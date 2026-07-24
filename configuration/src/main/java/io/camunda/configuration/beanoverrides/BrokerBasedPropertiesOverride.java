@@ -257,6 +257,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromExpression(override, camunda);
     populateFromProcessInstanceCreation(override, camunda);
     populateFromJobs(override, camunda);
+    populateFromSecretResolution(override, camunda);
   }
 
   private static void populateFromDistribution(
@@ -1199,5 +1200,16 @@ public class BrokerBasedPropertiesOverride {
         .getJobs()
         .setIncludeVariablesInJobCompletedEvent(
             camunda.getProcessing().getEngine().getJob().isIncludeVariablesInJobCompletedEvent());
+  }
+
+  private static void populateFromSecretResolution(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineSecrets = camunda.getProcessing().getEngine().getSecrets();
+    final var secretResolutionCfg = override.getExperimental().getEngine().getSecretResolution();
+    secretResolutionCfg.setInterval(engineSecrets.getInterval());
+    secretResolutionCfg.setRetryMaxAttempts(engineSecrets.getRetryMaxAttempts());
+    secretResolutionCfg.setRetryInitialDelay(engineSecrets.getRetryInitialDelay());
+    secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
+    secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
   }
 }

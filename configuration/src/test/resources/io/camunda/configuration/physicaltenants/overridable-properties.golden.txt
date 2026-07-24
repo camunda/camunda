@@ -274,6 +274,11 @@ processing.engine.batch-operations.scheduler-interval
 processing.engine.distribution.max-backoff-duration
 processing.engine.distribution.redistribution-interval
 processing.engine.job.include-variables-in-job-completed-event
+processing.engine.secrets.interval
+processing.engine.secrets.retry-backoff-factor
+processing.engine.secrets.retry-initial-delay
+processing.engine.secrets.retry-max-attempts
+processing.engine.secrets.retry-max-delay
 processing.flow-control.request.aimd.backoff-ratio
 processing.flow-control.request.aimd.initial-limit
 processing.flow-control.request.aimd.max-limit

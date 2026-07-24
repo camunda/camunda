@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.rules.TemporaryFolder;
@@ -90,7 +91,9 @@ public final class TestEngine {
                             JobStreamer.noop(),
                             SearchClientsProxy.noop(),
                             new BrokerRequestAuthorizationConverter(
-                                EngineSecurityConfigurations.defaultConfig()))
+                                EngineSecurityConfigurations.defaultConfig()),
+                            Map.of(),
+                            Map.of())
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

@@ -373,7 +373,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 brokerRequestAuthorizationConverter,
                 featureFlags,
                 brokerConfiguration,
-                exporterRepository));
+                exporterRepository,
+                Map.of(),
+                Map.of()));
   }
 
   @Override

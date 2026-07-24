@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -113,6 +114,12 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
                     key.second().inner().first().toString(),
                     key.second().inner().second().toString());
     waitingJobsByJobKeyColumnFamily.whileEqualPrefix(this.jobKey, kvVisitor);
+  }
+
+  @Override
+  public void visitPendingSecretReferences(final BiConsumer<String, String> visitor) {
+    pendingSecretReferencesColumnFamily.forEach(
+        (key, value) -> visitor.accept(key.first().toString(), key.second().toString()));
   }
 
   @Override

@@ -20,6 +20,8 @@ public class Engine {
 
   @NestedConfigurationProperty private EngineJob job = new EngineJob();
 
+  @NestedConfigurationProperty private EngineSecrets secrets = new EngineSecrets();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -42,5 +44,13 @@ public class Engine {
 
   public void setJob(final EngineJob job) {
     this.job = job;
+  }
+
+  public EngineSecrets getSecrets() {
+    return secrets;
+  }
+
+  public void setSecrets(final EngineSecrets secrets) {
+    this.secrets = secrets;
   }
 }

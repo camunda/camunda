@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -27,4 +28,10 @@ public interface SecretReferenceState {
    * false} to stop early.
    */
   void visitSecretReferencesByJob(long jobKey, BiPredicate<String, String> visitor);
+
+  /**
+   * Visits all pending secret references. The visitor receives (storeId, secretReference) for each
+   * entry.
+   */
+  void visitPendingSecretReferences(BiConsumer<String, String> visitor);
 }

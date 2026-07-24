@@ -325,6 +325,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-api</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

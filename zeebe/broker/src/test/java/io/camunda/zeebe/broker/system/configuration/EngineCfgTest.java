@@ -73,6 +73,16 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.getSecretResolutionInterval())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+    assertThat(configuration.getSecretResolutionRetryMaxAttempts())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS);
+    assertThat(configuration.getSecretResolutionRetryInitialDelay())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY);
+    assertThat(configuration.getSecretResolutionRetryMaxDelay())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY);
+    assertThat(configuration.getSecretResolutionRetryBackoffFactor())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR);
   }
 
   @Test

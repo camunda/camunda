@@ -107,7 +107,9 @@ public interface PartitionManager {
         brokerStartupContext.getSearchClientsProxy(),
         physicalTenantContext.authorizationConverter(),
         physicalTenantContext.featureFlags(),
-        topologyManager);
+        topologyManager,
+        physicalTenantContext.secretStores(),
+        physicalTenantContext.secretCaches());
   }
 
   static RecoveryPartitionManager createRecoveryPartitionManager(

@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 
 public interface ScheduledTaskState {
 
+  SecretReferenceState getSecretReferenceState();
+
   DistributionState getDistributionState();
 
   MessageState getMessageState();

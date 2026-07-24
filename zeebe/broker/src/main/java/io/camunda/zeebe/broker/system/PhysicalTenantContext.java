@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.broker.system;
 
+import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.util.Map;
 
 /**
  * Bundles all per-physical-tenant objects required to bootstrap the services for a given physical
@@ -28,4 +31,6 @@ public record PhysicalTenantContext(
     BrokerRequestAuthorizationConverter authorizationConverter,
     FeatureFlags featureFlags,
     BrokerCfg config,
-    ExporterRepository exporterRepository) {}
+    ExporterRepository exporterRepository,
+    Map<String, SecretStore> secretStores,
+    Map<String, SecretCache> secretCaches) {}

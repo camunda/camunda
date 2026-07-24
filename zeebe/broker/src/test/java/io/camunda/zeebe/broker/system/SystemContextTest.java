@@ -576,7 +576,9 @@ final class SystemContextTest {
                     mock(BrokerRequestAuthorizationConverter.class),
                     flags,
                     new BrokerCfg(),
-                    new ExporterRepository())),
+                    new ExporterRepository(),
+                    Map.of(),
+                    Map.of())),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -648,7 +650,9 @@ final class SystemContextTest {
                         convertersByTenant.get(tenantId),
                         FeatureFlags.createDefaultForTests(),
                         brokerCfg,
-                        new ExporterRepository())));
+                        new ExporterRepository(),
+                        Map.of(),
+                        Map.of())));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,

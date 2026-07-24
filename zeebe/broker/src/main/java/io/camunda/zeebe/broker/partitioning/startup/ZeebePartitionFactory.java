@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.partitioning.startup;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -81,6 +83,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +110,8 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final Map<String, SecretStore> secretStores;
+  private final Map<String, SecretCache> secretCaches;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -126,7 +131,9 @@ public final class ZeebePartitionFactory {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
-      final RocksDbResources rocksDbResources) {
+      final RocksDbResources rocksDbResources,
+      final Map<String, SecretStore> secretStores,
+      final Map<String, SecretCache> secretCaches) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -145,6 +152,8 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.secretStores = secretStores;
+    this.secretCaches = secretCaches;
   }
 
   public ZeebePartition constructPartition(
@@ -278,7 +287,9 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          secretStores,
+          secretCaches);
     };
   }
 }
