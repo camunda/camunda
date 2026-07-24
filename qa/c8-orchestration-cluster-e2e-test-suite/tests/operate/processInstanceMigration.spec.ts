@@ -863,7 +863,7 @@ test.describe.serial('Process Instance Migration', () => {
       // rule task incident" flake above: reload and retry the click.
       await waitForAssertion({
         assertion: async () => {
-          await operateDiagramPage.resetDiagramZoomButton.click();
+          await operateDiagramPage.resetDiagramZoomButton.click({timeout: 30_000});
         },
         onFailure: async () => {
           await page.reload();
