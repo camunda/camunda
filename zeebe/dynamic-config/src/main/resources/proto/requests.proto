@@ -74,6 +74,19 @@ message ForceRemoveBrokersRequest {
   bool dryRun = 2;
 }
 
+message ForceRemoveZoneRequest {
+  string zoneId = 1;
+  bool dryRun = 2;
+}
+
+message AddZoneRequest {
+  string zoneId = 1;
+  int32 numberOfReplicas = 2;
+  int32 priority = 3;
+  repeated string brokers = 4;
+  bool dryRun = 5;
+}
+
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;

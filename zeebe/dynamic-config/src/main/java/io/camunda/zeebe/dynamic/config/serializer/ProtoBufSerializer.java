@@ -12,6 +12,7 @@ import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
@@ -1109,6 +1111,27 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeForceRemoveZoneRequest(final ForceZoneRemoveRequest request) {
+    return Requests.ForceRemoveZoneRequest.newBuilder()
+        .setZoneId(request.zoneId())
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeForceRemoveZoneRequest(final AddZoneRequest request) {
+    return Requests.AddZoneRequest.newBuilder()
+        .setZoneId(request.zoneId())
+        .setNumberOfReplicas(request.numberOfReplicas())
+        .setPriority(request.priority())
+        .addAllBrokers(request.brokers().stream().map(MemberId::id).toList())
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -1436,6 +1459,33 @@ public class ProtoBufSerializer
       throw new DecodingFailed(e);
     }
     return new ClusterZoneMigrationRequest(proto.getZone(), proto.getDryRun());
+  }
+
+  @Override
+  public ForceZoneRemoveRequest decodeForceRemoveZoneRequest(final byte[] bytes) {
+    final Requests.ForceRemoveZoneRequest proto;
+    try {
+      proto = Requests.ForceRemoveZoneRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    return new ForceZoneRemoveRequest(proto.getZoneId(), proto.getDryRun());
+  }
+
+  @Override
+  public AddZoneRequest decodeAddZoneRequest(final byte[] bytes) {
+    final Requests.AddZoneRequest proto;
+    try {
+      proto = Requests.AddZoneRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    return new AddZoneRequest(
+        proto.getZoneId(),
+        proto.getNumberOfReplicas(),
+        proto.getPriority(),
+        proto.getBrokersList().stream().map(MemberId::from).collect(Collectors.toSet()),
+        proto.getDryRun());
   }
 
   @Override
