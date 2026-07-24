@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.exporting;
+package io.camunda.zeebe.gateway.admin;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-import static io.camunda.zeebe.gateway.admin.exporting.ExportingRequestBroadcasterTest.RequestMatcher.requestTo;
+import static io.camunda.zeebe.gateway.admin.ExportingRequestBroadcasterTest.RequestMatcher.requestTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Named.named;
@@ -26,8 +26,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.time.Duration;
