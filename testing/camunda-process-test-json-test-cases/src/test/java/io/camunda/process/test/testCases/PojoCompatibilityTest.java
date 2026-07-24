@@ -18,14 +18,15 @@ package io.camunda.process.test.testCases;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.dialect.Dialects;
 import io.camunda.process.test.api.testCases.ImmutableDecisionDefinitionSelector;
 import io.camunda.process.test.api.testCases.ImmutableDecisionSelector;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
@@ -82,7 +83,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -93,7 +94,7 @@ public class PojoCompatibilityTest {
 
   private static final String JSON_SCHEMA_PATH = "/schema/cpt-test-cases/schema.json";
 
-  private static JsonSchema jsonSchema;
+  private static Schema jsonSchema;
 
   private final ObjectMapper objectMapper =
       new ObjectMapper()
@@ -102,19 +103,20 @@ public class PojoCompatibilityTest {
 
   @BeforeAll
   static void setup() {
-    final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4);
+    final SchemaRegistry schemaRegistry = SchemaRegistry.withDialect(Dialects.getDraft7());
     jsonSchema =
-        factory.getSchema(PojoCompatibilityTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
+        schemaRegistry.getSchema(PojoCompatibilityTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("testCases")
-  void shouldBeValidTestCases(final String name, final TestCases testCases) {
+  void shouldBeValidTestCases(final String name, final TestCases testCases)
+      throws JsonProcessingException {
     // given
-    final JsonNode json = objectMapper.valueToTree(testCases);
+    final String json = objectMapper.writeValueAsString(testCases);
 
     // when
-    final Set<ValidationMessage> errors = jsonSchema.validate(json);
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
 
     // then
     assertThat(errors)
