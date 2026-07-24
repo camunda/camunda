@@ -196,7 +196,7 @@ public class ErrorMapper {
       }
       case final io.camunda.zeebe.backup.client.api.IncompleteTopologyException e -> {
         LOGGER.debug(
-            "Expected to handle request, but the gateway does not have a complete view of the cluster topology",
+            "Expected to handle request, but the broker client does not have a complete view of the cluster topology",
             rootError);
         yield new ServiceError(e.getMessage(), UNAVAILABLE);
       }
