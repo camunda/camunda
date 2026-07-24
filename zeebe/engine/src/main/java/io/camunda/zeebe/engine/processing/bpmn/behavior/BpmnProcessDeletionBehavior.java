@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -59,6 +60,13 @@ public final class BpmnProcessDeletionBehavior {
    * definition, if it is draining and no active instances remain. No-op otherwise.
    */
   public void finalizeDeletionIfDraining(final BpmnElementContext context) {
+    final var intent = context.getIntent();
+    if (intent != ProcessInstanceIntent.ELEMENT_COMPLETED
+        && intent != ProcessInstanceIntent.ELEMENT_TERMINATED) {
+      // only a completed or terminated instance frees the definition to drain
+      return;
+    }
+
     final var process =
         processState.getProcessByKeyAndTenant(
             context.getProcessDefinitionKey(), context.getTenantId());

@@ -51,4 +51,12 @@ public interface MutableProcessState extends ProcessState {
    * @param processRecord the record of the process that is deleted
    */
   void deleteProcess(final ProcessRecord processRecord);
+
+  /**
+   * Records that the given partition still owes a drain report for the given process definition.
+   */
+  void addPendingDeletion(long processDefinitionKey, int partitionId);
+
+  /** Clears the given partition's outstanding drain report for the given process definition. */
+  void removePendingDeletion(long processDefinitionKey, int partitionId);
 }

@@ -249,7 +249,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
   // definition being deleted while it has running instances. Lives on the aggregating partition.
-  DRAINING_PROCESS_DELETE(159, PARTITION_LOCAL);
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

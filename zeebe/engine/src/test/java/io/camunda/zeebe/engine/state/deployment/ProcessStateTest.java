@@ -1296,4 +1296,89 @@ public final class ProcessStateTest {
 
     return processRecord;
   }
+
+  @Test
+  public void shouldNotHavePendingDeletionInitially() {
+    // when - nothing recorded
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldAddPendingDeletion() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldTrackPendingDeletionsPerPartitionIndependently() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 4)).isFalse();
+  }
+
+  @Test
+  public void shouldScopePendingDeletionsPerProcessDefinition() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then - another definition is unaffected
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+    assertThat(processState.hasPendingDeletion(99L)).isFalse();
+    assertThat(processState.hasPendingDeletion(99L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldRemovePendingDeletion() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldReportNoPendingDeletionOnceAllPartitionsRemoved() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+    processState.removePendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+  }
+
+  @Test
+  public void shouldRemovePendingDeletionIdempotently() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+
+    // when - removing a partition that was never recorded, and one twice
+    processState.removePendingDeletion(1L, 99);
+    processState.removePendingDeletion(1L, 2);
+    processState.removePendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+  }
 }

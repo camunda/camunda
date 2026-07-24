@@ -570,11 +570,11 @@ public class DrainingProcessDefinitionTest {
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
 
     engine.pauseProcessing(Protocol.DEPLOYMENT_PARTITION);
-    final var drainState =
-        ((MutableProcessingState) engine.getProcessingState()).getProcessDeleteDrainState();
-    drainState.addDrainingPartition(processDefinitionKey, 1);
-    drainState.addDrainingPartition(processDefinitionKey, 2);
-    drainState.addDrainingPartition(processDefinitionKey, 3);
+    final var processState =
+        ((MutableProcessingState) engine.getProcessingState()).getProcessState();
+    processState.addPendingDeletion(processDefinitionKey, 1);
+    processState.addPendingDeletion(processDefinitionKey, 2);
+    processState.addPendingDeletion(processDefinitionKey, 3);
     engine.resumeProcessing(Protocol.DEPLOYMENT_PARTITION);
 
     // when - each partition reports it has finished draining (as the deployment partition receives

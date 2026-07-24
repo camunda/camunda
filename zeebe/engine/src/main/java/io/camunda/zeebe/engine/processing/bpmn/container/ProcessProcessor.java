@@ -222,8 +222,7 @@ public final class ProcessProcessor
     return transitionOperation
         .apply(context)
         .thenDo(postTransitionAction)
-        // after the instance is removed, finalize the definition's deletion if it was draining and
-        // this was its last active instance on this partition
+        // once the instance is removed, finalize the definition's deletion if it was draining
         .thenDo(processDeletionBehavior::finalizeDeletionIfDraining);
   }
 
