@@ -29,6 +29,12 @@
     <version.spring>7.0.8</version.spring>
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.3</version.junit>
+    <!-- Spring Boot 4.0.7 manages tools.jackson:jackson-bom (Jackson 3.x) via this same property
+    at 3.1.4, which transitively pins tools.jackson.core:jackson-databind@3.1.4. That version is
+    affected by GHSA-5gvw-p9qm-jgwh (improper @JsonView authorization bypass on @JsonUnwrapped
+    properties during deserialization). Override to 3.1.5, the minimum patched release for the
+    3.1.x line, until Spring Boot's own BOM picks up the fix. -->
+    <jackson-bom.version>3.1.5</jackson-bom.version>
     <spring-boot-starter-camunda-sdk.sourcedir>${project.basedir}/../spring-boot-starter-camunda-sdk/src</spring-boot-starter-camunda-sdk.sourcedir>
   </properties>
 
