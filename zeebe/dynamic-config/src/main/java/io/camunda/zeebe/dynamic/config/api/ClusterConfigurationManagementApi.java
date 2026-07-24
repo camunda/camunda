@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -83,6 +84,9 @@ public interface ClusterConfigurationManagementApi {
       ForceZoneRemoveRequest forceZoneRemoveRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> addZone(AddZoneRequest addZoneRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> updateZonePriorities(
+      UpdateZonePrioritiesRequest updateZonePrioritiesRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
       ExporterDisableRequest exporterDisableRequest);
