@@ -65,16 +65,26 @@ final class IncrementalChecksums {
       if (!fileChecksum.isComplete()) {
         throw new IllegalStateException(
             "Checksum for file %s is not complete (had size %s, expected size %s)"
-                .formatted(fileName, fileChecksum.size(), fileChecksum.totalSize()));
+                .formatted(fileName, fileChecksum.size, fileChecksum.totalSize));
       }
 
-      checksums.put(fileName, fileChecksum.checksum().getValue());
+      checksums.put(fileName, fileChecksum.checksum.getValue());
     }
 
     return new SfvChecksumImpl(checksums);
   }
 
-  private record FileChecksum(Checksum checksum, long size, long totalSize) {
+  private static final class FileChecksum {
+    private final Checksum checksum;
+    private final long size;
+    private final long totalSize;
+
+    private FileChecksum(final Checksum checksum, final long size, final long totalSize) {
+      this.checksum = checksum;
+      this.size = size;
+      this.totalSize = totalSize;
+    }
+
     public static FileChecksum of(final SnapshotChunk chunk) {
       final long fileBlockPosition = chunk.getFileBlockPosition();
       if (fileBlockPosition != 0) {
