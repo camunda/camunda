@@ -79,9 +79,18 @@ public final class RecordIndexRouter {
   /**
    * Returns the routing for this record. The routing field of a document controls to which shard it
    * will be assigned.
+   *
+   * <p>We route by the document id (which is unique per record, see {@link #idFor(Record)}) rather
+   * than by the partition id. Routing by partition id only yields as many distinct routing values
+   * as there are partitions (typically a small number, e.g. 1, 2, 3), which OpenSearch hashes into
+   * a handful of shards with collisions. This leaves some shards empty while others hold several
+   * partitions' worth of data, distributing documents unevenly and creating hotspots. Routing by
+   * the high-cardinality document id spreads records evenly across all shards. Because the id is
+   * stable per record, repeated writes of the same record still resolve to the same shard,
+   * preserving update idempotency.
    */
   String routingFor(final Record<?> record) {
-    return String.valueOf(record.getPartitionId());
+    return idFor(record);
   }
 
   private String valueTypeToString(final ValueType valueType) {
