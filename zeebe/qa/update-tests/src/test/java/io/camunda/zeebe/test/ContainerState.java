@@ -17,6 +17,7 @@ import io.camunda.container.CamundaContainer;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
+import io.camunda.container.cluster.CamundaPort;
 import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.agrona.LangUtil;
@@ -309,6 +312,12 @@ final class ContainerState implements AutoCloseable {
     final int commandPort = springBroker.mappedPort(TestZeebePort.COMMAND);
     Testcontainers.exposeHostPorts(clusterPort, commandPort);
 
+    // the broker runs as a host process (not on `network`), so it cannot resolve the gateway
+    // container's internal network alias when it pushes job-stream notifications back to the
+    // gateway over the cluster (Atomix) transport; fix the gateway's advertised cluster address
+    // to a host-reachable one so the broker can dial back
+    final int gatewayClusterHostPort = findAvailablePort();
+
     gateway =
         new GatewayContainer(gatewayImage)
             .withUnifiedConfig(
@@ -326,6 +335,12 @@ final class ContainerState implements AutoCloseable {
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
             .withNetwork(network);
 
+    gateway.setPortBindings(
+        Stream.concat(
+                gateway.getPortBindings().stream(),
+                Stream.of(gatewayClusterHostPort + ":" + CamundaPort.INTERNAL.getPort()))
+            .collect(Collectors.toList()));
+
     if (gatewayImage.equals(PREVIOUS_VERSION)) {
       gateway
           .withEnv(
@@ -333,7 +348,9 @@ final class ContainerState implements AutoCloseable {
               "host.testcontainers.internal:" + clusterPort)
           .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", gateway.getInternalHost())
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", gateway.getInternalHost());
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", "0.0.0.0")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "localhost")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT", String.valueOf(gatewayClusterHostPort));
     }
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
@@ -344,6 +361,14 @@ final class ContainerState implements AutoCloseable {
             .grpcAddress(gateway.getGrpcAddress())
             .preferRestOverGrpc(false)
             .build();
+  }
+
+  private static int findAvailablePort() {
+    try (ServerSocket socket = new ServerSocket(0)) {
+      return socket.getLocalPort();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public PartitionsActuator getPartitionsActuator() {
