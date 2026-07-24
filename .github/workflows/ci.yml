@@ -1309,7 +1309,11 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
+      # -Dflatten.updatePomFile=true swaps in the flattened POM for the deployed snapshot artifacts,
+      # matching the central-sonatype-publish release path. Without it, snapshots ship the raw reactor
+      # POM whose parent chain (zeebe-parent) imports NES-only Spring BOMs that external consumers such
+      # as zeebe-process-test cannot resolve from Maven Central.
+      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true
