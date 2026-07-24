@@ -71,7 +71,12 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     if (res.isLeft()) {
       return Either.left(mapFailure(res.getLeft()));
     }
-    return Either.right(buildOperations(clusterConfiguration, (RestoreResolvedRequest) res.get()));
+    try {
+      return Either.right(
+          buildOperations(clusterConfiguration, (RestoreResolvedRequest) res.get()));
+    } catch (final Exception e) {
+      return Either.left(mapFailure(e));
+    }
   }
 
   private static List<ClusterConfigurationChangeOperation> buildOperations(
