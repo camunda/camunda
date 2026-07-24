@@ -1190,9 +1190,18 @@ public class BrokerBasedPropertiesOverride {
       final String exporterName,
       final ExporterCfg unified,
       final ExporterCfg legacy) {
-    final String className =
-        unified.getClassName() != null ? unified.getClassName() : legacy.getClassName();
-    final ExporterConfigMerger merger = findExporterConfigMerger(mergers, exporterName, className);
+    if (hasText(unified.getJarPath()) || hasText(legacy.getJarPath())) {
+      return unified.getArgs();
+    }
+    final String unifiedClassName = unified.getClassName();
+    final String legacyClassName = legacy.getClassName();
+    if (!hasText(unifiedClassName)
+        || !hasText(legacyClassName)
+        || !unifiedClassName.equals(legacyClassName)) {
+      return unified.getArgs();
+    }
+    final ExporterConfigMerger merger =
+        findExporterConfigMerger(mergers, exporterName, unifiedClassName);
     if (merger == null) {
       // no merger for this class: whole-map replace, the unified args exactly as declared
       return unified.getArgs();
@@ -1233,6 +1242,10 @@ public class BrokerBasedPropertiesOverride {
 
   private static Map<String, Object> immutableArgsCopy(final Map<String, Object> args) {
     return args == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(args));
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 
   private static void populateFromGlobalListeners(
