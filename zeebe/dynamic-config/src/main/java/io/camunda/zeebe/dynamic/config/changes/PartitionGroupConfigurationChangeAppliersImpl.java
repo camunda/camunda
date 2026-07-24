@@ -21,7 +21,9 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionEnableExporterA
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionForceReconfigureApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionPreRestoreApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionRestoreApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
@@ -37,7 +39,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -52,16 +56,19 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final ModeChangeExecutor modeChangeExecutor;
+  private final RestoreChangeExecutor restoreChangeExecutor;
 
   public PartitionGroupConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       final ClusterChangeExecutor clusterChangeExecutor,
-      final ModeChangeExecutor modeChangeExecutor) {
+      final ModeChangeExecutor modeChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
     this.clusterChangeExecutor = clusterChangeExecutor;
     this.modeChangeExecutor = modeChangeExecutor;
+    this.restoreChangeExecutor = restoreChangeExecutor;
   }
 
   @Override
@@ -124,6 +131,11 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
           new AwaitModeChangeApplier(op.memberId(), op.mode(), modeChangeExecutor);
       case final ExportingStateChangeOperation op ->
           new ExportingStateChangeApplier(op.memberId(), op.state(), partitionChangeExecutor);
+      case final PartitionPreRestoreOperation op ->
+          new PartitionPreRestoreApplier(op.memberId(), op.partitionId(), restoreChangeExecutor);
+      case final PartitionRestoreOperation op ->
+          new PartitionRestoreApplier(
+              op.memberId(), op.partitionId(), op.backupIds(), restoreChangeExecutor);
     };
   }
 }

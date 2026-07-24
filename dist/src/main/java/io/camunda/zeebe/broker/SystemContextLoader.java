@@ -40,7 +40,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -76,7 +75,7 @@ public final class SystemContextLoader {
   private NodeIdProvider nodeIdProvider;
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
-  private @Nullable IntFunction<Long> exportedPositionSupplier;
+  private Map<String, IntFunction<Long>> exportedPositionSuppliers = Map.of();
   private SecretStoreRegistries secretStoreRegistries = new SecretStoreRegistries(Map.of());
 
   public SystemContextLoader withShutdownTimeout(final Duration shutdownTimeout) {
@@ -181,8 +180,8 @@ public final class SystemContextLoader {
   }
 
   public SystemContextLoader withExportedPositionSupplier(
-      final @Nullable IntFunction<Long> exportedPositionSupplier) {
-    this.exportedPositionSupplier = exportedPositionSupplier;
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers) {
+    this.exportedPositionSuppliers = exportedPositionSuppliers;
     return this;
   }
 
@@ -219,7 +218,7 @@ public final class SystemContextLoader {
         jwtDecoderFactory,
         oidcClaimsProviderFactory,
         searchClientsProxy,
-        exportedPositionSupplier,
+        exportedPositionSuppliers,
         nodeIdProvider,
         physicalTenantResolver);
   }

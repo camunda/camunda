@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -47,10 +48,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   @Override
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerPartitionChangeExecutors(
-          partitionChangeExecutor, partitionScalingChangeExecutor);
+          partitionChangeExecutor, partitionScalingChangeExecutor, restoreChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register change executor before the topology manager is started");

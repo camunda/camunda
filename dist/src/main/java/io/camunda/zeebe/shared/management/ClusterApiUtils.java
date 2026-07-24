@@ -45,7 +45,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -249,6 +251,16 @@ final class ClusterApiUtils {
               .brokerId(brokerIdValue(bootstrapOperation.memberId()))
               .partitionId(bootstrapOperation.partitionId())
               .priority(bootstrapOperation.priority());
+      case final PartitionPreRestoreOperation preRestoreOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_PRE_RESTORE)
+              .brokerId(brokerIdValue(preRestoreOperation.memberId()))
+              .partitionId(preRestoreOperation.partitionId());
+      case final PartitionRestoreOperation restoreOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_RESTORE)
+              .brokerId(brokerIdValue(restoreOperation.memberId()))
+              .partitionId(restoreOperation.partitionId());
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new Operation().operation(OperationEnum.DELETE_HISTORY);
       case final AwaitRedistributionCompletion redistributionCompletion ->
@@ -605,6 +617,16 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(bootstrapOperation.memberId()))
                   .partitionId(bootstrapOperation.partitionId())
                   .priority(bootstrapOperation.priority());
+          case final PartitionPreRestoreOperation preRestoreOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PRE_RESTORE)
+                  .brokerId(brokerIdValue(preRestoreOperation.memberId()))
+                  .partitionId(preRestoreOperation.partitionId());
+          case final PartitionRestoreOperation restoreOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_RESTORE)
+                  .brokerId(brokerIdValue(restoreOperation.memberId()))
+                  .partitionId(restoreOperation.partitionId());
           case final DeleteHistoryOperation deleteHistoryOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.DELETE_HISTORY);

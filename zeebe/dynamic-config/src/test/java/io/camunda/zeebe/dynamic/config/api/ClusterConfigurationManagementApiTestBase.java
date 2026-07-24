@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -164,15 +165,15 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var validatorRegistry = new RequestValidatorRegistry();
     validatorRegistry.registerValidator(
         null,
-        new ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest>() {
+        new ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest>() {
           @Override
           public Class<RestoreRequest> requestType() {
             return RestoreRequest.class;
           }
 
           @Override
-          public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
-            return Either.right(request);
+          public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
+            return Either.right(new RestoreResolvedRequest(Map.of(), false));
           }
         });
 
