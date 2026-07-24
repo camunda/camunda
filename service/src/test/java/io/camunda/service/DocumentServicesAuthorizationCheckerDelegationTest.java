@@ -59,7 +59,7 @@ class DocumentServicesAuthorizationCheckerDelegationTest {
     enabledConfig.setEnabled(true);
     servicesA =
         new DocumentServices(
-            "tenant-a",
+            "tenanta",
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             registryA,
@@ -69,7 +69,7 @@ class DocumentServicesAuthorizationCheckerDelegationTest {
             null);
     servicesB =
         new DocumentServices(
-            "tenant-b",
+            "tenantb",
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             registryB,
