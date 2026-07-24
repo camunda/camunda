@@ -16,7 +16,7 @@ import org.springframework.util.unit.DataSize;
 public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
-  public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofGigabytes(1);
+  public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofMegabytes(8);
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
   // Requests should time out faster than the election timeout to ensure that a single missed
   // heartbeat does not cause immediate re-election.

@@ -180,17 +180,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try (final var channel =
         FileChannel.open(snapshotFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
-      final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
+      channel.position(snapshotChunk.getFileBlockPosition());
 
+      final var buffer = ByteBuffer.wrap(snapshotChunk.getContent());
       while (buffer.hasRemaining()) {
-        final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
-        channel.position(snapshotChunk.getFileBlockPosition() + buffer.position());
-        channel.write(buffer.limit(newLimit));
-        buffer.limit(buffer.capacity());
+        //noinspection ResultOfMethodCallIgnored
+        channel.write(buffer);
       }
 
-      channel.force(true);
-
+      if (snapshotChunk.getTotalFileSize() == channel.position()) {
+        channel.force(true);
+      }
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
