@@ -12,8 +12,6 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
@@ -56,20 +54,5 @@ final class RestoreAppliers {
                   .formatted(partitionId, memberId)));
     }
     return Either.right(UnaryOperator.identity());
-  }
-
-  static ActorFuture<UnaryOperator<PartitionGroupConfiguration>> applyIdentity(
-      final ActorFuture<Void> step) {
-    final CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>> result =
-        new CompletableActorFuture<>();
-    step.onComplete(
-        (ignore, error) -> {
-          if (error == null) {
-            result.complete(UnaryOperator.identity());
-          } else {
-            result.completeExceptionally(error);
-          }
-        });
-    return result;
   }
 }

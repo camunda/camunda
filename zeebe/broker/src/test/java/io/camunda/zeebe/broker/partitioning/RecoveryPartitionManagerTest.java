@@ -37,10 +37,15 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -405,10 +410,8 @@ final class RecoveryPartitionManagerTest {
       controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
 
       // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isFalse();
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).succeedsWithin(Duration.ofSeconds(10));
       assertThat(partitionDir).isEmptyDirectory();
     }
 
@@ -426,10 +429,8 @@ final class RecoveryPartitionManagerTest {
       controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
 
       // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isFalse();
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).succeedsWithin(Duration.ofSeconds(10));
     }
 
     @Test
@@ -439,18 +440,16 @@ final class RecoveryPartitionManagerTest {
       controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
 
       // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
     }
 
     private void writeMarkerFile(final Path partitionDir) {
       try {
-        java.nio.file.Files.createDirectories(partitionDir);
-        java.nio.file.Files.writeString(partitionDir.resolve("marker.txt"), "data");
-      } catch (final java.io.IOException e) {
-        throw new java.io.UncheckedIOException(e);
+        Files.createDirectories(partitionDir);
+        Files.writeString(partitionDir.resolve("marker.txt"), "data");
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
       }
     }
   }
@@ -472,16 +471,11 @@ final class RecoveryPartitionManagerTest {
       // when: restoring a partition id that is not one of the manager's local partitions
       // (only PARTITION_ID and PARTITION_ID_2 are local per this class's setup)
       final var future = new AtomicReference<ActorFuture<Void>>();
-      controlActor.run(
-          () ->
-              future.set(
-                  partitionManager.restore(999, new java.util.TreeSet<>(java.util.List.of(1L)))));
+      controlActor.run(() -> future.set(partitionManager.restore(999, new TreeSet<>(List.of(1L)))));
 
       // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
       assertThat(future.get().getException())
           .hasMessageContaining("not a local partition of group");
     }
@@ -506,16 +500,11 @@ final class RecoveryPartitionManagerTest {
       // when
       final var future = new AtomicReference<ActorFuture<Void>>();
       controlActor.run(
-          () ->
-              future.set(
-                  partitionManager.restore(
-                      PARTITION_ID, new java.util.TreeSet<>(java.util.List.of(1L)))));
+          () -> future.set(partitionManager.restore(PARTITION_ID, new TreeSet<>(List.of(1L)))));
 
       // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
       assertThat(partitionDir).isEmptyDirectory();
     }
   }

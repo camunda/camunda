@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
@@ -45,19 +43,5 @@ final class RestoreAppliers {
                   .formatted(partitionId, memberId)));
     }
     return Either.right(UnaryOperator.identity());
-  }
-
-  static ActorFuture<UnaryOperator<MemberState>> applyIdentity(final ActorFuture<Void> step) {
-    final CompletableActorFuture<UnaryOperator<MemberState>> result =
-        new CompletableActorFuture<>();
-    step.onComplete(
-        (ignore, error) -> {
-          if (error == null) {
-            result.complete(UnaryOperator.identity());
-          } else {
-            result.completeExceptionally(error);
-          }
-        });
-    return result;
   }
 }

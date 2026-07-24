@@ -133,6 +133,9 @@ final class PartitionRestoreApplierTest {
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
     assertThat(executor.invokedRestores).containsExactly(Map.entry(PARTITION_ID, BACKUP_IDS));
+
+    final var groupConfiguration = PartitionGroupConfiguration.empty(1);
+    assertThat(result.join().apply(groupConfiguration)).isSameAs(groupConfiguration);
   }
 
   @Test

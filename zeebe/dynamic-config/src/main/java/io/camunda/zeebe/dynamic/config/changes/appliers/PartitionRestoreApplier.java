@@ -50,6 +50,8 @@ public final class PartitionRestoreApplier implements PartitionGroupConfiguratio
 
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
-    return RestoreAppliers.applyIdentity(restoreChangeExecutor.restore(partitionId, backupIds));
+    return restoreChangeExecutor
+        .restore(partitionId, backupIds)
+        .thenApply(ignored -> UnaryOperator.identity());
   }
 }

@@ -49,6 +49,8 @@ final class PartitionRestoreApplier implements MemberOperationApplier {
 
   @Override
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
-    return RestoreAppliers.applyIdentity(restoreChangeExecutor.restore(partitionId, backupIds));
+    return restoreChangeExecutor
+        .restore(partitionId, backupIds)
+        .thenApply(ignored -> UnaryOperator.identity());
   }
 }

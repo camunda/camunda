@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
@@ -81,7 +80,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
         clusterConfiguration.members().entrySet().stream()
             .filter(entry -> entry.getValue().state() == State.RECOVERING)
             .map(Entry::getKey)
-            .sorted(MemberId.ID_COMPARATOR)
+            .sorted()
             .toList();
 
     final var operations = new ArrayList<ClusterConfigurationChangeOperation>();
