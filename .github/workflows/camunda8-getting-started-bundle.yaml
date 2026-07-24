@@ -39,7 +39,7 @@ jobs:
       c8run_version: ${{ steps.resolve.outputs.c8run_version }}
       modeler_version: ${{ steps.resolve.outputs.modeler_version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Resolve c8run and modeler versions
         id: resolve
@@ -138,7 +138,7 @@ jobs:
       MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
       BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Print build info
         run: |
@@ -443,7 +443,7 @@ jobs:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
       BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download bundle artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -724,7 +724,7 @@ jobs:
     env:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download all bundle artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -778,7 +778,7 @@ jobs:
       C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
       MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Import Secrets
         id: secrets
@@ -899,7 +899,7 @@ jobs:
             -d "$PAYLOAD"
 
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
       - name: Observe build status
@@ -920,7 +920,7 @@ jobs:
     if: always() && (needs.build-bundle.result == 'failure' || needs.test-bundle.result == 'failure' || needs.upload-to-release.result == 'failure')
     permissions: {}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
@@ -974,7 +974,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Generate summary
         env:
