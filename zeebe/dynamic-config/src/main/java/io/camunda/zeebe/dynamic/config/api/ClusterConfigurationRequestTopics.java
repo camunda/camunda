@@ -20,7 +20,6 @@ public enum ClusterConfigurationRequestTopics {
   DISABLE_EXPORTER("topology-exporter-disable"),
   ENABLE_EXPORTER("topology-exporter-enable"),
   DELETE_EXPORTER("topology-exporter-delete"),
-
   SCALE_CLUSTER("topology-cluster-scale"),
   PATCH_CLUSTER("topology-cluster-patch"),
   PURGE("topology-cluster-purge"),
@@ -29,7 +28,9 @@ public enum ClusterConfigurationRequestTopics {
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
   MODE_CHANGE("topology-mode-change"),
   RESTORE("cluster-restore"),
-  ZONE_MIGRATION("topology-cluster-zone-migration");
+  ZONE_MIGRATION("topology-cluster-zone-migration"),
+  ADD_ZONE("topology-add-zone"),
+  FORCE_REMOVE_ZONE("topology-force-remove-zone");
 
   private final String topic;
 

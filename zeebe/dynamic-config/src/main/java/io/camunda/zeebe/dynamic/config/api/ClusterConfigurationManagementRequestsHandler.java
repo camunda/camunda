@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
@@ -201,6 +203,26 @@ public final class ClusterConfigurationManagementRequestsHandler
         forceRemoveBrokersRequest.dryRun(),
         new ForceRemoveBrokersRequestTransformer(
             forceRemoveBrokersRequest.membersToRemove(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveZone(
+      final ForceZoneRemoveRequest forceZoneRemoveRequest) {
+    return handleRequest(
+        forceZoneRemoveRequest.dryRun(),
+        new ForceRemoveZoneTransformer(forceZoneRemoveRequest.zoneId()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> addZone(
+      final AddZoneRequest addZoneRequest) {
+    return handleRequest(
+        addZoneRequest.dryRun(),
+        new AddZoneTransformer(
+            addZoneRequest.zoneId(),
+            addZoneRequest.numberOfReplicas(),
+            addZoneRequest.priority(),
+            addZoneRequest.brokers()));
   }
 
   @Override
