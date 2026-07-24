@@ -44,4 +44,59 @@ public class OptimizeMetrics {
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
   }
+<<<<<<< HEAD
+=======
+
+  public static Counter getCounter(
+      final MetricEnum metric, final String recordType, final Integer partitionId) {
+    return Counter.builder(metric.getName())
+        .description(metric.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
+  /**
+   * Registers a timer with the given metric definition and tags. Timers are used to track the
+   * duration and frequency of events.
+   *
+   * @param metricEnum the metric definition from {@link MetricEnum}
+   * @param tags the tags to apply to this timer
+   * @return a Timer instance registered to the global registry
+   */
+  public static Timer registerTimer(final MetricEnum metricEnum, final Tags tags) {
+    return Timer.builder(metricEnum.getName())
+        .description(metricEnum.getDescription())
+        .tags(tags)
+        .register(Metrics.globalRegistry);
+  }
+
+  /**
+   * Records an error occurrence with the specified error type. The error is tracked as a counter
+   * and tagged with the error type for analysis.
+   *
+   * @param errorType the type of error
+   */
+  public static void recordError(final ErrorType errorType) {
+    if (Objects.isNull(errorType)) {
+      return;
+    }
+    final Counter counter = ERROR_COUNTERS.get(errorType);
+    if (Objects.nonNull(counter)) {
+      counter.increment();
+    }
+  }
+
+  private static void initializeCounters() {
+
+    for (final ErrorType errorType : ErrorType.values()) {
+      final Counter counter =
+          Counter.builder(ERROR_METRIC.getName())
+              .description(ERROR_METRIC.getDescription())
+              .tag(ERROR_TYPE_TAG, errorType.getValue())
+              .register(Metrics.globalRegistry);
+      ERROR_COUNTERS.put(errorType, counter);
+    }
+  }
+>>>>>>> 21cd927b (feat: add per-mediator import throughput, cycle latency, and error metrics)
 }
