@@ -22,6 +22,17 @@ import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+/**
+ * Exposes exporting pause/resume for a single physical tenant, authorizing the caller explicitly
+ * (ADR 002 D2) since these operations are not engine commands.
+ *
+ * <p>It extends {@link PhysicalTenantScopedApiServices} for uniformity with the other
+ * explicitly-checked management services ({@code DocumentServices}, {@code SecretServices}) and to
+ * carry the physical tenant id, but it only consumes {@link #getPhysicalTenantId()}: the actual
+ * broker requests are stamped and dispatched by {@link ExportingRequestBroadcaster}, which sets the
+ * partition group itself, so the base class's {@code brokerRequestMutators()} PT-stamping is not
+ * exercised here.
+ */
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
   private final ExportingRequestBroadcaster exportingRequestBroadcaster;
