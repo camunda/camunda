@@ -9,6 +9,11 @@ import { appendFileSync } from 'node:fs';
 
 const escape = (msg: string): string => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 
+// The step summary is built as HTML, so escape anything interpolated into it —
+// reasons carry user-controlled PR title/body fragments.
+const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const appendEnvFile = (envVar: string, content: string): void => {
   const file = process.env[envVar];
   if (file) appendFileSync(file, content);
@@ -40,11 +45,11 @@ export const setFailed = (msg: string): void => {
 class Summary {
   private buf = '';
   addHeading(text: string, level = 1): this {
-    this.buf += `<h${level}>${text}</h${level}>\n`;
+    this.buf += `<h${level}>${escapeHtml(text)}</h${level}>\n`;
     return this;
   }
   addList(items: string[]): this {
-    this.buf += `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>\n`;
+    this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
     return this;
   }
   async write(): Promise<void> {

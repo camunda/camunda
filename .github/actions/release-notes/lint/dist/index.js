@@ -67,16 +67,13 @@ async function syncStickyComment(api, gate) {
  * comment triggers downstream automations that GITHUB_TOKEN events would not).
  */
 class GithubCommentApi {
-    token;
     issueNumber;
     repoUrl;
+    headers;
     constructor(token, owner, repo, issueNumber) {
-        this.token = token;
         this.issueNumber = issueNumber;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
-    }
-    headers() {
-        return (0, github_1.githubHeaders)(this.token, { json: true });
+        this.headers = (0, github_1.githubHeaders)(token, { json: true });
     }
     async list() {
         // Paginate through ALL comments. If the gate first runs on a PR that already
@@ -86,7 +83,7 @@ class GithubCommentApi {
         const perPage = 100;
         const all = [];
         for (let page = 1;; page++) {
-            const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`, { headers: this.headers() });
+            const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`, { headers: this.headers });
             if (!res.ok)
                 throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
             const batch = (await res.json());
@@ -99,7 +96,7 @@ class GithubCommentApi {
     async create(body) {
         const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments`, {
             method: 'POST',
-            headers: this.headers(),
+            headers: this.headers,
             body: JSON.stringify({ body }),
         });
         if (!res.ok)
@@ -108,7 +105,7 @@ class GithubCommentApi {
     async update(commentId, body) {
         const res = await fetch(`${this.repoUrl}/issues/comments/${commentId}`, {
             method: 'PATCH',
-            headers: this.headers(),
+            headers: this.headers,
             body: JSON.stringify({ body }),
         });
         if (!res.ok)
@@ -213,6 +210,9 @@ const node_fs_1 = __nccwpck_require__(24);
  * command/file protocols — nothing clever.
  */
 const escape = (msg) => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+// The step summary is built as HTML, so escape anything interpolated into it —
+// reasons carry user-controlled PR title/body fragments.
+const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const appendEnvFile = (envVar, content) => {
     const file = process.env[envVar];
     if (file)
@@ -246,11 +246,11 @@ exports.setFailed = setFailed;
 class Summary {
     buf = '';
     addHeading(text, level = 1) {
-        this.buf += `<h${level}>${text}</h${level}>\n`;
+        this.buf += `<h${level}>${escapeHtml(text)}</h${level}>\n`;
         return this;
     }
     addList(items) {
-        this.buf += `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>\n`;
+        this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
         return this;
     }
     async write() {
@@ -353,20 +353,19 @@ async function syncNoIssueLabel(api, gate) {
  * worth paying.
  */
 class GithubLabelApi {
-    token;
     issueNumber;
     repoUrl;
+    headers;
     constructor(token, owner, repo, issueNumber) {
-        this.token = token;
         this.issueNumber = issueNumber;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
-    }
-    headers() {
-        return (0, github_1.githubHeaders)(this.token, { json: true });
+        this.headers = (0, github_1.githubHeaders)(token, { json: true });
     }
     async list() {
+        // No pagination (unlike GithubCommentApi): GitHub caps an issue/PR at 100
+        // labels, so a single per_page=100 page is always the complete set.
         const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels?per_page=100`, {
-            headers: this.headers(),
+            headers: this.headers,
         });
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} listing labels on #${this.issueNumber}`);
@@ -390,7 +389,7 @@ class GithubLabelApi {
     async remove(label) {
         const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels/${encodeURIComponent(label)}`, {
             method: 'DELETE',
-            headers: this.headers(),
+            headers: this.headers,
         });
         // 404 means the label is already gone (e.g. a concurrent run removed it) — not an error.
         if (!res.ok && res.status !== 404) {
@@ -400,14 +399,14 @@ class GithubLabelApi {
     postLabel(label) {
         return fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels`, {
             method: 'POST',
-            headers: this.headers(),
+            headers: this.headers,
             body: JSON.stringify({ labels: [label] }),
         });
     }
     async ensureLabelExists(label) {
         const res = await fetch(`${this.repoUrl}/labels`, {
             method: 'POST',
-            headers: this.headers(),
+            headers: this.headers,
             body: JSON.stringify({ name: label, color: exports.NO_ISSUE_LABEL_COLOR, description: exports.NO_ISSUE_LABEL_DESCRIPTION }),
         });
         // 422 means another concurrent run already created it — not an error.
@@ -751,11 +750,13 @@ class GithubResolver {
     owner;
     repo;
     repoUrl;
+    headers;
     constructor(token, owner, repo) {
         this.token = token;
         this.owner = owner;
         this.repo = repo;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
+        this.headers = (0, github_1.githubHeaders)(token);
     }
     async resolve(refs) {
         return Promise.all(refs.map((ref) => this.resolveOne(ref)));
@@ -770,11 +771,10 @@ class GithubResolver {
      * unrelated PR in THIS repo. We only inherit attribution from our own repo.
      */
     async fetchPullBody(number, repo) {
-        const crossRepo = repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
-        if (crossRepo)
+        if (this.isCrossRepo(repo))
             return null;
         const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
-            headers: (0, github_1.githubHeaders)(this.token),
+            headers: this.headers,
         });
         if (res.status === 404)
             return null;
@@ -783,12 +783,15 @@ class GithubResolver {
         const data = (await res.json());
         return data.body ?? '';
     }
+    /** A ref points at a different repo than the one being gated (case-insensitive). */
+    isCrossRepo(repo) {
+        return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
+    }
     async resolveOne(ref) {
-        const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
-        if (crossRepo)
+        if (this.isCrossRepo(ref.repo))
             return { ...ref, target: 'missing', crossRepo: true };
         const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
-            headers: (0, github_1.githubHeaders)(this.token),
+            headers: this.headers,
         });
         if (res.status === 404)
             return { ...ref, target: 'missing', crossRepo: false };

@@ -59,23 +59,23 @@ export async function syncNoIssueLabel(api: LabelApi, gate: GateOutcome): Promis
  */
 export class GithubLabelApi implements LabelApi {
   private readonly repoUrl: string;
+  private readonly headers: Record<string, string>;
 
   constructor(
-    private readonly token: string,
+    token: string,
     owner: string,
     repo: string,
     private readonly issueNumber: number,
   ) {
     this.repoUrl = repoApiUrl(owner, repo);
-  }
-
-  private headers(): Record<string, string> {
-    return githubHeaders(this.token, { json: true });
+    this.headers = githubHeaders(token, { json: true });
   }
 
   async list(): Promise<string[]> {
+    // No pagination (unlike GithubCommentApi): GitHub caps an issue/PR at 100
+    // labels, so a single per_page=100 page is always the complete set.
     const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels?per_page=100`, {
-      headers: this.headers(),
+      headers: this.headers,
     });
     if (!res.ok) throw new Error(`GitHub API ${res.status} listing labels on #${this.issueNumber}`);
     const data = (await res.json()) as { name: string }[];
@@ -99,7 +99,7 @@ export class GithubLabelApi implements LabelApi {
   async remove(label: string): Promise<void> {
     const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels/${encodeURIComponent(label)}`, {
       method: 'DELETE',
-      headers: this.headers(),
+      headers: this.headers,
     });
     // 404 means the label is already gone (e.g. a concurrent run removed it) — not an error.
     if (!res.ok && res.status !== 404) {
@@ -110,7 +110,7 @@ export class GithubLabelApi implements LabelApi {
   private postLabel(label: string): Promise<Response> {
     return fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels`, {
       method: 'POST',
-      headers: this.headers(),
+      headers: this.headers,
       body: JSON.stringify({ labels: [label] }),
     });
   }
@@ -118,7 +118,7 @@ export class GithubLabelApi implements LabelApi {
   private async ensureLabelExists(label: string): Promise<void> {
     const res = await fetch(`${this.repoUrl}/labels`, {
       method: 'POST',
-      headers: this.headers(),
+      headers: this.headers,
       body: JSON.stringify({ name: label, color: NO_ISSUE_LABEL_COLOR, description: NO_ISSUE_LABEL_DESCRIPTION }),
     });
     // 422 means another concurrent run already created it — not an error.
