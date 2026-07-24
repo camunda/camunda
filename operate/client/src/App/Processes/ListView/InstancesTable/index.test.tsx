@@ -48,6 +48,7 @@ const mockProcessInstances: ProcessInstance[] = [
     rootProcessInstanceKey: null,
     tags: [],
     businessId: null,
+    suspendedDate: null,
   },
 ];
 

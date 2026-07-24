@@ -40,6 +40,7 @@ const mockMultiInstanceProcessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const mockEventSubprocessInstance: ProcessInstance = {
@@ -59,6 +60,7 @@ const mockEventSubprocessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const mockNestedSubProcessesInstance: ProcessInstance = {
@@ -78,6 +80,7 @@ const mockNestedSubProcessesInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const mockAdHocSubProcessesInstance: ProcessInstance = {
@@ -97,6 +100,7 @@ const mockAdHocSubProcessesInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const mockNestedSubProcessInstance: ProcessInstance = {
@@ -116,6 +120,7 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const multipleSubprocessesWithOneRunningScopeMock = {
@@ -1124,6 +1129,7 @@ const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+  suspendedDate: null,
 };
 
 const adHocSubProcessInnerInstanceElementInstances = {

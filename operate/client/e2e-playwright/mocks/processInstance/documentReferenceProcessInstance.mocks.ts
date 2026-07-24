@@ -22,6 +22,7 @@ const documentReferenceProcessInstance: InstanceMock = {
     processInstanceKey: '2251799813790427',
     processDefinitionKey: '2251799813790414',
     parentProcessInstanceKey: null,
+    suspendedDate: null,
     parentElementInstanceKey: null,
     rootProcessInstanceKey: '2251799813790427',
     tags: [],

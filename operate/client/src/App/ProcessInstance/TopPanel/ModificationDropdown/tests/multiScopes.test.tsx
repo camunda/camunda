@@ -93,6 +93,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
       rootProcessInstanceKey: null,
       tags: [],
       businessId: null,
+      suspendedDate: null,
     };
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
