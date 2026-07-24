@@ -31,7 +31,7 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
   public static final String FORM_KEY = "formKey";
   public static final String IS_FORM_EMBEDDED = "isFormEmbedded";
   public static final String IS_PUBLIC = "isPublic";
-  public static final String IS_DELETED = "isDeleted";
+  public static final String STATE = "state";
 
   public ProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

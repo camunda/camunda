@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
@@ -87,6 +88,6 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
         formId,
-        false);
+        ProcessDefinitionState.ACTIVE);
   }
 }

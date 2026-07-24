@@ -40,14 +40,14 @@
     </sql>
   </changeSet>
 
-  <changeSet id="add_process_definition_is_deleted_column" author="camunda">
+  <changeSet id="add_process_definition_state_column" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
-        <columnExists tableName="${prefix}PROCESS_DEFINITION" columnName="IS_DELETED"/>
+        <columnExists tableName="${prefix}PROCESS_DEFINITION" columnName="STATE"/>
       </not>
     </preConditions>
     <addColumn tableName="${prefix}PROCESS_DEFINITION">
-      <column name="IS_DELETED" type="BOOLEAN" defaultValueBoolean="false"/>
+      <column name="STATE" type="VARCHAR(20)"/>
     </addColumn>
   </changeSet>
 

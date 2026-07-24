@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
@@ -110,12 +111,13 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
   ProcessDefinitionFilter hasStartForm(final boolean hasStartForm);
 
   /**
-   * Filters process definitions by whether they have been deleted from the engine but are still
-   * retained in secondary storage. When not set, both deleted and non-deleted definitions are
+   * Filters process definitions by their state. When not set, definitions in any state are
    * returned.
    *
-   * @param isDeleted {@code true} to return only deleted definitions, {@code false} to exclude them
+   * @param state {@link ProcessDefinitionState#ACTIVE} to exclude deleted definitions, {@link
+   *     ProcessDefinitionState#DELETED} to return only definitions that have been deleted from the
+   *     engine but are still retained in secondary storage
    * @return the updated filter
    */
-  ProcessDefinitionFilter isDeleted(final boolean isDeleted);
+  ProcessDefinitionFilter state(final ProcessDefinitionState state);
 }

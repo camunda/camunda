@@ -32,7 +32,7 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @SinceVersion("8.10.0")
-  private Boolean isDeleted = false;
+  private ProcessDefinitionState state = ProcessDefinitionState.ACTIVE;
 
   public String getName() {
     return name;
@@ -82,7 +82,7 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         formKey,
         isFormEmbedded,
         isPublic,
-        isDeleted);
+        state);
   }
 
   @Override
@@ -109,7 +109,7 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         && Objects.equals(formKey, that.formKey)
         && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(isPublic, that.isPublic)
-        && Objects.equals(isDeleted, that.isDeleted);
+        && state == that.state;
   }
 
   @Override
@@ -149,8 +149,8 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         + isFormEmbedded
         + ", isPublic="
         + isPublic
-        + ", isDeleted="
-        + isDeleted
+        + ", state="
+        + state
         + ", tenantId='"
         + tenantId
         + '\''
@@ -270,12 +270,12 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
     return this;
   }
 
-  public Boolean getIsDeleted() {
-    return isDeleted;
+  public ProcessDefinitionState getState() {
+    return state;
   }
 
-  public ProcessEntity setIsDeleted(final Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public ProcessEntity setState(final ProcessDefinitionState state) {
+    this.state = state;
     return this;
   }
 }

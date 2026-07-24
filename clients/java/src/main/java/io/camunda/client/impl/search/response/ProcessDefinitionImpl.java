@@ -16,7 +16,9 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import java.util.Objects;
@@ -31,7 +33,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   private final String processDefinitionId;
   private final String tenantId;
   private final Boolean hasStartForm;
-  private final Boolean isDeleted;
+  private final ProcessDefinitionState state;
 
   public ProcessDefinitionImpl(final ProcessDefinitionResult item) {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
@@ -42,7 +44,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
     processDefinitionId = item.getProcessDefinitionId();
     tenantId = item.getTenantId();
     hasStartForm = item.getHasStartForm();
-    isDeleted = item.getIsDeleted();
+    state = EnumUtil.convert(item.getState(), ProcessDefinitionState.class);
   }
 
   @Override
@@ -86,8 +88,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   }
 
   @Override
-  public Boolean isDeleted() {
-    return isDeleted;
+  public ProcessDefinitionState getState() {
+    return state;
   }
 
   @Override
@@ -106,7 +108,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         processDefinitionId,
         tenantId,
         hasStartForm,
-        isDeleted);
+        state);
   }
 
   @Override
@@ -123,7 +125,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(hasStartForm, that.hasStartForm)
-        && Objects.equals(isDeleted, that.isDeleted);
+        && state == that.state;
   }
 
   @Override
@@ -150,8 +152,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         + '\''
         + ", hasStartForm="
         + hasStartForm
-        + ", isDeleted="
-        + isDeleted
+        + ", state="
+        + state
         + '}';
   }
 }

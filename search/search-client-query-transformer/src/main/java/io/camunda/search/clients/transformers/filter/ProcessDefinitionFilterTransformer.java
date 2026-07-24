@@ -9,24 +9,27 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_ID;
-import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.IS_DELETED;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.STATE;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -53,7 +56,7 @@ public class ProcessDefinitionFilterTransformer
     ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getHasStartFormQuery(filter.hasStartForm())).ifPresent(queries::add);
-    ofNullable(getIsDeletedQuery(filter.isDeleted())).ifPresent(queries::add);
+    ofNullable(getStateQuery(filter.state())).ifPresent(queries::add);
     return and(queries);
   }
 
@@ -70,9 +73,9 @@ public class ProcessDefinitionFilterTransformer
     if (hasStartForm != null) {
       return bool(b -> {
             if (hasStartForm) {
-              b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
+              b.must(List.of(exists(FORM_ID)));
             } else {
-              b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
+              b.mustNot(List.of(exists(FORM_ID)));
             }
             return b;
           })
@@ -81,18 +84,16 @@ public class ProcessDefinitionFilterTransformer
     return null;
   }
 
-  private SearchQuery getIsDeletedQuery(final Boolean isDeleted) {
-    if (isDeleted == null) {
+  private SearchQuery getStateQuery(final ProcessDefinitionState state) {
+    if (state == null) {
       return null;
     }
-    if (isDeleted) {
-      return term(IS_DELETED, true);
+    // ACTIVE is the implicit default for documents indexed before this field existed, so a missing
+    // field also counts as ACTIVE. Every other state requires an exact match.
+    if (state != ProcessDefinitionState.ACTIVE) {
+      return term(STATE, state.name());
     }
-    return bool(b -> {
-          b.mustNot(List.of(term(IS_DELETED, true)));
-          return b;
-        })
-        .toSearchQuery();
+    return or(term(STATE, ProcessDefinitionState.ACTIVE.name()), not(exists(STATE)));
   }
 
   @Override

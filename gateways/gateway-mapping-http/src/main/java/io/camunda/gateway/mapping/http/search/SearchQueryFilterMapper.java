@@ -48,6 +48,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
@@ -615,7 +616,9 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
       ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
-      ofNullable(filter.getIsDeleted()).ifPresent(builder::isDeleted);
+      ofNullable(filter.getState())
+          .map(state -> ProcessDefinitionState.valueOf(state.name()))
+          .ifPresent(builder::state);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
