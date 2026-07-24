@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.83
+
+### 🚀 Enhancements
+
+- Add `suspendedDate` to the 8.10 process-instance schemas — nullable date-time on the `ProcessInstance` result, an advanced date-time filter, and a new sort field — completing the `SUSPENDED` state support added in [#58035](https://github.com/camunda/camunda/pull/58035) ([#58564](https://github.com/camunda/camunda/issues/58564))
+
+### ❤️ Contributors
+
+- [@danielkelemen](https://github.com/danielkelemen)
+
 ## v0.0.82
 
 ### 🩹 Fixes
