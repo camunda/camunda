@@ -35,6 +35,8 @@ const StructuredList = styled(BaseStructuredList)`
 
 const CellContainer = styled(BaseStack)`
   padding: var(--cds-spacing-03) var(--cds-spacing-01);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
