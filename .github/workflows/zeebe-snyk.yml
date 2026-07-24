@@ -228,8 +228,8 @@ jobs:
             local attempt=1
 
             while true; do
-              timeout "${perAttemptTimeoutSecs}s" snyk "$@"
-              local status=$?
+              local status=0
+              timeout "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
               if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
                 return "${status}"
               fi
