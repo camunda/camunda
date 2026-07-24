@@ -45,7 +45,10 @@ function getReporters(): Pick<
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: mode === 'sbom' ? [...plugins, sbom({specVersion: sbomSpecVersion})] : plugins,
+  plugins:
+    mode === 'sbom'
+      ? [...plugins, sbom({specVersion: sbomSpecVersion})]
+      : plugins,
   preview: {
     port: 3003,
     open: false,

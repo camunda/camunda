@@ -61,7 +61,8 @@ export default defineConfig(({mode}) => ({
       },
     },
   },
-  plugins: mode === 'sbom' ? [...plugins, sbom({specVersion: sbomSpecVersion}) as PluginOption] : plugins,
+  plugins:
+    mode === 'sbom' ? [...plugins, sbom({specVersion: sbomSpecVersion}) as PluginOption] : plugins,
   optimizeDeps: {
     force: true,
     rolldownOptions: {
