@@ -29,10 +29,16 @@ import org.junit.jupiter.api.Test;
  * {@code zeebe-gateway-protocol} dependency) rather than through an OpenAPI parser: the file is a
  * fragment referenced piecemeal by {@code rest-api.yaml} ($ref per path item, not per schema), so a
  * full-spec parse does not reliably resolve its schemas back onto a single root document.
+ *
+ * <p>Extraction is scoped to the {@code SecretResolveRequest} schema block (up to the next
+ * top-level schema key), not the whole file: other schemas in {@code secrets.yaml} may later
+ * declare their own {@code maxItems}/{@code maxLength} constraints (e.g. pagination on {@code
+ * SecretListResult}), and this test must not break when they do.
  */
 class SecretRequestValidatorSpecSyncTest {
 
   private static final String SECRETS_YAML_CLASSPATH_RESOURCE = "v2/secrets.yaml";
+  private static final String SCHEMA_UNDER_TEST = "SecretResolveRequest";
 
   @Test
   void shouldMatchMaxBatchSizeDeclaredInSpec() {
@@ -54,20 +60,41 @@ class SecretRequestValidatorSpecSyncTest {
 
   private static int extractIntValue(final String yamlKey) {
     final var pattern = Pattern.compile(yamlKey + ":\\s*(\\d+)");
-    final Matcher matcher = pattern.matcher(secretsYaml());
+    final Matcher matcher = pattern.matcher(schemaUnderTest());
     if (!matcher.find()) {
       throw new AssertionError(
-          "Expected '%s' to declare a '%s' constraint, but none was found."
-              .formatted(SECRETS_YAML_CLASSPATH_RESOURCE, yamlKey));
+          "Expected the '%s' schema in '%s' to declare a '%s' constraint, but none was found."
+              .formatted(SCHEMA_UNDER_TEST, SECRETS_YAML_CLASSPATH_RESOURCE, yamlKey));
     }
     final var value = Integer.parseInt(matcher.group(1));
     if (matcher.find()) {
       throw new AssertionError(
-          "Expected '%s' to declare exactly one '%s' constraint, but found more than one. "
-                  .formatted(SECRETS_YAML_CLASSPATH_RESOURCE, yamlKey)
+          "Expected the '%s' schema in '%s' to declare exactly one '%s' constraint, but found "
+              + "more than one. "
+                  .formatted(SCHEMA_UNDER_TEST, SECRETS_YAML_CLASSPATH_RESOURCE, yamlKey)
               + "Narrow this test's extraction so it targets the right occurrence.");
     }
     return value;
+  }
+
+  /**
+   * Slices {@code secrets.yaml} down to the {@code SecretResolveRequest} schema block: from its
+   * declaration to the next top-level ({@code schemaName:}, 4-space indented) schema key.
+   */
+  private static String schemaUnderTest() {
+    final var yaml = secretsYaml();
+    final var start = yaml.indexOf(SCHEMA_UNDER_TEST + ":");
+    if (start < 0) {
+      throw new AssertionError(
+          "Expected '%s' to declare a '%s' schema, but none was found."
+              .formatted(SECRETS_YAML_CLASSPATH_RESOURCE, SCHEMA_UNDER_TEST));
+    }
+    final var nextSchema =
+        Pattern.compile("\\n {4}\\w+:")
+            .matcher(yaml)
+            .region(start + SCHEMA_UNDER_TEST.length(), yaml.length());
+    final var end = nextSchema.find() ? nextSchema.start() : yaml.length();
+    return yaml.substring(start, end);
   }
 
   private static String secretsYaml() {

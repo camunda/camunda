@@ -7,8 +7,11 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.SECRET_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.SECRET_REVEAL_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -56,17 +59,55 @@ public class SecretServicesTest {
   }
 
   private void grantReveal(final String... references) {
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any(), any()))
-        .thenReturn(Arrays.stream(references).map(AuthorizationScope::id).toList());
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
+        .thenReturn(
+            Arrays.stream(references)
+                .map(SecretServicesTest::bareName)
+                .map(AuthorizationScope::id)
+                .toList());
   }
 
   private void grantRevealWildcard() {
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any(), any()))
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
         .thenReturn(List.of(AuthorizationScope.WILDCARD));
   }
 
   private void denyAllReveals() {
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any(), any()))
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
+        .thenReturn(List.of());
+  }
+
+  private void grantRead(final String... references) {
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_READ_AUTHORIZATION)))
+        .thenReturn(
+            Arrays.stream(references)
+                .map(SecretServicesTest::bareName)
+                .map(AuthorizationScope::id)
+                .toList());
+  }
+
+  /**
+   * Grants are keyed by the bare {@code <name>} segment; strips the {@code camunda.secrets.} prefix
+   * so tests can keep expressing grants as full references.
+   */
+  private static String bareName(final String reference) {
+    final var prefix = "camunda.secrets.";
+    return reference.startsWith(prefix) ? reference.substring(prefix.length()) : reference;
+  }
+
+  private void grantReadWildcard() {
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_READ_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.WILDCARD));
+  }
+
+  private void denyAllReads() {
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_READ_AUTHORIZATION)))
         .thenReturn(List.of());
   }
 
@@ -277,6 +318,38 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldListByBareSecretNameNotFullReference() {
+    // given the checker grants only the bare name "a" (as the connector runtime and Console key
+    // secrets), not the full camunda.secrets.a reference
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_READ_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.id("a")));
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then the full reference for that bare name is listed: the resource id is matched against the
+    // bare name, not the full reference
+    assertThat(references).containsExactly("camunda.secrets.a");
+  }
+
+  @Test
+  void shouldNotEnumerateBackendWhenCallerHasNoReadGrant() {
+    // given the caller holds no SECRET:READ grant at all (no wildcard, no ID scope)
+    authorizationsConfig.setEnabled(true);
+    denyAllReads();
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then nothing is listed — the empty-grant short-circuit skips the (mocked, but eventually
+    // tenant-wide and costly) backend enumeration entirely rather than enumerating then filtering
+    // everything out
+    assertThat(references).isEmpty();
+  }
+
+  @Test
   void shouldAuthorizeExactlyTheGrantedResourceId() {
     // given the caller is granted REVEAL only on a different reference
     authorizationsConfig.setEnabled(true);
@@ -290,6 +363,27 @@ public class SecretServicesTest {
     // allow once any grant exists
     assertThat(resolution.resolved()).isEmpty();
     assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+  }
+
+  @Test
+  void shouldAuthorizeByBareSecretNameNotFullReference() {
+    // given the checker grants the bare name "token" (as the connector runtime and Console key
+    // secrets), not the full camunda.secrets.token reference
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.id("token")));
+
+    // when the full reference for that name is resolved
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.token"), authentication).join();
+
+    // then it is authorized: the resource id is matched against the bare name, not the full
+    // reference
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved())
+        .extracting(ResolvedSecret::reference)
+        .containsExactly("camunda.secrets.token");
   }
 
   @Test
@@ -345,5 +439,95 @@ public class SecretServicesTest {
     // then values only ever live in resolved entries; error entries carry metadata only
     assertThat(resolution.resolved()).isEmpty();
     assertThat(resolution.errors().get(0).message()).doesNotContain("mock-value-for-");
+  }
+
+  @Test
+  void shouldListOnlyAuthorizedReferences() {
+    // given the caller is granted READ on one of the three known references
+    authorizationsConfig.setEnabled(true);
+    grantRead("camunda.secrets.a");
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then only the authorized reference is listed, via a single bulk authorization query
+    assertThat(references).containsExactly("camunda.secrets.a");
+    verify(authorizationChecker, times(1))
+        .retrieveAuthorizedAuthorizationScopes(any(), eq(SECRET_READ_AUTHORIZATION));
+  }
+
+  @Test
+  void shouldListAllKnownReferencesWithReadWildcardGrant() {
+    // given a SECRET:READ:* wildcard grant
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then every known reference is listed, in a stable sorted order
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenNoReadGrant() {
+    // given the caller holds no SECRET:READ grant
+    authorizationsConfig.setEnabled(true);
+    denyAllReads();
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then nothing is listed, even though the backend knows references
+    assertThat(references).isEmpty();
+  }
+
+  @Test
+  void shouldListAllReferencesWhenAuthorizationIsDisabled() {
+    // given authorization is disabled cluster-wide. Matches DocumentServices#hasDocumentPermission:
+    // a deny-all here would make the endpoint unusable in authorization-disabled setups (e.g.
+    // C8Run's default), which the epic this endpoint serves explicitly targets.
+    authorizationsConfig.setEnabled(false);
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then every known reference is listed and the checker (which cannot be trusted while
+    // disabled) is never consulted
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+    verify(authorizationChecker, never())
+        .retrieveAuthorizedAuthorizationScopes(any(), eq(SECRET_READ_AUTHORIZATION));
+  }
+
+  @Test
+  void shouldNotAuthorizeListingWithRevealOnlyGrant() {
+    // given the caller holds SECRET:REVEAL on every known reference but no SECRET:READ
+    authorizationsConfig.setEnabled(true);
+    grantReveal("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+    denyAllReads();
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then nothing is listed: a REVEAL grant does not imply READ
+    assertThat(references).isEmpty();
+  }
+
+  @Test
+  void shouldNotAuthorizeRevealWithReadOnlyGrant() {
+    // given the caller holds SECRET:READ on a reference but no SECRET:REVEAL
+    authorizationsConfig.setEnabled(true);
+    grantRead("camunda.secrets.token");
+    denyAllReveals();
+
+    // when
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.token"), authentication).join();
+
+    // then the reveal is denied: a READ grant does not imply REVEAL
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
   }
 }
