@@ -150,6 +150,13 @@ export class OperateDiagramPage {
       .getByTestId('state-overlay-active');
   }
 
+  // Dedicated WaitingStateOverlay component, not part of the state-overlay-{state} family above.
+  getWaitingOverlay(elementId: string): Locator {
+    return this.page
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTestId('waiting-state-overlay');
+  }
+
   async verifyFlowNodeMetadata(
     elementId: string,
     options: {
