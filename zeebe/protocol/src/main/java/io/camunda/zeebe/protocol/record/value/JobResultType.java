@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Enumerates the different supported types of job results. Depending on this type different
  * properties of the {@link io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultValue}
@@ -32,7 +34,7 @@ public enum JobResultType {
     this.type = type;
   }
 
-  public static JobResultType from(final String resultType) {
+  public static JobResultType from(final @Nullable String resultType) {
     // If resultType is null or empty we will default to USER_TASK for backward compatibility.
     if (resultType == null || resultType.isEmpty()) {
       return USER_TASK;

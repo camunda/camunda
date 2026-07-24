@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -161,7 +163,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -422,8 +423,8 @@ public final class ValueTypeMapping {
     private final Class<I> intentClass;
 
     private Mapping(final Class<T> valueClass, final Class<I> intentClass) {
-      this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
-      this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
+      this.valueClass = requireNonNull(valueClass, "must specify a value class");
+      this.intentClass = requireNonNull(intentClass, "must specify an intent");
     }
 
     public Class<? extends T> getValueClass() {

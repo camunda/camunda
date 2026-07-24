@@ -51,6 +51,7 @@ final class ImmutableProtocolArchTest {
             .that()
             // lookup only interface types, ignore enums or concrete classes
             .areInterfaces()
+            .and(DescribedPredicate.not(Predicates.simpleName("package-info")))
             .and()
             // check only all the types under the record.value and subpackages
             .resideInAnyPackage("io.camunda.zeebe.protocol.record.value..")

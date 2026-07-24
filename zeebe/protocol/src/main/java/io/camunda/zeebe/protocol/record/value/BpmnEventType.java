@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import java.util.Arrays;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public enum BpmnEventType {
 
@@ -35,9 +36,9 @@ public enum BpmnEventType {
   TIMER("timer"),
   COMPENSATION("compensation");
 
-  private final String eventTypeName;
+  private final @Nullable String eventTypeName;
 
-  BpmnEventType(final String eventTypeName) {
+  BpmnEventType(final @Nullable String eventTypeName) {
     this.eventTypeName = eventTypeName;
   }
 

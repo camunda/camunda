@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import org.immutables.value.Value;
+import org.jspecify.annotations.Nullable;
 
 /** Represents a record published to the log stream. */
 @Value.Immutable
@@ -76,13 +76,13 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * @return the type of rejection if {@link #getRecordType()} returns {@link
    *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
-  RejectionType getRejectionType();
+  @Nullable RejectionType getRejectionType();
 
   /**
    * @return the reason why a command was rejected if {@link #getRecordType()} returns {@link
    *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
-  String getRejectionReason();
+  @Nullable String getRejectionReason();
 
   /**
    * @return the version of the broker that wrote this record
@@ -110,8 +110,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    *
    * @return the agent information associated with this record, or {@code null} if no agent
    */
-  @Nullable
-  Agent getAgent();
+  @Nullable Agent getAgent();
 
   /**
    * Identifies the inbound channel through which the command that produced this record was received
@@ -119,16 +118,14 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    *
    * @return the channel type, or {@code null} if not set
    */
-  @Nullable
-  ChannelType getRequestChannelType();
+  @Nullable ChannelType getRequestChannelType();
 
   /**
    * An optional tool name associated with the command, e.g. the MCP tool that triggered it.
    *
    * @return the tool name, or {@code null} if not set
    */
-  @Nullable
-  String getRequestToolName();
+  @Nullable String getRequestToolName();
 
   /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
