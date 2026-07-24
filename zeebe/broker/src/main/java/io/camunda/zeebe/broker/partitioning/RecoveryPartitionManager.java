@@ -67,6 +67,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -340,18 +341,9 @@ public final class RecoveryPartitionManager
     return result;
   }
 
-  private static void deleteDirectory(final Path directory) {
-    try {
-      if (Files.exists(directory)) {
-        FileUtil.deleteFolderContents(directory);
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to delete directory " + directory, e);
-    }
-  }
-
   @Override
-  public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+  public ActorFuture<Void> restore(
+      final int partitionId, @NonNull final SortedSet<Long> backupIds) {
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
@@ -385,7 +377,7 @@ public final class RecoveryPartitionManager
 
           CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor)
               .thenRunAsync(() -> verifyRestoredPartition(metadata), executor)
-              .handleAsync(
+              .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
                       LOG.error(
@@ -399,18 +391,12 @@ public final class RecoveryPartitionManager
                         error.addSuppressed(cleanupError);
                       }
                     }
-                    return error;
                   },
                   executor)
               .whenCompleteAsync(
-                  (error, handlerError) -> {
-                    // error is the restore/verification failure (if any), carried over as the
-                    // returned value of the handleAsync stage above, which already ran the
-                    // cleanup delete on the restoreExecutor; handlerError would only be set if
-                    // that stage's own logic threw unexpectedly
-                    final var failure = error != null ? error : handlerError;
-                    if (failure != null) {
-                      result.completeExceptionally(unwrapCompletionException(failure));
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(unwrapCompletionException(error));
                     } else {
                       LOG.info("Restored partition {} from backups {}", partitionId, backupIds);
                       result.complete(null);
@@ -419,6 +405,16 @@ public final class RecoveryPartitionManager
                   concurrencyControl);
         });
     return result;
+  }
+
+  private static void deleteDirectory(final Path directory) {
+    try {
+      if (Files.exists(directory)) {
+        FileUtil.deleteFolderContents(directory);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete directory " + directory, e);
+    }
   }
 
   private void restorePartition(
@@ -502,8 +498,6 @@ public final class RecoveryPartitionManager
                     .formatted(partitionId)
                 + "the restored data is likely corrupted");
       }
-      // Nothing was ever flushed to a snapshot (e.g. restored purely from the log); nothing to
-      // verify here.
       return;
     }
     final Path scratchRoot;
