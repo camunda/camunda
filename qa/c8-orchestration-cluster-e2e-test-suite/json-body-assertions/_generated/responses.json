@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "2621ca59c9557a9a19917dbb86d0f55cc4a294fd",
-    "generatedAt": "2026-07-22T12:34:18.258Z",
+    "commit": "7859fb770109cdf7597d8aa4fd639b6407fb2e19",
+    "generatedAt": "2026-07-24T10:15:52.809Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "41e371cab397ac73966ff7b0e0aab2a8f608598197d284da69dab4a1c961a6c4"
+    "specSha256": "b9290d0c6d54d34d0bc959a2e8198be085726a7e57016fd1926b2e1c3f052f9f"
   },
   "responses": [
     {
@@ -6839,8 +6839,14 @@
                   "enumValues": [
                     "ACTIVE",
                     "COMPLETED",
+                    "SUSPENDED",
                     "TERMINATED"
                   ]
+                },
+                {
+                  "name": "suspendedDate",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "tags",
@@ -6993,8 +6999,14 @@
             "enumValues": [
               "ACTIVE",
               "COMPLETED",
+              "SUSPENDED",
               "TERMINATED"
             ]
+          },
+          {
+            "name": "suspendedDate",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "tags",
