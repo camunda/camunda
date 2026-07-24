@@ -1,0 +1,18 @@
+---
+# Source: load-test-setup/templates/keycloak/keycloak-user-admin.yaml
+# This configures the "admin" credentials for Keycloak itself.
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: "keycloak-operator"
+  name: "c8-golden-stable-88-elasticsearch-stable-admin"
+  labels:
+    # Same convention as the Keycloak CR's labels, so this Secret can be found
+    # and cleaned up alongside it (it lives in the shared keycloak-operator
+    # namespace, not the load test's own namespace).
+    camunda.io/load-test-namespace: "c8-golden-stable-88-elasticsearch-stable"
+    deadline-date: TEST_DATE
+type: kubernetes.io/basic-auth
+data:
+  username: "YWRtaW4="
+  password: "RmVxdEJpdms1P1lvZmU="

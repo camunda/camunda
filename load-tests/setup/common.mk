@@ -331,6 +331,7 @@ endif
 install-platform:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -343,6 +344,7 @@ install-platform:
 install-platform-stable:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -356,6 +358,7 @@ install-platform-stable:
 install-load-test-setup: create-namespace
 	helm upgrade load-test-setup $(helm_chart_load_test_setup) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -423,9 +426,16 @@ archiver:
 
 .PHONY: clean
 clean:
-	@echo "Deleting namespace $(namespace) and waiting for finalization..."
+	@# Explicitly delete the Keycloak resources from the keycloak-operator namespace.
+	@# We could also uninstall the load-test-setup Helm Chart, but it returns a
+	@# (completely safe) error (about being "forbidden" while deleting Secrets)
+	@# due to how our Kubernetes RBACs are configured, and this error is likely
+	@# going to raise more questions.
+	@echo "Deleting Keycloak-related resources from the keycloak-operator namespace..."
+	-kubectl delete keycloak,secret --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$(namespace)" --ignore-not-found
 	@# `--wait` (default) blocks until the namespace is fully gone. We intentionally
 	@# wait so that a subsequent `make install` (or `make clean install`) doesn't
 	@# race against finalizers — applying manifests into a still-terminating
 	@# namespace errors out with "namespace X is being terminated".
+	@echo "Deleting namespace $(namespace) and waiting for finalization..."
 	-kubectl delete namespace $(namespace) --ignore-not-found --wait

@@ -7,13 +7,42 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: postgresql-keycloak-user
+  name: "postgresql-keycloak-user"
+  annotations:
+    description: |
+      Contains the username/password for the Keycloak user in PostgreSQL.
+      This is used by the CNPG Operator to initialize the PostgreSQL cluster.
+      Keycloak itself uses a Secret with duplicated values in
+      "keycloak-operator/c8-golden-stable-89-opensearch-postgresql".
   labels:
     cnpg.io/reload: "true"
 type: kubernetes.io/basic-auth
 data:
-  username: a2V5Y2xvYWs=
-  password: QmV2aVZpcWE4I1JvbWE=
+  username: "a2V5Y2xvYWs="
+  password: "QmV2aVZpcWE4I1JvbWE="
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: "keycloak-operator"
+  name: "c8-golden-stable-89-opensearch-postgresql"
+  annotations:
+    description: |
+      Contains the username/password for the Keycloak user in PostgreSQL.
+      This is used by the Keycloak instance to connect into PostgreSQL.
+      This Secret is a duplicate of the Secret used to initialize the PostgreSQL cluster by the CNPG Operator in
+      "c8-golden-stable-89-opensearch/postgresql-keycloak-user".
+  labels:
+    # Same convention as the Keycloak CR's labels, so this Secret can be found
+    # and cleaned up alongside it (it lives in the shared keycloak-operator
+    # namespace, not the load test's own namespace).
+    camunda.io/load-test-namespace: "c8-golden-stable-89-opensearch"
+    deadline-date: TEST_DATE
+type: kubernetes.io/basic-auth
+data:
+  username: "a2V5Y2xvYWs="
+  password: "QmV2aVZpcWE4I1JvbWE="
 ---
 # Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
 # Configure the PostgreSQL credentials for the Keycloak application itself.

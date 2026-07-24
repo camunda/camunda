@@ -31,7 +31,7 @@ data:
     operate:
       client:
         base-url: "http://operate:80"
-        auth-url: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+        auth-url: "http://c8-golden-stable-87-elasticsearch-stable.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
         profile: "oidc"
         audience: "operate-api"
     logging:

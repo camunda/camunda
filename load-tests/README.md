@@ -118,6 +118,8 @@ By default, the full Camunda Platform is deployed, including Orchestration Clust
 
 An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster. The Elasticsearch cluster is managed by the [Elastic Cloud on Kubernetes (ECK) operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) via an `Elasticsearch` custom resource — see the [setup README](setup/README.md#eck-elasticsearch) for configuration details.
 
+Keycloak is deployed via the [Keycloak Operator](https://www.keycloak.org/guides#operator) into a `keycloak-operator` namespace shared across all load tests on the cluster, backed by its own dedicated PostgreSQL cluster — see the [load test setup chart README](setup/charts/load-test-setup/README.md#keycloak) for the cross-namespace deployment model.
+
 Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
 
 Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
