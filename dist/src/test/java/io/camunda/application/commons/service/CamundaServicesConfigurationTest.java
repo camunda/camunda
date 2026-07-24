@@ -118,7 +118,8 @@ class CamundaServicesConfigurationTest {
   void shouldFallBackToSharedAuthorizationCheckerWhenNoPhysicalTenantCheckersBeanExists() {
     // given: SecondaryStorageType.none -- no PhysicalTenantSearchClientReaders bean exists, so no
     // PhysicalTenantAuthorizationCheckers bean can be built either. Falling back to the shared,
-    // default-tenant-pinned checker
+    // default-tenant-pinned checker is correct here, since there is exactly one authorization
+    // source cluster-wide in this mode.
     when(sharedAuthorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.CREATE));
     final var registry = buildRegistry(twoTenants(), Optional.empty());
@@ -137,6 +138,41 @@ class CamundaServicesConfigurationTest {
                 .join())
         .isEmpty();
     verify(sharedAuthorizationChecker, times(2)).collectPermissionTypes(any(), any(), any());
+  }
+
+  @Test
+  void shouldFallBackToSharedAuthorizationCheckerForTenantMissingFromPhysicalTenantCheckersMap() {
+    // given: PhysicalTenantAuthorizationCheckers exists but only has an entry for tenantA --
+    // tenantB is missing, e.g. config drift between PhysicalTenantResolver and the checkers map.
+    final var checkerA = mock(AuthorizationChecker.class);
+    when(checkerA.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Set.of(PermissionType.CREATE));
+    when(sharedAuthorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Set.of(PermissionType.CREATE));
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            Optional.of(new PhysicalTenantAuthorizationCheckers(Map.of(TENANT_A, checkerA))));
+
+    // when / then: tenantA uses its own checker, present in the map.
+    assertThat(
+            registry
+                .documentServices(TENANT_A)
+                .createDocumentBatch(List.of(), authentication)
+                .join())
+        .isEmpty();
+    verify(checkerA).collectPermissionTypes(any(), any(), any());
+    verifyNoInteractions(sharedAuthorizationChecker);
+
+    // when / then: tenantB, missing from the map, falls back to the shared checker without
+    // NPE-ing, instead of failing the whole tenant.
+    assertThat(
+            registry
+                .documentServices(TENANT_B)
+                .createDocumentBatch(List.of(), authentication)
+                .join())
+        .isEmpty();
+    verify(sharedAuthorizationChecker).collectPermissionTypes(any(), any(), any());
   }
 
   private static Map<String, Camunda> twoTenants() {
