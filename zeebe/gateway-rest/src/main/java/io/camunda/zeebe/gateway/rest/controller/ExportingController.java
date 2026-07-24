@@ -13,13 +13,15 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping("/v2/exporting")
-public class ExportingController {
+@NullMarked
+public final class ExportingController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;

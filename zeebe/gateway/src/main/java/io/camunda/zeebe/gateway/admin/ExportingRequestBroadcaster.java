@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
  * selects the partition set the operation enumerates and is stamped on every outgoing broker
  * request so that routing resolves leaders from that group's topology.
  */
+@NullMarked
 public class ExportingRequestBroadcaster {
   private static final Logger LOG = LoggerFactory.getLogger(ExportingRequestBroadcaster.class);
   final BrokerClient brokerClient;

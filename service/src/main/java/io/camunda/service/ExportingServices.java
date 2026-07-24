@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Exposes exporting pause/resume for a single physical tenant, authorizing the caller explicitly
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
  * partition group itself, so the base class's {@code brokerRequestMutators()} PT-stamping is not
  * exercised here.
  */
+@NullMarked
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
   private final ExportingRequestBroadcaster exportingRequestBroadcaster;
