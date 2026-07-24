@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.stream.LongStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,6 +91,7 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
             eq(500L), eq(SecretReferenceIntent.RESOLUTION_COMPLETED), eventCaptor.capture());
     Assertions.assertThat(eventCaptor.getValue().getStoreId()).isEqualTo(STORE_ID);
     Assertions.assertThat(eventCaptor.getValue().getSecretReference()).isEqualTo(SECRET_REF);
+    verify(rejectionWriter, never()).appendRejection(any(), any(), any());
   }
 
   @Test
@@ -113,6 +115,7 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
     Assertions.assertThat(next.getStoreId()).isEqualTo(STORE_ID);
     Assertions.assertThat(next.getSecretReference()).isEqualTo(SECRET_REF);
     Assertions.assertThat(next.getJobKeys()).containsExactlyInAnyOrder(1L, 2L);
+    verify(rejectionWriter, never()).appendRejection(any(), any(), any());
   }
 
   @Test
@@ -128,12 +131,15 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
     // when
     processor.processRecord(command(value));
 
-    // then - the batch is capped at 100 jobs
+    // then - the batch is capped at the first 100 jobs in drain order
     final var commandCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
     verify(commandWriter)
         .appendFollowUpCommand(
             eq(999L), eq(SecretReferenceIntent.BATCH_REACTIVATE_JOBS), commandCaptor.capture());
-    Assertions.assertThat(commandCaptor.getValue().getJobKeys()).hasSize(100);
+    final var expectedJobKeys = LongStream.rangeClosed(1, 100).boxed().toList();
+    Assertions.assertThat(commandCaptor.getValue().getJobKeys())
+        .containsExactlyElementsOf(expectedJobKeys);
+    verify(rejectionWriter, never()).appendRejection(any(), any(), any());
   }
 
   @Test
@@ -148,6 +154,7 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
 
     // then
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
+    verify(rejectionWriter, never()).appendRejection(any(), any(), any());
   }
 
   @Test
@@ -188,5 +195,6 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
         .appendFollowUpCommand(
             eq(999L), eq(SecretReferenceIntent.BATCH_REACTIVATE_JOBS), commandCaptor.capture());
     Assertions.assertThat(commandCaptor.getValue().getJobKeys()).containsExactly(1L);
+    verify(rejectionWriter, never()).appendRejection(any(), any(), any());
   }
 }
