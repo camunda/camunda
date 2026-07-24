@@ -51,7 +51,7 @@ data:
       identity:
         clientId: "optimize"
         audience: "optimize-api"
-        issuer: "http://localhost:18080/auth/realms/camunda-platform"
+        issuer: ""
         issuerBackendUrl: "http://c8-golden-main-opensearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
   application.yml: |
     historyCleanup:

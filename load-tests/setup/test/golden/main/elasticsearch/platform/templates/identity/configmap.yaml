@@ -30,7 +30,7 @@ data:
         multi-tenancy: "false"
 
       authProvider:
-        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
+        issuer-url: ""
         backend-url: "http://c8-golden-main-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
       component-presets:
         connectors:
@@ -42,26 +42,6 @@ data:
               permissions:
                 - audience: "orchestration-api"
                   definition: read:*
-        console:
-          applications:
-            - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
-              type: public
-              root-url: "http://localhost:8087"
-              redirect-uris:
-                - "/"
-          apis:
-            - name: Console API
-              audience: "console-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Console"
-              description: "Grants full access to Console"
-              permissions:
-                - audience: "console-api"
-                  definition: write:*
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -178,15 +158,13 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "http://c8-golden-main-elasticsearch.keycloak-operator.svc:18080/auth"
+      url: "http://c8-golden-main-elasticsearch.keycloak-operator.svc:18080/auth/"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
-        console:
-          root-url: "http://localhost:8087"
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         orchestration:
