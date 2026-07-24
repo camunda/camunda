@@ -9,7 +9,6 @@ package io.camunda.application.commons.security;
 
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,10 +39,7 @@ public class PhysicalTenantAuthorizationCheckerConfiguration {
         .forEach(
             (tenantId, searchClientReaders) ->
                 checkers.put(
-                    tenantId,
-                    new AuthorizationChecker(
-                        new SearchAuthorizationScopeRepository(
-                            searchClientReaders.authorizationReader()))));
+                    tenantId, AuthorizationCheckerFactory.forPhysicalTenant(searchClientReaders)));
     return new PhysicalTenantAuthorizationCheckers(Map.copyOf(checkers));
   }
 }
