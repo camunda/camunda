@@ -87,6 +87,29 @@ runs:
         test -f "${{ inputs.sbom-file }}"
         printf 'Using SBOM for %s: %s\n' "${{ inputs.project-name }}" "${{ inputs.sbom-file }}"
 
+    - name: Normalize CycloneDX specVersion for Snyk compatibility
+      shell: bash
+      run: |
+        # Snyk's `sbom test` CLI only decodes CycloneDX 1.4/1.5/1.6
+        # (https://docs.snyk.io/developer-tools/snyk-cli/commands/sbom-test). SBOM generators
+        # (e.g. rollup-plugin-sbom v4+) can default to newer spec versions Snyk can't parse
+        # yet, which fails with "failed to decode CycloneDX input: invalid specification
+        # version" (INC-6679/INC-6677). Normalize the emitted specVersion here, centrally,
+        # instead of relying on every frontend's own build config to pin it.
+        sbomFile="${{ inputs.sbom-file }}"
+        specVersion="$(jq -r '.specVersion' "${sbomFile}")"
+
+        case "${specVersion}" in
+          1.4 | 1.5 | 1.6)
+            printf 'SBOM specVersion %s is already Snyk-compatible for %s, leaving as-is.\n' "${specVersion}" "${{ inputs.project-name }}"
+            ;;
+          *)
+            printf 'SBOM specVersion %s for %s is not supported by Snyk (needs 1.4/1.5/1.6); rewriting to 1.6.\n' "${specVersion}" "${{ inputs.project-name }}"
+            jq '.specVersion = "1.6"' "${sbomFile}" > "${sbomFile}.tmp"
+            mv "${sbomFile}.tmp" "${sbomFile}"
+            ;;
+        esac
+
     - name: Scan SBOM with Snyk
       shell: bash
       env:
