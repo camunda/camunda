@@ -9,25 +9,29 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** Copied from the old post-importer */
-public record AdditionalData(
-    Map<String, IncidentDocument> incidents,
+public record IncidentsState(
+    Collection<IncidentDocument> incidentDocuments,
+    Set<String> incidentIdsToSkip,
     Map<String, List<String>> flowNodeInstanceIndices,
     Map<String, List<String>> flowNodeInstanceInListViewIndices,
     Map<Long, String> processInstanceTreePaths,
     Map<String, String> incidentTreePaths,
-    Map<String, String> processInstanceIndices,
+    Map<String, List<String>> processInstanceIndices,
     Map<String, Set<String>> piIdsWithIncidentIds,
     Map<String, Set<String>> fniIdsWithIncidentIds) {
-  public AdditionalData() {
+  public IncidentsState() {
     this(
-        new ConcurrentHashMap<>(),
+        new ConcurrentLinkedQueue<>(),
+        ConcurrentHashMap.newKeySet(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
@@ -35,6 +39,20 @@ public record AdditionalData(
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>());
+  }
+
+  public void addIncidentDocument(final IncidentDocument incidentDocument) {
+    incidentDocuments.add(incidentDocument);
+  }
+
+  public Collection<IncidentDocument> getIncidentDocuments() {
+    return incidentDocuments.stream()
+        .filter(incidentDocument -> !incidentIdsToSkip.contains(incidentDocument.id()))
+        .toList();
+  }
+
+  public void skipIncident(final IncidentDocument incidentDocument) {
+    incidentIdsToSkip.add(incidentDocument.id());
   }
 
   public boolean addPiIdsWithIncidentIds(final String piId, final String incidentId) {
@@ -51,6 +69,10 @@ public record AdditionalData(
 
   public boolean removeIncidentIdByFniId(final String fniId, final String incidentId) {
     return deleteIncidentIdByInstance(fniIdsWithIncidentIds, fniId, incidentId);
+  }
+
+  public void addProcessInstance(final String id, final String index) {
+    processInstanceIndices.computeIfAbsent(id, k -> new ArrayList<>()).add(index);
   }
 
   public void addFlowNodeInstanceInListView(final String id, final String index) {
