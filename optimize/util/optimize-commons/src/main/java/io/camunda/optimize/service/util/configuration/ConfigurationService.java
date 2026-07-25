@@ -58,8 +58,6 @@ import org.springframework.core.env.Environment;
 
 public class ConfigurationService {
 
-  private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
-
   // @formatter:off
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ConfigurationService.class);
@@ -76,8 +74,6 @@ public class ConfigurationService {
   private Long initialBackoff;
   private Long maximumBackoff;
   // engine import settings
-  private Integer engineConnectTimeout;
-  private Integer engineReadTimeout;
   private Integer currentTimeBackoffMilliseconds;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
