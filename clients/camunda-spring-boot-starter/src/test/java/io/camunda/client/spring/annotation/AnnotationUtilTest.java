@@ -194,8 +194,6 @@ public class AnnotationUtilTest {
     }
 
     private static final class VariablesType {
-      private String hello;
-      private String world;
     }
   }
 

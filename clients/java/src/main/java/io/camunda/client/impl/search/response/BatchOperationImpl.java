@@ -41,7 +41,6 @@ public class BatchOperationImpl implements BatchOperation {
   private final Integer operationsTotalCount;
   private final Integer operationsFailedCount;
   private final Integer operationsCompletedCount;
-  private final List<Long> keys = new ArrayList<>();
   private final List<BatchOperationError> errors = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {

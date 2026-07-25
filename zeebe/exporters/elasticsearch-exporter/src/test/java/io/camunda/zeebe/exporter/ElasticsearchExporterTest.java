@@ -522,7 +522,6 @@ final class ElasticsearchExporterTest {
   final class RecordSequenceTest {
 
     private static final int PARTITION_ID = 123;
-    private final int position = 1;
 
     @BeforeEach
     void initExporter() {
