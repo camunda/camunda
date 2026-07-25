@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "414a1be7b1a925811ccf2c316b0861d3a3d458e0",
-    "generatedAt": "2026-07-24T12:32:00.783Z",
+    "commit": "8897dd7e656e710d9e3e4485bee4cc670ced1103",
+    "generatedAt": "2026-07-25T12:49:59.797Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "672c6c7ba48365c0550c13f90f5e813d70424ac24ae13535df5a944d3ae8b4a3"
+    "specSha256": "16897b5c23a1fd1b8e394014caf24c59bf13717dbc7b15de1a8bc1e7a17314d0"
   },
   "responses": [
     {
@@ -6072,10 +6072,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "isDeleted",
-                  "type": "boolean"
-                },
-                {
                   "name": "name",
                   "type": "string",
                   "nullable": true
@@ -6091,6 +6087,14 @@
                 {
                   "name": "resourceName",
                   "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "DELETED"
+                  ]
                 },
                 {
                   "name": "tenantId",
@@ -6294,10 +6298,6 @@
             "type": "boolean"
           },
           {
-            "name": "isDeleted",
-            "type": "boolean"
-          },
-          {
             "name": "name",
             "type": "string",
             "nullable": true
@@ -6313,6 +6313,14 @@
           {
             "name": "resourceName",
             "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "ACTIVE",
+              "DELETED"
+            ]
           },
           {
             "name": "tenantId",
