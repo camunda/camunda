@@ -114,14 +114,14 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     getDistributionState()
         .foreachPendingDistribution(
             (distributionKey, record) -> {
-              getMetrics().addPendingDistribution(record.getPartitionId());
+              getMetrics().addPendingDistribution(record.getPartitionId(), record.getQueueId());
               return true;
             });
 
     getDistributionState()
         .foreachRetriableDistribution(
             (distributionKey, record) -> {
-              getMetrics().addInflightDistribution(record.getPartitionId());
+              getMetrics().addInflightDistribution(record.getPartitionId(), record.getQueueId());
               return true;
             });
   }
@@ -209,7 +209,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
     distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
 
-    getMetrics().addPendingDistribution(partition);
+    getMetrics().addPendingDistribution(partition, distributionRecord.getQueueId());
 
     final var canDistributeImmediately =
         distributionQueue
@@ -292,7 +292,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setIntent(intent)
             .setStartTime(clock.millis()));
 
-    getMetrics().addInflightDistribution(partition);
+    getMetrics().addInflightDistribution(partition, queueId);
 
     if (executeSideEffect) {
       // This getter makes a hard copy of the command value, which we need to send the command to
@@ -332,6 +332,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setIntent(command.getIntent());
 
     final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
+    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
@@ -343,7 +344,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           return true;
         });
 
-    getMetrics().sentAcknowledgeDistribution(receiverPartitionId);
+    getMetrics().sentAcknowledgeDistribution(receiverPartitionId, queueId.orElse(null));
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(
@@ -387,16 +388,16 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
   public void onAcknowledgeDistribution(
       final long distributionKey, final CommandDistributionRecord recordValue) {
     final var partitionId = recordValue.getPartitionId();
+    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
 
     // finish the distribution for the partition that acknowledged the distribution
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
 
-    getMetrics().removeInflightDistribution(partitionId);
-    getMetrics().removePendingDistribution(partitionId);
+    getMetrics().removeInflightDistribution(partitionId, queueId.orElse(null));
+    getMetrics().removePendingDistribution(partitionId, queueId.orElse(null));
 
     // Distribute next in queue if the distribution was part of a queue
-    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
     queueId.ifPresent(queue -> distributeNextInQueue(queue, partitionId));
 
     // Finish the distribution if there are no more pending distributions
@@ -427,7 +428,9 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
   public void onScheduledRetry(
       final long distributionKey, final CommandDistributionRecord distributionRecord) {
 
-    getMetrics().retryInflightDistribution(distributionRecord.getPartitionId());
+    getMetrics()
+        .retryInflightDistribution(
+            distributionRecord.getPartitionId(), distributionRecord.getQueueId());
 
     getCommandSender()
         .sendCommand(
