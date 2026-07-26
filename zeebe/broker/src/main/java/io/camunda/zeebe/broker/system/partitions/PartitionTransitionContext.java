@@ -47,8 +47,6 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   BrokerMemberId getMemberId();
 
-  LogStream getLogStream();
-
   void setLogStream(LogStream logStream);
 
   AsyncSnapshotDirector getSnapshotDirector();

@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -31,9 +32,11 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -239,6 +242,13 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
+    // The transfer-pause flag and the write gate both outlive role transitions, so a transfer that
+    // ends by stepping down (e.g. the watchdog firing) could leave either stuck paused. Clear both
+    // explicitly on every transition rather than relying on teardown/rebuild.
+    context.setPausedForTransfer(false);
+    if (context.getLogStream() != null) {
+      context.getLogStream().resumeWrites();
+    }
     switch (newRole) {
       case LEADER:
         leaderTransition(newTerm);
@@ -387,8 +397,7 @@ public final class ZeebePartition extends Actor
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
     // failure. The transition for the higher term will be already enqueued and services will be
     // installed for the new role.
-    if (context.getCurrentRole() == Role.LEADER
-        && context.getCurrentTerm() == context.getRaftPartition().term()) {
+    if (isCurrentLeaderTerm()) {
       LOG.info(
           "Unexpected failure occurred in partition {} (role {}, term {}), stepping down",
           context.getPartitionId(),
@@ -403,6 +412,12 @@ public final class ZeebePartition extends Actor
           context.getCurrentTerm());
       stopPartitionOnError();
     }
+  }
+
+  /** Whether this node is still leader in the term it was leader in when the caller checked. */
+  private boolean isCurrentLeaderTerm() {
+    return context.getCurrentRole() == Role.LEADER
+        && context.getCurrentTerm() == context.getRaftPartition().term();
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
@@ -458,6 +473,178 @@ public final class ZeebePartition extends Actor
           if (context.getStreamProcessor() != null && context.shouldProcess()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
             context.getStreamProcessor().resumeProcessing();
+          }
+        });
+  }
+
+  /**
+   * Pauses this partition for a leadership transfer: freezes writes, pauses processing so no
+   * follow-up commands are written, and sets up a watchdog that steps the leader down if the pause
+   * outlives {@code resumeTimeout}. The Raft term is kept, and both replication and exporters keep
+   * running.
+   *
+   * <p>The future completes once the pause is fully in effect and the watchdog has been set.
+   *
+   * <p>The caller must serialize leadership transfer operations for a given partition, and must
+   * await completion (success or failure) of this future before calling {@link
+   * #resumeFromTransfer()}. It is not safe to interleave this method with itself or {@code
+   * resumeFromTransfer()}.
+   */
+  public ActorFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+    final CompletableActorFuture<Long> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          LOG.info("Pausing partition {} for leadership transfer", context.getPartitionId());
+          final long pausedSinceMs = ActorClock.currentTimeMillis();
+          // Freeze write admission and drain in-flight writes, so no entry can be appended past
+          // this point
+          context.getLogStream().pauseWrites();
+          // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
+          // cannot silently un-pause the partition.
+          context.setPausedForTransfer(true);
+          // If arming does not complete within the resume deadline, roll back and fail so a stalled
+          // processor pause cannot leave writes frozen with no watchdog. Shares the resumeTimeout
+          // budget with the Raft watchdog.
+          final ScheduledTimer barrierTimeout =
+              actor.schedule(
+                  resumeTimeout.toMillis(), () -> onBarrierTimeout(resumeTimeout, result));
+          result.onComplete((ok, error) -> barrierTimeout.cancel());
+          // Await the processor confirming paused: once done, every write it submitted has already
+          // enqueued its Raft append.
+          context
+              .getStreamProcessor()
+              .pauseProcessing()
+              .onComplete(
+                  (ignored, error) -> {
+                    if (result.isDone()) {
+                      // Barrier already timed out and rolled back; ignore the late processor
+                      // result.
+                      return;
+                    }
+                    if (error != null) {
+                      rollbackTransferPause();
+                      result.completeExceptionally(error);
+                    } else {
+                      armRaftPause(resumeTimeout, pausedSinceMs, result);
+                    }
+                  });
+        });
+    return result;
+  }
+
+  /** Rolls back a pause barrier that did not arm within the resume deadline. */
+  private void onBarrierTimeout(
+      final Duration resumeTimeout, final CompletableActorFuture<Long> result) {
+    if (result.isDone()) {
+      return;
+    }
+    LOG.warn(
+        "Leadership-transfer pause for partition {} did not start within {}; rolling back",
+        context.getPartitionId(),
+        resumeTimeout);
+    rollbackTransferPause();
+    result.completeExceptionally(
+        new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
+  }
+
+  /**
+   * Undoes {@link #pauseForTransfer(Duration)} so a pause that fails partway does not leave the
+   * partition write-frozen.
+   */
+  private void rollbackTransferPause() {
+    context.setPausedForTransfer(false);
+    context.getLogStream().resumeWrites();
+    final var streamProcessor = context.getStreamProcessor();
+    if (streamProcessor != null && context.shouldProcess()) {
+      streamProcessor.resumeProcessing();
+    }
+  }
+
+  /**
+   * Captures the frozen last log index as the catch-up target and sets the watchdog on the Raft
+   * thread after every already-enqueued append.
+   */
+  private void armRaftPause(
+      final Duration resumeTimeout, final long pausedSinceMs, final ActorFuture<Long> result) {
+    context
+        .getRaftPartition()
+        .getServer()
+        .pauseForTransfer(resumeTimeout, pausedSinceMs)
+        .whenCompleteAsync(
+            (targetIndex, error) -> {
+              if (result.isDone()) {
+                // The barrier timed out while Raft was arming; undo the Raft pause so Raft
+                // is not left paused while the broker has already rolled back.
+                if (error == null) {
+                  context.getRaftPartition().getServer().resumeFromTransfer();
+                }
+                return;
+              }
+              if (error != null) {
+                rollbackTransferPause();
+                result.completeExceptionally(error);
+              } else {
+                result.complete(targetIndex);
+              }
+            },
+            actor);
+  }
+
+  /**
+   * Resumes this partition after a coordinated leadership transfer, undoing {@link
+   * #pauseForTransfer(Duration)}.
+   *
+   * <p>The attempt always ends either fully resumed or, if reopening fails, stepped down.
+   *
+   * <p>Must not interleave with a {@link #pauseForTransfer(Duration)} whose future has not yet
+   * completed.
+   */
+  public ActorFuture<Void> resumeFromTransfer() {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          LOG.info("Resuming partition {} after leadership transfer", context.getPartitionId());
+          context
+              .getRaftPartition()
+              .getServer()
+              .resumeFromTransfer()
+              .whenCompleteAsync(
+                  (ignored, raftError) -> {
+                    if (raftError != null) {
+                      result.completeExceptionally(raftError);
+                    } else {
+                      reopenAfterRaftResume(result);
+                    }
+                  },
+                  actor);
+        });
+    return result;
+  }
+
+  /** Reopens write admission, the transfer-pause flag and the stream processor. */
+  private void reopenAfterRaftResume(final CompletableActorFuture<Void> result) {
+    context.getLogStream().resumeWrites();
+    context.setPausedForTransfer(false);
+    final ActorFuture<Void> processorResume;
+    if (context.getStreamProcessor() != null && context.shouldProcess()) {
+      processorResume = context.getStreamProcessor().resumeProcessing();
+    } else {
+      processorResume = CompletableActorFuture.completed(null);
+    }
+    processorResume.onComplete(
+        (resumed, processorError) -> {
+          if (processorError != null) {
+            LOG.warn(
+                "Failed to resume the stream processor for partition {} after a transfer; stepping "
+                    + "down to rebuild services",
+                context.getPartitionId(),
+                processorError);
+            if (isCurrentLeaderTerm()) {
+              context.getRaftPartition().stepDown();
+            }
+            result.completeExceptionally(processorError);
+          } else {
+            result.complete(null);
           }
         });
   }

@@ -31,10 +31,12 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -175,6 +177,256 @@ public class ZeebePartitionTest {
 
     // then
     verify(transition, atLeast(1)).toInactive(3);
+  }
+
+  @Test
+  public void shouldClearTransferPauseOnRoleChange() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx, atLeast(1)).setPausedForTransfer(false);
+  }
+
+  @Test
+  public void shouldResumeLogStreamWritesOnRoleChange() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(logStream, atLeast(1)).resumeWrites();
+  }
+
+  @Test
+  public void shouldNotFailRoleChangeWhenLogStreamNotYetInstalled() {
+    // given
+    when(ctx.getLogStream()).thenReturn(null);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(transition).toLeader(1);
+  }
+
+  @Test
+  public void shouldRunPauseBarrierInOrderAndReturnTargetIndex() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
+    final var raftServer = raft.getServer();
+    when(raftServer.pauseForTransfer(any(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(99L));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> targetIndex = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(logStream, ctx, streamProcessor, raftServer);
+    inOrder.verify(logStream).pauseWrites();
+    inOrder.verify(ctx).setPausedForTransfer(true);
+    inOrder.verify(streamProcessor).pauseProcessing();
+    inOrder.verify(raftServer).pauseForTransfer(any(), anyLong());
+    assertThat(targetIndex).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(99L);
+  }
+
+  @Test
+  public void shouldClearTransferPauseAndResumeAdmissionOnResume() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(streamProcessor).resumeProcessing();
+  }
+
+  @Test
+  public void shouldCompleteResumeOnlyAfterStreamProcessorResumes() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> resume = partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resume).isNotDone();
+
+    // when
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resume).succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  @Test
+  public void shouldRollBackBarrierWhenRaftPauseFails() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().pauseForTransfer(any(), anyLong()))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("not the leader")));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(streamProcessor).resumeProcessing();
+  }
+
+  @Test
+  public void shouldRollBackWriteFreezeWhenProcessorPauseFails() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(raft.getServer(), never()).pauseForTransfer(any(), anyLong());
+  }
+
+  @Test
+  public void shouldRollBackBarrierWhenProcessorPauseStalls() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing()).thenReturn(new CompletableActorFuture<>());
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+    schedulerRule.getClock().addTime(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(raft.getServer(), never()).pauseForTransfer(any(), anyLong());
+  }
+
+  @Test
+  public void shouldNotReopenAdmissionWhenRaftResumeFails() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(raft.getServer().resumeFromTransfer())
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("not the leader")));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> result = partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream, never()).resumeWrites();
+    verify(ctx, never()).setPausedForTransfer(false);
+    verify(streamProcessor, never()).resumeProcessing();
+  }
+
+  @Test
+  public void shouldStepDownWhenStreamProcessorResumeFailsAfterRaftResume() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(streamProcessor.resumeProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
+    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
+    when(raft.getRole()).thenReturn(Role.LEADER);
+    when(raft.term()).thenReturn(1L);
+    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
+    when(ctx.getCurrentTerm()).thenReturn(1L);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> result = partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(raft).stepDown();
   }
 
   @Test

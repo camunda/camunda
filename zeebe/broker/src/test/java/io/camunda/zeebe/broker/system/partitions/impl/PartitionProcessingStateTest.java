@@ -55,6 +55,67 @@ class PartitionProcessingStateTest {
   }
 
   @Test
+  void shouldNotProcessWhilePausedForTransfer() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setDiskSpaceAvailable(true);
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
+
+    // when
+    partitionProcessingState.setPausedForTransfer(true);
+
+    // then
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+
+    // and when the transfer pause is cleared, processing may run again
+    partitionProcessingState.setPausedForTransfer(false);
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
+  }
+
+  @Test
+  void shouldStayPausedWhenDiskRecoversMidTransfer() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setPausedForTransfer(true);
+    partitionProcessingState.setDiskSpaceAvailable(false);
+
+    // when
+    partitionProcessingState.setDiskSpaceAvailable(true);
+
+    // then
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+  }
+
+  @Test
+  void shouldStayPausedWhenAdminResumesMidTransfer() throws IOException {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setDiskSpaceAvailable(true);
+    partitionProcessingState.setPausedForTransfer(true);
+    partitionProcessingState.pauseProcessing();
+
+    // when
+    partitionProcessingState.resumeProcessing();
+
+    // then
+    assertThat(partitionProcessingState.isProcessingPaused()).isFalse();
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+  }
+
+  @Test
+  void shouldNotPersistTransferPause() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setPausedForTransfer(true);
+
+    // when
+    final var reloaded = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+
+    // then
+    assertThat(reloaded.isPausedForTransfer()).isFalse();
+  }
+
+  @Test
   void shouldPauseAndResumeExporting() {
     // given
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
