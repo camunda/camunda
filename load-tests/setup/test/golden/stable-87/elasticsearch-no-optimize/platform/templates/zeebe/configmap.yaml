@@ -40,6 +40,8 @@ data:
               mode: none
         network:
           host: 0.0.0.0
+          # Bounds inbound messages on the broker command API, including requests from the standalone gateway.
+          maxMessageSize: "10MB"
           commandApi:
             port: 26501
           internalApi:
