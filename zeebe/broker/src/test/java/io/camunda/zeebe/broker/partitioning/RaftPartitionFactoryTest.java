@@ -44,6 +44,20 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldDefaultRaftRequestTimeoutToElectionTimeout() {
+    // given
+    final Duration expected = Duration.ofSeconds(15);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(expected);
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getRequestTimeout()).isEqualTo(expected);
+  }
+
+  @Test
   void shouldSetHeartbeatInterval() {
     // given
     final Duration expected = Duration.ofSeconds(10);

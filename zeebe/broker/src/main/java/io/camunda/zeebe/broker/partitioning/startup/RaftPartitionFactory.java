@@ -99,19 +99,18 @@ public final class RaftPartitionFactory {
         brokerCfg.getCluster().getRaft().isEnablePriorityElection());
     partitionConfig.setElectionTimeout(brokerCfg.getCluster().getElectionTimeout());
     partitionConfig.setHeartbeatInterval(brokerCfg.getCluster().getHeartbeatInterval());
-    partitionConfig.setRequestTimeout(brokerCfg.getExperimental().getRaft().getRequestTimeout());
-    partitionConfig.setSnapshotRequestTimeout(
-        brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
-    partitionConfig.setSnapshotChunkSize(
-        (int) brokerCfg.getExperimental().getRaft().getSnapshotChunkSize().toBytes());
-    partitionConfig.setConfigurationChangeTimeout(
-        brokerCfg.getExperimental().getRaft().getConfigurationChangeTimeout());
-    partitionConfig.setMaxQuorumResponseTimeout(
-        brokerCfg.getExperimental().getRaft().getMaxQuorumResponseTimeout());
-    partitionConfig.setMinStepDownFailureCount(
-        brokerCfg.getExperimental().getRaft().getMinStepDownFailureCount());
+    final var raftCfg = brokerCfg.getExperimental().getRaft();
+    partitionConfig.setRequestTimeout(
+        raftCfg.isRequestTimeoutConfigured()
+            ? raftCfg.getRequestTimeout()
+            : brokerCfg.getCluster().getElectionTimeout());
+    partitionConfig.setSnapshotRequestTimeout(raftCfg.getSnapshotRequestTimeout());
+    partitionConfig.setSnapshotChunkSize((int) raftCfg.getSnapshotChunkSize().toBytes());
+    partitionConfig.setConfigurationChangeTimeout(raftCfg.getConfigurationChangeTimeout());
+    partitionConfig.setMaxQuorumResponseTimeout(raftCfg.getMaxQuorumResponseTimeout());
+    partitionConfig.setMinStepDownFailureCount(raftCfg.getMinStepDownFailureCount());
     partitionConfig.setPreferSnapshotReplicationThreshold(
-        brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
+        raftCfg.getPreferSnapshotReplicationThreshold());
 
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());
