@@ -109,6 +109,16 @@ public class TestLogStream implements LogStream {
   }
 
   @Override
+  public void pauseWrites() {
+    logStream.pauseWrites();
+  }
+
+  @Override
+  public void resumeWrites() {
+    logStream.resumeWrites();
+  }
+
+  @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     logStream.registerRecordAvailableListener(recordAwaiter);
   }

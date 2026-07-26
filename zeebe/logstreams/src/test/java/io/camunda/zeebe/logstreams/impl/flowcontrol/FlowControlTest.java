@@ -124,6 +124,36 @@ public class FlowControlTest {
   }
 
   @Test
+  public void shouldRejectEvenInternalWritesWhenPausedForTransfer() {
+    // given
+    flowControl.pause();
+
+    // when
+    final var whilePaused = tryAcquireInternalWrite();
+
+    // then
+    EitherAssert.assertThat(whilePaused)
+        .isLeft()
+        .left()
+        .satisfies(r -> assertThat(r).isEqualTo(Rejection.PartitionPaused));
+
+    flowControl.resume();
+    EitherAssert.assertThat(tryAcquireInternalWrite()).isRight();
+  }
+
+  private Either<Rejection, InFlightEntry> tryAcquireInternalWrite() {
+    return flowControl.tryAcquire(
+        WriteContext.internal(),
+        List.of(
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+                    .intent(ProcessInstanceCreationIntent.CREATE),
+                new UnifiedRecordValue(0))));
+  }
+
+  @Test
   void shouldNotThrottleBeforeFirstExport() {
     // given — a fresh FlowControl (as created on every leader transition) with throttling enabled
     // and a partition that has already written far past the acceptable backlog
