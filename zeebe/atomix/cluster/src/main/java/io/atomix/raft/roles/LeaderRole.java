@@ -82,6 +82,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private ApplicationEntry lastZbEntry = null;
   private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
 
+  // Paused for a leadership transfer: the leader keeps its term and keeps replicating, but writes
+  // and processing are frozen. A watchdog steps down to follower if resumeFromTransfer() is not
+  // called in time.
+  private volatile boolean pausedForTransfer;
+  private long transferPauseStartMs;
+  private long transferPauseTargetIndex;
+  private Scheduled transferPauseWatchdog;
+
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
@@ -129,6 +137,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     return super.stop()
         .thenRun(appender::close)
+        .thenRun(() -> raft.getRebalanceMetrics().setPartitionPaused(false))
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
   }
@@ -151,6 +160,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               ReconfigureResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
                   .withError(Type.CONFIGURATION_ERROR, "Not ready to make configuration changes")
+                  .build()));
+    }
+
+    if (pausedForTransfer) {
+      // A configuration entry would move the frozen log head the desired leader is catching up to,
+      // so reject it (subject to retries). Force reconfiguration steps the leader down, which
+      // clears the pause, so it is not gated here.
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      "Cannot reconfigure while paused for a leadership transfer")
                   .build()));
     }
 
@@ -406,6 +429,94 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
+    // Paused mode always exits on a role transition (stop() runs when leadership is lost).
+    clearTransferPause();
+  }
+
+  /**
+   * Enters paused mode for a leadership transfer and set a watchdog that steps this leader down if
+   * {@link #resumeFromTransfer()} is not called within {@code resumeTimeout}.
+   *
+   * <p>The timeout is measured relative to the point at which write admission was frozen, rather
+   * than the current instant.
+   *
+   * @param pausedSinceMs epoch millis at which write admission was frozen
+   * @throws IllegalStateException if already paused, if the leader is still initializing, or if the
+   *     resumption deadline was already passed before this method was invoked
+   * @throws ConfigurationChangeInProgressException if a Raft configuration change is in progress
+   */
+  public long pauseForTransfer(final Duration resumeTimeout, final long pausedSinceMs) {
+    raft.checkThread();
+    if (pausedForTransfer) {
+      throw new IllegalStateException("Cannot pause for leadership transfer: already paused");
+    }
+    if (initializing()) {
+      throw new IllegalStateException(
+          "Cannot pause for leadership transfer: leader is still initializing");
+    }
+    if (configuring() || jointConsensus()) {
+      throw new ConfigurationChangeInProgressException(
+          "Cannot pause for leadership transfer: configuration change in progress");
+    }
+
+    final long elapsedMs = Math.max(0, System.currentTimeMillis() - pausedSinceMs);
+    if (elapsedMs >= resumeTimeout.toMillis()) {
+      throw new IllegalStateException(
+          "Cannot pause for leadership transfer: resume deadline of %s already passed"
+              .formatted(resumeTimeout));
+    }
+    final Duration remaining = resumeTimeout.minusMillis(elapsedMs);
+
+    pausedForTransfer = true;
+    transferPauseStartMs = pausedSinceMs;
+
+    // Writes must already have been frozen and the processor drained before this runs, so the last
+    // log index is our freeze target
+    transferPauseTargetIndex = raft.getLog().getLastIndex();
+
+    log.info(
+        "Set leadership-transfer watchdog; resume deadline in {} ({}ms already spent)",
+        remaining,
+        elapsedMs);
+
+    transferPauseWatchdog =
+        raft.getThreadContext().schedule(remaining, this::onTransferPauseDeadline);
+    raft.getRebalanceMetrics().setPartitionPaused(true);
+
+    return transferPauseTargetIndex;
+  }
+
+  /** Leaves paused mode after a coordinated leadership transfer. */
+  public void resumeFromTransfer() {
+    raft.checkThread();
+    if (pausedForTransfer) {
+      log.info("Resuming partition after leadership transfer");
+    }
+    clearTransferPause();
+  }
+
+  private void onTransferPauseDeadline() {
+    raft.checkThread();
+    if (!pausedForTransfer || !isRunning()) {
+      return;
+    }
+    log.warn("Partition still paused after the resume deadline; stepping down to follower");
+    clearTransferPause();
+    raft.transition(RaftServer.Role.FOLLOWER);
+  }
+
+  private void clearTransferPause() {
+    if (transferPauseWatchdog != null) {
+      transferPauseWatchdog.cancel();
+      transferPauseWatchdog = null;
+    }
+    if (pausedForTransfer) {
+      pausedForTransfer = false;
+      raft.getRebalanceMetrics().setPartitionPaused(false);
+      raft.getRebalanceMetrics()
+          .observePauseDuration(
+              Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
+    }
   }
 
   /** Ensures the local server is not the leader. */
@@ -653,6 +764,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private IndexedRaftLogEntry appendEntry(final RaftLogEntry entry) {
+    if (pausedForTransfer) {
+      // Safety backstop only - nothing should be attempting to append while we're in a paused state
+      throw new IllegalStateException(
+          "Cannot append to the log while the partition is paused for a leadership transfer");
+    }
     try {
       return appendWithRetry(entry);
     } catch (final Exception e) {
@@ -833,5 +949,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             runnable.run();
           }
         });
+  }
+
+  /**
+   * Thrown by {@link #pauseForTransfer(Duration, long)} when a Raft configuration change is in
+   * progress.
+   */
+  public static final class ConfigurationChangeInProgressException extends RuntimeException {
+    public ConfigurationChangeInProgressException(final String message) {
+      super(message);
+    }
   }
 }
