@@ -31,6 +31,9 @@ public class Engine {
   /** Configuration properties for the engine's caches. */
   @NestedConfigurationProperty private EngineCaches caches = new EngineCaches();
 
+  /** Configuration properties for the engine's message TTL checker. */
+  @NestedConfigurationProperty private EngineMessages messages = new EngineMessages();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised,
    * to guard against unbounded process recursion.
@@ -67,6 +70,14 @@ public class Engine {
 
   public void setCaches(final EngineCaches caches) {
     this.caches = caches;
+  }
+
+  public EngineMessages getMessages() {
+    return messages;
+  }
+
+  public void setMessages(final EngineMessages messages) {
+    this.messages = messages;
   }
 
   public int getMaxProcessDepth() {

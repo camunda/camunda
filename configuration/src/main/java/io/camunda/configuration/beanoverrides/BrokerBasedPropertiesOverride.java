@@ -258,6 +258,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromProcessInstanceCreation(override, camunda);
     populateFromJobs(override, camunda);
     populateFromCaches(override, camunda);
+    populateFromMessages(override, camunda);
 
     override
         .getExperimental()
@@ -288,6 +289,15 @@ public class BrokerBasedPropertiesOverride {
     cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
     cachesCfg.setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity());
     cachesCfg.setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution());
+  }
+
+  private static void populateFromMessages(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var messages = camunda.getProcessing().getEngine().getMessages();
+
+    final var messagesCfg = override.getExperimental().getEngine().getMessages();
+    messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
+    messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
   }
 
   private static void populateFromBatchOperations(
