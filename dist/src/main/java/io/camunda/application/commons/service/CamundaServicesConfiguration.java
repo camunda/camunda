@@ -136,7 +136,7 @@ public class CamundaServicesConfiguration {
         .forEach(
             (tenantId, tenantConfig) -> {
               final var search = searchClients.withPhysicalTenant(tenantId);
-              final var tenantAuthorizationChecker =
+              final var authorizationChecker =
                   authorizationCheckerProvider.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
@@ -315,7 +315,7 @@ public class CamundaServicesConfiguration {
                           securityContextProvider,
                           new SimpleDocumentStoreRegistry(
                               new CamundaDocumentStoreConfigurationLoader(tenantConfig)),
-                          tenantAuthorizationChecker,
+                          authorizationChecker,
                           cslProperties.getAuthorizations(),
                           executor,
                           converter))
@@ -411,7 +411,7 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          tenantAuthorizationChecker,
+                          authorizationChecker,
                           cslProperties.getAuthorizations(),
                           executor,
                           converter))
