@@ -63,6 +63,7 @@ public class CustomMcpModelPropertiesTest {
                 "processDefinitionId",
                 "processDefinitionKey",
                 "resourceName",
+                "state",
                 "version",
                 "versionTag")),
         Arguments.argumentSet(

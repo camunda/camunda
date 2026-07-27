@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -170,6 +171,7 @@ import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
@@ -696,7 +698,10 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
-        .hasStartForm(StringUtils.isNotBlank(entity.formId()));
+        .hasStartForm(StringUtils.isNotBlank(entity.formId()))
+        .state(
+            ProcessDefinitionResult.StateEnum.fromValue(
+                requireNonNullElse(entity.state(), ProcessDefinitionState.ACTIVE).name()));
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(

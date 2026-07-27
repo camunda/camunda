@@ -18,5 +18,6 @@
 
   <include file="/db/changelog/rdbms-exporter/changesets/8.9.0.xml" />
   <include file="/db/changelog/rdbms-exporter/changesets/8.9.9.xml" />
+  <include file="/db/changelog/rdbms-exporter/changesets/8.9.14.xml" />
 
 </databaseChangeLog>

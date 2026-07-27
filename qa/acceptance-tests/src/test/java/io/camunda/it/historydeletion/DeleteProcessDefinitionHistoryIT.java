@@ -20,6 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -153,6 +154,60 @@ public class DeleteProcessDefinitionHistoryIT {
     assertThat(result.getCreateBatchOperationResponse()).isNull();
     waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
     waitForProcesses(camundaClient, f -> f.processDefinitionId(processId), 1);
+  }
+
+  @Test
+  void shouldMarkProcessDefinitionAsDeletedWhenDeletedWithoutHistory() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // when - delete without history (keeps secondary storage records but marks as deleted)
+    final DeleteResourceResponse result =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
+
+    // then - wait until the process definition is marked as deleted in secondary storage
+    Awaitility.await("Process definition should be marked as deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var deleted =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .state(ProcessDefinitionState.DELETED))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(deleted).hasSize(1);
+              assertThat(deleted.getFirst().getState()).isEqualTo(ProcessDefinitionState.DELETED);
+            });
+
+    // and - searching with state=ACTIVE should not return the deleted definition
+    final var nonDeleted =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKey)
+                        .state(ProcessDefinitionState.ACTIVE))
+            .send()
+            .join()
+            .items();
+    assertThat(nonDeleted).isEmpty();
   }
 
   @Test
