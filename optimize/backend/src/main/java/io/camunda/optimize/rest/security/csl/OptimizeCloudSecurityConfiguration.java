@@ -10,8 +10,8 @@ package io.camunda.optimize.rest.security.csl;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,8 @@ public class OptimizeCloudSecurityConfiguration {
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
       final OidcProviderConfigurationPort oidcProviderConfigurationPort,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final CamundaSecurityLibraryProperties cslProperties) {
     final CloudAuthConfiguration cloud = cloudConfig(configurationService);
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
     if (StringUtils.isNotBlank(cloud.getOrganizationId())) {
@@ -78,7 +79,7 @@ public class OptimizeCloudSecurityConfiguration {
     }
     return new TokenValidatorFactory(
         oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-        OidcConfiguration.DEFAULT_CLOCK_SKEW,
+        cslProperties.getAuthentication().getOidc().getClockSkew(),
         extraValidators);
   }
 

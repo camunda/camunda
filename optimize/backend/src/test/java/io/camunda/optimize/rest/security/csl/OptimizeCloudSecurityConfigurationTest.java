@@ -15,6 +15,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +40,8 @@ class OptimizeCloudSecurityConfigurationTest {
 
   private final OptimizeCloudSecurityConfiguration config =
       new OptimizeCloudSecurityConfiguration();
+  private final CamundaSecurityLibraryProperties cslProperties =
+      new CamundaSecurityLibraryProperties();
 
   private OAuth2TokenValidator<Jwt> sharedValidator() {
     when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
@@ -48,7 +51,8 @@ class OptimizeCloudSecurityConfigurationTest {
     when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
 
     final TokenValidatorFactory factory =
-        config.tokenValidatorFactory(oidcProviderConfigurationPort, configurationService);
+        config.tokenValidatorFactory(
+            oidcProviderConfigurationPort, configurationService, cslProperties);
     return factory.createTokenValidator(clientRegistration());
   }
 
@@ -109,7 +113,7 @@ class OptimizeCloudSecurityConfigurationTest {
   }
 
   @Test
-  void shouldProvideIdTokenDecoderFactoryReusingTheSharedFactory() {
+  void shouldBuildOidcIdTokenDecoderFactoryForLogin() {
     when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
     when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
     when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
@@ -117,7 +121,8 @@ class OptimizeCloudSecurityConfigurationTest {
     when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
 
     final TokenValidatorFactory factory =
-        config.tokenValidatorFactory(oidcProviderConfigurationPort, configurationService);
+        config.tokenValidatorFactory(
+            oidcProviderConfigurationPort, configurationService, cslProperties);
 
     assertThat(config.idTokenDecoderFactory(factory)).isInstanceOf(OidcIdTokenDecoderFactory.class);
   }

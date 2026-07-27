@@ -67,8 +67,7 @@ public final class OptimizeCloudOrganizationValidator implements OAuth2TokenVali
     }
 
     LOG.debug(
-        "Rejected login token: organizations claim does not grant organization [{}] an allowed"
-            + " role",
+        "Rejected token: organizations claim does not grant organization [{}] an allowed role",
         organizationId);
     return OAuth2TokenValidatorResult.failure(
         new OAuth2Error(
