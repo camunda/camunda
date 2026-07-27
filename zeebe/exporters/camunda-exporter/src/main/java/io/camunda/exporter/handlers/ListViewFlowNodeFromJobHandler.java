@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewFlowNodeFromJobHandler
-    implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
+    implements StorageOrdinalKeyExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromJobHandler.class);

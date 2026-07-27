@@ -8,13 +8,17 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -86,16 +90,17 @@ public class FlowNodeInstanceNameFromAdHocActivityHandlerTest {
   }
 
   @Test
-  public void shouldGenerateInnerInstanceIdFromFlowScopeKey() {
+  void shouldExtractIdAndIndexesFromFlowScopeKey() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<ProcessInstanceRecordValue> record =
         createRecord(ProcessInstanceIntent.ELEMENT_ACTIVATING, "listUsers", 222L, 999L);
 
-    // when
-    final var idList = underTest.generateIds(record);
-
-    // then
-    assertThat(idList).containsExactly("999");
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex("999", index));
   }
 
   @Test
