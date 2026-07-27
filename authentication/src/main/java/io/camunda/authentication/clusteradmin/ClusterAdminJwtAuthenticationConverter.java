@@ -7,11 +7,11 @@
  */
 package io.camunda.authentication.clusteradmin;
 
-import io.camunda.authentication.utils.OidcClaimExtractor;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.security.core.auth.MappingRuleMatcher.MappingRule;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.oidc.OidcPrincipalLoader;
+import io.camunda.security.oidc.OidcClaimExtractor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
