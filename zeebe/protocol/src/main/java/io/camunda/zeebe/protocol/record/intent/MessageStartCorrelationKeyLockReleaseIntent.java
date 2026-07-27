@@ -34,9 +34,16 @@ package io.camunda.zeebe.protocol.record.intent;
  * P_B} stays silent — {@code P_K} keeps polling with back-off until it observes completion — so
  * there is no "still active" reply intent.
  *
+ * <p>{@link #PUSHED} is the push counterpart, applied on {@code P_B} when a cross-partition holder
+ * completes or terminates: {@code P_B} pushes a {@link #RELEASE} straight to {@code P_K} instead of
+ * waiting to be polled, and drops the holder-origin bookkeeping it kept for that purpose. The query
+ * half above then only has to cover the rare cases the push cannot (e.g. a holder lost before it
+ * pushed), acting as a self-healing reconciliation fallback rather than the primary path.
+ *
  * <p>The target partition of a {@link #QUERY} is derived from the holder instance key (every Zeebe
  * key encodes its generating partition); the target partition of the {@link #RELEASE} reply is
- * derived from the {@code requestKey} generated on {@code P_K}.
+ * derived from the {@code requestKey} — stamped by {@code P_K} on the poll path, synthesized by
+ * {@code P_B} from the buffered message key's partition bits on the push path.
  */
 public enum MessageStartCorrelationKeyLockReleaseIntent implements Intent {
 
@@ -46,7 +53,11 @@ public enum MessageStartCorrelationKeyLockReleaseIntent implements Intent {
 
   // release reply half, applied on P_K only when the holder instance is no longer active on P_B
   RELEASE((short) 2, false),
-  RELEASED((short) 3, true);
+  RELEASED((short) 3, true),
+
+  // push half, applied on P_B when a cross-partition holder completes/terminates: it pushes a
+  // RELEASE to P_K without waiting to be polled and drops the holder-origin bookkeeping
+  PUSHED((short) 4, true);
 
   private final short value;
   private final boolean isEvent;
@@ -76,6 +87,8 @@ public enum MessageStartCorrelationKeyLockReleaseIntent implements Intent {
         return RELEASE;
       case 3:
         return RELEASED;
+      case 4:
+        return PUSHED;
       default:
         return Intent.UNKNOWN;
     }

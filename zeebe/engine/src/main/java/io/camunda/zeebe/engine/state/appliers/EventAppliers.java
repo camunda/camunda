@@ -646,6 +646,9 @@ public final class EventAppliers implements EventApplier {
    *   <li>{@code RELEASED}: applied on {@code P_K} for each holder reported gone; removes the
    *       active process-instance lock and the cross-partition lock marker for that correlation
    *       key. The buffered-message pick-up is not done here but in the RELEASE command processor.
+   *   <li>{@code PUSHED}: applied on {@code P_B} when a holder completes/terminates and its {@code
+   *       RELEASE} was pushed to {@code P_K}; drops the holder-origin entry {@code P_B} kept for
+   *       it.
    * </ul>
    */
   private void registerMessageStartCorrelationKeyLockReleaseAppliers(
@@ -654,6 +657,9 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartCorrelationKeyLockReleaseIntent.RELEASED,
         new MessageStartCorrelationKeyLockReleaseReleasedV1Applier(state.getMessageState()));
+    register(
+        MessageStartCorrelationKeyLockReleaseIntent.PUSHED,
+        new MessageStartCorrelationKeyLockReleasePushedV1Applier(state.getMessageState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {
