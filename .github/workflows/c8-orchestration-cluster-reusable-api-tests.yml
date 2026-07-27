@@ -225,7 +225,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p container-logs
-          for c in $(docker ps --format '{{.Names}}'); do
+          for c in $(docker ps --format '{{.Names}}' 2>/dev/null || true); do
             docker logs --timestamps "$c" > "container-logs/${c}.log" 2>&1 || true
           done
           docker ps -a > container-logs/docker-ps.txt 2>&1 || true
