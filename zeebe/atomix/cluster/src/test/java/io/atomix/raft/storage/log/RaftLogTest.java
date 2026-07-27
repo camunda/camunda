@@ -18,10 +18,10 @@ package io.atomix.raft.storage.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -35,16 +35,19 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -254,17 +257,47 @@ class RaftLogTest {
   @Nested
   final class FlushTest {
     @Test
-    void shouldUseFlusher() throws CheckedJournalException {
+    void shouldUseFlusher() {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
       final var log = new RaftLog(journal, flusher);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
-      verify(flusher, times(1)).flush(journal);
+      verify(flusher, times(1)).flush(journal, 3L);
+      assertThat(result).isCompleted();
+    }
+
+    @Test
+    void shouldFlushSyncViaFlusher() throws CheckedJournalException {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.flushSync(3L);
+
+      // then
+      verify(flusher, times(1)).flush(journal, 3L);
+    }
+
+    @Test
+    void shouldThrowFlushExceptionWhenSyncFlushFails() {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      final var failure = new FlushException(new IOException("failed to sync"));
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.failedFuture(failure));
+      final var log = new RaftLog(journal, flusher);
+
+      // when - then
+      assertThatThrownBy(() -> log.flushSync(3L)).isSameAs(failure);
     }
 
     @Test
@@ -289,25 +322,27 @@ class RaftLogTest {
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
       verify(journal, times(1)).flush();
+      assertThat(result).isCompleted();
     }
 
     @Test
-    void shouldDisableFlush() throws CheckedJournalException {
+    void shouldDisableFlush() {
       // given
       final var journal = mock(Journal.class);
       final var flusher = spy(new NoopFlusher());
       final var log = new RaftLog(journal, flusher);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
-      verify(flusher, times(1)).flush(journal);
-      verify(journal, never()).flush();
+      verify(flusher, times(1)).flush(journal, 3L);
+      verifyNoInteractions(journal);
+      assertThat(result).isCompleted();
     }
   }
 }

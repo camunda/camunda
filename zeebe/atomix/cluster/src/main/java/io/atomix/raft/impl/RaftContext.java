@@ -78,7 +78,6 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
-import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -569,7 +568,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         try {
-          raftLog.flush();
+          raftLog.flushSync(commitIndex);
         } catch (final FlushException e) {
           if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(
@@ -676,7 +675,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(raftLog::flush), threadContext);
+    final var flushed = new CompletableFuture<Void>();
+    threadContext.execute(
+        () ->
+            raftLog
+                .flush(raftLog.getLastIndex())
+                .whenComplete(
+                    (ignored, error) -> {
+                      if (error != null) {
+                        flushed.completeExceptionally(error);
+                      } else {
+                        flushed.complete(null);
+                      }
+                    }));
+    return flushed;
   }
 
   /**
