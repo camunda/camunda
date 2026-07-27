@@ -37,6 +37,7 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.priority-election-enabled=false",
         "camunda.cluster.raft.flush-enabled=false",
         "camunda.cluster.raft.flush-delay=5s",
+        "camunda.cluster.raft.flush-coalesced=true",
         "camunda.cluster.raft.max-appends-per-follower=7",
         "camunda.cluster.raft.max-append-batch-size=64",
         "camunda.cluster.raft.request-timeout=5s",
@@ -82,6 +83,11 @@ public class ClusterRaftTest {
     }
 
     @Test
+    void shouldSetFlushCoalesced() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
+    }
+
+    @Test
     void shouldSetExperimental() {
       assertThat(brokerCfg.getExperimental())
           .returns(7, ExperimentalCfg::getMaxAppendsPerFollower)
@@ -110,6 +116,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
         "zeebe.broker.cluster.raft.flush.delay=10s",
+        "zeebe.broker.cluster.raft.flush.coalesced=true",
         "zeebe.broker.experimental.maxAppendsPerFollower=8",
         "zeebe.broker.experimental.maxAppendBatchSize=96",
         "zeebe.broker.experimental.raft.requestTimeout=10s",
@@ -155,6 +162,11 @@ public class ClusterRaftTest {
     }
 
     @Test
+    void shouldSetFlushCoalescedFromLegacy() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
+    }
+
+    @Test
     void shouldSetExperimentalFromLegacy() {
       assertThat(brokerCfg.getExperimental())
           .returns(8, ExperimentalCfg::getMaxAppendsPerFollower)
@@ -184,6 +196,7 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.priority-election-enabled=true",
         "camunda.cluster.raft.flush-enabled=true",
         "camunda.cluster.raft.flush-delay=15s",
+        "camunda.cluster.raft.flush-coalesced=true",
         "camunda.cluster.raft.max-appends-per-follower=7",
         "camunda.cluster.raft.max-append-batch-size=64",
         "camunda.cluster.raft.request-timeout=5s",
@@ -200,6 +213,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
         "zeebe.broker.cluster.raft.flush.delay=99s",
+        "zeebe.broker.cluster.raft.flush.coalesced=false",
         "zeebe.broker.experimental.maxAppendsPerFollower=8",
         "zeebe.broker.experimental.maxAppendBatchSize=96",
         "zeebe.broker.experimental.raft.requestTimeout=10s",
@@ -242,6 +256,11 @@ public class ClusterRaftTest {
     void shouldSetFlushDelayFromNew() {
       assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
           .isEqualTo(Duration.ofSeconds(15));
+    }
+
+    @Test
+    void shouldSetFlushCoalescedFromNew() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
     }
 
     @Test

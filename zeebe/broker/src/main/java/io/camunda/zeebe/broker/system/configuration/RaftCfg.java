@@ -11,7 +11,8 @@ import java.time.Duration;
 
 public final class RaftCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
-  private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
+  private static final FlushConfig DEFAULT_FLUSH_CONFIG =
+      new FlushConfig(true, Duration.ZERO, false);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
 
@@ -43,10 +44,19 @@ public final class RaftCfg implements ConfigurationEntry {
         + '}';
   }
 
-  public record FlushConfig(boolean enabled, Duration delayTime) {
-    public FlushConfig(final boolean enabled, final Duration delayTime) {
+  /**
+   * @param enabled if false, the raft log is only flushed before snapshots, trading durability for
+   *     performance
+   * @param delayTime if positive, flushes are delayed by at least the given period, trading
+   *     durability for performance; mutually exclusive with {@code coalesced}
+   * @param coalesced if true, redundant flushes are deduped and concurrent flushes are coalesced
+   *     without giving up durability; mutually exclusive with {@code delayTime}
+   */
+  public record FlushConfig(boolean enabled, Duration delayTime, boolean coalesced) {
+    public FlushConfig(final boolean enabled, final Duration delayTime, final boolean coalesced) {
       this.enabled = enabled;
       this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
+      this.coalesced = coalesced;
     }
   }
 }
