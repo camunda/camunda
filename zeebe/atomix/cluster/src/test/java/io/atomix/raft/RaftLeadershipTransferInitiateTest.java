@@ -22,6 +22,7 @@ import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
@@ -104,6 +105,52 @@ public class RaftLeadershipTransferInitiateTest {
 
     // then
     assertThat(result).as("pre-checks pass for a caught-up follower").isEmpty();
+  }
+
+  @Test
+  public void shouldCompleteCatchUpWhenFollowerIsCaughtUp() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+
+    // when
+    final CompletableFuture<Optional<LeadershipTransferResult>> caughtUp =
+        onRaftThread(
+            leader,
+            () ->
+                leaderRole(leader)
+                    .awaitDesiredLeaderCaughtUp(
+                        targetId,
+                        leader.getContext().getLog().getLastIndex(),
+                        Duration.ofSeconds(10)));
+
+    // then
+    assertThat(caughtUp).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(Optional.empty());
+  }
+
+  @Test
+  public void shouldTimeOutCatchUpWhenFollowerCannotReachTheTarget() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+
+    // when
+    final CompletableFuture<Optional<LeadershipTransferResult>> caughtUp =
+        onRaftThread(
+            leader,
+            () ->
+                leaderRole(leader)
+                    .awaitDesiredLeaderCaughtUp(
+                        targetId,
+                        leader.getContext().getLog().getLastIndex() + 1_000,
+                        Duration.ofMillis(500)));
+
+    // then
+    assertThat(caughtUp)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .isEqualTo(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
   }
 
   @Test
@@ -191,6 +238,33 @@ public class RaftLeadershipTransferInitiateTest {
 
     // then
     assertThat(result).contains(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldCompleteCatchUpWithTimedOutWhenPauseWatchdogExpires() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+
+    // when
+    final CompletableFuture<Optional<LeadershipTransferResult>> caughtUp =
+        onRaftThread(
+            leader,
+            () -> {
+              leaderRole(leader)
+                  .pauseForTransfer(Duration.ofMillis(500), System.currentTimeMillis());
+              return leaderRole(leader)
+                  .awaitDesiredLeaderCaughtUp(
+                      targetId,
+                      leader.getContext().getLog().getLastIndex() + 1_000,
+                      Duration.ofSeconds(30));
+            });
+
+    // then
+    assertThat(caughtUp)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .isEqualTo(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
   }
 
   /** Builds a membership change that removes {@code follower}, so it is not a no-op. */
