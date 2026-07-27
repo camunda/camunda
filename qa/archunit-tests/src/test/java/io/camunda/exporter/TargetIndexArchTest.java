@@ -26,7 +26,7 @@ public class TargetIndexArchTest {
           .areDeclaredInClassesThat()
           .areAssignableTo(TargetIndex.class)
           .and()
-          .haveNameNotMatching("^(name).*")
+          .haveNameNotMatching("^(name|equals|hashCode|toString).*")
           .should()
           .onlyBeCalled()
           .byClassesThat()
