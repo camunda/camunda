@@ -40,6 +40,10 @@ public final class MessageStartProcessInstanceReplyApplierTest {
   private static final String BPMN_PROCESS_ID = "process";
   private static final String CORRELATION_KEY = "ck-1";
   private static final String BUSINESS_ID = "bid-1";
+  // PROCESS_INSTANCE_KEY (1000) decodes to partition 0; a different local partition keeps these
+  // mock-based tests off the holder-origin write (partition-gated), which is covered on real state
+  // by MessageStartProcessInstanceStartedV1ApplierTest. They pin dedup / pending-ask / lock only.
+  private static final int PARTITION_ID = 1;
 
   private MutableMessageStartProcessInstanceDedupState mockDedupState;
   private MutableMessageStartProcessInstanceAskState mockAskState;
@@ -140,7 +144,7 @@ public final class MessageStartProcessInstanceReplyApplierTest {
 
     private MessageStartProcessInstanceStartedV1Applier newApplier() {
       return new MessageStartProcessInstanceStartedV1Applier(
-          mockDedupState, mockAskState, mockMessageState);
+          mockDedupState, mockAskState, mockMessageState, PARTITION_ID);
     }
   }
 

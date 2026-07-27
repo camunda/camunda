@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 
@@ -44,6 +45,19 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  *   <li><b>Pending-ask removal on {@code P_K}.</b> Always called; {@code remove} is a no-op when
  *       the entry is absent. On {@code P_B} there is no pending-ask, so this is also a harmless
  *       no-op.
+ *   <li><b>Holder-origin entry on {@code P_B}.</b> Records, keyed by the holder instance key, the
+ *       lock coordinates ({@code bpmnProcessId}, {@code correlationKey}, {@code tenantId}) plus the
+ *       {@code messageKey} whose partition bits address {@code P_K}, so that when the holder later
+ *       completes or terminates on {@code P_B} it can push a {@code RELEASE} to {@code P_K} without
+ *       re-deriving those coordinates from the completing element's context (the completing context
+ *       is unreliable under migration — the holder may since run a different process id).
+ *       Discriminated to {@code P_B} by the holder instance key's partition bits: the PI was
+ *       created on {@code P_B}, so {@code decodePartitionId(processInstanceKey) == partitionId}
+ *       there, whereas on {@code P_K} the same reply carries a PI key that decodes to {@code P_B}
+ *       and is skipped — the mirror of the discriminator used by the lock write below. Written only
+ *       when the holder carries a correlation key: without one there is no correlation-key lock on
+ *       {@code P_K} to release. The write is {@code upsert} and therefore idempotent under a
+ *       re-applied {@code STARTED} reply.
  *   <li><b>Cross-partition holder-instance discriminator on {@code P_K}.</b> Marks the local
  *       correlation-key lock entry that the {@link MessageStartEventSubscriptionCorrelatedApplier}
  *       wrote when the reply processor emitted {@code CORRELATED}, recording the holder instance's
@@ -70,14 +84,17 @@ final class MessageStartProcessInstanceStartedV1Applier
   private final MutableMessageStartProcessInstanceDedupState dedupState;
   private final MutableMessageStartProcessInstanceAskState askState;
   private final MutableMessageState messageState;
+  private final int partitionId;
 
   MessageStartProcessInstanceStartedV1Applier(
       final MutableMessageStartProcessInstanceDedupState dedupState,
       final MutableMessageStartProcessInstanceAskState askState,
-      final MutableMessageState messageState) {
+      final MutableMessageState messageState,
+      final int partitionId) {
     this.dedupState = dedupState;
     this.askState = askState;
     this.messageState = messageState;
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -94,6 +111,20 @@ final class MessageStartProcessInstanceStartedV1Applier
 
     final var correlationKey = value.getCorrelationKeyBuffer();
     final var businessId = value.getBusinessIdBuffer();
+
+    // On P_B: record the holder-origin entry so the holder's completion can later push a RELEASE to
+    // P_K. Discriminated to P_B by the holder key's partition bits, and skipped without a
+    // correlation key (no lock to release). See the class javadoc for the full rationale.
+    if (correlationKey.capacity() > 0
+        && Protocol.decodePartitionId(value.getProcessInstanceKey()) == partitionId) {
+      messageState.putCrossPartitionStartHolderOrigin(
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessIdBuffer(),
+          correlationKey,
+          value.getTenantId(),
+          value.getMessageKey());
+    }
+
     if (correlationKey.capacity() > 0
         && businessId.capacity() > 0
         && messageState.existActiveProcessInstance(

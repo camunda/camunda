@@ -144,6 +144,43 @@ public final class CrossPartitionMessageStartLockReleaseTest {
   }
 
   @Test
+  public void shouldWriteHolderOriginOnPBButNotOnPKForCrossPartitionStart() {
+    // given a cross-partition start whose holder stays active on P_B (service task) while the
+    // correlation-key lock lives on P_K
+    deployAndAwaitStartSubscriptions(SERVICE_PROCESS, SERVICE_MESSAGE_NAME);
+    publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(SERVICE_PROCESS_ID);
+    // holder active on P_B (its local STARTED applied) and the STARTED reply consumed on P_K
+    awaitHolderJobCreated(holderKey);
+    awaitMessageConsumedOnPK(SERVICE_MESSAGE_NAME);
+
+    // then the holder-origin entry exists on P_B (where the holder lives), keyed by the holder PI
+    // and carrying the lock coordinates plus a messageKey that addresses P_K
+    final var originOnPB =
+        engine
+            .getProcessingState(partitionFor(BUSINESS_ID))
+            .getMessageState()
+            .getCrossPartitionStartHolderOrigin(holderKey);
+    assertThat(originOnPB).as("the holder partition records the origin entry").isNotNull();
+    assertThat(BufferUtil.bufferAsString(originOnPB.getBpmnProcessIdBuffer()))
+        .isEqualTo(SERVICE_PROCESS_ID);
+    assertThat(BufferUtil.bufferAsString(originOnPB.getCorrelationKeyBuffer()))
+        .isEqualTo(CORRELATION_KEY);
+    assertThat(Protocol.decodePartitionId(originOnPB.getMessageKey()))
+        .as("the stored messageKey addresses P_K")
+        .isEqualTo(partitionFor(CORRELATION_KEY));
+
+    // and no entry is written on P_K, where the same STARTED reply is applied
+    assertThat(
+            engine
+                .getProcessingState(partitionFor(CORRELATION_KEY))
+                .getMessageState()
+                .getCrossPartitionStartHolderOrigin(holderKey))
+        .as("the lock partition never records a holder-origin entry")
+        .isNull();
+  }
+
+  @Test
   public void shouldReleaseLockAndStartBufferedMessageWhenHolderCompletesOnPB() {
     // given a cross-partition start: the holder is created (and auto-completes) on P_B and the
     // correlation-key lock is written on P_K
