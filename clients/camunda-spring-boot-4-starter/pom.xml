@@ -35,6 +35,23 @@
   <!-- jackson-databind 3.1.4 is a vulnerable transitive dep from Spring Boot's BOM; pinning directly here is the only way to override it. -->
   <dependencyManagement>
     <dependencies>
+      <!-- Override the jackson pin inherited from camunda-library-parent (version.jackson,
+      2.18.x for the Spring Boot 3 line) with the patched 2.21 line that Spring Boot 4 tracks.
+      This entry is nearer than the inherited BOM, so it wins for this module only. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>2.21.5</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Re-pin annotations to override the parent's non-import pin (jackson-bom can't), else
+      databind 2.21.x misses JsonSerializeAs. No patch since Jackson 2.20, so 2.21 not 2.21.5. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>2.21</version>
+      </dependency>
       <dependency>
         <groupId>tools.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
