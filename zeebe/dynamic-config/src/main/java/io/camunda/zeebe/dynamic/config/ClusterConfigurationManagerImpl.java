@@ -207,6 +207,46 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return future;
   }
 
+  @Override
+  public boolean isUsingNewConfig() {
+    return useNewConfig;
+  }
+
+  /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    executor.run(() -> future.complete(persistedCurrentConfiguration.getConfiguration()));
+    return future;
+  }
+
+  /**
+   * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
+   * triggers local operation application. Only valid when {@link #useNewConfig} is true.
+   */
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
+      final UnaryOperator<CurrentClusterConfiguration> updater) {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    executor.run(
+        () -> {
+          try {
+            final var updated = updater.apply(persistedCurrentConfiguration.getConfiguration());
+            updateLocalCurrentConfiguration(updated)
+                .ifRightOrLeft(
+                    applied -> {
+                      future.complete(applied);
+                      applyNewConfigurationChangeOperation();
+                    },
+                    future::completeExceptionally);
+          } catch (final Exception e) {
+            LOG.error("Failed to update cluster configuration", e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
   ActorFuture<Void> start(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
     executor.run(
         () -> {
@@ -455,6 +495,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         });
   }
 
+  // ---------------------------------------------------------------------------
+  // New multi-partition-group model (used only when useNewConfig is true).
+  // ---------------------------------------------------------------------------
+
   void removeTopologyChangeAppliers() {
     executor.run(() -> changeAppliers = null);
   }
@@ -467,53 +511,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(() -> onInconsistentConfigurationDetected = null);
   }
 
-  // ---------------------------------------------------------------------------
-  // New multi-partition-group model (used only when useNewConfig is true).
-  // ---------------------------------------------------------------------------
-
-  @Override
-  public boolean isUsingNewConfig() {
-    return useNewConfig;
-  }
-
   void setCurrentConfigurationGossiper(
       final Consumer<CurrentClusterConfiguration> currentConfigurationGossiper) {
     this.currentConfigurationGossiper = currentConfigurationGossiper;
-  }
-
-  /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
-  @Override
-  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
-    final var future = executor.<CurrentClusterConfiguration>createFuture();
-    executor.run(() -> future.complete(persistedCurrentConfiguration.getConfiguration()));
-    return future;
-  }
-
-  /**
-   * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
-   * triggers local operation application. Only valid when {@link #useNewConfig} is true.
-   */
-  @Override
-  public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
-      final UnaryOperator<CurrentClusterConfiguration> updater) {
-    final var future = executor.<CurrentClusterConfiguration>createFuture();
-    executor.run(
-        () -> {
-          try {
-            final var updated = updater.apply(persistedCurrentConfiguration.getConfiguration());
-            updateLocalCurrentConfiguration(updated)
-                .ifRightOrLeft(
-                    applied -> {
-                      future.complete(applied);
-                      applyNewConfigurationChangeOperation();
-                    },
-                    future::completeExceptionally);
-          } catch (final Exception e) {
-            LOG.error("Failed to update cluster configuration", e);
-            future.completeExceptionally(e);
-          }
-        });
-    return future;
   }
 
   void registerGlobalChangeAppliers(final GlobalConfigurationChangeAppliers appliers) {
@@ -548,17 +548,24 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           if (receivedConfiguration == null) {
             return;
           }
-          final var local = persistedCurrentConfiguration.getConfiguration();
-          final var merged = local.merge(receivedConfiguration);
-          if (!merged.equals(local)) {
-            updateLocalCurrentConfiguration(merged)
-                .ifRightOrLeft(
-                    applied -> applyNewConfigurationChangeOperation(),
-                    error ->
-                        LOG.warn(
-                            "Failed to process cluster configuration received via gossip. '{}'",
-                            receivedConfiguration,
-                            error));
+          try {
+            final var local = persistedCurrentConfiguration.getConfiguration();
+            final var merged = local.merge(receivedConfiguration);
+            if (!merged.equals(local)) {
+              updateLocalCurrentConfiguration(merged)
+                  .ifRightOrLeft(
+                      applied -> applyNewConfigurationChangeOperation(),
+                      error ->
+                          LOG.warn(
+                              "Failed to process cluster configuration received via gossip. '{}'",
+                              receivedConfiguration,
+                              error));
+            }
+          } catch (final Exception e) {
+            LOG.warn(
+                "Failed to process cluster configuration received via gossip. '{}'",
+                receivedConfiguration,
+                e);
           }
         });
   }
