@@ -60,4 +60,16 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
         .map(ActorFuture::join)
         .orElse(Collections.emptyList());
   }
+
+  @Override
+  public Collection<ClientStream<JobActivationProperties>> clientJobStreams(
+      final Optional<String> physicalTenantId) {
+    if (physicalTenantId.isEmpty()) {
+      return clientJobStreams();
+    }
+    final var tenantId = physicalTenantId.get();
+    return clientJobStreams().stream()
+        .filter(stream -> tenantId.equals(stream.physicalTenantId()))
+        .toList();
+  }
 }

@@ -84,6 +84,10 @@ public interface JobStreamActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   List<ClientJobStream> listClient();
 
+  @RequestLine("GET /client?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<ClientJobStream> listClient(@feign.Param final String physicalTenant);
+
   @RequestLine("GET /remote")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   List<RemoteJobStream> listRemote();

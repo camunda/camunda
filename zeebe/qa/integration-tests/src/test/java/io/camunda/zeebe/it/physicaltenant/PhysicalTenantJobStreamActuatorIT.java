@@ -78,4 +78,31 @@ final class PhysicalTenantJobStreamActuatorIT {
     // and - it is not visible when scoped to the default physical tenant
     assertThat(actuator.listRemote(PhysicalTenantsITHelper.DEFAULT_TENANT_ID)).isEmpty();
   }
+
+  @Test
+  void shouldListClientStreamsForTargetedPhysicalTenantOnly() {
+    // given - a job stream registered only on tenant A, from the gateway's (client-side) point of
+    // view
+    final var jobType = Strings.newRandomValidBpmnId();
+    tenantAClient
+        .newStreamJobsCommand()
+        .jobType(jobType)
+        .consumer(ignored -> {})
+        .workerName("worker")
+        .timeout(Duration.ofSeconds(1))
+        .send();
+
+    // when + then - the stream is visible when scoped to tenant A...
+    await("tenant A's client stream is registered")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var streams = actuator.listClient(TENANT_A);
+              assertThat(streams).hasSize(1);
+              assertThat(streams.get(0).jobType()).isEqualTo(jobType);
+            });
+
+    // and - it is not visible when scoped to the default physical tenant
+    assertThat(actuator.listClient(PhysicalTenantsITHelper.DEFAULT_TENANT_ID)).isEmpty();
+  }
 }
