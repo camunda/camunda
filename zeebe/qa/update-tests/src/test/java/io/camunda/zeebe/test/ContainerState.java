@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
@@ -64,7 +65,7 @@ final class ContainerState implements AutoCloseable {
   private static final DockerImageName PREVIOUS_VERSION =
       DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
   private static final DockerImageName CURRENT_VERSION =
-      DockerImageName.parse("camunda/camunda").withTag(currentVersionDockerTag());
+      ZeebeTestContainerDefaults.defaultTestImage();
 
   static {
     CONTAINER_START_RETRY_POLICY
@@ -96,14 +97,6 @@ final class ContainerState implements AutoCloseable {
   private TestStandaloneBroker springBroker;
   private Path extractedDataDir;
   private int partitionCount = PARTITION_COUNT;
-
-  private static String currentVersionDockerTag() {
-    final var version = VersionUtil.getSemanticVersion().orElseThrow();
-    if (version.isPreRelease()) {
-      return version.major() + "." + version.minor() + "-SNAPSHOT";
-    }
-    return version.toString();
-  }
 
   CamundaClient client() {
     return client;
@@ -312,12 +305,6 @@ final class ContainerState implements AutoCloseable {
     final int commandPort = springBroker.mappedPort(TestZeebePort.COMMAND);
     Testcontainers.exposeHostPorts(clusterPort, commandPort);
 
-    // the broker runs as a host process (not on `network`), so it cannot resolve the gateway
-    // container's internal network alias when it pushes job-stream notifications back to the
-    // gateway over the cluster (Atomix) transport; fix the gateway's advertised cluster address
-    // to a host-reachable one so the broker can dial back
-    final int gatewayClusterHostPort = findAvailablePort();
-
     gateway =
         new GatewayContainer(gatewayImage)
             .withUnifiedConfig(
@@ -335,6 +322,11 @@ final class ContainerState implements AutoCloseable {
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
             .withNetwork(network);
 
+    // the host-process broker can't resolve the gateway's container-internal network alias, so
+    // fix-map the gateway's cluster port to a free host port; the broker dials this back to push
+    // job-stream notifications to the gateway. Probed at runtime (not a fixed constant) so a
+    // leftover container from an earlier run never causes a bind collision.
+    final int gatewayClusterHostPort = findAvailablePort();
     gateway.setPortBindings(
         Stream.concat(
                 gateway.getPortBindings().stream(),
@@ -349,7 +341,7 @@ final class ContainerState implements AutoCloseable {
           .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", gateway.getInternalHost())
           .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", "0.0.0.0")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "localhost")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", gateway.getExternalHost())
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT", String.valueOf(gatewayClusterHostPort));
     }
 

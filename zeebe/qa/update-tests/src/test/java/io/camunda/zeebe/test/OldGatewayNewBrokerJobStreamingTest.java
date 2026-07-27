@@ -65,7 +65,7 @@ final class OldGatewayNewBrokerJobStreamingTest {
     final var stream =
         state.client().newStreamJobsCommand().jobType(JOB_TYPE).consumer(streamedJobs::add).send();
     try {
-      // when: an instance producing a job of the streamed type is created through the new gateway
+      // when: an instance producing a job of the streamed type is created through the old gateway
       state
           .client()
           .newCreateInstanceCommand()
