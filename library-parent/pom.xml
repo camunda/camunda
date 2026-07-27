@@ -73,6 +73,19 @@
         <artifactId>plexus-utils</artifactId>
         <version>3.6.1</version>
       </dependency>
+      <!-- Re-import jetty-bom ahead of spring-boot-dependencies for the same nearest-wins reason
+      as above, but for a compatibility (not vulnerability) concern: the parent pom.xml pins Jetty
+      to ${version.jetty} (11.x) ahead of its own spring-boot-dependencies import, because clients/java
+      tests use WireMock, which requires a Jetty 11 HttpServerFactory. Spring Boot's BOM manages Jetty
+      to 12.x; without re-pinning here, this POM's nearer spring-boot-dependencies would shadow the
+      parent's Jetty 11 pin and break WireMock startup in descendant modules. -->
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>${version.jetty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <!-- The version.spring-boot / version.spring property overrides above only take effect
       for BOM imports declared in this POM: the ancestor parent/pom.xml already imports
       spring-boot-dependencies and spring-framework-bom using its own property values (HeroDevs
