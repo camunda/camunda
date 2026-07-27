@@ -25,6 +25,7 @@ import io.camunda.client.impl.response.UpdateClusterVariableResponseImpl;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.UpdateClusterVariableRequest;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -55,6 +56,13 @@ public class TenantScopedUpdateClusterVariableImpl
     ArgumentUtil.ensureNotNull("value", value);
     this.name = name;
     updateVariableRequest.value(value);
+    return this;
+  }
+
+  @Override
+  public TenantScopedClusterVariableUpdateCommandStep1 metadata(
+      final Map<String, Object> metadata) {
+    updateVariableRequest.metadata(metadata);
     return this;
   }
 
