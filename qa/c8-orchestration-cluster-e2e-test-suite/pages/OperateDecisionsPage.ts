@@ -9,7 +9,12 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  'Process Instance Key' | 'Decision Instance Key(s)' | 'Evaluation Date Range';
+  | 'Process Instance Key'
+  | 'Decision Instance Key(s)'
+  | 'Business ID'
+  | 'Evaluation Date Range';
+
+export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 
 interface SearchParams {
   evaluated?: string;
@@ -30,6 +35,8 @@ class OperateDecisionsPage {
   readonly evaluatedCheckbox: Locator;
   readonly failedCheckbox: Locator;
   readonly decisionInstancesList: Locator;
+  readonly businessIdFilter: Locator;
+  readonly businessIdFilterType: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
 
   constructor(page: Page) {
@@ -57,6 +64,13 @@ class OperateDecisionsPage {
     this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
     this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
     this.decisionInstancesList = page.getByTestId('data-list');
+    this.businessIdFilter = page.getByRole('textbox', {
+      name: 'Business ID',
+      exact: true,
+    });
+    this.businessIdFilterType = page.getByRole('combobox', {
+      name: 'Business ID filter type',
+    });
     this.getOptionByName = (name: string, exact = true) =>
       this.filterRegion.getByRole('option', {name, exact});
   }
@@ -127,6 +141,22 @@ class OperateDecisionsPage {
         name: filterName,
       })
       .click();
+  }
+
+  async fillBusinessIdFilter(value: string): Promise<void> {
+    await expect(this.businessIdFilter).toBeVisible();
+    await expect(this.businessIdFilter).toBeEnabled();
+    await this.businessIdFilter.click();
+    await this.businessIdFilter.fill('');
+    await this.businessIdFilter.pressSequentially(value);
+    await expect(this.businessIdFilter).toHaveValue(value, {timeout: 30000});
+  }
+
+  async selectBusinessIdFilterType(
+    operator: AdvancedStringFilterOperator,
+  ): Promise<void> {
+    await this.businessIdFilterType.click();
+    await this.page.getByRole('option', {name: operator, exact: true}).click();
   }
 }
 
