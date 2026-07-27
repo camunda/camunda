@@ -8,16 +8,7 @@ name: C8 Orchestration Cluster Nightly main - API Tests (ES)
 on:
   schedule:
     - cron: "30 1 * * *"
-  workflow_dispatch:
-    inputs:
-      # TEMPORARY for PR #58409 CI-evidence validation of the new
-      # analytics-exporter-tests job split — revert to the bare
-      # `workflow_dispatch: {}` / hardcoded `branch: main` before merge.
-      branch:
-        description: "TEMPORARY: branch to test (defaults to main)"
-        required: false
-        type: string
-        default: main
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -26,18 +17,18 @@ jobs:
   nightly-api-tests-es:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
     with:
-      branch: ${{ inputs.branch || 'main' }}
+      branch: main
     secrets: inherit
 
   nightly-api-tests-es-all-in-one:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
     with:
-      branch: ${{ inputs.branch || 'main' }}
+      branch: main
       camunda_mode: all-in-one
     secrets: inherit
 
   nightly-analytics-exporter-tests:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-analytics-exporter-tests.yml
     with:
-      branch: ${{ inputs.branch || 'main' }}
+      branch: main
     secrets: inherit
