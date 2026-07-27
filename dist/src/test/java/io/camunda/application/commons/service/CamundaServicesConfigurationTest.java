@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.application.commons.security.PhysicalTenantAuthorizationCheckers;
+import io.camunda.application.commons.security.AuthorizationCheckerProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -38,7 +38,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
@@ -65,9 +64,8 @@ class CamundaServicesConfigurationTest {
     final var registry =
         buildRegistry(
             twoTenants(),
-            Optional.of(
-                new PhysicalTenantAuthorizationCheckers(
-                    Map.of(TENANT_A, checkerA, TENANT_B, checkerB))));
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
 
     // when / then: tenant A's checker grants CREATE -- the batch (empty, so no document store is
     // touched) completes normally, using only tenant A's checker.
@@ -100,8 +98,8 @@ class CamundaServicesConfigurationTest {
     final var registry =
         buildRegistry(
             Map.of("default", new Camunda()),
-            Optional.of(
-                new PhysicalTenantAuthorizationCheckers(Map.of("default", defaultChecker))));
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of("default", defaultChecker)));
 
     // when
     final var future =
@@ -115,14 +113,16 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
-  void shouldFallBackToSharedAuthorizationCheckerWhenNoPhysicalTenantCheckersBeanExists() {
-    // given: SecondaryStorageType.none -- no PhysicalTenantSearchClientReaders bean exists, so no
-    // PhysicalTenantAuthorizationCheckers bean can be built either. Falling back to the shared,
-    // default-tenant-pinned checker is correct here, since there is exactly one authorization
+  void shouldFallBackToSharedAuthorizationCheckerWhenNoPerTenantCheckersExist() {
+    // given: SecondaryStorageType.none -- no PhysicalTenantSearchClientReaders bean exists, so the
+    // provider has no per-tenant checkers and every tenant falls back to the shared,
+    // default-tenant-pinned checker. That is correct here, since there is exactly one authorization
     // source cluster-wide in this mode.
     when(sharedAuthorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.CREATE));
-    final var registry = buildRegistry(twoTenants(), Optional.empty());
+    final var registry =
+        buildRegistry(
+            twoTenants(), new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()));
 
     // when / then: must not NPE, and both tenants fall back to the same shared checker.
     assertThat(
@@ -141,9 +141,9 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
-  void shouldFallBackToSharedAuthorizationCheckerForTenantMissingFromPhysicalTenantCheckersMap() {
-    // given: PhysicalTenantAuthorizationCheckers exists but only has an entry for tenantA --
-    // tenantB is missing, e.g. config drift between PhysicalTenantResolver and the checkers map.
+  void shouldFallBackToSharedAuthorizationCheckerForTenantMissingFromPerTenantCheckers() {
+    // given: the provider only has a per-tenant checker for tenantA -- tenantB is missing, e.g.
+    // config drift between PhysicalTenantResolver and the per-tenant checkers.
     final var checkerA = mock(AuthorizationChecker.class);
     when(checkerA.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.CREATE));
@@ -152,7 +152,8 @@ class CamundaServicesConfigurationTest {
     final var registry =
         buildRegistry(
             twoTenants(),
-            Optional.of(new PhysicalTenantAuthorizationCheckers(Map.of(TENANT_A, checkerA))));
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA)));
 
     // when / then: tenantA uses its own checker, present in the map.
     assertThat(
@@ -184,7 +185,7 @@ class CamundaServicesConfigurationTest {
 
   private ServiceRegistry buildRegistry(
       final Map<String, Camunda> tenants,
-      final Optional<PhysicalTenantAuthorizationCheckers> physicalTenantAuthorizationCheckers) {
+      final AuthorizationCheckerProvider authorizationCheckerProvider) {
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(tenants);
 
@@ -198,8 +199,7 @@ class CamundaServicesConfigurationTest {
         mock(PasswordEncoder.class),
         mock(ActivateJobsHandler.class),
         SearchClientsProxy.noop(),
-        sharedAuthorizationChecker,
-        physicalTenantAuthorizationCheckers,
+        authorizationCheckerProvider,
         cslProperties,
         new GatewayRestConfiguration(),
         mock(BrokerTopologyManager.class),

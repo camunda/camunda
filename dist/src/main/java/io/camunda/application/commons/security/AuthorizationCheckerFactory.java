@@ -14,7 +14,7 @@ import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 /**
  * Builds the {@link AuthorizationChecker} for a single physical tenant from that tenant's own
  * {@link SearchClientReaders}. Shared by every per-tenant checker-construction site (currently
- * {@link PhysicalTenantAuthorizationCheckerConfiguration} and {@code
+ * {@link AuthorizationCheckerProviderConfiguration} and {@code
  * io.camunda.application.commons.search.ResourceAccessControllerConfiguration}) so the wrapping
  * logic lives in exactly one place, since the two consumers are gated by different Spring
  * conditions and can't simply share a bean.
