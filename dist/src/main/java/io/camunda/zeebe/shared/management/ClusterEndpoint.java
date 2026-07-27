@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
@@ -74,7 +75,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
-      Set.of("dryRun", "force", "replicationFactor", "mode");
+      Set.of("dryRun", "force", "replicationFactor", "mode", "physicalTenantId");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
 
@@ -559,13 +560,18 @@ public class ClusterEndpoint {
    * endpoint will be accessible through the Management REST API.
    *
    * @param mode The requested {@link Mode} to transition the member to
+   * @param physicalTenantId The physical tenant to target; defaults to {@link
+   *     PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} if not provided
    * @param dryRun Whether to perform a dry run of the mode change
    * @return The operations to transition the member to the requested mode
    */
   @PatchMapping(path = "/mode")
   public ResponseEntity<?> updateMode(
-      @RequestParam final Mode mode, @RequestParam(defaultValue = "false") final boolean dryRun) {
-    final var request = new ModeChangeRequest(mode, dryRun);
+      @RequestParam final Mode mode,
+      @RequestParam(defaultValue = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+          final String physicalTenantId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    final var request = new ModeChangeRequest(physicalTenantId, mode, dryRun);
     return ClusterApiUtils.mapOperationResponse(requestSender.modeChange(request).join());
   }
 
