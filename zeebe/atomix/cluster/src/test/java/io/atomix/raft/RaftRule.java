@@ -34,6 +34,7 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
@@ -61,6 +62,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -785,5 +787,20 @@ public final class RaftRule extends ExternalResource {
     default void configure(final MemberId id, final RaftServer.Builder builder) {}
 
     default void configure(final TestSnapshotStore snapshotStore) {}
+
+    /**
+     * Rebuilds the builder's storage with the given flusher factory, keeping the directory and
+     * snapshot store.
+     */
+    static void replaceFlusherFactory(
+        final RaftServer.Builder builder, final RaftLogFlusher.Factory flusherFactory) {
+      final var storage = Objects.requireNonNull(builder.storage);
+      builder.withStorage(
+          RaftStorage.builder(builder.meterRegistry)
+              .withDirectory(storage.directory())
+              .withSnapshotStore(storage.getPersistedSnapshotStore())
+              .withFlusherFactory(flusherFactory)
+              .build());
+    }
   }
 }

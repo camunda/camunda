@@ -103,10 +103,8 @@ public final class RaftCfg implements ConfigurationEntry {
    *     without giving up durability; mutually exclusive with {@code delayTime}
    */
   public record FlushConfig(boolean enabled, Duration delayTime, boolean coalesced) {
-    public FlushConfig(final boolean enabled, final Duration delayTime, final boolean coalesced) {
-      this.enabled = enabled;
-      this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
-      this.coalesced = coalesced;
+    public FlushConfig {
+      delayTime = delayTime == null ? Duration.ZERO : delayTime;
     }
   }
 }

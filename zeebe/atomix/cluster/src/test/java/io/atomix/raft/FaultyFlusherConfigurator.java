@@ -11,12 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
-import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -48,12 +46,7 @@ public record FaultyFlusherConfigurator(
                   new FlushException(new IOException("Failed sync")));
             }
 
-            try {
-              journal.flush();
-              return CompletableFuture.completedFuture(null);
-            } catch (final FlushException e) {
-              return CompletableFuture.failedFuture(e);
-            }
+            return RaftLogFlusher.Factory.DIRECT.flush(journal, index);
           }
 
           @Override
@@ -70,14 +63,7 @@ public record FaultyFlusherConfigurator(
     final int nodePriority;
     if (numericId <= faultyFlusherNumber) {
       LOG.trace("failing flusher for member {}", id);
-      final var storage = builder.storage;
-      Objects.requireNonNull(storage);
-      builder.withStorage(
-          RaftStorage.builder(builder.meterRegistry)
-              .withDirectory(storage.directory())
-              .withSnapshotStore(storage.getPersistedSnapshotStore())
-              .withFlusherFactory(faultyFlusher(faultyWhen, notifyFaultyFlush))
-              .build());
+      Configurator.replaceFlusherFactory(builder, faultyFlusher(faultyWhen, notifyFaultyFlush));
       nodePriority = leaderFaulty ? Math.max(5 - numericId, 2) : numericId;
     } else {
       LOG.trace("not failing flusher for member {} ", id);
