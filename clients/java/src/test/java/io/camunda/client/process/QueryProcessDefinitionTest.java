@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.FormResult;
@@ -107,7 +108,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .version(2)
                     .versionTag("alpha")
                     .processDefinitionId(sp -> sp.eq("orderProcess"))
-                    .tenantId("<default>"))
+                    .tenantId("<default>")
+                    .state(ProcessDefinitionState.DELETED))
         .send()
         .join();
     // then
@@ -122,6 +124,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(filter.getVersionTag()).isEqualTo("alpha");
     assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("orderProcess");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
+    assertThat(filter.getState()).isEqualTo(ProcessDefinitionFilter.StateEnum.DELETED);
   }
 
   @Test
