@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class PostImporterQueueFromIncidentHandler
-    implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
+    implements StorageOrdinalKeyExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
 
   private static final Set<IncidentIntent> SUPPORTED_INTENTS =
       EnumSet.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED, IncidentIntent.RESOLVED);

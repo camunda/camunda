@@ -29,7 +29,7 @@ import java.util.Map;
  * feature.
  */
 public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler
-    implements ExportHandler<
+    implements StorageOrdinalKeyExportHandler<
         ProcessInstanceForListViewEntity, ProcessInstanceBusinessIdRecordValue> {
 
   private final String indexName;
