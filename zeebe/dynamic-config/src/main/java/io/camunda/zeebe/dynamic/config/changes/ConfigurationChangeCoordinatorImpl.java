@@ -24,7 +24,6 @@ import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -649,11 +648,12 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final Consumer<CurrentClusterConfiguration> onGroupDrained,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
     final var group = config.partitionGroup(groupId);
-    if (group != null && !group.hasPendingChanges()) {
+    Objects.requireNonNull(group);
+    if (!group.hasPendingChanges()) {
       onGroupDrained.accept(config);
       return;
     }
-    final var operation = (PartitionGroupOperation) group.nextPendingOperation();
+    final var operation = group.nextPendingOperation();
     final var applier = groupSimulator.getApplier(operation);
     final var result = applier.init(config.globalConfiguration(), group);
     if (result.isLeft()) {
