@@ -7,15 +7,20 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,7 +67,7 @@ final class AgentInstanceHandlerTest {
   @ParameterizedTest(name = "[{index}] Should handle \''{0}\'' record")
   @EnumSource(
       value = AgentInstanceIntent.class,
-      names = {"CREATED", "UPDATED", "COMPLETED"},
+      names = {"CREATED", "UPDATED", "COMPLETED", "MIGRATED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final AgentInstanceIntent intent) {
     assertThat(underTest.handlesRecord(generateRecord(intent))).isTrue();
@@ -71,7 +76,7 @@ final class AgentInstanceHandlerTest {
   @ParameterizedTest(name = "[{index}] Should not handle \''{0}\'' record")
   @EnumSource(
       value = AgentInstanceIntent.class,
-      names = {"CREATED", "UPDATED", "COMPLETED"},
+      names = {"CREATED", "UPDATED", "COMPLETED", "MIGRATED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final AgentInstanceIntent intent) {
     assertThat(underTest.handlesRecord(generateRecord(intent))).isFalse();
@@ -371,6 +376,13 @@ final class AgentInstanceHandlerTest {
     // completionDate is null on UPDATED intent but still written so the upsert script
     // payload is identical across intents (no-op when null overwrites null in the index).
     expectedUpdateFields.put(COMPLETION_DATE, null);
+    // The definition fields are only ever changed by MIGRATED, but are re-asserted on every
+    // intent since flush() has no access to the record intent (see AgentInstanceHandler#flush).
+    expectedUpdateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    expectedUpdateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    expectedUpdateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    expectedUpdateFields.put(VERSION_TAG, entity.getVersionTag());
+    expectedUpdateFields.put(ELEMENT_ID, entity.getElementId());
 
     verify(mockRequest, times(1)).upsert(indexName, entity.getId(), entity, expectedUpdateFields);
   }
