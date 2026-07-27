@@ -890,9 +890,10 @@ public class PassiveRole extends InactiveRole {
                   (ignored, error) -> {
                     if (error != null) {
                       log.warn(
-                          "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
+                          "Failed to flush partially appended records up to index {} (previous entry index {})",
                           appendedIndex,
-                          request.prevLogIndex());
+                          request.prevLogIndex(),
+                          error);
                     }
                   });
           return;
