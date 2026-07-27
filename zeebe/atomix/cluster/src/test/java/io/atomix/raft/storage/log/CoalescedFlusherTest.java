@@ -216,6 +216,31 @@ final class CoalescedFlusherTest {
   }
 
   @Test
+  void shouldFailPendingWhenFlushThrowsUnexpectedException() throws CheckedJournalException {
+    // given - a failure outside the expected journal exceptions, e.g. from the metastore
+    setupJournal();
+    lastIndex.set(6);
+    doThrow(new IllegalStateException("unexpected"))
+        .doAnswer(
+            invocation -> {
+              lastFlushedIndex.set(lastIndex.get());
+              return null;
+            })
+        .when(journal)
+        .flush();
+    final var failed = flusher.flush(journal, 6);
+
+    // when
+    scheduler.runUntilIdle();
+
+    // then - the pending result fails instead of hanging, and the flusher stays usable
+    assertThat(failed).isCompletedExceptionally();
+    final var retried = flusher.flush(journal, 6);
+    scheduler.runUntilIdle();
+    assertThat(retried).isCompleted();
+  }
+
+  @Test
   void shouldRecoverAfterFailedFlush() throws CheckedJournalException {
     // given - a first flush which fails
     setupJournal();

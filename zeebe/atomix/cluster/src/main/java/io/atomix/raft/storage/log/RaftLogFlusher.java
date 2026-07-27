@@ -8,11 +8,8 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -100,7 +97,9 @@ public interface RaftLogFlusher extends CloseableSilently {
       try {
         journal.flush();
         return CompletableFuture.completedFuture(null);
-      } catch (final FlushException | JournalException | UncheckedIOException e) {
+      } catch (final Exception e) {
+        // any failure, not just the expected journal exceptions, means the records cannot be
+        // treated as durable; callers turn this into a rejected append or a leader step-down
         return CompletableFuture.failedFuture(e);
       }
     }
