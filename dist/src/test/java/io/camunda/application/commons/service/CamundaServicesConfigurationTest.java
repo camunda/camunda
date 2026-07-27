@@ -24,7 +24,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.SecretServices.ResolvedSecret;
@@ -136,6 +135,74 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
+  void shouldGateAuthorizationCheckOnPerPhysicalTenantAuthorizationsEnabled() {
+    // given: tenant A has authorizations enabled, tenant B has them disabled -- the enable flag
+    // must be read from each tenant's own security config, not a single root-scoped one.
+    final var tenants = new LinkedHashMap<String, Camunda>();
+    tenants.put(TENANT_A, tenantWithAuthorizations(true));
+    tenants.put(TENANT_B, tenantWithAuthorizations(false));
+    final var checkerA = mock(AuthorizationChecker.class);
+    final var checkerB = mock(AuthorizationChecker.class);
+    when(checkerA.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Set.of(PermissionType.CREATE));
+    final var registry =
+        buildRegistry(
+            tenants,
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+
+    // when / then: tenant A enforces the check via its own checker.
+    assertThat(
+            registry
+                .documentServices(TENANT_A)
+                .createDocumentBatch(List.of(), authentication)
+                .join())
+        .isEmpty();
+    verify(checkerA).collectPermissionTypes(any(), any(), any());
+
+    // when / then: tenant B has authorizations disabled -- the check is skipped entirely and its
+    // checker is never consulted, even though a per-tenant checker exists for it.
+    assertThat(
+            registry
+                .documentServices(TENANT_B)
+                .createDocumentBatch(List.of(), authentication)
+                .join())
+        .isEmpty();
+    verifyNoInteractions(checkerB);
+  }
+
+  @Test
+  void shouldGateExportingAuthorizationCheckOnPerPhysicalTenantAuthorizationsEnabled() {
+    // given: same per-tenant enable split as above -- ExportingServices (added in #57842) shares
+    // the DocumentServices/SecretServices wiring and must read its enable flag from each tenant's
+    // own security config too.
+    final var tenants = new LinkedHashMap<String, Camunda>();
+    tenants.put(TENANT_A, tenantWithAuthorizations(true));
+    tenants.put(TENANT_B, tenantWithAuthorizations(false));
+    final var checkerA = mock(AuthorizationChecker.class);
+    final var checkerB = mock(AuthorizationChecker.class);
+    // tenant A grants no SYSTEM permission -- the enabled check denies and short-circuits to
+    // forbidden before the broadcaster is touched.
+    when(checkerA.collectPermissionTypes(any(), any(), any())).thenReturn(Collections.emptySet());
+    final var registry =
+        buildRegistry(
+            tenants,
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+
+    // when / then: tenant A enforces the SYSTEM/UPDATE check via its own checker.
+    final var deniedForA = registry.exportingServices(TENANT_A).resumeExporting(authentication);
+    assertThat(deniedForA.isCompletedExceptionally()).isTrue();
+    verify(checkerA).collectPermissionTypes(any(), any(), any());
+
+    // when / then: tenant B has authorizations disabled -- the check is skipped and its checker is
+    // never consulted. (The subsequent broadcast fails on the mock broker client, which is
+    // irrelevant to the gate under test.)
+    registry.exportingServices(TENANT_B).resumeExporting(authentication);
+    verifyNoInteractions(checkerB);
+  }
+
+  @Test
   void shouldWireExactlyOneEntryWhenOnlyTheDefaultPhysicalTenantExists() {
     // given: a single-PT/default-only deployment
     final var defaultChecker = mock(AuthorizationChecker.class);
@@ -143,7 +210,7 @@ class CamundaServicesConfigurationTest {
         .thenReturn(Set.of(PermissionType.CREATE));
     final var registry =
         buildRegistry(
-            Map.of("default", new Camunda()),
+            Map.of("default", tenantWithAuthorizations(true)),
             new AuthorizationCheckerProvider(
                 sharedAuthorizationChecker, Map.of("default", defaultChecker)));
 
@@ -224,8 +291,8 @@ class CamundaServicesConfigurationTest {
 
   private static Map<String, Camunda> twoTenants() {
     final var tenants = new LinkedHashMap<String, Camunda>();
-    tenants.put(TENANT_A, new Camunda());
-    tenants.put(TENANT_B, new Camunda());
+    tenants.put(TENANT_A, tenantWithAuthorizations(true));
+    tenants.put(TENANT_B, tenantWithAuthorizations(true));
     return tenants;
   }
 
@@ -235,9 +302,6 @@ class CamundaServicesConfigurationTest {
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(tenants);
 
-    final var cslProperties = new CamundaSecurityLibraryProperties();
-    cslProperties.getAuthorizations().setEnabled(true);
-
     return configuration.serviceRegistry(
         physicalTenantResolver,
         mock(BrokerClient.class),
@@ -246,12 +310,18 @@ class CamundaServicesConfigurationTest {
         mock(ActivateJobsHandler.class),
         SearchClientsProxy.noop(),
         authorizationCheckerProvider,
-        cslProperties,
         new GatewayRestConfiguration(),
         mock(BrokerTopologyManager.class),
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()));
+  }
+
+  /** A physical tenant config with {@code security.authorizations.enabled} set as given. */
+  private static Camunda tenantWithAuthorizations(final boolean enabled) {
+    final var camunda = new Camunda();
+    camunda.getSecurity().getAuthorizations().setEnabled(enabled);
+    return camunda;
   }
 }
