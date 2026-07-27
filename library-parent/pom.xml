@@ -37,16 +37,8 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Re-import the netty/jackson/log4j BOMs (and pin plexus-utils) ahead of
-      spring-boot-dependencies below. spring-boot-dependencies manages these same artifacts at
-      its own pins, which carry known vulnerabilities (grpc-netty's netty, jackson-databind,
-      log4j, and the transitive plexus-utils); because this POM's dependencyManagement is nearer
-      than the parent's, those pins would otherwise shadow the fixed versions the parent already
-      carries and leak into the flattened client artifacts. Within a single dependencyManagement
-      the first import wins, so these must precede spring-boot-dependencies. Unlike Spring, these
-      are plain OSS coordinates resolvable from Maven Central, so reusing the parent's version.*
-      properties keeps the client aligned with backend security patching. The camunda-spring-boot-4-starter
-      overrides the jackson pin locally, as Spring Boot 4 tracks a newer jackson line. -->
+      <!-- Re-import these BOMs (first-import-wins) ahead of spring-boot-dependencies so its
+      vulnerable netty/jackson/log4j/plexus-utils pins don't leak into the flattened clients. -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
@@ -73,12 +65,8 @@
         <artifactId>plexus-utils</artifactId>
         <version>3.6.1</version>
       </dependency>
-      <!-- Re-import jetty-bom ahead of spring-boot-dependencies for the same nearest-wins reason
-      as above, but for a compatibility (not vulnerability) concern: the parent pom.xml pins Jetty
-      to ${version.jetty} (11.x) ahead of its own spring-boot-dependencies import, because clients/java
-      tests use WireMock, which requires a Jetty 11 HttpServerFactory. Spring Boot's BOM manages Jetty
-      to 12.x; without re-pinning here, this POM's nearer spring-boot-dependencies would shadow the
-      parent's Jetty 11 pin and break WireMock startup in descendant modules. -->
+      <!-- Keep Jetty on the parent's 11.x pin (Spring Boot's BOM moves it to 12.x): clients/java's
+      WireMock tests need a Jetty 11 HttpServerFactory. -->
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
@@ -86,14 +74,8 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- The version.spring-boot / version.spring property overrides above only take effect
-      for BOM imports declared in this POM: the ancestor parent/pom.xml already imports
-      spring-boot-dependencies and spring-framework-bom using its own property values (HeroDevs
-      NES tags), and those imports are expanded before these property overrides are visible to
-      them. Re-declaring the imports here, using this POM's own properties, produces managed
-      versions (spring-core, spring-context, spring-web, etc.) at the public OSS version, which
-      take precedence over the ancestor's entries per Maven's "nearest definition wins"
-      dependencyManagement merge rule. -->
+      <!-- Re-import these here so they expand with this POM's OSS version.* properties (nearest
+      wins), replacing the ancestor's HeroDevs NES tags that only resolve from Camunda's Nexus. -->
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
