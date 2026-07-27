@@ -8,7 +8,9 @@
 package io.camunda.optimize.rest.security.csl;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -69,6 +71,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeIdentityOidc(env, derived);
     bridgeAuth0Cloud(env, derived);
     bridgePublicApiJwt(env, derived);
+    bridgeAudiences(env, derived);
     bridgeResponseHeaders(env, derived);
     warnObsoleteKeys(env);
 
@@ -107,7 +110,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE", OIDC_PREFIX + "audiences");
+    // The identity audience is collected in bridgeAudiences (all audience sources share one key).
   }
 
   // OIDC / Auth0 (CCSaaS cloud), from the CAMUNDA_OPTIMIZE_AUTH0_* / CAMUNDA_OPTIMIZE_CLIENT_* env
@@ -170,7 +173,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     warnDeprecated("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", OIDC_PREFIX + "audiences");
+    // The Auth0 client audience is collected in bridgeAudiences (all audience sources share one
+    // key).
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION", OIDC_PREFIX + "organization-id");
     // Pass the cloud Accounts API audience as Auth0's `audience` authorize param, so the login
@@ -213,7 +217,39 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         derived,
         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
         OIDC_PREFIX + "jwk-set-uri");
-    mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_API_AUDIENCE", OIDC_PREFIX + "audiences");
+    // The public-API audience is collected in bridgeAudiences (all audience sources share one key).
+  }
+
+  // CSL exposes one Set-valued audiences property, but Optimize has three legacy audience keys that
+  // feed it: the login audience (CCSM identity or, in cloud, the Auth0 client audience - the two
+  // are
+  // mutually exclusive) and the public-API audience. The login audience and the public-API audience
+  // can both be configured, and both must survive: dropping either breaks the corresponding token
+  // validation (interactive login vs public API). Emitting each through putIfAbsent let only the
+  // first writer win. Collect every present source into one comma-joined value instead; Spring
+  // binds
+  // a comma-delimited string to the Set<String>.
+  private void bridgeAudiences(
+      final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    final Set<String> audiences = new LinkedHashSet<>();
+    final String loginAudienceKey =
+        isAuth0Configured(env)
+            ? "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE"
+            : "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE";
+    addAudience(env, audiences, loginAudienceKey);
+    addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
+    if (!audiences.isEmpty()) {
+      derived.putIfAbsent(OIDC_PREFIX + "audiences", String.join(",", audiences));
+    }
+  }
+
+  private void addAudience(
+      final ConfigurableEnvironment env, final Set<String> audiences, final String legacyKey) {
+    final String value = env.getProperty(legacyKey);
+    if (value != null && !value.isBlank()) {
+      audiences.add(value.trim());
+      warnDeprecated(legacyKey, OIDC_PREFIX + "audiences");
+    }
   }
 
   // HSTS max-age: negative disables the header in CSL.

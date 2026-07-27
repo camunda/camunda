@@ -179,6 +179,34 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldMergeCcsmLoginAndPublicApiAudiences() {
+    // A distinct login audience and public-API audience must both survive: dropping either breaks
+    // the corresponding token validation. They map to CSL's single Set-valued audiences property.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", "http://localhost:18080/realm");
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE", "optimize-login");
+    legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-login,optimize-public-api");
+  }
+
+  @Test
+  void shouldMergeAuth0LoginAndPublicApiAudiences() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
+    legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
+    legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,optimize-public-api");
+  }
+
+  @Test
   void shouldBridgeHstsMaxAge() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", "31536000");
