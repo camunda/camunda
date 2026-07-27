@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.message.CrossPartitionMessageStartHolderOrigin;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import org.agrona.DirectBuffer;
 
@@ -87,6 +88,23 @@ public interface MessageState {
    * @return the recorded holder process-instance key, or {@code -1} when absent
    */
   long getCrossPartitionStartLockHolder(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+
+  /**
+   * Returns the cross-partition message-start holder-origin entry for the holder instance {@code
+   * processInstanceKey}, or {@code null} when none exists. Present only on {@code P_B} (the
+   * buffering partition), the entry carries the lock coordinates ({@code bpmnProcessId}, {@code
+   * correlationKey}, {@code tenantId}) and the {@code messageKey} whose partition bits address
+   * {@code P_K}, so a completing/terminating holder can push a {@code RELEASE} without re-deriving
+   * anything from the completing element's context.
+   *
+   * <p>The returned value's buffers are backed by the shared column-family read buffer; copy them
+   * before appending events or performing further state reads.
+   *
+   * @param processInstanceKey the holder instance's process-instance key
+   * @return the origin entry, or {@code null} when absent
+   */
+  CrossPartitionMessageStartHolderOrigin getCrossPartitionStartHolderOrigin(
+      long processInstanceKey);
 
   /**
    * Index to point to a specific position in the messages with deadline column family.

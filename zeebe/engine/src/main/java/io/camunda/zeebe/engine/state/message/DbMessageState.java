@@ -160,6 +160,19 @@ public final class DbMessageState implements MutableMessageState {
 
   private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamily;
 
+  /**
+   * <pre> holder process instance key -> (bpmnProcessId, correlationKey, tenantId, messageKey)
+   *
+   * Origin entry for a cross-partition message-start holder on {@code P_B}. Keyed by the holder
+   * instance key, it stores everything needed to push a {@code RELEASE} to {@code P_K} when the
+   * holder completes/terminates: the lock coordinates and the {@code messageKey} whose partition
+   * bits address {@code P_K}. Present only on {@code P_B}.
+   */
+  private final ColumnFamily<DbLong, CrossPartitionMessageStartHolderOrigin>
+      crossPartitionStartHolderOriginColumnFamily;
+
+  private final CrossPartitionMessageStartHolderOrigin crossPartitionStartHolderOrigin;
+
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
 
   private Long localMessageDeadlineCount = 0L;
@@ -259,6 +272,14 @@ public final class DbMessageState implements MutableMessageState {
             transactionContext,
             processInstanceKey,
             correlationKey);
+
+    crossPartitionStartHolderOrigin = new CrossPartitionMessageStartHolderOrigin();
+    crossPartitionStartHolderOriginColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN,
+            transactionContext,
+            processInstanceKey,
+            crossPartitionStartHolderOrigin);
 
     bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
   }
@@ -422,6 +443,47 @@ public final class DbMessageState implements MutableMessageState {
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
+  }
+
+  @Override
+  public void putCrossPartitionStartHolderOrigin(
+      final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final String tenantId,
+      final long messageKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+    ensureGreaterThan("message key", messageKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    crossPartitionStartHolderOrigin
+        .setBpmnProcessId(bpmnProcessId)
+        .setCorrelationKey(correlationKey)
+        .setTenantId(tenantId)
+        .setMessageKey(messageKey);
+    // upsert because the cross-partition STARTED reply can be re-applied on retry; writing the same
+    // holder origin twice is a no-op overwrite rather than an error.
+    crossPartitionStartHolderOriginColumnFamily.upsert(
+        this.processInstanceKey, crossPartitionStartHolderOrigin);
+  }
+
+  @Override
+  public CrossPartitionMessageStartHolderOrigin getCrossPartitionStartHolderOrigin(
+      final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    return crossPartitionStartHolderOriginColumnFamily.get(this.processInstanceKey);
+  }
+
+  @Override
+  public void removeCrossPartitionStartHolderOrigin(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    crossPartitionStartHolderOriginColumnFamily.deleteIfExists(this.processInstanceKey);
   }
 
   @Override
