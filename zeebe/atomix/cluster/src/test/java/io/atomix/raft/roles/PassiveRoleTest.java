@@ -333,6 +333,71 @@ public class PassiveRoleTest {
     verify(ctx, never()).setCommitIndex(anyLong());
   }
 
+  @Test
+  public void shouldNotAckEmptyAppendWhileEarlierRecordsAreNotDurable() {
+    // given - records up to index 2 are appended but only flushed up to index 1, e.g. because the
+    // flush of a previous append request is still in progress
+    final var flushFuture = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushFuture);
+    when(log.getLastFlushedIndex()).thenReturn(1L);
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(2L);
+    when(lastEntry.term()).thenReturn(1L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    runThreadContextInline();
+
+    // an empty append, e.g. a heartbeat, acknowledging everything up to index 2
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(1)
+            .withPrevLogIndex(2)
+            .withEntries(List.of())
+            .withCommitIndex(2)
+            .build();
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // then - the acknowledgement waits for durability of the acknowledged records
+    verify(log).flush(2L);
+    assertThat(responseFuture).isNotCompleted();
+
+    flushFuture.complete(null);
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isTrue();
+    assertThat(responseFuture.join().lastLogIndex()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldAckEmptyAppendImmediatelyWhenRecordsAreDurable() {
+    // given - everything appended is already flushed
+    when(log.getLastFlushedIndex()).thenReturn(2L);
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(2L);
+    when(lastEntry.term()).thenReturn(1L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(1)
+            .withPrevLogIndex(2)
+            .withEntries(List.of())
+            .withCommitIndex(2)
+            .build();
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // then - the acknowledgement is immediate, without any flush
+    verify(log, never()).flush(anyLong());
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isTrue();
+  }
+
   private void runThreadContextInline() {
     final var threadContext = mock(ThreadContext.class);
     doAnswer(

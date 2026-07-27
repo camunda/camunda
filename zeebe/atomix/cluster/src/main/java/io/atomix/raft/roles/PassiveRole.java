@@ -984,9 +984,23 @@ public class PassiveRole extends InactiveRole {
 
   private CompletableFuture<Void> flush(final long lastLogIndex, final long previousEntryIndex) {
     if (lastLogIndex > previousEntryIndex) {
+      // this request appended new records, which must be flushed before acknowledging them
       return raft.getLog().flush(lastLogIndex);
     }
-    return CompletableFuture.completedFuture(null);
+
+    if (lastLogIndex <= raft.getLog().getLastFlushedIndex()) {
+      // nothing was appended, and everything acknowledged by this response is already durable;
+      // this is the common case for empty appends, e.g. heartbeats, as with a synchronous flush
+      // strategy every appended record is flushed before the next request is handled
+      return CompletableFuture.completedFuture(null);
+    }
+
+    // nothing was appended, but records acknowledged by this response are not durable yet, e.g. an
+    // empty append while the flush for a previous append request is still in progress. A success
+    // response acknowledges everything up to its last log index, so it must wait for durability
+    // like the append it is concurrent with; otherwise the leader could count this replica for
+    // commit based on records which a crash may still lose.
+    return raft.getLog().flush(lastLogIndex);
   }
 
   private static Throwable unwrapError(final CompletableFuture<Void> completedResult) {
