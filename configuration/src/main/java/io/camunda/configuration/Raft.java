@@ -422,6 +422,12 @@ public class Raft {
      */
     private Duration replicationTimeout = Duration.ofSeconds(10);
 
+    /**
+     * The maximum number of TimeoutNow requests the current leader sends, including the initial
+     * request (one send per {@code heartbeatInterval}), before reporting {@code TRANSFER_FAILED}.
+     */
+    private int maxTransferAttempts = 3;
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -448,6 +454,18 @@ public class Raft {
                 .formatted(replicationTimeout));
       }
       this.replicationTimeout = replicationTimeout;
+    }
+
+    public int getMaxTransferAttempts() {
+      return maxTransferAttempts;
+    }
+
+    public void setMaxTransferAttempts(final int maxTransferAttempts) {
+      if (maxTransferAttempts <= 0) {
+        throw new IllegalArgumentException(
+            "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
+      }
+      this.maxTransferAttempts = maxTransferAttempts;
     }
   }
 }

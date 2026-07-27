@@ -15,6 +15,7 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD =
       DataSize.ofMegabytes(8);
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
+  public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
@@ -23,6 +24,7 @@ public final class RaftCfg implements ConfigurationEntry {
 
   private DataSize rebalanceReplicationLagThreshold = DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD;
   private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
+  private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -56,6 +58,14 @@ public final class RaftCfg implements ConfigurationEntry {
     this.rebalanceReplicationTimeout = rebalanceReplicationTimeout;
   }
 
+  public int getRebalanceMaxTransferAttempts() {
+    return rebalanceMaxTransferAttempts;
+  }
+
+  public void setRebalanceMaxTransferAttempts(final int rebalanceMaxTransferAttempts) {
+    this.rebalanceMaxTransferAttempts = rebalanceMaxTransferAttempts;
+  }
+
   @Override
   public String toString() {
     return "RaftCfg{"
@@ -67,6 +77,8 @@ public final class RaftCfg implements ConfigurationEntry {
         + rebalanceReplicationLagThreshold
         + ", rebalanceReplicationTimeout="
         + rebalanceReplicationTimeout
+        + ", rebalanceMaxTransferAttempts="
+        + rebalanceMaxTransferAttempts
         + '}';
   }
 

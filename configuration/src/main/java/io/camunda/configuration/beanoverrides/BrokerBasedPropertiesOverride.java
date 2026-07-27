@@ -626,6 +626,10 @@ public class BrokerBasedPropertiesOverride {
         .getRaft()
         .setRebalanceReplicationTimeout(raft.getRebalance().getReplicationTimeout());
     override
+        .getCluster()
+        .getRaft()
+        .setRebalanceMaxTransferAttempts(raft.getRebalance().getMaxTransferAttempts());
+    override
         .getExperimental()
         .getRaft()
         .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());

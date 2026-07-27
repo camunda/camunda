@@ -1340,6 +1340,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionConfig.getRebalanceReplicationTimeout();
   }
 
+  public int getRebalanceMaxTransferAttempts() {
+    return partitionConfig.getRebalanceMaxTransferAttempts();
+  }
+
   public Duration getMaxQuorumResponseTimeout() {
     return partitionConfig.getMaxQuorumResponseTimeout();
   }
