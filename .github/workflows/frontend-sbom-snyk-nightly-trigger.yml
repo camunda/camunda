@@ -1,0 +1,30 @@
+# description: Runs the nightly frontend SBOM vulnerability scan for maintained branches.
+# test location: .github/workflows/frontend-sbom-snyk-nightly.yml
+# type: CI
+# owner: @camunda/core-features
+---
+name: Frontend SBOM Snyk Nightly Trigger
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: "Scan (${{ matrix.branch }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - main
+          - stable/8.9
+          - stable/8.8
+    uses: ./.github/workflows/frontend-sbom-snyk-nightly.yml
+    secrets: inherit
+    with:
+      branch: ${{ matrix.branch }}
+      notify-on-failure: true

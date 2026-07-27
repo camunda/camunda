@@ -4,10 +4,19 @@
 # owner: @camunda/core-features
 ---
 name: Frontend SBOM Snyk Nightly
+run-name: Frontend SBOM Snyk (${{ inputs.branch }})
 
 on:
-  schedule:
-    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch to scan
+        required: true
+        type: string
+      notify-on-failure:
+        description: Notify Slack when a scan fails
+        required: true
+        type: boolean
   workflow_dispatch:
     inputs:
       branch:
@@ -15,6 +24,11 @@ on:
         required: true
         default: main
         type: string
+      notify-on-failure:
+        description: Notify Slack when a scan fails
+        required: true
+        default: false
+        type: boolean
 
 defaults:
   run:
@@ -28,7 +42,7 @@ env:
 
 jobs:
   identity-fe-sbom-snyk:
-    name: "Identity / Front End - Snyk SBOM"
+    name: "Identity / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -43,7 +57,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
+          ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -74,7 +88,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   operate-fe-sbom-snyk:
-    name: "Operate / Front End - Snyk SBOM"
+    name: "Operate / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -89,7 +103,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
+          ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -121,7 +135,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   tasklist-fe-sbom-snyk:
-    name: "Tasklist / Front End - Snyk SBOM"
+    name: "Tasklist / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -136,7 +150,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
+          ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -168,7 +182,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   optimize-fe-sbom-snyk:
-    name: "Optimize / Front End - Snyk SBOM"
+    name: "Optimize / Front End - Snyk SBOM (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -184,7 +198,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
+          ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
@@ -238,12 +252,12 @@ jobs:
       - operate-fe-sbom-snyk
       - tasklist-fe-sbom-snyk
       - optimize-fe-sbom-snyk
-    if: always() && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
+    if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
+          ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Slack token from Vault
@@ -259,7 +273,10 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
       - name: Build status summary
         id: summary
+        env:
+          BRANCH: ${{ inputs.branch }}
         run: |
+          branch="${BRANCH}"
           identity="${{ needs.identity-fe-sbom-snyk.result }}"
           operate="${{ needs.operate-fe-sbom-snyk.result }}"
           tasklist="${{ needs.tasklist-fe-sbom-snyk.result }}"
@@ -269,6 +286,7 @@ jobs:
 
           {
             echo "REPORT<<EOF"
+            echo "*Branch:* \`${branch}\`"
             echo "$(icon "$identity") *Identity* — ${identity}"
             echo "$(icon "$operate") *Operate* — ${operate}"
             echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
@@ -282,12 +300,12 @@ jobs:
           token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           payload: |
             channel: "C0A0SKKTXD0"
-            text: "Frontend SBOM Snyk Nightly — failures detected"
+            text: "Frontend SBOM Snyk Nightly — failures detected on ${{ inputs.branch }}"
             blocks:
               - type: "header"
                 text:
                   type: "plain_text"
-                  text: "Frontend SBOM Snyk Nightly — failures detected"
+                  text: "Frontend SBOM Snyk Nightly — failures detected on ${{ inputs.branch }}"
               - type: "section"
                 text:
                   type: "mrkdwn"
