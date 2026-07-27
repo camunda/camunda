@@ -1,0 +1,200 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.message;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+/**
+ * Multi-partition behavioral pin for the <em>push</em> half of the cross-partition correlation-key
+ * lock release (#57172): when the holder instance created via the handshake completes on {@code
+ * P_B}, {@code P_B} pushes that completion to {@code P_K}, which releases the lock and picks up the
+ * next buffered message — without the reconciliation poll being involved at all.
+ *
+ * <p>Unlike {@link CrossPartitionMessageStartLockReleaseTest}, whose scenarios drive the poll loop
+ * with an explicit {@code increaseTime}, this class deliberately runs with the reconciliation poll
+ * <em>disabled</em> (an interval far larger than any test's wall-clock runtime). The test harness's
+ * {@code ControlledActorClock} follows wall-clock time by default, so a short poll interval would
+ * fire on its own and race the push, making a "no QUERY" assertion flaky. Disabling the poll leaves
+ * the push as the only mechanism that can release the lock: the pick-up happening at all proves the
+ * push works, and the absence of any {@code QUERY} proves it was the push — not reconciliation —
+ * that did it.
+ *
+ * <p>The constants are chosen so {@code hash(correlationKey) != hash(businessId)}; an
+ * {@code @Before} precondition fails loudly if a future hash change degenerates the scenario into a
+ * single-partition path.
+ */
+public final class CrossPartitionMessageStartLockReleasePushTest {
+
+  private static final int PARTITION_COUNT = 3;
+
+  // hash("ck-1") → P_K=1 and hash("biz-1") → P_B=3 under PARTITION_COUNT=3, so the holder runs on a
+  // different partition than the lock. Re-asserted in @Before against hash drift.
+  private static final String CORRELATION_KEY = "ck-1";
+  private static final String BUSINESS_ID = "biz-1";
+
+  private static final long LONG_TTL = Duration.ofMinutes(5).toMillis();
+
+  // The reconciliation poll is disabled by making its interval far larger than any test's
+  // wall-clock runtime. The harness clock follows wall-clock, so this guarantees the poll never
+  // ticks during the test and the push is the sole releaser.
+  private static final Duration POLL_DISABLED = Duration.ofHours(1);
+
+  // Auto-completing message-start process: the holder completes on P_B on its own (the engine's job
+  // client writes to the primary partition and could not complete a job living on P_B).
+  private static final String AUTO_PROCESS_ID = "wf-auto";
+  private static final String AUTO_MESSAGE_NAME = "auto-start-msg";
+  private static final BpmnModelInstance AUTO_PROCESS =
+      Bpmn.createExecutableProcess(AUTO_PROCESS_ID)
+          .startEvent("autoStart")
+          .message(AUTO_MESSAGE_NAME)
+          .endEvent()
+          .done();
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.multiplePartition(PARTITION_COUNT)
+          .withEngineConfig(
+              config ->
+                  config
+                      .setBusinessIdUniquenessEnabled(true)
+                      .setMessageStartLockReleasePollInterval(POLL_DISABLED));
+
+  @Before
+  public void assertCrossPartitionRouting() {
+    assertThat(partitionFor(CORRELATION_KEY))
+        .as(
+            "CORRELATION_KEY (%s) and BUSINESS_ID (%s) must hash to different partitions so the"
+                + " cross-partition lock-release loop is actually exercised",
+            CORRELATION_KEY, BUSINESS_ID)
+        .isNotEqualTo(partitionFor(BUSINESS_ID));
+  }
+
+  @Test
+  public void shouldReleaseLockOnHolderCompletionWithoutPolling() {
+    // given a cross-partition start: holder created (and auto-completes) on P_B, lock on P_K
+    deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(AUTO_PROCESS_ID);
+    awaitMessageConsumedOnPK(AUTO_MESSAGE_NAME);
+
+    // and a second same-correlation-key publish buffered behind the lock
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, null);
+
+    // and the holder completes on P_B
+    awaitHolderCompleted(AUTO_PROCESS_ID);
+
+    // when the reconciliation poll never fires (disabled)
+
+    // then P_K releases the lock and starts the buffered message on P_K, driven purely by the
+    // completion push from P_B
+    final var pickedUp =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .filter(r -> r.getValue().getProcessInstanceKey() != holderKey)
+            .getFirst();
+    assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
+        .as("the buffered message is picked up on P_K without any poll tick")
+        .isEqualTo(partitionFor(CORRELATION_KEY));
+
+    // and not a single holder-liveness QUERY was ever sent up to that pick-up — the release was
+    // push-driven, not discovered by reconciliation
+    final long queries =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getValueType() == ValueType.PROCESS_INSTANCE
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                        && r.getKey() == pickedUp.getValue().getProcessInstanceKey())
+            .filter(
+                r ->
+                    r.getValueType() == ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE
+                        && r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.QUERY)
+            .count();
+    assertThat(queries).as("no reconciliation QUERY is needed on the push happy path").isZero();
+  }
+
+  private void deployAndAwaitStartSubscriptions(
+      final BpmnModelInstance process, final String messageName) {
+    engine.deployment().withXmlResource(process).deploy();
+    // deploy() waits for CommandDistribution:FINISHED; additionally wait until every partition has
+    // its MessageStartEventSubscription so the P_B ask handler sees its local subscription before
+    // the first cross-partition request arrives (otherwise it would reply
+    // NO_SUBSCRIPTION_REJECTED).
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CREATED)
+        .withMessageName(messageName)
+        .limit(PARTITION_COUNT)
+        .asList();
+  }
+
+  private void publishStart(
+      final String messageName, final String correlationKey, final String businessId) {
+    var builder =
+        engine
+            .message()
+            .withName(messageName)
+            .withCorrelationKey(correlationKey)
+            .withTimeToLive(LONG_TTL);
+    if (businessId != null) {
+      builder = builder.withBusinessId(businessId);
+    }
+    builder.publish();
+  }
+
+  /** First PROCESS-level activation for the given process — the holder created on {@code P_B}. */
+  private static long awaitHolderActivating(final String bpmnProcessId) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .withBpmnProcessId(bpmnProcessId)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst()
+        .getValue()
+        .getProcessInstanceKey();
+  }
+
+  private static void awaitHolderCompleted(final String bpmnProcessId) {
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withBpmnProcessId(bpmnProcessId)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+  }
+
+  /**
+   * Waits for the buffered message to be consumed on {@code P_K} by the handshake (its terminal
+   * {@code EXPIRED}), which is written in the same {@code STARTED}-reply processing that writes the
+   * correlation-key lock on {@code P_K}.
+   */
+  private static void awaitMessageConsumedOnPK(final String messageName) {
+    RecordingExporter.messageRecords(MessageIntent.EXPIRED)
+        .withName(messageName)
+        .withCorrelationKey(CORRELATION_KEY)
+        .getFirst();
+  }
+
+  private static int partitionFor(final String key) {
+    return SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(key), PARTITION_COUNT);
+  }
+}
