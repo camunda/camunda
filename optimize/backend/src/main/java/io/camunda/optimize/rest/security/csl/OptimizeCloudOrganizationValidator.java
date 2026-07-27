@@ -20,21 +20,16 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * CCSaaS organization gate as an {@link OAuth2TokenValidator}. Mirrors OC's {@code
- * OrganizationValidator} shape so the same validator can be composed into CSL's {@code
- * TokenValidatorFactory} and applied to both the bearer access token and the interactive login
- * id_token (via a shared {@code idTokenDecoderFactory}). See {@link
- * OptimizeCloudSecurityConfiguration}.
+ * CCSaaS webapp login gate as an {@link OAuth2TokenValidator}, applied to the interactive login
+ * id_token via the {@code idTokenDecoderFactory} in {@link OptimizeCloudSecurityConfiguration}.
+ * Restores the legacy {@code CCSaaSSecurityConfigurerAdapter}'s {@code RoleValidator}: the {@code
+ * https://camunda.com/orgs} claim must list the configured organization with at least one allowed
+ * role (mirrors the legacy {@code hasAccess} org check plus the role gate).
  *
- * <p>Beyond OC's membership-only check this also enforces an <em>allowed organization role</em>,
- * restoring the legacy {@code CCSaaSSecurityConfigurerAdapter} {@code hasAccess} + {@code
- * RoleValidator} behaviour: the {@code https://camunda.com/orgs} claim must list the configured
- * organization with at least one allowed role.
- *
- * <p>Like OC, this is <em>lenient on absence</em>: a token without the organizations claim passes,
- * so machine-to-machine public-API tokens (which never carry it) are not organization-gated.
- * Interactive Auth0 logins always carry the claim, so the gate is effectively strict for real
- * users.
+ * <p><em>Strict</em>, matching the 8.9 baseline: a login token without (or with a malformed)
+ * organizations claim is rejected. This validator gates the login path only; it is deliberately not
+ * added to the bearer/public-API token validation, where machine-to-machine tokens legitimately
+ * carry no organizations claim (that path is cluster-id-gated instead).
  */
 public final class OptimizeCloudOrganizationValidator implements OAuth2TokenValidator<Jwt> {
 
@@ -60,16 +55,12 @@ public final class OptimizeCloudOrganizationValidator implements OAuth2TokenVali
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt token) {
     final Object claim = token.getClaims().get(ORGANIZATIONS_CLAIM);
-    if (claim == null) {
-      // Not all tokens carry an organizations claim (e.g. M2M API tokens); only validate those
-      // that do.
-      return OAuth2TokenValidatorResult.success();
-    }
     if (claim instanceof final Collection<?> organizations && grantsAllowedRole(organizations)) {
       return OAuth2TokenValidatorResult.success();
     }
     LOG.debug(
-        "Rejected token: organizations claim does not grant organization [{}] an allowed role",
+        "Rejected login token: organizations claim does not grant organization [{}] an allowed"
+            + " role",
         organizationId);
     return OAuth2TokenValidatorResult.failure(
         new OAuth2Error(

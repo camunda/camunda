@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.rest.security.oauth.CustomClaimValidator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
@@ -32,16 +33,19 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
  * CCSaaSSecurityConfigurerAdapter} performed, using CSL's documented host extension points. See <a
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  *
- * <p>Follows OC's pattern (its {@code OidcOverrideBeansConfiguration}): the SaaS checks are two
- * {@link OAuth2TokenValidator}s composed into CSL's {@link TokenValidatorFactory}, and the same
- * factory feeds the {@code idTokenDecoderFactory}. So a single place gates <em>both</em> the bearer
- * public-API access token and the interactive webapp login id_token — no bespoke {@code
- * OidcUserService}.
+ * <p>Reproduces the 8.9 baseline's <em>path-specific</em> split, both checks strict on their own
+ * path. It uses OC's {@code JwtDecoderFactory<ClientRegistration>} mechanism for the login gate,
+ * but deliberately does not share one lenient validator factory across both paths (which would
+ * weaken the bearer cluster check and the login org check):
  *
  * <ul>
- *   <li>{@link OptimizeCloudOrganizationValidator} — organization membership + allowed role
- *       (lenient on absence, so M2M tokens without the claim are not organization-gated).
- *   <li>{@link OptimizeCloudClusterValidator} — cluster id binding (lenient on absence).
+ *   <li>{@code idTokenDecoderFactory} validates the interactive login id_token with a strict {@link
+ *       OptimizeCloudOrganizationValidator} (organization membership + allowed role). The login
+ *       id_token carries the {@code orgs} claim but not the cluster id, so only the org gate
+ *       applies here.
+ *   <li>{@link TokenValidatorFactory} (the bearer/public-API decoder) appends a strict cluster-id
+ *       {@link CustomClaimValidator}. Machine-to-machine bearer tokens carry the cluster id but no
+ *       org membership, so only the cluster gate applies here.
  * </ul>
  *
  * <p>The Auth0 {@code audience} authorize-request parameter (so the login token is accepted by the
@@ -55,8 +59,35 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 @ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
 public class OptimizeCloudSecurityConfiguration {
 
+  static final String CLUSTER_ID_CLAIM = "https://camunda.com/clusterId";
+
+  /**
+   * Bearer/public-API token validation: CSL ships timestamp/issuer/audience; this overrides its
+   * {@code @ConditionalOnMissingBean} default to add a strict cluster-id check. No org gate here.
+   */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
+      final OidcProviderConfigurationPort oidcProviderConfigurationPort,
+      final ConfigurationService configurationService) {
+    final CloudAuthConfiguration cloud = cloudConfig(configurationService);
+    final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
+    if (StringUtils.isNotBlank(cloud.getClusterId())) {
+      extraValidators.add(new CustomClaimValidator(CLUSTER_ID_CLAIM, cloud.getClusterId()));
+    }
+    return new TokenValidatorFactory(
+        oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
+        OidcConfiguration.DEFAULT_CLOCK_SKEW,
+        extraValidators);
+  }
+
+  /**
+   * Interactive login id_token validation. Composes CSL's base validators (timestamp/issuer/
+   * audience) with a strict organization + role gate, and does not carry the bearer path's
+   * cluster-id check. Overrides CSL's {@code @ConditionalOnMissingBean} default so the webapp login
+   * is organization-gated.
+   */
+  @Bean
+  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final OidcProviderConfigurationPort oidcProviderConfigurationPort,
       final ConfigurationService configurationService) {
     final CloudAuthConfiguration cloud = cloudConfig(configurationService);
@@ -66,25 +97,13 @@ public class OptimizeCloudSecurityConfiguration {
           new OptimizeCloudOrganizationValidator(
               cloud.getOrganizationId(), OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES));
     }
-    if (StringUtils.isNotBlank(cloud.getClusterId())) {
-      extraValidators.add(new OptimizeCloudClusterValidator(cloud.getClusterId()));
-    }
-    return new TokenValidatorFactory(
-        oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-        OidcConfiguration.DEFAULT_CLOCK_SKEW,
-        extraValidators);
-  }
-
-  /**
-   * Applies the same {@link TokenValidatorFactory} (and therefore the SaaS org/cluster validators)
-   * to the interactive login id_token. Overrides CSL's {@code @ConditionalOnMissingBean} default so
-   * the webapp login is org/cluster-gated, matching OC.
-   */
-  @Bean
-  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-      final TokenValidatorFactory tokenValidatorFactory) {
+    final TokenValidatorFactory idTokenValidatorFactory =
+        new TokenValidatorFactory(
+            oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
+            OidcConfiguration.DEFAULT_CLOCK_SKEW,
+            extraValidators);
     final OidcIdTokenDecoderFactory decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
+    decoderFactory.setJwtValidatorFactory(idTokenValidatorFactory::createTokenValidator);
     return decoderFactory;
   }
 

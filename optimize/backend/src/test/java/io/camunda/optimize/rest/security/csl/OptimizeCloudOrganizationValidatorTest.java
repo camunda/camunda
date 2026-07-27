@@ -43,9 +43,9 @@ class OptimizeCloudOrganizationValidatorTest {
   }
 
   @Test
-  void shouldAcceptWhenOrganizationsClaimAbsent() {
-    // Lenient on absence: M2M tokens without the claim are not organization-gated.
-    assertThat(validator.validate(jwtWithoutOrgs()).hasErrors()).isFalse();
+  void shouldRejectWhenOrganizationsClaimAbsent() {
+    // Strict on the login path: a login token without the orgs claim is denied (8.9 baseline).
+    assertThat(validator.validate(jwtWithoutOrgs()).hasErrors()).isTrue();
   }
 
   @Test
