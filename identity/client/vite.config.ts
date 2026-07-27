@@ -33,7 +33,15 @@ const plugins: PluginOption[] = [
 export default defineConfig(
   ({ mode }): UserConfig => ({
     base: "",
-    plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
+    plugins:
+      mode === "sbom"
+        ? [
+            ...plugins,
+            sbom({
+              specVersion: "1.6",
+            }),
+          ]
+        : plugins,
     resolve: {
       tsconfigPaths: true,
     },

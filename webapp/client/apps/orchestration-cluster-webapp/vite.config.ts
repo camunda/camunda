@@ -54,7 +54,7 @@ const config = defineConfig(({mode}) => ({
 			'#/admin': path.resolve(__dirname, './src/admin'),
 		},
 	},
-	plugins: mode === 'sbom' ? [...basePlugins, sbom()] : basePlugins,
+	plugins: mode === 'sbom' ? [...basePlugins, sbom({specVersion: '1.6'})] : basePlugins,
 	server: {
 		port: 3000,
 		open: true,
