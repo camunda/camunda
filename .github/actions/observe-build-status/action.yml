@@ -99,6 +99,9 @@ runs:
     # are actually going to submit (secrets present). This keeps the overhead off the
     # green path entirely.
     - name: Setup codeowners-cli
+      # Attribution is best-effort: a download/cache failure here must never fail the
+      # action, otherwise it could drop the CI Analytics submission for the failing job.
+      continue-on-error: true
       if: ${{ inputs.build_status == 'failure' && inputs.user_description == '' && steps.secrets.outputs.gcloud_sa_key != '' }}
       uses: ./.github/actions/codeowners-setup-cli
 
