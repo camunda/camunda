@@ -43,16 +43,17 @@ function useUploadDocuments() {
 			const payload = (await response.json()) as CreateDocumentsResponseBody;
 			const result = new Map<string, DocumentReference[]>();
 
-			payload.createdDocuments.forEach((document) => {
+			for (const document of payload.createdDocuments) {
 				const pickerKey = document.metadata.customProperties?.[PICKER_KEY];
 
 				if (typeof pickerKey !== 'string' || pickerKey.length === 0) {
-					return;
+					continue;
 				}
 
-				const documentResult = result.get(pickerKey);
-				result.set(pickerKey, Array.isArray(documentResult) ? [...documentResult, document] : [document]);
-			});
+				const documentResult = result.get(pickerKey) ?? [];
+				documentResult.push(document);
+				result.set(pickerKey, documentResult);
+			}
 
 			return result;
 		},

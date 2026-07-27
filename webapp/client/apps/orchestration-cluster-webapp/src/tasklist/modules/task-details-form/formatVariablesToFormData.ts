@@ -12,13 +12,10 @@ type Variable = {
 };
 
 function formatVariablesToFormData(variables: Variable[]) {
-	return variables.reduce(
-		(accumulator, {name, value}) => ({
-			...accumulator,
-			[name]: value === null ? '' : JSON.parse(value),
-		}),
-		{},
-	);
+	return variables.reduce<Record<string, unknown>>((accumulator, {name, value}) => {
+		accumulator[name] = value === null ? '' : JSON.parse(value);
+		return accumulator;
+	}, {});
 }
 
 export {formatVariablesToFormData};

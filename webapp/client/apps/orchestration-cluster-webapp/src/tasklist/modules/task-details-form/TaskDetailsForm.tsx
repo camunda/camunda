@@ -29,13 +29,10 @@ type Props = {
 };
 
 function getVariablesFromSubmitPayload(variables: PartialVariable[]) {
-	return variables.reduce<Record<string, unknown>>(
-		(accumulator, {name, value}) => ({
-			...accumulator,
-			[name]: tryParseJSON(value),
-		}),
-		{},
-	);
+	return variables.reduce<Record<string, unknown>>((accumulator, {name, value}) => {
+		accumulator[name] = tryParseJSON(value);
+		return accumulator;
+	}, {});
 }
 
 const TaskDetailsForm: React.FC<Props> = ({
