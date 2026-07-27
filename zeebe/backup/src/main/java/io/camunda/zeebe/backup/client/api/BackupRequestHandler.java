@@ -425,11 +425,4 @@ public final class BackupRequestHandler implements BackupApi {
     request.setPartitionId(partitionId);
     return request;
   }
-
-  private static class IncompleteTopologyException extends RuntimeException {
-
-    IncompleteTopologyException(final String message) {
-      super(message);
-    }
-  }
 }

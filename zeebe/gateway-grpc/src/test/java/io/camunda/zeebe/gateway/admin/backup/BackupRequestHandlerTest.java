@@ -315,10 +315,8 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
     final var backups = future.toCompletableFuture().join();
-    assertThat(backups)
-        .hasSize(2)
-        .extracting(BackupStatus::backupId)
-        .containsExactlyInAnyOrder(1L, 2L);
+    // the actuator and REST API promise descending order of backupId
+    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(2L, 1L);
 
     assertThat(backups)
         .extracting(BackupStatus::status)

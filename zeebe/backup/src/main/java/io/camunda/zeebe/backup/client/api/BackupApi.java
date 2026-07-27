@@ -67,14 +67,17 @@ public interface BackupApi {
 
   /**
    * @param physicalTenantId the physical tenant (partition group) to target
-   * @return a list of available backups
+   * @return a list of available backups, sorted in descending order of backup id
    */
   default CompletionStage<List<BackupStatus>> listBackups(final String physicalTenantId) {
     return listBackups(physicalTenantId, WILDCARD);
   }
 
   /**
-   * Returns a list of backups with ids matching the prefix.
+   * Returns a list of backups with ids matching the prefix, sorted in descending order of backup
+   * id. Both the {@code backupRuntime} actuator and the {@code /v2/backups/runtime} REST endpoint
+   * promise this ordering, so implementations must enforce it regardless of the order in which the
+   * backup stores return manifests.
    *
    * @param physicalTenantId the physical tenant (partition group) to target
    * @param prefix A string that backup ids must match. Must end in a single `*`.

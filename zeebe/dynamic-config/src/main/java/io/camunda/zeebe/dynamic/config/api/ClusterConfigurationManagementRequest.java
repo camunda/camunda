@@ -137,6 +137,14 @@ public sealed interface ClusterConfigurationManagementRequest {
       String zoneId, int numberOfReplicas, int priority, Set<MemberId> brokers, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
+  /**
+   * Re-orders the Raft leader-election priorities of the persisted {@code ZoneAwareConfig}: the
+   * existing priority values are kept and re-assigned to zones by {@code zoneOrder} (highest
+   * first).
+   */
+  record UpdateZonePrioritiesRequest(List<String> zoneOrder, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 

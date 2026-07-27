@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin;
+package io.camunda.exporter.index;
 
-public class IncompleteTopologyException extends RuntimeException {
+public sealed interface TargetIndex permits MainIndex {
+  String name();
 
-  public IncompleteTopologyException(final String message) {
-    super(message);
+  static TargetIndex mainIndex(final String name) {
+    return new MainIndex(name);
   }
 }

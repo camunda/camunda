@@ -62,8 +62,10 @@ const DetailsTab: React.FC = () => {
     hasSelection,
     resolvedElementInstance,
     selectedElementId,
+    selectedElementInstanceKey,
     selectedAnchorElementId,
     selectedInstancesCount,
+    isSelectedInstanceMultiInstanceBody,
     isFetchingElement,
   } = useProcessInstanceElementSelection();
 
@@ -172,20 +174,33 @@ const DetailsTab: React.FC = () => {
 
   const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
 
+  /**
+   * Alias to {@linkcode selectedElementInstanceKey} if non multi-instance elements
+   * are selected. For multi-instance elements, agent instances data is linked to
+   * the inner instances and not the multi-instance element instance.
+   *
+   * **Note:** Intentionally uses {@linkcode selectedElementInstanceKey} and not the resolved
+   * element-instance key to keep agent details stable when an element is activated again.
+   * An agent instance can be reused across multiple element activations, and the agent details
+   * can be viewed just fine without an explicit element instance being selected/resolved.
+   */
+  const agentElementInstanceKey = isSelectedInstanceMultiInstanceBody
+    ? null
+    : selectedElementInstanceKey;
+
   const {
     data: agentInstancesResult,
-    isLoading: isAgentLoading,
+    isLoading: isAgentInstancesLoading,
     isError: isAgentError,
   } = useAgentInstancesForElement({
     processInstanceKey: processInstance?.processInstanceKey ?? '',
     elementId: effectiveElementId ?? '',
-    elementInstanceKey,
+    elementInstanceKey: agentElementInstanceKey,
     enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
     enablePeriodicRefetch: isProcessInstanceRunning,
   });
   const showAgentInstance =
     (agentInstancesResult && agentInstancesResult.items.length > 0) ||
-    isAgentLoading ||
     isAgentError;
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
@@ -518,14 +533,15 @@ const DetailsTab: React.FC = () => {
     );
   }
 
-  if (isFetchingElement) {
-    return <StructuredListSkeleton rowCount={5} />;
-  }
-
   const hasMultipleInstances =
     selectedInstancesCount !== null && selectedInstancesCount > 1;
 
-  if (resolvedElementInstance === null && !showAgentInstance) {
+  if (
+    resolvedElementInstance === null &&
+    !isFetchingElement &&
+    !isAgentInstancesLoading &&
+    !showAgentInstance
+  ) {
     return (
       <EmptyMessageContainer>
         <EmptyMessage
@@ -557,9 +573,8 @@ const DetailsTab: React.FC = () => {
           hasMoreTotalItems={
             agentInstancesResult?.page.hasMoreTotalItems ?? false
           }
-          isLoading={isAgentLoading}
           isError={isAgentError}
-          selectedElementInstanceKey={elementInstanceKey}
+          selectedElementInstanceKey={agentElementInstanceKey}
         />
       )}
       {!showAgentInstance && clientConfig.waitStatesEnabled && (
@@ -567,7 +582,9 @@ const DetailsTab: React.FC = () => {
       )}
       <SectionContainer>
         <SectionHeading>Element Instance</SectionHeading>
-        {resolvedElementInstance === null ? (
+        {isFetchingElement ? (
+          <StructuredListSkeleton rowCount={5} />
+        ) : resolvedElementInstance === null ? (
           <ElementInstanceHint>
             {hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'

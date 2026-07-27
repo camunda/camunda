@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
@@ -84,10 +85,13 @@ public class PostImporterQueueFromIncidentHandler
   }
 
   @Override
-  public void flush(final PostImporterQueueEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final PostImporterQueueEntity entity,
+      final BatchRequest batchRequest) {
     // Route each entry to a single shard by partition id so that, within a partition, a search can
     // never observe a higher position without also seeing all lower positions (see #56117)
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getPartitionId()));
+    batchRequest.addWithRouting(index, entity, String.valueOf(entity.getPartitionId()));
   }
 
   @Override

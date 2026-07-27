@@ -138,9 +138,11 @@ public interface BrokerStartupContext {
 
   void setRocksDbResources(RocksDbResources sharedRocksDbResources);
 
-  BrokerAdminServiceImpl getBrokerAdminService();
+  BrokerAdminServiceImpl getBrokerAdminService(String physicalTenantId);
 
-  void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService);
+  void addBrokerAdminService(String physicalTenantId, BrokerAdminServiceImpl brokerAdminService);
+
+  void removeBrokerAdminService(String physicalTenantId);
 
   ClusterConfigurationService getClusterConfigurationService();
 

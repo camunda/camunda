@@ -187,18 +187,27 @@ paths:
   /partition-distribution:
     put:
       summary:
-        Update the partition distribution configuration. The new configuration is persisted and applied immediately
-        by computing the necessary partition join, leave, and priority-reconfiguration operations. When migrating
-        a bare or partially zoned cluster to zone-aware (see `PUT /cluster/zones`), list zones in the order they
-        should receive the existing (bare) nodes — the first zone in the list receives node 0, the second zone
-        node 1, and so on, wrapping around by zone count. This order only matters for that one-time migration;
-        once all zones are migrated, every other API addresses zones by name.
+        Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
+
+        Setting `config` persists a new configuration and applies it immediately by computing the necessary
+        partition join, leave, and priority-reconfiguration operations. When migrating a bare or partially zoned
+        cluster to zone-aware (see `PUT /cluster/zones`), list zones in `config.zones` in the order they should
+        receive the existing (bare) nodes — the first zone receives node 0, the second node 1, and so on, wrapping
+        around by zone count. This order only matters for that one-time migration; once all zones are migrated,
+        every other API addresses zones by name.
+
+        Setting `zonePriorities` re-orders the zones' priorities on a fully zone-aware cluster. The
+        priorities values are reused and they are just reassigned to a different zone based on the order of the zones in the
+        request. The first zone gets the highest existing priority value, the second zone the next highest, and so on. No new
+        priority values are introduced. This only updates the priorities; it does not itself move partition
+        leaders. Leaders move to the newly-preferred zone on the next election (e.g. triggered by a separate
+        rebalance). It must list exactly the currently configured zones; idempotent.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+              $ref: "components.yaml#/schemas/UpdatePartitionDistributionRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
       responses:

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
@@ -47,7 +48,10 @@ class OpensearchBatchRequestTest {
 
   private static final String ID = "id";
   private static final String INDEX = "index";
+  private static final TargetIndex TARGET_INDEX = TargetIndex.mainIndex(INDEX);
   private static final String INDEX_WITH_HANDLER = "indexWithHandler";
+  private static final TargetIndex TARGET_INDEX_WITH_HANDLER =
+      TargetIndex.mainIndex(INDEX_WITH_HANDLER);
   private OpensearchBatchRequest batchRequest;
   private OpenSearchClient osClient;
   private OpensearchScriptBuilder scriptBuilder;
@@ -73,7 +77,7 @@ class OpensearchBatchRequestTest {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     // when
     batchRequest.execute();
 
@@ -96,7 +100,7 @@ class OpensearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final String routing = "routing";
 
-    batchRequest.addWithRouting(INDEX, entity, routing);
+    batchRequest.addWithRouting(TARGET_INDEX, entity, routing);
     // when
     batchRequest.execute();
 
@@ -120,7 +124,7 @@ class OpensearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
-    batchRequest.upsert(INDEX, ID, entity, updateFields);
+    batchRequest.upsert(TARGET_INDEX, ID, entity, updateFields);
     // when
     batchRequest.execute();
 
@@ -145,7 +149,7 @@ class OpensearchBatchRequestTest {
     final Map<String, Object> updateFields = Map.of("id", "id2");
     final String routing = "routing";
 
-    batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
+    batchRequest.upsertWithRouting(TARGET_INDEX, ID, entity, updateFields, routing);
     // when
     batchRequest.execute();
 
@@ -172,7 +176,7 @@ class OpensearchBatchRequestTest {
     final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
+    batchRequest.upsertWithScript(TARGET_INDEX, ID, entity, script, params);
     // when
     batchRequest.execute();
 
@@ -199,7 +203,7 @@ class OpensearchBatchRequestTest {
     final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
+    batchRequest.upsertWithScriptAndRouting(TARGET_INDEX, ID, entity, script, params, routing);
     // when
     batchRequest.execute();
 
@@ -221,7 +225,7 @@ class OpensearchBatchRequestTest {
     // given
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
-    batchRequest.update(INDEX, ID, updateFields);
+    batchRequest.update(TARGET_INDEX, ID, updateFields);
     // when
     batchRequest.execute();
 
@@ -242,7 +246,7 @@ class OpensearchBatchRequestTest {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    batchRequest.update(INDEX, ID, entity);
+    batchRequest.update(TARGET_INDEX, ID, entity);
     // when
     batchRequest.execute();
 
@@ -267,7 +271,7 @@ class OpensearchBatchRequestTest {
     final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    batchRequest.updateWithScript(INDEX, ID, script, params);
+    batchRequest.updateWithScript(TARGET_INDEX, ID, script, params);
     // when
     batchRequest.execute();
 
@@ -286,7 +290,7 @@ class OpensearchBatchRequestTest {
   @Test
   void shouldDeleteEntity() throws IOException, PersistenceException {
     // given
-    batchRequest.delete(INDEX, ID);
+    batchRequest.delete(TARGET_INDEX, ID);
     // when
     batchRequest.execute();
 
@@ -307,7 +311,7 @@ class OpensearchBatchRequestTest {
     // given
     final String routing = "routing";
 
-    batchRequest.deleteWithRouting(INDEX, ID, routing);
+    batchRequest.deleteWithRouting(TARGET_INDEX, ID, routing);
     // when
     batchRequest.execute();
 
@@ -328,8 +332,8 @@ class OpensearchBatchRequestTest {
   void shouldExecuteWithMultipleOperationsInBatch() throws PersistenceException, IOException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
-    batchRequest.add(INDEX, entity);
-    batchRequest.update(INDEX, ID, entity);
+    batchRequest.add(TARGET_INDEX, entity);
+    batchRequest.update(TARGET_INDEX, ID, entity);
     // when
     batchRequest.execute();
 
@@ -349,9 +353,9 @@ class OpensearchBatchRequestTest {
         new OpensearchBatchRequest(osClient, scriptBuilder).withMaxBytes(1L);
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    tinyCapRequest.add(INDEX, entity);
-    tinyCapRequest.add(INDEX, entity);
-    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
     // when
     tinyCapRequest.execute();
 
@@ -366,7 +370,7 @@ class OpensearchBatchRequestTest {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     // when
     batchRequest.executeWithRefresh();
 
@@ -384,7 +388,7 @@ class OpensearchBatchRequestTest {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     when(osClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
     // when
@@ -410,7 +414,7 @@ class OpensearchBatchRequestTest {
 
     when(osClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
 
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     // when
     final ThrowingCallable callable = () -> batchRequest.execute();
 
@@ -446,7 +450,7 @@ class OpensearchBatchRequestTest {
             "%s failed for type [%s] and id [%s]: %s",
             item.operationType(), item.index(), item.id(), item.error().reason());
 
-    batchRequest.add(INDEX_WITH_HANDLER, entity);
+    batchRequest.add(TARGET_INDEX_WITH_HANDLER, entity);
     // when
     batchRequest.execute(errorHandler);
 
@@ -522,7 +526,7 @@ class OpensearchBatchRequestTest {
   }
 
   private static byte[] readAllBytes(final BinaryData data) {
-    try (var in = data.asInputStream()) {
+    try (final var in = data.asInputStream()) {
       return in.readAllBytes();
     } catch (final IOException e) {
       throw new AssertionError("failed to read BinaryData", e);

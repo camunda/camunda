@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.operate.TreePath;
@@ -117,7 +118,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
 
   @Override
-  public void flush(final IncidentEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final IncidentEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
@@ -125,7 +127,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     updateFields.put(POSITION, entity.getPosition());
     updateFields.put(TREE_PATH, entity.getTreePath());
     updateFields.put(STATE, entity.getState());
-    batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
+    batchRequest.upsert(index, String.valueOf(entity.getKey()), entity, updateFields);
   }
 
   @Override

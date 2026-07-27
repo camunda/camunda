@@ -54,7 +54,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -74,7 +74,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -98,7 +98,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -135,7 +135,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -180,7 +180,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -227,7 +227,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -246,6 +246,46 @@ describe('<ConversationHistory />', () => {
       toolResultMessage.getByRole('heading', {name: 'search'}),
     ).toBeInTheDocument();
     expect(toolResultMessage.getByText('Tool output here')).toBeInTheDocument();
+  });
+
+  it('should trigger a refetch when the agent instance status changes', async () => {
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-2'})]),
+    );
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-1'})]),
+    );
+
+    const {rerender} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="IDLE"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-1')).toBeVisible(),
+    );
+
+    rerender(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="TOOL_CALLING"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-2')).toBeVisible(),
+    );
   });
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
@@ -267,7 +307,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -329,7 +369,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -409,7 +449,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -460,7 +500,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -505,7 +545,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -549,7 +589,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111']}
@@ -569,7 +609,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -588,7 +628,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -626,7 +666,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -686,7 +726,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -750,7 +790,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}

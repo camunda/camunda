@@ -11,8 +11,10 @@ import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
@@ -43,7 +45,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 
 final class AgentHistoryHandlerTest {
 
@@ -328,14 +329,15 @@ final class AgentHistoryHandlerTest {
     final var entity = new AgentHistoryEntity().setId("1");
     underTest.updateEntity(record, entity);
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then — only commitStatus is included in the upsert updateFields map
     verify(mockRequest)
-        .upsert(indexName, entity.getId(), entity, Map.of(COMMIT_STATUS, entity.getCommitStatus()));
+        .upsert(index, entity.getId(), entity, Map.of(COMMIT_STATUS, entity.getCommitStatus()));
   }
 
   @ParameterizedTest(name = "[{index}] Should map protocol role ''{0}'' to entity role")

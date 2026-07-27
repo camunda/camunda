@@ -8,20 +8,23 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-/**
- * Stub applier for {@link ProcessInstanceIntent#SUSPENDED}.
- *
- * <p>TODO(#57517): mark the process instance as suspended once {@code SuspensionState} exists.
- *
- * <p>TODO(#57518): this applier's real implementation (including buffered-command handling) lands
- * here.
- */
+/** Applier for {@link ProcessInstanceIntent#SUSPENDED}. */
 final class ProcessInstanceSuspendedApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
+  private final MutableSuspensionState suspensionState;
+
+  ProcessInstanceSuspendedApplier(final MutableSuspensionState suspensionState) {
+    this.suspensionState = suspensionState;
+  }
+
   @Override
-  public void applyState(final long key, final ProcessInstanceRecord value) {}
+  public void applyState(final long key, final ProcessInstanceRecord value) {
+    suspensionState.setSuspensionState(key, SuspensionState.State.SUSPENDED);
+  }
 }

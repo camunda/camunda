@@ -28,6 +28,7 @@ import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.CreateClusterVariableRequest;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -60,6 +61,13 @@ public class GloballyScopedCreateClusterVariableImpl
   public GloballyScopedClusterVariableCreationCommandStep1 kind(final ClusterVariableKind kind) {
     ArgumentUtil.ensureNotNull("kind", kind);
     createVariableRequest.setKind(EnumUtil.convert(kind, ClusterVariableKindEnum.class));
+    return this;
+  }
+
+  @Override
+  public GloballyScopedClusterVariableCreationCommandStep1 metadata(
+      final Map<String, Object> metadata) {
+    createVariableRequest.metadata(metadata);
     return this;
   }
 

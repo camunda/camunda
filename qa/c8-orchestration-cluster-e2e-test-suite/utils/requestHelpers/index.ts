@@ -124,3 +124,17 @@ export {
   getVariablesByName,
   getVariablesByPatterns,
 } from './optimize-variable-requestHelpers';
+export {
+  WAIT_STATES_SEARCH_ENDPOINT,
+  type WaitStateItem,
+  type WaitStateSearchResponse,
+  searchWaitStatesByFilter,
+  waitForWaitState,
+  createProcessInstanceWaitingOnJob,
+  createProcessInstanceWaitingOnMessage,
+  createProcessInstanceWaitingOnSignal,
+  createProcessInstanceWaitingOnUserTask,
+  createProcessInstanceWaitingOnTimer,
+  createProcessInstanceWaitingOnCondition,
+  createProcessInstanceWithManyWaitingTokens,
+} from './wait-state-requestHelpers';

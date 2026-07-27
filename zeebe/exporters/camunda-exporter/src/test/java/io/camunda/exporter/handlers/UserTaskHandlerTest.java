@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -206,17 +207,18 @@ public class UserTaskHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
@@ -238,17 +240,18 @@ public class UserTaskHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(recordKey),
             inputEntity,
             updateFieldsMap,
@@ -699,10 +702,11 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(111L));
     underTest.updateEntity(taskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
@@ -717,7 +721,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(taskRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -743,9 +747,10 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
@@ -755,7 +760,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -786,9 +791,10 @@ public class UserTaskHandlerTest {
         underTest.createNewEntity(String.valueOf(123)).setAssignee("test-assignee");
     underTest.updateEntity(taskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
@@ -798,7 +804,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getAssignee()).isEqualTo(null);
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -825,17 +831,18 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.COMPLETED);
     expectedUpdates.put(TaskTemplate.COMPLETION_TIME, taskEntity.getCompletionTime());
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -881,9 +888,10 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(recordKey));
     underTest.updateEntity(taskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
@@ -906,7 +914,7 @@ public class UserTaskHandlerTest {
         .isEqualTo(taskRecordValue.getCandidateUsersList());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(recordKey),
             taskEntity,
             expectedUpdates,
@@ -953,9 +961,10 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
     underTest.updateEntity(assignTaskRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
@@ -967,7 +976,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getAssignee()).isEqualTo(assignTaskRecordValue.getAssignee());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @ParameterizedTest
@@ -991,13 +1000,14 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
 
     // when
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
 
     // then
     verify(mockRequest)
         .upsertWithRouting(
-            eq(indexName),
+            eq(index),
             eq(taskEntity.getId()),
             eq(taskEntity),
             updateFieldsCaptor.capture(),

@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.ExporterBatchWriter.Builder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -103,7 +104,10 @@ public class ExporterBatchWriterMultipleHandlersTest {
 
     // then
     verify(batchRequest, times(2))
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     verify(batchRequest).execute(any());
   }
 
@@ -130,9 +134,15 @@ public class ExporterBatchWriterMultipleHandlersTest {
 
     // then
     verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     verify(batchRequest)
-        .update(eq("indexB"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexB")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     verify(batchRequest).execute(any());
   }
 
@@ -164,22 +174,40 @@ public class ExporterBatchWriterMultipleHandlersTest {
     final InOrder inOrder = Mockito.inOrder(batchRequest);
     inOrder
         .verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexB"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexB")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexC"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexC")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexD"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexD")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexE"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexE")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexF"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexF")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder.verify(batchRequest).execute(any());
   }
 
@@ -212,13 +240,22 @@ public class ExporterBatchWriterMultipleHandlersTest {
     final InOrder inOrder = Mockito.inOrder(batchRequest);
     inOrder
         .verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(OtherTestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(OtherTestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(DifferentTestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(DifferentTestEntity.class));
     inOrder
         .verify(batchRequest)
-        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+        .update(
+            eq(TargetIndex.mainIndex("indexA")),
+            eq(Long.toString(record.getKey())),
+            any(TestEntity.class));
     inOrder.verify(batchRequest).execute(any());
   }
 
@@ -355,13 +392,14 @@ public class ExporterBatchWriterMultipleHandlersTest {
     }
 
     @Override
-    public void flush(final T entity, final BatchRequest batchRequest) throws PersistenceException {
-      batchRequest.update(indexName, entity.getId(), entity);
+    public void flush(final TargetIndex index, final T entity, final BatchRequest batchRequest)
+        throws PersistenceException {
+      batchRequest.update(index, entity.getId(), entity);
     }
 
     @Override
     public String getIndexName() {
-      return null;
+      return indexName;
     }
   }
 

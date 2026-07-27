@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -35,12 +36,15 @@ public final class ProcessInstanceResumeProcessor
 
   private static final String PROCESS_NOT_FOUND_MESSAGE =
       MESSAGE_PREFIX + "no such process was found";
+  private static final String PROCESS_NOT_SUSPENDED_MESSAGE =
+      MESSAGE_PREFIX + "it is not currently suspended";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
+  private final SuspensionState suspensionState;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
@@ -51,6 +55,7 @@ public final class ProcessInstanceResumeProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
+    suspensionState = processingState.getSuspensionState();
   }
 
   @Override
@@ -63,8 +68,6 @@ public final class ProcessInstanceResumeProcessor
 
     final ProcessInstanceRecord value = elementInstance.getValue();
 
-    // TODO(#57517): reject with INVALID_STATE if the process instance is not currently SUSPENDED,
-    // once SuspensionState exists to read the current status from.
     // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
     // draining of buffered commands is implemented.
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
@@ -75,7 +78,9 @@ public final class ProcessInstanceResumeProcessor
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null || elementInstance.getParentKey() > 0) {
+    if (elementInstance == null
+        || elementInstance.getParentKey() > 0
+        || elementInstance.isTerminating()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -112,6 +117,14 @@ public final class ProcessInstanceResumeProcessor
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return false;
+    }
+
+    if (suspensionState.getSuspensionState(command.getKey()) != SuspensionState.State.SUSPENDED) {
+      final var reason = String.format(PROCESS_NOT_SUSPENDED_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 

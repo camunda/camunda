@@ -31,6 +31,8 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.util.HashMap;
+import java.util.Map;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -166,6 +168,53 @@ public class CreateClusterVariableTest extends ClientRestTest {
     final CreateClusterVariableRequest sentRequest =
         gatewayService.getLastRequest(CreateClusterVariableRequest.class);
     assertThat(sentRequest.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldCreateGlobalClusterVariableWithMetadata() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put("kind", "CREDENTIAL");
+    metadata.put("schemaVersion", 2);
+    gatewayService.onCreateGlobalClusterVariableRequest(
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL));
+
+    // when
+    client
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(VARIABLE_NAME, VARIABLE_VALUE)
+        .metadata(metadata)
+        .send()
+        .join();
+
+    // then
+    final CreateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(CreateClusterVariableRequest.class);
+    assertThat(sentRequest.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
+  }
+
+  @Test
+  void shouldCreateTenantClusterVariableWithMetadata() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put("kind", "CREDENTIAL");
+    metadata.put("schemaVersion", 2);
+    gatewayService.onCreateTenantClusterVariableRequest(
+        TENANT_ID,
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT));
+
+    // when
+    client
+        .newTenantScopedClusterVariableCreateRequest(TENANT_ID)
+        .create(VARIABLE_NAME, VARIABLE_VALUE)
+        .metadata(metadata)
+        .send()
+        .join();
+
+    // then
+    final CreateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(CreateClusterVariableRequest.class);
+    assertThat(sentRequest.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 
   @Test

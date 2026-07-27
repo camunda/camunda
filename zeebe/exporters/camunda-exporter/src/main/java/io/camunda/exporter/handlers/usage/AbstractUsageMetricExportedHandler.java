@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.T
 
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.usage.AbstractUsageMetricExportedHandler.Batch;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
@@ -70,8 +71,8 @@ abstract class AbstractUsageMetricExportedHandler<
   }
 
   @Override
-  public void flush(final B batch, final BatchRequest batchRequest) {
-    batch.getMetrics().forEach(e -> batchRequest.add(indexName, e));
+  public void flush(final TargetIndex index, final B batch, final BatchRequest batchRequest) {
+    batch.getMetrics().forEach(e -> batchRequest.add(index, e));
   }
 
   @Override

@@ -87,6 +87,11 @@ message AddZoneRequest {
   bool dryRun = 5;
 }
 
+message UpdateZonePrioritiesRequest {
+  repeated string zoneOrder = 1;
+  bool dryRun = 2;
+}
+
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;

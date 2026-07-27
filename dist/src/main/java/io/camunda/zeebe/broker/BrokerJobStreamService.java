@@ -15,6 +15,7 @@ import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,11 +41,35 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   }
 
   @Override
+  public Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams(
+      final Optional<String> physicalTenantId) {
+    if (physicalTenantId.isEmpty()) {
+      return remoteJobStreams();
+    }
+    return bridge
+        .getJobStreamService(physicalTenantId.get())
+        .map(svc -> svc.remoteStreamService().streams())
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
   public Collection<ClientStream<JobActivationProperties>> clientJobStreams() {
     return bridge
         .getJobStreamClient()
         .map(JobStreamClient::list)
         .map(ActorFuture::join)
         .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Collection<ClientStream<JobActivationProperties>> clientJobStreams(
+      final Optional<String> physicalTenantId) {
+    if (physicalTenantId.isEmpty()) {
+      return clientJobStreams();
+    }
+    final var tenantId = physicalTenantId.get();
+    return clientJobStreams().stream()
+        .filter(stream -> tenantId.equals(stream.physicalTenantId()))
+        .toList();
   }
 }

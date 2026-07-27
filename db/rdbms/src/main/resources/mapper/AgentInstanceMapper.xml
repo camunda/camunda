@@ -71,18 +71,28 @@
     )
   </insert>
 
-  <!-- partial update: only mutable fields; immutable fields (definition, limits, identity) are left unchanged -->
+  <!--
+  Partial update: mutable fields plus the process-definition fields (only ever changed by a MIGRATED event)
+  Limits and identity columns are the only ones left genuinely write-once.
+  -->
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     UPDATE ${prefix}AGENT_INSTANCE
     SET
-      STATUS              = #{status},
-      INPUT_TOKENS        = #{inputTokens},
-      OUTPUT_TOKENS       = #{outputTokens},
-      MODEL_CALLS         = #{modelCalls},
-      TOOL_CALLS          = #{toolCalls},
-      TOOLS               = #{tools, jdbcType=CLOB},
-      LAST_UPDATED_DATE   = #{lastUpdatedDate, jdbcType=TIMESTAMP}
-      <if test="completionDate != null">, COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}</if>
+      PROCESS_DEFINITION_ID      = #{processDefinitionId},
+      PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
+      PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
+      VERSION_TAG                = #{versionTag},
+      ELEMENT_ID                 = #{elementId},
+      STATUS                     = #{status},
+      INPUT_TOKENS               = #{inputTokens},
+      OUTPUT_TOKENS              = #{outputTokens},
+      MODEL_CALLS                = #{modelCalls},
+      TOOL_CALLS                 = #{toolCalls},
+      TOOLS                      = #{tools, jdbcType=CLOB},
+      LAST_UPDATED_DATE          = #{lastUpdatedDate, jdbcType=TIMESTAMP}
+      <if test="completionDate != null">
+        , COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}
+      </if>
     WHERE AGENT_INSTANCE_KEY = #{agentInstanceKey}
   </update>
 

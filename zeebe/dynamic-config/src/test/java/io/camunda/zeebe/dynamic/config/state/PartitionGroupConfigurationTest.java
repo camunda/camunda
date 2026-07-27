@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -464,6 +465,95 @@ class PartitionGroupConfigurationTest {
       // when / then
       assertThatThrownBy(() -> config.members().put(MEMBER_1, broker(1, 2)))
           .isInstanceOf(UnsupportedOperationException.class);
+    }
+  }
+
+  @Nested
+  class ConfigurationChangeNavigation {
+
+    private static final DeleteHistoryOperation OP_0 = new DeleteHistoryOperation(MEMBER_0);
+    private static final DeleteHistoryOperation OP_1 = new DeleteHistoryOperation(MEMBER_1);
+
+    @Test
+    void shouldReturnPendingChangeForTargetMemberOnly() {
+      // given
+      final var config =
+          group(4, Map.of(MEMBER_0, broker(1, 1), MEMBER_1, broker(1, 2)))
+              .startConfigurationChange(List.of(OP_1));
+
+      // when / then
+      assertThat(config.pendingChangesFor(MEMBER_1)).contains(OP_1);
+      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+      assertThat(config.nextPendingOperation()).isEqualTo(OP_1);
+    }
+
+    @Test
+    void shouldReturnEmptyPendingChangeWhenNoChangeInProgress() {
+      // given
+      final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
+
+      // when / then
+      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+    }
+
+    @Test
+    void shouldApplyUpdaterAndCompleteChangeOnLastOperation() {
+      // given — a single pending operation
+      final var config =
+          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0));
+      final long versionAfterStart = config.version();
+
+      // when — the operation completes with an updater that flips the broker mode
+      final var advanced =
+          config.advanceConfigurationChange(
+              c -> c.updateMember(MEMBER_0, b -> b.setMode(Mode.RECOVERING)));
+
+      // then — the updater's effect is visible, the change is completed and the version is bumped
+      assertThat(advanced.getMember(MEMBER_0).mode()).isEqualTo(Mode.RECOVERING);
+      assertThat(advanced.hasPendingChanges()).isFalse();
+      assertThat(advanced.lastChange()).isPresent();
+      assertThat(advanced.version()).isEqualTo(versionAfterStart + 1);
+    }
+
+    @Test
+    void shouldStepPlanWithoutBumpingVersionWhileOperationsRemain() {
+      // given — two operations pending
+      final var config =
+          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0, OP_1));
+      final long versionAfterStart = config.version();
+
+      // when
+      final var advanced = config.advanceConfigurationChange(UnaryOperator.identity());
+
+      // then
+      assertThat(advanced.hasPendingChanges()).isTrue();
+      assertThat(advanced.pendingChanges().get().pendingOperations()).containsExactly(OP_1);
+      assertThat(advanced.version()).isEqualTo(versionAfterStart);
+    }
+
+    @Test
+    void shouldCancelPendingChangesBumpingVersionByTwo() {
+      // given
+      final var config =
+          group(4, Map.of(MEMBER_0, broker(1, 1))).startConfigurationChange(List.of(OP_0));
+      final long versionAfterStart = config.version();
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.hasPendingChanges()).isFalse();
+      assertThat(cancelled.version()).isEqualTo(versionAfterStart + 2);
+      assertThat(cancelled.lastChange()).isPresent();
+    }
+
+    @Test
+    void shouldReturnSameConfigWhenCancellingWithoutPendingChange() {
+      // given
+      final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
+
+      // when / then
+      assertThat(config.cancelPendingChanges()).isSameAs(config);
     }
   }
 }

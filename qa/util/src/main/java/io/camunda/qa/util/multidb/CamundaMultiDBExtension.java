@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Fail.fail;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -647,10 +649,7 @@ public class CamundaMultiDBExtension
           .timeout(Duration.ofSeconds(60))
           .ignoreExceptions()
           .untilAsserted(
-              () ->
-                  org.assertj.core.api.Assertions.assertThat(
-                          admin.newUsersSearchRequest().send().join().items())
-                      .isNotNull());
+              () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
     }
   }
 
@@ -662,8 +661,10 @@ public class CamundaMultiDBExtension
       }
       Awaitility.await("until user '%s' can authenticate".formatted(user.username()))
           .timeout(Duration.ofSeconds(60))
-          .ignoreExceptions()
-          .untilAsserted(() -> client.newTopologyRequest().send().join());
+          .untilAsserted(
+              () ->
+                  assertThatNoException()
+                      .isThrownBy(() -> client.newTopologyRequest().send().join()));
     }
   }
 

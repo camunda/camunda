@@ -21,6 +21,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -35,6 +36,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -58,6 +60,7 @@ public record DefaultServiceRegistry(
     Map<String, AgentInstanceServices> agentInstanceByTenant,
     Map<String, AuditLogServices> auditLogByTenant,
     Map<String, AuthorizationServices> authorizationByTenant,
+    Map<String, RuntimeBackupServices> backupByTenant,
     Map<String, BatchOperationServices> batchOperationByTenant,
     Map<String, ClockServices> clockByTenant,
     Map<String, ClusterVariableServices> clusterVariableByTenant,
@@ -67,6 +70,7 @@ public record DefaultServiceRegistry(
     Map<String, DecisionRequirementsServices> decisionRequirementsByTenant,
     Map<String, DocumentServices> documentByTenant,
     Map<String, ElementInstanceServices> elementInstanceByTenant,
+    Map<String, ExportingServices> exportingByTenant,
     Map<String, ExpressionServices> expressionByTenant,
     Map<String, FormServices> formByTenant,
     Map<String, GlobalListenerServices> globalListenerByTenant,
@@ -126,6 +130,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public RuntimeBackupServices backupServices(final String physicalTenantId) {
+    return byTenant(backupByTenant, physicalTenantId);
+  }
+
+  @Override
   public BatchOperationServices batchOperationServices(final String physicalTenantId) {
     return byTenant(batchOperationByTenant, physicalTenantId);
   }
@@ -168,6 +177,11 @@ public record DefaultServiceRegistry(
   @Override
   public ElementInstanceServices elementInstanceServices(final String physicalTenantId) {
     return byTenant(elementInstanceByTenant, physicalTenantId);
+  }
+
+  @Override
+  public ExportingServices exportingServices(final String physicalTenantId) {
+    return byTenant(exportingByTenant, physicalTenantId);
   }
 
   @Override
@@ -321,6 +335,7 @@ public record DefaultServiceRegistry(
     private final Map<String, AgentInstanceServices> agentInstanceByTenant = new HashMap<>();
     private final Map<String, AuditLogServices> auditLogByTenant = new HashMap<>();
     private final Map<String, AuthorizationServices> authorizationByTenant = new HashMap<>();
+    private final Map<String, RuntimeBackupServices> backupByTenant = new HashMap<>();
     private final Map<String, BatchOperationServices> batchOperationByTenant = new HashMap<>();
     private final Map<String, ClockServices> clockByTenant = new HashMap<>();
     private final Map<String, ClusterVariableServices> clusterVariableByTenant = new HashMap<>();
@@ -332,6 +347,7 @@ public record DefaultServiceRegistry(
         new HashMap<>();
     private final Map<String, DocumentServices> documentByTenant = new HashMap<>();
     private final Map<String, ElementInstanceServices> elementInstanceByTenant = new HashMap<>();
+    private final Map<String, ExportingServices> exportingByTenant = new HashMap<>();
     private final Map<String, ExpressionServices> expressionByTenant = new HashMap<>();
     private final Map<String, FormServices> formByTenant = new HashMap<>();
     private final Map<String, GlobalListenerServices> globalListenerByTenant = new HashMap<>();
@@ -385,6 +401,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder backupServices(final String tenantId, final RuntimeBackupServices service) {
+      backupByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder batchOperationServices(
         final String tenantId, final BatchOperationServices service) {
       batchOperationByTenant.put(tenantId, service);
@@ -433,6 +454,11 @@ public record DefaultServiceRegistry(
     public Builder elementInstanceServices(
         final String tenantId, final ElementInstanceServices service) {
       elementInstanceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder exportingServices(final String tenantId, final ExportingServices service) {
+      exportingByTenant.put(tenantId, service);
       return this;
     }
 
@@ -557,6 +583,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(agentInstanceByTenant),
           Map.copyOf(auditLogByTenant),
           Map.copyOf(authorizationByTenant),
+          Map.copyOf(backupByTenant),
           Map.copyOf(batchOperationByTenant),
           Map.copyOf(clockByTenant),
           Map.copyOf(clusterVariableByTenant),
@@ -566,6 +593,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(decisionRequirementsByTenant),
           Map.copyOf(documentByTenant),
           Map.copyOf(elementInstanceByTenant),
+          Map.copyOf(exportingByTenant),
           Map.copyOf(expressionByTenant),
           Map.copyOf(formByTenant),
           Map.copyOf(globalListenerByTenant),

@@ -52,7 +52,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -72,7 +71,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[{...agentInstance, status: 'THINKING'}]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -91,7 +89,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[{...agentInstance, status: 'IDLE'}]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -108,7 +105,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[{...agentInstance, status: 'COMPLETED'}]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -127,7 +123,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[{...agentInstance, status: 'INITIALIZING'}]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -146,7 +141,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[{...agentInstance, status: 'TOOL_DISCOVERY'}]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -159,29 +153,12 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render loading state', () => {
-    render(
-      <AgentDetails
-        agentInstances={[]}
-        totalAgentsCount={0}
-        hasMoreTotalItems={false}
-        isLoading={true}
-        isError={false}
-        selectedElementInstanceKey={null}
-      />,
-    );
-
-    expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-details-skeleton')).toBeInTheDocument();
-  });
-
   it('should render error state when fetch fails', () => {
     render(
       <AgentDetails
         agentInstances={[]}
         totalAgentsCount={0}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={true}
         selectedElementInstanceKey={null}
       />,
@@ -203,7 +180,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -232,7 +208,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -276,7 +251,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -305,7 +279,6 @@ describe('<AgentDetails />', () => {
         ]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -328,7 +301,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -363,7 +335,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -395,7 +366,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[agentInstance]}
         totalAgentsCount={1}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -426,7 +396,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[thinkingAgent, completedAgent]}
         totalAgentsCount={2}
         hasMoreTotalItems={false}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -472,7 +441,6 @@ describe('<AgentDetails />', () => {
         agentInstances={[thinkingAgent, completedAgent]}
         totalAgentsCount={10}
         hasMoreTotalItems={true}
-        isLoading={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,

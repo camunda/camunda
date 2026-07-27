@@ -272,7 +272,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
@@ -327,7 +327,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -355,7 +355,7 @@ jobs:
       TEST_TYPE: E2E
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -515,7 +515,7 @@ jobs:
     env:
       TEST_TYPE: E2E
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@8f6fae58d4594d3a700982c6642d9de28a950fcc # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
@@ -611,6 +611,12 @@ jobs:
         with:
           name: logs
           path: ./optimize/client/build/*.log
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: optimize-e2e-cloud-docker-logs
       - name: Observe build status
         if: always()
         continue-on-error: true
