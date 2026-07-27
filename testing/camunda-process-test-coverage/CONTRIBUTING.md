@@ -8,7 +8,7 @@ This guide covers everything you need to contribute to this coverage module.
 
 |     Tool     |                       Version                       |
 |--------------|-----------------------------------------------------|
-| Node.js      | ≥ 20 (CI uses v24.13.0 via `frontend-maven-plugin`) |
+| Node.js      | ≥ 20 (CI uses v24.15.0 via `frontend-maven-plugin`) |
 | npm          | ≥ 10 (CI uses 11.9.0)                               |
 | Java / Maven | 21 / 3.x (for Maven integration)                    |
 

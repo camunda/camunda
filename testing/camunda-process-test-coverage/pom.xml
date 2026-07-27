@@ -193,7 +193,7 @@
             <phase>initialize</phase>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <nodeVersion>v24.13.0</nodeVersion>
+              <nodeVersion>v24.15.0</nodeVersion>
               <npmVersion>11.9.0</npmVersion>
             </configuration>
           </execution>
