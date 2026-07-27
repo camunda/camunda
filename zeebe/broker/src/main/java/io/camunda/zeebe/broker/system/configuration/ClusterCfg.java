@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
@@ -186,6 +187,10 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setNodeId(final Integer nodeId) {
     this.nodeId = nodeId;
+  }
+
+  public MemberId getMemberId() {
+    return MemberId.from(getZone(), getNodeId());
   }
 
   public int getPartitionsCount() {
