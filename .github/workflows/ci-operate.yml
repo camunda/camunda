@@ -233,50 +233,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  operate-fe-sbom-snyk:
-    if: inputs.runFeTests
-    name: "Tool / Front End - Snyk SBOM"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: {} # GITHUB_TOKEN unused in this job
-    env:
-      TEST_TYPE: Tool
-    defaults:
-      run:
-        working-directory: ${{ env.CLIENT_DIR }}
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@9f994ff942efdab9e4ffb41bc1cc610d3488e9cc # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - name: Import Snyk token from Vault
-        id: snyk-secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - name: Generate and scan frontend SBOM
-        uses: ./.github/actions/frontend-sbom-snyk
-        env:
-          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
-        with:
-          directory: operate/client
-          sbom-file: operate/client/build/cyclonedx/bom.json
-          project-name: Operate frontend
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     if: inputs.runFeTests
