@@ -110,7 +110,6 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    // The identity audience is collected in bridgeAudiences (all audience sources share one key).
   }
 
   // OIDC / Auth0 (CCSaaS cloud), from the CAMUNDA_OPTIMIZE_AUTH0_* / CAMUNDA_OPTIMIZE_CLIENT_* env
@@ -173,8 +172,6 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     warnDeprecated("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    // The Auth0 client audience is collected in bridgeAudiences (all audience sources share one
-    // key).
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION", OIDC_PREFIX + "organization-id");
     // Pass the cloud Accounts API audience as Auth0's `audience` authorize param, so the login
@@ -217,18 +214,13 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         derived,
         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
         OIDC_PREFIX + "jwk-set-uri");
-    // The public-API audience is collected in bridgeAudiences (all audience sources share one key).
   }
 
-  // CSL exposes one Set-valued audiences property, but Optimize has three legacy audience keys that
-  // feed it: the login audience (CCSM identity or, in cloud, the Auth0 client audience - the two
-  // are
-  // mutually exclusive) and the public-API audience. The login audience and the public-API audience
-  // can both be configured, and both must survive: dropping either breaks the corresponding token
-  // validation (interactive login vs public API). Emitting each through putIfAbsent let only the
-  // first writer win. Collect every present source into one comma-joined value instead; Spring
-  // binds
-  // a comma-delimited string to the Set<String>.
+  // CSL has one Set-valued audiences property. Optimize feeds it from a login audience (CCSM
+  // identity, or the Auth0 client audience in cloud - mutually exclusive) and the public-API
+  // audience, which can both be set. Both must survive, so collect every present source into one
+  // comma-joined value that Spring binds to the Set; the old per-key putIfAbsent kept only the
+  // first.
   private void bridgeAudiences(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     final Set<String> audiences = new LinkedHashSet<>();
