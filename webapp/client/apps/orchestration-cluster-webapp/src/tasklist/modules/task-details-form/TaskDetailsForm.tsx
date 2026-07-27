@@ -12,9 +12,9 @@ import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskComp
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form-js/CamundaFormRenderer';
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
-import {formatVariablesToFormData} from '#/tasklist/modules/form-js/formatVariablesToFormData';
-import {tryParseJSON} from '#/tasklist/modules/form-js/tryParseJSON';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
+import {formatVariablesToFormData} from './formatVariablesToFormData';
+import {tryParseJSON} from './tryParseJSON';
 import {useUploadDocuments} from './useUploadDocuments';
 import styles from './TaskDetailsForm.module.scss';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
