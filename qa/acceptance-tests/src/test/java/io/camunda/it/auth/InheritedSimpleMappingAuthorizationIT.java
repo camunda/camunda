@@ -202,15 +202,7 @@ public class InheritedSimpleMappingAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
-  /**
-   * Returns the pre-built, physical-tenant-scoped client the {@code MultiDbTest} extension already
-   * created and cached for the given client id during test setup. Do not close the returned client:
-   * it is shared across all test methods in this class and is closed once by the extension during
-   * {@code afterAll}; closing it here would break any later test reusing the same client id.
-   * Building a client directly (e.g. via {@code BROKER.newClientBuilder()}) instead of going
-   * through this lookup would bypass physical-tenant scoping and can make requests fall back to the
-   * "default" physical tenant, which races with this test's own tenant-scoped setup.
-   */
+  /** Shared client from the {@code MultiDbTest} extension; do not close it. */
   private CamundaClient getClient(final String id) {
     return clientFactory.getCamundaClient(id);
   }
