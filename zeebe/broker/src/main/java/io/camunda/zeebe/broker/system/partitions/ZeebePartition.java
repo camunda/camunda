@@ -576,14 +576,12 @@ public final class ZeebePartition extends Actor
         .whenCompleteAsync(
             (targetIndex, error) -> {
               if (result.isDone()) {
-                // The barrier timed out while Raft was arming; undo the Raft pause so Raft
-                // is not left paused while the broker has already rolled back.
-                if (error == null) {
-                  context.getRaftPartition().getServer().resumeFromTransfer();
-                }
+                context.getRaftPartition().getServer().resumeFromTransfer();
                 return;
               }
+
               if (error != null) {
+                context.getRaftPartition().getServer().resumeFromTransfer();
                 rollbackTransferPause();
                 result.completeExceptionally(error);
               } else {
