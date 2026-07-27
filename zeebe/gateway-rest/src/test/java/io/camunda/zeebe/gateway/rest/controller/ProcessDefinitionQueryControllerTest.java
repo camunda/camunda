@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -62,7 +63,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           5,
           "alpha",
           "<default>",
-          "formId");
+          "formId",
+          ProcessDefinitionState.ACTIVE);
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
@@ -73,7 +75,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "version": 5,
           "versionTag": "alpha",
           "tenantId": "<default>",
-          "hasStartForm": true
+          "hasStartForm": true,
+          "state": "ACTIVE"
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -87,7 +90,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "version": 5,
                   "versionTag": "alpha",
                   "tenantId": "<default>",
-                  "hasStartForm": true
+                  "hasStartForm": true,
+                  "state": "ACTIVE"
               }
           ],
           "page": {
@@ -111,7 +115,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       5,
                       "alpha",
                       "<default>",
-                      "formId")))
+                      "formId",
+                      ProcessDefinitionState.ACTIVE)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -214,6 +219,77 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getByKey(23L);
+  }
+
+  @Test
+  public void shouldReturnDeletedStateForDeletedProcessDefinition() {
+    // given
+    final var deletedEntity =
+        new ProcessDefinitionEntity(
+            23L,
+            "Complex process",
+            "complexProcess",
+            "<xml/>",
+            "complexProcess.bpmn",
+            5,
+            "alpha",
+            "<default>",
+            "formId",
+            ProcessDefinitionState.DELETED);
+    when(processDefinitionServices.getByKey(23L)).thenReturn(deletedEntity);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+                "processDefinitionKey": "23",
+                "name": "Complex process",
+                "processDefinitionId": "complexProcess",
+                "resourceName": "complexProcess.bpmn",
+                "version": 5,
+                "versionTag": "alpha",
+                "tenantId": "<default>",
+                "hasStartForm": true,
+                "state": "DELETED"
+            }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  public void shouldDefaultToActiveStateForLegacyNullState() {
+    // given - a row/document written before the state field existed
+    final var legacyEntity =
+        new ProcessDefinitionEntity(
+            23L,
+            "Complex process",
+            "complexProcess",
+            "<xml/>",
+            "complexProcess.bpmn",
+            5,
+            "alpha",
+            "<default>",
+            "formId",
+            null);
+    when(processDefinitionServices.getByKey(23L)).thenReturn(legacyEntity);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(PROCESS_DEFINITION_ENTITY_JSON, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest

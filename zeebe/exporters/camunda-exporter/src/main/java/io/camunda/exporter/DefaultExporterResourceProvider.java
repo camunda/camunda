@@ -44,6 +44,7 @@ import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessDeletedHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
@@ -238,6 +239,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
+            new ProcessDeletedHandler(
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -346,6 +349,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 

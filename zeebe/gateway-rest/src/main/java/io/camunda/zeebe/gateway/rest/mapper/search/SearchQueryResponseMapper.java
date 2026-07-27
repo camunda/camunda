@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
@@ -34,6 +35,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -549,7 +551,10 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
-        .hasStartForm(StringUtils.isNotBlank(entity.formId()));
+        .hasStartForm(StringUtils.isNotBlank(entity.formId()))
+        .state(
+            ProcessDefinitionResult.StateEnum.fromValue(
+                requireNonNullElse(entity.state(), ProcessDefinitionState.ACTIVE).name()));
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(

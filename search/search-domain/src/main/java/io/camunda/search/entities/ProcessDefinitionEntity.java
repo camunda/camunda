@@ -16,5 +16,12 @@ public record ProcessDefinitionEntity(
     Integer version,
     String versionTag,
     String tenantId,
-    String formId)
-    implements TenantOwnedEntity {}
+    String formId,
+    ProcessDefinitionState state)
+    implements TenantOwnedEntity {
+
+  public enum ProcessDefinitionState {
+    ACTIVE,
+    DELETED
+  }
+}
