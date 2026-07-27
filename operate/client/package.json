@@ -100,7 +100,7 @@
     "knip": "6.29.0",
     "monaco-editor": "0.55.1",
     "msw": "2.15.0",
-    "playwright": "1.61.1",
+    "playwright": "1.62.0",
     "prettier": "3.9.4",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-sbom": "4.0.0",
