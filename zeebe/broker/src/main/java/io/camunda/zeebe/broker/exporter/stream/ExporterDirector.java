@@ -382,7 +382,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
         final long tailPosition = pending.reader().seekToEnd();
         container.requestReplay(tailPosition);
       }
-      container.openExporter();
     }
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
@@ -678,53 +677,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
 
     for (final ExporterContainer container : containers) {
       final var pending = pendingByExporterId.remove(container.getId());
-      openWithRetryAndSchedule(container, pending);
+      scheduleExporterActor(pending);
     }
 
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
-  }
-
-  /**
-   * Opens the given container's exporter, retrying indefinitely (with backoff) until it succeeds or
-   * this exporter is disabled/removed while opening. Once open, schedules an {@link ExporterActor}
-   * for it that reads and exports independently of every other exporter.
-   */
-  private void openWithRetryAndSchedule(
-      final ExporterContainer container, final PendingContainer pending) {
-    final var openFuture =
-        new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
-            .runWithRetry(
-                () -> {
-                  try {
-                    // If the exporter was disabled or removed concurrently, don't retry opening.
-                    if (containers.contains(container)) {
-                      container.openExporter();
-                    } else {
-                      LOG.debug(
-                          "Exporter '{}' was disabled or removed before it could be opened.",
-                          container.getId());
-                    }
-                    return true;
-                  } catch (final Exception e) {
-                    LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
-                    LOG.debug("Failed to open exporter '{}' => Stacktrace:", container.getId(), e);
-                    return false;
-                  }
-                },
-                this::isClosed);
-
-    actor.runOnCompletion(
-        openFuture,
-        (ok, error) -> {
-          if (error != null || isClosed() || !containers.contains(container)) {
-            if (pending.reader() != null) {
-              pending.reader().close();
-            }
-            return;
-          }
-          scheduleExporterActor(pending);
-        });
   }
 
   private void restartActiveExportingMode() {
