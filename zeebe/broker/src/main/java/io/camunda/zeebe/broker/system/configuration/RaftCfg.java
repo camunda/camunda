@@ -8,14 +8,21 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import java.time.Duration;
+import org.springframework.util.unit.DataSize;
 
 public final class RaftCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
+  public static final DataSize DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD =
+      DataSize.ofMegabytes(8);
+  public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
 
   private FlushConfig flush = DEFAULT_FLUSH_CONFIG;
+
+  private DataSize rebalanceReplicationLagThreshold = DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD;
+  private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -33,6 +40,22 @@ public final class RaftCfg implements ConfigurationEntry {
     this.flush = flush;
   }
 
+  public DataSize getRebalanceReplicationLagThreshold() {
+    return rebalanceReplicationLagThreshold;
+  }
+
+  public void setRebalanceReplicationLagThreshold(final DataSize rebalanceReplicationLagThreshold) {
+    this.rebalanceReplicationLagThreshold = rebalanceReplicationLagThreshold;
+  }
+
+  public Duration getRebalanceReplicationTimeout() {
+    return rebalanceReplicationTimeout;
+  }
+
+  public void setRebalanceReplicationTimeout(final Duration rebalanceReplicationTimeout) {
+    this.rebalanceReplicationTimeout = rebalanceReplicationTimeout;
+  }
+
   @Override
   public String toString() {
     return "RaftCfg{"
@@ -40,6 +63,10 @@ public final class RaftCfg implements ConfigurationEntry {
         + enablePriorityElection
         + ", flushConfig="
         + flush
+        + ", rebalanceReplicationLagThreshold="
+        + rebalanceReplicationLagThreshold
+        + ", rebalanceReplicationTimeout="
+        + rebalanceReplicationTimeout
         + '}';
   }
 
