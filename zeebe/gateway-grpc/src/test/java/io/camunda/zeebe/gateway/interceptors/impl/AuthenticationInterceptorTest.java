@@ -569,7 +569,7 @@ final class AuthenticationInterceptorTest {
   }
 
   @Test
-  void nonStringArrayGroupsIsRejected() {
+  void shouldContributeNoGroupsWhenGroupsClaimIsNotAStringArray() {
     // given
     final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
     final Map<String, Object> claims =
@@ -596,18 +596,16 @@ final class AuthenticationInterceptorTest {
         closedCall,
         createAuthHeader(),
         (call, headers) -> {
+          // then — the token authenticates and simply carries no groups, degrading like a missing
+          // claim instead of being rejected
+          assertGroups().isEmpty();
           call.close(Status.OK, headers);
           return null;
         });
 
-    // then
+    // then — the call was actually handled; a rejection would never have reached the handler above
     assertThat(closedCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Failed to load OIDC groups");
-              assertThat(status.getCause()).isNull();
-            });
+        .hasValueSatisfying(status -> assertThat(status.getCode()).isEqualTo(Status.OK.getCode()));
   }
 
   @Test
