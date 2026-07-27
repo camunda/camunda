@@ -9,6 +9,7 @@ package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -22,6 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -173,11 +175,15 @@ public class ClusterAdminOidcAuthenticationIT {
   }
 
   @Test
-  void shouldForbidNotErrorWhenGroupsClaimIsMalformed() throws Exception {
-    // when — a valid token whose groups claim is a number instead of a string/array, so extraction
-    // fails
-    final HttpResponse<String> response =
-        get(clusterUri(), bearer(accessToken(CLIENT_MALFORMED_GROUP)));
+  void shouldForbidInsteadOfErrorWhenGroupsClaimIsMalformed() throws Exception {
+    // given — a valid token whose groups claim really is a number instead of a string/array, so
+    // extraction fails. Asserted explicitly: a claim Keycloak emitted as a string would still be
+    // denied with 403 and let this test pass without exercising the extraction failure at all
+    final String token = accessToken(CLIENT_MALFORMED_GROUP);
+    assertThat(claimsOf(token).path(GROUPS_CLAIM).isNumber()).isTrue();
+
+    // when
+    final HttpResponse<String> response = get(clusterUri(), bearer(token));
 
     // then — the failure is handled, not surfaced as a 500: the token matches no dimension and is
     // denied with a clean 403 (problem+json), exactly like a token that matches nothing
@@ -277,6 +283,10 @@ public class ClusterAdminOidcAuthenticationIT {
     final HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     return JSON.readTree(response.body()).get("access_token").asText();
+  }
+
+  private static JsonNode claimsOf(final String token) throws Exception {
+    return JSON.readTree(Base64.getUrlDecoder().decode(token.split("\\.")[1]));
   }
 
   private static HttpResponse<String> get(final URI uri, final String authorizationHeader)
