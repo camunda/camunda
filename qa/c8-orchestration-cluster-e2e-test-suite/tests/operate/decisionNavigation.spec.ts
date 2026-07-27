@@ -213,10 +213,10 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Click the Process Instance Key link for the evaluated instance', async () => {
-      const processInstanceLink = operateDecisionsPage.decisionInstancesList.getByRole(
-        'link',
-        {name: `View process instance ${processInstanceKey}`},
-      );
+      const processInstanceLink =
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: `View process instance ${processInstanceKey}`,
+        });
       await expect(processInstanceLink).toBeVisible();
       await processInstanceLink.click();
     });
@@ -246,6 +246,15 @@ test.describe('Decision Navigation', () => {
     await test.step('Filter by Assign Approver Group decision', async () => {
       await operateDecisionsPage.selectDecisionName('Assign Approver Group');
       await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
+      // Wait for the filtered results to settle before interacting — the unfiltered
+      // list also contains Invoice Classification rows (same processInstanceKey), and
+      // clicking while the list is still re-rendering can hit a row that gets detached
+      // by the filter update, so the navigation click is lost and the panel never opens.
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByText(
+          'Invoice Classification',
+        ),
+      ).toHaveCount(0);
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
