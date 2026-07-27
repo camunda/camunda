@@ -20,7 +20,7 @@ const outDir = 'build';
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
+  plugins: mode === 'sbom' ? [...plugins, sbom({specVersion: '1.6'})] : plugins,
   preview: {
     port: 3003,
     open: false,
