@@ -7,7 +7,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import {NavLink, useLocation} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {

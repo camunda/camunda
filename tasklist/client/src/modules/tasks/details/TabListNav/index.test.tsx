@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing/testing-library';
 import {TabListNav} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {LocationLog} from 'modules/testing/LocationLog';
 
 const getWrapper = (

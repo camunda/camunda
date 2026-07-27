@@ -10,7 +10,7 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from 'modules/auth/authentication';
 import {observer} from 'mobx-react-lite';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {pages} from 'modules/routing';
 import {notificationsStore} from 'modules/notifications/notifications.store';
 

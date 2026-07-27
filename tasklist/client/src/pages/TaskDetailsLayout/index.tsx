@@ -18,7 +18,7 @@ import {Aside} from 'modules/tasks/details/Aside';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import {useTranslation} from 'react-i18next';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
-import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
+import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router';
 import {DetailsSkeleton} from 'modules/tasks/details/DetailsSkeleton';
 import {useProcessDefinitionXml} from 'modules/api/useProcessDefinitionXml.query';
 import {useTask} from 'modules/api/useTask.query';

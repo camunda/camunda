@@ -15,7 +15,7 @@ import {
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
-} from 'react-router-dom';
+} from 'react-router';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from 'modules/NetworkStatusWatcher';

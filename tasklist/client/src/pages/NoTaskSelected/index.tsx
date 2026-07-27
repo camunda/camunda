@@ -12,7 +12,7 @@ import {getStateLocally} from 'modules/local-storage';
 import {useEffect} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'modules/tracking/reftags';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {tracking} from 'modules/tracking';
 import styles from './styles.module.scss';
 import {useTasks} from 'modules/api/useTasks.query';

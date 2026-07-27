@@ -25,7 +25,7 @@ import {tracking} from 'modules/tracking';
 import {getStateLocally} from 'modules/local-storage';
 import {isForbidden} from 'modules/utils/isForbidden';
 import {useMemo} from 'react';
-import {matchPath, useLocation, useSearchParams} from 'react-router-dom';
+import {matchPath, useLocation, useSearchParams} from 'react-router';
 import {useCustomFiltersContext} from 'modules/tasks/available-tasks/CollapsiblePanel/CustomFiltersModal/CustomFiltersContext';
 import {IconButton} from '@carbon/react';
 import styles from '../styles.module.scss';

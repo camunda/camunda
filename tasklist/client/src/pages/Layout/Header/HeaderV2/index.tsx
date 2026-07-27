@@ -8,7 +8,7 @@
 
 import {useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
+import {Link as RouterLink, matchPath, useLocation} from 'react-router';
 import {
   C3LicenseTag,
   preview_C3NavigationV2 as C3NavigationV2,

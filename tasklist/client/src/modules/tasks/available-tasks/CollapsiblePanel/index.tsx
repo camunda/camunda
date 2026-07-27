@@ -18,7 +18,7 @@ import {
 } from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router';
 import {useTaskFilters} from 'modules/features/tasks/filters/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {getStateLocally} from 'modules/local-storage';

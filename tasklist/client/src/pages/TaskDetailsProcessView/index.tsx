@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useOutletContext} from 'react-router-dom';
+import {useOutletContext} from 'react-router';
 import {ProcessDiagramView} from 'modules/tasks/details/ProcessDiagramView';
 import type {OutletContext} from 'pages/TaskDetailsLayout';
 

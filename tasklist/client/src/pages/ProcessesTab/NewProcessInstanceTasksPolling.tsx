@@ -7,7 +7,7 @@
  */
 
 import {pages} from 'modules/routing';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {tracking} from 'modules/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request} from 'modules/api/request';

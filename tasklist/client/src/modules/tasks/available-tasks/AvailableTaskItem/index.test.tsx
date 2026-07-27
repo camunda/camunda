@@ -8,7 +8,7 @@
 
 import {render, screen, fireEvent} from 'modules/testing/testing-library';
 import {AvailableTaskItem} from './index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {currentUser} from '@camunda/c8-mocks';
 import {LocationLog} from 'modules/testing/LocationLog';
 

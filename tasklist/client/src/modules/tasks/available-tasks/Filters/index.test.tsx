@@ -9,7 +9,7 @@
 import {screen} from '@testing-library/react';
 import {render} from 'modules/testing/testing-library';
 import {LocationLog} from 'modules/testing/LocationLog';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Filters} from './index';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';

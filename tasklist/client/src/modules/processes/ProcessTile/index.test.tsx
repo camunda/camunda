@@ -10,7 +10,7 @@ import {ProcessTile} from '.';
 import {render, screen, waitFor, within} from 'modules/testing/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {getProcessDefinitionMock} from 'modules/mocks/processDefinitions';
 
 const getWrapper = () => {

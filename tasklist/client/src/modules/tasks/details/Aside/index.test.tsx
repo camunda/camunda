@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing/testing-library';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {currentUser, currentUserWithTenants} from '@camunda/c8-mocks';

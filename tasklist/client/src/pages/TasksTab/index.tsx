@@ -8,7 +8,7 @@
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import cn from 'classnames';
-import {Outlet, useLocation} from 'react-router-dom';
+import {Outlet, useLocation} from 'react-router';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {useTasks} from 'modules/api/useTasks.query';

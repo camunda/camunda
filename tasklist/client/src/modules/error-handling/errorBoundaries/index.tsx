@@ -7,7 +7,7 @@
  */
 
 import type {FallbackProps} from 'react-error-boundary';
-import {useRouteError} from 'react-router-dom';
+import {useRouteError} from 'react-router';
 import {SomethingWentWrong} from 'modules/error-handling/SomethingWentWrong';
 import styles from './styles.module.scss';
 import {TruncatedVariableError} from 'modules/api/useSelectedVariables.query';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createMemoryRouter, Outlet, RouterProvider} from 'react-router-dom';
+import {createMemoryRouter, Outlet, RouterProvider} from 'react-router';
 import {Component, loader, ErrorBoundary} from './index';
 import {
   Component as AuditLogDetailsComponent,

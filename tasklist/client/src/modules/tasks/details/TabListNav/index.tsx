@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, type Path} from 'react-router-dom';
+import {useLocation, useNavigate, type Path} from 'react-router';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'modules/tasks/details/taskDetailsLayoutCommon.module.scss';
 import cn from 'classnames';

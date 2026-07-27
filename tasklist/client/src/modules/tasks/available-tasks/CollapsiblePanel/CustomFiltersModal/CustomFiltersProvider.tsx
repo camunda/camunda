@@ -14,7 +14,7 @@ import {
 import {useCallback, useState} from 'react';
 import {CustomFiltersModal} from '.';
 import {DeleteFilterModal} from './DeleteFilterModal';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {getNavLinkSearchParam} from 'modules/features/tasks/filters/getNavLinkSearchParam';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 

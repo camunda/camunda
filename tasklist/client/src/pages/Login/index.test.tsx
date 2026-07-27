@@ -12,7 +12,7 @@ import {
   screen,
   waitFor,
 } from 'modules/testing/testing-library';
-import {Link, MemoryRouter} from 'react-router-dom';
+import {Link, MemoryRouter} from 'react-router';
 import {http, HttpResponse} from 'msw';
 import {Component} from './index';
 import {authenticationStore} from 'modules/auth/authentication';

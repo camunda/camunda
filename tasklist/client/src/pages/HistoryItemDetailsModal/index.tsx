@@ -11,7 +11,7 @@ import {
   redirect,
   useNavigate,
   useLocation,
-} from 'react-router-dom';
+} from 'react-router';
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
 import {t} from 'i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';

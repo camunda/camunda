@@ -8,7 +8,7 @@
 
 import {render, screen, within} from 'modules/testing/testing-library';
 import {CollapsiblePanel} from './index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse, http} from 'msw';
