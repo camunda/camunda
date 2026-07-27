@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -421,6 +422,19 @@ public record CurrentClusterConfiguration(
 
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
     return partitionGroups.get(groupId);
+  }
+
+  /**
+   * Returns the desired leader of every partition in the cluster, grouped by partition group id.
+   * Partition ids are unique only within a group, so the outer group-id key is required to
+   * disambiguate them. See {@link PartitionGroupConfiguration#desiredLeaders()} for how the
+   * per-group leaders are derived.
+   *
+   * @return the desired leaders per group, keyed by group id then by partition id
+   */
+  public Map<String, SortedMap<Integer, MemberId>> desiredLeaders() {
+    return partitionGroups.entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().desiredLeaders()));
   }
 
   private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {

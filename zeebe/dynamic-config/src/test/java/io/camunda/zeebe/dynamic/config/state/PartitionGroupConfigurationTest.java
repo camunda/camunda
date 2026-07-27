@@ -25,6 +25,7 @@ class PartitionGroupConfigurationTest {
 
   private static final MemberId MEMBER_0 = MemberId.from("0");
   private static final MemberId MEMBER_1 = MemberId.from("1");
+  private static final MemberId MEMBER_2 = MemberId.from("2");
 
   private static PartitionState partition(final int priority) {
     return PartitionState.active(priority, DynamicPartitionConfig.init());
@@ -36,6 +37,13 @@ class PartitionGroupConfigurationTest {
       partitions.put(id, partition(1));
     }
     return new BrokerPartitionState(version, Instant.EPOCH, partitions, Mode.PROCESSING);
+  }
+
+  private static BrokerPartitionState brokerWithPriorities(
+      final Map<Integer, Integer> partitionPriorities) {
+    final Map<Integer, PartitionState> partitions = new HashMap<>();
+    partitionPriorities.forEach((id, priority) -> partitions.put(id, partition(priority)));
+    return new BrokerPartitionState(1, Instant.EPOCH, partitions, Mode.PROCESSING);
   }
 
   private static PartitionGroupConfiguration group(
@@ -554,6 +562,72 @@ class PartitionGroupConfigurationTest {
 
       // when / then
       assertThat(config.cancelPendingChanges()).isSameAs(config);
+    }
+  }
+
+  @Nested
+  class DesiredLeader {
+
+    @Test
+    void shouldReturnHighestPriorityBrokerAsDesiredLeader() {
+      // given
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWithPriorities(Map.of(1, 1)),
+                  MEMBER_1, brokerWithPriorities(Map.of(1, 3)),
+                  MEMBER_2, brokerWithPriorities(Map.of(1, 2))));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).contains(MEMBER_1);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenNoBrokerReplicatesPartition() {
+      // given
+      final var config = group(1, Map.of(MEMBER_0, brokerWithPriorities(Map.of(1, 1))));
+
+      // when / then
+      assertThat(config.getDesiredLeader(2)).isEmpty();
+    }
+
+    @Test
+    void shouldBreakPriorityTiesDeterministicallyByMemberId() {
+      // given
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_1, brokerWithPriorities(Map.of(1, 5)),
+                  MEMBER_0, brokerWithPriorities(Map.of(1, 5))));
+
+      // when / then
+      assertThat(config.getDesiredLeader(1)).contains(MEMBER_0);
+    }
+
+    @Test
+    void shouldDeriveDesiredLeaderPerPartition() {
+      // given
+      final var config =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerWithPriorities(Map.of(1, 3, 2, 1)),
+                  MEMBER_1, brokerWithPriorities(Map.of(1, 1, 2, 3))));
+
+      // when / then
+      assertThat(config.desiredLeaders())
+          .containsExactly(Map.entry(1, MEMBER_0), Map.entry(2, MEMBER_1));
+    }
+
+    @Test
+    void shouldReturnEmptyDesiredLeadersWhenGroupHasNoPartitions() {
+      // given
+      final var config = group(1, Map.of());
+
+      // when / then
+      assertThat(config.desiredLeaders()).isEmpty();
     }
   }
 }
