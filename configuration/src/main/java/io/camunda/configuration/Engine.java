@@ -34,6 +34,9 @@ public class Engine {
   /** Configuration properties for the engine's message TTL checker. */
   @NestedConfigurationProperty private EngineMessages messages = new EngineMessages();
 
+  /** Configuration properties for the engine's usage metrics export. */
+  @NestedConfigurationProperty private EngineUsageMetrics usageMetrics = new EngineUsageMetrics();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised,
    * to guard against unbounded process recursion.
@@ -78,6 +81,14 @@ public class Engine {
 
   public void setMessages(final EngineMessages messages) {
     this.messages = messages;
+  }
+
+  public EngineUsageMetrics getUsageMetrics() {
+    return usageMetrics;
+  }
+
+  public void setUsageMetrics(final EngineUsageMetrics usageMetrics) {
+    this.usageMetrics = usageMetrics;
   }
 
   public int getMaxProcessDepth() {

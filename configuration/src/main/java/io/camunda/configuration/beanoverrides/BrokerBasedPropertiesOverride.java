@@ -259,6 +259,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromJobs(override, camunda);
     populateFromCaches(override, camunda);
     populateFromMessages(override, camunda);
+    populateFromUsageMetrics(override, camunda);
 
     override
         .getExperimental()
@@ -298,6 +299,17 @@ public class BrokerBasedPropertiesOverride {
     final var messagesCfg = override.getExperimental().getEngine().getMessages();
     messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
     messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+  }
+
+  private static void populateFromUsageMetrics(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var usageMetrics = camunda.getProcessing().getEngine().getUsageMetrics();
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getUsageMetrics()
+        .setExportInterval(usageMetrics.getExportInterval());
   }
 
   private static void populateFromBatchOperations(
