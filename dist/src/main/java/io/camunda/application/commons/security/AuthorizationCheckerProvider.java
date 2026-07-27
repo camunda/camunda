@@ -21,10 +21,14 @@ import java.util.Map;
  * sharing the single default-tenant-pinned bean.
  *
  * <p>Each per-tenant checker is backed by that tenant's own {@link
- * io.camunda.search.clients.reader.AuthorizationReader}. When there is no dedicated checker for a
- * tenant -- either because secondary storage is disabled (there is exactly one authorization source
- * cluster-wide) or because a tenant is absent from the map -- {@code withPhysicalTenant} falls back
- * to {@code defaultChecker}.
+ * io.camunda.search.clients.reader.AuthorizationReader}.
+ *
+ * <p>When secondary storage is disabled there are no per-tenant checkers at all ({@code
+ * checkersByPhysicalTenant} is empty) and there is exactly one authorization source cluster-wide,
+ * so {@code withPhysicalTenant} resolves every tenant to {@code defaultChecker}. Once per-tenant
+ * checkers exist, however, an unknown physical tenant is <b>a configuration error rather than a
+ * default</b>: {@code withPhysicalTenant} fails hard instead of silently resolving against another
+ * tenant's authorization storage (which would break tenant isolation).
  */
 public record AuthorizationCheckerProvider(
     AuthorizationChecker defaultChecker, Map<String, AuthorizationChecker> checkersByPhysicalTenant)
@@ -32,6 +36,20 @@ public record AuthorizationCheckerProvider(
 
   @Override
   public AuthorizationChecker withPhysicalTenant(final String physicalTenantId) {
-    return checkersByPhysicalTenant.getOrDefault(physicalTenantId, defaultChecker);
+    if (checkersByPhysicalTenant.isEmpty()) {
+      // secondary storage disabled: one authorization source cluster-wide, no per-tenant checkers
+      return defaultChecker;
+    }
+    final var checker =
+        physicalTenantId == null ? null : checkersByPhysicalTenant.get(physicalTenantId);
+    if (checker == null) {
+      throw new IllegalStateException(
+          "No AuthorizationChecker registered for physical tenant '"
+              + physicalTenantId
+              + "'; refusing to fall back to a shared default, as resolving authorizations against "
+              + "another tenant's storage would break tenant isolation. This indicates a "
+              + "configuration issue: the physical tenant is unknown or has no authorization source.");
+    }
+    return checker;
   }
 }

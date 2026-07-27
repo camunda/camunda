@@ -187,39 +187,22 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
-  void shouldFallBackToSharedAuthorizationCheckerForTenantMissingFromPerTenantCheckers() {
-    // given: the provider only has a per-tenant checker for tenantA -- tenantB is missing, e.g.
-    // config drift between PhysicalTenantResolver and the per-tenant checkers.
+  void shouldFailHardWhenAPhysicalTenantIsMissingFromPerTenantCheckers() {
+    // given: config drift -- both tenants exist in the resolver, but the provider only has a
+    // per-tenant checker for tenantA (tenantB is missing). tenantB must not silently resolve
+    // against another tenant's authorization storage.
     final var checkerA = mock(AuthorizationChecker.class);
-    when(checkerA.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.CREATE));
-    when(sharedAuthorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.CREATE));
-    final var registry =
-        buildRegistry(
-            twoTenants(),
-            new AuthorizationCheckerProvider(
-                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA)));
 
-    // when / then: tenantA uses its own checker, present in the map.
-    assertThat(
-            registry
-                .documentServices(TENANT_A)
-                .createDocumentBatch(List.of(), authentication)
-                .join())
-        .isEmpty();
-    verify(checkerA).collectPermissionTypes(any(), any(), any());
-    verifyNoInteractions(sharedAuthorizationChecker);
-
-    // when / then: tenantB, missing from the map, falls back to the shared checker without
-    // NPE-ing, instead of failing the whole tenant.
-    assertThat(
-            registry
-                .documentServices(TENANT_B)
-                .createDocumentBatch(List.of(), authentication)
-                .join())
-        .isEmpty();
-    verify(sharedAuthorizationChecker).collectPermissionTypes(any(), any(), any());
+    // when / then: wiring the registry fails hard for the missing tenant rather than falling back
+    // to the shared default checker.
+    assertThatThrownBy(
+            () ->
+                buildRegistry(
+                    twoTenants(),
+                    new AuthorizationCheckerProvider(
+                        sharedAuthorizationChecker, Map.of(TENANT_A, checkerA))))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(TENANT_B);
   }
 
   private static Map<String, Camunda> twoTenants() {
