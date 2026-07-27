@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
@@ -41,13 +42,18 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    // do not react on ProcessEvent.DELETED to keep historic data
     return record.getValueType() == ValueType.PROCESS
-        && record.getIntent() == ProcessIntent.CREATED;
+        && (record.getIntent() == ProcessIntent.CREATED
+            || record.getIntent() == ProcessIntent.DELETED);
   }
 
   @Override
   public void export(final Record<Process> record) {
+    if (record.getIntent() == ProcessIntent.DELETED) {
+      processDefinitionWriter.markDeleted(record.getValue().getProcessDefinitionKey());
+      return;
+    }
+
     final Process value = record.getValue();
     processDefinitionWriter.create(map(value));
     final String resourceName = value.getResourceName();
@@ -92,6 +98,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         StringUtils.defaultIfEmpty(value.getVersionTag(), null),
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
-        formId);
+        formId,
+        ProcessDefinitionState.ACTIVE);
   }
 }
