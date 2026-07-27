@@ -17,7 +17,6 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
@@ -118,7 +117,6 @@ public class CamundaServicesConfiguration {
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
       final SearchClientsProxy searchClients,
       final AuthorizationCheckerProvider authorizationCheckerProvider,
-      final CamundaSecurityLibraryProperties cslProperties,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry,
@@ -319,7 +317,7 @@ public class CamundaServicesConfiguration {
                           new SimpleDocumentStoreRegistry(
                               new CamundaDocumentStoreConfigurationLoader(tenantConfig)),
                           authorizationChecker,
-                          cslProperties.getAuthorizations(),
+                          tenantSecurity.getAuthorizations(),
                           executor,
                           converter))
                   .elementInstanceServices(tenantId, elementInstance)
@@ -331,7 +329,7 @@ public class CamundaServicesConfiguration {
                           securityContextProvider,
                           exportingRequestBroadcaster,
                           authorizationChecker,
-                          cslProperties.getAuthorizations(),
+                          tenantSecurity.getAuthorizations(),
                           executor,
                           converter))
                   .expressionServices(
@@ -426,7 +424,7 @@ public class CamundaServicesConfiguration {
                           brokerClient,
                           securityContextProvider,
                           authorizationChecker,
-                          cslProperties.getAuthorizations(),
+                          tenantSecurity.getAuthorizations(),
                           executor,
                           converter))
                   .signalServices(
