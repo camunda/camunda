@@ -16,6 +16,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -31,6 +36,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -312,7 +322,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   hadolint:
-    if: inputs.runBeTests
+    if: inputs.runDockerfileChecks
     name: "Tool / Dockerfile / Hadolint"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job

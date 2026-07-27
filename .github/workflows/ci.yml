@@ -58,6 +58,7 @@ jobs:
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      optimize-dockerfile-changes: ${{ steps.filter.outputs.optimize-dockerfile-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
@@ -2104,7 +2105,7 @@ jobs:
       use-shared-distball: true
 
   optimize-ci:
-    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
+    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
     name: "Optimize"
     needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-optimize.yml
@@ -2115,6 +2116,7 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      runDockerfileChecks: ${{ needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
       use-shared-distball: true
 
   zeebe-ci:
