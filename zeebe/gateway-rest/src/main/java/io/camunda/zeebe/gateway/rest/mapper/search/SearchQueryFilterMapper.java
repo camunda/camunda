@@ -18,6 +18,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
@@ -361,6 +362,9 @@ public class SearchQueryFilterMapper {
                   .ifPresent(builder::processDefinitionIdOperations);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getHasStartForm()).ifPresent(builder::hasStartForm);
+              Optional.ofNullable(f.getState())
+                  .map(state -> ProcessDefinitionState.valueOf(state.name()))
+                  .ifPresent(builder::state);
             });
     return builder.build();
   }
