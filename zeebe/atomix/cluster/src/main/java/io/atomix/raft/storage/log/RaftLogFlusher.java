@@ -18,18 +18,25 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>The default strategy is {@link DirectFlusher}, which is the safest but slowest option.
  *
+ * <p>{@link CoalescedFlusher} keeps the {@link DirectFlusher}'s durability guarantee, but elides
+ * redundant flushes and covers concurrent flush requests with a single flush. Prefer it when
+ * flushes are slow, e.g. on network-attached storage.
+ *
  * <p>The {@link NoopFlusher} is the fastest but most dangerous option, as it will defer flushing to
  * the operating system. It's then possible to run into data corruption or data loss issues. Please
  * refer to the documentation regarding this.
  *
  * <p>{@link DelayedFlusher} can be configured to provide a trade-off between performance and
  * safety. This will cause flushes to be performed in a delayed fashion. See its documentation for
- * more. You should pick this if {@link DirectFlusher} does not provide the desired performance, but
- * you still wish a lower likelihood of corruption issues than with {@link NoopFlusher}. The
- * recommended configuration would be to find the smallest possible delay with which you achieve
- * your performance goals.
+ * more. You should pick this if the durability-preserving strategies do not provide the desired
+ * performance, but you still wish a lower likelihood of corruption issues than with {@link
+ * NoopFlusher}. The recommended configuration would be to find the smallest possible delay with
+ * which you achieve your performance goals.
  */
 public interface RaftLogFlusher extends CloseableSilently {
+
+  /** Shared result for flush requests which complete immediately. */
+  CompletableFuture<Void> COMPLETED = CompletableFuture.completedFuture(null);
 
   /**
    * Signals that the journal should be durable at least up to the given index. The returned future
@@ -39,8 +46,9 @@ public interface RaftLogFlusher extends CloseableSilently {
    * DelayedFlusher}, {@link NoopFlusher}) complete it immediately, before the data is actually on
    * disk.
    *
-   * <p>Futures returned by consecutive calls complete in call order. They may complete on a
-   * different thread than the calling thread, depending on the implementation.
+   * <p>Results of requests which require a flush complete in call order. A request for an already
+   * durable index may complete immediately, ahead of pending earlier requests. Results may complete
+   * on a different thread than the calling thread, depending on the implementation.
    *
    * @param journal the journal to flush
    * @param index the index up to which durability is requested
@@ -74,9 +82,7 @@ public interface RaftLogFlusher extends CloseableSilently {
 
     @Override
     public CompletableFuture<Void> flush(final Journal journal, final long index) {
-      // trades durability for performance: callers may proceed immediately, the operating system
-      // will eventually flush the journal
-      return CompletableFuture.completedFuture(null);
+      return COMPLETED;
     }
 
     @Override
@@ -96,7 +102,7 @@ public interface RaftLogFlusher extends CloseableSilently {
     public CompletableFuture<Void> flush(final Journal journal, final long index) {
       try {
         journal.flush();
-        return CompletableFuture.completedFuture(null);
+        return COMPLETED;
       } catch (final Exception e) {
         // any failure, not just the expected journal exceptions, means the records cannot be
         // treated as durable; callers turn this into a rejected append or a leader step-down
