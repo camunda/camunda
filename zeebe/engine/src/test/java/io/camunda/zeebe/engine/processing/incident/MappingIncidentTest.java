@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -159,6 +160,69 @@ public final class MappingIncidentTest {
 
     assertThat(incidentEvent.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
+  }
+
+  @Test
+  public void shouldNotApplyAnyInputMappingIfOneFails() {
+    // given: the second of two input mappings has a genuinely failing source expression (an
+    // unresolved variable alone is NOT sufficient to trigger a failure — see "Investigation
+    // finding" earlier in this plan; assert() forces a real FEEL evaluation failure, matching the
+    // trigger already used by every other case in this test class)
+    final var process =
+        Bpmn.createExecutableProcess("process-atomic")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeInputExpression("1", "first")
+                        .zeebeInputExpression("assert(foo, foo != null)", "second"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-atomic").create();
+
+    // then: an incident is raised for the failing mapping ...
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
+
+    // ... and the successful first mapping produced no variable (bounded absence check — a bare
+    // `.exists()` on a stream with nothing to find blocks for the default wait time and then
+    // throws; expectNoMatchingRecords shortens that wait and lets `.exists()` return false)
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("first")
+                        .exists()))
+        .isFalse();
+
+    // when: the missing variable is provided and the incident is resolved
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("foo", "bar")).update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then: all mappings are re-evaluated from the start
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("first")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("second")
+                .exists())
+        .isTrue();
   }
 
   @Test
