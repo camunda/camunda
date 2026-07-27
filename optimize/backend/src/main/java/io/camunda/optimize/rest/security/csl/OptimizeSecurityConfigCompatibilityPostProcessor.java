@@ -223,20 +223,32 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // CCSM validated two distinct audiences on two paths: the identity audience on the login/session
   // token and the public-API audience on the bearer path. Both must survive here.
   //
-  // CCSaaS/Auth0 only ever validated the client audience (on the public-API path; the login
-  // id_token was not audience-checked). The public-API audience is a CCSM-only key, so we do not
-  // feed it in Auth0 mode - doing so would accept an audience legacy cloud never honoured.
+  // CSL applies one audiences set to both the login id_token decoder and the api bearer decoder,
+  // so it must hold both audiences: the Auth0 login id_token's only aud is the webapp client id,
+  // while public-API and M2M bearer tokens carry the resource audience. Mirrors the operator
+  // (camunda/camunda-operator#4240). The public-API audience is a CCSM-only key, not fed here.
   private void bridgeAudiences(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     final Set<String> audiences = new LinkedHashSet<>();
     if (isAuth0Configured(env)) {
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE");
+      // The client id is the login id_token's only aud; it is bridged to client-id elsewhere, so
+      // add it as an accepted audience without emitting a deprecation warning for it here.
+      addClientIdAsAudience(env, audiences);
     } else {
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE");
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
     }
     if (!audiences.isEmpty()) {
       derived.putIfAbsent(OIDC_PREFIX + "audiences", String.join(",", audiences));
+    }
+  }
+
+  private void addClientIdAsAudience(
+      final ConfigurableEnvironment env, final Set<String> audiences) {
+    final String clientId = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID");
+    if (clientId != null && !clientId.isBlank()) {
+      audiences.add(clientId.trim());
     }
   }
 
