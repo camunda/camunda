@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.Partitioning.Scheme;
@@ -24,6 +26,7 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -31,7 +34,9 @@ import software.amazon.awssdk.regions.Region;
  *
  * <p>Used by both the broker and the restore application.
  */
-public class NodeIProviderConfigurationUtils {
+public class NodeIdProviderConfigurationUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfigurationUtils.class);
+
   public static S3NodeIdRepository getS3NodeIdRepository(final Cluster cluster) {
     return switch (cluster.getNodeIdProvider().getType()) {
       case FIXED -> null;

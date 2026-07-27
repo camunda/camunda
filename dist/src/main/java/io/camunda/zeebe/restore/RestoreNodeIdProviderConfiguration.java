@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.restore;
 
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.fromBrokerCopier;
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getNodeIdProvider;
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getS3NodeIdRepository;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.fromBrokerCopier;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.getNodeIdProvider;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.getS3NodeIdRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
