@@ -37,15 +37,8 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Re-import the netty/jackson/log4j BOMs (and pin plexus-utils) ahead of
-      spring-boot-dependencies below. spring-boot-dependencies manages these same artifacts at
-      its own pins, which carry known vulnerabilities (grpc-netty's netty, jackson-databind,
-      log4j, and the transitive plexus-utils); because this POM's dependencyManagement is nearer
-      than the parent's, those pins would otherwise shadow the fixed versions the parent already
-      carries and leak into the flattened client artifacts. Within a single dependencyManagement
-      the first import wins, so these must precede spring-boot-dependencies. Unlike Spring, these
-      are plain OSS coordinates resolvable from Maven Central, so reusing the parent's version.*
-      properties keeps the client aligned with backend security patching. -->
+      <!-- Re-import these BOMs (first-import-wins) ahead of spring-boot-dependencies so its
+      vulnerable netty/jackson/log4j/plexus-utils pins don't leak into the flattened clients. -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
@@ -72,13 +65,8 @@
         <artifactId>plexus-utils</artifactId>
         <version>3.6.1</version>
       </dependency>
-      <!-- Re-import spring-framework-bom and spring-boot-dependencies here (in addition
-      to the property overrides above) so the imports are expanded using this POM's own
-      properties. The parent pom.xml also imports both BOMs, but using its own
-      version.spring / version.spring-boot values (HeroDevs NES patch versions); since
-      those imports are expanded at the ancestor level, overriding the properties alone
-      here is not enough to change the already-resolved managed versions. Maven's
-      nearest-definition-wins rule then lets these imports take precedence. -->
+      <!-- Re-import these here so they expand with this POM's OSS version.* properties (nearest
+      wins), replacing the ancestor's HeroDevs NES tags that only resolve from Camunda's Nexus. -->
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
