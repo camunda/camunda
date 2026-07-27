@@ -34,13 +34,9 @@ function composeCommand(
   projectName: string,
   args: string[],
 ): string {
-  return [
-    'docker compose',
-    ...composeFiles,
-    '-p',
-    projectName,
-    ...args,
-  ].join(' ');
+  return ['docker compose', ...composeFiles, '-p', projectName, ...args].join(
+    ' ',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -155,10 +151,7 @@ const WAITSTATES_PROJECT_NAME = 'waitstates-isolated';
 // (start...stop) at a time; a second caller blocks in
 // startIsolatedEnvironmentWaitStatesOff() until the first one's
 // stopIsolatedEnvironmentWaitStates() releases the lock.
-const WAITSTATES_LOCK_DIR = path.join(
-  os.tmpdir(),
-  'waitstates-isolated.lock',
-);
+const WAITSTATES_LOCK_DIR = path.join(os.tmpdir(), 'waitstates-isolated.lock');
 const WAITSTATES_LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const WAITSTATES_LOCK_RETRY_MS = 1_000;
 
