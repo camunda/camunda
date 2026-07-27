@@ -495,10 +495,6 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           LOG.info("Pausing partition {} for leadership transfer", context.getPartitionId());
-          final long pausedSinceMs = ActorClock.currentTimeMillis();
-          // Freeze write admission and drain in-flight writes, so no entry can be appended past
-          // this point
-          context.getLogStream().pauseWrites();
           // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
           // cannot silently un-pause the partition.
           context.setPausedForTransfer(true);
@@ -521,12 +517,19 @@ public final class ZeebePartition extends Actor
                       // result.
                       return;
                     }
+
                     if (error != null) {
                       rollbackTransferPause();
                       result.completeExceptionally(error);
-                    } else {
-                      armRaftPause(resumeTimeout, pausedSinceMs, result);
+                      return;
                     }
+
+                    // Freeze write admission and drain in-flight writes, so no entry can be
+                    // appended past this point
+                    context.getLogStream().pauseWrites();
+                    final long pausedSinceMs = ActorClock.currentTimeMillis();
+
+                    armRaftPause(resumeTimeout, pausedSinceMs, result);
                   });
         });
     return result;

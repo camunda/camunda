@@ -241,9 +241,9 @@ public class ZeebePartitionTest {
 
     // then
     final InOrder inOrder = inOrder(logStream, ctx, streamProcessor, raftServer);
-    inOrder.verify(logStream).pauseWrites();
     inOrder.verify(ctx).setPausedForTransfer(true);
     inOrder.verify(streamProcessor).pauseProcessing();
+    inOrder.verify(logStream).pauseWrites();
     inOrder.verify(raftServer).pauseForTransfer(any(), anyLong());
     assertThat(targetIndex).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(99L);
   }
