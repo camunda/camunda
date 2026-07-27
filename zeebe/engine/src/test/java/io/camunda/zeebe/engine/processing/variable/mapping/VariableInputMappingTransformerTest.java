@@ -10,11 +10,12 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
@@ -118,21 +119,32 @@ public final class VariableInputMappingTransformerTest {
   @Test
   public void shouldApplyMappings() {
     // given
-    final var expression =
-        transformer.transformInputMappings(mappings, expressionLanguage).expression();
+    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
+    inputMappings
+        .mappings()
+        .forEach(
+            mapping ->
+                assertThat(mapping.source().isValid())
+                    .describedAs(
+                        "Expected valid expression: %s", mapping.source().getFailureMessage())
+                    .isTrue());
 
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+    // when: evaluate the mappings one by one in modeling order, same as
+    // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
+    // the base variables, which fall back for anything not mapped yet
+    final var resultBuilder = new InputMappingResultBuilder();
+    for (final var mapping : inputMappings.mappings()) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(accumulated != null ? accumulated : variables.get(name));
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-
-    MsgPackUtil.assertEquality(result.toBuffer(), expectedOutput);
+    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {

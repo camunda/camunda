@@ -95,6 +95,10 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
       final var staticExpression = (StaticExpression) expression;
       return staticExpression;
 
+    } else if (expression instanceof NullExpression) {
+      final var nullExpression = (NullExpression) expression;
+      return nullExpression;
+
     } else if (expression instanceof FeelExpression) {
       final var feelExpression = (FeelExpression) expression;
       return evaluateFeelExpression(expression, context, feelExpression);

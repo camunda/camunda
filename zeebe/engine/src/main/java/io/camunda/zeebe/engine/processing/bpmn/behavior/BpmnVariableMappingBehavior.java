@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -59,6 +61,11 @@ public final class BpmnVariableMappingBehavior {
   /**
    * Apply the input mappings for a BPMN element. Generally called on activating of the element.
    *
+   * <p>The mappings are evaluated one by one in modeling order. Each mapping's source expression
+   * sees the results of the earlier mappings (they take priority over same-named scope variables)
+   * and falls back to the element's variable scope otherwise. Evaluation stops at the first failing
+   * mapping and no variables are applied in that case.
+   *
    * @param context The current bpmn element context
    * @param element The current bpmn element
    * @return either void if successful, otherwise a failure
@@ -67,17 +74,28 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
     final String tenantId = context.getTenantId();
-    final Optional<Expression> inputMappingExpression =
-        element.getInputMappings().map(InputMappings::expression);
+    final Optional<InputMappings> inputMappings = element.getInputMappings();
 
-    if (inputMappingExpression.isPresent()) {
-      // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
-      // for input mappings, so a modeled reference survives evaluation instead of nulling
-      return inputMappingExpressionProcessor
-          .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
-          .flatMap(result -> mapLocalVariables(context, element, result));
+    if (inputMappings.isEmpty()) {
+      return Either.right(null);
     }
-    return Either.right(null);
+
+    final var resultBuilder = new InputMappingResultBuilder();
+    // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
+    // for input mappings, so a modeled reference survives evaluation instead of nulling
+    final var processor =
+        inputMappingExpressionProcessor.prependContext(
+            name -> Either.left(resultBuilder.getVariable(name)));
+
+    for (final InputMapping mapping : inputMappings.get().mappings()) {
+      final var result =
+          processor.evaluateVariableMappingSourceExpression(mapping.source(), scopeKey, tenantId);
+      if (result.isLeft()) {
+        return Either.left(result.getLeft());
+      }
+      resultBuilder.put(mapping.targetPath(), result.get());
+    }
+    return mapLocalVariables(context, element, resultBuilder.toDocument());
   }
 
   /**

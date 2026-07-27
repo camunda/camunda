@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
@@ -174,19 +174,19 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     try {
       return adHocActivity
           .getInputMappings()
-          .map(InputMappings::expression)
           .map(
-              expression -> {
-                if (expression instanceof final FeelExpression feelExpression) {
-                  return taggedParameterExtractor
-                      .extractParameters(feelExpression.getParsedExpression())
-                      .stream()
+              inputMappings ->
+                  inputMappings.mappings().stream()
+                      .map(InputMapping::source)
+                      .filter(FeelExpression.class::isInstance)
+                      .map(FeelExpression.class::cast)
+                      .flatMap(
+                          feelExpression ->
+                              taggedParameterExtractor
+                                  .extractParameters(feelExpression.getParsedExpression())
+                                  .stream())
                       .map(this::mapAdHocActivityParameter)
-                      .toList();
-                }
-
-                return null;
-              })
+                      .toList())
           .orElseGet(Collections::emptyList);
     } catch (final Exception e) {
       throw new RuntimeException(
