@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.response.ProcessDefinition;
 
 public class ProcessDefinitionBuilder implements ProcessDefinition {
@@ -27,6 +28,7 @@ public class ProcessDefinitionBuilder implements ProcessDefinition {
   private String processDefinitionId;
   private String tenantId;
   private Boolean hasStartForm;
+  private ProcessDefinitionState state;
 
   @Override
   public long getProcessDefinitionKey() {
@@ -105,6 +107,16 @@ public class ProcessDefinitionBuilder implements ProcessDefinition {
 
   public ProcessDefinitionBuilder setHasStartForm(final Boolean hasStartForm) {
     this.hasStartForm = hasStartForm;
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionState getState() {
+    return state;
+  }
+
+  public ProcessDefinitionBuilder setState(final ProcessDefinitionState state) {
+    this.state = state;
     return this;
   }
 
