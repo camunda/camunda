@@ -12,6 +12,7 @@ import static io.camunda.debug.cli.util.ErrorMessageUtil.rootMessage;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
@@ -86,7 +87,8 @@ final class ProcessDefinitionRecovery {
       final T entity = handler.createNewEntity(id);
       handler.updateEntity(record, entity);
       if (batch != null) {
-        handler.flush(entity, batch);
+        final var index = TargetIndex.mainIndex(handler.getIndexName());
+        handler.flush(index, entity, batch);
       }
     }
   }

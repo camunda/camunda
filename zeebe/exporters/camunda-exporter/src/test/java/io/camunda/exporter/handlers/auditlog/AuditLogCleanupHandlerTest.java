@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
@@ -146,11 +147,12 @@ public class AuditLogCleanupHandlerTest {
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     final var entity = new AuditLogCleanupEntity().setId(ENTITY_ID);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(entity, batchRequest);
+    handler.flush(index, entity, batchRequest);
 
-    verify(batchRequest).add(INDEX_NAME, entity);
+    verify(batchRequest).add(index, entity);
     verifyNoMoreInteractions(batchRequest);
   }
 

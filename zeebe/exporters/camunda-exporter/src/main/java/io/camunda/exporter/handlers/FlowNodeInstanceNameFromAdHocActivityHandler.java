@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -106,13 +107,16 @@ public class FlowNodeInstanceNameFromAdHocActivityHandler
   }
 
   @Override
-  public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final FlowNodeInstanceEntity entity,
+      final BatchRequest batchRequest) {
     // Only sets the name. The inner-instance document (with its identifying fields) is normally
     // inserted first by FlowNodeInstanceFromProcessInstanceHandler, since the engine writes the
     // inner instance's own ELEMENT_ACTIVATING before the entry child's. The upsert here is a
     // defensive fallback: it lets ES/OS create the document rather than fail if it is missing.
     batchRequest.upsertWithScript(
-        indexName,
+        index,
         entity.getId(),
         entity,
         SET_IF_NULL_NAME_SCRIPT,

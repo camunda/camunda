@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -185,15 +186,16 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     final String batchOperationKey = "batch-op-1";
     final var entity = underTest.createNewEntity(processInstanceKey + ":" + batchOperationKey);
     entity.setBatchOperationIds(List.of(batchOperationKey));
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // When
-    underTest.flush(entity, batchRequest);
+    underTest.flush(index, entity, batchRequest);
 
     // Then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)
         .updateWithScript(
-            eq(underTest.getIndexName()),
+            eq(index),
             eq(processInstanceKey),
             anyString(),
             eq(Map.of("batchOperationId", batchOperationKey)));

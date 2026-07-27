@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -133,15 +134,16 @@ public class IncidentHandlerTest {
     final IncidentEntity incidentEntity = new IncidentEntity();
     underTest.updateEntity(incidentRecord, incidentEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(incidentEntity, mockRequest);
+    underTest.flush(index, incidentEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsert(
-            indexName,
+            index,
             String.valueOf(recordKey),
             incidentEntity,
             Map.of(

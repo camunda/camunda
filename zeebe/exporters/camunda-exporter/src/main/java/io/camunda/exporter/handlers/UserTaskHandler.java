@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -129,14 +130,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final TaskEntity entity, final BatchRequest batchRequest) {
 
     final Map<String, Object> updateFields = getUpdatedFields(entity);
 
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
-        indexName,
+        index,
         previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getId(),
         entity,
         updateFields,

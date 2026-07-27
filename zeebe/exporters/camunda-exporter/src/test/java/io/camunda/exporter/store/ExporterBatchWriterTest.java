@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.protocol.TestRecord;
 import io.camunda.protocol.TestValue;
 import java.util.List;
@@ -117,6 +118,7 @@ class ExporterBatchWriterTest {
     final TestRecord record = new TestRecord(0, NULL_VAL);
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.getIndexName()).thenReturn("test-index");
     when(handler.handlesRecord(eq(record))).thenReturn(true);
     when(handler.generateIds(eq(record))).thenReturn(List.of(id));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
@@ -131,7 +133,7 @@ class ExporterBatchWriterTest {
 
     // then
 
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(TargetIndex.mainIndex("test-index"), entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
@@ -143,6 +145,7 @@ class ExporterBatchWriterTest {
     final TestRecord record = new TestRecord(0, NULL_VAL);
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.getIndexName()).thenReturn("test-index");
     when(handler.handlesRecord(eq(record))).thenReturn(true);
     when(handler.generateIds(eq(record))).thenReturn(List.of(id));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
@@ -156,7 +159,7 @@ class ExporterBatchWriterTest {
     batchWriter.flush(batchRequest);
 
     // then
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(TargetIndex.mainIndex("test-index"), entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
@@ -228,6 +231,7 @@ class ExporterBatchWriterTest {
     final TestRecord record = new TestRecord(0, NULL_VAL);
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.getIndexName()).thenReturn("test-index");
     when(handler.handlesRecord(eq(record))).thenReturn(true);
     when(handler.generateIds(eq(record))).thenReturn(List.of(id));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);

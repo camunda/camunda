@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -68,9 +69,10 @@ public class AuthorizationDeletedHandler
   }
 
   @Override
-  public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(getIndexName(), entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override
