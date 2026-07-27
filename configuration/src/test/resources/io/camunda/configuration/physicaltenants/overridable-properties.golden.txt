@@ -272,6 +272,14 @@ processing.engine.batch-operations.query-retry-initial-delay
 processing.engine.batch-operations.query-retry-max
 processing.engine.batch-operations.query-retry-max-delay
 processing.engine.batch-operations.scheduler-interval
+processing.engine.caches.authorizations-cache-capacity
+processing.engine.caches.authorizations-cache-ttl
+processing.engine.caches.candidate-group-name-resolution
+processing.engine.caches.drg-cache-capacity
+processing.engine.caches.form-cache-capacity
+processing.engine.caches.group-name-cache-capacity
+processing.engine.caches.process-cache-capacity
+processing.engine.caches.resource-cache-capacity
 processing.engine.distribution.max-backoff-duration
 processing.engine.distribution.redistribution-interval
 processing.engine.job.include-variables-in-job-completed-event

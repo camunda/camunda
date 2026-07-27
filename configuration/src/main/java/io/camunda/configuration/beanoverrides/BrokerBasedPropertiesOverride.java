@@ -257,6 +257,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromExpression(override, camunda);
     populateFromProcessInstanceCreation(override, camunda);
     populateFromJobs(override, camunda);
+    populateFromCaches(override, camunda);
   }
 
   private static void populateFromDistribution(
@@ -266,6 +267,21 @@ public class BrokerBasedPropertiesOverride {
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+  }
+
+  private static void populateFromCaches(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var caches = camunda.getProcessing().getEngine().getCaches();
+
+    final var cachesCfg = override.getExperimental().getEngine().getCaches();
+    cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
+    cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
+    cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
+    cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
+    cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
+    cachesCfg.setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity());
+    cachesCfg.setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution());
   }
 
   private static void populateFromBatchOperations(

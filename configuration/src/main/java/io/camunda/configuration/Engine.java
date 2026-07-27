@@ -20,6 +20,9 @@ public class Engine {
 
   @NestedConfigurationProperty private EngineJob job = new EngineJob();
 
+  /** Configuration properties for the engine's caches. */
+  @NestedConfigurationProperty private EngineCaches caches = new EngineCaches();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -42,5 +45,13 @@ public class Engine {
 
   public void setJob(final EngineJob job) {
     this.job = job;
+  }
+
+  public EngineCaches getCaches() {
+    return caches;
+  }
+
+  public void setCaches(final EngineCaches caches) {
+    this.caches = caches;
   }
 }
