@@ -88,7 +88,7 @@ public class BasicCamundaUserService implements CamundaUserPort {
   protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
     final var componentAccess =
         resourceAccessProvider
-            .withPhysicalTenant(PhysicalTenantContext.currentOrNull())
+            .withPhysicalTenant(PhysicalTenantContext.current())
             .resolveResourceAccess(authentication, COMPONENT_ACCESS_AUTHORIZATION);
     if (!componentAccess.allowed()) {
       return List.of();

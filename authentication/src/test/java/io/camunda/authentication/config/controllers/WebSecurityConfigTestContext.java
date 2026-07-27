@@ -134,7 +134,8 @@ public class WebSecurityConfigTestContext {
   @Bean
   public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
       final ResourceAccessProvider resourceAccessProvider) {
-    return new PhysicalTenantResourceAccessProvider(resourceAccessProvider, Map.of());
+    return new PhysicalTenantResourceAccessProvider(
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, resourceAccessProvider));
   }
 
   /**

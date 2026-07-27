@@ -76,7 +76,11 @@ public class BasicCamundaUserServiceTest {
 
     final var scopedResourceAccessProvider =
         new PhysicalTenantResourceAccessProvider(
-            resourceAccessProvider, Map.of(TENANT_A, tenantAResourceAccessProvider));
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                resourceAccessProvider,
+                TENANT_A,
+                tenantAResourceAccessProvider));
 
     basicCamundaUserService =
         new BasicCamundaUserService(

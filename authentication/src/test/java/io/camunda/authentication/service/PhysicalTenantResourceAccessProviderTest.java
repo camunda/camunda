@@ -8,6 +8,7 @@
 package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import java.util.Map;
@@ -19,39 +20,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PhysicalTenantResourceAccessProviderTest {
 
-  @Mock private ResourceAccessProvider defaultProvider;
   @Mock private ResourceAccessProvider tenantAProvider;
 
   @Test
   void shouldReturnTenantProviderForKnownTenant() {
     // given
     final var provider =
-        new PhysicalTenantResourceAccessProvider(
-            defaultProvider, Map.of("tenanta", tenantAProvider));
+        new PhysicalTenantResourceAccessProvider(Map.of("tenanta", tenantAProvider));
 
     // when / then
     assertThat(provider.withPhysicalTenant("tenanta")).isSameAs(tenantAProvider);
   }
 
   @Test
-  void shouldFallBackToDefaultProviderForUnknownTenant() {
+  void shouldFailHardForUnknownTenant() {
     // given
     final var provider =
-        new PhysicalTenantResourceAccessProvider(
-            defaultProvider, Map.of("tenanta", tenantAProvider));
+        new PhysicalTenantResourceAccessProvider(Map.of("tenanta", tenantAProvider));
 
-    // when / then
-    assertThat(provider.withPhysicalTenant("tenantb")).isSameAs(defaultProvider);
+    // when / then — no silent fallback: an unknown tenant would break isolation, so fail hard
+    assertThatThrownBy(() -> provider.withPhysicalTenant("tenantb"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("tenantb");
   }
 
   @Test
-  void shouldFallBackToDefaultProviderForNullTenant() {
+  void shouldFailHardForNullTenant() {
     // given
     final var provider =
-        new PhysicalTenantResourceAccessProvider(
-            defaultProvider, Map.of("tenanta", tenantAProvider));
+        new PhysicalTenantResourceAccessProvider(Map.of("tenanta", tenantAProvider));
 
-    // when / then — currentOrNull() may yield null off a request thread
-    assertThat(provider.withPhysicalTenant(null)).isSameAs(defaultProvider);
+    // when / then — an unresolved physical tenant (null) is a configuration error, not a default
+    assertThatThrownBy(() -> provider.withPhysicalTenant(null))
+        .isInstanceOf(IllegalStateException.class);
   }
 }

@@ -23,21 +23,28 @@ import java.util.Map;
  * #withPhysicalTenant(String)} so the lookup reads that tenant's own authorization storage,
  * consistent with how the same authorizations are enforced on API requests.
  *
- * <p>Each per-tenant provider is backed by that tenant's own {@code AuthorizationReader}. When a
- * tenant has no dedicated provider -- it is absent from the map, or the physical tenant could not
- * be resolved off a request thread ({@code null}) -- {@code withPhysicalTenant} falls back to
- * {@code defaultProvider}, the root-scoped bean.
+ * <p>Every configured physical tenant (including the default one) has its own provider, backed by
+ * that tenant's own {@code AuthorizationReader}. {@link #withPhysicalTenant(String)} <b>fails hard
+ * when no provider is registered for the requested tenant</b> rather than falling back to a shared
+ * default: silently resolving against another tenant's authorization storage would break tenant
+ * isolation, so an unknown (or unresolved) physical tenant is treated as a configuration error.
  */
 public record PhysicalTenantResourceAccessProvider(
-    ResourceAccessProvider defaultProvider,
     Map<String, ResourceAccessProvider> providersByPhysicalTenant)
     implements PhysicalTenantScoped<ResourceAccessProvider> {
 
   @Override
   public ResourceAccessProvider withPhysicalTenant(final String physicalTenantId) {
-    if (physicalTenantId == null) {
-      return defaultProvider;
+    final var provider =
+        physicalTenantId == null ? null : providersByPhysicalTenant.get(physicalTenantId);
+    if (provider == null) {
+      throw new IllegalStateException(
+          "No ResourceAccessProvider registered for physical tenant '"
+              + physicalTenantId
+              + "'; refusing to fall back to a shared default, as resolving authorizations against "
+              + "another tenant's storage would break tenant isolation. This indicates a "
+              + "configuration issue: the physical tenant is unknown or has no authorization source.");
     }
-    return providersByPhysicalTenant.getOrDefault(physicalTenantId, defaultProvider);
+    return provider;
   }
 }

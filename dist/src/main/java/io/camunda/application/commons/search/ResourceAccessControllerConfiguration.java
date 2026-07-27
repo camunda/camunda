@@ -92,12 +92,15 @@ public class ResourceAccessControllerConfiguration {
    * {@code /v2/authentication/me} handlers to resolve {@code COMPONENT ACCESS} against the tenant
    * the request is scoped to (rather than the root-bound {@link #resourceAccessProvider} bean).
    *
+   * <p>One entry per configured physical tenant (including the default one); there is deliberately
+   * no shared-default fallback, so an unknown tenant fails hard rather than silently resolving
+   * against the wrong tenant's storage.
+   *
    * <p>Storage-agnostic: the per-tenant provider is built the same way for every secondary-storage
    * type, so unlike {@link PhysicalTenantResourceAccessControllers} it needs no storage-type split.
    */
   @Bean
   public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
-      final ResourceAccessProvider resourceAccessProvider,
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
       final PhysicalTenantSecurityProperties physicalTenantSecurityProperties) {
     final Map<String, ResourceAccessProvider> providers = new LinkedHashMap<>();
@@ -109,7 +112,7 @@ public class ResourceAccessControllerConfiguration {
                   physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(tenantId);
               providers.put(tenantId, resourceAccessProviderFor(searchClientReaders, cslProps));
             });
-    return new PhysicalTenantResourceAccessProvider(resourceAccessProvider, Map.copyOf(providers));
+    return new PhysicalTenantResourceAccessProvider(Map.copyOf(providers));
   }
 
   private static ResourceAccessProvider resourceAccessProviderFor(

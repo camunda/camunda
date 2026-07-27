@@ -8,6 +8,7 @@
 package io.camunda.application.commons.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -195,11 +196,12 @@ public class ResourceAccessControllerConfigurationTest {
                 final var provider = context.getBean(PhysicalTenantResourceAccessProvider.class);
                 assertThat(provider.providersByPhysicalTenant())
                     .containsOnlyKeys("tenanta", "tenantb");
-                // each tenant resolves to its own provider, absent tenants fall back to the default
+                // each tenant resolves to its own provider; an unknown tenant fails hard rather
+                // than silently falling back (which would break tenant isolation)
                 assertThat(provider.withPhysicalTenant("tenanta"))
                     .isSameAs(provider.providersByPhysicalTenant().get("tenanta"));
-                assertThat(provider.withPhysicalTenant("absent"))
-                    .isSameAs(provider.defaultProvider());
+                assertThatThrownBy(() -> provider.withPhysicalTenant("absent"))
+                    .isInstanceOf(IllegalStateException.class);
               });
     }
   }
