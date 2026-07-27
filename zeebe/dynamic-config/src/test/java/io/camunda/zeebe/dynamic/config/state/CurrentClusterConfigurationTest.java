@@ -52,6 +52,14 @@ class CurrentClusterConfigurationTest {
         1, Instant.EPOCH, Map.of(partitionId, partition()), Mode.PROCESSING);
   }
 
+  private static BrokerPartitionState brokerPartition(final int partitionId, final int priority) {
+    return new BrokerPartitionState(
+        1,
+        Instant.EPOCH,
+        Map.of(partitionId, PartitionState.active(priority, DynamicPartitionConfig.init())),
+        Mode.PROCESSING);
+  }
+
   private static PartitionGroupConfiguration group(
       final long version, final Map<MemberId, BrokerPartitionState> members) {
     return new PartitionGroupConfiguration(
@@ -808,6 +816,47 @@ class CurrentClusterConfigurationTest {
       assertThatThrownBy(
               () -> new CurrentClusterConfiguration(0, GlobalConfiguration.init(), Map.of(), null))
           .isInstanceOf(NullPointerException.class);
+    }
+  }
+
+  @Nested
+  class DesiredLeaders {
+
+    @Test
+    void shouldExposeDesiredLeaderPerGroupAndPartition() {
+      // given
+      final var groupA =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerPartition(1, 1),
+                  MEMBER_1, brokerPartition(1, 3)));
+      final var groupB =
+          group(
+              1,
+              Map.of(
+                  MEMBER_0, brokerPartition(1, 5),
+                  MEMBER_1, brokerPartition(1, 2)));
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("group-a", groupA, "group-b", groupB),
+              PhasedChangeState.empty());
+
+      // when / then
+      final var desiredLeaders = config.desiredLeaders();
+      assertThat(desiredLeaders).containsOnlyKeys("group-a", "group-b");
+      assertThat(desiredLeaders.get("group-a")).containsExactly(Map.entry(1, MEMBER_1));
+      assertThat(desiredLeaders.get("group-b")).containsExactly(Map.entry(1, MEMBER_0));
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenNoGroups() {
+      // given
+      final var config = config(global(1, Map.of()), Map.of(), PhasedChangeState.empty());
+
+      // when / then
+      assertThat(config.desiredLeaders()).isEmpty();
     }
   }
 }

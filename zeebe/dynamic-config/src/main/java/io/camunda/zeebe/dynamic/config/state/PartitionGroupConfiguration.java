@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -339,6 +341,46 @@ public record PartitionGroupConfiguration(
 
   public @Nullable BrokerPartitionState getMember(final MemberId memberId) {
     return members.get(memberId);
+  }
+
+  /**
+   * Returns the <em>desired leader</em> of the given partition within this group (the broker that
+   * replicates the partition with the highest {@link PartitionState#priority() priority}).
+   *
+   * @param partitionId the partition id, unique only within this group
+   * @return the desired leader, or empty if no broker in this group replicates the partition
+   */
+  public Optional<MemberId> getDesiredLeader(final int partitionId) {
+    return members.entrySet().stream()
+        .map(
+            entry -> {
+              final PartitionState partition = entry.getValue().getPartition(partitionId);
+              return partition == null ? null : Map.entry(entry.getKey(), partition);
+            })
+        .filter(Objects::nonNull)
+        .max(
+            Comparator.<Entry<MemberId, PartitionState>>comparingInt(
+                    entry -> entry.getValue().priority())
+                .thenComparing(Entry::getKey, MemberId.ID_COMPARATOR.reversed()))
+        .map(Entry::getKey);
+  }
+
+  /**
+   * Returns the desired leader of every partition in this group, keyed by partition id. A partition
+   * is present iff at least one broker in the group replicates it.
+   *
+   * @return the desired leaders, keyed by partition id in ascending order
+   */
+  public SortedMap<Integer, MemberId> desiredLeaders() {
+    final SortedMap<Integer, MemberId> leaders = new TreeMap<>();
+    members.values().stream()
+        .flatMap(broker -> broker.partitions().keySet().stream())
+        .distinct()
+        .forEach(
+            partitionId ->
+                getDesiredLeader(partitionId)
+                    .ifPresent(leader -> leaders.put(partitionId, leader)));
+    return leaders;
   }
 
   private PartitionGroupConfiguration withMembers(
