@@ -40,7 +40,7 @@ import {
 import {TenantField} from 'modules/components/TenantField';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router';
 import {
   getDefinitionIdentifier,
   splitDefinitionIdentifier,

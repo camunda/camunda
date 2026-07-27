@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, matchPath} from 'react-router-dom';
+import {useLocation, matchPath} from 'react-router';
 import {Paths} from 'modules/Routes';
 
 const useCurrentPage = () => {

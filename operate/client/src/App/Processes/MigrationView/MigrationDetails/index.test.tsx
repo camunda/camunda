@@ -9,7 +9,7 @@
 import {render, screen} from 'modules/testing-library';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {MigrationDetails} from '.';
 import {createProcessDefinition} from 'modules/testUtils';
 

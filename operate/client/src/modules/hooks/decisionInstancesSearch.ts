@@ -11,7 +11,7 @@ import {
   parseDecisionInstancesSearchSort,
 } from 'modules/utils/filter/decisionsFilter';
 import {useMemo} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 
 function useDecisionInstancesSearchFilter() {
   const [searchParams] = useSearchParams();

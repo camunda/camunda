@@ -18,7 +18,7 @@ import {
 import {Container, EmptyMessageContainer} from './styled';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {Information} from '@carbon/react/icons';
 import {Button} from '@carbon/react';
 import {notificationsStore} from 'modules/stores/notifications';

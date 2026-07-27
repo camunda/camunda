@@ -7,7 +7,7 @@
  */
 
 import {TabListNav} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {render, screen} from 'modules/testing-library';
 

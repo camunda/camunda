@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, useLocation} from 'react-router-dom';
+import {Navigate, useLocation} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';

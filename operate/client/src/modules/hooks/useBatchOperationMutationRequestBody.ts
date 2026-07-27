@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';

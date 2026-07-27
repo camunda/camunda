@@ -14,7 +14,7 @@ import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router';
 import {PAGE_TITLE} from 'modules/constants';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';

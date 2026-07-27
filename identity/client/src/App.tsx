@@ -7,7 +7,7 @@
  */
 
 import { FC, StrictMode, useEffect } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router";
 import { getBaseUrl } from "./configuration";
 import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";

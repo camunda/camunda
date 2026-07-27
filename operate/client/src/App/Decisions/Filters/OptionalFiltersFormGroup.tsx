@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, useSearchParams, type Location} from 'react-router-dom';
+import {useLocation, useSearchParams, type Location} from 'react-router';
 import type {FieldValidator} from 'final-form';
 import {
   parseDecisionsFilter,

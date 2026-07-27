@@ -12,7 +12,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {BatchModificationSummaryModal} from './index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {
   createProcessDefinition,

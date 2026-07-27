@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 
 const LocationLog: React.FC = () => {
   const location = useLocation();

@@ -11,7 +11,7 @@ import {
   waitForElementToBeRemoved,
   screen,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {searchResult} from 'modules/testUtils';

@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';

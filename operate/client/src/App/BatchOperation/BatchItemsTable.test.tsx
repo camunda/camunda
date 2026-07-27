@@ -16,7 +16,7 @@ import {
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {BatchItemsTable} from './BatchItemsTable';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
 

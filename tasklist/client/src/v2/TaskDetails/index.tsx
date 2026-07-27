@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, useOutletContext} from 'react-router-dom';
+import {useLocation, useNavigate, useOutletContext} from 'react-router';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'v2/api/useCompleteTask.mutation';
 import {useTranslation} from 'react-i18next';

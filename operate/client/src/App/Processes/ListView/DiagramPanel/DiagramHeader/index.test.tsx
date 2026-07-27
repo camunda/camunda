@@ -9,7 +9,7 @@
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {searchResult} from 'modules/testUtils';
 import type {ProcessDefinitionSelection} from 'modules/hooks/processDefinitions';

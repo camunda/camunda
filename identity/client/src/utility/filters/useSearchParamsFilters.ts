@@ -7,7 +7,7 @@
  */
 
 import { createSearchParamsSync } from "src/utility/filters/searchParamsFilters";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { useMemo } from "react";
 
 function useSearchParamsFilters<T>(

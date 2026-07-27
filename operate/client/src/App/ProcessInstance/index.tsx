@@ -42,7 +42,7 @@ import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useNavigate, matchPath, type Location} from 'react-router-dom';
+import {useNavigate, matchPath, type Location} from 'react-router';
 import {Locations, Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {BottomPanelTabs} from './BottomPanelTabs';

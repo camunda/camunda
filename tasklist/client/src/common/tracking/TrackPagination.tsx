@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {tracking} from 'common/tracking';
 
 const TrackPagination: React.FC = () => {

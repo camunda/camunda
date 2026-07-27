@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router';
 import {IconButton, InlineNotification, SkeletonText} from '@carbon/react';
 import {ArrowLeft} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';

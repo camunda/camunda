@@ -9,7 +9,7 @@
 import {render, screen} from 'modules/testing-library';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {DetailsModal} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 
 const baseAuditLog: AuditLog = {
   auditLogKey: '123',

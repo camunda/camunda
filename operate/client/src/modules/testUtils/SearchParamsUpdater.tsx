@@ -7,7 +7,7 @@
  */
 
 import {fireEvent, screen} from 'modules/testing-library';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 
 /**
  * Used to programmatically update search params after initial render in tests.

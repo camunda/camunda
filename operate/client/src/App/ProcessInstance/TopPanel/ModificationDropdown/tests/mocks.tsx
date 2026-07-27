@@ -8,7 +8,7 @@
 
 import {render} from 'modules/testing-library';
 import {createRef} from 'react';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {ModificationDropdown} from '../index';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';

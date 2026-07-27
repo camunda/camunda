@@ -12,7 +12,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'common/testing/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {storeStateLocally, clearStateLocally} from 'common/local-storage';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';

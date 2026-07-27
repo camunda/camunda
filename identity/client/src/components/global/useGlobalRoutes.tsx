@@ -7,7 +7,7 @@
  */
 
 import useTranslate from "src/utility/localization";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import Users from "src/pages/users";
 import Groups from "src/pages/groups";
 import Roles from "src/pages/roles";

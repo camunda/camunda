@@ -9,7 +9,7 @@
 import {AppHeader} from 'App/Layout/AppHeader';
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Filters} from '../';
 import {
   selectDecision,

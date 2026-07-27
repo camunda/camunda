@@ -10,7 +10,7 @@ import {tracking} from 'modules/tracking';
 import {CarbonBreadcrumb} from './styled';
 import {Link} from 'modules/components/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {
   type CallHierarchy,

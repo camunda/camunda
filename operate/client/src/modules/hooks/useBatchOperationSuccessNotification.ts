@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {notificationsStore} from 'modules/stores/notifications';
 import {formatOperationType} from 'modules/utils/formatOperationType';
 import {Paths} from 'modules/Routes';

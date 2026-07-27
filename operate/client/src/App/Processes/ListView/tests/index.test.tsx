@@ -7,7 +7,7 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
+import {Route, MemoryRouter, Routes, Link} from 'react-router';
 import {ListView} from '../index';
 import {
   mockProcessDefinitions,

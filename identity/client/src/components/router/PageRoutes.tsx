@@ -7,7 +7,7 @@
  */
 
 import { FC, ReactElement } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 import Redirect from "src/components/router/Redirect";
 
 type PageRoutesProps = {

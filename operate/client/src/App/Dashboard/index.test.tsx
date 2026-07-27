@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {render, screen} from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {PAGE_TITLE} from 'modules/constants';
 import {Dashboard} from './index';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';

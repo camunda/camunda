@@ -8,7 +8,7 @@
 
 import {render, screen, fireEvent} from 'common/testing/testing-library';
 import {AvailableTaskItem} from './index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {currentUser} from 'common/mocks/current-user';
 import {LocationLog} from 'common/testing/LocationLog';
 import * as userMocks from 'common/mocks/current-user';

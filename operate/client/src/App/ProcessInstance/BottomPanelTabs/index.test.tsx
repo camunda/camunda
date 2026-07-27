@@ -12,7 +12,7 @@ import {
   Navigate,
   RouterProvider,
   useLocation,
-} from 'react-router-dom';
+} from 'react-router';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';

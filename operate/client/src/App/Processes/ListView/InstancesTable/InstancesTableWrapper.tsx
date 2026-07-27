@@ -19,7 +19,7 @@ import {
   useProcessInstancesSearchFilter,
   useProcessInstancesSearchSort,
 } from 'modules/hooks/processInstancesSearch';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {useEffect, useMemo} from 'react';

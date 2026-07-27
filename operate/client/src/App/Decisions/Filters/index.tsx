@@ -12,7 +12,7 @@ import {
   type DecisionsFilter,
 } from 'modules/utils/filter/decisionsFilter';
 import {Form} from 'react-final-form';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router';
 import {
   Container,
   Form as StyledForm,

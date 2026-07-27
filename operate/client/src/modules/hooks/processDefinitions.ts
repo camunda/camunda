@@ -11,7 +11,7 @@ import {DEFAULT_TENANT} from 'modules/constants';
 import {useProcessDefinitionsSearch} from 'modules/queries/processDefinitions/useProcessDefinitionsSearch';
 import {parseProcessDefinitionsSearchFilter} from 'modules/utils/filter/v2/processDefinitionsSearchFilter';
 import {useMemo} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 
 interface ProcessDefinitionWithIdentifier extends ProcessDefinition {
   /** A `definitionId`##`tenantId` tuple that is almost unique but not unique across versions. */

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Paths} from 'modules/Routes';

@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import Redirect from "src/components/router/Redirect";
 

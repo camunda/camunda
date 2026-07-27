@@ -8,7 +8,7 @@
 
 import {render, waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {SessionWatcher} from './SessionWatcher';

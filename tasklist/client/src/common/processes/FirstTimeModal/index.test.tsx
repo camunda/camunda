@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'common/testing/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {FirstTimeModal} from '.';
 
 type Props = {

@@ -13,7 +13,7 @@ import {
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from '../index';
 import {mockInstance} from './index.setup';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';

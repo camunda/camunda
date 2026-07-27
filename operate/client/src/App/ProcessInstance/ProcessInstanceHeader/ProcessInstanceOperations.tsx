@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Button, MenuButton, MenuItem} from '@carbon/react';
 import {

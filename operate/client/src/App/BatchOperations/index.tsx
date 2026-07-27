@@ -7,7 +7,7 @@
  */
 
 import {useMemo, useEffect} from 'react';
-import {useSearchParams, Link} from 'react-router-dom';
+import {useSearchParams, Link} from 'react-router';
 import {Pagination} from '@carbon/react';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';

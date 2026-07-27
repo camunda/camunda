@@ -7,7 +7,7 @@
  */
 
 import {useQueryClient} from '@tanstack/react-query';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
