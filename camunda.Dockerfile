@@ -58,7 +58,7 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -sSL --retry 3 --retry-delay 5 --retry-connrefused \
+    curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
       "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
       -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
