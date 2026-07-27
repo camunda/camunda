@@ -21,17 +21,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
  * CCSaaS organization + role gate. When a token carries the {@code https://camunda.com/orgs} claim,
- * the claim must list the configured organization with at least one allowed role. This restores the
- * legacy {@code CCSaaSSecurityConfigurerAdapter}'s {@code RoleValidator}: Optimize access requires
- * an {@code admin}/{@code analyst}/{@code owner}/{@code supportagent} role, unlike OC's
- * membership-only check.
+ * the claim must list the configured organization with at least one allowed role ({@code
+ * admin}/{@code analyst}/{@code owner}/{@code supportagent}), unlike OC's membership-only check.
  *
  * <p><em>Lenient on absence</em>, matching OC's shared-factory model: a token without the
  * organizations claim (for example a machine-to-machine bearer token) passes this validator, so the
  * single shared {@link io.camunda.security.spring.oidc.TokenValidatorFactory} can serve both the
  * interactive login id_token (carries orgs, not cluster id) and bearer tokens (carry cluster id,
- * not orgs). The only difference from Optimize 8.9 is on absence: 8.9 denied login when the orgs
- * claim was missing, whereas here a claim-less token is left to the other path's gate (cluster id).
+ * not orgs).
  */
 public final class OptimizeCloudOrganizationValidator implements OAuth2TokenValidator<Jwt> {
 

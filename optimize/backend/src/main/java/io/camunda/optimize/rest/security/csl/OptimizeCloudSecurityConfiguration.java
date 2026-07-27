@@ -26,30 +26,22 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 
 /**
- * CCSaaS-specific security wiring for the CSL adoption. Active only under the cloud profile with
- * CSL enabled. Brings back the SaaS org/cluster validation the legacy {@code
- * CCSaaSSecurityConfigurerAdapter} performed, using CSL's documented host extension points. See <a
+ * CCSaaS security wiring for the CSL adoption, active only under the cloud profile with CSL
+ * enabled. Restores the SaaS org/cluster validation the legacy {@code
+ * CCSaaSSecurityConfigurerAdapter} performed, using CSL's host extension points. See <a
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  *
- * <p>Mirrors OC's {@code OidcOverrideBeansConfiguration}: a single shared {@link
- * TokenValidatorFactory} carries both a lenient {@link OptimizeCloudOrganizationValidator} and a
- * lenient {@link OptimizeCloudClusterValidator}, and the {@code idTokenDecoderFactory} reuses that
- * same factory. Because both validators are lenient on claim absence, the one chain serves both the
- * interactive login id_token (carries {@code orgs}, not the cluster id) and machine-to-machine
- * bearer tokens (carry the cluster id, not {@code orgs}).
+ * <p>Mirrors OC's {@code OidcOverrideBeansConfiguration}: one shared {@link TokenValidatorFactory}
+ * carries an {@link OptimizeCloudOrganizationValidator} and an {@link
+ * OptimizeCloudClusterValidator}, and {@code idTokenDecoderFactory} reuses it. Both validators are
+ * lenient on claim absence, so the single chain serves both the login id_token (carries {@code
+ * orgs}, not the cluster id) and M2M bearer tokens (carry the cluster id, not {@code orgs}). Unlike
+ * OC, Optimize keeps the org role gate.
  *
- * <p>This aligns Optimize with OC's shared-factory model but keeps Optimize's org role gate. It
- * still changes behaviour relative to Optimize 8.9 (see the PR description's "Differences vs 8.9"):
- * on claim absence the checks are now lenient (a login token without the orgs claim, or a bearer
- * token without the cluster id, is no longer rejected on that ground), and the id_token now runs
- * through CSL's issuer/audience validation. The org membership + allowed-role requirement is
- * retained.
- *
- * <p>The Auth0 {@code audience} authorize-request parameter (so the login token is accepted by the
- * Accounts API) and the clusterId-derived servlet context path are supplied by configuration, not
- * code: the config compatibility bridge maps the legacy Optimize keys to {@code
- * camunda.security.*}, and CSL's authorization-request resolver injects the {@code audience}
- * parameter natively.
+ * <p>The Auth0 {@code audience} authorize-request parameter and the clusterId-derived servlet
+ * context path come from configuration, not code: the config compatibility bridge maps the legacy
+ * Optimize keys to {@code camunda.security.*}, and CSL injects the {@code audience} parameter
+ * natively.
  */
 @Configuration
 @Conditional(CCSaaSCondition.class)
@@ -57,11 +49,10 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 public class OptimizeCloudSecurityConfiguration {
 
   /**
-   * Shared token validation for both the login id_token and bearer/public-API tokens. CSL ships the
-   * base chain (timestamp/issuer/audience); this overrides its {@code @ConditionalOnMissingBean}
-   * default to append the SaaS org and cluster gates. Both gates are lenient on claim absence, but
-   * the organization id and cluster id must be configured: a blank value fails startup rather than
-   * silently disabling the gate.
+   * Shared token validation for the login id_token and bearer/public-API tokens. Overrides CSL's
+   * {@code @ConditionalOnMissingBean} default to append the SaaS org and cluster gates. The
+   * organization id and cluster id must be configured: a blank value fails startup rather than
+   * silently disabling a gate.
    */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
@@ -86,8 +77,8 @@ public class OptimizeCloudSecurityConfiguration {
 
   /**
    * Interactive login id_token validation. Reuses the shared {@link #tokenValidatorFactory} so the
-   * login token runs through the same org/cluster gates as bearer tokens. Overrides CSL's
-   * {@code @ConditionalOnMissingBean} default so the webapp login is organization-gated.
+   * login token runs through the same org/cluster gates as bearer tokens, overriding CSL's
+   * {@code @ConditionalOnMissingBean} default.
    */
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(

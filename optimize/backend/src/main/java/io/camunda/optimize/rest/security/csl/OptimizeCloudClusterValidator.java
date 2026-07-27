@@ -24,8 +24,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * <p><em>Lenient on absence</em>, matching OC and the CSL adoption baseline: a token without the
  * cluster id claim (for example the interactive login id_token) passes this validator, so the
  * single shared {@link io.camunda.security.spring.oidc.TokenValidatorFactory} can serve both the
- * login id_token and machine-to-machine bearer tokens. This is an intentional behaviour change from
- * Optimize 8.9, which rejected a bearer token that lacked the cluster id claim.
+ * login id_token and machine-to-machine bearer tokens.
  */
 public final class OptimizeCloudClusterValidator implements OAuth2TokenValidator<Jwt> {
 
