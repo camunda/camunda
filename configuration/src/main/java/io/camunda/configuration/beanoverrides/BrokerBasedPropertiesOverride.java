@@ -258,6 +258,11 @@ public class BrokerBasedPropertiesOverride {
     populateFromProcessInstanceCreation(override, camunda);
     populateFromJobs(override, camunda);
     populateFromCaches(override, camunda);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
   }
 
   private static void populateFromDistribution(

@@ -7,9 +7,17 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Engine {
+  private static final String PREFIX = "camunda.processing.engine";
+
+  private static final Set<String> LEGACY_MAX_PROCESS_DEPTH_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.maxProcessDepth");
 
   /** Configuration properties for the engine's distribution settings. */
   @NestedConfigurationProperty private Distribution distribution = new Distribution();
@@ -22,6 +30,12 @@ public class Engine {
 
   /** Configuration properties for the engine's caches. */
   @NestedConfigurationProperty private EngineCaches caches = new EngineCaches();
+
+  /**
+   * Configures the maximum depth of nested call activities allowed before an incident is raised,
+   * to guard against unbounded process recursion.
+   */
+  private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
 
   public Distribution getDistribution() {
     return distribution;
@@ -53,5 +67,18 @@ public class Engine {
 
   public void setCaches(final EngineCaches caches) {
     this.caches = caches;
+  }
+
+  public int getMaxProcessDepth() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".max-process-depth",
+        maxProcessDepth,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_MAX_PROCESS_DEPTH_PROPERTIES);
+  }
+
+  public void setMaxProcessDepth(final int maxProcessDepth) {
+    this.maxProcessDepth = maxProcessDepth;
   }
 }

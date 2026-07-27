@@ -286,6 +286,7 @@ processing.engine.distribution.redistribution-interval
 processing.engine.job.include-variables-in-job-completed-event
 processing.engine.job.timeout-checker-batch-limit
 processing.engine.job.timeout-checker-polling-interval
+processing.engine.max-process-depth
 processing.flow-control.request.aimd.backoff-ratio
 processing.flow-control.request.aimd.initial-limit
 processing.flow-control.request.aimd.max-limit
