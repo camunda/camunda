@@ -104,12 +104,11 @@ public final class CrossPartitionMessageStartLockReleaseTest {
           .endEvent()
           .done();
 
-  // Dual-start process on a *single* bpmnProcessId: the message-start path auto-completes (the
-  // cross-partition holder), while the none-start path parks on a service task so a second instance
-  // of the SAME process definition can actively hold the businessId. Needed because businessId
-  // uniqueness is scoped per (businessId, processDefinitionId, tenantId) — a different process
-  // could
-  // not contend for the same businessId.
+  // Dual-start process on a *single* bpmnProcessId: the message-start path parks on a service task
+  // (the cross-partition holder stays active), while the none-start path parks on a service task so
+  // a second instance of the SAME process definition can actively hold the businessId. Needed
+  // because businessId uniqueness is scoped per (businessId, processDefinitionId, tenantId) — a
+  // different process could not contend for the same businessId.
   private static final String CONTENDED_PROCESS_ID = "wf-contended";
   private static final String CONTENDED_MESSAGE_NAME = "contended-start-msg";
   private static final BpmnModelInstance CONTENDED_PROCESS = contendedProcess();
@@ -125,7 +124,15 @@ public final class CrossPartitionMessageStartLockReleaseTest {
 
   private static BpmnModelInstance contendedProcess() {
     final var process = Bpmn.createExecutableProcess(CONTENDED_PROCESS_ID);
-    process.startEvent("contendedMsgStart").message(CONTENDED_MESSAGE_NAME).endEvent();
+    // the message-start holder parks on a job so it stays active: it must not auto-complete, which
+    // would push its own release immediately (before the contender exists), a separately covered
+    // path. Deferring the release to the poll (via ban) lets the contender take the businessId
+    // first.
+    process
+        .startEvent("contendedMsgStart")
+        .message(CONTENDED_MESSAGE_NAME)
+        .serviceTask("contendedMsgTask", t -> t.zeebeJobType("hold"))
+        .endEvent();
     process
         .startEvent("contendedNoneStart")
         .serviceTask("contendedTask", t -> t.zeebeJobType("hold"))
@@ -383,17 +390,28 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     // leave two active root PIs sharing one businessId — the exact corruption the cross-partition
     // routing of the pick-up exists to prevent. Uses a dual-start process so the contender shares
     // the buffered message's process definition (uniqueness is scoped per process definition).
+    //
+    // The release is deferred to the reconciliation poll by *banning* the holder rather than
+    // completing it: a completing holder pushes its own release immediately — before the contender
+    // exists, while the businessId is free — which is a separately covered path. Banning frees the
+    // businessId (uniqueness excludes banned instances) while leaving the correlation-key lock for
+    // the poll to release, so the contender can take the businessId before the pick-up.
     deployAndAwaitStartSubscriptions(CONTENDED_PROCESS, CONTENDED_MESSAGE_NAME);
 
-    // the original holder starts on P_B via the message-start ask and auto-completes; lock on P_K
+    // the holder starts on P_B via the message-start ask and parks on a job (stays active); lock
+    // P_K
     publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
     final long holderKey = awaitHolderActivating(CONTENDED_PROCESS_ID);
+    awaitHolderJobCreated(holderKey);
     awaitMessageConsumedOnPK(CONTENDED_MESSAGE_NAME);
 
     // a second publish with the same correlation key AND the same businessId is buffered behind the
     // lock — it will have to be re-routed to P_B on pick-up
     publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
-    awaitHolderCompleted(CONTENDED_PROCESS_ID);
+
+    // ban the holder: frees the businessId without completing it, so no push fires and the
+    // correlation-key lock is left for the poll to release
+    engine.banInstanceInNewTransaction(partitionFor(BUSINESS_ID), holderKey);
 
     // a *different* instance of the same process now actively holds that businessId on P_B (via the
     // none-start path that parks on a service task), so the businessId is taken again before the
