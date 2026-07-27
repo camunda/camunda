@@ -21,11 +21,15 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.ManagementServices;
+import io.camunda.service.SecretServices.ResolvedSecret;
+import io.camunda.service.SecretServices.SecretErrorCode;
+import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.service.license.CamundaLicense;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
@@ -87,6 +91,48 @@ class CamundaServicesConfigurationTest {
     // re-verify checkerA's count is still exactly one -- catches a leak in the other direction,
     // where querying tenant B would incorrectly also consult tenant A's checker.
     verify(checkerA, times(1)).collectPermissionTypes(any(), any(), any());
+  }
+
+  @Test
+  void shouldWireDistinctAuthorizationCheckerPerPhysicalTenantIntoSecretServices() {
+    // given: SecretServices shares the per-tenant checker wiring with DocumentServices
+    final var checkerA = mock(AuthorizationChecker.class);
+    final var checkerB = mock(AuthorizationChecker.class);
+    when(checkerA.retrieveAuthorizedAuthorizationScopes(any(), any()))
+        .thenReturn(List.of(AuthorizationScope.WILDCARD));
+    when(checkerB.retrieveAuthorizedAuthorizationScopes(any(), any())).thenReturn(List.of());
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+
+    // when / then: tenant A's checker grants REVEAL -- the reference resolves, using only tenant
+    // A's checker.
+    final var resolvedForA =
+        registry
+            .secretServices(TENANT_A)
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+    assertThat(resolvedForA.resolved())
+        .extracting(ResolvedSecret::reference)
+        .containsExactly("camunda.secrets.token");
+    verify(checkerA).retrieveAuthorizedAuthorizationScopes(any(), any());
+    verifyNoInteractions(checkerB);
+
+    // when / then: tenant B's own checker denies REVEAL -- the reference is denied even though
+    // tenant A's checker (queried above) would have granted it, and A is not consulted again.
+    final var resolvedForB =
+        registry
+            .secretServices(TENANT_B)
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+    assertThat(resolvedForB.resolved()).isEmpty();
+    assertThat(resolvedForB.errors())
+        .extracting(SecretResolutionError::code)
+        .containsExactly(SecretErrorCode.ACCESS_DENIED);
+    verify(checkerB).retrieveAuthorizedAuthorizationScopes(any(), any());
+    verify(checkerA, times(1)).retrieveAuthorizedAuthorizationScopes(any(), any());
   }
 
   @Test
