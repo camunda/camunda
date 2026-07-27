@@ -140,7 +140,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "${{ steps.message.outputs.MESSAGE }}"
+                  text: ${{ toJSON(steps.message.outputs.MESSAGE) }}
 
       - name: Observe build status
         if: always()
