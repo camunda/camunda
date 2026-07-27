@@ -315,6 +315,7 @@ public record CurrentClusterConfiguration(
       throw new IllegalArgumentException(
           "Expected to init a plan with at least one phase, but the phase list is empty");
     }
+
     final var newState = phasedChangeState.initPlan(phases);
     final var plan = newState.pending().orElseThrow();
     return withPhasedChangeState(newState).applyPhase(plan);
@@ -457,8 +458,11 @@ public record CurrentClusterConfiguration(
    * becomes a {@link PartitionGroupParallelPhase} targeting the default group. For example {@code
    * [MemberJoin, PartitionJoin, PartitionLeave, MemberLeave]} yields three phases: a global phase,
    * a default-group phase with the two partition operations, and another global phase.
+   *
+   * <p>Also used by the coordinator to turn a freshly generated flat operation list (from the
+   * unchanged request transformers) into a {@link PhasedChangePlan} for the default group.
    */
-  private static List<Phase> toPhases(final List<ClusterConfigurationChangeOperation> operations) {
+  public static List<Phase> toPhases(final List<ClusterConfigurationChangeOperation> operations) {
     final List<Phase> phases = new ArrayList<>();
     final List<GlobalChangeOperation> globalRun = new ArrayList<>();
     final List<PartitionGroupOperation> partitionRun = new ArrayList<>();
