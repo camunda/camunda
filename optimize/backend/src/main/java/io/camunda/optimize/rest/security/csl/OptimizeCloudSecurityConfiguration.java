@@ -13,7 +13,6 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -60,7 +59,9 @@ public class OptimizeCloudSecurityConfiguration {
   /**
    * Shared token validation for both the login id_token and bearer/public-API tokens. CSL ships the
    * base chain (timestamp/issuer/audience); this overrides its {@code @ConditionalOnMissingBean}
-   * default to append the lenient SaaS org and cluster gates.
+   * default to append the SaaS org and cluster gates. Both gates are lenient on claim absence, but
+   * the organization id and cluster id must be configured: a blank value fails startup rather than
+   * silently disabling the gate.
    */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
@@ -68,15 +69,15 @@ public class OptimizeCloudSecurityConfiguration {
       final ConfigurationService configurationService,
       final CamundaSecurityLibraryProperties cslProperties) {
     final CloudAuthConfiguration cloud = cloudConfig(configurationService);
-    final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
-    if (StringUtils.isNotBlank(cloud.getOrganizationId())) {
-      extraValidators.add(
-          new OptimizeCloudOrganizationValidator(
-              cloud.getOrganizationId(), OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES));
-    }
-    if (StringUtils.isNotBlank(cloud.getClusterId())) {
-      extraValidators.add(new OptimizeCloudClusterValidator(cloud.getClusterId()));
-    }
+    final String organizationId = requireConfigured(cloud.getOrganizationId(), "organizationId");
+    final String clusterId = requireConfigured(cloud.getClusterId(), "clusterId");
+    // Both gates are always added. CCSaaS access control must be enforced, so a blank org or
+    // cluster id fails startup above rather than silently dropping a gate and failing open.
+    final List<OAuth2TokenValidator<Jwt>> extraValidators =
+        List.of(
+            new OptimizeCloudOrganizationValidator(
+                organizationId, OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES),
+            new OptimizeCloudClusterValidator(clusterId));
     return new TokenValidatorFactory(
         oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
         cslProperties.getAuthentication().getOidc().getClockSkew(),
@@ -99,5 +100,15 @@ public class OptimizeCloudSecurityConfiguration {
   private static CloudAuthConfiguration cloudConfig(
       final ConfigurationService configurationService) {
     return configurationService.getAuthConfiguration().getCloudAuthConfiguration();
+  }
+
+  private static String requireConfigured(final String value, final String name) {
+    if (StringUtils.isBlank(value)) {
+      throw new IllegalStateException(
+          ("CCSaaS CSL mode requires a non-blank %s: SaaS organization and cluster access control"
+                  + " cannot be enforced without it. Check the cloud auth configuration.")
+              .formatted(name));
+    }
+    return value;
   }
 }

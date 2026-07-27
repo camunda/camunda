@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -125,6 +126,38 @@ class OptimizeCloudSecurityConfigurationTest {
             oidcProviderConfigurationPort, configurationService, cslProperties);
 
     assertThat(config.idTokenDecoderFactory(factory)).isInstanceOf(OidcIdTokenDecoderFactory.class);
+  }
+
+  @Test
+  void shouldFailStartupWhenOrganizationIdIsBlank() {
+    // Fail closed: a blank org id must not silently drop the CCSaaS org access-control gate.
+    when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
+    when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
+    when(cloudAuthConfiguration.getOrganizationId()).thenReturn("  ");
+
+    assertThatThrownBy(
+            () ->
+                config.tokenValidatorFactory(
+                    oidcProviderConfigurationPort, configurationService, cslProperties))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("organizationId");
+  }
+
+  @Test
+  void shouldFailStartupWhenClusterIdIsBlank() {
+    // Fail closed: a blank cluster id must not silently drop the CCSaaS cluster access-control
+    // gate.
+    when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
+    when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
+    when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
+    when(cloudAuthConfiguration.getClusterId()).thenReturn("");
+
+    assertThatThrownBy(
+            () ->
+                config.tokenValidatorFactory(
+                    oidcProviderConfigurationPort, configurationService, cslProperties))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("clusterId");
   }
 
   private static ClientRegistration clientRegistration() {
