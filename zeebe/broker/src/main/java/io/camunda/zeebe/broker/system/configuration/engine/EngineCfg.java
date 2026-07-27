@@ -26,6 +26,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
+  private OrdinalCfg ordinal = new OrdinalCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -41,6 +42,7 @@ public final class EngineCfg implements ConfigurationEntry {
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
     startup.init(globalConfig, brokerBase);
+    ordinal.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -147,6 +149,14 @@ public final class EngineCfg implements ConfigurationEntry {
     startup = startupCfg;
   }
 
+  public OrdinalCfg getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final OrdinalCfg ordinal) {
+    this.ordinal = ordinal;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -176,6 +186,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + processInstanceCreation
         + ", startup="
         + startup
+        + ", ordinal="
+        + ordinal
         + '}';
   }
 
@@ -218,6 +230,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
-        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setOrdinalRolloverEvaluationInterval(ordinal.getRolloverEvaluationInterval());
   }
 }

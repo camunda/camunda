@@ -164,11 +164,13 @@ public final class ZeebePartitionFactory implements Closeable {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
+    // YOHAN COMMENT >> 2. create factory
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     final var partitionId = raftPartition.id().id();
+    // YOHAN COMMENT >> create rocks db config
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
     final var rocksDbResources =
         getOrInitRocksDbResources(rocksDbConfiguration, membershipService.getLocalMember().id());
@@ -341,6 +343,7 @@ public final class ZeebePartitionFactory implements Closeable {
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
 
+      // YOHAN COMMENT >> 3. create engine processors
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
           localBroker.getPartitionsCount(),

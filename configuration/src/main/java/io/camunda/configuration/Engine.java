@@ -20,6 +20,8 @@ public class Engine {
 
   @NestedConfigurationProperty private EngineJob job = new EngineJob();
 
+  @NestedConfigurationProperty private EngineOrdinal ordinal = new EngineOrdinal();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -42,5 +44,13 @@ public class Engine {
 
   public void setJob(final EngineJob job) {
     this.job = job;
+  }
+
+  public EngineOrdinal getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final EngineOrdinal ordinal) {
+    this.ordinal = ordinal;
   }
 }

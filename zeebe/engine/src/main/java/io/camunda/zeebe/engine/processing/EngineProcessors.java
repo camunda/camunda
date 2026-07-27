@@ -54,8 +54,9 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
-import io.camunda.zeebe.engine.processing.ordinals.FakeOrdinalKeyProvider;
-import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.ActiveOrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
@@ -100,6 +101,7 @@ public final class EngineProcessors {
 
   private EngineProcessors() {}
 
+  // YOHAN COMMENT >> 3. Creating engine proessorsc
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
@@ -111,22 +113,47 @@ public final class EngineProcessors {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    // YOHAN COMMENT >> OLD key generator
     final var keyGenerator = processingState.getKeyGenerator();
-    final var ordinalKeyProvider = new FakeOrdinalKeyProvider(partitionsCount);
+    final var ordinalKeyProvider = new ActiveOrdinalKeyProvider(processingState.getOrdinalState());
 
     final var routingInfo =
         RoutingInfo.dynamic(
             processingState.getRoutingState(), RoutingInfo.forStaticPartitions(partitionsCount));
     final var scheduledTaskStateFactory =
         typedRecordProcessorContext.getScheduledTaskStateFactory();
-    final var writers = typedRecordProcessorContext.getWriters();
-    final var typedRecordProcessors = TypedRecordProcessors.processors();
 
+    final var writers = typedRecordProcessorContext.getWriters();
+    subscriptionCommandSender.setWriters(writers);
+
+    final var typedRecordProcessors = TypedRecordProcessors.processors();
     typedRecordProcessors.withListener(processingState);
+
+    final var distributionMetrics =
+        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var commandDistributionBehavior =
+        new CommandDistributionBehavior(
+            processingState.getDistributionState(),
+            writers,
+            typedRecordProcessorContext.getPartitionId(),
+            routingInfo,
+            interPartitionCommandSender,
+            distributionMetrics);
+
+    final var config = typedRecordProcessorContext.getConfig();
+
+    // TODO: @yohanfernando >> We need to get the ordinal provider and then pass it around to
+    //  places that need adding ordinal
+    OrdinalProcessors.addOrdinalProcessors(
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        commandDistributionBehavior,
+        config,
+        processingState.getOrdinalState());
 
     final var clock = typedRecordProcessorContext.getClock();
     final int partitionId = typedRecordProcessorContext.getPartitionId();
-    final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
     final DueDateTimerCheckScheduler timerChecker =
@@ -138,15 +165,15 @@ public final class EngineProcessors {
         new ProcessEngineMetrics(
             typedRecordProcessorContext.getMeterRegistry(),
             processingState.getElementInstanceState().getActiveProcessInstanceCount());
-    final var distributionMetrics =
-        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var batchOperationMetrics =
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
     final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
 
-    subscriptionCommandSender.setWriters(writers);
+    // YOHAN COMMENT >> vvv create behaviors & processors
+    // YOHAN COMMENT >> vvv create behaviors & processors
+    // YOHAN COMMENT >> vvv create behaviors & processors
 
     final var decisionBehavior =
         new DecisionBehavior(
@@ -176,17 +203,7 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics);
-
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
-
-    final var commandDistributionBehavior =
-        new CommandDistributionBehavior(
-            processingState.getDistributionState(),
-            writers,
-            typedRecordProcessorContext.getPartitionId(),
-            routingInfo,
-            interPartitionCommandSender,
-            distributionMetrics);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
@@ -363,6 +380,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
+    // YOHAN COMMENT >> creating default tenant & members etc
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 

@@ -75,6 +75,7 @@ public interface Intent {
     map.put(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionIntent.class);
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
+    map.put(ValueType.ORDINAL, OrdinalIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);
     map.put(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.class);
