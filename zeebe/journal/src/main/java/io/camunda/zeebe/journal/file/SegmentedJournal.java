@@ -176,13 +176,19 @@ public final class SegmentedJournal implements Journal {
       try {
         writer.flush();
       } finally {
+        // store the last flushed index while still holding the lock, so that the stored value can
+        // never overtake a concurrent truncation, which lowers the index under the write lock
+        if (writer.getLastFlushedIndex() > 0) {
+          metaStore.storeLastFlushedIndex(writer.getLastFlushedIndex());
+        }
         rwlock.unlockRead(stamp);
       }
-    } finally {
-      if (writer.getLastFlushedIndex() > 0) {
-        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
-      }
     }
+  }
+
+  @Override
+  public long getLastFlushedIndex() {
+    return writer.getLastFlushedIndex();
   }
 
   @Override

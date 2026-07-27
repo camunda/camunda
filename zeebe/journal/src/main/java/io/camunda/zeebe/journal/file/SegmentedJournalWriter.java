@@ -35,7 +35,10 @@ final class SegmentedJournalWriter {
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
   private final JournalMetrics journalMetrics;
-  private long lastFlushedIndex;
+
+  // may be read and advanced concurrently by multiple flushing threads (under the journal's read
+  // lock), while truncation lowers it exclusively under the journal's write lock
+  private volatile long lastFlushedIndex;
 
   private Segment currentSegment;
   private SegmentWriter currentWriter;
@@ -198,16 +201,24 @@ final class SegmentedJournalWriter {
         flushedIndex = lastSegmentIndex;
       }
     } finally {
-      // store whatever we managed to flush to avoid doing it again
-      if (flushedIndex > lastFlushedIndex) {
-        lastFlushedIndex = flushedIndex;
+      advanceLastFlushedIndex(flushedIndex, segmentsCount);
+    }
+  }
 
-        LOGGER.trace(
-            "Flushed {} segment(s), from index {} to index {}",
-            segmentsCount,
-            lastFlushedIndex,
-            flushedIndex);
-      }
+  /**
+   * Stores whatever we managed to flush to avoid doing it again. Concurrent flushes may race here,
+   * so the index is only ever advanced - truncation, which lowers it, is mutually exclusive with
+   * flushing via the journal's write lock.
+   */
+  private synchronized void advanceLastFlushedIndex(
+      final long flushedIndex, final int flushedSegments) {
+    if (flushedIndex > lastFlushedIndex) {
+      LOGGER.trace(
+          "Flushed {} segment(s), from index {} to index {}",
+          flushedSegments,
+          lastFlushedIndex,
+          flushedIndex);
+      lastFlushedIndex = flushedIndex;
     }
   }
 

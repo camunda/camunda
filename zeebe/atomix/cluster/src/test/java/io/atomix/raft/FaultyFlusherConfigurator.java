@@ -17,6 +17,7 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,16 +38,27 @@ public record FaultyFlusherConfigurator(
     return (ignored) ->
         new RaftLogFlusher() {
           @Override
-          public void flush(final Journal journal) throws FlushException {
+          public CompletableFuture<Void> flush(final Journal journal, final long index) {
             if (faultyWhen.get()) {
               notifyFaultyFlush.run();
               if (withDataLoss) {
                 journal.deleteAfter(journal.getLastIndex() - 1);
               }
-              throw new FlushException(new IOException("Failed sync"));
-            } else {
-              journal.flush();
+              return CompletableFuture.failedFuture(
+                  new FlushException(new IOException("Failed sync")));
             }
+
+            try {
+              journal.flush();
+              return CompletableFuture.completedFuture(null);
+            } catch (final FlushException e) {
+              return CompletableFuture.failedFuture(e);
+            }
+          }
+
+          @Override
+          public void onLogTruncation(final long newLastIndex) {
+            // nothing to do - flushes complete synchronously, there are never pending results
           }
         };
   }

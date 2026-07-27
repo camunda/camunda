@@ -64,6 +64,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -882,14 +883,19 @@ public class PassiveRole extends InactiveRole {
 
         final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
         if (failedToAppend) {
-          try {
-            flush(lastLogIndex - 1, request.prevLogIndex());
-          } catch (final Exception e) {
-            log.warn(
-                "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
-                lastLogIndex - 1,
-                request.prevLogIndex());
-          }
+          // the request was already completed by tryToAppend; still try to persist what was
+          // appended so far, but only on a best-effort basis
+          final long appendedIndex = lastLogIndex - 1;
+          flush(appendedIndex, request.prevLogIndex())
+              .whenComplete(
+                  (ignored, error) -> {
+                    if (error != null) {
+                      log.warn(
+                          "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
+                          appendedIndex,
+                          request.prevLogIndex());
+                    }
+                  });
           return;
         }
 
@@ -926,14 +932,41 @@ public class PassiveRole extends InactiveRole {
         role() == RaftServer.Role.PASSIVE ? raft.getLog().getLastIndex() : lastLogIndex;
     raft.setFirstCommitIndex(request.commitIndex(), agreedPersistedIndex);
 
-    try {
-      //     Make sure all entries are flushed before ack to ensure we have persisted what we
-      //     acknowledge
-      flush(lastLogIndex, request.prevLogIndex());
-    } catch (final Exception e) {
+    // Make sure all entries are flushed before ack to ensure we have persisted what we
+    // acknowledge. Depending on the configured flush strategy the flush may complete
+    // asynchronously, in which case the response is also completed asynchronously, once a flush
+    // covering the appended entries completed.
+    final long appendedIndex = lastLogIndex;
+    final var flushResult = flush(appendedIndex, request.prevLogIndex());
+    if (flushResult.isDone()) {
+      // fast path for flush strategies which complete synchronously, e.g. the default direct
+      // strategy; this keeps handling the request a single, synchronous step
+      completeAppendOnceFlushed(
+          unwrapError(flushResult), request, appendedIndex, commitIndex, future);
+      return;
+    }
+
+    flushResult.whenComplete(
+        (ignored, error) ->
+            raft.getThreadContext()
+                .execute(
+                    () ->
+                        completeAppendOnceFlushed(
+                            error, request, appendedIndex, commitIndex, future)));
+  }
+
+  private void completeAppendOnceFlushed(
+      final Throwable flushError,
+      final InternalAppendRequest request,
+      final long lastLogIndex,
+      final long commitIndex,
+      final CompletableFuture<AppendResponse> future) {
+    if (flushError != null) {
+      final var error =
+          flushError instanceof CompletionException ? flushError.getCause() : flushError;
       log.warn(
           "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
-          e);
+          error);
       // Flush failed, return error to the leader so we can retry.
       failAppend(request.prevLogIndex(), future);
       return;
@@ -949,11 +982,15 @@ public class PassiveRole extends InactiveRole {
     succeedAppend(lastLogIndex, future);
   }
 
-  private void flush(final long lastFlushedIndex, final long previousEntryIndex)
-      throws FlushException {
-    if (lastFlushedIndex > previousEntryIndex) {
-      raft.getLog().flush();
+  private CompletableFuture<Void> flush(final long lastLogIndex, final long previousEntryIndex) {
+    if (lastLogIndex > previousEntryIndex) {
+      return raft.getLog().flush(lastLogIndex);
     }
+    return CompletableFuture.completedFuture(null);
+  }
+
+  private static Throwable unwrapError(final CompletableFuture<Void> completedResult) {
+    return completedResult.isCompletedExceptionally() ? completedResult.exceptionNow() : null;
   }
 
   private boolean tryToAppend(

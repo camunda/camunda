@@ -40,13 +40,28 @@ final class DelayedFlusherTest {
     Mockito.when(journal.isOpen()).thenReturn(true);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).hasSize(1);
 
     final var scheduled = scheduler.operations.get(0);
     assertThat(scheduled.delay).isEqualTo(Duration.ofSeconds(5));
+    Mockito.verify(journal, Mockito.never()).flush();
+  }
+
+  @Test
+  void shouldCompleteResultImmediately() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.when(journal.isOpen()).thenReturn(true);
+
+    // when
+    final var result = flusher.flush(journal, 1);
+
+    // then - the flush is only scheduled, but callers may proceed immediately as this flusher
+    // trades durability for performance
+    assertThat(result).isCompleted();
     Mockito.verify(journal, Mockito.never()).flush();
   }
 
@@ -58,7 +73,7 @@ final class DelayedFlusherTest {
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     scheduler.runNext();
 
     // then
@@ -72,9 +87,9 @@ final class DelayedFlusherTest {
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
 
     // when
-    flusher.flush(journal);
-    flusher.flush(journal);
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
+    flusher.flush(journal, 1);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).hasSize(1);
@@ -88,7 +103,7 @@ final class DelayedFlusherTest {
     final var journal = Mockito.mock(Journal.class);
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     flusher.close();
 
     // then
@@ -104,7 +119,7 @@ final class DelayedFlusherTest {
 
     // when
     flusher.close();
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
 
     // then
     assertThat(scheduler.operations).isEmpty();
@@ -119,7 +134,7 @@ final class DelayedFlusherTest {
         .flush();
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     scheduler.runNext();
     Mockito.doNothing().when(journal).flush();
     scheduler.runNext();
@@ -137,7 +152,7 @@ final class DelayedFlusherTest {
         .flush();
 
     // when
-    flusher.flush(journal);
+    flusher.flush(journal, 1);
     flusher.close();
     scheduler.runNext();
 
