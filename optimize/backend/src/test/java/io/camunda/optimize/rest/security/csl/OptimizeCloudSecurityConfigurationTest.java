@@ -82,7 +82,7 @@ class OptimizeCloudSecurityConfigurationTest {
         jwt(
             Map.of(
                 OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM,
-                List.of(Map.of("id", "org-1", "roles", List.of("viewer")))));
+                List.of(Map.of("id", "org-1", "roles", List.of("analyst")))));
 
     assertThat(validator.validate(idToken).hasErrors()).isFalse();
   }

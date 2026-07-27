@@ -18,21 +18,21 @@ import org.springframework.security.oauth2.jwt.Jwt;
 class OptimizeCloudOrganizationValidatorTest {
 
   private final OptimizeCloudOrganizationValidator validator =
-      new OptimizeCloudOrganizationValidator("org-1");
+      new OptimizeCloudOrganizationValidator(
+          "org-1", OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES);
 
   @Test
-  void shouldAcceptWhenMemberOfConfiguredOrg() {
-    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("viewer"))));
+  void shouldAcceptWhenConfiguredOrgHasAllowedRole() {
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("analyst"))));
 
     assertThat(validator.validate(token).hasErrors()).isFalse();
   }
 
   @Test
-  void shouldAcceptRegardlessOfOrgRole() {
-    // Aligned with OC: membership only, the Auth0 org role no longer gates access.
-    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of())));
+  void shouldRejectWhenConfiguredOrgHasNoAllowedRole() {
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("viewer"))));
 
-    assertThat(validator.validate(token).hasErrors()).isFalse();
+    assertThat(validator.validate(token).hasErrors()).isTrue();
   }
 
   @Test
@@ -44,7 +44,8 @@ class OptimizeCloudOrganizationValidatorTest {
 
   @Test
   void shouldAcceptWhenOrganizationsClaimAbsent() {
-    // Lenient on absence (OC baseline): tokens without an orgs claim pass, e.g. M2M bearer tokens.
+    // Lenient on absence (OC shared-factory model): tokens without an orgs claim pass here, e.g.
+    // M2M bearer tokens, which are gated by the cluster-id check instead.
     assertThat(validator.validate(jwtWithoutOrgs()).hasErrors()).isFalse();
   }
 

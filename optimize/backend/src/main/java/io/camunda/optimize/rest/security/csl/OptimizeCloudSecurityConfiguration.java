@@ -39,10 +39,12 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
  * interactive login id_token (carries {@code orgs}, not the cluster id) and machine-to-machine
  * bearer tokens (carry the cluster id, not {@code orgs}).
  *
- * <p>This deliberately aligns Optimize with OC and changes behaviour relative to Optimize 8.9 (see
- * the PR description's "Differences vs 8.9"): 8.9 denied login on a missing/malformed orgs claim,
- * required an allowed org role, and rejected bearer tokens without a cluster id. Under CSL,
- * fine-grained access is decided by the authorization policy, not by the Auth0 org role.
+ * <p>This aligns Optimize with OC's shared-factory model but keeps Optimize's org role gate. It
+ * still changes behaviour relative to Optimize 8.9 (see the PR description's "Differences vs 8.9"):
+ * on claim absence the checks are now lenient (a login token without the orgs claim, or a bearer
+ * token without the cluster id, is no longer rejected on that ground), and the id_token now runs
+ * through CSL's issuer/audience validation. The org membership + allowed-role requirement is
+ * retained.
  *
  * <p>The Auth0 {@code audience} authorize-request parameter (so the login token is accepted by the
  * Accounts API) and the clusterId-derived servlet context path are supplied by configuration, not
@@ -67,7 +69,9 @@ public class OptimizeCloudSecurityConfiguration {
     final CloudAuthConfiguration cloud = cloudConfig(configurationService);
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
     if (StringUtils.isNotBlank(cloud.getOrganizationId())) {
-      extraValidators.add(new OptimizeCloudOrganizationValidator(cloud.getOrganizationId()));
+      extraValidators.add(
+          new OptimizeCloudOrganizationValidator(
+              cloud.getOrganizationId(), OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES));
     }
     if (StringUtils.isNotBlank(cloud.getClusterId())) {
       extraValidators.add(new OptimizeCloudClusterValidator(cloud.getClusterId()));
