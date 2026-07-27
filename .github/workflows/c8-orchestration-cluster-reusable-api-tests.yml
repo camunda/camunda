@@ -224,7 +224,7 @@ jobs:
       # TEMPORARY for PR #58409 CI-evidence validation — revert to
       # `if: inputs.branch == 'main'` (both steps below) before merge.
       - name: Run analytics-exporter isolated tests
-        if: inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation'
+        if: always() && (inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation')
         shell: bash
         run: npm run test -- --project=analytics-exporter-isolated
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
