@@ -54,6 +54,15 @@ public final class OptimizeCloudOidcUserService extends OidcUserService {
   @Override
   public OidcUser loadUser(final OidcUserRequest userRequest) throws OAuth2AuthenticationException {
     final OidcUser user = super.loadUser(userRequest);
+    // SPIKE-ONLY — do NOT merge. Captures a real Auth0 id_token to confirm what `aud` it
+    // carries, informing the audience-gate decision in #58638. Logs the full token (sensitive):
+    // run only in a throwaway int env and never share/commit the output.
+    LOG.info(
+        "SPIKE id_token sample: aud={}, iss={}, sub={}, raw={}",
+        user.getIdToken().getAudience(),
+        user.getIdToken().getIssuer(),
+        user.getIdToken().getSubject(),
+        user.getIdToken().getTokenValue());
     if (!hasRequiredOrgRole(user)) {
       LOG.debug(
           "Denying login for [{}]: not a member of organization [{}] with an allowed role {}",
