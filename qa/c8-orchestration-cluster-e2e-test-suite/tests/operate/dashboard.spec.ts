@@ -18,6 +18,7 @@ import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
+import {findInstanceWithVariable} from '../../utils/operateDashboardHelper';
 import {undefined} from 'valibot';
 
 let instanceIds: string[] = [];
@@ -138,34 +139,6 @@ test.describe('Dashboard', () => {
     await expect(operateDashboardPage.incidentInstancesBadge).toHaveText(/\d+/);
   };
 
-  const findInstanceWithVariable = async (
-    expectedVariableRegex: RegExp,
-  ): Promise<boolean> => {
-    const viewInstanceLinks = operateDashboardPage.viewInstanceLink();
-    await expect(viewInstanceLinks.first()).toBeVisible();
-
-    const linkCount = await viewInstanceLinks.count();
-    for (let index = 0; index < linkCount; index++) {
-      await operateDashboardPage.viewInstanceLink().nth(index).click();
-
-      const variableVisible = await operateProcessInstancePage
-        .variableCellByName(expectedVariableRegex)
-        .waitFor({state: 'visible', timeout: 10000})
-        .then(() => true)
-        .catch(() => false);
-      if (variableVisible) {
-        return true;
-      }
-
-      await page.goBack();
-      await expect(
-        operateDashboardPage.viewInstanceLink().first(),
-      ).toBeVisible();
-    }
-
-    return false;
-  };
-
   const openIncidentTypeAndVerifyVariable = async (
     incidentTypeRegex: RegExp,
     expectedVariableRegex: RegExp,
@@ -180,12 +153,16 @@ test.describe('Dashboard', () => {
 
     await openGroupedIncidentView();
 
-    // Incidents whose messages truncate to the same text share one dashboard
-    // group, so the filtered view can list more than one instance. Retry while
-    // instances import until the one carrying the expected variable is found.
     await waitForAssertion({
       assertion: async () => {
-        expect(await findInstanceWithVariable(expectedVariableRegex)).toBe(true);
+        expect(
+          await findInstanceWithVariable(
+            page,
+            operateDashboardPage,
+            operateProcessInstancePage,
+            expectedVariableRegex,
+          ),
+        ).toBe(true);
       },
       onFailure: openGroupedIncidentView,
       maxRetries: 5,
