@@ -11,7 +11,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, AccordionSkeleton, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, Tag} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -74,7 +74,6 @@ type AgentDetailsProps = {
   agentInstances: AgentInstance[];
   totalAgentsCount: number;
   hasMoreTotalItems: boolean;
-  isLoading: boolean;
   isError: boolean;
 };
 
@@ -83,7 +82,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   agentInstances,
   totalAgentsCount,
   hasMoreTotalItems,
-  isLoading,
   isError,
 }) => {
   const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
@@ -114,20 +112,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       }),
     [agentInstances],
   );
-
-  if (isLoading) {
-    return (
-      <AgentDetailsContainer>
-        <AgentHeading>AI Agent</AgentHeading>
-        <AccordionSkeleton
-          align="start"
-          count={4}
-          open={false}
-          data-testid="agent-details-skeleton"
-        />
-      </AgentDetailsContainer>
-    );
-  }
 
   if (isError || !agentInstance) {
     return (
