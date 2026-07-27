@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.application.commons.security.AuthorizationCheckerProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
@@ -16,7 +17,6 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentHistoryServices;
@@ -115,7 +115,7 @@ public class CamundaServicesConfiguration {
       final PasswordEncoder passwordEncoder,
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
       final SearchClientsProxy searchClients,
-      final AuthorizationChecker authorizationChecker,
+      final AuthorizationCheckerProvider authorizationCheckerProvider,
       final CamundaSecurityLibraryProperties cslProperties,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
@@ -136,6 +136,8 @@ public class CamundaServicesConfiguration {
         .forEach(
             (tenantId, tenantConfig) -> {
               final var search = searchClients.withPhysicalTenant(tenantId);
+              final var authorizationChecker =
+                  authorizationCheckerProvider.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
               final var tenantSecurity = tenantConfig.getSecurity();
