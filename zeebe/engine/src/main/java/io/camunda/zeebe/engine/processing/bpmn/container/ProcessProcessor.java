@@ -34,8 +34,6 @@ import java.util.function.Function;
 public final class ProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
 
-  private static final Consumer<BpmnElementContext> NOOP = context -> {};
-
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -267,16 +265,27 @@ public final class ProcessProcessor
       // Business ID that blocks a message-start owned by the latest version. The re-drive resolves
       // the latest version, so it correctly finds (or finds nothing) regardless of the holder's own
       // version.
+      final var processInstanceKey = context.getProcessInstanceKey();
       final var correlationKey =
           bufferedMessageStartEventBehavior.findCorrelationKey(context).orElse(null);
       final var businessId = context.getBusinessId();
 
-      return postTransitionContext ->
-          bufferedMessageStartEventBehavior.correlateNextBufferedMessagesOnCompletion(
-              postTransitionContext, correlationKey, businessId);
+      return postTransitionContext -> {
+        bufferedMessageStartEventBehavior.correlateNextBufferedMessagesOnCompletion(
+            postTransitionContext, correlationKey, businessId);
+        // If this instance is a cross-partition message-start holder, push its completion to P_K so
+        // the correlation-key lock there is freed without waiting for a poll (a no-op point read
+        // for every non-holder instance).
+        bufferedMessageStartEventBehavior.pushCrossPartitionHolderCompletion(processInstanceKey);
+      };
 
     } else {
-      return NOOP;
+      // A plain root instance still has to push its completion when it is a cross-partition
+      // message-start holder whose current version lost the message start event through migration:
+      // the release must key off the origin entry captured at creation, not this version's context.
+      final var processInstanceKey = context.getProcessInstanceKey();
+      return postTransitionContext ->
+          bufferedMessageStartEventBehavior.pushCrossPartitionHolderCompletion(processInstanceKey);
     }
   }
 }
