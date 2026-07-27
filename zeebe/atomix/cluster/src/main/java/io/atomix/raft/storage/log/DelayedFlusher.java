@@ -50,9 +50,7 @@ public final class DelayedFlusher implements RaftLogFlusher {
   @Override
   public CompletableFuture<Void> flush(final Journal journal, final long index) {
     scheduleFlush(journal);
-    // this flusher trades durability for performance: callers may proceed before the data is
-    // actually on disk, so the result completes immediately
-    return CompletableFuture.completedFuture(null);
+    return COMPLETED;
   }
 
   @Override
