@@ -219,18 +219,17 @@ jobs:
 
       # Analytics exporter tests manage their own throwaway broker/collector
       # stack via utils/dockerComposeControl.ts, so they run separately from
-      # api-tests above. Main-only, permanently — not backporting, the
-      # exporter's config differs too much on stable/8.7/8.8/8.9.
-      # TEMPORARY for PR #58409 CI-evidence validation — revert to
-      # `if: inputs.branch == 'main'` (both steps below) before merge.
+      # api-tests above (always() since it's independent of that step's
+      # outcome). Main-only, permanently — not backporting, the exporter's
+      # config differs too much on stable/8.7/8.8/8.9.
       - name: Run analytics-exporter isolated tests
-        if: always() && (inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation')
+        if: always() && inputs.branch == 'main'
         shell: bash
         run: npm run test -- --project=analytics-exporter-isolated
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Clean up analytics-exporter isolated environment
-        if: always() && (inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation')
+        if: always() && inputs.branch == 'main'
         shell: bash
         env:
           # Combining with docker-compose.yml means Compose validates the
