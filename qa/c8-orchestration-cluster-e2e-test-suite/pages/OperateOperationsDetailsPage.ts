@@ -64,6 +64,45 @@ export class OperateOperationsDetailsPage {
     return await this.state.innerText();
   }
 
+  /**
+   * Drives the Suspend button until the suspend command is accepted.
+   *
+   * The button is driven by the read model, so it turns on before the freshly
+   * created batch is visible to the suspend command. An immediate click 404s
+   * ("Batch operation not found") and the UI does not retry (the original
+   * nightly failure). Re-issue Suspend across that eventual-consistency window,
+   * reloading between attempts (the detail view does not auto-refresh, #52021),
+   * until the state flips to Suspended. Throws immediately if the batch finishes
+   * cancelling first — a Completed/Failed batch can no longer be suspended, so
+   * further attempts would be pointless.
+   */
+  async suspendUntilCommandAccepted(maxAttempts = 10): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const status = await this.getBatchOperationStatus();
+      if (/suspended/i.test(status)) {
+        return;
+      }
+      if (/completed|failed/i.test(status)) {
+        throw new Error(
+          `Batch reached "${status}" before the suspend command was accepted; ` +
+            `a finished batch can no longer be suspended.`,
+        );
+      }
+
+      const suspendable = await this.suspendButton
+        .isEnabled()
+        .catch(() => false);
+      if (suspendable) {
+        await this.suspendButton.click();
+      }
+      await this.page.reload();
+    }
+
+    throw new Error(
+      `Batch did not reach Suspended within ${maxAttempts} attempts.`,
+    );
+  }
+
   async getBatchOperationKey(): Promise<string> {
     const url = this.page.url();
 

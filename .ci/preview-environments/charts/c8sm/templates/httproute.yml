@@ -13,11 +13,12 @@
 # because the backend service names, ports and context paths are derived from
 # the camunda-platform subchart templates.
 #
-# Known gap: the `global.preview.ingress.internalAuthBypass.enabled` source-IP
-# Vouch bypass (non-default) has no faithful Traefik Gateway API equivalent —
-# Traefik's ipAllowList rejects non-listed IPs rather than letting them skip
-# auth — and is therefore intentionally not translated here; revisit if a
-# consumer enables it.
+# Internal auth bypass: when `global.preview.ingress.internalAuthBypass.enabled`
+# is true (non-default; CI/testing only), a Traefik IngressRoute
+# (templates/internal-bypass-ingressroute.yml) lets requests from the internal
+# source ranges skip Vouch entirely — the nginx-era `satisfy: any` +
+# `whitelist-source-range` semantics, which Gateway API cannot express (no
+# source-IP match; Traefik's ipAllowList rejects instead of falling through).
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
@@ -44,7 +45,7 @@ spec:
   hostnames:
   - {{ include "ingress.domain" $ | quote }}
   rules:
-  # app-root: redirect "/" to Console.
+  # app-root: redirect "/" to Web Modeler.
   - matches:
     - path:
         type: Exact
@@ -55,12 +56,12 @@ spec:
         statusCode: 302
         path:
           type: ReplaceFullPath
-          replaceFullPath: {{ .Values.camundaPlatform.console.contextPath | quote }}
-  # Console
+          replaceFullPath: {{ .Values.camundaPlatform.webModeler.contextPath | quote }}
+  # Orchestration (REST gateway)
   - matches:
     - path:
         type: PathPrefix
-        value: {{ .Values.camundaPlatform.console.contextPath | quote }}
+        value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
     # Vouch + error-pages filter set, anchored here and reused by every other
     # authenticated rule below via the *authFilters alias.
     filters: &authFilters
@@ -77,26 +78,22 @@ spec:
         name: {{ $errorsMiddleware }}
     {{- end }}
     backendRefs:
-    - name: {{ template "console.fullname" $camundaPlatform }}
-      port: {{ .Values.camundaPlatform.console.service.port }}
-  # Orchestration (REST gateway)
-  - matches:
-    - path:
-        type: PathPrefix
-        value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
-    filters: *authFilters
-    backendRefs:
     - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
       port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
-  # Keycloak (Identity auth realm)
+  # Keycloak (Identity auth realm). The operator-managed Keycloak lives in the
+  # shared keycloak-operator namespace (templates/keycloak.yml), so this is a
+  # cross-namespace backendRef — Traefik's Gateway API provider rejects
+  # ExternalName backends — permitted by the ReferenceGrant that keycloak.yml
+  # creates in that namespace. The anchor is reused by the OIDC rule below.
   - matches:
     - path:
         type: PathPrefix
         value: {{ include "identity.keycloak.contextPath" $camundaPlatform | quote }}
     filters: *authFilters
-    backendRefs:
-    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
-      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+    backendRefs: &keycloakBackend
+    - name: {{ .Release.Name }}-kc-service
+      namespace: keycloak-operator
+      port: 8080
   # OIDC discovery / token endpoints, served WITHOUT Vouch authentication (no
   # ExtensionRef filter). These are Exact matches, which take precedence over
   # the `/auth` PathPrefix rule above, so they correctly bypass Vouch while the
@@ -126,9 +123,7 @@ spec:
         kind: Middleware
         name: {{ $errorsMiddleware }}
     {{- end }}
-    backendRefs:
-    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
-      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+    backendRefs: *keycloakBackend
   # Identity
   - matches:
     - path:
@@ -174,4 +169,3 @@ spec:
     backendRefs:
     - name: {{ template "connectors.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.connectors.service.serverPort }}
-

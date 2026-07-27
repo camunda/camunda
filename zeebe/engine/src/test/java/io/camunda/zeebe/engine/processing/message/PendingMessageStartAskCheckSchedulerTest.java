@@ -124,6 +124,7 @@ public final class PendingMessageStartAskCheckSchedulerTest {
             anyLong(),
             any(),
             anyLong(),
+            anyLong(),
             anyString());
   }
 
@@ -166,6 +167,7 @@ public final class PendingMessageStartAskCheckSchedulerTest {
               any(),
               anyLong(),
               any(),
+              anyLong(),
               anyLong(),
               anyString());
     }
@@ -222,6 +224,7 @@ public final class PendingMessageStartAskCheckSchedulerTest {
               anyLong(),
               any(),
               anyLong(),
+              anyLong(),
               anyString());
 
       assertThat(messageKeyCaptor.getAllValues()).containsExactlyInAnyOrder(1L, 2L);
@@ -254,11 +257,43 @@ public final class PendingMessageStartAskCheckSchedulerTest {
               anyLong(),
               any(),
               anyLong(),
+              anyLong(),
               anyString());
 
       final var capturedBusinessId = businessIdCaptor.getValue();
       assertThat(capturedBusinessId.getStringWithoutLengthUtf8(0, capturedBusinessId.capacity()))
           .isEqualTo("specific-business-id");
+    }
+
+    @Test
+    void shouldReEmitOriginalDeadlineAndTtlOnRetry() {
+      // given a due ask carrying a specific deadline and TTL
+      scheduler.onRecovered(mockContext);
+      final var ask = createAsk(1L, 100L, "my-business-id");
+      ask.setMessageDeadline(5000L);
+      ask.setMessageTtl(1234L);
+      stubPendingAsks(NOW - BASE_MILLIS, ask);
+      when(mockRoutingInfo.partitionForCorrelationKey(any())).thenReturn(2);
+
+      // when
+      scheduler.run();
+
+      // then the retry re-emits both verbatim so P_B's expiry guard sees the original values
+      verify(mockCommandSender)
+          .sendDirectStartProcessInstanceRequest(
+              eq(2),
+              eq(1L),
+              any(),
+              any(),
+              any(),
+              eq(100L),
+              any(),
+              any(),
+              anyLong(),
+              any(),
+              eq(5000L),
+              eq(1234L),
+              anyString());
     }
   }
 

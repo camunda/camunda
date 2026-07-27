@@ -61,7 +61,7 @@ public final class ProcessInstanceCommandContext {
 
   public void reject(final RejectionType rejectionType, final String reason) {
     writers.rejection().appendRejection(record, rejectionType, reason);
-    writers.response().writeRejectionOnCommand(record, rejectionType, reason);
+    writers.response().writeRejectedResponseOnCommand(record, rejectionType, reason);
   }
 
   public TypedCommandWriter getCommandWriter() {

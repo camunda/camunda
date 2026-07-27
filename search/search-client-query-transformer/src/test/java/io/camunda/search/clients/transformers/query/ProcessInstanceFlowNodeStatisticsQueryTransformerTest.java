@@ -15,24 +15,23 @@ import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAgg
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -40,7 +39,6 @@ import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import org.junit.jupiter.api.Test;
 
 public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
@@ -68,29 +66,28 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
     assertThat(searchRequest.from()).isZero();
     assertThat(searchRequest.size()).isZero();
 
+    // query: flat term on flownode-instance — no join relation filter
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchTermQuery.class);
+    final var termQuery = (SearchTermQuery) queryVariant;
+    assertThat(termQuery).isEqualTo(term(PROCESS_INSTANCE_KEY, processInstanceKey).queryOption());
+
+    // aggregation: flat filter → terms → filters (no children wrapper)
     final var aggregations = searchRequest.aggregations();
     assertThat(aggregations).hasSize(1);
-    assertThat(aggregations.getFirst()).isInstanceOf(SearchChildrenAggregator.class);
+    assertThat(aggregations.getFirst()).isInstanceOf(SearchFilterAggregator.class);
 
-    final var childrenAgg = (SearchChildrenAggregator) aggregations.getFirst();
-    assertThat(childrenAgg.name()).isEqualTo(AGGREGATION_TO_FLOW_NODES);
-    assertThat(childrenAgg.type()).isEqualTo(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
-    assertThat(childrenAgg.aggregations()).hasSize(1);
-    assertThat(childrenAgg.aggregations().getFirst()).isInstanceOf(SearchFilterAggregator.class);
-
-    final var filterAgg = (SearchFilterAggregator) childrenAgg.aggregations().getFirst();
+    final var filterAgg = (SearchFilterAggregator) aggregations.getFirst();
     assertThat(filterAgg.name()).isEqualTo(AGGREGATION_FILTER_FLOW_NODES);
     assertThat(filterAgg.query())
         .isEqualTo(
-            or(
-                not(term(ACTIVITY_TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())),
-                term(ListViewTemplate.INCIDENT, true)));
+            or(not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())), term(INCIDENT, true)));
     assertThat(filterAgg.aggregations()).hasSize(1);
     assertThat(filterAgg.aggregations().getFirst()).isInstanceOf(SearchTermsAggregator.class);
 
     final var termsAgg = (SearchTermsAggregator) filterAgg.aggregations().getFirst();
     assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODES);
-    assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
+    assertThat(termsAgg.field()).isEqualTo(FLOW_NODE_ID);
     assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
     assertThat(termsAgg.minDocCount()).isEqualTo(1);
     assertThat(termsAgg.aggregations()).hasSize(1);
@@ -104,30 +101,11 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
         .containsOnly(
             entry(
                 AGGREGATION_ACTIVE,
-                and(
-                    term(ListViewTemplate.INCIDENT, false),
-                    term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))),
-            entry(
-                AGGREGATION_COMPLETED,
-                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())),
-            entry(
-                AGGREGATION_CANCELED,
-                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString())),
+                and(term(INCIDENT, false), term(STATE, FlowNodeState.ACTIVE.toString()))),
+            entry(AGGREGATION_COMPLETED, term(STATE, FlowNodeState.COMPLETED.toString())),
+            entry(AGGREGATION_CANCELED, term(STATE, FlowNodeState.TERMINATED.toString())),
             entry(
                 AGGREGATION_INCIDENTS,
-                and(
-                    term(ListViewTemplate.INCIDENT, true),
-                    term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))));
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    final var boolQuery = (SearchBoolQuery) queryVariant;
-    assertThat(boolQuery.filter()).isEmpty();
-    assertThat(boolQuery.should()).isEmpty();
-    assertThat(boolQuery.mustNot()).isEmpty();
-    assertThat(boolQuery.must())
-        .containsExactly(
-            term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-            term(PROCESS_INSTANCE_KEY, filter.processInstanceKey()));
+                and(term(INCIDENT, true), term(STATE, FlowNodeState.ACTIVE.toString()))));
   }
 }

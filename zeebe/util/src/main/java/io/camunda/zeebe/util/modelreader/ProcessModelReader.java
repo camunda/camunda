@@ -9,8 +9,11 @@ package io.camunda.zeebe.util.modelreader;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
@@ -27,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -90,6 +94,40 @@ public final class ProcessModelReader {
         .getChildElementsByType(FlowNode.class)
         .forEach(fn -> extractCallActivities(callActivities, fn));
     return callActivities;
+  }
+
+  /**
+   * Returns the ids of all directly-activatable ad-hoc activities across every ad-hoc subprocess in
+   * the process: the direct child flow nodes that can be activated via the {@code
+   * ActivateAdHocSubProcessActivities} command.
+   *
+   * <p>This mirrors the engine's {@code AdHocSubProcessTransformer}, which selects an activity as
+   * directly-activatable when it has no incoming sequence flow (i.e. it is an entry point, not
+   * reached by flow) and its type is activatable — excluding start, boundary and end events as well
+   * as event subprocesses.
+   */
+  public Set<String> extractAdHocActivityIds() {
+    return extractFlowNodes().stream()
+        .filter(AdHocSubProcess.class::isInstance)
+        .map(AdHocSubProcess.class::cast)
+        .flatMap(ahsp -> ahsp.getChildElementsByType(FlowNode.class).stream())
+        .filter(ProcessModelReader::isDirectlyActivatableAdHocActivity)
+        .map(FlowNode::getId)
+        .collect(Collectors.toSet());
+  }
+
+  private static boolean isDirectlyActivatableAdHocActivity(final FlowNode flowNode) {
+    return flowNode.getIncoming().isEmpty() && isActivatableActivity(flowNode);
+  }
+
+  private static boolean isActivatableActivity(final FlowNode flowNode) {
+    if (flowNode instanceof StartEvent
+        || flowNode instanceof BoundaryEvent
+        || flowNode instanceof EndEvent) {
+      return false;
+    }
+    // event subprocesses are not re-parented into the inner instance and are not activatable
+    return !(flowNode instanceof final SubProcess subProcess && subProcess.triggeredByEvent());
   }
 
   public static boolean hasUserTasks(final Collection<FlowNode> flowNodes) {

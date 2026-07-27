@@ -175,7 +175,7 @@ class AgentHistoryDbReaderTest {
         .partitionId(1)
         .jobKey(60L)
         .jobLease("lease-" + key)
-        .iteration(1)
+        .loopIteration(1)
         .role(AgentInstanceHistoryRole.USER)
         .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)
         .producedAt(OffsetDateTime.parse("2024-01-01T00:00:00Z"))

@@ -97,7 +97,7 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
     assertThat(body.getRole()).isEqualTo(AgentInstanceHistoryRoleEnum.ASSISTANT);
     assertThat(body.getContent()).hasSize(1);
     assertThat(body.getProducedAt()).isEqualTo(PRODUCED_AT.toString());
-    assertThat(body.getIteration()).isNull();
+    assertThat(body.getLoopIteration()).isNull();
     assertThat(body.getToolCalls()).isNull();
     assertThat(body.getMetrics()).isNull();
   }
@@ -117,7 +117,7 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
         .producedAt(PRODUCED_AT)
         .jobLease("lease-token")
-        .iteration(3)
+        .loopIteration(3)
         .metrics(
             new AgentInstanceHistoryMetrics().inputTokens(100L).outputTokens(50L).durationMs(200L))
         .execute();
@@ -126,7 +126,7 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
     final AgentInstanceHistoryItemRequest body =
         gatewayService.getLastRequest(AgentInstanceHistoryItemRequest.class);
     assertThat(body.getJobLease()).isEqualTo("lease-token");
-    assertThat(body.getIteration()).isEqualTo(3);
+    assertThat(body.getLoopIteration()).isEqualTo(3);
     assertThat(body.getMetrics().getInputTokens()).isEqualTo(100L);
     assertThat(body.getMetrics().getOutputTokens()).isEqualTo(50L);
     assertThat(body.getMetrics().getDurationMs()).isEqualTo(200L);
@@ -295,11 +295,11 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .hasMessage("text content value must not be null or blank");
   }
 
-  // ── Argument validation: iteration ───────────────────────────────────────
+  // ── Argument validation: loopIteration ───────────────────────────────────────
 
-  @ParameterizedTest(name = "iteration={0} should be rejected")
+  @ParameterizedTest(name = "loopIteration={0} should be rejected")
   @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
-  void shouldRejectNonPositiveIteration(final int iteration) {
+  void shouldRejectNonPositiveLoopIteration(final int loopIteration) {
     assertThatThrownBy(
             () ->
                 client
@@ -309,9 +309,9 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .role(AgentInstanceHistoryRole.USER)
                     .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(PRODUCED_AT)
-                    .iteration(iteration))
+                    .loopIteration(loopIteration))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("iteration must be greater than 0");
+        .hasMessageContaining("loopIteration must be greater than 0");
   }
 
   // ── Argument validation: content factory null guards ─────────────────────

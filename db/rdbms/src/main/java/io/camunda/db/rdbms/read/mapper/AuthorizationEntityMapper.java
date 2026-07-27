@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.search.entities.AuthorizationEntity;
 import java.util.HashSet;
@@ -16,9 +18,9 @@ public class AuthorizationEntityMapper {
   public static AuthorizationEntity toEntity(final AuthorizationDbModel model) {
     return new AuthorizationEntity(
         model.authorizationKey(),
-        model.ownerId(),
-        model.ownerType(),
-        model.resourceType(),
+        nullToEmpty(model.ownerId()),
+        nullToEmpty(model.ownerType()),
+        nullToEmpty(model.resourceType()),
         model.resourceMatcher(),
         model.resourceId(),
         model.resourcePropertyName(),

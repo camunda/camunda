@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,6 +31,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue SCOPE_KEY = new StringValue("scope");
   private static final StringValue METADATA_KEY = new StringValue("metadata");
+  private static final StringValue KIND_KEY = new StringValue("kind");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp =
@@ -38,14 +40,17 @@ public class ClusterVariableRecord extends UnifiedRecordValue
       new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class, ClusterVariableScope.UNSPECIFIED);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
   private final DocumentProperty metadataProp = new DocumentProperty(METADATA_KEY);
+  private final EnumProperty<ClusterVariableKind> kindProp =
+      new EnumProperty<>(KIND_KEY, ClusterVariableKind.class, ClusterVariableKind.JSON);
 
   public ClusterVariableRecord() {
-    super(5);
+    super(6);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(metadataProp);
+        .declareProperty(metadataProp)
+        .declareProperty(kindProp);
   }
 
   @Override
@@ -119,6 +124,16 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getMetadataBuffer() {
     return metadataProp.getValue();
+  }
+
+  @Override
+  public ClusterVariableKind getKind() {
+    return kindProp.getValue();
+  }
+
+  public ClusterVariableRecord setKind(final ClusterVariableKind kind) {
+    kindProp.setValue(kind);
+    return this;
   }
 
   @JsonIgnore

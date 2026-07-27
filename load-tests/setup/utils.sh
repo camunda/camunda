@@ -72,35 +72,88 @@ function hashmod_zone() {
     echo "$zone"
 }
 
-function get_existing_secret() {
-  local jsonObject="$1"
-  local key="$2"
-
-  detect_os
-  local base64_decode_flag="-d"
-  if [ "${GO_OS}" == "darwin" ]; then
-    base64_decode_flag="-D"
-  fi
-
-  local existing_secret
-  existing_secret="$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 "$base64_decode_flag")" || {
-    echo "ERROR: failed to decode key '$key' from existing camunda-credentials secret."
-    exit 1
-  }
-
-  if [ -z "$existing_secret" ]; then
-    echo "ERROR: existing camunda-credentials secret is missing key '$key'."
-    exit 1
-  fi
-  echo "$existing_secret"
+# Check whether a value is present in a list (pass the list as trailing args).
+# Usage: if contains "$value" "${some_array[@]}"; then ...
+contains() {
+  local value="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [[ "$item" == "$value" ]] && return 0
+  done
+  return 1
 }
 
-# Generate credentials. These are baked into resources/camunda-credentials.yaml
-# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
-# subsequent `make install` reapplies the same manifest, so the secret in the
-# cluster always matches the value the load test starter authenticates with.
-# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
-# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
-# SIGPIPE doesn't trip `set -e` in the caller.
-function gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
-function gen_token()    { openssl rand -hex 16; }
+# Parse and validate a Kubernetes DNS-1123 namespace label.
+# Adds "c8-" prefix if missing, then validates. On success, echoes the final
+# namespace name to stdout. Informational messages go to stderr. Exits on error.
+parse_namespace() {
+  local namespace="$1"
+  if [[ ! "$namespace" =~ ^c8- ]]; then
+    namespace="c8-$namespace"
+    echo "Namespace prefix added: $namespace" >&2
+  fi
+  if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+    echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label." >&2
+    echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric." >&2
+    exit 1
+  fi
+  if [ ${#namespace} -gt 63 ]; then
+    echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63." >&2
+    exit 1
+  fi
+  echo "$namespace"
+}
+
+# Parse and validate a non-negative integer TTL. Echoes the value on success. Exits on error.
+parse_ttl() {
+  local ttl="$1"
+  if ! [[ $ttl =~ ^[0-9]+$ ]]; then
+    echo "Error: TTL '$ttl' is not a number" >&2
+    exit 1
+  fi
+  echo "$ttl"
+}
+
+# Parse and validate a secondary storage type against the allowed list.
+# Usage: storage="$(parse_secondary_storage "$storage" "${allowed_storage[@]}")"
+# Echoes the storage value on success. Exits with an error if not in the allowed list.
+parse_secondary_storage() {
+  local storage="$1"
+  shift
+  if ! contains "$storage" "$@"; then
+    echo "Error: Invalid secondary storage type '$storage'" >&2
+    echo "Allowed values are: $(echo "$*" | tr ' ' ',')" >&2
+    exit 1
+  fi
+  echo "$storage"
+}
+
+# Parse and normalize a boolean (true/false) argument.
+# Usage: value="$(parse_bool "<raw_value>")"
+# Lowercases the input, validates it, and echoes the normalized value. Exits on error.
+parse_bool() {
+  local value
+  value=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+  if [[ "$value" != "true" && "$value" != "false" ]]; then
+    echo "Error: Invalid boolean value '$1'" >&2
+    echo "Allowed values are: true or false" >&2
+    exit 1
+  fi
+  echo "$value"
+}
+
+# Compute the deadline date TTL_DAYS from now. Echoes the date in YYYY-MM-DD format.
+compute_deadline_date() {
+  local ttl_days="$1"
+  local deadline_date
+  if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
+    : # GNU date succeeded
+  elif deadline_date=$(date -v +"${ttl_days}"d +%Y-%m-%d 2>/dev/null); then
+    : # BSD/macOS date succeeded
+  else
+    echo "Error: Could not calculate deadline date. Supported on Linux and macOS only." >&2
+    exit 1
+  fi
+  echo "$deadline_date"
+}

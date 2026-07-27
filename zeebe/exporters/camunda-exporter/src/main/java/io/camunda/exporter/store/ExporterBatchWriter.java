@@ -10,6 +10,7 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -124,7 +125,8 @@ public final class ExporterBatchWriter {
       final var key = entry.getKey();
       final var handler = key.handler();
       final var entity = entry.getValue();
-      handler.flush(entity, batchRequest);
+      final var index = TargetIndex.mainIndex(handler.getIndexName());
+      handler.flush(index, entity, batchRequest);
     }
 
     batchRequest.execute(customErrorHandler);

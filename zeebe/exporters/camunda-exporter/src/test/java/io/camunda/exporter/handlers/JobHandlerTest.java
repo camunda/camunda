@@ -24,9 +24,11 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
@@ -50,7 +52,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 
 final class JobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -577,14 +578,14 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(index, jobEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(expectedIndexName, jobEntity.getId(), jobEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, jobEntity.getId(), jobEntity, expectedUpdateFields);
   }
 
   @Test
@@ -644,14 +645,14 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(index, jobEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(expectedIndexName, jobEntity.getId(), jobEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, jobEntity.getId(), jobEntity, expectedUpdateFields);
   }
 
   private Record<JobRecordValue> generateRecord(final JobIntent intent) {

@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -27,20 +26,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Multi-partition regression for the dedup-deadline grace introduced to close the near-deadline
- * duplicate window. Once rejected asks are retried, a message can succeed at {@code T − ε} with an
+ * Multi-partition regression for the TTL-gated expiry guard that replaced the near-deadline grace.
+ * Once rejected asks are retried, a message can succeed at {@code T − ε} with an
  * <em>auto-completing</em> holder; a retry sent just before the message deadline {@code T} but
- * <em>processed</em> on {@code P_B} after {@code T} would, without a grace, miss the dedup row,
- * re-evaluate live state (the holder has since completed, freeing the businessId), and start a
- * <em>duplicate</em> instance.
+ * <em>processed</em> on {@code P_B} after {@code T} must NOT re-evaluate live state (the holder has
+ * since completed, freeing the businessId) and start a <em>duplicate</em> instance.
  *
  * <p>This test drops the {@code START} reply to {@code P_K} until the clock is past the message
- * deadline but still within the grace, so the <em>first delivered</em> {@code STARTED} reply is the
- * past-deadline re-reply. With the grace configured, {@code P_B} still treats the dedup row as a
- * hit and re-replies the original process-instance key, so exactly one process instance is ever
- * created on {@code P_B}. The grace-disabled counterpart — which starts a fresh PI once the
- * deadline passes — is pinned by {@code
- * MessageStartProcessInstanceCrossPartitionHandshakeTest#shouldStartFreshPiWhenRetryArrivesAfterMessageDeadlineHasPassed}.
+ * deadline, so every reply {@code P_K} could observe after unblocking is the past-deadline retry.
+ * With the guard, {@code P_B} refuses that retry with {@code REJECT_EXPIRED} (no dedup lookup, no
+ * live evaluation), so exactly one process instance is ever created on {@code P_B}. This is the
+ * deterministic replacement for the removed grace window; the single-partition guard behaviour is
+ * pinned by {@code
+ * MessageStartProcessInstanceRequestRequestProcessorTest#shouldReplyExpiredRejectedWhenDeadlinePassedAndTtlPositive}.
  */
 public final class MessageStartProcessInstanceNearDeadlineRetryTest {
 
@@ -55,7 +53,6 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
   private static final String MESSAGE_NAME = "start-msg-near-deadline";
 
   private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
-  private static final Duration DEDUP_GRACE = Duration.ofSeconds(10);
   private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
   private static final Duration ASK_RETRY_INTERVAL = Duration.ofSeconds(1);
 
@@ -79,8 +76,7 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
-                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL)
-                      .setMessageStartAskRetryGrace(DEDUP_GRACE));
+                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -90,13 +86,13 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
   }
 
   @Test
-  public void shouldNotDuplicatePiWhenRetryIsProcessedAfterDeadlineButWithinGrace() {
+  public void shouldRejectLateRetryAfterDeadlineAndNeverDuplicateOnPB() {
     // given an auto-completing message-start whose holder PI completes on P_B on its own
     deployAndAwaitStartEventSubscriptionsOnAllPartitions();
 
-    // drop every START reply to P_K until we cross the message deadline, so the first STARTED that
-    // P_K records is the past-deadline re-reply (dropped replies leave the pending ask alive and
-    // keep the scheduler re-asking)
+    // drop every START reply to P_K until we cross the message deadline, so the first reply P_K
+    // could act on after unblocking is a past-deadline retry (dropped replies leave the pending ask
+    // alive and keep the scheduler re-asking)
     final AtomicBoolean blockStartReply = new AtomicBoolean(true);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) ->
@@ -104,14 +100,13 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
 
     // when the message is published; P_B creates PI_1, writes the dedup row, and PI_1
     // auto-completes
-    final var publish =
-        engine
-            .message()
-            .withName(MESSAGE_NAME)
-            .withCorrelationKey(CORRELATION_KEY)
-            .withBusinessId(BUSINESS_ID)
-            .withTimeToLive(MESSAGE_TTL.toMillis())
-            .publish();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(MESSAGE_TTL.toMillis())
+        .publish();
     final long firstPiKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .withBpmnProcessId(PROCESS_ID)
@@ -120,22 +115,23 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
             .getValue()
             .getProcessInstanceKey();
 
-    // and the clock advances past the message deadline but stays within the grace window (and well
-    // within the 1-minute TTL checker interval, so the buffered message on P_K is not yet expired
-    // and the ask keeps being retried)
+    // and the clock advances past the message deadline (still well within the 1-minute TTL checker
+    // interval, so the buffered message on P_K is not yet expired and the ask keeps being retried)
     engine.increaseTime(MESSAGE_TTL.plusSeconds(2));
 
-    // when the START reply is allowed through again and one more retry round completes
+    // when replies are allowed through again and one more retry round completes
     blockStartReply.set(false);
     engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
 
-    // then the late retry succeeds and consumes the buffered message (EXPIRED on P_K is the
-    // terminal of a successful handshake); bounded by that terminal, exactly one process instance
-    // was ever activated on P_B and it is the original PI — the dedup grace absorbed the late
-    // retry instead of letting it start a fresh, duplicate instance
+    // then the past-deadline retry is refused with REJECT_EXPIRED (P_K records EXPIRED_REJECTED),
+    // and bounded by that terminal exactly one process instance was ever activated on P_B — the
+    // guard refused the late retry instead of letting it start a fresh, duplicate instance
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+        .getFirst();
     final var activations =
         RecordingExporter.records()
-            .limit(r -> r.getIntent() == MessageIntent.EXPIRED && r.getKey() == publish.getKey())
+            .limit(r -> r.getIntent() == MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
             .processInstanceRecords()
             .withBpmnProcessId(PROCESS_ID)
             .withElementType(BpmnElementType.PROCESS)
@@ -143,7 +139,7 @@ public final class MessageStartProcessInstanceNearDeadlineRetryTest {
             .asList();
     assertThat(activations)
         .extracting(r -> r.getValue().getProcessInstanceKey())
-        .as("the near-deadline retry must re-reply the cached PI key, not start a duplicate on P_B")
+        .as("the late retry must be expiry-rejected, never start a duplicate on P_B")
         .containsExactly(firstPiKey);
   }
 

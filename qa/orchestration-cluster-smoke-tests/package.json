@@ -1,7 +1,7 @@
 {
   "name": "orchestration-cluster-smoke-tests",
   "type": "module",
-  "packageManager": "npm@11.16.0",
+  "packageManager": "npm@12.0.1",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -18,12 +18,12 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "24.13.2",
-    "eslint": "10.4.0",
+    "@types/node": "24.13.3",
+    "eslint": "10.7.0",
     "eslint-plugin-license-header": "0.9.0",
-    "prettier": "3.8.3",
+    "prettier": "3.9.6",
     "prettier-plugin-organize-imports": "4.3.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.60.0"
+    "typescript-eslint": "8.65.0"
   }
 }

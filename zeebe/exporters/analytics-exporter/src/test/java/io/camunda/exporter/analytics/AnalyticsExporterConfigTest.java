@@ -46,6 +46,56 @@ class AnalyticsExporterConfigTest {
   }
 
   @Test
+  void shouldRejectNonPositivePushInterval() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setPushInterval("PT0S").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be positive");
+  }
+
+  @Test
+  void shouldRejectNegativePushInterval() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setPushInterval("-PT5M").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be positive");
+  }
+
+  @Test
+  void shouldRejectInsecureEndpointByDefault() {
+    assertThatThrownBy(
+            () ->
+                new AnalyticsExporterConfig()
+                    .setEndpoint("http://analytics.example.com")
+                    .validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("https://");
+  }
+
+  @Test
+  void shouldAllowInsecureEndpointWhenAllowInsecureIsTrue() {
+    assertThatCode(
+            () ->
+                new AnalyticsExporterConfig()
+                    .setEndpoint("http://analytics.example.com")
+                    .setAllowInsecure(true)
+                    .validate())
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAllowHttpLocalhostWithoutAllowInsecure() {
+    assertThatCode(
+            () -> new AnalyticsExporterConfig().setEndpoint("http://localhost:8080").validate())
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAllowHttp127001WithoutAllowInsecure() {
+    assertThatCode(
+            () -> new AnalyticsExporterConfig().setEndpoint("http://127.0.0.1:8080").validate())
+        .doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldRejectNonPositiveMaxQueueSize() {
     assertThatThrownBy(() -> new AnalyticsExporterConfig().setMaxQueueSize(0).validate())
         .isInstanceOf(IllegalArgumentException.class)

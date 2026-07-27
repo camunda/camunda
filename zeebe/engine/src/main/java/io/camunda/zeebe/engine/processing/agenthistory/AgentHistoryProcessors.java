@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.agenthistory;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -23,12 +23,12 @@ public final class AgentHistoryProcessors {
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
         ValueType.AGENT_HISTORY,
         AgentHistoryIntent.CREATE,
-        new AgentHistoryCreateProcessor(writers, processingState, authCheckBehavior, keyGenerator));
+        new AgentHistoryCreateProcessor(writers, processingState, cslCheck, keyGenerator));
     typedRecordProcessors.onCommand(
         ValueType.AGENT_HISTORY,
         AgentHistoryIntent.COMMIT,

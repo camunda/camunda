@@ -69,7 +69,7 @@ const AvailableTasks: React.FC<Props> = ({
 						<Task
 							ref={taskRef}
 							key={task.userTaskKey}
-							taskId={task.userTaskKey.toString()}
+							userTaskKey={task.userTaskKey}
 							displayName={task.name ?? task.elementId}
 							processDisplayName={task.processName ?? task.processDefinitionId}
 							businessId={task.businessId}

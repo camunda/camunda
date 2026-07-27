@@ -38,7 +38,7 @@ public final class SearchQueryHitTransformer<T>
 
   private Object[] toArray(final List<FieldValue> values) {
     if (values != null && !values.isEmpty()) {
-      return values.stream().map(FieldValue::_get).map(String::valueOf).toArray();
+      return values.stream().map(FieldValue::_get).toArray();
     } else {
       return null;
     }

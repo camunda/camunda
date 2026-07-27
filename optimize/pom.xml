@@ -60,8 +60,8 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch.client>8.19.18</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.18</version.elasticsearch-java-client>
+    <version.elasticsearch.client>8.19.19</version.elasticsearch.client>
+    <version.elasticsearch-java-client>8.19.19</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>${version.elasticsearch.container}</elasticsearch.test.version>
     <!-- The least supported opensearch version we should test against-->
@@ -76,7 +76,7 @@
     <!-- testing config -->
     <mockito.version>5.23.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <mockserver.version>6.1.0</mockserver.version>
+    <mockserver.version>7.4.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
     <google-java-format.plugin.version>1.35.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
@@ -278,7 +278,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.5.1</version>
           <executions>
             <execution>
               <id>empty-javadoc-jar</id>
@@ -367,13 +367,13 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>5.0.0</version>
+          <version>5.1.1</version>
         </plugin>
         <!-- Google code format plugin -->
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.8.0</version>
           <configuration>
             <java>
               <includes>

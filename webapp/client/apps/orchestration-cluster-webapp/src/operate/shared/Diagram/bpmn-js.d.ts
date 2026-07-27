@@ -156,3 +156,17 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 
 	export default NavigatedViewer;
 }
+
+declare module 'bpmn-moddle' {
+	import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+	export type DiagramModel = {
+		elementsById: {[id: string]: BusinessObject};
+		rootElement: BusinessObject;
+	};
+
+	export class BpmnModdle {
+		constructor();
+		fromXML(xml: string, definitions: string): Promise<DiagramModel>;
+	}
+}

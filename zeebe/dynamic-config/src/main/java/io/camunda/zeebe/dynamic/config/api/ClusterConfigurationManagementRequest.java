@@ -11,13 +11,19 @@ import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
 import static io.camunda.zeebe.util.Preconditions.assertPositive;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** Defines the supported requests for the configuration management. */
+@NullMarked
 public sealed interface ClusterConfigurationManagementRequest {
 
   /**
@@ -101,7 +107,42 @@ public sealed interface ClusterConfigurationManagementRequest {
   record UpdatePartitionDistributorConfigRequest(PartitionDistributorConfig config, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
+  /**
+   * Migrates one persisted zone stage from a bare or partially zoned cluster. The request names the
+   * zone to migrate; the persisted {@code ZoneAwareConfig} remains the single source of truth for
+   * zone order, priorities, and replica counts.
+   */
+  record ClusterZoneMigrationRequest(String zone, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+    public ClusterZoneMigrationRequest {
+      assertNonEmpty("zone").accept(zone);
+    }
+  }
+
   record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  /**
+   * Force-evicts a failed zone's brokers from the member set and drops the zone from the persisted
+   * {@code ZoneAwareConfig}, in one atomic change.
+   */
+  record ForceZoneRemoveRequest(String zoneId, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  /**
+   * Restores a previously failed-over zone: re-adds the operator-supplied brokers and re-includes
+   * the zone in the persisted {@code ZoneAwareConfig}, in one atomic change.
+   */
+  record AddZoneRequest(
+      String zoneId, int numberOfReplicas, int priority, Set<MemberId> brokers, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  /**
+   * Re-orders the Raft leader-election priorities of the persisted {@code ZoneAwareConfig}: the
+   * existing priority values are kept and re-assigned to zones by {@code zoneOrder} (highest
+   * first).
+   */
+  record UpdateZonePrioritiesRequest(List<String> zoneOrder, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ExporterDisableRequest(String exporterId, boolean dryRun)
@@ -111,6 +152,9 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {}
 
   record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record ExportingStateChangeRequest(ExportingState state, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {
@@ -132,4 +176,17 @@ public sealed interface ClusterConfigurationManagementRequest {
       return new ModeChangeRequest(Mode.PROCESSING, dryRun);
     }
   }
+
+  record RestoreRequest(
+      String physicalTenantId,
+      List<Long> backupIds,
+      @Nullable String from,
+      @Nullable String to,
+      String databaseType,
+      boolean continuousBackups,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record RestoreResolvedRequest(Map<Integer, long[]> backups, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
 }

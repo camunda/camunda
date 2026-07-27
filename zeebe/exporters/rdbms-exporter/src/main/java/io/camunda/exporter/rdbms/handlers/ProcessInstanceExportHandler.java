@@ -66,6 +66,12 @@ public class ProcessInstanceExportHandler
       finishAndScheduleCleanup(record, ProcessInstanceState.CANCELED);
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_MIGRATED)) {
       processInstanceWriter.update(map(record));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.SUSPENDED)) {
+      processInstanceWriter.suspend(
+          record.getValue().getProcessInstanceKey(),
+          DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.RESUMED)) {
+      processInstanceWriter.resume(record.getValue().getProcessInstanceKey());
     }
   }
 

@@ -1,7 +1,7 @@
 ---
 name: Frontend SBOM Snyk
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Generate a frontend SBOM and scan it with Snyk
 
@@ -37,7 +37,7 @@ runs:
   steps:
     - name: Setup Node for npm
       if: inputs.package-manager == 'npm'
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
@@ -45,7 +45,7 @@ runs:
 
     - name: Setup Node for yarn
       if: inputs.package-manager == 'yarn'
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: ${{ inputs.node-version }}
 
@@ -92,7 +92,38 @@ runs:
       env:
         SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
       run: |
-        snyk sbom test \
+        # Bounds the `snyk` call so a single stuck/slow call to the Snyk API cannot consume the
+        # whole job's timeout (see INC-6630 for the same class of issue with unbounded external
+        # network calls in CI).
+        #
+        # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
+        # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
+        # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+        # other code straight through - retrying a legitimate vuln finding (1) would needlessly
+        # double every scan that has findings and defeat the purpose of this bound.
+        function runSnykWithRetry() {
+          local maxAttempts=2
+          local perAttemptTimeoutSecs=120
+          local retryDelaySecs=10
+          local attempt=1
+
+          while true; do
+            local status=0
+            timeout "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
+            if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+              return "${status}"
+            fi
+            if [ "${attempt}" -ge "${maxAttempts}" ]; then
+              echo "::error::snyk $* still failing after ${maxAttempts} attempts (exit ${status})"
+              return "${status}"
+            fi
+            echo "snyk $* transient failure (exit ${status}), retry ${attempt}/${maxAttempts} in ${retryDelaySecs}s..."
+            sleep "${retryDelaySecs}"
+            attempt=$((attempt + 1))
+          done
+        }
+
+        runSnykWithRetry sbom test \
           --file="${{ inputs.sbom-file }}" \
           --org="${{ inputs.snyk-org }}" \
           --severity-threshold="${{ inputs.severity-threshold }}"

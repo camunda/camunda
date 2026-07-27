@@ -254,6 +254,42 @@ public final class JobPollerImplTest extends ClientTest {
   }
 
   @Test
+  public void shouldPollWithLease() {
+    // given
+    gatewayService.onActivateJobsRequest(TestData.job());
+
+    // when
+    getJobPollerWithLease(true).poll(5, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final GatewayOuterClass.ActivateJobsRequest request = gatewayService.getLastRequest();
+              assertThat(request.getWithLease()).isTrue();
+            });
+  }
+
+  @Test
+  public void shouldNotPollWithLeaseByDefault() {
+    // given
+    gatewayService.onActivateJobsRequest(TestData.job());
+
+    // when
+    getJobPoller().poll(5, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final GatewayOuterClass.ActivateJobsRequest request = gatewayService.getLastRequest();
+              assertThat(request.getWithLease()).isFalse();
+            });
+  }
+
+  @Test
   public void shouldConsistentlyUseTenantFilterAcrossMultiplePolls() {
     // given
     gatewayService.onActivateJobsRequest(TestData.job());
@@ -303,7 +339,8 @@ public final class JobPollerImplTest extends ClientTest {
         Collections.emptyList(),
         Collections.singletonList("test-tenant"),
         TenantFilter.PROVIDED,
-        10);
+        10,
+        false);
   }
 
   private JobPoller getJobPollerWithTenantFilter(
@@ -317,7 +354,22 @@ public final class JobPollerImplTest extends ClientTest {
         Collections.emptyList(),
         tenantIds,
         tenantFilter,
-        10);
+        10,
+        false);
+  }
+
+  private JobPoller getJobPollerWithLease(final boolean withLease) {
+    return new JobPollerImpl(
+        client,
+        Duration.ofSeconds(10),
+        "testJobType",
+        "testWorkerName",
+        Duration.ofSeconds(10),
+        Collections.emptyList(),
+        Collections.singletonList("test-tenant"),
+        TenantFilter.PROVIDED,
+        10,
+        withLease);
   }
 
   private static final class TestData {

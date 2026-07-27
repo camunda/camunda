@@ -117,6 +117,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.WaitStateStatisticsQuery;
 import io.camunda.security.core.auth.SecurityContext;
@@ -587,6 +588,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
     return doSearchWithReader(requireScopedReaders().variableReader(), query);
+  }
+
+  @Override
+  public List<String> searchVariableNames(final VariableNameQuery query) {
+    return doReadWithResourceAccessController(
+        access -> requireScopedReaders().variableReader().searchVariableNames(query, access));
   }
 
   @Override

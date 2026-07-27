@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -54,6 +55,9 @@ public final class ClusterConfigurationGossiper
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
+  // New-model handler; when set, received gossip is delivered as a CurrentClusterConfiguration
+  // (field 2, or migrated from field 1) instead of through the legacy handler.
+  private Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
   private final TopologyMetrics topologyMetrics;
 
   public ClusterConfigurationGossiper(
@@ -167,11 +171,27 @@ public final class ClusterConfigurationGossiper
   }
 
   private void update(final ClusterConfigurationGossipState receivedGossipState) {
-    if (!receivedGossipState.equals(gossipState)) {
-      final ClusterConfiguration topology = receivedGossipState.getClusterConfiguration();
-      if (topology != null) {
-        clusterConfigurationUpdateHandler.accept(topology);
+    if (receivedGossipState.equals(gossipState)) {
+      return;
+    }
+    if (currentConfigurationUpdateHandler != null) {
+      // New model: prefer field 2; fall back to migrating field 1 from an old broker.
+      final var received = receivedGossipState.getCurrentClusterConfiguration();
+      final CurrentClusterConfiguration wrapper =
+          received != null
+              ? received
+              : receivedGossipState.getClusterConfiguration() != null
+                  ? CurrentClusterConfiguration.fromLegacy(
+                      receivedGossipState.getClusterConfiguration())
+                  : null;
+      if (wrapper != null) {
+        currentConfigurationUpdateHandler.accept(wrapper);
       }
+      return;
+    }
+    final ClusterConfiguration topology = receivedGossipState.getClusterConfiguration();
+    if (topology != null) {
+      clusterConfigurationUpdateHandler.accept(topology);
     }
   }
 
@@ -181,6 +201,18 @@ public final class ClusterConfigurationGossiper
     gossip();
     notifyListeners(updatedConfiguration);
     topologyMetrics.updateFromTopology(updatedConfiguration);
+  }
+
+  private void onCurrentConfigurationUpdated(
+      final CurrentClusterConfiguration updatedConfiguration) {
+    // Dual-write: field 2 carries the full new model, field 1 the legacy view read by old brokers.
+    final var legacyView = updatedConfiguration.toLegacyDefault();
+    gossipState.setCurrentClusterConfiguration(updatedConfiguration);
+    gossipState.setClusterConfiguration(legacyView);
+    LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
+    gossip();
+    notifyListeners(legacyView);
+    topologyMetrics.updateFromTopology(legacyView);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {
@@ -206,6 +238,31 @@ public final class ClusterConfigurationGossiper
         () -> {
           if (!clusterConfiguration.equals(gossipState.getClusterConfiguration())) {
             onConfigurationUpdated(clusterConfiguration);
+          }
+        });
+  }
+
+  /**
+   * Sets the handler invoked with the received {@link CurrentClusterConfiguration} (new model).
+   * Setting it switches the receive path from the legacy handler to this one.
+   */
+  public void setCurrentConfigurationUpdateHandler(
+      final Consumer<CurrentClusterConfiguration> handler) {
+    executor.run(() -> currentConfigurationUpdateHandler = handler);
+  }
+
+  /**
+   * New-model counterpart of {@link #updateClusterConfiguration}; dual-writes both gossip fields.
+   */
+  public void updateCurrentClusterConfiguration(
+      final CurrentClusterConfiguration currentClusterConfiguration) {
+    if (currentClusterConfiguration == null) {
+      return;
+    }
+    executor.run(
+        () -> {
+          if (!currentClusterConfiguration.equals(gossipState.getCurrentClusterConfiguration())) {
+            onCurrentConfigurationUpdated(currentClusterConfiguration);
           }
         });
   }

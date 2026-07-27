@@ -7,23 +7,26 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.backup.BackupServiceRegistry;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchEngineConfigurations;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
-import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -56,10 +59,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
   private static final String WRONG_ARGUMENTS_ERROR =
       "Expected 1 or 2 arguments: <backupId> [--skip-schema-check], but got %d argument(s): %s";
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
-  private final BackupService backupService;
+  private final BackupServiceRegistry backupServiceRegistry;
 
-  public StandaloneBackupManager(final BackupService backupService) {
-    this.backupService = backupService;
+  public StandaloneBackupManager(final BackupServiceRegistry backupServiceRegistry) {
+    this.backupServiceRegistry = backupServiceRegistry;
   }
 
   public static void main(final String[] args) throws Exception {
@@ -86,6 +89,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
             StandaloneBackupManager.class,
             NativeSearchClientsConfiguration.class,
             PhysicalTenantSearchClientReadersConfiguration.class,
+            PhysicalTenantSearchEngineConfigurations.class,
             SearchClientReaderConfiguration.class)
         .addCommandLineProperties(true)
         .run(args);
@@ -116,12 +120,23 @@ public class StandaloneBackupManager implements CommandLineRunner {
       skipSchemaCheck = parseSchemaCheckArg(args[1]);
     }
 
+    if (backupServiceRegistry.isEmpty()) {
+      throw new IllegalStateException(
+          "Expected at least one physical tenant backup service, but none are configured. "
+              + "A backup would silently capture nothing.");
+    }
+
     try {
       final var takeBackupRequestDto = new TakeBackupRequestDto();
       takeBackupRequestDto.setBackupId(backupId);
       takeBackupRequestDto.setSkipSchemaCheck(skipSchemaCheck);
-      final var backupResponse = backupService.takeBackup(takeBackupRequestDto);
-      LOG.info("Triggered search engine snapshots: {}", backupResponse.getScheduledSnapshots());
+      for (final var backup : backupServiceRegistry.physicalTenantBackups()) {
+        final var backupResponse = backup.backupService().takeBackup(takeBackupRequestDto);
+        LOG.info(
+            "Triggered search engine snapshots for physical tenant '{}': {}",
+            backup.physicalTenantId(),
+            backupResponse.getScheduledSnapshots());
+      }
     } catch (final Exception e) {
       LOG.error(
           "Expected to trigger search engine snapshots for backupId {}, but failed", backupId, e);
@@ -129,30 +144,63 @@ public class StandaloneBackupManager implements CommandLineRunner {
     }
 
     LOG.info("Will observe snapshot creation...");
-    boolean isBackupInProgress = true;
-    while (isBackupInProgress) {
+    Map<String, GetBackupStateResponseDto> backupStates;
+    do {
       // we need to sleep here already otherwise the getBackupState fails, as it can't
       // handle empty snapshot responses...
       Thread.sleep(5 * 1_000);
-      final var backup = backupService.getBackupState(backupId);
-      final var backupState = backup.getState();
+      backupStates = fetchBackupStates(backupId);
+      logBackupStates(backupStates);
+    } while (isBackupInProgress(backupStates));
 
-      LOG.info("Snapshot observation:");
-      LOG.info("Indices snapshot is {}. Details: [{}]", backupState, backup);
-
-      if (isCompletedBackup(backupState)) {
-        isBackupInProgress = false;
-      } else if (isFailedBackup(backupState)) {
-        final var failureReason =
-            backup.getFailureReason() != null && !backup.getFailureReason().isEmpty()
-                ? " Indices backup failure: %s.".formatted(backup.getFailureReason())
-                : "";
-        throw new IllegalStateException(
-            "Backup with id:[%d] failed.%s".formatted(backupId, failureReason));
-      }
-    }
-
+    failIfAnyBackupFailed(backupId, backupStates);
     LOG.info("Backup with id:[{}] is completed!", backupId);
+  }
+
+  private Map<String, GetBackupStateResponseDto> fetchBackupStates(final long backupId) {
+    final var backupStates = new LinkedHashMap<String, GetBackupStateResponseDto>();
+    for (final var backup : backupServiceRegistry.physicalTenantBackups()) {
+      backupStates.put(backup.physicalTenantId(), backup.backupService().getBackupState(backupId));
+    }
+    return backupStates;
+  }
+
+  private void logBackupStates(final Map<String, GetBackupStateResponseDto> backupStates) {
+    LOG.info("Snapshot observation:");
+    backupStates.forEach(
+        (tenantId, backup) ->
+            LOG.info(
+                "Physical tenant '{}' indices snapshot is {}. Details: [{}]",
+                tenantId,
+                backup.getState(),
+                backup));
+  }
+
+  private boolean isBackupInProgress(final Map<String, GetBackupStateResponseDto> backupStates) {
+    return backupStates.values().stream()
+        .anyMatch(b -> !isCompletedBackup(b.getState()) && !isFailedBackup(b.getState()));
+  }
+
+  private void failIfAnyBackupFailed(
+      final Long backupId, final Map<String, GetBackupStateResponseDto> backupStates) {
+    final var failureDetails =
+        backupStates.entrySet().stream()
+            .filter(entry -> isFailedBackup(entry.getValue().getState()))
+            .map(this::describeFailure)
+            .collect(Collectors.joining(" "));
+    if (!failureDetails.isEmpty()) {
+      throw new IllegalStateException(
+          "Backup with id:[%d] failed for %s".formatted(backupId, failureDetails));
+    }
+  }
+
+  private String describeFailure(final Map.Entry<String, GetBackupStateResponseDto> entry) {
+    final var backup = entry.getValue();
+    final var failureReason =
+        backup.getFailureReason() != null && !backup.getFailureReason().isEmpty()
+            ? " Indices backup failure: %s.".formatted(backup.getFailureReason())
+            : "";
+    return "physical tenant '%s'.%s".formatted(entry.getKey(), failureReason);
   }
 
   private boolean isCompletedBackup(final BackupStateDto backupStateDto) {
@@ -189,12 +237,6 @@ public class StandaloneBackupManager implements CommandLineRunner {
     @Bean
     public ExitCodeExceptionMapper exitCodeExceptionMapper() {
       return ex -> 1;
-    }
-
-    @Bean
-    @ConfigurationProperties(prefix = "camunda.database")
-    public SearchEngineConfiguration searchEngineConfiguration() {
-      return SearchEngineConfiguration.of(b -> b);
     }
   }
 }

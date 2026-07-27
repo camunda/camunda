@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
@@ -18,6 +19,13 @@ import net.jqwik.api.domains.Domain;
 import net.jqwik.api.domains.DomainContext;
 
 final class ProtoBufSerializerPropertyTest {
+
+  private static final String COLLECTION_EQUALITY_HINT =
+      """
+      Decoded configuration must be equal to the initial one.
+      If this fails even though both objects look the same, make sure to take defensive copies of collections in the config and its nested types.
+      jqwik tends to generate sorted sets and maps which are not equal to the unsorted collections created on deserialization.""";
+
   @Property(tries = 100)
   @Domain(ClusterTopologyDomain.class)
   @Domain(DomainContext.Global.class)
@@ -32,11 +40,24 @@ final class ProtoBufSerializerPropertyTest {
 
     // then
     assertThat(decodedState.getClusterConfiguration())
-        .describedAs(
-            """
-            Decoded clusterTopology must be equal to initial one.
-            If this fails even though both objects look the same, make sure to take defensive copies of collections in the ClusterTopology and its nested types.
-            jqwik tends to generate sorted sets and maps which are not equal to the unsorted collections created on deserialization.""")
+        .describedAs(COLLECTION_EQUALITY_HINT)
         .isEqualTo(clusterConfiguration);
+  }
+
+  @Property(tries = 100)
+  @Domain(ClusterTopologyDomain.class)
+  @Domain(DomainContext.Global.class)
+  void shouldEncodeAndDecodeCurrentClusterConfiguration(
+      @ForAll final CurrentClusterConfiguration configuration) {
+    // given
+    final var protoBufSerializer = new ProtoBufSerializer();
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeCurrentClusterConfiguration(
+            protoBufSerializer.encodeCurrentClusterConfiguration(configuration));
+
+    // then
+    assertThat(decoded).describedAs(COLLECTION_EQUALITY_HINT).isEqualTo(configuration);
   }
 }

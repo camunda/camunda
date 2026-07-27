@@ -9,8 +9,10 @@ package io.camunda.db.rdbms.write.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.ValueTypeEnum;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class ClusterVariableDbModelTest {
@@ -35,6 +37,7 @@ public class ClusterVariableDbModelTest {
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo("null");
+    assertThat(model.metadata()).isEmpty();
   }
 
   @Test
@@ -57,5 +60,37 @@ public class ClusterVariableDbModelTest {
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isEqualTo(123456L);
     assertThat(model.value()).isEqualTo("123456");
+  }
+
+  @Test
+  public void shouldCopyClusterVariable() {
+    // given
+    final List<MetadataEntry> metadata =
+        List.of(
+            new MetadataEntry("kind", "CREDENTIAL", null),
+            new MetadataEntry("schemaVersion", "2", 2.0));
+    final ClusterVariableDbModel.ClusterVariableDbModelBuilder builder =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder();
+
+    // when
+    final ClusterVariableDbModel model =
+        builder
+            .name("test")
+            .value("someValue")
+            .tenantId("tenant1")
+            .scope(ClusterVariableScope.GLOBAL)
+            .metadata(metadata)
+            .build();
+
+    // then
+    assertThat(model.metadata()).isEqualTo(metadata);
+
+    // and copy() preserves metadata unless overridden
+    final ClusterVariableDbModel copied = model.copy(b -> b);
+    assertThat(copied.name()).isEqualTo("test");
+    assertThat(copied.value()).isEqualTo("someValue");
+    assertThat(copied.tenantId()).isEqualTo("tenant1");
+    assertThat(copied.scope()).isEqualTo(ClusterVariableScope.GLOBAL);
+    assertThat(copied.metadata()).isEqualTo(metadata);
   }
 }

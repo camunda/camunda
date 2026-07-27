@@ -51,6 +51,14 @@ public class ItemProviderFactory {
           forResolveIncident(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
               batchOperation.getAuthentication());
+      case SUSPEND_PROCESS_INSTANCE ->
+          forSuspendProcessInstance(
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication());
+      case RESUME_PROCESS_INSTANCE ->
+          forResumeProcessInstance(
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication());
       case UPDATE_JOB ->
           forUpdateJob(
               batchOperation.getEntityFilter(JobFilter.class), batchOperation.getAuthentication());
@@ -120,6 +128,32 @@ public class ItemProviderFactory {
         searchClientsProxy,
         metrics,
         filter.toBuilder().partitionId(partitionId).build(),
+        authentication);
+  }
+
+  private ProcessInstanceItemProvider forSuspendProcessInstance(
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new ProcessInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder()
+            .partitionId(partitionId)
+            .states(ProcessInstanceState.ACTIVE.name())
+            .parentProcessInstanceKeyOperations(Operation.exists(false))
+            .build(),
+        authentication);
+  }
+
+  private ProcessInstanceItemProvider forResumeProcessInstance(
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new ProcessInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder()
+            .partitionId(partitionId)
+            .states(ProcessInstanceState.SUSPENDED.name())
+            .parentProcessInstanceKeyOperations(Operation.exists(false))
+            .build(),
         authentication);
   }
 

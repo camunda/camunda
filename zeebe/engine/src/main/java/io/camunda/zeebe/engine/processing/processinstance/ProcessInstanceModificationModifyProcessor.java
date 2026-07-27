@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -21,11 +22,12 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.Activ
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
 import io.camunda.zeebe.engine.processing.common.UnsupportedMultiInstanceBodyActivationException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -200,14 +203,14 @@ public final class ProcessInstanceModificationModifyProcessor
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public ProcessInstanceModificationModifyProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -220,7 +223,7 @@ public final class ProcessInstanceModificationModifyProcessor
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -236,32 +239,35 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.MODIFY_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "modify a process instance",
-                  processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.MODIFY_PROCESS_INSTANCE))
+                        .resourceId(processInstance.getValue().getBpmnProcessId())),
+            processInstance,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.MODIFY_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstance.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(eventKey)));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -279,7 +285,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (commandValidationResult.isLeft()) {
       final var rejection = commandValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -301,7 +307,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (moveByKeyValidationResult.isLeft()) {
       final var rejection = moveByKeyValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -330,7 +336,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (instructionsValidationResult.isLeft()) {
       final var rejection = instructionsValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -392,7 +398,7 @@ public final class ProcessInstanceModificationModifyProcessor
     stateWriter.appendFollowUpEvent(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
   }
 
@@ -403,7 +409,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -414,7 +420,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       return ProcessingError.EXPECTED_ERROR;
 
@@ -423,14 +429,15 @@ public final class ProcessInstanceModificationModifyProcessor
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final TerminatedChildProcessException exception) {
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -440,7 +447,8 @@ public final class ProcessInstanceModificationModifyProcessor
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
     }
 
@@ -1359,7 +1367,8 @@ public final class ProcessInstanceModificationModifyProcessor
                           instruction.getClass().getName()));
             })
         .forEach(
-            variableDocument ->
+            variableDocument -> {
+              try {
                 variableBehavior.mergeLocalDocument(
                     scopeKey,
                     process.getKey(),
@@ -1367,7 +1376,14 @@ public final class ProcessInstanceModificationModifyProcessor
                     processInstance.getValue().getRootProcessInstanceKey(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
-                    variableDocument));
+                    variableDocument);
+              } catch (final ValidationException e) {
+                throw new IllegalArgumentException(
+                    "Variable validation failed for element '%s' in process instance '%d': %s"
+                        .formatted(elementId, processInstance.getKey(), e.getMessage()),
+                    e);
+              }
+            });
   }
 
   private void terminateElement(final ElementInstance elementInstance) {

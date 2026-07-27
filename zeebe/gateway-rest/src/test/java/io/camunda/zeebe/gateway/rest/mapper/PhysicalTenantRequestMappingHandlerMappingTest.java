@@ -67,6 +67,8 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/v2", EXPECTED_PREFIX + "/v2"),
         Arguments.of("/v2/widgets", EXPECTED_PREFIX + "/v2/widgets"),
         Arguments.of("/v2/widgets/{id}", EXPECTED_PREFIX + "/v2/widgets/{id}"),
+        // OpenAPI docs: springdoc's /v3/api-docs spec endpoint gets a PT-prefixed sibling
+        Arguments.of("/v3/api-docs", EXPECTED_PREFIX + "/v3/api-docs"),
         // webapp routes
         Arguments.of("/operate", EXPECTED_PREFIX + "/operate"),
         Arguments.of("/operate/processes", EXPECTED_PREFIX + "/operate/processes"),
@@ -76,6 +78,8 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/admin/users", EXPECTED_PREFIX + "/admin/users"),
         Arguments.of("/webapp", EXPECTED_PREFIX + "/webapp"),
         Arguments.of("/webapp/some-route", EXPECTED_PREFIX + "/webapp/some-route"),
+        // post-logout landing gets a per-tenant sibling so scoped OIDC logout can return to it
+        Arguments.of("/post-logout", EXPECTED_PREFIX + "/post-logout"),
         // non-matching: different prefix
         Arguments.of("/v1/widgets", null),
         // non-matching: word boundary guards (no trailing slash → not a root)
@@ -132,7 +136,12 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
             "plain webapp controller /tasklist/tasks keeps original and adds prefixed sibling",
             new PlainController(),
             "/tasklist/tasks",
-            List.of("/tasklist/tasks", EXPECTED_PREFIX + "/tasklist/tasks")));
+            List.of("/tasklist/tasks", EXPECTED_PREFIX + "/tasklist/tasks")),
+        Arguments.of(
+            "plain /post-logout controller keeps original and adds prefixed sibling",
+            new PlainController(),
+            "/post-logout",
+            List.of("/post-logout", EXPECTED_PREFIX + "/post-logout")));
   }
 
   @ParameterizedTest(name = "[{index}] {0}")

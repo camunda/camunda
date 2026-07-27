@@ -18,6 +18,8 @@ import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -198,6 +200,32 @@ class AbstractEntityReaderTest {
             new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
   }
 
+  @Test
+  void shouldRejectEmptyAfterCursor() {
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final SearchQueryPage page = SearchQueryPage.of(p -> p.from(0).size(10).after(""));
+
+    assertThatThrownBy(() -> reader.convertPaging(sort, page))
+        .isInstanceOf(CamundaSearchException.class)
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(Reason.INVALID_ARGUMENT);
+  }
+
+  @Test
+  void shouldRejectEmptyBeforeCursor() {
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final SearchQueryPage page = SearchQueryPage.of(p -> p.from(0).size(10).before(""));
+
+    assertThatThrownBy(() -> reader.convertPaging(sort, page))
+        .isInstanceOf(CamundaSearchException.class)
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(Reason.INVALID_ARGUMENT);
+  }
+
   // ---- Null-value keyset pagination tests ----
 
   @Test
@@ -348,7 +376,9 @@ class AbstractEntityReaderTest {
 
   @Test
   void shouldBuildSearchBeforeWithNullInFirstColumnTwoCols() {
-    // given: entity where first column (processDefinitionVersionTag) is null
+    // given: entity where first column (processDefinitionVersionTag) is null. ASC sorts NULLs
+    // first, so when traversing backwards nothing sorts before a leading null - the strict leading
+    // clause is dropped, leaving only the tie-break that walks earlier null rows by unique key.
     final var entity =
         Instancio.of(ProcessInstanceEntity.class)
             .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
@@ -368,17 +398,11 @@ class AbstractEntityReaderTest {
         SearchQueryPage.of(p -> p.from(0).size(10).before(result.startCursor()));
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
-    // then: 2 keyset entries
-    assertThat(dbPage.keySetPagination()).hasSize(2);
+    // then: only the tie-break group remains (the unsatisfiable leading group is dropped)
+    assertThat(dbPage.keySetPagination()).hasSize(1);
 
-    // ks0: processDefinitionVersionTag IS NOT NULL  (null + ASC + searchBefore => IS_NOT_NULL)
+    // processDefinitionVersionTag IS NULL AND processInstanceKey < value
     assertThat(dbPage.keySetPagination().get(0).entries())
-        .containsExactly(
-            new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
-
-    // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey < value
-    assertThat(dbPage.keySetPagination().get(1).entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
                 "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
@@ -388,9 +412,10 @@ class AbstractEntityReaderTest {
 
   @Test
   void shouldBuildSearchAfterDescWithNullInFirstColumn() {
-    // given: entity where the DESC sort column (processDefinitionVersionTag) is null
-    // null + DESC + searchAfter => IS_NULL (null rows come last in DESC, so "after null" = nothing
-    // further; but "is null" is the correct comparator for rows at the same null level)
+    // given: entity where the DESC sort column (processDefinitionVersionTag) is null. DESC sorts
+    // NULLs last, so nothing sorts after a null cursor - the strict leading clause must be dropped
+    // (not IS NULL, which would re-match every null row and stall the cursor). Only the tie-break
+    // that advances within the trailing null block by the unique key survives.
     final var entity =
         Instancio.of(ProcessInstanceEntity.class)
             .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
@@ -410,17 +435,11 @@ class AbstractEntityReaderTest {
         SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
-    // then: 2 keyset entries
-    assertThat(dbPage.keySetPagination()).hasSize(2);
+    // then: only the tie-break group remains (the unsatisfiable leading group is dropped)
+    assertThat(dbPage.keySetPagination()).hasSize(1);
 
-    // ks0: processDefinitionVersionTag IS NULL  (null + DESC + searchAfter => IS_NULL)
+    // processDefinitionVersionTag IS NULL AND processInstanceKey > value
     assertThat(dbPage.keySetPagination().get(0).entries())
-        .containsExactly(
-            new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null));
-
-    // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey > value
-    assertThat(dbPage.keySetPagination().get(1).entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
                 "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
@@ -430,8 +449,9 @@ class AbstractEntityReaderTest {
 
   @Test
   void shouldBuildSearchBeforeDescWithNullInFirstColumn() {
-    // given: entity where the DESC sort column (processDefinitionVersionTag) is null
-    // null + DESC + searchBefore => IS_NULL  (reverse of searchAfter+DESC+null)
+    // given: entity where the DESC sort column (processDefinitionVersionTag) is null. DESC sorts
+    // NULLs last, so traversing backwards from a trailing null reaches the non-null rows - the
+    // strict leading clause is IS NOT NULL (was incorrectly IS NULL, which re-matched null rows).
     final var entity =
         Instancio.of(ProcessInstanceEntity.class)
             .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
@@ -454,11 +474,11 @@ class AbstractEntityReaderTest {
     // then: 2 keyset entries
     assertThat(dbPage.keySetPagination()).hasSize(2);
 
-    // ks0: processDefinitionVersionTag IS NULL  (null + DESC + searchBefore => IS_NULL)
+    // ks0: processDefinitionVersionTag IS NOT NULL  (null + DESC + searchBefore => IS_NOT_NULL)
     assertThat(dbPage.keySetPagination().get(0).entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null));
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
 
     // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey < value
     assertThat(dbPage.keySetPagination().get(1).entries())

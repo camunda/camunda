@@ -13,6 +13,8 @@ public record ErrorResponse(ErrorCode code, String message) {
     INVALID_REQUEST,
     OPERATION_NOT_ALLOWED,
     CONCURRENT_MODIFICATION,
-    INTERNAL_ERROR;
+    INTERNAL_ERROR,
+    INVALID_STATE,
+    NOT_FOUND;
   }
 }

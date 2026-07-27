@@ -204,9 +204,9 @@ public class CreateAgentHistoryItemCommandImpl
   }
 
   @Override
-  public CreateAgentHistoryItemFinalCommandStep iteration(final int iteration) {
-    ArgumentUtil.ensureGreaterThan("iteration", iteration, 0);
-    request.iteration(iteration);
+  public CreateAgentHistoryItemFinalCommandStep loopIteration(final int loopIteration) {
+    ArgumentUtil.ensureGreaterThan("loopIteration", loopIteration, 0);
+    request.loopIteration(loopIteration);
     return this;
   }
 

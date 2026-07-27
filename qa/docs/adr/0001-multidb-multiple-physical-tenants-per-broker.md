@@ -69,14 +69,21 @@ concrete primitive is dialect-specific, since "schema" has no single cross-diale
   targets that database.
 - **SQL Server (MSSQL)**: a dedicated database per PT (`CREATE DATABASE`), since MSSQL has no
   connection-URL schema selector; the PT URL targets it via `databaseName`.
-- **Oracle** — the exception: each PT gets a per-tenant **table prefix** in the shared `camunda`
-  schema, not a dedicated schema, and reuses the base connection unchanged. Oracle's schema == user,
-  so a schema-per-PT would require `CREATE USER`, which is DBA-only. More fundamentally, the
-  production `SecondaryStorageIsolationValidation` keys a storage location on
-  `(type, connection-url, table-prefix)` and deliberately ignores the connection user, so two Oracle
-  users on the same URL resolve to the *same* location and the broker refuses to start. A distinct
-  table prefix is the validator's explicitly-allowed "shared connection, distinct prefix" mode and
-  needs no privileged bootstrap.
+- **Oracle**: a dedicated **user** per PT (`CREATE USER`), which on Oracle *is* a dedicated schema;
+  the PT connects as that user with no table prefix, exactly as production isolates Oracle PTs by
+  schema-per-user. This requires a privileged (DBA-grade) base connection for the `CREATE USER` /
+  `DROP USER … CASCADE` bootstrap and an Oracle CI matrix grant. The PT's `database-vendor-id` is
+  pinned to `oracle` so the production `SecondaryStorageIsolationValidation` keys the storage
+  location on the connecting user and recognizes distinct Oracle users on the same JDBC URL as
+  distinct locations ([#56402](https://github.com/camunda/camunda/issues/56402)).
+
+  > Historical note: Oracle was originally the exception, isolated by a per-PT **table prefix** in
+  > the shared `camunda` schema, because the validator keyed a location on
+  > `(type, connection-url, table-prefix)` and deliberately ignored the connection user — so two
+  > Oracle users on the same URL collapsed to the *same* location and the broker refused to start.
+  > [#56402](https://github.com/camunda/camunda/issues/56402) taught the validator to key on the
+  > Oracle user (when `database-vendor-id: oracle`), removing that limitation and letting the harness
+  > use schema-per-user like every other dialect.
 
 The namespace name embeds a run-unique token (the same token the framework already uses for
 parallel-test isolation) plus the PT id, so concurrent CI runs never collide. RDBMS schema auto-DDL
@@ -88,7 +95,7 @@ supported RDBMS dialect, not just H2.
 
 Fresh-storage-per-run isolation — the property [#56006](https://github.com/camunda/camunda/issues/56006)
 added by hand — thus holds for every PT for free (a fresh in-memory DB on H2, a fresh per-run
-schema/database on the other dialects, a fresh per-run table prefix on Oracle).
+schema/database on the other dialects, a fresh per-run user/schema on Oracle).
 
 Constraint: the namespace name (`<run>_<ptId>`) must stay within the dialect's identifier-length
 limit — the binding constraint being Oracle's 30-character identifier cap (far stricter than, e.g.,

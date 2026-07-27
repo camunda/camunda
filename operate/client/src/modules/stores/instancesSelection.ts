@@ -19,6 +19,7 @@ type Runtime = {
   visibleIds: string[];
   visibleRunningIds?: string[];
   visibleFinishedIds?: string[];
+  visibleIncidentIds?: string[];
 };
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
@@ -39,6 +40,7 @@ class InstancesSelection {
     visibleIds: [],
     visibleRunningIds: [],
     visibleFinishedIds: [],
+    visibleIncidentIds: [],
   };
   autorunDisposer: null | IReactionDisposer = null;
 
@@ -70,7 +72,8 @@ class InstancesSelection {
       prev.totalCount === next.totalCount &&
       isEqual(prev.visibleIds, next.visibleIds) &&
       isEqual(prev.visibleRunningIds ?? [], next.visibleRunningIds ?? []) &&
-      isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? [])
+      isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? []) &&
+      isEqual(prev.visibleIncidentIds ?? [], next.visibleIncidentIds ?? [])
     ) {
       return;
     }
@@ -190,6 +193,21 @@ class InstancesSelection {
     );
   }
 
+  get hasSelectedInstancesWithIncidents() {
+    const {
+      selectedIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const visibleIncidentIds = this.runtime.visibleIncidentIds ?? [];
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleIncidentIds.some((id) => selectedIds.includes(id))
+    );
+  }
+
   get checkedRunningIds() {
     const {selectionMode, selectedIds} = this.state;
     const visibleRunningIds = this.runtime.visibleRunningIds ?? [];
@@ -199,6 +217,17 @@ class InstancesSelection {
     }
 
     return visibleRunningIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedIncidentIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleIncidentIds = this.runtime.visibleIncidentIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleIncidentIds.includes(id));
+    }
+
+    return visibleIncidentIds.filter((id) => !selectedIds.includes(id));
   }
 
   get checkedFinishedIds() {
@@ -241,6 +270,7 @@ class InstancesSelection {
       visibleIds: [],
       visibleRunningIds: [],
       visibleFinishedIds: [],
+      visibleIncidentIds: [],
     };
     this.autorunDisposer?.();
   };

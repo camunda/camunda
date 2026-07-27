@@ -22,10 +22,12 @@ const Content = styled.div<ContentProps>`
       overflow: hidden;
       display: grid;
       grid-template-rows: ${$isInfoBannerVisible ? 'auto 1fr' : '1fr'};
-      ${$isInfoBannerVisible &&
-      css`
-        grid-gap: var(--cds-spacing-05);
-      `}
+      ${
+        $isInfoBannerVisible &&
+        css`
+          grid-gap: var(--cds-spacing-05);
+        `
+      }
     `;
   }}
 `;

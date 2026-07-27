@@ -20,12 +20,15 @@ import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.container.cluster.BrokerNode;
+import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.List;
@@ -356,8 +359,51 @@ public interface ClusterActuator {
 
   @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
-  PlannedOperationsResponse patchPartitionDistribution(
-      @RequestBody final PartitionDistributionConfig config, @Param boolean dryRun);
+  PlannedOperationsResponse updatePartitionDistribution(
+      @RequestBody final UpdatePartitionDistributionRequest request, @Param boolean dryRun);
+
+  /** Applies a full partition distribution config via {@code PUT /partition-distribution}. */
+  default PlannedOperationsResponse patchPartitionDistribution(
+      final PartitionDistributionConfig config, final boolean dryRun) {
+    return updatePartitionDistribution(
+        new UpdatePartitionDistributionRequest().config(config), dryRun);
+  }
+
+  /**
+   * Performs a leader switchover via {@code PUT /partition-distribution}: re-orders the existing
+   * per-zone priorities by {@code zonePriorities} (highest first).
+   */
+  default PlannedOperationsResponse updateZonePriorities(
+      final List<String> zonePriorities, final boolean dryRun) {
+    return updatePartitionDistribution(
+        new UpdatePartitionDistributionRequest().zonePriorities(zonePriorities), dryRun);
+  }
+
+  @RequestLine("PUT /zones?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  PlannedOperationsResponse migrateZone(
+      @RequestBody final ClusterZoneMigrationRequest request, @Param boolean dryRun);
+
+  /**
+   * Force-removes the given zone: force-evicts the zone's brokers and drops the zone from the
+   * partition distribution config.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /zones/{zoneId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse forceRemoveZone(@Param final String zoneId, @Param boolean dryRun);
+
+  /**
+   * Adds back the given zone: re-adds the given brokers and re-includes the zone in the partition
+   * distribution config.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /zones/{zoneId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse addZone(
+      @Param final String zoneId, @RequestBody final AddZoneRequest request, @Param boolean dryRun);
 
   /**
    * Requests a cluster mode change.

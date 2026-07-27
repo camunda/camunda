@@ -38,6 +38,7 @@ public class SubscriptionCommandSenderTest {
   public static final DirectBuffer DEFAULT_PROCESS_ID = BufferUtil.wrapString("process");
   public static final int DEFAULT_MESSAGE_KEY = 123;
   public static final long DEFAULT_MESSAGE_DEADLINE = 4567L;
+  public static final long DEFAULT_MESSAGE_TTL = 1000L;
   public static final UnsafeBuffer DEFAULT_VARIABLES = new UnsafeBuffer();
   public static final DirectBuffer DEFAULT_CORRELATION_KEY =
       BufferUtil.wrapString("correlationKey");
@@ -454,6 +455,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
         DEFAULT_TENANT);
 
     // then
@@ -478,6 +480,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
         DEFAULT_TENANT);
 
     // then
@@ -502,6 +505,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
         DEFAULT_TENANT);
 
     // then
@@ -562,6 +566,19 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceExpiredRejectedReply() {
+    // given
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceExpiredRejected(request);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());

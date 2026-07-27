@@ -88,6 +88,19 @@ public interface PartitionsActuator {
   @Headers("Accept: application/json")
   Map<Integer, PartitionStatus> query();
 
+  /**
+   * Same as {@link #query()}, but decodes the response as the Node-scoped (all physical tenants)
+   * shape returned when there is more than one known physical tenant on the node: a map keyed by
+   * physical tenant ID, whose values are the usual per-partition status map.
+   */
+  @RequestLine("GET")
+  @Headers("Accept: application/json")
+  Map<String, Map<Integer, PartitionStatus>> queryByTenant();
+
+  @RequestLine("GET ?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  Map<Integer, PartitionStatus> query(@feign.Param final String physicalTenant);
+
   @RequestLine("POST /pauseExporting")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseExporting();
@@ -104,17 +117,21 @@ public interface PartitionsActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseProcessing();
 
+  @RequestLine("POST /pauseProcessing?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> pauseProcessing(@feign.Param final String physicalTenant);
+
   @RequestLine("POST /resumeProcessing")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> resumeProcessing();
 
+  @RequestLine("POST /resumeProcessing?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> resumeProcessing(@feign.Param final String physicalTenant);
+
   @RequestLine("POST /takeSnapshot")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> takeSnapshot();
-
-  @RequestLine("POST /prepareUpgrade")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
-  Map<Integer, PartitionStatus> prepareUpgrade();
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   record PartitionStatus(

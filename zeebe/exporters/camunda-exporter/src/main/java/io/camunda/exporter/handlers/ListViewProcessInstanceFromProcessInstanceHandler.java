@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -45,6 +46,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<Intent> SUSPEND_RESUME_STATES = Set.of(SUSPENDED, RESUMED);
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
@@ -73,7 +75,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
           || ELEMENT_MIGRATED.equals(intent)
-          || ANCESTOR_MIGRATED.equals(intent);
+          || ANCESTOR_MIGRATED.equals(intent)
+          || SUSPEND_RESUME_STATES.contains(intent);
     }
     return false;
   }
@@ -137,6 +140,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     } else if (intent.equals(ELEMENT_MIGRATED) || intent.equals(ANCESTOR_MIGRATED)) {
       final TreePath treePath = createTreePath(record);
       piEntity.setTreePath(treePath.toString()).setState(ProcessInstanceState.ACTIVE);
+    } else if (intent.equals(SUSPENDED)) {
+      piEntity.setState(ProcessInstanceState.SUSPENDED).setSuspendedDate(timestamp);
+    } else if (intent.equals(RESUMED)) {
+      piEntity.setState(ProcessInstanceState.ACTIVE).setSuspendedDate(null);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -154,7 +161,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
   @Override
   public void flush(
-      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     final Map<String, Object> updateFields = new HashMap<>();
     if (entity.getStartDate() != null) {
@@ -177,6 +186,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     updateFields.put(POSITION, entity.getPosition());
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());
+      updateFields.put(ListViewTemplate.SUSPENDED_DATE, entity.getSuspendedDate());
     }
     if (entity.getTags() != null && !entity.getTags().isEmpty()) {
       updateFields.put(ListViewTemplate.TAGS, entity.getTags());
@@ -185,7 +195,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       updateFields.put(ListViewTemplate.BUSINESS_ID, entity.getBusinessId());
     }
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

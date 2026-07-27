@@ -11,7 +11,7 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity;
 
 public enum AgentHistorySearchColumn implements SearchColumn<AgentInstanceHistoryEntity> {
   AGENT_HISTORY_KEY("historyItemKey"),
-  ITERATION("iteration"),
+  LOOP_ITERATION("loopIteration"),
   PRODUCED_AT("producedAt");
 
   private final String property;

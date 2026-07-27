@@ -10,7 +10,9 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateBusinessIdDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateSuspendedStateDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -77,6 +79,54 @@ public class ProcessInstanceWriter implements RdbmsWriter {
               WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
+              dto));
+    }
+  }
+
+  public void updateBusinessId(final long key, final String businessId) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.businessId(businessId));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateBusinessId",
+              new UpdateBusinessIdDto(key, businessId)));
+    }
+  }
+
+  public void suspend(final long key, final OffsetDateTime suspendedDate) {
+    final boolean wasMerged =
+        mergeToQueue(
+            key, b -> b.state(ProcessInstanceState.SUSPENDED).suspendedDate(suspendedDate));
+
+    if (!wasMerged) {
+      final var dto =
+          new UpdateSuspendedStateDto(key, ProcessInstanceState.SUSPENDED, suspendedDate);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState",
+              dto));
+    }
+  }
+
+  public void resume(final long key) {
+    final boolean wasMerged =
+        mergeToQueue(key, b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+
+    if (!wasMerged) {
+      final var dto = new UpdateSuspendedStateDto(key, ProcessInstanceState.ACTIVE, null);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState",
               dto));
     }
   }

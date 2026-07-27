@@ -18,4 +18,8 @@ public class UnifiedConfigurationException extends RuntimeException {
   public UnifiedConfigurationException(final String message) {
     super(message);
   }
+
+  public UnifiedConfigurationException(final String message, final Exception cause) {
+    super(message, cause);
+  }
 }

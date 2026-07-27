@@ -39,6 +39,7 @@ import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceBusinessIdExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.ResourceExportHandler;
@@ -62,10 +63,12 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigratio
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddUpdateHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
+import io.camunda.exporter.rdbms.replication.DelayReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -75,6 +78,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
@@ -85,24 +89,36 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private final RdbmsServiceFactory rdbmsServiceFactory;
   private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
+  private final Map<String, ExporterConfiguration> exporterConfigByPhysicalTenantId;
 
   private RdbmsExporter exporter;
   private RdbmsCacheRegistry cacheRegistry;
 
   public RdbmsExporterWrapper(
       final RdbmsServiceFactory rdbmsServiceFactory,
-      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
+      final Map<String, ExporterConfiguration> exporterConfigByPhysicalTenantId) {
     this.rdbmsServiceFactory = rdbmsServiceFactory;
     this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
+    this.exporterConfigByPhysicalTenantId = Map.copyOf(exporterConfigByPhysicalTenantId);
   }
 
   @Override
   public void configure(final Context context) {
-    final var config = context.getConfiguration().instantiate(ExporterConfiguration.class);
-    config.validate(); // throws exception if configuration is invalid
-
     final int partitionId = context.getPartitionId();
     final var physicalTenantId = context.getPhysicalTenantId();
+
+    // The RDBMS exporter is provisioned outside the Broker via Spring, so the broker-supplied
+    // context configuration is not physical-tenant aware; resolve the config for this physical
+    // tenant from the factory-supplied map instead (see #57804).
+    final var config = exporterConfigByPhysicalTenantId.get(physicalTenantId);
+    if (config == null) {
+      throw new ExporterException(
+          "No RDBMS exporter configuration for physical tenant '%s'; known physical tenants: %s"
+              .formatted(physicalTenantId, exporterConfigByPhysicalTenantId.keySet()));
+    }
+    config.validate(); // throws exception if configuration is invalid
+
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
     // Use the partition-scoped meter registry so the writer metrics inherit the partition and
@@ -138,18 +154,29 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDependentRowLimit()),
             context.clock());
     builder.historyDeletionService(historyDeletionService);
-    if (config.getAsyncReplication().isEnabled()) {
-      final ReplicationLogStatusProvider replicationLogStatusProvider =
-          rdbmsService.getReplicationLogStatusProvider();
-      builder.replicationControllerFactory(
-          new LsnReplicationControllerFactory(
-              replicationLogStatusProvider,
-              config.getAsyncReplication(),
-              partitionId,
-              context.clock(),
-              rdbmsWriters.getMetrics()));
-    } else {
+    if (!config.getAsyncReplication().isEnabled()) {
       builder.replicationControllerFactory(ReplicationControllerFactory.noop());
+    } else {
+      switch (config.getAsyncReplication().getType()) {
+        case LOG_SEQ -> {
+          final ReplicationLogStatusProvider replicationLogStatusProvider =
+              rdbmsService.getReplicationLogStatusProvider();
+          builder.replicationControllerFactory(
+              new LsnReplicationControllerFactory(
+                  replicationLogStatusProvider,
+                  config.getAsyncReplication(),
+                  partitionId,
+                  context.clock(),
+                  rdbmsWriters.getMetrics()));
+        }
+        case DELAY ->
+            builder.replicationControllerFactory(
+                new DelayReplicationControllerFactory(
+                    config.getAsyncReplication(), partitionId, context.clock()));
+        default ->
+            throw new IllegalArgumentException(
+                "Unknown replication type: " + config.getAsyncReplication().getType());
+      }
     }
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
@@ -251,6 +278,9 @@ public class RdbmsExporterWrapper implements Exporter {
             historyCleanupService,
             cacheRegistry.processCache(),
             rdbmsWriters.getErrorMessageSize()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+        new ProcessInstanceBusinessIdExportHandler(rdbmsWriters.getProcessInstanceWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(

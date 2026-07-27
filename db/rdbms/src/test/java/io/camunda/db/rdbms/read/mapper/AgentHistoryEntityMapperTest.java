@@ -39,7 +39,7 @@ class AgentHistoryEntityMapperTest {
     dbModel.partitionId(1);
     dbModel.jobKey(700L);
     dbModel.jobLease("lease-abc");
-    dbModel.iteration(3);
+    dbModel.loopIteration(3);
     dbModel.role(AgentInstanceHistoryRole.ASSISTANT);
     dbModel.commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED);
     dbModel.producedAt(producedAt);
@@ -62,7 +62,7 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.jobKey()).isEqualTo(700L);
     assertThat(entity.jobLease()).isEqualTo("lease-abc");
-    assertThat(entity.iteration()).isEqualTo(3);
+    assertThat(entity.loopIteration()).isEqualTo(3);
     assertThat(entity.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(entity.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(entity.producedAt()).isEqualTo(producedAt);
@@ -94,6 +94,39 @@ class AgentHistoryEntityMapperTest {
     assertThat(AgentHistoryEntityMapper.toEntity(null)).isNull();
   }
 
+  @Test
+  void shouldMapAllNullMetricsToNullMetrics() {
+    // given — all three null means metrics were never provided
+    final var dbModel = minimalDbModel(43L);
+    dbModel.inputTokens(null);
+    dbModel.outputTokens(null);
+    dbModel.durationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
+
+    // then
+    assertThat(entity.metrics()).isNull();
+  }
+
+  @Test
+  void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
+    // given — inputTokens and outputTokens set, durationMs absent
+    final var dbModel = minimalDbModel(44L);
+    dbModel.inputTokens(100L);
+    dbModel.outputTokens(200L);
+    dbModel.durationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
+
+    // then
+    assertThat(entity.metrics()).isNotNull();
+    assertThat(entity.metrics().inputTokens()).isEqualTo(100L);
+    assertThat(entity.metrics().outputTokens()).isEqualTo(200L);
+    assertThat(entity.metrics().durationMs()).isNull();
+  }
+
   private AgentHistoryDbModel minimalDbModel(final long key) {
     final var model = new AgentHistoryDbModel();
     model.agentHistoryKey(key);
@@ -107,7 +140,7 @@ class AgentHistoryEntityMapperTest {
     model.partitionId(1);
     model.jobKey(6L);
     model.jobLease("lease");
-    model.iteration(1);
+    model.loopIteration(1);
     model.role(AgentInstanceHistoryRole.USER);
     model.commitStatus(AgentInstanceHistoryCommitStatus.PENDING);
     model.producedAt(OffsetDateTime.parse("2024-01-01T00:00:00Z"));

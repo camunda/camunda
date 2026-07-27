@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: docker.io/camunda/zeebe:8.7.34
+          image: docker.io/camunda/zeebe:8.7.35
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
@@ -94,7 +94,7 @@ spec:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
               value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: "http://elastic:9200"
+              value: "http://elasticsearch-es-http:9200"
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
               value: "zeebe-record"
             - name: JAVA_TOOL_OPTIONS

@@ -1,7 +1,8 @@
 # description: Runs parallel endurance tests weekly against main (TTL: 28 days).
-#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, latency.
+#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, ECS.
 #              Naming pattern: medic-y-YYYY-cw-WW-<sha>
-# calls: camunda-load-test.yml (5 parallel calls, one per scenario)
+# calls: camunda-load-test.yml (3 parallel calls, one per scenario) +
+#        camunda-ecs-weekly-load-test.yml (1 parallel call) — 4 load tests total
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
@@ -42,7 +43,7 @@ jobs:
     outputs:
       image-tag: ${{ steps.data.outputs.image-tag }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Collect test data
@@ -75,7 +76,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -142,12 +143,17 @@ jobs:
     needs: test-data
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      # Jib's default HTTP timeout (20s) for registry push/pull is too low and has caused
+      # intermittent failures pushing the load-test images; see discussion in
+      # https://camunda.slack.com/archives/C5AHF1D8T/p1784723160353049
+      JIB_HTTP_TIMEOUT: 60000
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
@@ -159,11 +165,11 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -DskipTests -DskipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
         env:
           IMAGE_TAG: ${{ needs.test-data.outputs.image-tag }}
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
         env:
           IMAGE_TAG: ${{ needs.test-data.outputs.image-tag }}
       - name: Observe build status
@@ -235,33 +241,19 @@ jobs:
       reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: realistic
 
-  setup-latency-test:
-    name: Latency test
-    uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
-    needs:
-      - test-data
-      - build-camunda-image
-      - build-load-test-images
-    if: |
-      always() &&
-      needs.test-data.result == 'success' &&
-      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    with:
-      name: ${{ needs.test-data.outputs.image-tag }}-latency
-      ttl: ${{ fromJSON(inputs.ttl || '28') }}
-      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
-      scenario: latency
-
   setup-ecs-benchmark:
     name: ECS Weekly Benchmark
     needs:
       - test-data
       - build-camunda-image
       - build-load-test-images
+    # ECS benchmark identity is derived from the current calendar week and a live scan of
+    # running ECS services, with no notion of reuse-tag. Re-running with reuse-tag set is only
+    # meant to recreate a specific week's Helm-based load tests; ECS doesn't support updating an
+    # existing week's benchmark in place, so skip it entirely in that case.
     if: |
       always() &&
+      inputs.reuse-tag == '' &&
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
@@ -276,12 +268,12 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test, setup-ecs-benchmark ]
+    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-ecs-benchmark ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Import Slack webhook from Vault
@@ -296,7 +288,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook

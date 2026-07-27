@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -34,6 +35,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -100,11 +102,14 @@ public class ResolveIncidentTest {
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
 
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -229,6 +234,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -275,7 +282,8 @@ public class ResolveIncidentTest {
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
     }
 
     @Test
@@ -284,6 +292,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())

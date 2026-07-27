@@ -435,10 +435,75 @@
 				"fetchErrorDescription": "Laden Sie die Seite neu, um es erneut zu versuchen"
 			},
 			"processes": {
-				"title": "Prozesse"
+				"title": "Prozesse",
+				"filters": {
+					"processSection": "Prozess",
+					"name": "Name",
+					"searchByName": "Nach Prozessnamen suchen",
+					"version": "Version",
+					"selectVersion": "Prozessversion auswählen",
+					"allVersions": "Alle Versionen",
+					"element": "Element",
+					"searchByElement": "Nach Prozesselement suchen",
+					"instancesStates": "Instanzstatus",
+					"runningInstances": "Laufende Instanzen",
+					"finishedInstances": "Abgeschlossene Instanzen",
+					"active": "Aktiv",
+					"incidents": "Vorfälle",
+					"completed": "Abgeschlossen",
+					"canceled": "Abgebrochen",
+					"tenant": "Mandant",
+					"processInstanceKey": "Prozessinstanz-Schlüssel",
+					"processInstanceKeyPlaceholder": "getrennt durch Leerzeichen oder Komma",
+					"businessId": "Business ID",
+					"batchOperationKey": "Batch-Operation-Schlüssel",
+					"parentProcessInstanceKey": "Schlüssel der übergeordneten Prozessinstanz",
+					"errorMessage": "Fehlermeldung",
+					"hasRetriesLeft": "Fehlgeschlagener Job mit verbleibenden Wiederholungen",
+					"startDateRange": "Startdatumsbereich",
+					"endDateRange": "Enddatumsbereich",
+					"removeFilter": "Filter {{label}} entfernen",
+					"startDatePopoverTitle": "Instanzen nach Startdatum filtern",
+					"endDatePopoverTitle": "Instanzen nach Enddatum filtern"
+				},
+				"diagramHeader": {
+					"title": "Prozess",
+					"processName": "Prozessname",
+					"processId": "Prozess-ID",
+					"versionTag": "Versions-Tag"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
+					"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus",
+					"noProcessSelected": "Es ist kein Prozess ausgewählt",
+					"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus"
+				}
 			},
 			"decisions": {
 				"title": "Entscheidungen"
+			},
+			"decisionInstance": {
+				"title": "Operate Entscheidungsinstanz",
+				"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
+				"notFoundNotificationTitle": "Entscheidungsinstanz {{decisionInstanceId}} konnte nicht gefunden werden",
+				"header": {
+					"decisionInstanceKeyColumn": "Entscheidungsinstanzschlüssel",
+					"versionColumn": "Version",
+					"businessIdColumn": "Geschäfts-ID",
+					"tenantColumn": "Mandant",
+					"evaluationDateColumn": "Auswertungsdatum",
+					"processInstanceColumn": "Prozessinstanzschlüssel",
+					"versionLinkTitle": "Instanzen der Entscheidung \"{{name}} Version {{version}}\" anzeigen",
+					"versionLinkTitleWithTenant": "Instanzen der Entscheidung \"{{name}} Version {{version}}\" anzeigen - {{tenant}}",
+					"processInstanceLinkTitle": "Prozessinstanz {{processInstanceKey}} anzeigen",
+					"noProcessInstance": "Keine",
+					"openDrdButton": "Entscheidungsanforderungsdiagramm öffnen"
+				},
+				"forbidden": {
+					"heading": "403 - Sie haben keine Berechtigung, diese Informationen anzuzeigen",
+					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
+					"learnMoreLink": "Mehr über Berechtigungen erfahren"
+				}
 			},
 			"operations": {
 				"title": "Operationen"
@@ -470,6 +535,48 @@
 				"filtersPanel": {
 					"label": "Filter",
 					"resetFilters": "Filter zurücksetzen"
+				},
+				"validators": {
+					"ids": "Schlüssel muss eine 16- bis 19-stellige Zahl sein, getrennt durch Leerzeichen oder Komma",
+					"parentInstanceId": "Schlüssel muss eine 16- bis 19-stellige Zahl sein",
+					"batchOperationKey": "Schlüssel muss eine 16- bis 19-stellige Zahl oder eine UUID sein",
+					"time": "Die Zeit muss im Format hh:mm:ss angegeben werden",
+					"timeRange": "„Von-Zeit“ liegt nach „Bis-Zeit“"
+				},
+				"tenantField": {
+					"selectTenant": "Mandant auswählen",
+					"tenant": "Mandant",
+					"allTenants": "Alle Mandanten"
+				},
+				"optionalFiltersMenu": {
+					"moreFilters": "Weitere Filter"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "ist gleich",
+					"operatorNotEquals": "ist nicht gleich",
+					"operatorContains": "enthält",
+					"operatorIsOneOf": "ist eines von",
+					"operatorIsNotOneOf": "ist keines von",
+					"operatorExists": "existiert",
+					"operatorListPlaceholder": "durch Leerzeichen oder Komma getrennt",
+					"operatorExistsPlaceholder": "true oder false",
+					"operatorTypeLabel": "{{label}} Filtertyp",
+					"selectOperator": "Operator auswählen"
+				},
+				"instanceHeader": {
+					"incidentsCount_one": "{{count}} Vorfall",
+					"incidentsCount_other": "{{count}} Vorfälle"
+				},
+				"copyButton": {
+					"copy": "Kopieren",
+					"copied": "Kopiert",
+					"copyToClipboard": "In die Zwischenablage kopieren",
+					"copiedToClipboard": "In die Zwischenablage kopiert"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Löschen",
+					"cancelButton": "Abbrechen",
+					"confirmationError": "Bitte aktivieren Sie dieses Kästchen, wenn Sie fortfahren möchten."
 				}
 			}
 		}

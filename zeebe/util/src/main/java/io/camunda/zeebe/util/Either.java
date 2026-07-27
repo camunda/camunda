@@ -61,6 +61,8 @@ import org.jspecify.annotations.Nullable;
  */
 public sealed interface Either<L extends @Nullable Object, R extends @Nullable Object> {
 
+  static final Either<Void, Void> RIGHT_VOID = Either.right(Unit.unit());
+
   /**
    * Returns a {@link Right} describing the given value.
    *
@@ -370,6 +372,11 @@ public sealed interface Either<L extends @Nullable Object, R extends @Nullable O
    */
   <T extends @Nullable Object> T fold(
       Function<? super L, ? extends T> leftFn, Function<? super R, ? extends T> rightFn);
+
+  @SuppressWarnings("unchecked")
+  static <A extends @Nullable Object> Either<A, Void> rightVoid() {
+    return (Either<A, Void>) Either.RIGHT_VOID;
+  }
 
   /**
    * A right for either a left or right. By convention, right is used for success and left for

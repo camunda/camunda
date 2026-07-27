@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {deploy} from 'utils/zeebeClient';
+import {deploy, waitForLatestProcessVersion} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -133,6 +133,73 @@ test.describe('process page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 
+  const NOT_FOUND_MESSAGE = 'We could not find any process with that name';
+
+  test('filter processes by "Requires form input to start"', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+  }) => {
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    await tasklistProcessesPage.filterByStartForm(
+      'Requires form input to start',
+    );
+
+    // A process with a start form is shown under this filter, tagged.
+    await tasklistProcessesPage.searchForProcess(
+      'processWithStartNodeFormDeployed',
+    );
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
+    await expect(
+      tasklistProcessesPage.requiresFormInputTagFor(
+        'processWithStartNodeFormDeployed',
+      ),
+    ).toHaveText('Requires form input');
+
+    // A process without a start form is excluded by this filter.
+    await tasklistProcessesPage.searchForProcess('User_Process');
+    await expect(page.getByText(NOT_FOUND_MESSAGE)).toBeVisible();
+    await expect(tasklistProcessesPage.processTile).toHaveCount(0);
+  });
+
+  test('filter processes by "Does not require form input to start"', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+  }) => {
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    await tasklistProcessesPage.filterByStartForm(
+      'Does not require form input to start',
+    );
+
+    // A process without a start form is shown under this filter and not tagged.
+    await tasklistProcessesPage.searchForProcess('User_Process');
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
+    await expect(tasklistProcessesPage.processTile).toContainText(
+      'User_Process',
+    );
+    await expect(
+      tasklistProcessesPage.requiresFormInputTagFor('User_Process'),
+    ).toBeHidden();
+
+    // A process with a start form is excluded by this filter.
+    await tasklistProcessesPage.searchForProcess(
+      'processWithStartNodeFormDeployed',
+    );
+    await expect(page.getByText(NOT_FOUND_MESSAGE)).toBeVisible();
+    await expect(tasklistProcessesPage.processTile).toHaveCount(0);
+  });
+
   test('complete process with start node having deployed form', async ({
     page,
     tasklistHeader,
@@ -196,5 +263,65 @@ test.describe('process page', () => {
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
       timeout: 60000,
     });
+  });
+
+  // Regression test for https://github.com/camunda/camunda/issues/40045
+  test('show only the latest version of a process definition', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+    taskPanelPage,
+  }) => {
+    await deploy(['./resources/latest_version_process.form']);
+    await deploy(['./resources/latest_version_process_v1.bpmn']);
+    const deployment = await deploy([
+      './resources/latest_version_process_v2.bpmn',
+    ]);
+    await waitForLatestProcessVersion(
+      'Latest_Version_Process',
+      deployment.processes[0].processDefinitionVersion,
+    );
+
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(tasklistProcessesPage.processTile).toHaveCount(1);
+        await expect(tasklistProcessesPage.processTile).toContainText(
+          'Latest Version Process',
+        );
+      },
+      onFailure: async () => {
+        await page.reload();
+        if (await tasklistProcessesPage.continueButton.isVisible()) {
+          await tasklistProcessesPage.continueButton.click();
+        }
+        await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+      },
+    });
+
+    await tasklistProcessesPage.startProcessButton.click();
+    await expect(page.getByText('Process has started')).toBeVisible();
+
+    await tasklistHeader.clickTasksTab();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(
+          taskPanelPage.availableTasks
+            .getByText('Latest Version Task V2')
+            .first(),
+        ).toBeVisible();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
+    await expect(
+      taskPanelPage.availableTasks.getByText('Latest Version Task V1'),
+    ).toBeHidden();
   });
 });

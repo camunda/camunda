@@ -7,8 +7,8 @@
  */
 
 import {useReducer} from 'react';
-import {Button, Tag, Tooltip} from '@carbon/react';
-import {Document, Maximize, Tools} from '@carbon/react/icons';
+import {Button} from '@carbon/react';
+import {Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -21,14 +21,13 @@ import {
   TextContent,
   MessageActions,
   ObjectContent,
-  AttachmentsContainer,
-  AttachmentsLabel,
-  AttachmentButton,
   MessageHeader,
-  MetricsContainer,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
 import {MessageDetailsModal} from './MessageDetailsModal';
+import {MessageMetrics} from './MessageMetrics';
+import {DocumentContent} from './MessageAttachments/DocumentContent';
+import {ToolCalls} from './MessageAttachments/ToolCalls';
 
 type Actor = Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT'> | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
@@ -47,15 +46,11 @@ const labelByActor: Record<Actor, string> = {
   ASSISTANT: 'Assistant',
 };
 
-function formatDuration(ms: number): string {
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
-}
-
 type ConversationMessageProps = {
   actor: Actor;
   content: ContentItem[];
   historyItemKey?: string;
-  metrics?: Metrics | null;
+  metrics?: Metrics;
   toolCalls?: ToolCall[];
 };
 
@@ -71,10 +66,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     initialMessageDetailsState,
   );
 
-  const documentEntries = content.filter(
-    (entry) => entry.contentType === 'DOCUMENT',
-  );
-
   return (
     <Container
       $actor={actor}
@@ -83,22 +74,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     >
       <MessageHeader>
         <ActorLabel>{labelByActor[actor]}</ActorLabel>
-        {metrics !== null && (
-          <MetricsContainer>
-            <Tooltip
-              description={`Input: ${metrics.inputTokens.toLocaleString()} · Output: ${metrics.outputTokens.toLocaleString()}`}
-              align="bottom"
-            >
-              <Tag data-testid="message-token-metric" type="gray" size="sm">
-                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
-                &nbsp;tokens
-              </Tag>
-            </Tooltip>
-            <Tag data-testid="message-duration-metric" type="gray" size="sm">
-              {formatDuration(metrics.durationMs)}
-            </Tag>
-          </MetricsContainer>
-        )}
+        <MessageMetrics metrics={metrics} />
       </MessageHeader>
       {content.map((entry, index) => {
         switch (entry.contentType) {
@@ -136,32 +112,11 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
-      {documentEntries.length > 0 && (
-        <AttachmentsContainer>
-          <AttachmentsLabel>Documents</AttachmentsLabel>
-          {documentEntries.map(({documentReference}) => (
-            <AttachmentButton key={documentReference.documentId} disabled>
-              <Document size={12} />
-              {documentReference.metadata.fileName}
-            </AttachmentButton>
-          ))}
-        </AttachmentsContainer>
-      )}
-      {toolCalls.length > 0 && (
-        <AttachmentsContainer>
-          <AttachmentsLabel>Tool calls</AttachmentsLabel>
-          {toolCalls.map((tc) => (
-            <AttachmentButton
-              key={tc.toolCallId}
-              aria-label={`"${tc.toolName}" tool call.`}
-              disabled
-            >
-              <Tools size={12} />
-              {tc.toolName}
-            </AttachmentButton>
-          ))}
-        </AttachmentsContainer>
-      )}
+      <DocumentContent
+        content={content}
+        modalTitleSuffix="conversation message"
+      />
+      <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal
           title={messageDetails.title}

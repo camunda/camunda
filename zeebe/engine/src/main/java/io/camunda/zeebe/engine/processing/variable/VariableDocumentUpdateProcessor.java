@@ -7,16 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -28,12 +31,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -60,7 +65,7 @@ public final class VariableDocumentUpdateProcessor
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public VariableDocumentUpdateProcessor(
@@ -70,7 +75,7 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
     processState = processingState.getProcessState();
@@ -81,9 +86,8 @@ public final class VariableDocumentUpdateProcessor
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
-    this.bannedInstanceCheck =
-        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    this.cslCheck = cslCheck;
+    bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -94,7 +98,7 @@ public final class VariableDocumentUpdateProcessor
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectedResponseOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -103,30 +107,37 @@ public final class VariableDocumentUpdateProcessor
     if (bannedInstanceCheckResult.isLeft()) {
       final var rejection = bannedInstanceCheckResult.getLeft();
       writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
-      writers.response().writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, rejection.type(), rejection.reason());
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(record)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(scope.getValue().getTenantId())
-            .addResourceId(scope.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    final var isAuthorized =
+        cslCheck.checkAuthorizationAndTenant(
+            record,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(scope.getValue().getBpmnProcessId())),
+            record.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            scope.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(value.getScopeKey())));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "update variables for element",
-                  scope.getValue().getProcessInstanceKey(),
-                  "such element")
-              : rejection.reason();
-      writers.rejection().appendRejection(record, rejection.type(), errorMessage);
-      writers.response().writeRejectionOnCommand(record, rejection.type(), errorMessage);
+      writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, rejection.type(), rejection.reason());
       return;
     }
 
@@ -138,7 +149,9 @@ public final class VariableDocumentUpdateProcessor
       if (lifecycleState != LifecycleState.CREATED) {
         final var reason = INVALID_USER_TASK_STATE_MESSAGE.formatted(userTaskKey, lifecycleState);
         writers.rejection().appendRejection(record, RejectionType.INVALID_STATE, reason);
-        writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_STATE, reason);
+        writers
+            .response()
+            .writeRejectedResponseOnCommand(record, RejectionType.INVALID_STATE, reason);
         return;
       }
 
@@ -173,29 +186,14 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      switch (value.getUpdateSemantics()) {
-        case LOCAL ->
-            variableBehavior.mergeLocalDocument(
-                userTaskRecord.getElementInstanceKey(),
-                userTaskRecord.getProcessDefinitionKey(),
-                userTaskRecord.getProcessInstanceKey(),
-                userTaskRecord.getRootProcessInstanceKey(),
-                userTaskRecord.getBpmnProcessIdBuffer(),
-                userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
-        case PROPAGATE ->
-            variableBehavior.mergeDocument(
-                userTaskRecord.getElementInstanceKey(),
-                userTaskRecord.getProcessDefinitionKey(),
-                userTaskRecord.getProcessInstanceKey(),
-                userTaskRecord.getRootProcessInstanceKey(),
-                userTaskRecord.getBpmnProcessIdBuffer(),
-                userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
-        default ->
-            throw new IllegalStateException(
-                "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
-                    .formatted(value.getUpdateSemantics()));
+      try {
+        mergeVariables(value, userTaskRecord, variableBehavior);
+      } catch (final ValidationException e) {
+        writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+        writers
+            .response()
+            .writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+        return;
       }
 
       writers
@@ -204,7 +202,8 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATED, value);
       writers
           .response()
-          .writeEventOnCommand(variableDocKey, VariableDocumentIntent.UPDATED, value, record);
+          .writeAcceptedResponseOnCommand(
+              variableDocKey, VariableDocumentIntent.UPDATED, value, record);
       writers
           .state()
           .appendFollowUpEvent(
@@ -243,14 +242,55 @@ public final class VariableDocumentUpdateProcessor
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
       writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      return;
+    } catch (final ValidationException e) {
+      writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
       return;
     }
 
     final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    writers
+        .response()
+        .writeAcceptedResponseOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+  }
+
+  public static void mergeVariables(
+      final VariableDocumentRecord value,
+      final UserTaskRecord userTaskRecord,
+      final VariableBehavior variableBehavior)
+      throws VariableValidationException {
+    switch (value.getUpdateSemantics()) {
+      case LOCAL ->
+          variableBehavior.mergeLocalDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              value.getVariablesBuffer());
+      case PROPAGATE ->
+          variableBehavior.mergeDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              value.getVariablesBuffer());
+      default ->
+          throw new IllegalStateException(
+              "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
+                  .formatted(value.getUpdateSemantics()));
+    }
   }
 
   private static boolean hasVariables(final VariableDocumentRecord record) {

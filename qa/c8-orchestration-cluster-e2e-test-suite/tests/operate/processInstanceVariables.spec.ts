@@ -24,6 +24,7 @@ const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
 
 let completedInstanceKey: string;
+let addVariablesInstanceKey: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -33,7 +34,18 @@ test.beforeAll(async () => {
   ]);
   const manyVariables = generateManyVariables();
   await createInstances('variableScrollingProcess', 1, 1, manyVariables);
-  await createInstances('simpleServiceTaskProcess', 1, 1);
+  // simpleServiceTaskProcess is also deployed by processInstanceJobPriority.spec.ts, so more than
+  // one version can exist in the shared cluster. Capture this instance's key and open it directly
+  // instead of relying on the Processes name filter, which defaults to the latest version and would
+  // otherwise show "no Instances matching" for an instance created on an earlier version.
+  const [simpleServiceTaskInstance] = await createInstances(
+    'simpleServiceTaskProcess',
+    1,
+    1,
+  );
+  addVariablesInstanceKey = String(
+    simpleServiceTaskInstance.processInstanceKey,
+  );
 
   const worker = createWorker('jsonVarTask', false);
 
@@ -123,12 +135,10 @@ test.describe('Process Instance Variables', () => {
   }) => {
     test.slow();
 
-    await test.step('Navigate to Processes tab and open the process instance', async () => {
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'simple service task process',
-      );
-      await operateProcessesPage.clickProcessInstanceLink();
+    await test.step('Open the process instance', async () => {
+      await operateProcessInstancePage.gotoProcessInstancePage({
+        id: addVariablesInstanceKey,
+      });
       await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });
 

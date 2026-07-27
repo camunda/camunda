@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobClientStreamMetricsDoc.PushResult
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -21,8 +22,11 @@ import java.util.Map;
 
 final class JobClientStreamMetrics implements ClientStreamMetrics {
 
+  private static final String PHYSICAL_TENANT_ID_TAG = PartitionKeyNames.PHYSICAL_TENANT.asString();
+
   private final Map<ErrorCode, Counter> pushAttempts = new EnumMap<>(ErrorCode.class);
 
+  private final String physicalTenantId;
   private final StatefulGauge aggregatedStreamCount;
   private final StatefulGauge clientCount;
   private final StatefulGauge serverCount;
@@ -30,9 +34,12 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
   private final Counter pushSuccessCount;
   private final Counter pushFailureCount;
 
-  JobClientStreamMetrics(final MeterRegistry registry) {
+  JobClientStreamMetrics(final MeterRegistry registry, final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+
     aggregatedClients =
         MicrometerUtil.buildSummary(JobClientStreamMetricsDoc.AGGREGATED_CLIENTS)
+            .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
             .register(registry);
     pushFailureCount =
         registerPushCounter(JobClientStreamMetricsDoc.PUSHES, PushResultTag.FAILURE, registry);
@@ -88,6 +95,7 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
       final JobClientStreamMetricsDoc doc, final MeterRegistry registry) {
     return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
+        .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
         .register(registry);
   }
 
@@ -96,6 +104,7 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
     return Counter.builder(JobClientStreamMetricsDoc.PUSH_TRY_FAILED_COUNT.getName())
         .description(JobClientStreamMetricsDoc.PUSH_TRY_FAILED_COUNT.getDescription())
         .tag(PushKeyNames.CODE.asString(), errorCode.name())
+        .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
         .register(registry);
   }
 
@@ -106,6 +115,7 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
     return Counter.builder(doc.getName())
         .description(doc.getDescription())
         .tag(PushKeyNames.STATUS.asString(), result.getTagValue())
+        .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
         .register(registry);
   }
 }

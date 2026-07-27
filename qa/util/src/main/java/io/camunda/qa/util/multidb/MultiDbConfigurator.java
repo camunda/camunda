@@ -7,17 +7,16 @@
  */
 package io.camunda.qa.util.multidb;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TEST_INTEGRATION_RDBMS_FAST_INIT;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
-import java.util.HashMap;
+import java.time.Duration;
 import java.util.Map;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -59,73 +58,13 @@ public class MultiDbConfigurator {
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix, final boolean retentionEnabled) {
     this.indexPrefix = indexPrefix;
-    final Map<String, Object> elasticsearchProperties = new HashMap<>();
-
-    /* Tasklist */
-    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
-
-    /* Camunda */
-    elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
-
-    testApplication.withAdditionalProperties(elasticsearchProperties);
     testApplication
         .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
         .withUnifiedConfig(
             cfg -> {
-              cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
-              // 0s causes ILM to move data asap - it is normally the default
-              // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-              cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
-              cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(elasticsearchUrl);
-              cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getElasticsearch()
-                  .getHistory()
-                  .setPolicyName(indexPrefix + "-ilm");
-              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getElasticsearch());
+              configureDocumentBasedStorage(
+                  cfg, elasticsearchUrl, indexPrefix, "", "", retentionEnabled);
             });
-    testApplication.withExporter(
-        CamundaExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(CamundaExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "connect",
-                  Map.of(
-                      "url",
-                      elasticsearchUrl,
-                      "indexPrefix",
-                      indexPrefix,
-                      "type",
-                      io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
-                  "index",
-                  Map.of("prefix", indexPrefix),
-                  "history",
-                  Map.of(
-                      "waitPeriodBeforeArchiving",
-                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
-                      "delayBetweenRuns",
-                      "1000",
-                      "maxDelayBetweenRuns",
-                      "1000",
-                      "retention",
-                      Map.of(
-                          "enabled",
-                          Boolean.toString(retentionEnabled),
-                          "policyName",
-                          indexPrefix + "-ilm",
-                          "minimumAge",
-                          // 0s causes ILM to move data asap - it is normally the default
-                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-                          "0s",
-                          "usageMetricsPolicyName",
-                          indexPrefix + "-usage-metrics-ilm",
-                          "usageMetricsMinimumAge",
-                          "0s")),
-                  "bulk",
-                  Map.of("size", 1)));
-        });
   }
 
   public void configureOpenSearchSupportIncludingOldExporter(
@@ -168,85 +107,43 @@ public class MultiDbConfigurator {
       final boolean retentionEnabled,
       final boolean isAws) {
     this.indexPrefix = indexPrefix;
-
-    final Map<String, Object> opensearchProperties = new HashMap<>();
-
-    /* Tasklist */
-    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
-    opensearchProperties.put("camunda.tasklist.opensearch.aws-enabled", isAws);
-
-    /* Operate */
-    opensearchProperties.put("camunda.operate.opensearch.aws-enabled", isAws);
-
-    /* Camunda */
-    opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
-    opensearchProperties.put("camunda.database.aws-enabled", isAws);
-
-    testApplication.withAdditionalProperties(opensearchProperties);
-
     /* Unified Config */
     testApplication
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {
-              cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
-              cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
-              cfg.getData().getSecondaryStorage().getOpensearch().setUrl(opensearchUrl);
-              cfg.getData().getSecondaryStorage().getOpensearch().setIndexPrefix(indexPrefix);
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getOpensearch()
-                  .getHistory()
-                  .setPolicyName(indexPrefix + "-ilm");
-              cfg.getData().getSecondaryStorage().getOpensearch().setUsername(userName);
-              cfg.getData().getSecondaryStorage().getOpensearch().setPassword(userPassword);
+              configureDocumentBasedStorage(
+                  cfg, opensearchUrl, indexPrefix, userName, userPassword, retentionEnabled);
               cfg.getData().getSecondaryStorage().getOpensearch().setAwsEnabled(isAws);
-              overrideRefreshInterval(cfg.getData().getSecondaryStorage().getOpensearch());
             });
+  }
 
-    testApplication.withExporter(
-        CamundaExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(CamundaExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "connect",
-                  Map.of(
-                      "url",
-                      opensearchUrl,
-                      "indexPrefix",
-                      indexPrefix,
-                      "type",
-                      io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
-                      "username",
-                      userName,
-                      "password",
-                      userPassword,
-                      "awsEnabled",
-                      isAws),
-                  "index",
-                  Map.of("prefix", indexPrefix),
-                  "history",
-                  Map.of(
-                      "waitPeriodBeforeArchiving",
-                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
-                      "retention",
-                      Map.of(
-                          "enabled",
-                          Boolean.toString(retentionEnabled),
-                          "policyName",
-                          indexPrefix + "-ilm",
-                          "minimumAge",
-                          // 0s causes ILM to move data asap - it is normally the default
-                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-                          "0s",
-                          "usageMetricsPolicyName",
-                          indexPrefix + "-usage-metrics-ilm",
-                          "usageMetricsMinimumAge",
-                          "0s")),
-                  "bulk",
-                  Map.of("size", 1)));
-        });
+  private void configureDocumentBasedStorage(
+      final Camunda cfg,
+      final String url,
+      final String indexPrefix,
+      final String userName,
+      final String userPassword,
+      final boolean retentionEnabled) {
+    cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
+    cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
+    final var documentBasedDatabase =
+        cfg.getData().getSecondaryStorage().getDocumentBasedDatabase();
+    documentBasedDatabase.setCreateSchema(true);
+    documentBasedDatabase.setUrl(url);
+    documentBasedDatabase.setIndexPrefix(indexPrefix);
+    documentBasedDatabase.getHistory().setPolicyName(indexPrefix + "-ilm");
+    if (userName != null && !userName.isBlank()) {
+      documentBasedDatabase.setUsername(userName);
+    }
+    if (userPassword != null && !userPassword.isBlank()) {
+      documentBasedDatabase.setPassword(userPassword);
+    }
+    documentBasedDatabase.getHistory().setWaitPeriodBeforeArchiving(retentionEnabled ? "1s" : "1h");
+    documentBasedDatabase.getHistory().setDelayBetweenRuns(Duration.ofMillis(1000));
+    documentBasedDatabase.getHistory().setMaxDelayBetweenRuns(Duration.ofMillis(1000));
+    documentBasedDatabase.getBulk().setSize(1);
+    overrideRefreshInterval(documentBasedDatabase);
   }
 
   public void configureRDBMSSupport(
@@ -279,34 +176,24 @@ public class MultiDbConfigurator {
               rdbms.setUsername(username);
               rdbms.setPassword(password);
               rdbms.setPrefix(tablePrefix);
+              rdbms.setFlushInterval(Duration.ZERO);
+              if (retentionEnabled) {
+                rdbms.getHistory().setDefaultHistoryTTL(Duration.ofSeconds(1));
+                rdbms.getHistory().setMinHistoryCleanupInterval(Duration.ofSeconds(1));
+                rdbms.getHistory().setMaxHistoryCleanupInterval(Duration.ofSeconds(5));
+                rdbms.getHistory().setDefaultBatchOperationHistoryTTL(Duration.ofSeconds(1));
+                rdbms.getHistory().setDecisionInstanceTTL(Duration.ofSeconds(1));
+              } else {
+                rdbms.getHistory().setDefaultHistoryTTL(Duration.ofHours(1));
+                rdbms.getHistory().setMinHistoryCleanupInterval(Duration.ofHours(1));
+                rdbms.getHistory().setMaxHistoryCleanupInterval(Duration.ofHours(2));
+                rdbms.getHistory().setDefaultBatchOperationHistoryTTL(Duration.ofHours(1));
+                rdbms.getHistory().setDecisionInstanceTTL(Duration.ofHours(1));
+              }
             });
 
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
-
-    // Since the property override from unified configuration is not applied in this test setup, we
-    // have to build the RDBMS exporter manually
-    testApplication.withExporter(
-        "rdbms",
-        cfg -> {
-          cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
-          cfg.setArgs(
-              Map.of(
-                  "flushInterval",
-                  "PT0S",
-                  "history",
-                  Map.of(
-                      "defaultHistoryTTL",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "minHistoryCleanupInterval",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "maxHistoryCleanupInterval",
-                      retentionEnabled ? "PT5S" : "PT2H",
-                      "defaultBatchOperationHistoryTTL",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "decisionInstanceTTL",
-                      retentionEnabled ? "PT1S" : "PT1H")));
-        });
   }
 
   public String getIndexPrefix() {

@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -50,12 +51,15 @@ public class ClusterVariableController {
   public ClusterVariableController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final IdentifierValidator identifierValidator) {
+      final IdentifierValidator identifierValidator,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     clusterVariableMapper =
         new ClusterVariableMapper(
-            new ClusterVariableRequestValidator(new ClusterVariableValidator(identifierValidator)));
+            new ClusterVariableRequestValidator(
+                new ClusterVariableValidator(identifierValidator),
+                gatewayRestConfiguration.getMaxClusterVariableMetadataSize()));
   }
 
   @CamundaPostMapping(path = "/global")

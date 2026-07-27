@@ -17,12 +17,15 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.noExtraFilters;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.rollingEndDateFilter;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.withDefinitions;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -367,6 +370,43 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
         .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(450.0, within(1.0)));
     assertThat(buckets.stream().filter(e -> lightProc.equals(e.getKey())).findFirst())
         .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(120.0, within(1.0)));
+  }
+
+  @Test
+  void shouldLabelTopTokenConsumersWithLatestVersionProcessName() {
+    // given agentic instances of a process whose (BPMN) key is not human-readable
+    final String processKey = "invoice-agent-process";
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(processKey, 200L, 100L).build(),
+            agenticInstanceWithTokens(processKey, 100L, 50L).build()));
+    // and a later version of that definition carrying a human-readable name (the auto-seeded v1
+    // definition defaults its name to the key, so the name must come from the latest version)
+    persistProcessDefinitions(
+        List.of(
+            ProcessDefinitionOptimizeDto.builder()
+                .id(processKey + ":2:2")
+                .key(processKey)
+                .version("2")
+                .name("Invoice Approval Agent")
+                .dataSource(new ZeebeDataSourceDto("test-source", 1))
+                .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+                .bpmn20Xml("<definitions/>")
+                .build()));
+
+    // when evaluating the top-consumers tile
+    final List<MapResultEntryDto> buckets =
+        reports.evaluateMapMeasure(TOKEN_CONSUMERS_REPORT_ID, 0);
+
+    // then the bar is still keyed by the BPMN process id but labelled with the latest-version name
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .singleElement()
+        .satisfies(
+            e -> {
+              assertThat(e.getKey()).isEqualTo(processKey);
+              assertThat(e.getLabel()).isEqualTo("Invoice Approval Agent");
+            });
   }
 
   @Test

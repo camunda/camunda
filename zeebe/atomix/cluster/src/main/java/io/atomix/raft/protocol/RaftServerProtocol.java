@@ -88,6 +88,15 @@ public interface RaftServerProtocol {
   CompletableFuture<TransferResponse> transfer(MemberId memberId, TransferRequest request);
 
   /**
+   * Sends a timeout-now request to the given node, instructing it to start an election immediately.
+   *
+   * @param memberId the node to which to send the request
+   * @param request the request to send
+   * @return a future to be completed with the response
+   */
+  CompletableFuture<TimeoutNowResponse> timeoutNow(MemberId memberId, TimeoutNowRequest request);
+
+  /**
    * Sends a poll request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -126,6 +135,17 @@ public interface RaftServerProtocol {
 
   /** Unregisters the transfer request handler. */
   void unregisterTransferHandler();
+
+  /**
+   * Registers a timeout-now request callback.
+   *
+   * @param handler the timeout-now request handler to register
+   */
+  void registerTimeoutNowHandler(
+      Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> handler);
+
+  /** Unregisters the timeout-now request handler. */
+  void unregisterTimeoutNowHandler();
 
   /**
    * Registers a configure request callback.

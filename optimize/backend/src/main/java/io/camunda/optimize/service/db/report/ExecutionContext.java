@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ExecutionContext<D extends SingleReportDataDto, P extends ExecutionPlan> {
 
@@ -64,6 +65,12 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
 
   private boolean multiIndexAlias = false;
 
+  // Per-request memoization cache for values that are derived from the (immutable) report data and
+  // are expensive to recompute, but may be needed by several phases of a single report evaluation
+  // (e.g. building the aggregation and mapping its result). Intentionally excluded from equals,
+  // hashCode and toString as it only caches values already derived from the fields above.
+  private final Map<String, Object> computedAttributes = new HashMap<>();
+
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
       final ReportEvaluationContext<? extends R> reportEvaluationContext) {
     this(reportEvaluationContext, null);
@@ -93,6 +100,16 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {
     allDistributedByKeysAndLabels =
         allDistributedByKeys.stream().collect(toMap(Function.identity(), Function.identity()));
+  }
+
+  /**
+   * Returns the value cached under {@code key}, computing and caching it with {@code supplier} on
+   * first access. Scoped to this (per-request) execution context, so it is safe for memoizing
+   * values derived from the report data across the phases of a single report evaluation.
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getOrComputeAttribute(final String key, final Supplier<T> supplier) {
+    return (T) computedAttributes.computeIfAbsent(key, ignored -> supplier.get());
   }
 
   private <R extends ReportDefinitionDto<D>> FilterContext createFilterContext(

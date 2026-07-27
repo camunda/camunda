@@ -12,17 +12,19 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
-import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -75,50 +77,8 @@ final class ClusterEndpointTest {
         .hasMessage("Unsupported query parameter(s): x, y");
   }
 
-  @Test
-  void shouldDetectZoneAwareCluster() {
-    // given
-    final var config = zoneAwareConfiguration();
-
-    // when - then
-    assertThat(ClusterEndpoint.isZoneAware(config)).isTrue();
-  }
-
-  @Test
-  void shouldDetectNonZoneAwareCluster() {
-    // given
-    final var config = nonZoneAwareConfiguration();
-
-    // when - then
-    assertThat(ClusterEndpoint.isZoneAware(config)).isFalse();
-  }
-
   private ClusterEndpoint createEndpoint() {
     return new ClusterEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
-  }
-
-  private static ClusterConfiguration zoneAwareConfiguration() {
-    return ClusterConfiguration.init()
-        .addMember(
-            MemberId.from("zone-a", 0),
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
-        .addMember(
-            MemberId.from("zone-b", 0),
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
-  }
-
-  private static ClusterConfiguration nonZoneAwareConfiguration() {
-    return ClusterConfiguration.init()
-        .addMember(
-            MemberId.from("0"),
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
-        .addMember(
-            MemberId.from("1"),
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
   }
 
   @Nested
@@ -185,6 +145,98 @@ final class ClusterEndpointTest {
 
       // then
       verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, true));
+    }
+  }
+
+  @Nested
+  class UpdatePartitionDistributionEndpoint {
+
+    private static PartitionDistributionConfig zoneAwareConfig() {
+      return new PartitionDistributionConfig()
+          .type(TypeEnum.ZONE_AWARE)
+          .zones(List.of(new ZoneSpec().name("zone-a").numberOfReplicas(1).priority(100)));
+    }
+
+    @Test
+    void shouldSendPartitionDistributionRequestWhenConfigSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var config = zoneAwareConfig();
+      final var expected =
+          new UpdatePartitionDistributorConfigRequest(
+              ClusterApiUtils.toPartitionDistributorConfig(config), false);
+      when(sender.updatePartitionDistribution(expected))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of()))));
+
+      // when
+      final var response =
+          endpoint.updatePartitionDistribution(
+              new UpdatePartitionDistributionRequest().config(config), false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender).updatePartitionDistribution(expected);
+    }
+
+    @Test
+    void shouldSendZonePrioritiesRequestWhenZonePrioritiesSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var zoneOrder = List.of("zone-b", "zone-a");
+      final var expected = new UpdateZonePrioritiesRequest(zoneOrder, true);
+      when(sender.updateZonePriorities(expected))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of()))));
+
+      // when - dryRun flag is forwarded
+      final var response =
+          endpoint.updatePartitionDistribution(
+              new UpdatePartitionDistributionRequest().zonePriorities(zoneOrder), true);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender).updateZonePriorities(expected);
+    }
+
+    @Test
+    void shouldRejectWhenBothConfigAndZonePrioritiesSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.updatePartitionDistribution(
+              new UpdatePartitionDistributionRequest()
+                  .config(zoneAwareConfig())
+                  .zonePriorities(List.of("zone-a")),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldRejectWhenNeitherConfigNorZonePrioritiesSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.updatePartitionDistribution(new UpdatePartitionDistributionRequest(), false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
     }
   }
 }

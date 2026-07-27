@@ -84,6 +84,14 @@ const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
 	method: endpoints.getProcessDefinitionXml.method,
 });
 
+const mockGetProcessDefinitionStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionStatistics.getUrl({
+		processDefinitionKey: ':processDefinitionKey',
+		statisticName: 'element-instances',
+	}),
+	method: endpoints.getProcessDefinitionStatistics.method,
+});
+
 const mockAssignTaskEndpoint = createEndpointMock({
 	endpoint: endpoints.assignTask.getUrl({userTaskKey: ':userTaskKey'}),
 	method: endpoints.assignTask.method,
@@ -104,6 +112,16 @@ const mockQueryUserTaskAuditLogsEndpoint = createEndpointMock({
 	method: endpoints.queryUserTaskAuditLogs.method,
 });
 
+const mockGetAuditLogEndpoint = createEndpointMock({
+	endpoint: endpoints.getAuditLog.getUrl({auditLogKey: ':auditLogKey'}),
+	method: endpoints.getAuditLog.method,
+});
+
+const mockGetDecisionInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
+	method: endpoints.getDecisionInstance.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -113,10 +131,12 @@ export {
 	mockSaasTokenEndpoint,
 	mockGetUserTaskEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
 	mockAssignTaskEndpoint,
 	mockUnassignTaskEndpoint,
 	mockCompleteTaskEndpoint,
 	mockQueryUserTaskAuditLogsEndpoint,
+	mockGetAuditLogEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
@@ -124,4 +144,5 @@ export {
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
+	mockGetDecisionInstanceEndpoint,
 };

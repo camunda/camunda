@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
@@ -186,6 +187,22 @@ public class ErrorMapper {
             "Expected to handle request, but the gateway does not know any partitions yet";
         LOGGER.trace(message, rootError);
         yield new ServiceError(message, UNAVAILABLE);
+      }
+      case final IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the gateway does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
+      case final io.camunda.zeebe.backup.client.api.IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the broker client does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
+      case final io.camunda.zeebe.backup.client.api.BackupAlreadyExistException e -> {
+        LOGGER.debug(e.getMessage(), rootError);
+        yield new ServiceError(e.getMessage(), ALREADY_EXISTS);
       }
       case final ConnectTimeoutException ignored -> {
         final var message =

@@ -18,7 +18,6 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AgentHistoryHandler;
 import io.camunda.exporter.handlers.AgentInstanceHandler;
-import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
 import io.camunda.exporter.handlers.ClusterVariableCreatedUpdatedHandler;
@@ -32,6 +31,7 @@ import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceNameFromAdHocActivityHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GlobalListenerCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GlobalListenerDeletedHandler;
@@ -46,6 +46,7 @@ import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
@@ -54,6 +55,7 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubs
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessDeletedHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
 import io.camunda.exporter.handlers.ResourceDeletedHandler;
@@ -67,7 +69,6 @@ import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantDeletedHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
 import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
-import io.camunda.exporter.handlers.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -77,6 +78,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandlerBuilder;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -98,6 +100,8 @@ import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandle
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
+import io.camunda.exporter.handlers.usage.UsageMetricTUExportedHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateHandlerBuilder;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -255,6 +259,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 decisionRequirementsCache),
             new ListViewProcessInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
+            new ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromIncidentHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromJobHandler(
@@ -282,6 +288,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
                 processCache),
+            new FlowNodeInstanceNameFromAdHocActivityHandler(
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
+                processCache),
             new IncidentHandler(
                 indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
@@ -294,6 +303,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
                 processCache,
                 configuration.getExtensionProperties()),
+            new ProcessDeletedHandler(
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -397,7 +408,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new UsageMetricExportedHandler(
-                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName()),
+            new UsageMetricTUExportedHandler(
                 indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
             new JobBatchMetricsExportedHandler(
                 indexDescriptors.get(JobMetricsBatchTemplate.class).getFullQualifiedName()),
@@ -444,6 +456,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 
@@ -541,15 +555,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var auditLogCleanupIndexName =
         (indexDescriptors.get(AuditLogCleanupIndex.class).getFullQualifiedName());
     final var auditLogBuilder =
-        AuditLogHandler.builder(indexName, auditLogCleanupIndexName, auditLog);
+        AuditLogHandlerBuilder.builder(indexName, auditLogCleanupIndexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       AuditLogTransformerRegistry.createPartitionSpecificTransformers()
-          .forEach(auditLogBuilder::addHandler);
+          .forEach(auditLogBuilder::addHandlers);
     }
 
     AuditLogTransformerRegistry.createAllPartitionTransformers()
-        .forEach(auditLogBuilder::addHandler);
+        .forEach(auditLogBuilder::addHandlers);
 
     exportHandlers.addAll(auditLogBuilder.build());
   }

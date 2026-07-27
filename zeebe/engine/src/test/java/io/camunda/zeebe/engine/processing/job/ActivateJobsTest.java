@@ -28,6 +28,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -598,6 +600,29 @@ public final class ActivateJobsTest {
                     .limit(jobAmount)
                     .count()
                 == jobAmount);
+  }
+
+  @Test
+  public void shouldActivateJobsWithAssignedTenantFilterWhenAuthAndMultiTenancyDisabled() {
+    // given — both authorizationsEnabled and multiTenancyChecksEnabled are false (singlePartition
+    // default). With tenantFilter=ASSIGNED the processor resolves the authorized tenant list.
+    // Regression: the buggy code returned ANONYMOUS, whose getAuthorizedTenantIds() threw
+    // UnsupportedOperationException.
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var activated =
+        ENGINE.jobs().withType(taskType).withTenantFilter(TenantFilter.ASSIGNED).activate();
+
+    // then — the job is activated on the default tenant (no UnsupportedOperationException)
+    assertThat(activated.getValue().getJobs())
+        .hasSize(1)
+        .allSatisfy(
+            job -> assertThat(job.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   private JobBatchRecordValue getActivatedJobBatch() {

@@ -15,17 +15,30 @@ import java.util.regex.Pattern;
 public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
   public static final String SNAPSHOT_NAME_PREFIX = "camunda_webapps_";
   private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
-  private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
-  private static final Pattern BACKUPID_PATTERN =
-      Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
-  private static final Pattern METADATA_PATTERN =
-      Pattern.compile(
-          SNAPSHOT_NAME_PREFIX
-              + "(?<backupId>\\d+)_(?<version>[^_]+)_part_(?<index>\\d+)_of_(?<count>\\d+)");
+
+  private final String physicalTenantPrefix;
+  private final String snapshotNamePrefixPattern;
+  private final Pattern backupIdPattern;
+  private final Pattern metadataPattern;
+
+  public WebappsSnapshotNameProvider() {
+    this("");
+  }
+
+  public WebappsSnapshotNameProvider(final String physicalTenantId) {
+    physicalTenantPrefix = physicalTenantId.isEmpty() ? "" : physicalTenantId + "_";
+    final String prefix = physicalTenantPrefix + SNAPSHOT_NAME_PREFIX;
+    snapshotNamePrefixPattern = prefix + "{backupId}_";
+    backupIdPattern = Pattern.compile(Pattern.quote(prefix) + "(\\d*)_.*");
+    metadataPattern =
+        Pattern.compile(
+            Pattern.quote(prefix)
+                + "(?<backupId>\\d+)_(?<version>[^_]+)_part_(?<index>\\d+)_of_(?<count>\\d+)");
+  }
 
   @Override
   public String getSnapshotNamePrefix(final long backupId) {
-    return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
+    return snapshotNamePrefixPattern.replace("{backupId}", String.valueOf(backupId));
   }
 
   @Override
@@ -39,7 +52,7 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
 
   @Override
   public Long extractBackupId(final String snapshotName) {
-    final Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
+    final Matcher matcher = backupIdPattern.matcher(snapshotName);
     if (matcher.matches()) {
       return Long.valueOf(matcher.group(1));
     } else {
@@ -52,7 +65,7 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
     if (snapshotName == null) {
       return null;
     }
-    final Matcher matcher = METADATA_PATTERN.matcher(snapshotName);
+    final Matcher matcher = metadataPattern.matcher(snapshotName);
     if (matcher.matches()) {
       final Long backupId = Long.parseLong(matcher.group("backupId"));
       final String version = matcher.group("version");
@@ -68,6 +81,6 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
 
   @Override
   public String snapshotNamePrefix() {
-    return SNAPSHOT_NAME_PREFIX;
+    return physicalTenantPrefix + SNAPSHOT_NAME_PREFIX;
   }
 }

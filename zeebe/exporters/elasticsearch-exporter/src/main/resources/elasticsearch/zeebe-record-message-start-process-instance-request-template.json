@@ -10,7 +10,7 @@
   "template": {
     "settings": {
       "number_of_shards": 1,
-      "number_of_replicas": 0,
+      "number_of_replicas": 1,
       "index.queries.cache.enabled": false
     },
     "aliases": {
@@ -49,6 +49,9 @@
               "type": "long"
             },
             "messageDeadline": {
+              "type": "long"
+            },
+            "messageTtl": {
               "type": "long"
             },
             "variables": {

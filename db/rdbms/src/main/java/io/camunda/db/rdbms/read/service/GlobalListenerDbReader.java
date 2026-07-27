@@ -20,6 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.GlobalListenerUtil;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class GlobalListenerDbReader extends AbstractEntityReader<GlobalListenerE
   }
 
   @Override
-  public GlobalListenerEntity getGlobalListener(
+  public @Nullable GlobalListenerEntity getGlobalListener(
       final String listenerId,
       final GlobalListenerType listenerType,
       final ResourceAccessChecks resourceAccessChecks) {

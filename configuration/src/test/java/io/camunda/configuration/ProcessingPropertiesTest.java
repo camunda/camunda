@@ -32,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class ProcessingPropertiesTest {
 
   private static final int EXPECTED_MAX_COMMANDS_IN_BATCH = 200;
-  private static final boolean EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS = false;
   private static final Duration EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL = Duration.ofSeconds(10);
   private static final Set<Long> EXPECTED_SKIP_POSITIONS = Set.of(10L, 20L);
   private static final boolean EXPECTED_ENABLE_PRECONDITIONS_CHECK = true;
@@ -42,13 +41,16 @@ public class ProcessingPropertiesTest {
   private static final boolean EXPECTED_ENABLE_ASYNC_TIMER_DUEDATE_CHECKER = true;
   private static final boolean EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = false;
   private static final boolean EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED = true;
+  private static final boolean
+      EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
+  private static final boolean
+      EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = false;
   private static final int EXPECTED_MAX_RECOVERABLE_RETRIES = 50;
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.processing.max-commands-in-batch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "camunda.processing.enable-async-scheduled-tasks=" + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "camunda.processing.scheduled-tasks-check-interval=10s",
         "camunda.processing.skip-positions=10,20",
         "camunda.processing.enable-preconditions-check=" + EXPECTED_ENABLE_PRECONDITIONS_CHECK,
@@ -77,8 +79,6 @@ public class ProcessingPropertiesTest {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
           .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
-          .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
           .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries);
@@ -103,7 +103,10 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 
@@ -111,8 +114,6 @@ public class ProcessingPropertiesTest {
   @TestPropertySource(
       properties = {
         "zeebe.broker.processingCfg.maxCommandsInBatch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "zeebe.broker.processingCfg.enableAsyncScheduledTasks="
-            + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "zeebe.broker.processingCfg.scheduledTaskCheckInterval=10s",
         "zeebe.broker.processingCfg.skipPositions=10,20",
         "zeebe.broker.experimental.consistencyChecks.enablePreconditions="
@@ -129,6 +130,8 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "zeebe.broker.experimental.features.enableMessageBodyOnExpired="
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope="
+            + EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -141,8 +144,6 @@ public class ProcessingPropertiesTest {
     void shouldSetProcessingPropertiesFromLegacy() {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
-          .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions);
@@ -167,7 +168,10 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 
@@ -176,7 +180,6 @@ public class ProcessingPropertiesTest {
       properties = {
         // new
         "camunda.processing.max-commands-in-batch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "camunda.processing.enable-async-scheduled-tasks=" + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "camunda.processing.scheduled-tasks-check-interval=10s",
         "camunda.processing.skip-positions=10,20",
         "camunda.processing.enable-preconditions-check=" + EXPECTED_ENABLE_PRECONDITIONS_CHECK,
@@ -195,7 +198,6 @@ public class ProcessingPropertiesTest {
 
         // legacy
         "zeebe.broker.processingCfg.maxCommandsInBatch=1",
-        "zeebe.broker.processingCfg.enableAsyncScheduledTasks=true",
         "zeebe.broker.processingCfg.scheduledTaskCheckInterval=1s",
         "zeebe.broker.processingCfg.skipPositions=30,40",
         "zeebe.broker.experimental.consistencyChecks.enablePreconditions=false",
@@ -204,7 +206,9 @@ public class ProcessingPropertiesTest {
         "zeebe.broker.experimental.features.enableMessageTtlCheckerAsync=false",
         "zeebe.broker.experimental.features.enableTimerDueDateCheckerAsync=false",
         "zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector=true",
-        "zeebe.broker.experimental.features.enableMessageBodyOnExpired=false"
+        "zeebe.broker.experimental.features.enableMessageBodyOnExpired=false",
+        "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope="
+            + EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -217,8 +221,6 @@ public class ProcessingPropertiesTest {
     void shouldSetProcessingPropertiesFromNew() {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
-          .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
@@ -244,7 +246,10 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 }

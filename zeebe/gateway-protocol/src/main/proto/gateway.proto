@@ -48,6 +48,15 @@ message ActivateJobsRequest {
   repeated string tenantIds = 7;
   // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
   TenantFilter tenantFilter = 8;
+  // whether to activate the jobs with a lease; when true, each activated job is assigned a
+  // distinct, opaque lease token, returned as ActivatedJob.leaseToken. The lease fences the
+  // complete, fail, and throw-error commands against a superseded activation of the same job
+  // (e.g. after the job timed out or failed and was re-activated by another worker): a command
+  // carrying a stale lease token is rejected rather than racing with the newer activation. Once
+  // a job has been activated with a lease, it is served only to leasing workers of that job
+  // type; a homogeneous fleet per job type is recommended. Defaults to false, which activates
+  // jobs without a lease.
+  bool withLease = 9;
 }
 
 message ActivateJobsResponse {
@@ -129,6 +138,12 @@ message ActivatedJob {
   int32 priority = 19;
   // the business ID of the owning process instance; null when the instance has none
   string businessId = 20;
+  // the lease token identifying this activation; unset when the job was activated without a
+  // lease
+  optional string leaseToken = 21;
+  // the id of the physical tenant that the job-activation request was routed to;
+  // the default physical tenant when the request did not specify one
+  string physicalTenantId = 22;
 }
 
 message UserTaskProperties {
@@ -182,6 +197,22 @@ message CompleteJobRequest {
   // The result of the completed job as determined by the worker.
   // This functionality is currently supported only by user task listeners.
   optional JobResult result = 3;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, the matching token must be supplied to prove the command comes from the
+  // worker that holds the current lease; a command with no token is rejected. A command carrying
+  // a stale token is likewise rejected, fencing the job against a superseded activation (e.g.
+  // after the job timed out or failed and was re-activated by another worker). A job that was
+  // activated without a lease requires no token.
+  optional string leaseToken = 4;
+  // an optional business id to assign to the process instance the job belongs to, as part of
+  // completing the job. The business id can only be assigned to a root process instance: if the
+  // job belongs to a child process instance (one started by a call activity), the completion is
+  // rejected. An empty business id is likewise rejected. The assignment is single and irreversible
+  // and is only accepted while business id uniqueness is disabled. Only artifacts created after the
+  // assignment carry the business id; already-existing ones are not enriched. Completing with a
+  // business id that differs from one already assigned rejects the whole completion, leaving the
+  // job open; re-sending the identical business id is an idempotent no-op.
+  optional string businessId = 5;
 }
 
 message JobResult{
@@ -616,6 +647,13 @@ message FailJobRequest {
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
   // valid argument, as the root of the JSON document is an array and not an object.
   string variables = 5;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, the matching token must be supplied to prove the command comes from the
+  // worker that holds the current lease; a command with no token is rejected. A command carrying
+  // a stale token is likewise rejected, fencing the job against a superseded activation (e.g.
+  // after the job timed out or failed and was re-activated by another worker). A job that was
+  // activated without a lease requires no token.
+  optional string leaseToken = 6;
 }
 
 message FailJobResponse {
@@ -634,6 +672,13 @@ message ThrowErrorRequest {
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
   // valid argument, as the root of the JSON document is an array and not an object.
   string variables = 4;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, the matching token must be supplied to prove the command comes from the
+  // worker that holds the current lease; a command with no token is rejected. A command carrying
+  // a stale token is likewise rejected, fencing the job against a superseded activation (e.g.
+  // after the job timed out or failed and was re-activated by another worker). A job that was
+  // activated without a lease requires no token.
+  optional string leaseToken = 5;
 }
 
 message ThrowErrorResponse {
@@ -746,6 +791,15 @@ message UpdateJobRetriesRequest {
   int32 retries = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 3;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, a supplied token is validated to prove the command comes from the worker
+  // that holds the current lease; a command carrying a stale token is rejected, fencing the job
+  // against a superseded activation (e.g. after the job timed out or failed and was re-activated
+  // by another worker). An update without a token always applies, to support operator and bulk
+  // updates of leased jobs; this differs from lifecycle commands like complete, fail, and
+  // throw-error, which always require a token for leased jobs. A job that was activated without a
+  // lease requires no token.
+  optional string leaseToken = 4;
 }
 
 message UpdateJobRetriesResponse {
@@ -758,6 +812,15 @@ message UpdateJobTimeoutRequest {
   int64 timeout = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 3;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, a supplied token is validated to prove the command comes from the worker
+  // that holds the current lease; a command carrying a stale token is rejected, fencing the job
+  // against a superseded activation (e.g. after the job timed out or failed and was re-activated
+  // by another worker). An update without a token always applies, to support operator and bulk
+  // updates of leased jobs; this differs from lifecycle commands like complete, fail, and
+  // throw-error, which always require a token for leased jobs. A job that was activated without a
+  // lease requires no token.
+  optional string leaseToken = 4;
 }
 
 message UpdateJobTimeoutResponse {
@@ -770,6 +833,15 @@ message UpdateJobPriorityRequest {
   optional int32 priority = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 3;
+  // the token identifying a leased job's activation, obtained from ActivatedJob.leaseToken.
+  // For a leased job, a supplied token is validated to prove the command comes from the worker
+  // that holds the current lease; a command carrying a stale token is rejected, fencing the job
+  // against a superseded activation (e.g. after the job timed out or failed and was re-activated
+  // by another worker). An update without a token always applies, to support operator and bulk
+  // updates of leased jobs; this differs from lifecycle commands like complete, fail, and
+  // throw-error, which always require a token for leased jobs. A job that was activated without a
+  // lease requires no token.
+  optional string leaseToken = 4;
 }
 
 message UpdateJobPriorityResponse {
@@ -894,6 +966,17 @@ message MigrateProcessInstanceRequest {
 }
 
 message MigrateProcessInstanceResponse {
+
+}
+
+message AssignProcessInstanceBusinessIdRequest {
+  // key of the process instance to assign the business id to
+  int64 processInstanceKey = 1;
+  // the business id to assign to the process instance
+  string businessId = 2;
+}
+
+message AssignProcessInstanceBusinessIdResponse {
 
 }
 
@@ -1283,6 +1366,25 @@ service Gateway {
           For example, the engine cannot determine how to migrate a process instance when the instructions are: [A->B, A->C].
    */
   rpc MigrateProcessInstance (MigrateProcessInstanceRequest) returns (MigrateProcessInstanceResponse) {
+
+  }
+
+  /*
+    Assigns a business id to an already running process instance.
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key, or it is not active
+
+      FAILED_PRECONDITION:
+        - the process instance already has a different business id assigned
+        - the process instance is a child instance created by a call activity
+        - business id uniqueness is enabled for the process definition
+
+      INVALID_ARGUMENT:
+        - the business id is empty or exceeds the allowed length
+   */
+  rpc AssignProcessInstanceBusinessId (AssignProcessInstanceBusinessIdRequest) returns (AssignProcessInstanceBusinessIdResponse) {
 
   }
 

@@ -123,6 +123,13 @@ public class MemberId extends NodeId {
   }
 
   /**
+   * @return if this memberId is bare, i.e. without a zone
+   */
+  public boolean isBare() {
+    return zone == null;
+  }
+
+  /**
    * @return {@code true} if this member id belongs to the given zone.
    */
   public boolean isInZone(final @Nullable String zone) {
@@ -146,5 +153,13 @@ public class MemberId extends NodeId {
     } catch (final NumberFormatException e) {
       return null;
     }
+  }
+
+  @Override
+  public int compareTo(final NodeId that) {
+    if (that instanceof final MemberId memberId) {
+      return ID_COMPARATOR.compare(this, memberId);
+    }
+    return super.compareTo(that);
   }
 }

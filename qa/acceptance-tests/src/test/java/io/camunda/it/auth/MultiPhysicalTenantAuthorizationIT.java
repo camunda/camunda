@@ -349,6 +349,9 @@ final class MultiPhysicalTenantAuthorizationIT {
         .newClientBuilder()
         .physicalTenantId(tenantId)
         .preferRestOverGrpc(true)
+        // the REST address already carries the /physical-tenants/<id> prefix, so opt out of the
+        // client's auto-prefixing to avoid a doubled path
+        .prefixPhysicalTenantPath(false)
         .restAddress(restAddress)
         .grpcAddress(BROKER.grpcAddress())
         .credentialsProvider(

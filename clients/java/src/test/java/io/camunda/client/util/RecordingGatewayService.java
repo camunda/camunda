@@ -21,6 +21,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -135,6 +137,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         MigrateProcessInstanceRequest.class,
         r -> MigrateProcessInstanceResponse.getDefaultInstance());
+    addRequestHandler(
+        AssignProcessInstanceBusinessIdRequest.class,
+        r -> AssignProcessInstanceBusinessIdResponse.getDefaultInstance());
     addRequestHandler(
         EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
     addRequestHandler(
@@ -428,6 +433,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void migrateProcessInstance(
       final MigrateProcessInstanceRequest request,
       final StreamObserver<MigrateProcessInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final StreamObserver<AssignProcessInstanceBusinessIdResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

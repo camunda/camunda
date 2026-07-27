@@ -15,6 +15,7 @@ import static io.camunda.search.filter.Operation.lte;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.filter.ClusterVariableFilter;
+import io.camunda.search.filter.MetadataValueFilter;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.UntypedOperation;
 import org.junit.jupiter.api.Test;
@@ -132,5 +133,41 @@ public class ClusterVariableFilterTest {
     assertThat(filter.valueOperations()).hasSize(1);
     assertThat(filter.valueOperations().getFirst().operator()).isEqualTo(Operator.IN);
     assertThat(filter.valueOperations().getFirst().values()).hasSize(3);
+  }
+
+  @Test
+  public void shouldSetMetadataFilters() {
+    // given
+    final var filterBuilder = new ClusterVariableFilter.Builder();
+    final var kindFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(eq("CREDENTIAL")))
+            .build();
+    final var schemaVersionFilter =
+        new MetadataValueFilter.Builder()
+            .key("schemaVersion")
+            .valueOperation(UntypedOperation.of(gte(2)))
+            .build();
+
+    // when
+    final var filter =
+        filterBuilder.names("name").metadataOperations(kindFilter, schemaVersionFilter).build();
+
+    // then
+    assertThat(filter.metadataOperations()).hasSize(2);
+    assertThat(filter.metadataOperations().get(0).key()).isEqualTo("kind");
+    assertThat(filter.metadataOperations().get(1).key()).isEqualTo("schemaVersion");
+  }
+
+  @Test
+  public void shouldDefaultMetadataOperationsToEmptyList() {
+    // given
+
+    // when
+    final var filter = new ClusterVariableFilter.Builder().names("foo").build();
+
+    // then
+    assertThat(filter.metadataOperations()).isEmpty();
   }
 }

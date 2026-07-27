@@ -17,12 +17,55 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 final class ClientStreamRegistryTest {
+  private static final String OTHER_PHYSICAL_TENANT_ID = "other-tenant";
   private static final ClientStreamConsumer CLIENT_STREAM_CONSUMER =
       p -> CompletableActorFuture.completed(null);
 
   private final TestClientStreamMetrics metrics = new TestClientStreamMetrics();
   private final ClientStreamRegistry<TestSerializableData> registry =
       new ClientStreamRegistry<>(metrics);
+
+  @Test
+  void shouldNotAggregateSameStreamTypeAndMetadataAcrossDifferentPhysicalTenants() {
+    // given
+    final var metadata = new TestSerializableData();
+    final var streamType = BufferUtil.wrapString("foo");
+
+    // when - two different tenants subscribe with the exact same streamType and metadata
+    final var defaultTenantClient =
+        registry.addClient(
+            streamType, metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var otherTenantClient =
+        registry.addClient(streamType, metadata, CLIENT_STREAM_CONSUMER, OTHER_PHYSICAL_TENANT_ID);
+
+    // then - each tenant gets its own aggregated stream, not a shared one
+    final var defaultServerStream = defaultTenantClient.serverStream();
+    final var otherServerStream = otherTenantClient.serverStream();
+    assertThat(defaultServerStream.streamId()).isNotEqualTo(otherServerStream.streamId());
+    assertThat(defaultServerStream.physicalTenantId()).isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(otherServerStream.physicalTenantId()).isEqualTo(OTHER_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldAssignFreshServerStreamIdAfterRemovingLastClientForATenant() {
+    // given
+    final var metadata = new TestSerializableData();
+    final var streamType = BufferUtil.wrapString("foo");
+    final var firstClient =
+        registry.addClient(
+            streamType, metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var firstStreamId = firstClient.serverStream().streamId();
+
+    // when - the only client is removed, closing the aggregated stream entirely
+    registry.removeClient(firstClient.streamId());
+
+    // then - a new subscription for the same tenant and logical id gets a fresh stream id,
+    // proving the stale serverStreamIds entry was actually cleaned up under its tenant-scoped key
+    final var secondClient =
+        registry.addClient(
+            streamType, metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(secondClient.serverStream().streamId()).isNotEqualTo(firstStreamId);
+  }
 
   @Test
   void shouldReportStreamCountOnAdd() {

@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -39,7 +40,7 @@ final class RetryStrategyTest {
   private ActorFuture<Boolean> resultFuture;
 
   @ParameterizedTest
-  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff", "abortable-backoff"})
   void shouldRunUntilDone(final TestCase<?> test) {
     // given
     final var count = new AtomicInteger(0);
@@ -56,7 +57,7 @@ final class RetryStrategyTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff", "abortable-backoff"})
   void shouldStopWhenAbortConditionReturnsTrue(final TestCase<?> test) {
     // given
     final AtomicInteger count = new AtomicInteger(0);
@@ -80,7 +81,7 @@ final class RetryStrategyTest {
    * specific class tests?
    */
   @ParameterizedTest
-  @ValueSource(strings = {"recoverable", "abortable"})
+  @ValueSource(strings = {"recoverable", "abortable", "abortable-backoff"})
   void shouldAbortOnOtherException(final TestCase<?> test) {
     // given
     final RuntimeException failure = new RuntimeException("expected");
@@ -332,9 +333,15 @@ final class RetryStrategyTest {
         case "recoverable" -> TestCase.of(RecoverableRetryStrategy::new);
         case "abortable" -> TestCase.of(AbortableRetryStrategy::new);
         case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
+        case "abortable-backoff" ->
+            TestCase.of(
+                actor ->
+                    new AbortableDelayedRetryStrategy(
+                        actor, new ExponentialBackoffRetryDelay(Duration.ZERO, Duration.ZERO)));
         default ->
             throw new IllegalArgumentException(
-                "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
+                "Expected one of ['endless', 'recoverable', 'abortable', 'backoff', or "
+                    + "'abortable-backoff'], but got "
                     + type);
       };
     }

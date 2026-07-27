@@ -1,7 +1,7 @@
 ---
 name: Common paths filter for camunda/camunda
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: |
   Common filters to detect and group changes against a base branch
@@ -231,6 +231,15 @@ outputs:
     description: Output whether dependency manifests (pom.xml, lock files) changed, triggering PR vulnerability scanning
     value: >-
       ${{ steps.filter-dep-manifests.outputs.dep-manifest-change == 'true' }}
+  fossa-changes:
+    description: Output whether FOSSA license analysis should be run based on GitHub event and files changed (dependency manifests or the license CI itself)
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-dep-manifests.outputs.dep-manifest-change == 'true'
+      }}
   c8-e2e-test-suite-changes:
     description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
     value: >-
@@ -246,6 +255,15 @@ outputs:
       ${{
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
+      }}
+  scripts-changes:
+    description: Output whether any file under .github/scripts/ changed, so its Python unit tests should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.scripts-change == 'true'
       }}
 
 runs:
@@ -478,6 +496,15 @@ runs:
         load-test-setup-change:
           - 'load-tests/setup/**'
           - '.tool-versions'
+
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+    id: filter-scripts
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        scripts-change:
+          - '.github/scripts/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

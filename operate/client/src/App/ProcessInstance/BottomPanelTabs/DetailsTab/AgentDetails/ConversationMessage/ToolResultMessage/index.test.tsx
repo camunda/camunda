@@ -62,8 +62,24 @@ describe('<ToolResultMessage />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a fallback message when the result has no TEXT or OBJECT content', () => {
+  it('should show a fallback message when the result has no content at all', () => {
     render(
+      <ToolResultMessage
+        availableTools={[]}
+        toolCalls={[
+          {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
+        ]}
+        content={[]}
+      />,
+    );
+
+    expect(
+      screen.getByText('The tool call did not return content.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should render document chips and open the document list modal', async () => {
+    const {user} = render(
       <ToolResultMessage
         availableTools={[]}
         toolCalls={[
@@ -93,7 +109,47 @@ describe('<ToolResultMessage />', () => {
     );
 
     expect(
-      screen.getByText('The tool call did not return content.'),
+      screen.queryByText('The tool call did not return content.'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('listitem', {name: 'report.txt'}),
     ).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('View documents'));
+
+    const dialog = within(screen.getByRole('dialog'));
+    expect(
+      dialog.getByRole('heading', {name: '1 document in tool result'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should open the tool result modal when the expand button is clicked', async () => {
+    const {user} = render(
+      <ToolResultMessage
+        availableTools={[
+          {name: 'search', description: 'Searches the web.', elementId: null},
+        ]}
+        toolCalls={[
+          {
+            toolCallId: '1',
+            toolName: 'search',
+            elementId: null,
+            arguments: {},
+          },
+        ]}
+        content={[]}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    const expandButton = screen.getByRole('button', {name: 'Expand'});
+    await user.click(expandButton);
+
+    const modal = within(screen.getByRole('dialog'));
+    expect(
+      modal.getByRole('heading', {name: 'Tool call: search'}),
+    ).toBeInTheDocument();
+    expect(modal.getByText('Searches the web.')).toBeInTheDocument();
   });
 });

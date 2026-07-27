@@ -15,54 +15,25 @@
 .github/workflows/c8run* @camunda/distribution
 /c8run/ @camunda/distribution
 
-# General Automation, Unified CI and release helpers by Monorepo DevOps team
-/.github/actions/build*/*                                @camunda/monorepo-devops-team
-/.github/actions/is-fork/*                               @camunda/monorepo-devops-team
-/.github/actions/observe*/*                              @camunda/monorepo-devops-team
-/.github/actions/paths-filter/*                          @camunda/monorepo-devops-team
-/.github/actions/setup-build/*                           @camunda/monorepo-devops-team
-/.github/actions/setup-maven*/*                          @camunda/monorepo-devops-team
-/.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
-/.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
-/.github/workflows/backport.yml                          @camunda/monorepo-devops-team
-/.github/workflows/stale-backport-tracker.yml            @camunda/monorepo-devops-team
-/.github/workflows/camunda-helm-integration.yml          @camunda/monorepo-devops-team
-/.github/workflows/camunda-platform-release*             @camunda/monorepo-devops-team
-/.github/workflows/chatops*                              @camunda/monorepo-devops-team
-/.github/workflows/check-licenses.yml                    @camunda/monorepo-devops-team
-/.github/workflows/check-pr-conflicts.yml                @camunda/monorepo-devops-team
-/.github/workflows/ci*                                   @camunda/monorepo-devops-team
-/.github/workflows/commitlint.yml                        @camunda/monorepo-devops-team
-/.github/workflows/dispatch-release*                     @camunda/monorepo-devops-team
-/.github/workflows/docs*                                 @camunda/monorepo-devops-team
-/.github/workflows/generate-concurrency-group.yml        @camunda/monorepo-devops-team
-/.github/workflows/generate-snapshot-docker-tag.yml      @camunda/monorepo-devops-team
-/.github/workflows/maven-dependency-snapshot.yml         @camunda/monorepo-devops-team
-/.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
-/.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
-/.github/workflows/preview-env*                          @camunda/monorepo-devops-team
-/.github/workflows/reject-updates-using-merge-commit.yml @camunda/monorepo-devops-team
-/.github/workflows/renovatelint.yml                      @camunda/monorepo-devops-team
-/.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
-/.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
-/.github/workflows/update-backwards-compat-version.yml   @camunda/monorepo-devops-team
-/.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
-/.github/workflows/check-outdated-prs.yml                @camunda/monorepo-devops-team
-/.github/workflows/create-urgent-hotfix-img.yml          @camunda/monorepo-devops-team
-/.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
-/.github/actions/dependency-vuln-check/*                 @camunda/monorepo-devops-team
-/.github/dependency-review-config.json                   @camunda/monorepo-devops-team
+# General Automation, Unified CI and release helpers by Engineering Operations team
+/.github/actions/build*/*                                @camunda/engineering-operations
+/.github/actions/is-fork/*                               @camunda/engineering-operations
+/.github/actions/observe*/*                              @camunda/engineering-operations
+/.github/actions/paths-filter/*                          @camunda/engineering-operations
+/.github/actions/setup-build/*                           @camunda/engineering-operations
+/.github/actions/setup-maven*/*                          @camunda/engineering-operations
+/.github/actions/renew-github-token/*                    @camunda/engineering-operations
+/.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
+/.github/dependency-review-config.json                   @camunda/engineering-operations
 
 ###################
 ## Core Features ##
 ###################
 
 # CI Files
-/.github/workflows/operate-e2e-tests.yml                  @camunda/core-features
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
 /.github/workflows/ci-operate.yml                         @camunda/core-features
 /.github/workflows/ci-tasklist.yml                        @camunda/core-features
-/.github/workflows/tasklist-e2e-tests.yml                 @camunda/core-features
 /.github/workflows/ci-optimize.yml                        @camunda/core-features
 /.github/workflows/optimize-check-c4.yml                  @camunda/core-features
 /.github/workflows/optimize-e2e-tests-sm-nightly.yml      @camunda/core-features
@@ -125,6 +96,7 @@
 /zeebe/journal @camunda/zeebe-distributed-platform
 /zeebe/logstreams @camunda/zeebe-distributed-platform
 /zeebe/restore @camunda/zeebe-distributed-platform
+/zeebe/restore-standalone @camunda/zeebe-distributed-platform
 /zeebe/scheduler @camunda/zeebe-distributed-platform
 /zeebe/snapshot @camunda/zeebe-distributed-platform
 /zeebe/stream-platform @camunda/zeebe-distributed-platform
@@ -174,16 +146,16 @@
 /.claude/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
-/.claude/skills/act-testing/**                   @camunda/monorepo-devops-team
-/.claude/skills/agentic-workflows/**             @camunda/monorepo-devops-team
-/.claude/skills/ci-fix-failure/**                @camunda/monorepo-devops-team
-/.claude/skills/ci-incident/**                   @camunda/monorepo-devops-team
-/.claude/skills/ci-push-workflow-health/**       @camunda/monorepo-devops-team
-/.claude/skills/ci-runner-utilization/**         @camunda/monorepo-devops-team
-/.claude/skills/ci-scheduled-workflow-health/**  @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/**        @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/**                 @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/**         @camunda/monorepo-devops-team
+/.claude/skills/act-testing/**                   @camunda/engineering-operations
+/.claude/skills/agentic-workflows/**             @camunda/engineering-operations
+/.claude/skills/ci-fix-failure/**                @camunda/engineering-operations
+/.claude/skills/ci-incident/**                   @camunda/engineering-operations
+/.claude/skills/ci-push-workflow-health/**       @camunda/engineering-operations
+/.claude/skills/ci-runner-utilization/**         @camunda/engineering-operations
+/.claude/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
+/.claude/skills/ci-security-compliance/**        @camunda/engineering-operations
+/.claude/skills/ci-validation/**                 @camunda/engineering-operations
+/.claude/skills/ci-workflow-authoring/**         @camunda/engineering-operations
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
@@ -208,12 +180,14 @@
 /testing/        @camunda/c8-testing
 
 # CI Files
-/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml          @camunda/camundaex
-/.github/workflows/camunda-client-compatibility-test.yml                             @camunda/camundaex
-/.github/workflows/camunda-client-compatibility-test-trigger.yml                     @camunda/camundaex
-/.github/workflows/camunda-process-test-compatibility-trigger.yml                    @camunda/camundaex
-/.github/workflows/camunda-spring-boot-starter-compatibility-test.yml               @camunda/camundaex
-/.github/workflows/camunda-spring-boot-starter-compatibility-test-trigger.yml       @camunda/camundaex
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml          @camunda/core-features
+/.github/workflows/camunda-client-compatibility-test.yml                             @camunda/core-features
+/.github/workflows/camunda-client-compatibility-test-trigger.yml                     @camunda/core-features
+/.github/workflows/camunda-process-test-compatibility.yml                            @camunda/c8-testing
+/.github/workflows/camunda-process-test-compatibility-trigger.yml                    @camunda/c8-testing
+/.github/workflows/camunda-process-test-compatibility.yml                                 @camunda/c8-testing
+/.github/workflows/camunda-spring-boot-starter-compatibility-test.yml               @camunda/core-features
+/.github/workflows/camunda-spring-boot-starter-compatibility-test-trigger.yml       @camunda/core-features
 
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team

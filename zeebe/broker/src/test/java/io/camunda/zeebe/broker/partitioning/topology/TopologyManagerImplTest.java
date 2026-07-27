@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
@@ -85,6 +86,21 @@ final class TopologyManagerImplTest {
             () -> {
               assertThat(brokerInfo.getPartitionRoles()).doesNotContainKey(PARTITION_ID);
               assertThat(brokerInfo.getPartitionHealthStatuses()).doesNotContainKey(PARTITION_ID);
+            });
+  }
+
+  @Test
+  void shouldReturnLocalPartitionHealth() {
+    // given
+    topologyManager.onHealthChanged(PARTITION_ID, HealthStatus.HEALTHY);
+
+    // when / then
+    Awaitility.await()
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () -> {
+              final var health = topologyManager.getLocalPartitionHealth().join();
+              assertThat(health).containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY);
             });
   }
 }

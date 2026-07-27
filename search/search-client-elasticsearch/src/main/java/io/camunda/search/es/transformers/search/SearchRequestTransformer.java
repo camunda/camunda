@@ -112,8 +112,7 @@ public final class SearchRequestTransformer
 
   private List<FieldValue> of(final Object[] values) {
     return Arrays.asList(values).stream()
-        .map(JsonData::of)
-        .map(FieldValue::of)
+        .map(value -> value == null ? FieldValue.NULL : FieldValue.of(JsonData.of(value)))
         .collect(Collectors.toList());
   }
 }

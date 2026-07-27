@@ -104,6 +104,20 @@ public interface ActivateJobsCommandStep1
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
 
     /**
+     * Activate the jobs with a lease. When enabled, each activated job is assigned a distinct lease
+     * token, returned as {@link io.camunda.client.api.response.ActivatedJob#getLeaseToken()
+     * ActivatedJob#getLeaseToken()}. The lease token fences the complete, fail, and throw-error
+     * commands against a superseded activation of the same job.
+     *
+     * <p>If not set, jobs are activated without a lease.
+     *
+     * @param withLease whether to activate the jobs with a lease
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ActivateJobsCommandStep3 withLease(boolean withLease);
+
+    /**
      * Sets the request timeout for the command.
      *
      * <p>Additionally, it sets the HTTP response timeout to the specified value, incremented by the

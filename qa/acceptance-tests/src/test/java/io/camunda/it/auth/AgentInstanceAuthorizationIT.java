@@ -240,23 +240,31 @@ class AgentInstanceAuthorizationIT {
   }
 
   @Test
-  void createShouldReturnExistingKeyWhenAlreadyExistsForAuthorizedUser(
+  void createShouldReturn409WhenAlreadyExistsForAuthorizedUser(
       @Authenticated(USER3) final CamundaClient camundaClient) {
     // given — user3 has UPDATE_PROCESS_INSTANCE on PROCESS_ID_3, and an agent instance was
     // already created for elementInstanceKey3 by admin in setUp
 
-    // when
-    final var response =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey3)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .execute();
+    // when — duplicate CREATE for the same element instance
+    final var exception =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newCreateAgentInstanceCommand()
+                        .elementInstanceKey(elementInstanceKey3)
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt("You are a helpful assistant.")
+                        .execute())
+            .actual();
 
-    // then — idempotent CREATE returns the existing key
-    assertThat(response.getAgentInstanceKey()).isEqualTo(agentInstanceKey3);
+    // then — 409 Conflict with ALREADY_EXISTS regardless of payload
+    assertThat(exception.details().getStatus()).isEqualTo(409);
+    assertThat(exception.details().getTitle()).isEqualTo("ALREADY_EXISTS");
+    assertThat(exception.details().getDetail())
+        .contains(String.valueOf(elementInstanceKey3))
+        .contains(String.valueOf(agentInstanceKey3));
   }
 
   // ── update ────────────────────────────────────────────────────────────────

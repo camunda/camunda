@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -30,7 +30,7 @@ public class JobCommandPreconditionValidator {
   private final JobState jobState;
   private final String intent;
   private final List<JobCommandCheck> customChecks;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public JobCommandPreconditionValidator(
@@ -38,8 +38,8 @@ public class JobCommandPreconditionValidator {
       final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
-    this(jobState, bannedInstanceState, intent, validStates, List.of(), authorizationCheckBehavior);
+      final CslAuthorizationCheck cslCheck) {
+    this(jobState, bannedInstanceState, intent, validStates, List.of(), cslCheck);
   }
 
   public JobCommandPreconditionValidator(
@@ -48,12 +48,12 @@ public class JobCommandPreconditionValidator {
       final String intent,
       final List<State> validStates,
       final List<JobCommandCheck> customChecks,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
     this.customChecks = customChecks;
-    this.authorizationCheckBehavior = authorizationCheckBehavior;
+    this.cslCheck = cslCheck;
     bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
   }
 
@@ -100,10 +100,11 @@ public class JobCommandPreconditionValidator {
 
   private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
+    final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var storedJob =
-        authorizationCheckBehavior.shouldSkipAllChecks()
+        authorizedTenants.isAnonymous()
             ? jobState.getJob(jobKey)
-            : jobState.getJob(jobKey, authorizationCheckBehavior.getAuthorizedTenantIds(command));
+            : jobState.getJob(jobKey, authorizedTenants);
 
     if (storedJob == null) {
       return Either.left(

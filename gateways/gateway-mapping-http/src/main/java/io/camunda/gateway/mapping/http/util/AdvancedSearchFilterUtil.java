@@ -69,6 +69,16 @@ public class AdvancedSearchFilterUtil {
     return (final Object filter) -> mapToTypedOperations(filter, Object::toString);
   }
 
+  /**
+   * Maps an advanced filter to operations that preserve the raw scalar value (string or number)
+   * without coercing it to a string. Booleans are handled as `exists` operations, lists (e.g.
+   * `$in`) are converted element-wise. Used for untyped filters such as metadata, where numeric vs
+   * string typing must be preserved for downstream range queries.
+   */
+  public static Function<Object, List<Operation<Object>>> mapToUntypedOperations() {
+    return (final Object filter) -> mapToTypedOperations(filter, value -> value);
+  }
+
   public static Function<Object, List<Operation<String>>> mapToStringOperations(
       final String fieldName,
       final List<String> validationErrors,

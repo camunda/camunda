@@ -96,6 +96,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
       case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
       case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
+      case PROCESS_INSTANCE_BUSINESS_ID -> index.processInstanceBusinessId;
       case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
       case DECISION_REQUIREMENTS -> index.decisionRequirements;
       case DECISION -> index.decision;
@@ -209,7 +210,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean deployment = true;
     public boolean error = true;
     public boolean incident = true;
-    public boolean job = true;
+    public boolean job = false;
     public boolean jobBatch = false;
     public boolean message = true;
     public boolean messageBatch = false;
@@ -220,6 +221,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean processInstanceCreation = true;
     public boolean processInstanceMigration = true;
     public boolean processInstanceModification = true;
+    public boolean processInstanceBusinessId = true;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
@@ -282,8 +284,9 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     private List<String> variableValueTypeInclusion = new ArrayList<>();
     private List<String> variableValueTypeExclusion = new ArrayList<>();
 
-    // optimize mode
-    private boolean optimizeModeEnabled = false;
+    // Optimize mode takes precedence over the per-value-type flags above: even with job=true, the
+    // OptimizeModeFilter still rejects JOB records while this is enabled.
+    private boolean optimizeModeEnabled = true;
 
     // export local variables flag
     private boolean exportLocalVariablesEnabled = true;
@@ -658,6 +661,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + processInstanceMigration
           + ", processInstanceModification="
           + processInstanceModification
+          + ", processInstanceBusinessId="
+          + processInstanceBusinessId
           + ", processMessageSubscription="
           + processMessageSubscription
           + ", variable="

@@ -52,6 +52,50 @@ class ItemProviderFactoryTest {
   }
 
   @Test
+  void shouldSetFiltersForSuspendProcessInstance() {
+    // Arrange
+    final var filter = new ProcessInstanceFilter.Builder().build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // Act
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // Assert
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.parentProcessInstanceKeyOperations()).contains(Operation.exists(false));
+    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSetFiltersForResumeProcessInstance() {
+    // Arrange
+    final var filter = new ProcessInstanceFilter.Builder().build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.RESUME_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // Act
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // Assert
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.parentProcessInstanceKeyOperations()).contains(Operation.exists(false));
+    assertThat(usedFilter.stateOperations()).contains(Operation.eq("SUSPENDED"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
   void shouldSetFiltersForMigrateProcessInstance() {
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var batchOperation = mock(PersistedBatchOperation.class);

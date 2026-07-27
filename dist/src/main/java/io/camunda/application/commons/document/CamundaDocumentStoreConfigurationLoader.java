@@ -88,6 +88,28 @@ public final class CamundaDocumentStoreConfigurationLoader
     putResolved(properties, AWS, storeId, "bucket-path", "BUCKET_PATH", store.getBucketPath());
     putResolved(properties, AWS, storeId, "region", "REGION", store.getRegion());
     putResolved(properties, AWS, storeId, "bucket-ttl", "BUCKET_TTL", store.getBucketTtl());
+    putResolved(properties, AWS, storeId, "endpoint", "ENDPOINT", store.getEndpoint());
+    putResolved(
+        properties,
+        AWS,
+        storeId,
+        "force-path-style",
+        "FORCE_PATH_STYLE",
+        store.getForcePathStyle());
+    putResolved(
+        properties,
+        AWS,
+        storeId,
+        "chunked-encoding-enabled",
+        "CHUNKED_ENCODING_ENABLED",
+        store.getChunkedEncodingEnabled());
+    putResolved(
+        properties,
+        AWS,
+        storeId,
+        "support-legacy-md5",
+        "SUPPORT_LEGACY_MD5",
+        store.getSupportLegacyMd5());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
@@ -136,10 +158,21 @@ public final class CamundaDocumentStoreConfigurationLoader
       final String unifiedField,
       final String propertyKey,
       final Object unifiedValue) {
+    if (unifiedValue != null) {
+      UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+          PREFIX + storeType + "." + storeId + "." + unifiedField,
+          String.valueOf(unifiedValue),
+          String.class,
+          BackwardsCompatibilityMode.SUPPORTED,
+          Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));
+      properties.put(propertyKey, String.valueOf(unifiedValue));
+      return;
+    }
+
     final String resolved =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             PREFIX + storeType + "." + storeId + "." + unifiedField,
-            unifiedValue == null ? null : String.valueOf(unifiedValue),
+            null,
             String.class,
             BackwardsCompatibilityMode.SUPPORTED,
             Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));

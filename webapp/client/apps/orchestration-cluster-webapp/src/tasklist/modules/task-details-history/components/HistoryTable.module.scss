@@ -11,3 +11,7 @@
 .detailsLabel {
 	@include type.type-style('caption-01');
 }
+
+.tableContainer {
+	padding-block-start: 0;
+}

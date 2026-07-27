@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -69,14 +71,21 @@ public final class MessageStartProcessInstanceRequestStartProcessor
 
   private final StateWriter stateWriter;
   private final MessageState messageState;
+  private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
   private final MessageStartEventSubscriptionRecord correlatedSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
   private final MessageRecord expiredMessageRecord = new MessageRecord();
 
   public MessageStartProcessInstanceRequestStartProcessor(
-      final StateWriter stateWriter, final MessageState messageState) {
+      final StateWriter stateWriter,
+      final TypedResponseWriter responseWriter,
+      final MessageState messageState,
+      final MessageCorrelationState messageCorrelationState) {
     this.stateWriter = stateWriter;
     this.messageState = messageState;
+    deferredCorrelationResponse =
+        new DeferredMessageStartCorrelationResponse(
+            stateWriter, responseWriter, messageCorrelationState, messageState);
   }
 
   @Override
@@ -134,5 +143,10 @@ public final class MessageStartProcessInstanceRequestStartProcessor
       stateWriter.appendFollowUpEvent(
           reply.getMessageKey(), MessageIntent.EXPIRED, expiredMessageRecord);
     }
+
+    // (iv) If the cross-partition start was triggered by a synchronous correlate command (rather
+    // than an asynchronous publish), flush the deferred CORRELATED response to the waiting client.
+    // No-op for publishes and idempotent on a re-delivered reply.
+    deferredCorrelationResponse.writeCorrelatedResponse(reply);
   }
 }

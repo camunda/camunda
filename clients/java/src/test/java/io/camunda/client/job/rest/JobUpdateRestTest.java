@@ -145,6 +145,64 @@ public class JobUpdateRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldUpdateTimeoutWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
   public void shouldUpdateRetriesAndTimeoutByKey() {
     // given
     final long jobKey = 12;
@@ -476,5 +534,197 @@ public class JobUpdateRestTest extends ClientRestTest {
     assertThat(request.getChangeset().getPriority()).isEqualTo(newPriority);
     assertThat(request.getChangeset().getRetries()).isNull();
     assertThat(request.getChangeset().getTimeout()).isNull();
+  }
+
+  @Test
+  public void shouldUpdateJobCommandWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateRetries(3).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJobForUpdateJobCommand() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateJobCommand(job).updateRetries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected the activated job's lease token to be carried automatically")
+        .isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOneForUpdateJobCommand() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateJobCommand(job).updateRetries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the activated job carries none")
+        .isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKeyForUpdateJobCommand() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateRetries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the command is built from a job key")
+        .isNull();
+  }
+
+  @Test
+  public void shouldUpdateRetriesWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateRetriesCommand(jobKey).retries(3).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJobForUpdateRetriesCommand() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateRetriesCommand(job).retries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected the activated job's lease token to be carried automatically")
+        .isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOneForUpdateRetriesCommand() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateRetriesCommand(job).retries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the activated job carries none")
+        .isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKeyForUpdateRetriesCommand() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the command is built from a job key")
+        .isNull();
+  }
+
+  @Test
+  public void shouldUpdatePriorityWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(5).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJobForUpdateJobPriorityCommand() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateJobPriorityCommand(job).priority(5).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected the activated job's lease token to be carried automatically")
+        .isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOneForUpdateJobPriorityCommand() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateJobPriorityCommand(job).priority(5).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the activated job carries none")
+        .isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKeyForUpdateJobPriorityCommand() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(5).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the command is built from a job key")
+        .isNull();
   }
 }

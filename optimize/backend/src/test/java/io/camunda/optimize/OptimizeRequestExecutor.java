@@ -19,7 +19,6 @@ import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -243,7 +242,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  @VisibleForTesting
   public OptimizeRequestExecutor withBearerToken(final String token) {
     requestHeaders.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
     authCookie = null;

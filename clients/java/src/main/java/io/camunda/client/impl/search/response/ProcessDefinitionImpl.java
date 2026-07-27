@@ -16,7 +16,9 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import java.util.Objects;
@@ -31,6 +33,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   private final String processDefinitionId;
   private final String tenantId;
   private final Boolean hasStartForm;
+  private final ProcessDefinitionState state;
 
   public ProcessDefinitionImpl(final ProcessDefinitionResult item) {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
@@ -41,6 +44,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
     processDefinitionId = item.getProcessDefinitionId();
     tenantId = item.getTenantId();
     hasStartForm = item.getHasStartForm();
+    state = EnumUtil.convert(item.getState(), ProcessDefinitionState.class);
   }
 
   @Override
@@ -84,6 +88,11 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   }
 
   @Override
+  public ProcessDefinitionState getState() {
+    return state;
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return processDefinitionId;
   }
@@ -98,7 +107,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         versionTag,
         processDefinitionId,
         tenantId,
-        hasStartForm);
+        hasStartForm,
+        state);
   }
 
   @Override
@@ -114,7 +124,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(hasStartForm, that.hasStartForm);
+        && Objects.equals(hasStartForm, that.hasStartForm)
+        && state == that.state;
   }
 
   @Override
@@ -141,6 +152,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         + '\''
         + ", hasStartForm="
         + hasStartForm
+        + ", state="
+        + state
         + '}';
   }
 }

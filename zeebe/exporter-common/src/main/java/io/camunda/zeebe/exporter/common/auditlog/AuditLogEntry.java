@@ -417,6 +417,10 @@ public class AuditLogEntry {
     return this;
   }
 
+  public static <R extends RecordValue> AuditLogEntityType getEntityType(final Record<R> record) {
+    return AuditLogInfo.getEntityType(record);
+  }
+
   public static <R extends RecordValue> AuditLogEntry of(final Record<R> record) {
     final AuditLogInfo info = AuditLogInfo.of(record);
 

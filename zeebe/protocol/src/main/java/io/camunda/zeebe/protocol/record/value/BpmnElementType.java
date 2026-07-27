@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import java.util.Arrays;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public enum BpmnElementType {
 
@@ -61,7 +62,7 @@ public enum BpmnElementType {
   SCRIPT_TASK("scriptTask", false),
   SEND_TASK("sendTask", false);
 
-  private final String elementTypeName;
+  private final @Nullable String elementTypeName;
 
   /**
    * A container element is defined as an element that contains child elements within, such as a
@@ -69,7 +70,7 @@ public enum BpmnElementType {
    */
   private final boolean isContainerElement;
 
-  BpmnElementType(final String elementTypeName, final boolean isContainerElement) {
+  BpmnElementType(final @Nullable String elementTypeName, final boolean isContainerElement) {
     this.elementTypeName = elementTypeName;
     this.isContainerElement = isContainerElement;
   }

@@ -16,11 +16,13 @@ const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
 }>`
   ${({$hasLeftMargin}) => {
     return css`
-      ${$hasLeftMargin
-        ? css`
-            margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
-          `
-        : ''}
+      ${
+        $hasLeftMargin
+          ? css`
+              margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
+            `
+          : ''
+      }
     `;
   }}
 `;

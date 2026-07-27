@@ -16,6 +16,53 @@ tools:
   github:
     mode: gh-proxy
     toolsets: [default]
+steps:
+  - name: Collect cost-relevant workflow diffs (DataOps)
+    shell: bash
+    run: |
+      set -uo pipefail
+      mkdir -p /tmp/gh-aw/data
+      cd "$GITHUB_WORKSPACE"
+
+      # Cost-relevant keys. run:/jobs:/on: are intentionally EXCLUDED — they appear in
+      # virtually every workflow diff, so including them (or matching context lines) makes
+      # the pre-filter drop nothing and forces the agent to read every changed file.
+      COST_RE='(runs-on|timeout-minutes|matrix|strategy|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|cron)'
+
+      # 1. Candidate source files changed in the last 7 days (skip generated lock files —
+      #    they are compiled from the source .md, so analysing them duplicates work).
+      git log --since="7 days ago" --name-only --diff-filter=ACMR --pretty=format: \
+        -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml' \
+        | sort -u | grep -v '^$' > /tmp/gh-aw/data/candidates.txt || true
+
+      : > /tmp/gh-aw/data/diffs.txt
+      : > /tmp/gh-aw/data/relevant.txt
+      while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        [ -f "$f" ] || continue
+        # 2. Pre-filter on the CHANGED lines and hunk headers of a zero-context (-U0) diff.
+        #    Matching only added/removed/hunk lines — not surrounding context — is what makes
+        #    the filter actually discriminate between cost-relevant and cosmetic changes.
+        diff="$(git log --since='7 days ago' -U0 -p --no-color -- "$f")"
+        if ! printf '%s\n' "$diff" | grep -E '^[-+@]' | grep -Eq "$COST_RE"; then
+          continue
+        fi
+        echo "$f" >> /tmp/gh-aw/data/relevant.txt
+        {
+          echo "===== FILE: $f ====="
+          git log --since='7 days ago' --format='COMMIT %h %ad %s' --date=short -- "$f"
+          echo "----- DIFF (zero context) -----"
+          printf '%s\n' "$diff"
+          echo
+        } >> /tmp/gh-aw/data/diffs.txt
+      done < /tmp/gh-aw/data/candidates.txt
+
+      {
+        echo "candidates=$(wc -l < /tmp/gh-aw/data/candidates.txt)"
+        echo "cost_relevant_after_prefilter=$(wc -l < /tmp/gh-aw/data/relevant.txt)"
+        echo "diffs_bytes=$(wc -c < /tmp/gh-aw/data/diffs.txt)"
+      } > /tmp/gh-aw/data/summary.txt
+      cat /tmp/gh-aw/data/summary.txt
 safe-outputs:
   create-issue:
     max: 1
@@ -40,20 +87,15 @@ Use exactly one persistent issue for reporting:
 
 ## Steps
 
-1. **Identify candidate files**: List candidate files with `git log --since="7 days ago" --name-only --diff-filter=ACMR --pretty=format: -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml' | sort -u` on the `main` branch. Skip `*.lock.yml` files — they are generated from the corresponding source `.md` workflow file by `gh aw compile`, so analysing them duplicates work and inflates token consumption. The cost-relevant signal always lives in the source file.
+1. **Read the pre-computed diffs**: A deterministic setup step (see the `steps:` block in the frontmatter) has already identified the candidate files, dropped generated `*.lock.yml` files, applied the cost-relevant pre-filter, and written the surviving diffs to disk. Do **not** re-run `git log`/`git diff` per file — that is what previously exhausted the token budget. Instead read:
 
-2. **Pre-filter to cost-relevant changes**: For each candidate file, check whether its diff over the last 7 days mentions any cost-relevant key before reading the full diff. Run:
+   - `/tmp/gh-aw/data/summary.txt` — counts: total candidates, how many survived the pre-filter, and the diff payload size.
+   - `/tmp/gh-aw/data/diffs.txt` — for each surviving file: a `===== FILE: <path> =====` header, its commits over the window (`COMMIT <hash> <date> <subject>`), and the zero-context diff. Read this file **once** and keep it in context; it is already compact.
+   - `/tmp/gh-aw/data/relevant.txt` — the list of surviving file paths (one per line).
 
-   ```sh
-   git log --since="7 days ago" -p --no-color -- "<file>" \
-     | grep -E '(runs-on|timeout-minutes|matrix|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|run|jobs|on):'
-   ```
+   The pre-filter keeps a file only when the **changed** lines (or hunk headers) of its diff mention a cost-relevant key (`runs-on`, `timeout-minutes`, `matrix`, `strategy`, `concurrency`, `paths`, `paths-ignore`, `services`, `container`, `continue-on-error`, `schedule`, `cron`). `run:`/`jobs:`/`on:` are deliberately excluded because they appear in almost every diff. This trades a small risk of missing an `env:`/`with:`/`uses:`-only cost change for staying well inside the effective-token budget. If a future change is suspected to slip through, broaden `COST_RE` in the setup step.
 
-   Note that the regex deliberately does **not** require the keyword line itself to be added or removed — it matches anywhere in the diff output (added, removed, or context lines within a hunk). That way a change to a nested value (e.g. adding an entry under `matrix:` while `matrix:` itself is unchanged context) still keeps the file in scope.
-
-   Drop files where this returns nothing. Such changes are **highly unlikely** to be cost-relevant under this repo's typical patterns (pure comments, action SHA bumps without new commands, formatting). They are not, however, guaranteed cost-free: `env:`/`with:`/`uses:` edits can materially change job runtime without touching any of the listed keys. We accept that risk in exchange for staying inside the agent's effective-token budget; if a future change is suspected to slip through, broaden the regex.
-
-3. **Analyze each remaining file**: For every file that survived the pre-filter, inspect its diff over the same 7-day window with `git log --since="7 days ago" -p --no-color -- <file>`. (Equivalent: derive a base commit with `base="$(git log --since='7 days ago' --format=%H -- <file> | tail -1)~"` and run `git diff "$base" -- <file>`.) Look for the following cost-increasing patterns:
+2. **Analyze each surviving file**: For every `===== FILE: =====` block in `/tmp/gh-aw/data/diffs.txt`, inspect its diff and look for the following cost-increasing patterns:
 
    ### Cost-Increasing Patterns to Detect
 
@@ -71,21 +113,21 @@ Use exactly one persistent issue for reporting:
    - **Added retry logic**: Adding retry steps or `continue-on-error` that multiply execution time on paid-runner jobs
    - **Container or service additions**: New `services:` or `container:` definitions on paid-runner jobs that add overhead
 
-4. **Assess impact**: For each detected change, estimate the cost impact as **Low**, **Medium**, or **High** based on:
+3. **Assess impact**: For each detected change, estimate the cost impact as **Low**, **Medium**, or **High** based on:
    - How frequently the workflow runs (scheduled vs. per-push vs. per-PR)
    - The size of the paid-runner change (e.g., `gcp-core-2` → `gcp-core-16` is High; minor increase is Medium)
    - The number of additional paid-runner minutes per run
 
    Changes that only affect standard free GitHub-hosted runners have zero cost impact and must not appear in the report.
 
-5. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
-   - A summary section with the total number of CI changes and how many are cost-relevant
+4. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
+   - A summary section with the total number of CI changes and how many are cost-relevant (use the counts in `/tmp/gh-aw/data/summary.txt`)
    - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request. Include at most **15 rows**, ranked by Impact Level (High → Medium → Low). Keep each Description cell under **200 characters**. If more than 15 cost-impacting changes were detected, note the omitted count in the summary.
    - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each. Only include recommendations that would actually **save money** (e.g. shrink a paid runner, remove a redundant paid-runner job, tighten path filters on a paid-runner workflow, add concurrency cancellation). Do **not** include speculative future-watch items, "monitor X", "audit for potential future migration", or anything that does not reduce spend today. If there are no money-saving recommendations, omit the section entirely rather than padding it.
    - Address the report to the CI DRI by mentioning `@camunda/monorepo-ci-dri` in the report body (e.g. in the summary or a short intro line) so they are notified.
    - Do NOT inline diff snippets, `<details>` blocks, or per-change breakdowns — link to the commit or PR instead.
 
-6. **Upsert persistent issue**:
+5. **Upsert persistent issue**:
    - Search for an existing issue with exact title `Weekly CI Change Cost Impact Analysis`
    - If it exists, replace its body with the newly generated report body using `update-issue`
    - If it does not exist, create it once with `create-issue` using that exact title, then ensure its body is the generated report

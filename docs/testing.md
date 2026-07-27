@@ -98,6 +98,25 @@ successfully before running the tests.
    }
 ```
 
+#### Do's: isolate tests with unique data
+
+When a test needs identifiers (process IDs, tenant IDs, usernames, resource keys), generate a unique
+identifier per test (or per test class) instead of reusing a constant, so tests cannot interfere with
+each other — collisions are a common source of flakiness.
+
+#### Do's: fix the root cause of a race, don't just retry around it
+
+When a test is flaky because of a timing/ordering race, prefer fixing the underlying synchronization
+(await the real precondition, close the actual ordering gap in the code under test) over masking it with
+added retries or longer sleeps. Retries and timeout bumps are acceptable as an explicitly-temporary
+stopgap to unblock, but they hide the defect rather than remove it — track the root cause in an issue.
+
+#### Don'ts: leak resources between tests
+
+Tests that create external resources (indices, containers, clients, clusters) must tear them down, even
+on failure. Leaked resources accumulate across runs and surface later as unrelated, hard-to-diagnose
+flakiness. Use lifecycle hooks / try-with-resources so cleanup runs regardless of the test outcome.
+
 ## Acceptance test
 
 > [!Note]

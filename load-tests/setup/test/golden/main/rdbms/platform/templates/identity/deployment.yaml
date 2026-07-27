@@ -48,10 +48,9 @@ spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
-        []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.10.0-alpha1
+          image: camunda/identity:8.10.0-alpha3
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -83,11 +82,6 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-firstuser-password
-            - name: VALUES_OPTIMIZE-LOADTEST_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-optimize-loadtest-client-secret
             - name: IDENTITY_LOG_APPENDER
               value: Stackdriver
           envFrom:

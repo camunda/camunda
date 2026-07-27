@@ -38,6 +38,7 @@
     <module>gateway-rest</module>
     <module>exporter-api</module>
     <module>exporter-common</module>
+    <module>exporter-config-support</module>
     <module>exporter-filter</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>
@@ -65,6 +66,7 @@
     <module>backup-stores/filesystem</module>
     <module>backup-stores/common</module>
     <module>restore</module>
+    <module>restore-standalone</module>
     <module>dynamic-config</module>
     <module>dynamic-node-id-provider</module>
   </modules>

@@ -100,8 +100,8 @@ public final class BpmnProcessFilter implements ExporterRecordFilter, RecordVers
       accepted = allowedBpmnProcesses.contains(bpmnProcessId);
     }
 
-    if (!accepted && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (!accepted && LOG.isTraceEnabled()) {
+      LOG.trace(
           "BpmnProcessFilter rejected record {} (valueType={}): bpmnProcessId '{}' did not pass inclusion/exclusion rules",
           record.getKey(),
           record.getValueType(),

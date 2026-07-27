@@ -114,6 +114,35 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 - Commit messages should explain *why*, not just *what* changed
 - Do not use commit scopes — commitlint enforces `scope-empty`. Use `fix: ...` not `fix(ci): ...`
 
+### Referencing code in issues, PRs, and comments
+
+When pointing at specific lines of repository code in any GitHub-rendered or shared artifact — issue,
+PR description, PR/review comment, or a linked note — use a **stable GitHub permalink** instead of a
+bare `path:line` reference. GitHub renders the linked lines inline, and pinning a commit SHA keeps the
+reference correct even after the file changes later. A bare `path:line` is only acceptable in local,
+throwaway context (never in something a teammate will read on GitHub).
+
+Derive the link locally — no API calls, no `gh`:
+
+```bash
+slug=$(git remote get-url origin | sed -E 's#^(git@github\.com:|https?://github\.com/)##; s#\.git$##')
+sha=$(git log -1 --format=%H -- "<path>")   # commit that last touched the file
+echo "https://github.com/$slug/blob/$sha/<path>#L<start>-L<end>"   # single line: #L<start>
+```
+
+- **SHA choice:** default to the file's last-touching commit (`git log -1 --format=%H -- <path>`). The
+  file content at that commit equals the current committed content, so the line numbers are valid, and
+  for existing code that commit is already on the remote. Use `git rev-parse HEAD` when linking code
+  from the current PR branch. Always use the full 40-char SHA — a branch name or short SHA is less
+  stable and can 404.
+- **Format:** `https://github.com/<slug>/blob/<sha>/<path>#L<start>` for one line, `#L<start>-L<end>`
+  for a range. `<path>` is repo-root-relative.
+- **The SHA must already be pushed to the remote**, otherwise the link 404s — verify with
+  `git branch -r --contains <sha>` (non-empty). The file's last-touching commit satisfies this once the
+  code is merged. If the file has local edits that are not pushed yet, do not link an unpushed SHA: pick
+  a SHA that is already on `main` (e.g. `git rev-parse origin/main`) and select the line range against
+  that version of the file.
+
 ### Build pipeline
 
 All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core) for standalone
@@ -220,6 +249,7 @@ Load extra context on demand — only when relevant, only if the files exist.
 - MCP gateway (`gateways/gateway-mcp/`) → `gateways/gateway-mcp/AGENTS.md`
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
+- Testing libraries / Camunda Process Test (`testing/`) → `testing/AGENTS.md`
 
 **When working inside a specific module**:
 
@@ -248,6 +278,12 @@ Load extra context on demand — only when relevant, only if the files exist.
 - Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the
   surrounding test already uses them.
 - Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
+- Isolate tests with unique data (process/tenant/resource IDs) — never reuse fixed identifiers across
+  tests, as collisions cause flakiness.
+- Fix the root cause of a flaky race rather than masking it with retries or longer waits; if a stopgap
+  is unavoidable, mark it explicitly as temporary and track the root cause in an issue.
+- Always tear down resources you create (indices, containers, clients, clusters), even on failure, to
+  avoid cross-run flakiness.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
 - Reference example: `qa/acceptance-tests/src/test/java/io/camunda/it/StandaloneCamundaTest.java`
@@ -260,7 +296,24 @@ Load extra context on demand — only when relevant, only if the files exist.
 - Describe why the changes are necessary and note alternatives considered
 - Keep descriptions brief and concise
 - For bug fixes: ask the engineer whether the fix needs backporting to stable branches before
-  opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it.
+  opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it
+  (see "Backporting" below).
+
+### Backporting
+
+Automated by a GitHub Action (`korthout/backport-action`, see `.github/workflows/backport.yml`;
+human docs in `CONTRIBUTING.md`). **Never create backport PRs, branches, or cherry-picks yourself,
+and never offer to.** Trigger a backport only through the automation — a label, or a `/backport`
+comment — never by hand.
+
+- **Start:** add one `backport stable/X.Y` label per target branch (e.g. `backport stable/8.7`).
+  Not-yet-merged PR → runs on merge. Already-merged PR → comment `/backport`. Multiple labels →
+  multiple backport PRs.
+- **Success:** action opens the backport PR; a bot approves and merges it once CI passes.
+- **Conflicts:** action opens a **draft** PR with conflict markers committed as-is plus a comment
+  with resolution steps. You may resolve them (check out the branch, fix conflicts and markers) —
+  but only on a draft PR the action already opened. When asked to backport, first check whether
+  such a draft PR exists.
 
 ### Git workflow
 

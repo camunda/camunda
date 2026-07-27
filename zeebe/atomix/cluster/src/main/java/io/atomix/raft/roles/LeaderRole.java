@@ -106,6 +106,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.getThreadContext()
           .execute(
               () -> {
+                if (!isRunning()) {
+                  // The role was stopped between scheduling and running this task, e.g. because
+                  // the server stepped down or shut down. Do not append as an ex-leader; the next
+                  // elected leader resumes the exit from joint consensus.
+                  return;
+                }
                 final var currentMembers = raft.getCluster().getConfiguration().newMembers();
                 ongoingReconfigurationRequestFuture = new CompletableFuture<>();
                 leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
@@ -185,6 +191,23 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Write a new configuration entry with the updated member list.
     final var currentMembers = raft.getCluster().getMembers();
     final var updatedMembers = request.members();
+
+    // A configuration with members but no ACTIVE ones could neither elect a leader nor commit
+    // entries, permanently stranding the remaining members. The empty configuration stays allowed:
+    // it is the result of the last member leaving when scaling a partition down to zero.
+    final var hasActiveMember =
+        updatedMembers.stream().anyMatch(member -> member.getType() == RaftMember.Type.ACTIVE);
+    if (!updatedMembers.isEmpty() && !hasActiveMember) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      "Requested configuration %s must be empty or have at least one active member"
+                          .formatted(updatedMembers))
+                  .build()));
+    }
 
     if (equalMembership(currentMembers, updatedMembers)) {
       return CompletableFuture.completedFuture(
@@ -293,6 +316,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             });
   }
 
+  @Override
+  public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
+    logRequest(request);
+
+    // If a member sends a PollRequest to the leader, that indicates that it likely healed from
+    // a network partition and may have had its status set to UNAVAILABLE by the leader. In order
+    // to ensure heartbeats are immediately stored to the member, update its status if necessary.
+    final RaftMemberContext member = raft.getCluster().getMemberContext(request.candidate());
+    if (member != null) {
+      member.resetFailureCount();
+    }
+
+    return CompletableFuture.completedFuture(
+        logResponse(
+            PollResponse.builder()
+                .withStatus(RaftResponse.Status.OK)
+                .withTerm(raft.getTerm())
+                .withAccepted(false)
+                .build()));
+  }
+
   private void leaveJointConsensus(
       final Collection<RaftMember> updatedMembers, final Configuration configuration) {
     configure(updatedMembers, List.of())
@@ -374,7 +418,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Sets the current node as the cluster leader. */
   private void takeLeadership() {
     raft.setLeader(raft.getCluster().getLocalMember().memberId());
-    raft.getCluster().reset();
     raft.getCluster()
         .getReplicationTargets()
         .forEach(member -> member.openReplicationContext(raft.getLog()));
@@ -592,27 +635,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   @Override
-  public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
-    logRequest(request);
-
-    // If a member sends a PollRequest to the leader, that indicates that it likely healed from
-    // a network partition and may have had its status set to UNAVAILABLE by the leader. In order
-    // to ensure heartbeats are immediately stored to the member, update its status if necessary.
-    final RaftMemberContext member = raft.getCluster().getMemberContext(request.candidate());
-    if (member != null) {
-      member.resetFailureCount();
-    }
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            PollResponse.builder()
-                .withStatus(RaftResponse.Status.OK)
-                .withTerm(raft.getTerm())
-                .withAccepted(false)
-                .build()));
-  }
-
-  @Override
   public CompletableFuture<VoteResponse> onVote(final VoteRequest request) {
     if (updateTermAndLeader(request.term(), null)) {
       log.info("Received greater term from {}", request.candidate());
@@ -687,6 +709,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final var indexedEntry = raft.getLog().append(entry);
     raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
     log.trace("Appended {}", indexedEntry);
+    final int entryBytes = indexedEntry.size();
+    raft.getCluster()
+        .getReplicationTargets()
+        .forEach(member -> member.recordAppendedBytes(entryBytes));
     appender.observeNonCommittedEntries(raft.getCommitIndex());
     return indexedEntry;
   }

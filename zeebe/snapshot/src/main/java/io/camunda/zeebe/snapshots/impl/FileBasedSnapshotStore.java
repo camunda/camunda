@@ -13,13 +13,13 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.BootstrapSnapshotStore;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -42,12 +42,12 @@ public final class FileBasedSnapshotStore extends Actor
       final int brokerId,
       final PartitionId partitionId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
     super("SnapshotStore", partitionId);
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
-            brokerId, root, checksumProvider, actor, new SnapshotMetrics(meterRegistry));
+            brokerId, root, fileInfoProvider, actor, new SnapshotMetrics(meterRegistry));
   }
 
   /**
@@ -58,13 +58,13 @@ public final class FileBasedSnapshotStore extends Actor
       final int brokerId,
       final int partitionId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
     this(
         brokerId,
         new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionId),
         root,
-        checksumProvider,
+        fileInfoProvider,
         meterRegistry);
   }
 

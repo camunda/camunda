@@ -328,7 +328,28 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   AGENT_HISTORY(150, PARTITION_LOCAL),
   // secondary index: (jobKey, jobLease, historyItemKey) → ∅; supports prefix iteration by job key
   // or job key + lease
-  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL);
+  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
+  // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
+  // process instance key to find every agent instance still associated with it
+  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL),
+  // pending secret references: (storeId, secretReference) → ∅
+  PENDING_SECRET_REFERENCES(153, PARTITION_LOCAL),
+  // secondary index: (jobKey, storeId, secretReference) → ∅; supports prefix iteration by job key
+  SECRET_REFERENCES_BY_JOB(154, PARTITION_LOCAL),
+  // secondary index: (storeId, secretReference, jobKey) → ∅; supports prefix iteration by (storeId,
+  // secretReference)
+  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL),
+  // suspension marker: processInstanceKey -> State (SUSPENDED/RESUMING); presence of an entry
+  // means the process instance has a suspension marker (either SUSPENDED or still draining as
+  // RESUMING) — the marker is only removed once resuming has fully completed
+  SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
+  // commands diverted while their target process instance is suspended, keyed by a
+  // KeyGenerator-issued bufferedCommandKey -> ProcessInstanceBufferedCommandRecord
+  BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
+  // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
+  // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
+  // therefore monotonically increasing, so key order == FIFO insertion order)
+  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

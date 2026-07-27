@@ -7,16 +7,22 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
@@ -43,7 +49,10 @@ public class AgentInstanceHandler
 
   private static final Set<AgentInstanceIntent> HANDLED_INTENTS =
       Set.of(
-          AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
+          AgentInstanceIntent.CREATED,
+          AgentInstanceIntent.UPDATED,
+          AgentInstanceIntent.COMPLETED,
+          AgentInstanceIntent.MIGRATED);
 
   private final String indexName;
 
@@ -120,12 +129,22 @@ public class AgentInstanceHandler
   }
 
   @Override
-  public void flush(final AgentInstanceEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final AgentInstanceEntity entity, final BatchRequest batchRequest) {
     // `creationDate` is intentionally excluded: it is handler-derived from
     // `record.getTimestamp()` and only populated by `updateEntity()` on the CREATED
     // intent. Including it here would overwrite the existing index value with null on
     // every UPDATED / COMPLETED event.
     final Map<String, Object> updateFields = new HashMap<>();
+    // Identity fields: only MIGRATED changes these, but flush() can't see the intent, so
+    // always included.
+    updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    updateFields.put(VERSION_TAG, entity.getVersionTag());
+    updateFields.put(ELEMENT_ID, entity.getElementId());
+
+    // Runtime fields
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
     updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
@@ -135,7 +154,7 @@ public class AgentInstanceHandler
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

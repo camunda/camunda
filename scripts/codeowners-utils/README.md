@@ -109,7 +109,7 @@ Example:
 
 ```
 zeebe/engine/src/test/java/io/camunda/zeebe/engine/EngineTest.java | @camunda/core-features | unit
-qa/acceptance-tests/src/test/java/io/camunda/it/client/ClientIT.java | @camunda/camundaex | acceptance
+qa/acceptance-tests/src/test/java/io/camunda/it/client/ClientIT.java | @camunda/core-features | acceptance
 ```
 
 ### JSON Format

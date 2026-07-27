@@ -21,6 +21,11 @@ Required environment variables:
 Optional:
   QUERIES_YAML        Path to queries.yaml. Default:
                       load-tests/docs/scripts/queries.yaml
+  FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn links to this run's flamegraph
+                      artifacts (e.g. "<url|name> · <url|name>"), built by the
+                      `List flamegraph artifacts` step in the calling job via
+                      actions/github-script + listWorkflowRunArtifacts. Empty
+                      or unset omits the flamegraphs line.
 """
 import json
 import os
@@ -39,6 +44,7 @@ rest_ns = f'c8-{bench}-rest'
 repo    = os.environ['REPO']
 run_id  = os.environ['RUN_ID']
 webhook = os.environ['SLACK_WEBHOOK_URL']
+flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
 
 queries_yaml = os.environ.get('QUERIES_YAML', 'load-tests/docs/scripts/queries.yaml')
 
@@ -89,31 +95,40 @@ grpc_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?
 rest_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={rest_ns}&from={from_ms}&to={to_ms}'
 run_url   = f'https://github.com/{repo}/actions/runs/{run_id}'
 
-payload = {
-    'blocks': [
-        {
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>',
-            },
+blocks = [
+    {
+        'type': 'section',
+        'text': {
+            'type': 'mrkdwn',
+            'text': f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>',
         },
-        {
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': f'<{grpc_dash}|Grafana gRPC> · <{rest_dash}|Grafana REST>',
-            },
+    },
+    {
+        'type': 'section',
+        'text': {
+            'type': 'mrkdwn',
+            'text': f'<{grpc_dash}|Grafana gRPC> · <{rest_dash}|Grafana REST>',
         },
-        {
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': '```\n' + table + '\n```',
-            },
+    },
+    {
+        'type': 'section',
+        'text': {
+            'type': 'mrkdwn',
+            'text': '```\n' + table + '\n```',
         },
-    ]
-}
+    },
+]
+
+if flamegraph_links:
+    blocks.append({
+        'type': 'section',
+        'text': {
+            'type': 'mrkdwn',
+            'text': f':fire: *Flamegraphs:* {flamegraph_links}',
+        },
+    })
+
+payload = {'blocks': blocks}
 
 body = json.dumps(payload).encode()
 req  = urllib.request.Request(

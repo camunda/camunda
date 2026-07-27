@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.authz.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
@@ -88,14 +89,21 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
                       query ->
                           assertThat(query.queryOption())
                               .isInstanceOfSatisfying(
-                                  SearchTermsQuery.class,
-                                  (termsQuery) -> {
-                                    assertThat(termsQuery.field()).isEqualTo(GroupIndex.GROUP_ID);
-                                    assertThat(
-                                            termsQuery.values().stream()
-                                                .map(TypedValue::stringValue)
-                                                .toList())
-                                        .containsExactlyInAnyOrder("1", "2");
+                                  SearchHasParentQuery.class,
+                                  (hasParentQuery) -> {
+                                    assertThat(hasParentQuery.parentType()).isEqualTo("group");
+                                    assertThat(hasParentQuery.query().queryOption())
+                                        .isInstanceOfSatisfying(
+                                            SearchTermsQuery.class,
+                                            (termsQuery) -> {
+                                              assertThat(termsQuery.field())
+                                                  .isEqualTo(GroupIndex.GROUP_ID);
+                                              assertThat(
+                                                      termsQuery.values().stream()
+                                                          .map(TypedValue::stringValue)
+                                                          .toList())
+                                                  .containsExactlyInAnyOrder("1", "2");
+                                            });
                                   }));
             });
   }

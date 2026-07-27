@@ -18,6 +18,7 @@ package io.camunda.client.job.rest;
 import static io.camunda.client.api.command.enums.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.client.api.command.enums.JobResultType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.ActivatedJob;
@@ -75,6 +76,102 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getVariables()).isNull();
+  }
+
+  @Test
+  void shouldCompleteJobWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newCompleteCommand(jobKey).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  void shouldCompleteJobWithBusinessId() {
+    // given
+    final long jobKey = 12;
+    final String businessId = "biz-1";
+
+    // when
+    client.newCompleteCommand(jobKey).withBusinessId(businessId).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldNotSetBusinessIdByDefault() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getBusinessId()).isNull();
+  }
+
+  @Test
+  void shouldRejectBlankBusinessId() {
+    // given
+    final long jobKey = 12;
+
+    // when/then
+    assertThatThrownBy(() -> client.newCompleteCommand(jobKey).withBusinessId("   "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("businessId");
+  }
+
+  @Test
+  void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newCompleteCommand(job).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newCompleteCommand(job).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
+  void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
   }
 
   @Test

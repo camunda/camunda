@@ -25,6 +25,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -93,7 +94,8 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
             clockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            engine);
+            engine,
+            () -> new CamundaDataSource(camundaClient));
 
     engine.start(
         () -> {},
@@ -109,7 +111,13 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
   @Test
   void shouldUseOverriddenAwaitBehaviorWhenCompletingJobInsideConditionalEngine() {
     // given
-    when(camundaClient.newJobSearchRequest().filter(any(Consumer.class)).send().join().items())
+    when(camundaClient
+            .newJobSearchRequest()
+            .filter(any(Consumer.class))
+            .page(any(Consumer.class))
+            .send()
+            .join()
+            .items())
         .thenReturn(Collections.singletonList(job));
     when(job.getJobKey()).thenReturn(JOB_KEY);
     when(job.getType()).thenReturn(JOB_TYPE);
@@ -124,7 +132,14 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
   @Test
   void shouldUseOverriddenAwaitBehaviorWhenCompletingUserTaskInsideConditionalEngine() {
     // given
-    when(camundaClient.newUserTaskSearchRequest().filter(any(Consumer.class)).send().join().items())
+    when(camundaClient
+            .newUserTaskSearchRequest()
+            .filter(any(Consumer.class))
+            .sort(any(Consumer.class))
+            .page(any(Consumer.class))
+            .send()
+            .join()
+            .items())
         .thenReturn(Collections.singletonList(userTask));
     when(userTask.getUserTaskKey()).thenReturn(USER_TASK_KEY);
     when(userTask.getElementId()).thenReturn(USER_TASK_ELEMENT_ID);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Map;
@@ -109,4 +110,13 @@ public interface PartitionChangeExecutor {
    */
   ActorFuture<Void> enableExporter(
       int partitionId, String exporterId, long metadataVersion, String initializeFrom);
+
+  /**
+   * Sets the overall exporting state for every partition owned by this member, pausing,
+   * soft-pausing or resuming all exporters of each partition accordingly.
+   *
+   * @param exportingState the target exporting state
+   * @return a future that completes when the exporting state has been applied to all partitions
+   */
+  ActorFuture<Void> setExportingState(final ExportingState exportingState);
 }

@@ -88,6 +88,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-config-support</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
 
@@ -191,6 +196,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-restore</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
     </dependency>
@@ -198,6 +208,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -243,6 +254,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-validation</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-api</artifactId>
     </dependency>
 
     <dependency>

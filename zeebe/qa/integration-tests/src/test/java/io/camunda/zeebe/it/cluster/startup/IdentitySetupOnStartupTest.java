@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -48,10 +49,16 @@ final class IdentitySetupOnStartupTest {
                 .start()
                 .awaitCompleteTopology()) {
 
-      Assertions.assertThat(
-              RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst())
-          .describedAs("Expect that identity setup was completed regardless of small max msg size")
-          .isNotNull();
+      RecordingExporter.await(Duration.ofSeconds(30))
+          .untilAsserted(
+              () ->
+                  Assertions.assertThat(
+                          RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED)
+                              .limit(1))
+                      .describedAs(
+                          "Expect that identity setup was completed regardless of small max msg"
+                              + " size")
+                      .isNotEmpty());
 
       assertThat(
               logCapturer.contains(

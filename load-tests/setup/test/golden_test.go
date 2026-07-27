@@ -3,7 +3,9 @@ package golden
 
 import (
 	"flag"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,13 +29,33 @@ var update = flag.Bool("update-golden", false,
 // load-test-setup chart only — used to test opt-in chart features that have a
 // dedicated make target (e.g. template-load-test-setup-chaos). This avoids
 // duplicating the full storage matrix for features that are orthogonal to storage.
+//
+// PhysicalTenants, when true, passes physical_tenants=true to the platform
+// template target. Only supported for rdbms secondary_storage (main version only).
+//
+// PlatformOnly, when true, renders only the platform chart. Use it for
+// scenarios whose assertions are scoped to platform-only templates.
+//
+// PathFilter, when set, restricts golden comparison (and, under
+// -update-golden, what gets committed) to rendered manifest paths with one of
+// these prefixes, relative to each chart's own output tree — e.g.
+// "templates/orchestration" keeps templates/orchestration/statefulset.yaml
+// but drops everything else. Use this for scenarios whose purpose is
+// verifying one narrow area (a specific bugfix's blast radius): committing
+// and diffing the full rendered tree for every combination isn't worth the
+// review noise when only a handful of files are actually relevant. Leave
+// empty (the default) to keep comparing every rendered file, unchanged from
+// today's behavior.
 type scenario struct {
-	Name        string
-	Storage     string // elasticsearch | opensearch | postgresql | none
-	Optimize    bool
-	Stable      bool
-	Workload    string // "" = default profile; e.g. "max", "realistic"
-	SetupTarget string // named make target for template-load-test-setup variants
+	Name            string
+	Storage         string // elasticsearch | opensearch | postgresql | none
+	Optimize        bool
+	Stable          bool
+	Workload        string // "" = default profile; e.g. "max", "realistic"
+	SetupTarget     string // named make target for template-load-test-setup variants
+	PhysicalTenants bool
+	PlatformOnly    bool
+	PathFilter      []string
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -54,10 +76,22 @@ type versionedScenario struct {
 // regenerated when that file changes.
 var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
+	// no-optimize scenarios only exist to catch the ES/OS exporter/Optimize
+	// interaction bug (see PR #57771) — scoped to the orchestration templates
+	// where that config actually appears, not the full rendered tree.
+	// stable-87 uses the pre-orchestration zeebe template path.
+	{Name: "elasticsearch-no-optimize", Storage: "elasticsearch", Optimize: false, Stable: false,
+		PlatformOnly: true, PathFilter: []string{"templates/orchestration", "templates/zeebe"}},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
+	{Name: "opensearch-no-optimize", Storage: "opensearch", Optimize: false, Stable: false,
+		PlatformOnly: true, PathFilter: []string{"templates/orchestration", "templates/zeebe"}},
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
 	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
 	{Name: "none", Storage: "none", Optimize: false, Stable: false},
+	// Optimize cannot run without a secondary storage backend, so this covers
+	// that enable_optimize=true is correctly ignored (rather than crashing or
+	// silently misconfiguring the ES/OS exporter) when storage is disabled.
+	{Name: "none-optimize", Storage: "none", Optimize: true, Stable: false},
 	{Name: "elasticsearch-stable", Storage: "elasticsearch", Optimize: true, Stable: true},
 	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
@@ -67,15 +101,17 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
+	// physical_tenants=true deploys a second tenant alongside the default on a
+	// shared RDBMS (table-prefix isolation). Only supported for rdbms storage.
+	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
 }
 
 // versions lists the setup directories under test, each the name of a directory
 // under load-tests/setup/ that contains a newLoadTest.sh.
 //
-// Only "main" is active for now. The stable versions scaffold identically; to
-// enable one, uncomment its line and run:
+// To add a new version, append its directory name here and run:
 //
-//	go test -update-golden -run 'TestGoldenFiles/<version>' ./...
+//	make update-golden PATTERN=<version>
 //
 // to generate its golden files, then commit them. No other code change is needed.
 var versions = []string{
@@ -109,6 +145,11 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				}
 			}
 
+			// physical_tenants=true is only implemented in the main Makefile.
+			if s.PhysicalTenants && v != "main" {
+				continue
+			}
+
 			scenario := versionedScenario{
 				Version:  v,
 				scenario: s,
@@ -138,7 +179,7 @@ func TestGoldenFiles(t *testing.T) {
 			defer ns.Cleanup()
 
 			if s.Workload != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter)
 				return
 			}
 
@@ -146,7 +187,7 @@ func TestGoldenFiles(t *testing.T) {
 			// via their dedicated Makefile target. They render only that
 			// chart to avoid duplicating the full platform/load-tester matrix.
 			if s.SetupTarget != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "")
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "", s.PathFilter)
 				return
 			}
 
@@ -157,8 +198,16 @@ func TestGoldenFiles(t *testing.T) {
 				platformTarget = "template-stable"
 			}
 
-			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
-			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
+			var extraVars []string
+			if s.PhysicalTenants {
+				extraVars = append(extraVars, "physical_tenants=true")
+			}
+
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)
+			if s.PlatformOnly {
+				return
+			}
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", s.PathFilter, extraVars...)
 		})
 	}
 }
@@ -192,7 +241,11 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 			require.NoError(t, err, "make dry-run failed:\n%s", string(out))
 
 			helmCommand := string(out)
-			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
+			// TODO: uncomment and remove the other line once all the tests are
+			// using the Elasticsearch ECK resource instead of the
+			// Elasticsearch Bitnami Helm Chart.
+			//require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elasticsearch-es-http:9200")
+			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic")
 			require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
 			require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
 			require.Less(
@@ -206,11 +259,14 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
 // compares (or writes) the resulting manifest tree against the golden directory.
-func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string) {
+// pathFilter, when non-empty, restricts the comparison to that subset of
+// rendered paths (see scenario.PathFilter). extraVars are additional make
+// variable assignments forwarded to Render.
+func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string, pathFilter []string, extraVars ...string) {
 	t.Helper()
 
-	srcDir := ns.Render(t, makeTarget, workload)
-	assertGoldenDir(t, version, scenario, chartName, srcDir, *update)
+	srcDir := ns.Render(t, makeTarget, workload, extraVars...)
+	assertGoldenDir(t, version, scenario, chartName, srcDir, *update, pathFilter)
 }
 
 // TestNormalize verifies that the normalize function strips expected fields
@@ -238,4 +294,61 @@ func TestNormalize(t *testing.T) {
 
 	// Idempotent.
 	require.Equal(t, got, normalize(got))
+}
+
+func TestShouldCollectAllManifestsWithoutPathFilter(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "Chart.yaml", "name: platform\n")
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, nil)
+
+	// then
+	require.Equal(t, []string{"Chart.yaml", "templates/orchestration/deployment.yaml"}, sortedKeys(manifests))
+}
+
+func TestShouldCollectOnlyPathFilterMatches(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+	writeTestManifest(t, root, "templates/identity/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, []string{"templates/orchestration"})
+
+	// then
+	require.Equal(t, []string{"templates/orchestration/deployment.yaml"}, sortedKeys(manifests))
+}
+
+func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, []string{"templates/missing"})
+
+	// then
+	require.Empty(t, manifests)
+}
+
+func TestShouldMatchPathFilterByExactFileOrDirectoryPrefix(t *testing.T) {
+	// given
+	filter := []string{"./Chart.yaml", "templates/orchestration/"}
+
+	// when / then
+	require.True(t, matchesPathFilter("Chart.yaml", filter))
+	require.True(t, matchesPathFilter("templates/orchestration/deployment.yaml", filter))
+	require.False(t, matchesPathFilter("templates/orchestration-extra/deployment.yaml", filter))
+	require.False(t, matchesPathFilter("templates/identity/deployment.yaml", filter))
+}
+
+func writeTestManifest(t *testing.T, root, rel, content string) {
+	t.Helper()
+
+	path := filepath.Join(root, filepath.FromSlash(rel))
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }

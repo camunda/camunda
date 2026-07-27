@@ -82,7 +82,7 @@ public class OidcAuthOverGrpcIT {
                     .getOidc()
                     .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
                 c.getAuthentication().getOidc().setClientId("example");
-                c.getAuthentication().getOidc().setRedirectUri("example.com");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com");
                 c.getAuthorizations().setEnabled(true);
                 c.getInitialization()
                     .setMappingRules(

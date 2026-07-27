@@ -8,11 +8,13 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +25,8 @@ import java.util.stream.IntStream;
 @SuppressWarnings({"unused", "resource"})
 public final class TestClusterBuilder {
 
-  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  private static final Duration MULTI_ZONE_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(15);
 
   private String name = DEFAULT_CLUSTER_NAME;
 
@@ -287,7 +290,12 @@ public final class TestClusterBuilder {
     createGateways();
 
     return new TestCluster(
-        name, replicationFactor, partitionsCount, new HashMap<>(brokers), new HashMap<>(gateways));
+        name,
+        replicationFactor,
+        partitionsCount,
+        new HashMap<>(brokers),
+        new HashMap<>(gateways),
+        multiZoneConfigs);
   }
 
   private void applyConfigFunctions(final MemberId id, final TestApplication<?> zeebe) {
@@ -381,15 +389,18 @@ public final class TestClusterBuilder {
       return;
     }
 
-    final var zoneIndex = brokerIndex % zoneCount;
+    final var zoneIndex = ZoneLayout.zoneRankForBareNodeIdx(brokerIndex, zoneCount);
     final var cluster = config.getCluster();
     cluster.setZone(multiZoneConfigs.get(zoneIndex).name());
-    cluster.setNodeId(brokerIndex / zoneCount);
+    cluster.setNodeId(ZoneLayout.localNodeIdxForBareNodeIdx(brokerIndex, zoneCount));
     cluster.getPartitioning().setScheme(Scheme.ZONE_AWARE);
     cluster
         .getPartitioning()
         .setZoneAware(
             new ZoneAware(IntStream.range(0, zoneCount).mapToObj(this::zoneConfig).toList()));
+    // cross-zone gossip during bootstrap needs more headroom than the 5s default used for
+    // single-zone test clusters
+    cluster.getMetadata().setBootstrapTimeout(MULTI_ZONE_BOOTSTRAP_TIMEOUT);
   }
 
   private Zone zoneConfig(final int zoneIndex) {

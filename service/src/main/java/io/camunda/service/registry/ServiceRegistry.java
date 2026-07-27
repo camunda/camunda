@@ -21,6 +21,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -35,6 +36,8 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
+import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
@@ -64,6 +67,8 @@ public interface ServiceRegistry {
 
   AuthorizationServices authorizationServices(String physicalTenantId);
 
+  RuntimeBackupServices backupServices(String physicalTenantId);
+
   BatchOperationServices batchOperationServices(String physicalTenantId);
 
   ClockServices clockServices(String physicalTenantId);
@@ -81,6 +86,8 @@ public interface ServiceRegistry {
   DocumentServices documentServices(String physicalTenantId);
 
   ElementInstanceServices elementInstanceServices(String physicalTenantId);
+
+  ExportingServices exportingServices(String physicalTenantId);
 
   ExpressionServices expressionServices(String physicalTenantId);
 
@@ -107,6 +114,8 @@ public interface ServiceRegistry {
   ResourceServices resourceServices(String physicalTenantId);
 
   RoleServices roleServices(String physicalTenantId);
+
+  SecretServices secretServices(String physicalTenantId);
 
   SignalServices signalServices(String physicalTenantId);
 

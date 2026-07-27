@@ -12,7 +12,7 @@
 
 import {z} from 'zod';
 
-const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SUSPENDED', 'TERMINATED']);
 type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
 type StatisticName = 'element-instances';
 
@@ -23,6 +23,7 @@ const processInstanceSchema = z.object({
 	processDefinitionVersionTag: z.string().nullable(),
 	startDate: z.string(),
 	endDate: z.string().nullable(),
+	suspendedDate: z.string().nullable(),
 	state: processInstanceStateSchema,
 	hasIncident: z.boolean(),
 	tenantId: z.string(),

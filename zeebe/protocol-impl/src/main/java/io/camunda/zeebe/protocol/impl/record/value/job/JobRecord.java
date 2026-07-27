@@ -23,14 +23,17 @@ import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -100,6 +103,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue LEASE_TOKEN_KEY = new StringValue("leaseToken");
+  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -148,9 +152,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
   private final StringProperty leaseTokenProp = new StringProperty(LEASE_TOKEN_KEY, EMPTY_STRING);
+  private final ArrayProperty<JobSecretReference> secretReferencesProp =
+      new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
   public JobRecord() {
-    super(28);
+    super(30);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -179,7 +185,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
-        .declareProperty(leaseTokenProp);
+        .declareProperty(leaseTokenProp)
+        .declareProperty(secretReferencesProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -213,6 +220,15 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
     leaseTokenProp.setValue(record.getLeaseTokenBuffer());
+    copySecretReferencesFrom(record);
+  }
+
+  private void copySecretReferencesFrom(final JobRecord record) {
+    // same-class buffer copy avoids the String round-trip of
+    // setSecretReferences(getSecretReferences())
+    secretReferencesProp.reset();
+    record.secretReferencesProp.forEach(
+        reference -> secretReferencesProp.add().copyFrom(reference));
   }
 
   public void wrap(final JobRecord record) {
@@ -394,6 +410,60 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public List<JobSecretReferenceValue> getSecretReferences() {
+    // detach copies so the returned list stays valid if this record is reused or reset later
+    return secretReferencesProp.stream()
+        .map(
+            element -> {
+              final var copy = new JobSecretReference();
+              copy.copy(element);
+              return (JobSecretReferenceValue) copy;
+            })
+        .toList();
+  }
+
+  public JobRecord setSecretReferences(
+      final List<? extends JobSecretReferenceValue> secretReferences) {
+    secretReferencesProp.reset();
+    if (secretReferences != null) {
+      secretReferences.forEach(
+          reference ->
+              addSecretReference(
+                  reference.getStoreId(), reference.getSecretReference(), reference.getPath()));
+    }
+    return this;
+  }
+
+  /**
+   * Direct access to the secret reference elements, without the detached copies of {@link
+   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
+   */
+  @JsonIgnore
+  public ValueArray<JobSecretReference> secretReferences() {
+    return secretReferencesProp;
+  }
+
+  @JsonIgnore
+  public boolean hasSecretReferences() {
+    return !secretReferencesProp.isEmpty();
+  }
+
+  public JobRecord addSecretReference(
+      final String storeId, final String secretReference, final String path) {
+    secretReferencesProp
+        .add()
+        .setStoreId(storeId)
+        .setSecretReference(secretReference)
+        .setPath(path);
+    return this;
+  }
+
+  public JobRecord resetSecretReferences() {
+    secretReferencesProp.reset();
+    return this;
+  }
+
+  @Override
   public boolean isJobToUserTaskMigration() {
     return isJobToUserTaskMigrationProp.getValue();
   }
@@ -441,6 +511,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public String getLeaseToken() {
     return bufferAsString(leaseTokenProp.getValue());
+  }
+
+  @JsonIgnore
+  public boolean hasLeaseToken() {
+    return !getLeaseToken().isEmpty();
   }
 
   public JobRecord setLeaseToken(final String leaseToken) {

@@ -22,6 +22,7 @@ const runningInstance: InstanceMock = {
     processDefinitionVersionTag: null,
     endDate: null,
     parentProcessInstanceKey: null,
+    suspendedDate: null,
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Helper functions for collecting flaky test data
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 set -euo pipefail
 flaky_data='[]'
@@ -9,7 +9,7 @@ flaky_data='[]'
 add_job_data() {
   local job_name="$1"
   local flaky_tests="$2"
-  flaky_tests=$(echo "$flaky_tests" | xargs)
+  flaky_tests=$(echo "$flaky_tests" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
   if [[ -n "$flaky_tests" ]]; then
     echo "Adding job: $job_name with flaky test: $flaky_tests"
 

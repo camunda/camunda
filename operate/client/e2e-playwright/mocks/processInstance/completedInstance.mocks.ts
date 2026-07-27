@@ -22,6 +22,7 @@ const completedInstance: InstanceMock = {
     hasIncident: false,
     processDefinitionVersionTag: null,
     parentProcessInstanceKey: null,
+    suspendedDate: null,
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],

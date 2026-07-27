@@ -12,12 +12,12 @@ import static io.camunda.zeebe.util.Unit.unit;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -50,9 +50,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private boolean isValid = false;
   private @Nullable PersistedSnapshot snapshot;
   private @Nullable MutableChecksumsSFV checksum;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
   private long maxExportedPosition = Long.MAX_VALUE;
+  private long totalSizeBytes;
   private final boolean isBootstrap;
 
   @SuppressWarnings("NullAway.Init")
@@ -61,13 +62,13 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final Path directory,
       final FileBasedSnapshotStoreImpl snapshotStore,
       final ConcurrencyControl actor,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final boolean isBootstrap) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
-    this.checksumProvider = checksumProvider;
+    this.fileInfoProvider = fileInfoProvider;
     this.isBootstrap = isBootstrap;
   }
 
@@ -105,7 +106,9 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
+          final var snapshotInfoResult = SnapshotInfos.of(directory, fileInfoProvider, true);
+          checksum = snapshotInfoResult.checksum();
+          totalSizeBytes = snapshotInfoResult.totalSizeInBytes();
 
           snapshot = null;
           isValid = true;
@@ -178,16 +181,20 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try {
       final var metadata =
           isBootstrap
-              ? FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION)
+              ? FileBasedSnapshotMetadata.forBootstrap(
+                  FileBasedSnapshotStoreImpl.VERSION, totalSizeBytes)
               : new FileBasedSnapshotMetadata(
                   FileBasedSnapshotStoreImpl.VERSION,
                   snapshotId.getProcessedPosition(),
                   snapshotId.getExportedPosition(),
                   maxExportedPosition,
                   lastFollowupEventPosition,
-                  false);
+                  false,
+                  totalSizeBytes);
 
-      writeMetadataAndUpdateChecksum(metadata);
+      final var metadataBytes = metadata.encode();
+      writeMetadataAndUpdateChecksum(metadataBytes);
+
       // snapshot id and director were first provided without the checksum because we could only
       // calculate it just now.
       // Let's construct a new snapshot id with the checksum and move the snapshot to the final
@@ -226,7 +233,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       }
       snapshot =
           snapshotStore.persistNewSnapshot(
-              directoryWithChecksum, idWithChecksum, checksum, metadata);
+              directoryWithChecksum, idWithChecksum, checksum, metadata, metadataBytes.length);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -235,8 +242,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     snapshotStore.removePendingSnapshot(this);
   }
 
-  private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
-      throws IOException {
+  private void writeMetadataAndUpdateChecksum(final byte[] metadataBytes) throws IOException {
     final var metadataPath = directory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final var channel =
@@ -244,10 +250,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                 metadataPath,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.DSYNC);
         final var output = Channels.newOutputStream(channel)) {
-      metadata.encode(output);
-      Objects.requireNonNull(checksum, "checksum").updateFromFile(metadataPath);
+      output.write(metadataBytes);
+      Objects.requireNonNull(checksum, "checksum")
+          .updateFromBytes(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME, metadataBytes);
     }
   }
 

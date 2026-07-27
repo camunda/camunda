@@ -54,6 +54,7 @@ class RdbmsDbModelSortITCoverageArchTest {
           "GroupMemberDbModel", // member sub-entity; no GroupMemberSortIT
           "TenantMemberDbModel", // member sub-entity; no TenantMemberSortIT
           "RoleMemberDbModel", // member sub-entity; no RoleMemberSortIT
+          "ClusterVariableMetadataDbModel", // metadata sub-entity; covered by ClusterVariableIT
           "ProcessDefinitionVariableNameLookupDbModel", // variable-name cache; has an IT but no
           // sort fields
           "BatchOperationErrorDbModel", // error sub-entity of BatchOperation; no sort fields

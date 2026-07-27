@@ -138,7 +138,7 @@ public final class MessageSubscriptionRejectProcessor
 
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.NOT_CORRELATED, messageCorrelationRecord);
-      responseWriter.writeRejection(
+      responseWriter.writeRejectedResponseOnCommand(
           record,
           RejectionType.NOT_FOUND,
           SUBSCRIPTION_NOT_FOUND.formatted(

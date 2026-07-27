@@ -14,14 +14,17 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,9 +34,10 @@ import org.junit.Test;
 /**
  * Verifies the {@code P_B}-side processor of the cross-partition message-start handshake in
  * isolation: a directly-written {@link MessageStartProcessInstanceRequestIntent#REQUEST} command is
- * consumed and translated into one of the three reply commands. The routing flip that drives this
- * handshake from a published message lands in a later commit; until then, this is the only
- * end-to-end exercise of the processor.
+ * consumed and translated into one of the four reply commands (START, REJECT_UNIQUENESS,
+ * REJECT_NO_SUBSCRIPTION, REJECT_EXPIRED). The routing flip that drives this handshake from a
+ * published message lands in a later commit; until then, this is the only end-to-end exercise of
+ * the processor.
  *
  * <p>Tests run on a single-partition engine and encode the source partition in {@code messageKey}
  * as partition {@code 1}, so the reply command is written locally and observable via {@link
@@ -195,6 +199,191 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(reply.getBusinessId()).isEqualTo(BUSINESS_ID);
     assertThat(reply.getProcessDefinitionKey()).isEqualTo(424242L);
     assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldReplyExpiredRejectedWhenDeadlinePassedAndTtlPositive() {
+    // given a deployed process whose businessId is free, so without the guard the request WOULD
+    // start a PI — proving the guard short-circuits before dedup lookup and live evaluation
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+
+    // when a REQUEST arrives whose deadline has already passed and that carried a positive TTL
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(1L)
+                    .setMessageTtl(1_000L)));
+
+    // then the TTL-gated expiry guard refuses it: REJECT_EXPIRED reply, no PI, no dedup-based START
+    final var reply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
+    assertOriginalRequestPreserved(reply, BUSINESS_ID, subscriptionKey);
+    assertThat(reply.getProcessInstanceKey())
+        .as("expiry rejections do not carry a PI key")
+        .isEqualTo(-1L);
+
+    final long startedPis =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(startedPis).as("no PI is activated for an expired request").isZero();
+  }
+
+  @Test
+  public void shouldStartWhenDeadlinePassedButTtlIsZero() {
+    // given a deployed process with a free businessId
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+
+    // when a past-deadline REQUEST arrives but its TTL is 0 (fire-and-forget): a TTL=0 message
+    // always arrives past its deadline, so the guard must NOT reject it (documented TTL=0
+    // first-arrival activation)
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey).setMessageDeadline(1L).setMessageTtl(0L)));
+
+    // then it falls through to live evaluation and starts a PI, replying START (not REJECT_EXPIRED)
+    final var startReply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.START);
+    assertThat(startReply.getProcessInstanceKey()).isPositive();
+  }
+
+  @Test
+  public void shouldTreatExactDeadlineBoundaryAsExpired() {
+    // Pins the guard's boundary semantics as inclusive (messageDeadline <= now, not <): a request
+    // whose deadline is exactly the current clock value counts as expired. Pinning the clock makes
+    // the processor's clock.millis() stable so an exact-equality deadline can be asserted
+    // deterministically — with a live clock the comparison would race the wall clock.
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    engine.getClock().pinCurrentTime();
+    final long now = engine.getClock().getCurrentTimeInMillis();
+
+    // when a REQUEST arrives whose messageDeadline is EXACTLY now (positive TTL)
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(now)
+                    .setMessageTtl(1_000L)));
+
+    // then the inclusive boundary refuses it: REJECT_EXPIRED reply, no PI activated. A strict `<`
+    // guard would instead start a PI here, so this asserts the `<=` choice directly.
+    final var reply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
+    assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+
+    final long startedPis =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(startedPis)
+        .as("messageDeadline == now must be treated as expired (inclusive <=)")
+        .isZero();
+  }
+
+  @Test
+  public void shouldReplyNoSubscriptionRejectedWhenTargetDefinitionIsDraining() {
+    // given - a deployed process whose definition is then marked DRAINING
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(MESSAGE_START_PROCESS)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    drain(metadata);
+
+    // when - a REQUEST arrives for the draining definition
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                requestWith(BUSINESS_ID, subscriptionKey, metadata.getProcessDefinitionKey())));
+
+    // then - it is rejected as "no subscription" and no PI is activated
+    final var reply =
+        firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+    assertThat(reply.getProcessDefinitionKey()).isEqualTo(metadata.getProcessDefinitionKey());
+    assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+
+    // no STARTED event is written for a phantom instance and no PROCESS is activated
+    final long startedEvents =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .filter(
+                r ->
+                    r.getRecordType() == RecordType.EVENT
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.STARTED)
+            .count();
+    assertThat(startedEvents).as("no dedup/STARTED entry for a draining definition").isZero();
+
+    final long activatedProcesses =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activatedProcesses).as("no PI is activated for a draining definition").isZero();
+
+    assertNoOtherReply(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
+  /**
+   * Puts the given process definition into the {@code DRAINING} state. Since no processor writes
+   * the {@code DRAINING} event yet, the event is injected onto the log while the engine is stopped
+   * so it is applied to state on the next start (replay). TODO(#56978): drive draining via a real
+   * {@code RESOURCE_DELETION.DELETE} once that change lands, and remove this injection helper.
+   */
+  private void drain(final ProcessMetadataValue metadata) {
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .key(metadata.getProcessDefinitionKey())
+            .process(
+                ProcessIntent.DRAINING,
+                new ProcessRecord()
+                    .setKey(metadata.getProcessDefinitionKey())
+                    .setBpmnProcessId(metadata.getBpmnProcessId())
+                    .setVersion(metadata.getVersion())
+                    .setResourceName(metadata.getResourceName())
+                    .setTenantId(metadata.getTenantId())));
+    engine.start();
+
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+        .await();
   }
 
   private MessageStartProcessInstanceRequestRecord request(

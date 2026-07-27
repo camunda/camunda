@@ -11,22 +11,36 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
+  default void registerPartitionChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+    registerPartitionChangeExecutors(
+        partitionChangeExecutor,
+        partitionScalingChangeExecutor,
+        new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+  }
+
   void registerPartitionChangeExecutors(
       PartitionChangeExecutor partitionChangeExecutor,
-      PartitionScalingChangeExecutor partitionScalingChangeExecutor);
+      PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      RestoreChangeExecutor restoreChangeExecutor);
 
   void removePartitionChangeExecutor();
 
@@ -39,6 +53,13 @@ public interface ClusterConfigurationService extends AsyncClosable {
   void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
   void removeInconsistentConfigurationListener();
+
+  void registerRequestValidator(
+      @Nullable String physicalTenantId, ClusterConfigurationRequestValidator<?, ?> validator);
+
+  void removeRequestValidator(
+      @Nullable String physicalTenantId,
+      Class<? extends ClusterConfigurationManagementRequest> requestType);
 
   default List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
     final var partitionDistribution = getPartitionDistribution();

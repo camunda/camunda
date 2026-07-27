@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -24,16 +25,21 @@ import org.agrona.concurrent.UnsafeBuffer;
 final class ClientStreamRegistry<M extends BufferWriter> {
   private final Map<ClientStreamId, ClientStreamImpl<M>> clientStreams = new HashMap<>();
   private final Map<UUID, AggregatedClientStream<M>> serverStreams = new HashMap<>();
-  private final Map<LogicalId<M>, UUID> serverStreamIds = new HashMap<>();
+  private final Map<ServerStreamKey<M>, UUID> serverStreamIds = new HashMap<>();
 
-  private final ClientStreamMetrics metrics;
+  private final Function<String, ClientStreamMetrics> metricsFactory;
 
   ClientStreamRegistry() {
-    this(ClientStreamMetrics.noop());
+    this(physicalTenantId -> ClientStreamMetrics.noop());
   }
 
   ClientStreamRegistry(final ClientStreamMetrics metrics) {
-    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
+    this(physicalTenantId -> metrics);
+    Objects.requireNonNull(metrics, "must specify metrics");
+  }
+
+  ClientStreamRegistry(final Function<String, ClientStreamMetrics> metricsFactory) {
+    this.metricsFactory = Objects.requireNonNull(metricsFactory, "must specify metrics factory");
   }
 
   Optional<AggregatedClientStream<M>> get(final UUID serverStreamId) {
@@ -51,13 +57,16 @@ final class ClientStreamRegistry<M extends BufferWriter> {
       final String physicalTenantId) {
     final var streamTypeBuffer = new UnsafeBuffer(streamType);
     final LogicalId<M> logicalId = new LogicalId<>(streamTypeBuffer, metadata);
-    // Find serverStreamId given streamType and metadata. Once a server stream is removed, a new
-    // server stream with same streamType and metadata will get a new UUID.
-    final var serverStreamId = serverStreamIds.computeIfAbsent(logicalId, k -> UUID.randomUUID());
+    final var streamKey = new ServerStreamKey<>(physicalTenantId, logicalId);
+    final var metrics = metricsFactory.apply(physicalTenantId);
+    // Keyed by physicalTenantId too, so identical (streamType, metadata) pairs from different
+    // tenants don't aggregate into the same stream.
+    final var serverStreamId = serverStreamIds.computeIfAbsent(streamKey, k -> UUID.randomUUID());
     final var serverStream =
         serverStreams.computeIfAbsent(
             serverStreamId,
-            k -> new AggregatedClientStream<>(serverStreamId, logicalId, physicalTenantId));
+            k ->
+                new AggregatedClientStream<>(serverStreamId, logicalId, physicalTenantId, metrics));
     final var streamId = new ClientStreamIdImpl(serverStreamId, serverStream.nextLocalId());
     final var clientStream =
         new ClientStreamImpl<>(
@@ -65,8 +74,8 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     serverStream.addClient(clientStream);
     clientStreams.put(streamId, clientStream);
 
-    metrics.aggregatedStreamCount(serverStreams.size());
-    metrics.clientCount(clientStreams.size());
+    metrics.aggregatedStreamCount(countAggregatedStreamsFor(physicalTenantId));
+    metrics.clientCount(countClientsFor(physicalTenantId));
     return clientStream;
   }
 
@@ -77,13 +86,15 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     final var clientStream = clientStreams.remove(streamId);
     if (clientStream != null) {
       final var serverStream = clientStream.serverStream();
+      final var physicalTenantId = serverStream.physicalTenantId();
+      final var metrics = metricsFactory.apply(physicalTenantId);
       serverStream.removeClient(clientStream.streamId());
-      metrics.clientCount(clientStreams.size());
+      metrics.clientCount(countClientsFor(physicalTenantId));
 
       if (serverStream.isEmpty()) {
         serverStreams.remove(serverStream.streamId());
-        serverStreamIds.remove(serverStream.logicalId());
-        metrics.aggregatedStreamCount(serverStreams.size());
+        serverStreamIds.remove(new ServerStreamKey<>(physicalTenantId, serverStream.logicalId()));
+        metrics.aggregatedStreamCount(countAggregatedStreamsFor(physicalTenantId));
 
         return Optional.of(serverStream);
       }
@@ -93,15 +104,45 @@ final class ClientStreamRegistry<M extends BufferWriter> {
   }
 
   void clear() {
+    final var physicalTenantIds =
+        serverStreams.values().stream()
+            .map(AggregatedClientStream::physicalTenantId)
+            .distinct()
+            .toList();
+
     clientStreams.clear();
     serverStreams.clear();
     serverStreamIds.clear();
 
-    metrics.clientCount(0);
-    metrics.aggregatedStreamCount(0);
+    physicalTenantIds.forEach(
+        physicalTenantId -> {
+          final var metrics = metricsFactory.apply(physicalTenantId);
+          metrics.clientCount(0);
+          metrics.aggregatedStreamCount(0);
+        });
   }
 
   Optional<ClientStreamImpl<M>> getClient(final ClientStreamId clientStreamId) {
     return Optional.ofNullable(clientStreams.get(clientStreamId));
   }
+
+  private int countAggregatedStreamsFor(final String physicalTenantId) {
+    return (int)
+        serverStreams.values().stream()
+            .filter(s -> physicalTenantId.equals(s.physicalTenantId()))
+            .count();
+  }
+
+  private int countClientsFor(final String physicalTenantId) {
+    return (int)
+        clientStreams.values().stream()
+            .filter(c -> physicalTenantId.equals(c.serverStream().physicalTenantId()))
+            .count();
+  }
+
+  /**
+   * Identifies a server stream by physical tenant in addition to its logical id, so identical
+   * (streamType, metadata) pairs from different tenants never aggregate into the same stream.
+   */
+  private record ServerStreamKey<T>(String physicalTenantId, LogicalId<T> logicalId) {}
 }

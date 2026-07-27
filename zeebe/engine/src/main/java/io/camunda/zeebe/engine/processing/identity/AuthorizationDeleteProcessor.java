@@ -10,14 +10,11 @@ package io.camunda.zeebe.engine.processing.identity;
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION;
 
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -55,7 +52,6 @@ public class AuthorizationDeleteProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
 
@@ -64,10 +60,7 @@ public class AuthorizationDeleteProcessor
       final KeyGenerator keyGenerator,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckPort authCheckPort,
-      final LazyTokenClaimsConverter claimsConverter,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final EngineSecurityConfig securityConfig,
+      final CslAuthorizationCheck cslCheck,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
@@ -75,9 +68,7 @@ public class AuthorizationDeleteProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
-    authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior =
-        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
+    permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
@@ -99,7 +90,8 @@ public class AuthorizationDeleteProcessor
             (rejection) -> {
               LOG.debug("Rejecting DELETE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -119,7 +111,6 @@ public class AuthorizationDeleteProcessor
                   command.getValue());
               sideEffectWriter.appendSideEffect(
                   () -> {
-                    authorizationCheckBehavior.clearAuthorizationsCache();
                     authorizationScopeStateAdapter.invalidateAll();
                     return true;
                   });
@@ -159,11 +150,10 @@ public class AuthorizationDeleteProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         authorizationKey, AuthorizationIntent.DELETED, command.getValue(), command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authorizationCheckBehavior.clearAuthorizationsCache();
           authorizationScopeStateAdapter.invalidateAll();
           return true;
         });

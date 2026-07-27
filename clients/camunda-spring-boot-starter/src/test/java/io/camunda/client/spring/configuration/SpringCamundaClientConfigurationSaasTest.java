@@ -26,23 +26,19 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @SpringBootTest(
-    classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
+    classes = CamundaAutoConfiguration.class,
     properties = {
       "camunda.client.mode=saas",
       "camunda.client.cloud.cluster-id=12345",
       "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
-      "logging.level.io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration=debug"
+      "logging.level.io.camunda.client.spring.configuration.CamundaClientFactory=debug"
     })
-@ExtendWith(OutputCaptureExtension.class)
 public class SpringCamundaClientConfigurationSaasTest {
   public static final CamundaClientBuilderImpl DEFAULT =
       (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
@@ -189,9 +185,10 @@ public class SpringCamundaClientConfigurationSaasTest {
   }
 
   @Test
-  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
-    assertThat(output).contains("clientId='***'");
-    assertThat(output).contains("clientSecret='***'");
+  void shouldMaskCredentialsInConfigurationToString() {
+    assertThat(camundaClientConfiguration.toString())
+        .contains("clientId='***'")
+        .contains("clientSecret='***'");
   }
 
   @Test

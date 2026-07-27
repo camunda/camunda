@@ -59,9 +59,9 @@ We have GitHub teams of engineers grouped by expertise:
 
 - [Monorepo Backend engineers](https://github.com/orgs/camunda/teams/monorepo-backend-engineers)
 - [Monorepo Frontend engineers](https://github.com/orgs/camunda/teams/monorepo-frontend-engineers)
-- [Monorepo DevOps team](https://github.com/orgs/camunda/teams/monorepo-devops-team)
+- [Engineering Operations team](https://github.com/orgs/camunda/teams/engineering-operations)
 
-If you spot errors in the grouping, reach out to the Monorepo DevOps team!
+If you spot errors in the grouping, reach out to the Engineering Operations team!
 
 ### Overview
 

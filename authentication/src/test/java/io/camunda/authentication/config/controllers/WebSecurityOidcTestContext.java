@@ -19,6 +19,7 @@ import io.camunda.service.registry.DefaultServiceRegistry;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /** Additional dependency beans for the OIDC setup */
@@ -33,6 +34,17 @@ public class WebSecurityOidcTestContext {
   @Bean
   public JwtDecoder testJwtDecoder() {
     return Mockito.mock(JwtDecoder.class);
+  }
+
+  /**
+   * Overrides CSL's session-backed default so {@link OidcMockMvcTestHelper#oidcLogin} works under
+   * ADR-0031's per-chain {@code SessionRepositoryFilter}. See {@link
+   * InMemoryTestOAuth2AuthorizedClientRepository} for why the session-backed repository can't see
+   * clients saved through the MockMvc post-processor.
+   */
+  @Bean
+  public OAuth2AuthorizedClientRepository authorizedClientRepository() {
+    return new InMemoryTestOAuth2AuthorizedClientRepository();
   }
 
   @Bean

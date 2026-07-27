@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -27,11 +28,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -275,6 +278,21 @@ public final class ProcessInstanceClient {
           record,
           username);
     }
+
+    public Record<ProcessInstanceCreationRecordValue> createExpectingRejection() {
+      final long position =
+          writer.writeCommand(
+              requestStreamId,
+              requestId,
+              ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+              record);
+
+      return RecordingExporter.processInstanceCreationRecords()
+          .onlyCommandRejections()
+          .withIntent(ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
+          .withSourceRecordPosition(position)
+          .getFirst();
+    }
   }
 
   public static class ExistingInstanceClient {
@@ -304,9 +322,45 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst();
 
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> SUSPENDED_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.SUSPENDED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
+
+    public static final Function<Long, Record<ProcessInstanceRecordValue>>
+        SUSPEND_REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceIntent.SUSPEND)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
     public static final Function<Long, Record<ErrorRecordValue>> ERROR_EXPECTATION =
         (processInstanceKey) ->
             RecordingExporter.errorRecords().withIntent(ErrorIntent.CREATED).getFirst();
+
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> RESUMED_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.RESUMED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
+
+    public static final Function<Long, Record<ProcessInstanceRecordValue>>
+        RESUME_REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceIntent.RESUME)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
 
     private static final int DEFAULT_PARTITION = -1;
     private final CommandWriter writer;
@@ -315,6 +369,10 @@ public final class ProcessInstanceClient {
     private String[] authorizedTenants;
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
+    private Function<Long, Record<ProcessInstanceRecordValue>> resumeExpectation =
+        RESUMED_EXPECTATION;
+    private Function<Long, Record<ProcessInstanceRecordValue>> suspendExpectation =
+        SUSPENDED_EXPECTATION;
 
     public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
       this.writer = writer;
@@ -337,6 +395,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ExistingInstanceClient expectResumeRejection() {
+      resumeExpectation = RESUME_REJECTION_EXPECTATION;
+      return this;
+    }
+
     public Record<ProcessInstanceRecordValue> cancel() {
       writeCancelCommand();
       return expectation.apply(processInstanceKey);
@@ -350,6 +413,66 @@ public final class ProcessInstanceClient {
     public Record<ErrorRecordValue> cancelWithError() {
       writeCancelCommand();
       return ERROR_EXPECTATION.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> resume() {
+      writeResumeCommand();
+      return resumeExpectation.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> resume(final String username) {
+      writeResumeCommandWithUserKey(username);
+      return resumeExpectation.apply(processInstanceKey);
+    }
+
+    public ExistingInstanceClient expectSuspendRejection() {
+      suspendExpectation = SUSPEND_REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<ProcessInstanceRecordValue> suspend() {
+      writeSuspendCommand();
+      return suspendExpectation.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> suspend(final String username) {
+      writeSuspendCommandWithUserKey(username);
+      return suspendExpectation.apply(processInstanceKey);
+    }
+
+    private void writeSuspendCommand() {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.SUSPEND,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeSuspendCommandWithUserKey(final String username) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.SUSPEND,
+          username,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
     }
 
     private void writeCancelCommand() {
@@ -387,6 +510,41 @@ public final class ProcessInstanceClient {
           authorizedTenants);
     }
 
+    private void writeResumeCommand() {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.RESUME,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeResumeCommandWithUserKey(final String username) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.RESUME,
+          username,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
     public ExistingInstanceClient forAuthorizedTenants(final String... authorizedTenants) {
       this.authorizedTenants = authorizedTenants;
       return this;
@@ -398,6 +556,11 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceMigrationClient migration() {
       return new ProcessInstanceMigrationClient(writer, processInstanceKey, authorizedTenants);
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient businessIdAssignment() {
+      return new ProcessInstanceBusinessIdAssignmentClient(
+          writer, processInstanceKey, authorizedTenants);
     }
   }
 
@@ -999,6 +1162,86 @@ public final class ProcessInstanceClient {
       } else {
         return expectation.apply(position);
       }
+    }
+  }
+
+  public static class ProcessInstanceBusinessIdAssignmentClient {
+
+    private static final Function<Long, Record<ProcessInstanceBusinessIdRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceBusinessIdRecords()
+                    .withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<ProcessInstanceBusinessIdRecordValue>>
+        REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceBusinessIdRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceBusinessIdIntent.ASSIGN)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
+    private Function<Long, Record<ProcessInstanceBusinessIdRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    private final CommandWriter writer;
+    private final long processInstanceKey;
+    private final ProcessInstanceBusinessIdRecord record;
+    private String[] authorizedTenants;
+
+    public ProcessInstanceBusinessIdAssignmentClient(
+        final CommandWriter writer,
+        final long processInstanceKey,
+        final String[] authorizedTenants) {
+      this.writer = writer;
+      this.processInstanceKey = processInstanceKey;
+      this.authorizedTenants = authorizedTenants;
+      record = new ProcessInstanceBusinessIdRecord().setProcessInstanceKey(processInstanceKey);
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient withBusinessId(final String businessId) {
+      record.setBusinessId(businessId);
+      return this;
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient forAuthorizedTenants(
+        final String... authorizedTenants) {
+      this.authorizedTenants = authorizedTenants;
+      return this;
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<ProcessInstanceBusinessIdRecordValue> assign() {
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceBusinessIdIntent.ASSIGN,
+              record,
+              authorizedTenants);
+      return expectation == REJECTION_EXPECTATION
+          ? expectation.apply(processInstanceKey)
+          : expectation.apply(position);
+    }
+
+    public Record<ProcessInstanceBusinessIdRecordValue> assign(final String username) {
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceBusinessIdIntent.ASSIGN,
+              username,
+              record,
+              authorizedTenants);
+      return expectation == REJECTION_EXPECTATION
+          ? expectation.apply(processInstanceKey)
+          : expectation.apply(position);
     }
   }
 }

@@ -181,7 +181,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
         createSchema,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of("zeebe.broker.exporters.camundaexporter.args.createSchema"));
+        getLegacyCreateSchemaProperties());
   }
 
   public void setCreateSchema(final boolean createSchema) {
@@ -611,5 +611,11 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.index.templatePriority",
         "zeebe.broker.exporters.camundaexporter.args.index.templatePriority");
+  }
+
+  private Set<String> getLegacyCreateSchemaProperties() {
+    return Set.of(
+        "zeebe.broker.exporters.camundaexporter.args.createSchema",
+        "camunda.database.schema-manager.create-schema");
   }
 }

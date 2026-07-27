@@ -107,6 +107,15 @@ public final class SearchQueryBuilders {
     return fn.apply(variableSearchQuery()).build();
   }
 
+  public static VariableNameQuery.Builder variableNameSearchQuery() {
+    return new VariableNameQuery.Builder();
+  }
+
+  public static VariableNameQuery variableNameSearchQuery(
+      final Function<VariableNameQuery.Builder, ObjectBuilder<VariableNameQuery>> fn) {
+    return fn.apply(variableNameSearchQuery()).build();
+  }
+
   public static ClusterVariableQuery.Builder clusterVariableSearchQuery() {
     return new ClusterVariableQuery.Builder();
   }

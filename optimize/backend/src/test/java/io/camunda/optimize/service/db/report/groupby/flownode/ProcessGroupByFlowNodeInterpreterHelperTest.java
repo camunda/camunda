@@ -14,18 +14,29 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.groupby.flownode.ProcessGroupByFlowNodeInterpreterHelper.AdHocSubProcessStructure;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -135,6 +146,175 @@ class ProcessGroupByFlowNodeInterpreterHelperTest {
 
     // then no enrichment happens because the filter may legitimately exclude the missing node
     assertThat(groups).isEmpty();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldResolveAdHocSubProcessStructureFromOnlyTheFirstDefinition() {
+    // given a report with two definitions: the first has an ad-hoc subprocess ("ahsp") with tool
+    // "toolA", the second has an unrelated flow node that happens to share the ID "ahsp" (BPMN IDs
+    // are only unique within a single model, not across definitions)
+    underTest = helper();
+    final String firstDefinitionXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+            id="defs1" targetNamespace="http://bpmn.io/schema/bpmn">
+          <bpmn:process id="proc1" isExecutable="true">
+            <bpmn:adHocSubProcess id="ahsp">
+              <bpmn:serviceTask id="toolA" />
+            </bpmn:adHocSubProcess>
+          </bpmn:process>
+        </bpmn:definitions>
+        """;
+    final ReportDataDefinitionDto firstDefinition = new ReportDataDefinitionDto("first-key");
+    final ReportDataDefinitionDto secondDefinition = new ReportDataDefinitionDto("second-key");
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setDefinitions(List.of(firstDefinition, secondDefinition));
+    when(context.getReportData()).thenReturn(reportData);
+    when(context.getOrComputeAttribute(any(), any()))
+        .thenAnswer(invocation -> ((Supplier<?>) invocation.getArgument(1)).get());
+    final ProcessDefinitionOptimizeDto firstDefinitionDto = new ProcessDefinitionOptimizeDto();
+    firstDefinitionDto.setBpmn20Xml(firstDefinitionXml);
+    when(definitionService.getDefinition(
+            DefinitionType.PROCESS,
+            firstDefinition.getKey(),
+            firstDefinition.getVersions(),
+            firstDefinition.getTenantIds()))
+        .thenReturn(Optional.of(firstDefinitionDto));
+
+    // when
+    final AdHocSubProcessStructure structure = underTest.resolveAdHocSubProcessStructure(context);
+
+    // then only the first definition's model is parsed: the second definition's model is never
+    // even fetched, so a coincidentally-shared ID from it cannot be misclassified as a container or
+    // tool
+    assertThat(structure.containerIds()).containsExactly("ahsp");
+    assertThat(structure.childIds()).containsExactly("toolA");
+    verify(definitionService, never())
+        .getDefinition(
+            DefinitionType.PROCESS,
+            secondDefinition.getKey(),
+            secondDefinition.getVersions(),
+            secondDefinition.getTenantIds());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldSkipAdHocSubProcessContainerAndEmitInnerToolsFromFlowNodeBuckets() {
+    // given an AI Agent service task, an ad-hoc subprocess container and its two inner tool nodes
+    underTest = helper();
+    stubFlowNodeNames(
+        "agent-task", "Agent Task", "ahsp", "AI Agent", "tool-a", "Tool A", "tool-b", "Tool B");
+    when(context.getReportData()).thenReturn(new ProcessReportDataDto());
+    final AdHocSubProcessStructure structure =
+        new AdHocSubProcessStructure(Set.of("ahsp"), Set.of("tool-a", "tool-b"));
+    final Function<String, List<DistributedByResult>> agentResultExtractor = mock(Function.class);
+    when(agentResultExtractor.apply(any())).thenReturn(List.of());
+    final Function<String, List<DistributedByResult>> innerToolResultExtractor =
+        mock(Function.class);
+    when(innerToolResultExtractor.apply(any())).thenReturn(List.of());
+
+    // when
+    final List<GroupByResult> groups =
+        underTest.mapAgentFlowNodeBucketsToGroupByResults(
+            List.of("agent-task", "ahsp"),
+            Function.identity(),
+            agentResultExtractor,
+            List.of("tool-a", "tool-b"),
+            Function.identity(),
+            innerToolResultExtractor,
+            structure,
+            context,
+            List.of());
+
+    // then the non-container agent node keeps its aggregated value, the inner tools are emitted,
+    // and
+    // the container is not valued from the agent bucket (only backfilled empty)
+    assertThat(groups)
+        .extracting(GroupByResult::getKey)
+        .containsExactlyInAnyOrder("agent-task", "tool-a", "tool-b", "ahsp");
+    verify(agentResultExtractor).apply("agent-task");
+    verify(agentResultExtractor, never()).apply("ahsp");
+    verify(innerToolResultExtractor).apply("tool-a");
+    verify(innerToolResultExtractor).apply("tool-b");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldOnlyEmitInnerToolBucketsThatAreAdHocSubProcessChildren() {
+    // given an inner-tool bucket that is not a child of any ad-hoc subprocess (e.g. an unrelated
+    // flow node instance)
+    underTest = helper();
+    stubFlowNodeNames("ahsp", "AI Agent", "tool-a", "Tool A", "other", "Other Task");
+    when(context.getReportData()).thenReturn(new ProcessReportDataDto());
+    final AdHocSubProcessStructure structure =
+        new AdHocSubProcessStructure(Set.of("ahsp"), Set.of("tool-a"));
+    final Function<String, List<DistributedByResult>> innerToolResultExtractor =
+        mock(Function.class);
+    when(innerToolResultExtractor.apply(any())).thenReturn(List.of());
+
+    // when
+    final List<GroupByResult> groups =
+        underTest.mapAgentFlowNodeBucketsToGroupByResults(
+            List.of("ahsp"),
+            Function.identity(),
+            bucket -> List.of(),
+            List.of("tool-a", "other"),
+            Function.identity(),
+            innerToolResultExtractor,
+            structure,
+            context,
+            List.of());
+
+    // then only the ad-hoc subprocess child tool is valued from the flow-node bucket; the unrelated
+    // node is not (though it is still backfilled as a modelled node)
+    verify(innerToolResultExtractor).apply("tool-a");
+    verify(innerToolResultExtractor, never()).apply("other");
+    assertThat(groups).extracting(GroupByResult::getKey).contains("tool-a", "other", "ahsp");
+  }
+
+  @Test
+  void shouldSetEveryViewMeasureToDocCountInFrequencyResultWithoutChangingItsAggregationType() {
+    // given a distributed-by result with two view measures, each carrying the report's configured
+    // (default AVERAGE) aggregation type, as produced by the TOOL_CALLS view's createEmptyResult
+    underTest = helper();
+    final ViewMeasure measureA =
+        ViewMeasure.builder().aggregationType(new AggregationDto(AggregationType.AVERAGE)).build();
+    final ViewMeasure measureB =
+        ViewMeasure.builder().aggregationType(new AggregationDto(AggregationType.AVERAGE)).build();
+    final DistributedByResult result =
+        DistributedByResult.createDistributedByNoneResult(
+            ViewResult.builder().viewMeasures(List.of(measureA, measureB)).build());
+
+    // when
+    final List<DistributedByResult> frequencyResult =
+        underTest.toFrequencyResult(new ArrayList<>(List.of(result)), 7L);
+
+    // then every view measure carries the bucket's document count as its value, and its
+    // aggregation type is left untouched so it keeps matching the sibling agent-node groups'
+    // measure identifier (see toFrequencyResult's javadoc for why)
+    assertThat(frequencyResult).hasSize(1);
+    assertThat(measureA.getValue()).isEqualTo(7.0);
+    assertThat(measureA.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.AVERAGE));
+    assertThat(measureB.getValue()).isEqualTo(7.0);
+    assertThat(measureB.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.AVERAGE));
+  }
+
+  @Test
+  void shouldNotFailFrequencyResultWhenViewResultOrMeasuresAreNull() {
+    // given distributed-by results with a null view result and a null measures list
+    underTest = helper();
+    final DistributedByResult nullViewResult =
+        DistributedByResult.createDistributedByNoneResult(null);
+    final DistributedByResult nullMeasures =
+        DistributedByResult.createDistributedByNoneResult(ViewResult.builder().build());
+
+    // when / then no exception is raised and the same list is returned
+    final List<DistributedByResult> input = new ArrayList<>(List.of(nullViewResult, nullMeasures));
+    assertThat(underTest.toFrequencyResult(input, 3L)).isSameAs(input);
   }
 
   private void stubFlowNodeNames(final String... keyLabelPairs) {

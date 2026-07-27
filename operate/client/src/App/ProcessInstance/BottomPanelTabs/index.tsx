@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router-dom';
+import {Navigate, Outlet, useLocation, useNavigate} from 'react-router-dom';
+import {useLayoutEffect, useRef} from 'react';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -16,6 +17,10 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import {modificationsStore} from 'modules/stores/modifications';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -53,17 +58,58 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   isHistoryTabVisible,
 }) => {
   const {hasSelection} = useProcessInstanceElementSelection();
-  const {data: processInstance} = useProcessInstance();
+  const {data: processInstance, isLoading: isProcessInstanceLoading} =
+    useProcessInstance();
+  const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
+    useWaitStateStatistics({
+      enabled: getClientConfig().waitStatesEnabled,
+    });
+  const isProcessLevelWaiting = hasProcessLevelWaitState(
+    waitStateStatistics,
+    processInstance?.processDefinitionId,
+  );
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
+
+  const prevHasSelectionRef = useRef(hasSelection);
+  useLayoutEffect(() => {
+    // Switches to the default element tab when users
+    // select an element without a previous selection.
+    const prevHasSelection = prevHasSelectionRef.current;
+    prevHasSelectionRef.current = hasSelection;
+    if (
+      !hasSelection ||
+      prevHasSelection ||
+      modificationsStore.isModificationModeEnabled
+    ) {
+      return;
+    }
+
+    const pathname = hasIncident
+      ? Paths.processInstanceIncidents({processInstanceId})
+      : Paths.processInstanceDetails({processInstanceId});
+    navigate({pathname, search: location.search}, {replace: true});
+  }, [hasSelection, hasIncident, processInstanceId, location.search, navigate]);
+
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
     hasIncident,
   );
 
   const tabItems = [
+    {
+      label: 'Instance History',
+      to: {
+        pathname: Paths.processInstanceHistory({processInstanceId}),
+      },
+      key: 'instance-history',
+      selected: currentPage === 'process-details-instance-history',
+      title: 'Instance History',
+      visible: isHistoryTabVisible,
+    },
     {
       label: 'Incidents',
       to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
@@ -80,7 +126,9 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       key: 'details',
       selected: currentPage === 'process-details-details',
       title: 'Details',
-      visible: hasSelection,
+      // Shown for a selected element instance, or for the process scope only
+      // when there is a process-level wait state to surface.
+      visible: hasSelection || isProcessLevelWaiting,
     },
     {
       label: 'Variables',
@@ -124,19 +172,18 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       title: 'Operations Log',
       visible: true,
     },
-    {
-      label: 'Instance History',
-      to: {
-        pathname: Paths.processInstanceHistory({processInstanceId}),
-      },
-      key: 'instance-history',
-      selected: currentPage === 'process-details-instance-history',
-      title: 'Instance History',
-      visible: isHistoryTabVisible,
-    },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
   const selectedTab = tabItems.find((tab) => tab.selected);
+
+  // Avoid redirecting away from the Details tab while it's still unknown
+  // whether a process-level wait state exists (process instance or wait-state
+  // query still loading) — otherwise a direct link to Details would bounce to
+  // Variables before the wait state resolves.
+  const isDeferringRedirect =
+    selectedTab?.key === 'details' &&
+    !hasSelection &&
+    (isProcessInstanceLoading || isWaitStateLoading);
 
   return (
     <Container>
@@ -144,11 +191,14 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       <TabContent>
         <Outlet />
       </TabContent>
-      {selectedTab?.visible === false && (
+      {selectedTab?.visible === false && !isDeferringRedirect && (
         <Navigate
           to={{
             ...location,
-            pathname: Paths.processInstanceVariables({processInstanceId}),
+            pathname:
+              hasSelection || isProcessLevelWaiting
+                ? Paths.processInstanceDetails({processInstanceId})
+                : Paths.processInstanceVariables({processInstanceId}),
           }}
           replace
         />

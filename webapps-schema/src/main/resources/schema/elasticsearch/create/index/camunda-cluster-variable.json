@@ -25,6 +25,9 @@
       "isPreview": {
         "type": "boolean"
       },
+      "kind": {
+        "type": "keyword"
+      },
       "metadata": {
         "type": "nested",
         "properties": {

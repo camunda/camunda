@@ -21,7 +21,7 @@ const Title = styled(Link)`
 			text-decoration: underline;
 		}
 	}
-`;
+` as typeof Link;
 
 const LabelContainer = styled.div`
 	width: 100%;
@@ -38,6 +38,6 @@ const Label = styled(Link)`
 			text-decoration: underline;
 		}
 	}
-`;
+` as typeof Link;
 
 export {Title, LabelContainer, Label};

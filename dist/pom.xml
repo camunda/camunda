@@ -119,7 +119,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-restore</artifactId>
+      <artifactId>zeebe-restore-standalone</artifactId>
     </dependency>
 
     <dependency>
@@ -400,8 +400,9 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>rds</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -442,6 +443,21 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>document-store</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-file</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-aws</artifactId>
     </dependency>
 
     <dependency>
@@ -724,6 +740,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-restore</artifactId>
     </dependency>
 
     <dependency>
@@ -1136,7 +1157,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.22.0</version>
+        <version>7.23.0</version>
         <executions>
           <execution>
             <id>backups</id>

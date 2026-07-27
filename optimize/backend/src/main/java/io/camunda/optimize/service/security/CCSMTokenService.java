@@ -31,16 +31,25 @@ import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -53,17 +62,41 @@ public class CCSMTokenService {
   private static final String OPTIMIZE_PERMISSION = "write:*";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
 
+  // Known Microsoft Entra / Azure AD issuer host roots across all cloud deployments:
+  //   Commercial:    login.microsoftonline.com, sts.windows.net
+  //   US Government: login.microsoftonline.us
+  //   Germany:       login.microsoftonline.de  (legacy sovereign, still active)
+  //   China:         login.partner.microsoftonline.cn, sts.chinacloudapi.cn
+  // Each entry matches both the exact host and any subdomain (e.g.
+  // "tenant.login.microsoftonline.us").
+  private static final List<String> ENTRA_ISSUER_ROOT_DOMAINS =
+      List.of(
+          "login.microsoftonline.com",
+          "login.microsoftonline.us",
+          "login.microsoftonline.de",
+          "login.partner.microsoftonline.cn",
+          "sts.windows.net",
+          "sts.chinacloudapi.cn");
+
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
   private final Identity identity;
+  // Both present only under CSL; absent in the legacy CCSM setup, which falls back to the auth
+  // cookie and the token's sub claim.
+  private final ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider;
+  private final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider;
 
   public CCSMTokenService(
       final AuthCookieService authCookieService,
       final ConfigurationService configurationService,
-      final Identity identity) {
+      final Identity identity,
+      final ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider,
+      final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider) {
     this.authCookieService = authCookieService;
     this.configurationService = configurationService;
     this.identity = identity;
+    this.authorizedClientRepositoryProvider = authorizedClientRepositoryProvider;
+    this.camundaAuthenticationProviderProvider = camundaAuthenticationProviderProvider;
   }
 
   public List<Cookie> createOptimizeAuthNewCookies(
@@ -163,6 +196,7 @@ public class CCSMTokenService {
     if (!userHasOptimizeAuthorization(verifiedToken)) {
       throw new NotAuthorizedException("User is not authorized to access Optimize");
     }
+    validateEntraTokenVersion(accessToken);
   }
 
   public AccessToken verifyToken(final String accessToken) {
@@ -172,10 +206,69 @@ public class CCSMTokenService {
       if (!userHasOptimizeAuthorization(verifiedToken)) {
         throw new NotAuthorizedException("User is not authorized to access Optimize");
       }
+      validateEntraTokenVersion(accessToken);
       return verifiedToken;
     } catch (final TokenVerificationException ex) {
       throw new NotAuthorizedException("Token could not be verified", ex);
     }
+  }
+
+  /**
+   * Rejects Microsoft Entra (Azure AD) access tokens that were issued in v1.0 format ({@code ver !=
+   * "2.0"}). Entra issues v1.0 tokens by default when {@code api.requestedAccessTokenVersion} is
+   * not set on the app registration. Camunda requires v2.0 because v1.0 tokens use a different
+   * audience format that causes silent redirect loops instead of clear auth errors.
+   *
+   * <p>When a v1.0 token is detected, this method logs an actionable ERROR message and throws
+   * {@link NotAuthorizedException} so the failure surfaces immediately.
+   *
+   * <p>Gated by {@code security.auth.ccsm.entraTokenVersionCheckEnabled} (default {@code true}).
+   * Set to {@code false} as a last-resort escape hatch if a deployment cannot immediately update
+   * the Azure app registration.
+   */
+  private void validateEntraTokenVersion(final String rawToken) {
+    if (!configurationService
+        .getAuthConfiguration()
+        .getCcsmAuthConfiguration()
+        .isEntraTokenVersionCheckEnabled()) {
+      return;
+    }
+    final DecodedJWT decoded;
+    try {
+      decoded = authentication().decodeJWT(extractTokenFromAuthorizationValue(rawToken));
+    } catch (final TokenDecodeException e) {
+      return;
+    }
+    final String issuer = decoded.getIssuer();
+    if (issuer == null || !isMicrosoftEntraIssuer(issuer)) {
+      return;
+    }
+    final String ver = decoded.getClaim("ver").asString();
+    if (!"2.0".equals(ver)) {
+      final String msg =
+          "Microsoft Entra token rejected: 'ver' claim is '"
+              + ver
+              + "' but '2.0' is required. "
+              + "Set 'api.requestedAccessTokenVersion = 2' on the Camunda app registration "
+              + "in the Azure portal to enable v2.0 access tokens.";
+      LOG.error(msg);
+      throw new NotAuthorizedException(msg);
+    }
+  }
+
+  static boolean isMicrosoftEntraIssuer(final String issuer) {
+    final String host;
+    try {
+      host = URI.create(issuer).getHost();
+    } catch (final IllegalArgumentException e) {
+      return false;
+    }
+    if (host == null) {
+      return false;
+    }
+    final String lower = host.toLowerCase(Locale.ROOT);
+    return ENTRA_ISSUER_ROOT_DOMAINS.stream()
+        .anyMatch(domain -> lower.equals(domain) || lower.endsWith("." + domain));
   }
 
   public Tokens renewToken(final String refreshToken) {
@@ -215,6 +308,13 @@ public class CCSMTokenService {
   }
 
   public Optional<String> getCurrentUserIdFromAuthToken() {
+    // Under CSL the principal is resolved from the configured username-claim, which may not be the
+    // sub claim. Prefer it over re-decoding the access token (whose subject is always sub), so the
+    // resolved user id matches the CSL SecurityContext principal.
+    final Optional<String> cslUserId = cslAuthenticatedUsername();
+    if (cslUserId.isPresent()) {
+      return cslUserId;
+    }
     try {
       // The userID is the subject of the current JWT token
       return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
@@ -223,12 +323,57 @@ public class CCSMTokenService {
     }
   }
 
+  private Optional<String> cslAuthenticatedUsername() {
+    final CamundaAuthenticationProvider provider =
+        camundaAuthenticationProviderProvider == null
+            ? null
+            : camundaAuthenticationProviderProvider.getIfAvailable();
+    if (provider == null) {
+      return Optional.empty();
+    }
+    if (!(SecurityContextHolder.getContext().getAuthentication()
+        instanceof OAuth2AuthenticationToken)) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(provider.getCamundaAuthentication())
+        .map(CamundaAuthentication::authenticatedUsername);
+  }
+
   public Optional<String> getCurrentUserAuthToken() {
+    final HttpServletRequest request = currentRequest().orElse(null);
+    if (request == null) {
+      return Optional.empty();
+    }
+    // Under CSL the token lives in the OIDC session's authorized client; fall back to the auth
+    // cookie for the legacy CCSM setup.
+    return cslSessionAccessToken(request).or(() -> AuthCookieService.getAuthCookieToken(request));
+  }
+
+  private Optional<HttpServletRequest> currentRequest() {
     return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
         .filter(ServletRequestAttributes.class::isInstance)
         .map(ServletRequestAttributes.class::cast)
-        .map(ServletRequestAttributes::getRequest)
-        .flatMap(AuthCookieService::getAuthCookieToken);
+        .map(ServletRequestAttributes::getRequest);
+  }
+
+  private Optional<String> cslSessionAccessToken(final HttpServletRequest request) {
+    final OAuth2AuthorizedClientRepository repository =
+        authorizedClientRepositoryProvider == null
+            ? null
+            : authorizedClientRepositoryProvider.getIfAvailable();
+    if (repository == null) {
+      return Optional.empty();
+    }
+    if (!(SecurityContextHolder.getContext().getAuthentication()
+        instanceof final OAuth2AuthenticationToken oauthToken)) {
+      return Optional.empty();
+    }
+    final OAuth2AuthorizedClient client =
+        repository.loadAuthorizedClient(
+            oauthToken.getAuthorizedClientRegistrationId(), oauthToken, request);
+    return Optional.ofNullable(client)
+        .map(OAuth2AuthorizedClient::getAccessToken)
+        .map(token -> token.getTokenValue());
   }
 
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {

@@ -39,19 +39,7 @@ class SecurityPathAdapterTest {
   void shouldExposeUnprotectedPaths() {
     assertThat(port.unprotectedPaths())
         .containsExactlyInAnyOrder(
-            "/error",
-            "/actuator/**",
-            "/ready",
-            "/health",
-            "/startup",
-            "/post-logout",
-            "/swagger/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/v2/rest-api.yaml",
-            "/new/**",
-            "/tasklist/new/**",
-            "/favicon.ico");
+            "/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
   }
 
   @Test
@@ -67,6 +55,7 @@ class SecurityPathAdapterTest {
             "/",
             "/sso-callback/**",
             "/oauth2/authorization/**",
+            "/post-logout",
             "/processes",
             "/processes/*",
             "/{regex:[\\d]+}",
@@ -76,7 +65,10 @@ class SecurityPathAdapterTest {
             "/decisions/*",
             "/instances",
             "/instances/*",
-            "/default-ui.css");
+            "/default-ui.css",
+            "/swagger/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**");
   }
 
   @Test
@@ -88,14 +80,24 @@ class SecurityPathAdapterTest {
   void shouldExposeUnauthenticatedWebappPaths() {
     assertThat(port.unauthenticatedWebappPaths())
         .containsExactlyInAnyOrder(
+            "/post-logout",
             "/default-ui.css",
             "/tasklist/assets/**",
             "/tasklist/client-config.js",
             "/tasklist/custom.css",
             "/tasklist/favicon.ico",
+            "/operate/assets/**",
+            "/operate/client-config.js",
+            "/operate/custom.css",
+            "/operate/favicon.ico",
+            "/admin/assets/**",
+            "/admin/favicon.ico",
             "/webapp/assets/**",
             "/webapp/custom.css",
-            "/webapp/favicon.ico");
+            "/webapp/favicon.ico",
+            "/swagger/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**");
   }
 
   @Test

@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
+import io.camunda.service.SecretServices;
+import io.camunda.service.SecretServices.SecretResolution;
+import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -25,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -33,6 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
@@ -65,7 +70,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecordWithRootProcessInstanceKey(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -105,7 +110,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -146,7 +151,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -182,7 +187,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -193,6 +198,79 @@ class ResponseMapperTest {
           .singleElement()
           // businessId should be null when the record carries an empty string
           .satisfies(job -> assertThat(job.getBusinessId()).isNull());
+    }
+
+    @Test
+    void shouldMapActivatedJobWithLeaseToken() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setLeaseToken("lease-token-1")
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(job -> assertThat(job.getLeaseToken()).isEqualTo("lease-token-1"));
+    }
+
+    @Test
+    void shouldNotSetLeaseTokenWhenNotLeasedForActivatedJob() {
+      // given - job activated without a lease (empty string on the record)
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              // leaseToken defaults to an empty string when not set
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          // leaseToken should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getLeaseToken()).isNull());
     }
 
     @Test
@@ -219,7 +297,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -228,6 +306,40 @@ class ResponseMapperTest {
       assertThat(result.getActivateJobsResponse().getJobs())
           .singleElement()
           .satisfies(job -> assertThat(job.getPriority()).isEqualTo(80));
+    }
+
+    @Test
+    void shouldMapPhysicalTenantIdToActivatedJobResult() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "riskproduction");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.getPhysicalTenantId()).isEqualTo("riskproduction"));
     }
 
     static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
@@ -327,7 +439,7 @@ class ResponseMapperTest {
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
 
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -394,7 +506,8 @@ class ResponseMapperTest {
           .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
-          .setBusinessId(jobRecord.getBusinessId());
+          .setBusinessId(jobRecord.getBusinessId())
+          .setLeaseToken(jobRecord.getLeaseToken());
 
       // Set variables as empty MsgPack map
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -625,6 +738,33 @@ class ResponseMapperTest {
       assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
       assertThat(response.getBatchOperation().getBatchOperationType().name())
           .isEqualTo(batchOperationType.name());
+    }
+  }
+
+  @Nested
+  class SecretMappingTest {
+
+    /**
+     * The service and the generated REST model each declare their own {@code SecretErrorCode} enum,
+     * bridged by {@link ResponseMapper#toSecretResolveResult}. Keep them in sync: mapping drift is
+     * expected to be caught at build time (exhaustive switch / missing enum symbols), and this test
+     * additionally pins each service code to a REST code with the identical name.
+     */
+    @ParameterizedTest
+    @EnumSource(SecretServices.SecretErrorCode.class)
+    void shouldMapEverySecretErrorCodeToMatchingRestCode(
+        final SecretServices.SecretErrorCode code) {
+      // given a resolution carrying an error for the code
+      final var resolution =
+          new SecretResolution(
+              List.of(), List.of(new SecretResolutionError("camunda.secrets.x", code, "message")));
+
+      // when
+      final var result = ResponseMapper.toSecretResolveResult(resolution);
+
+      // then the mapped REST code exists and has the identical name
+      assertThat(result.getErrors()).hasSize(1);
+      assertThat(result.getErrors().get(0).getCode().name()).isEqualTo(code.name());
     }
   }
 }

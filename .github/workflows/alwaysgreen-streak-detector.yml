@@ -42,7 +42,7 @@ env:
   PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
   MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
   MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
-  MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
+  MEDIC_ENGINEERING_OPERATIONS: '<!subteam^S07D6C6B18T|monorepo-ci-medic>'
   MEDIC_CORE_FEATURES: '<!subteam^S08P2CU9V8W|core-features-medic>'
   STREAK_MARKER_ACTIVE: 'AlwaysGreen streak (active)'
   STREAK_MARKER_RESOLVED: 'AlwaysGreen streak (resolved)'
@@ -63,7 +63,7 @@ jobs:
       contents: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Import Slack token from Vault
         id: slack-secrets
@@ -202,7 +202,9 @@ jobs:
             # ----------------------------------------------------------------
             # Build medic pings from failure-context artifacts on the latest run.
             # ----------------------------------------------------------------
-            MEDIC_PINGS="${MEDIC_MONOREPO_DEVOPS}"   # default owner: pipeline plumbing
+            # Default owner: this pipeline's TEST_OWNER is Distribution, not
+            # monorepo-ci-medic.
+            MEDIC_PINGS="${MEDIC_DISTRIBUTION}"
 
             if [[ "${IS_STREAK}" == "true" ]]; then
               WORK_DIR="${RUNNER_TEMP}/streak-context-${BASE_REF//\//-}"
@@ -224,7 +226,6 @@ jobs:
                   case "$owner" in
                     "@camunda/test-automation-team")   mentions+=("${MEDIC_TEST_AUTOMATION}") ;;
                     "@camunda/distribution")            mentions+=("${MEDIC_DISTRIBUTION}") ;;
-                    "@camunda/monorepo-devops-team")    mentions+=("${MEDIC_MONOREPO_DEVOPS}") ;;
                     "@camunda/core-features")           mentions+=("${MEDIC_CORE_FEATURES}") ;;
                   esac
                 done <<<"$OWNERS"

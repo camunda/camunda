@@ -12,8 +12,8 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -30,7 +30,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -53,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -61,12 +62,12 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   private BrokerInfo brokerInfo = mock(BrokerInfo.class);
   private BrokerCfg brokerConfiguration = mock(BrokerCfg.class);
-  private IdentityConfiguration identityConfiguration = mock(IdentityConfiguration.class);
   private SpringBrokerBridge springBrokerBridge = mock(SpringBrokerBridge.class);
   private ActorSchedulingService actorSchedulingService = mock(ActorSchedulingService.class);
   private ConcurrencyControl concurrencyControl = mock(ConcurrencyControl.class);
   private BrokerHealthCheckService healthCheckService = mock(BrokerHealthCheckService.class);
   private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers = new LinkedHashMap<>();
   private List<PartitionListener> partitionListeners = List.of();
   private List<PartitionRaftListener> partitionRaftListeners = List.of();
   private ClusterServicesImpl clusterServices = mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS);
@@ -75,18 +76,19 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private ManagedMessagingService apiMessagingService = mock(ManagedMessagingService.class);
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
-  private ExporterRepository exporterRepository = mock(ExporterRepository.class);
+  private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
-  private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
-  private JobStreamService jobStreamService = mock(JobStreamService.class);
+  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
   private Duration shutdownTimeout = Duration.ofSeconds(30);
   private SnowflakeIdGenerator requestIdGenerator = mock(SnowflakeIdGenerator.class);
   private MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private EngineSecurityConfig securityConfiguration = EngineSecurityConfigurations.defaultConfig();
+  private final EngineSecurityConfig securityConfiguration =
+      EngineSecurityConfigurations.defaultConfig();
   private UserServices userServices = mock(UserServices.class);
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
@@ -96,8 +98,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts =
-      new LinkedHashMap<>();
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -119,15 +120,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setBrokerConfiguration(final BrokerCfg brokerConfiguration) {
     this.brokerConfiguration = brokerConfiguration;
-  }
-
-  @Override
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
-  }
-
-  public void setIdentityConfiguration(final IdentityConfiguration identityConfiguration) {
-    this.identityConfiguration = identityConfiguration;
   }
 
   @Override
@@ -173,6 +165,16 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
     this.searchClientsProxy = searchClientsProxy;
+  }
+
+  @Override
+  public IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
+    return exportedPositionSuppliers.get(physicalTenantId);
+  }
+
+  public void setExportedPositionSupplier(
+      final String physicalTenantId, final IntFunction<Long> exportedPositionSupplier) {
+    exportedPositionSuppliers.put(physicalTenantId, exportedPositionSupplier);
   }
 
   @Override
@@ -265,15 +267,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
-  }
-
-  public void setExporterRepository(final ExporterRepository exporterRepository) {
-    this.exporterRepository = exporterRepository;
-  }
-
-  @Override
   public Map<String, PartitionManager> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
@@ -300,23 +293,34 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public BrokerAdminServiceImpl getBrokerAdminService() {
-    return brokerAdminService;
+  public BrokerAdminServiceImpl getBrokerAdminService(final String physicalTenantId) {
+    return brokerAdminServices.get(physicalTenantId);
   }
 
   @Override
-  public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
-    this.brokerAdminService = brokerAdminService;
+  public void addBrokerAdminService(
+      final String physicalTenantId, final BrokerAdminServiceImpl brokerAdminService) {
+    brokerAdminServices.put(physicalTenantId, brokerAdminService);
   }
 
   @Override
-  public JobStreamService getJobStreamService() {
-    return jobStreamService;
+  public void removeBrokerAdminService(final String physicalTenantId) {
+    brokerAdminServices.remove(physicalTenantId);
   }
 
   @Override
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
+  }
+
+  @Override
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
+  }
+
+  @Override
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
   }
 
   @Override
@@ -368,35 +372,22 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public EngineSecurityConfig getSecurityConfiguration() {
-    return securityConfiguration;
-  }
-
-  @Override
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    return physicalTenantEngineContexts.computeIfAbsent(
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    return physicalTenantContexts.computeIfAbsent(
         physicalTenantId,
         id ->
-            new PhysicalTenantEngineContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
-  }
-
-  public void setPhysicalTenantEngineContext(
-      final String physicalTenantId, final PhysicalTenantEngineContext context) {
-    physicalTenantEngineContexts.put(physicalTenantId, context);
-  }
-
-  public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
-    this.securityConfiguration = securityConfiguration;
+            new PhysicalTenantContext(
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerConfiguration,
+                exporterRepository,
+                new SecretStoreRegistry(Map.of())));
   }
 
   @Override
   public Function<String, UserServices> getUserServicesForTenant() {
     return tenantId -> userServices;
-  }
-
-  public void setUserServices(final UserServices userServices) {
-    this.userServices = userServices;
   }
 
   @Override
@@ -413,17 +404,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     return authConfig -> jwtDecoder;
   }
 
-  public void setJwtDecoder(final JwtDecoder jwtDecoder) {
-    this.jwtDecoder = jwtDecoder;
-  }
-
   @Override
   public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
     return authConfig -> oidcClaimsProvider;
-  }
-
-  public void setOidcClaimsProvider(final OidcClaimsProvider oidcClaimsProvider) {
-    this.oidcClaimsProvider = oidcClaimsProvider;
   }
 
   @Override
@@ -435,15 +418,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   public void setSnapshotApiRequestHandler(
       final SnapshotApiRequestHandler snapshotApiRequestHandler) {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
-  }
-
-  public void setBrokerRequestAuthorizationConverter(
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-  }
-
-  public void setFeatureFlags(final FeatureFlags featureFlags) {
-    this.featureFlags = featureFlags;
   }
 
   @Override
@@ -473,5 +447,31 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setPhysicalTenantIds(final PhysicalTenantIds physicalTenantIds) {
     this.physicalTenantIds = physicalTenantIds;
+  }
+
+  public void setPhysicalTenantContext(
+      final String physicalTenantId, final PhysicalTenantContext context) {
+    physicalTenantContexts.put(physicalTenantId, context);
+  }
+
+  public void setUserServices(final UserServices userServices) {
+    this.userServices = userServices;
+  }
+
+  public void setJwtDecoder(final JwtDecoder jwtDecoder) {
+    this.jwtDecoder = jwtDecoder;
+  }
+
+  public void setOidcClaimsProvider(final OidcClaimsProvider oidcClaimsProvider) {
+    this.oidcClaimsProvider = oidcClaimsProvider;
+  }
+
+  public void setBrokerRequestAuthorizationConverter(
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+  }
+
+  public void setFeatureFlags(final FeatureFlags featureFlags) {
+    this.featureFlags = featureFlags;
   }
 }

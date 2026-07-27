@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.identity;
 
-import io.camunda.authentication.config.spi.SessionStoreAdapter;
+import io.camunda.authentication.config.spi.PhysicalTenantScopedSessionStorePortProvider;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -102,11 +102,38 @@ public class WebSessionRepositoryConfiguration {
         rdbmsMapperBundles);
   }
 
+  /**
+   * Per-scope session store lookup consumed by CSL's {@code ScopedSecurityChainRegistrar}
+   * (ADR-0029): each scoped chain gets a {@link SessionStorePort} bound to its physical tenant, so
+   * a scope's persistent sessions route to that tenant's store structurally at commit time.
+   *
+   * <p>Declared with the concrete type (not the {@link ScopedSessionStorePortProvider} interface)
+   * so {@link #sessionStorePort} can share this exact instance for the default tenant — it is still
+   * discoverable by CSL via the interface. Spring still injects it wherever {@code
+   * ScopedSessionStorePortProvider} is required.
+   */
+  @Bean
+  public PhysicalTenantScopedSessionStorePortProvider scopedSessionStorePortProvider(
+      final PhysicalTenantScoped<PersistentWebSessionClient> sessionClientProvider) {
+    return new PhysicalTenantScopedSessionStorePortProvider(sessionClientProvider);
+  }
+
+  /**
+   * The {@link SessionStorePort} for the default/unprefixed surface's session filter — bound to the
+   * default physical tenant's store. It is a single-store adapter like every other; there is no
+   * cross-tenant routing/fan-out adapter (ADR-0029).
+   *
+   * <p>Resolved through {@link #scopedSessionStorePortProvider} (rather than building a separate
+   * adapter) so the default surface and the {@code default} scope share the same store instance —
+   * required for CSL's expiry-sweep dedup to actually collapse the duplicate (ADR-0029 §4), and for
+   * the default surface's webapp and API chains to share one {@code SessionRepositoryFilter}
+   * instead of a separately registered global filter (CSL ADR-0031).
+   */
   @Bean
   public SessionStorePort sessionStorePort(
-      final PhysicalTenantScoped<PersistentWebSessionClient> sessionClientProvider,
-      final PhysicalTenantIds physicalTenants) {
-    return new SessionStoreAdapter(sessionClientProvider, physicalTenants);
+      final PhysicalTenantScopedSessionStorePortProvider scopedSessionStorePortProvider) {
+    return scopedSessionStorePortProvider.forPhysicalTenant(
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean("webSessionDeletionUncaughtExceptionHandler")

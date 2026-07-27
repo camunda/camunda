@@ -19,13 +19,9 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
-import java.time.Duration;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDecisionArchiverJob> {
 
   @Override
@@ -52,7 +48,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldArchiveStandaloneDecisionInstance(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -61,13 +57,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           final var decisionInstance = decisionInstance("2020-01-01T00:00:00+00:00");
           store(decisionInstanceTemplate, client, decisionInstance);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
         });
   }
@@ -75,7 +71,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveDecisionInstanceWithProcessInstanceKey(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a decision instance that belongs to a process instance (not standalone)
@@ -90,13 +86,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, standaloneDecision);
           store(decisionInstanceTemplate, client, processDecision);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only the standalone decision should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, standaloneDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, processDecision);
         });
@@ -105,7 +101,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveRecentStandaloneDecisionInstance(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a decision instance evaluated very recently (should not be archived yet)
@@ -117,13 +113,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, oldDecision);
           store(decisionInstanceTemplate, client, recentDecision);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, oldDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, recentDecision);
         });
@@ -132,7 +128,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldArchiveStandaloneDecisionInstanceWithDependantAuditLog(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -149,13 +145,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, decisionInstance);
           store(auditLogTemplate, client, auditLogEntry);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
           verifyMoved(auditLogTemplate, client, auditLogEntry, "2020-01-01");
         });
@@ -164,7 +160,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveAuditLogWithDifferentEntityType(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - an audit log entry for a different entity type should not be archived
@@ -181,13 +177,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, decisionInstance);
           store(auditLogTemplate, client, unrelatedAuditLog);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
           verifyNotMoved(auditLogTemplate, client, unrelatedAuditLog);
         });

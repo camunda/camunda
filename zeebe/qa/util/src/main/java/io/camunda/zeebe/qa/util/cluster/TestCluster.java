@@ -14,11 +14,13 @@ import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.configuration.Zone;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
@@ -84,6 +86,7 @@ public final class TestCluster implements CloseableSilently {
 
   private final String name;
   private final Map<MemberId, TestStandaloneGateway> gateways;
+  private final List<Zone> multiZoneConfig;
   private final Map<MemberId, TestStandaloneBroker> brokers;
   private final int replicationFactor;
   private final int partitionsCount;
@@ -102,12 +105,14 @@ public final class TestCluster implements CloseableSilently {
       final int replicationFactor,
       final int partitionsCount,
       final Map<MemberId, TestStandaloneBroker> brokers,
-      final Map<MemberId, TestStandaloneGateway> gateways) {
+      final Map<MemberId, TestStandaloneGateway> gateways,
+      final List<Zone> multiZoneConfig) {
     this.name = name;
     this.replicationFactor = replicationFactor;
     this.partitionsCount = partitionsCount;
     this.brokers = Collections.unmodifiableMap(brokers);
     this.gateways = Collections.unmodifiableMap(gateways);
+    this.multiZoneConfig = multiZoneConfig;
   }
 
   /** Returns a new cluster builder */
@@ -338,7 +343,8 @@ public final class TestCluster implements CloseableSilently {
   public TestCluster awaitHealthyTopology(final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
-        .untilAsserted(() -> assertThat(allGateways()).allSatisfy(this::assertHealthyTopology));
+        .untilAsserted(
+            () -> assertThat(allGateways()).allSatisfy(TestCluster::assertHealthyTopology));
     return this;
   }
 
@@ -427,7 +433,7 @@ public final class TestCluster implements CloseableSilently {
     }
   }
 
-  private void assertHealthyTopology(final TestGateway<?> node) {
+  public static void assertHealthyTopology(final TestGateway<?> node) {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();
@@ -445,5 +451,9 @@ public final class TestCluster implements CloseableSilently {
         .filter(TestApplication::isGateway)
         .filter(TestGateway.class::isInstance)
         .map(node -> (TestGateway<?>) node);
+  }
+
+  public List<Zone> getMultiZoneConfig() {
+    return multiZoneConfig;
   }
 }

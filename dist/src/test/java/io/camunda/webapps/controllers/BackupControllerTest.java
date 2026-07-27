@@ -8,18 +8,23 @@
 package io.camunda.webapps.controllers;
 
 import static io.camunda.management.backups.HistoryStateCode.COMPLETED;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.application.commons.backup.BackupServiceRegistry;
+import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
+import io.camunda.management.backups.HistoryBackupTenantInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
@@ -42,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -77,15 +81,40 @@ public abstract sealed class BackupControllerTest {
                     .failures(Arrays.asList(DETAIL_DTO.getFailures()))
                     .startTime(START_TIME)));
     EXPECTED_INFO.setFailureReason(DETAIL_DTO.getFailures()[0]);
+    final var expectedTenantInfo =
+        new HistoryBackupTenantInfo(
+            "default",
+            HistoryStateCode.FAILED,
+            List.of(
+                new HistoryBackupDetail()
+                    .snapshotName("snapshot-1")
+                    .state("FAILED")
+                    .failures(Arrays.asList(DETAIL_DTO.getFailures()))
+                    .startTime(START_TIME)));
+    expectedTenantInfo.setFailureReason(DETAIL_DTO.getFailures()[0]);
+    EXPECTED_INFO.setPhysicalTenants(List.of(expectedTenantInfo));
   }
 
   @Mock private BackupService backupService;
   @Mock private BackupRepositoryProps backupProperties;
-  @InjectMocks private BackupController backupController;
+  private BackupController backupController;
 
   @BeforeEach
   public void setup() {
+    backupController =
+        new BackupController(
+            new BackupServiceRegistry(
+                List.of(new PhysicalTenantBackup("default", backupService, backupProperties))));
     lenient().when(backupProperties.repositoryName()).thenReturn("repo-1");
+  }
+
+  private BackupController twoTenantController(
+      final BackupService physicalTenantService, final BackupRepositoryProps physicalTenantProps) {
+    return new BackupController(
+        new BackupServiceRegistry(
+            List.of(
+                new PhysicalTenantBackup("default", backupService, backupProperties),
+                new PhysicalTenantBackup("tenant1", physicalTenantService, physicalTenantProps))));
   }
 
   private void mockErrorWith(final Exception e) {
@@ -180,6 +209,104 @@ public abstract sealed class BackupControllerTest {
     final var response = backupController.getBackups(null, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
+  }
+
+  @Test
+  public void shouldReportWorstStateAcrossTenants() {
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(backupService.getBackupState(1L))
+        .thenReturn(
+            new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.COMPLETED));
+    when(physicalTenantService.getBackupState(1L))
+        .thenReturn(
+            new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.IN_PROGRESS));
+
+    final var response = controller.getBackupState(1L);
+
+    assertThat(response.getStatus()).isEqualTo(200);
+    final var info = (HistoryBackupInfo) response.getBody();
+    assertThat(info.getState()).isEqualTo(HistoryStateCode.IN_PROGRESS);
+    assertThat(info.getPhysicalTenants())
+        .extracting(HistoryBackupTenantInfo::getPhysicalTenantId, HistoryBackupTenantInfo::getState)
+        .containsExactlyInAnyOrder(
+            tuple("default", HistoryStateCode.COMPLETED),
+            tuple("tenant1", HistoryStateCode.IN_PROGRESS));
+  }
+
+  @Test
+  public void shouldReportCompletedWhenAllTenantsCompleted() {
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(backupService.getBackupState(1L))
+        .thenReturn(
+            new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.COMPLETED));
+    when(physicalTenantService.getBackupState(1L))
+        .thenReturn(
+            new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.COMPLETED));
+
+    final var response = controller.getBackupState(1L);
+
+    assertThat(((HistoryBackupInfo) response.getBody()).getState())
+        .isEqualTo(HistoryStateCode.COMPLETED);
+  }
+
+  @Test
+  public void shouldFanOutTakeAndDeleteAcrossTenants() {
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(backupService.takeBackup(any()))
+        .thenReturn(new TakeBackupResponseDto().setScheduledSnapshots(List.of("snapshot-1")));
+    when(physicalTenantService.takeBackup(any()))
+        .thenReturn(new TakeBackupResponseDto().setScheduledSnapshots(List.of("snapshot-2")));
+
+    final var takeResponse = controller.takeBackup(1L);
+    final var deleteResponse = controller.deleteBackup(1L);
+
+    assertThat(takeResponse.getBody())
+        .isEqualTo(
+            new TakeBackupHistoryResponse()
+                .scheduledSnapshots(List.of("snapshot-1", "snapshot-2")));
+    assertThat(deleteResponse.getStatus()).isEqualTo(204);
+    verify(backupService).deleteBackup(1L);
+    verify(physicalTenantService).deleteBackup(1L);
+  }
+
+  @Test
+  public void shouldMergeBackupListsByBackupId() {
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(backupService.getBackups(anyBoolean(), any()))
+        .thenReturn(
+            List.of(
+                new GetBackupStateResponseDto()
+                    .setBackupId(1L)
+                    .setState(BackupStateDto.COMPLETED)));
+    when(physicalTenantService.getBackups(anyBoolean(), any()))
+        .thenReturn(
+            List.of(
+                new GetBackupStateResponseDto()
+                    .setBackupId(1L)
+                    .setState(BackupStateDto.IN_PROGRESS),
+                new GetBackupStateResponseDto()
+                    .setBackupId(2L)
+                    .setState(BackupStateDto.COMPLETED)));
+
+    final var response = controller.getBackups(true, null);
+
+    @SuppressWarnings("unchecked")
+    final var infos = (List<HistoryBackupInfo>) response.getBody();
+    assertThat(infos.size()).isEqualTo(2);
+    assertThat(infos.get(0).getState()).isEqualTo(HistoryStateCode.IN_PROGRESS);
+    assertThat(infos.get(1).getState()).isEqualTo(HistoryStateCode.COMPLETED);
   }
 
   @EnumSource(BackupStateDto.class)

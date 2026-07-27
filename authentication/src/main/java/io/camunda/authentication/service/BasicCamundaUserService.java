@@ -14,7 +14,6 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.user.CamundaUserDTO;
-import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.service.registry.ServiceRegistry;
@@ -33,12 +32,12 @@ import org.springframework.stereotype.Service;
 public class BasicCamundaUserService implements CamundaUserPort {
 
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final ResourceAccessProvider resourceAccessProvider;
+  private final PhysicalTenantResourceAccessProvider resourceAccessProvider;
   private final ServiceRegistry serviceRegistry;
 
   public BasicCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
-      final ResourceAccessProvider resourceAccessProvider,
+      final PhysicalTenantResourceAccessProvider resourceAccessProvider,
       final ServiceRegistry serviceRegistry) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
@@ -88,8 +87,9 @@ public class BasicCamundaUserService implements CamundaUserPort {
 
   protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
     final var componentAccess =
-        resourceAccessProvider.resolveResourceAccess(
-            authentication, COMPONENT_ACCESS_AUTHORIZATION);
+        resourceAccessProvider
+            .withPhysicalTenant(PhysicalTenantContext.current())
+            .resolveResourceAccess(authentication, COMPONENT_ACCESS_AUTHORIZATION);
     if (!componentAccess.allowed()) {
       return List.of();
     }

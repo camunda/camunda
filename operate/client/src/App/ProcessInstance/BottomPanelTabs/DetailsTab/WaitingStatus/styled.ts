@@ -12,7 +12,6 @@ const StatusContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-03);
-  padding-top: var(--cds-spacing-05);
 `;
 
 const StatusHeading = styled.h5`

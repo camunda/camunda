@@ -54,6 +54,7 @@ import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
@@ -369,6 +370,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onTransfer(request), TransferResponse::builder));
+    protocol.registerTimeoutNowHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onTimeoutNow(request), TimeoutNowResponse::builder));
     protocol.registerAppendV1Handler(
         request ->
             handleRequestOnContext(
@@ -576,7 +581,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
-      meta.storeCommitIndex(commitIndex);
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
         final long configurationIndex = clusterConfig.index();
@@ -584,6 +588,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           cluster.commitCurrentConfiguration();
         }
       }
+      // Persist the commit index only after the configuration it covers is persisted. This keeps
+      // the invariant that a committed configuration entry at or below the stored commit index is
+      // always recoverable from the meta store, so startup only needs to search the uncommitted
+      // part of the log for configuration entries. The reverse order would allow a crash to leave
+      // a stored commit index covering a configuration that is in neither the meta store nor,
+      // after restart, in memory.
+      meta.storeCommitIndex(commitIndex);
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
     }
@@ -900,6 +911,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterJoinHandler();
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
+    protocol.unregisterTimeoutNowHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
@@ -926,6 +938,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public Duration getElectionTimeout() {
     return partitionConfig.getElectionTimeout();
+  }
+
+  /**
+   * Returns the configuration change timeout.
+   *
+   * @return The configuration change timeout.
+   */
+  public Duration getConfigurationChangeTimeout() {
+    return partitionConfig.getConfigurationChangeTimeout();
   }
 
   /**

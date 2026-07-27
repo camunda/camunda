@@ -20,14 +20,16 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -98,12 +100,13 @@ public final class MessageStreamProcessorTest {
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
-          final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
-          when(mockAuthCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
-              .thenReturn(Either.right(null));
+          final var mockBpmnBehaviors = mock(BpmnBehaviors.class);
+          final var mockVariableBehavior = mock(VariableBehavior.class);
+          when(mockVariableBehavior.validateVariables(any())).thenReturn(Either.right(null));
+          when(mockBpmnBehaviors.variableBehavior()).thenReturn(mockVariableBehavior);
           MessageEventProcessors.addMessageProcessors(
               PARTITION_ID,
-              mock(BpmnBehaviors.class),
+              mockBpmnBehaviors,
               typedRecordProcessors,
               processingState,
               scheduledTaskState,
@@ -113,8 +116,10 @@ public final class MessageStreamProcessorTest {
               FeatureFlags.createDefault(),
               spyCommandDistributionBehavior,
               InstantSource.system(),
-              mockAuthCheckBehavior,
-              routingInfo);
+              routingInfo,
+              mock(AuthorizationCheckPort.class),
+              mock(LazyTokenClaimsConverter.class),
+              mock(EngineSecurityConfig.class));
           return typedRecordProcessors;
         });
   }

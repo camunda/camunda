@@ -157,5 +157,35 @@ public enum LeaderMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {RaftKeyNames.PARTITION_GROUP, PartitionKeyNames.PARTITION};
     }
+  },
+  /** Per-follower replication lag in bytes (log replication + snapshot installation) */
+  REPLICATION_LAG_BYTES {
+    @Override
+    public String getBaseUnit() {
+      return "bytes";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.raft.replication.lag.bytes";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Per-follower replication lag in bytes; used as the pre-check input for coordinated"
+          + " leadership transfer";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT, RaftKeyNames.FOLLOWER
+      };
+    }
   }
 }

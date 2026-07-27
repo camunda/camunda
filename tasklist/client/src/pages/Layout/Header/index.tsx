@@ -11,10 +11,10 @@ import {HeaderV2} from './HeaderV2';
 import {LegacyHeader} from './LegacyHeader';
 import {CustomFiltersProvider} from 'modules/tasks/available-tasks/CollapsiblePanel/CustomFiltersModal/CustomFiltersProvider';
 
-const Header: React.FC = () =>
+const Header: React.FC<{hideNavLinks?: boolean}> = ({hideNavLinks = false}) =>
   IS_NAV_V2_ENABLED ? (
     <CustomFiltersProvider>
-      <HeaderV2 />
+      <HeaderV2 hideNavLinks={hideNavLinks} />
     </CustomFiltersProvider>
   ) : (
     <LegacyHeader />

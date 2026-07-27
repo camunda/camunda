@@ -7,14 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignmentBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -23,7 +26,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -41,11 +44,9 @@ import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -105,6 +106,12 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         (job key '%d', type '%s', processInstanceKey '%d')
       """;
 
+  private static final String BUSINESS_ID_ASSIGNMENT_NO_INSTANCE_MESSAGE =
+      """
+        Expected to complete job with key '%d' and assign a business id to its process instance \
+        with key '%d', but no such process instance was found
+      """;
+
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
           UserTaskRecord.ASSIGNEE,
@@ -120,14 +127,14 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
           JobListenerEventType.COMPLETING);
 
   private final UserTaskState userTaskState;
-  private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final JobCommandPreconditionValidator preconditionChecker;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
   private final ProcessingState processState;
   private final VariableBehavior variableBehavior;
+  private final ProcessInstanceBusinessIdAssignmentBehavior businessIdAssignmentBehavior;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -141,18 +148,21 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final VariableBehavior variableBehavior,
-      final boolean includeVariablesInJobCompletedEvent) {
+      final boolean includeVariablesInJobCompletedEvent,
+      final boolean businessIdUniquenessEnabled) {
     processState = state;
     userTaskState = state.getUserTaskState();
-    jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     commandWriter = writers.command();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    businessIdAssignmentBehavior =
+        new ProcessInstanceBusinessIdAssignmentBehavior(
+            writers.state(), businessIdUniquenessEnabled);
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -160,6 +170,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                JobLeaseFencingCheck.forLifecycleCommand(),
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
                 this::checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation,
@@ -167,9 +178,10 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkCreatingListenerJobForAssigneeCorrection,
-                this::checkTaskListenerJobForUnknownPropertyCorrections),
-            authCheckBehavior);
-    this.authCheckBehavior = authCheckBehavior;
+                this::checkTaskListenerJobForUnknownPropertyCorrections,
+                this::checkBusinessIdAssignment),
+            cslCheck);
+    this.cslCheck = cslCheck;
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
     this.variableBehavior = variableBehavior;
@@ -180,11 +192,17 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 
@@ -202,13 +220,14 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     job.setResult(command.getValue().getResult());
 
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
-    responseWriter.writeEventOnCommand(command.getKey(), JobIntent.COMPLETED, job, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        command.getKey(), JobIntent.COMPLETED, job, command);
 
     if (job.isAgentic()) {
       commandWriter.appendFollowUpCommand(
           command.getKey(),
           AgentHistoryIntent.COMMIT,
-          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(""));
+          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
     }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
@@ -219,7 +238,56 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     if (!includeVariablesInJobCompletedEvent) {
       job.setVariables(command.getValue().getVariablesBuffer());
     }
+    appendBusinessIdAssignment(command, job);
     postCompleteActions(job);
+  }
+
+  /**
+   * Assigns a Business ID to the job's process instance when the completion command carries one
+   * (ADR 0006, D11/D12). The assignment has already been validated as a precondition, so on any
+   * failure the whole COMPLETE command is rejected and the job is not completed (atomicity). The
+   * {@code ASSIGNED} event is appended before {@link #postCompleteActions(JobRecord)} so that any
+   * artifacts created while the process continues snapshot the newly assigned value.
+   */
+  private void appendBusinessIdAssignment(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final String businessIdToAssign = command.getValue().getBusinessId();
+    if (businessIdToAssign.isEmpty()) {
+      return;
+    }
+
+    final var processInstance = elementInstanceState.getInstance(job.getProcessInstanceKey());
+    final var processInstanceRecord = processInstance.getValue();
+    final var assignment =
+        new ProcessInstanceBusinessIdRecord()
+            .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setBusinessId(businessIdToAssign);
+    businessIdAssignmentBehavior.enrich(assignment, processInstanceRecord);
+    businessIdAssignmentBehavior.appendAssignedEvent(job.getProcessInstanceKey(), assignment);
+  }
+
+  /**
+   * Validates the optional Business ID assignment carried on the completion command against the
+   * job's process instance, reusing the same rules as the standalone ASSIGN command (ADR 0006,
+   * D12). Runs as a completion precondition so a failed assignment rejects the whole command.
+   */
+  private Either<Rejection, JobRecord> checkBusinessIdAssignment(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final String businessIdToAssign = command.getValue().getBusinessId();
+    if (businessIdToAssign.isEmpty()) {
+      return Either.right(job);
+    }
+
+    final var processInstance = elementInstanceState.getInstance(job.getProcessInstanceKey());
+    if (processInstance == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              BUSINESS_ID_ASSIGNMENT_NO_INSTANCE_MESSAGE.formatted(
+                  command.getKey(), job.getProcessInstanceKey())));
+    }
+
+    return businessIdAssignmentBehavior.validate(processInstance, businessIdToAssign).map(d -> job);
   }
 
   private void preCompleteActions(final JobRecord job, final ProcessingSession session) {
@@ -335,15 +403,21 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private void propagateJobVariablesToAdHocSubProcess(
       final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
     final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
-
-    variableBehavior.mergeDocument(
-        targetAdHocSubProcess.getKey(),
-        targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
-        targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
-        targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
-        targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
-        targetAdHocSubProcessInstanceValue.getTenantId(),
-        completingJobRecord.getVariablesBuffer());
+    try {
+      variableBehavior.mergeDocument(
+          targetAdHocSubProcess.getKey(),
+          targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
+          targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
+          targetAdHocSubProcessInstanceValue.getTenantId(),
+          completingJobRecord.getVariablesBuffer());
+    } catch (final ValidationException e) {
+      throw new IllegalArgumentException(
+          "Failed to propagate job variables to ad-hoc sub-process instance %d"
+              .formatted(targetAdHocSubProcess.getKey()),
+          e);
+    }
   }
 
   private Either<Rejection, JobRecord>
@@ -543,17 +617,11 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Either.right(job);
-    }
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
+        job,
+        AuthorizationRejectionMapper.noPrincipal());
   }
 }

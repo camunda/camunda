@@ -303,6 +303,7 @@ final class ContinuousBackupIT {
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
+    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
     cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.GCS);
   }

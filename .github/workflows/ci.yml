@@ -1,7 +1,7 @@
 # description: The Unified CI for the monorepo. This workflow runs tests for all modules in the monorepo. Any new tests are required to adhere to inclusion rules
 # test location: /
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: CI
 
@@ -31,7 +31,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
@@ -68,12 +68,13 @@ jobs:
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
+      scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       # Detect changes against the base branch
       - name: Detect changes
@@ -93,8 +94,8 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.68.2'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
         with:
@@ -141,12 +142,12 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Determine fetch depth for checkout
         id: depth
         run: |
           echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -176,8 +177,8 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -204,8 +205,8 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
@@ -228,13 +229,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
           persist-credentials: false
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
@@ -252,6 +253,41 @@ jobs:
           echo "  make update-golden"
           echo "  git diff golden/    # review the change"
           echo "  git add golden/ && git commit -m 'test: update golden files'"
+          echo "Or apply the 'generate-golden' label. Renovate PRs touching load-tests/setup/** are handled automatically."
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-helm-lockfile:
+    if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Helm Chart Lock"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+      - name: Update Helm dependencies
+        run: helm dependency update load-tests/setup/charts/load-test-setup/
+      - name: Check Chart.lock is up to date
+        run: |
+          if ! git diff --exit-code load-tests/setup/charts/load-test-setup/Chart.lock; then
+            echo "::error::Chart.lock is out of date. Run 'helm dependency update load-tests/setup/charts/load-test-setup/' and commit the updated Chart.lock."
+            exit 1
+          fi
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -270,8 +306,8 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -302,8 +338,8 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/codeowners-setup-cli
       - name: Check for unowned files
@@ -334,8 +370,8 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -382,8 +418,8 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -429,104 +465,18 @@ jobs:
 
   build-distball:
     name: "Build / Distribution Tarball"
-    # Build the distball once and share it, replacing a reactor build in each consumer.
-    # Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA artifact API;
-    # self-hosted gcp-perf consumers (integration-tests, and the reusable database/webapp-UT
-    # workflows) use GCS, since the artifact API is throughput-capped on self-hosted runners.
+    # Extracted into a reusable workflow so the standalone rdbms/search integration-test
+    # workflows can share it too. See #52693 and #56931.
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
-    runs-on: gcp-perf-core-8-default
-    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        timeout-minutes: 1
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: build-shared
-          dockerhub-readonly: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - name: Log distball size
-        run: ls -lh "${{ steps.build-zeebe.outputs.distball }}"
-      # build-zeebe installs this run's io.camunda SNAPSHOTs into ~/.m2; consumers
-      # resolve them via `mvn verify`, but the GHA Maven cache never propagates
-      # locally-installed SNAPSHOTs between jobs, so archive them for the consumers.
-      - name: Archive local Maven SNAPSHOT artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          # `installed/` is the split-local-repository partition holding only artifacts this
-          # reactor installed (see maven resolver split local repository), so archive the whole
-          # tree rather than filtering to io/camunda -- robust if the group id ever changes.
-          # Drop the distro assemblies (shipped as the distball), sources/javadoc and
-          # bookkeeping to ~halve the payload.
-          tar \
-            --exclude='*.tar.gz' \
-            --exclude='*-sources.jar' \
-            --exclude='*-javadoc.jar' \
-            --exclude='*.lastUpdated' \
-            --exclude='_remote.repositories' \
-            --exclude='*.repositories' \
-            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
-          ls -lh m2-installed.tar
-      # docker-checks (GitHub-hosted) consumes these via the artifact API.
-      - name: Upload distball (artifact)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: distball-${{ github.run_id }}
-          path: ${{ steps.build-zeebe.outputs.distball }}
-          retention-days: 1
-          compression-level: 0  # tarball is already gzipped
-          if-no-files-found: error
-      - name: Upload local Maven SNAPSHOT artifacts (artifact)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: m2-installed-${{ github.run_id }}
-          path: m2-installed.tar
-          retention-days: 1
-          compression-level: 6
-          if-no-files-found: error
-      # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
-      # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
-      # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
-      - uses: ./.github/actions/gcs-build-cache-auth
-        with:
-          vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Upload distball + SNAPSHOTs to GCS
-        shell: bash
-        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
-        env:
-          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
-        run: |
-          set -euo pipefail
-          gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
-            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
-          gcloud storage cp m2-installed.tar \
-            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
 
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
@@ -541,8 +491,8 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
@@ -613,7 +563,7 @@ jobs:
       ZEEBE_BACKUP_MODULES: ${{ steps.set-constants.outputs.backup }}
       # Zeebe modules owned by the @camunda/zeebe-distributed-platform team
       ZEEBE_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.distributed }}
-      # Zeebe modules owned by the @camunda/camundaex team
+      # Zeebe modules owned by the @camunda/core-features team
       ZEEBE_CLIENT_MODULES: ${{ steps.set-constants.outputs.client }}
       # Extra modules for skipping in general-unit-tests, these modules are used in ZEEBE_EXPORTER_MODULES instead
       GENERAL_UT_EXTRA_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_extra_skip }}
@@ -631,7 +581,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Set all test constants
         id: set-constants
         run: |
@@ -640,7 +590,7 @@ jobs:
           # ============================================================================
 
           # Zeebe modules owned by @camunda/core-features
-          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine'"
+          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws'"
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
@@ -649,7 +599,7 @@ jobs:
           # Zeebe modules owned by @camunda/zeebe-distributed-platform
           DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
-          # Zeebe modules owned by @camunda/camundaex
+          # Zeebe modules owned by @camunda/core-features
           CLIENT="':camunda-client-java'"
 
           # General UT configuration
@@ -765,8 +715,6 @@ jobs:
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
-              "docker-repository": "localhost:5000/camunda/camunda",
-              "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/data-layer",
               "module": "Zeebe",
               "stressRun": 1
@@ -833,7 +781,7 @@ jobs:
               "runs-on": "gcp-perf-core-16-default",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
-              "owner": "@camunda/monorepo-devops-team",
+              "owner": "@camunda/engineering-operations",
               "module": "Zeebe",
               "test-filter": "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*${DOLLAR}*.java",
               "stressRun": 1
@@ -847,7 +795,7 @@ jobs:
               "runs-on": "gcp-perf-core-8-default",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
-              "owner": "@camunda/camundaex",
+              "owner": "@camunda/c8-testing",
               "module": "Testing",
               "stressRun": 1
             },
@@ -858,7 +806,7 @@ jobs:
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
-              "owner": "@camunda/camundaex",
+              "owner": "@camunda/core-features",
               "module": "Clients",
               "stressRun": 1
             },
@@ -912,8 +860,8 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -1012,11 +960,11 @@ jobs:
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
           - component: Client
             suite: CamundaEx
-            owner: '@camunda/camundaex'
+            owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -1096,8 +1044,9 @@ jobs:
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         timeout-minutes: 1
       - name: Read DB versions
         id: db-versions
@@ -1174,23 +1123,126 @@ jobs:
       use-shared-distball: true
 
   physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / H2"
+    name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that
+            # skip RDBMS-incompatible tests.
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
+            # elasticsearch-tenant service) instead of the default tenant's cluster.
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            # Points the PT at a genuinely separate OS instance (db/docker-compose.yml's
+            # opensearch-tenant service) instead of the default tenant's cluster.
+            physical-tenant-opensearch-url: "http://localhost:9201"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "h2"
-      database-name: "H2"
-      # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that skip
-      # RDBMS-incompatible tests.
-      it-database-type: "rdbms_h2"
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
       physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
       # physical-tenant profile.
       maven-profiles: "physical-tenant"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
+      test-suite-name: "acceptance"
+      use-shared-distball: true
+
+  physical-tenant-identity-tests:
+    name: "Physical Tenant Acceptance Tests / Identity / ${{ matrix.database-name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            physical-tenant-opensearch-url: "http://localhost:9201"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
+      maven-profiles: "physical-tenant-identity"
+      test-type: "physical-tenant-identity-tests"
+      test-type-label: "Physical Tenant Acceptance Identity"
+      test-suite-name: "identity"
+      use-shared-distball: true
+
+  physical-tenant-history-tests:
+    name: "Physical Tenant Acceptance Tests / History / ${{ matrix.database-name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            physical-tenant-opensearch-url: "http://localhost:9201"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
+      maven-profiles: "physical-tenant-history"
+      test-type: "physical-tenant-history-tests"
+      test-type-label: "Physical Tenant Acceptance History"
+      test-suite-name: "history"
+      use-shared-distball: true
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -1210,8 +1262,8 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
       # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
@@ -1298,8 +1350,8 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Generate cache key with current hour
         if: matrix.group == 'qa-update'
@@ -1307,7 +1359,7 @@ jobs:
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
         if: matrix.group == 'qa-update'
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
@@ -1332,12 +1384,17 @@ jobs:
           minimus: true
           gcs-build-cache-auth: true
       # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
-      - name: Download distball from GCS
+      - name: Create dist/target
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist/target
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+        run: mkdir -p dist/target
+      - name: Download distball from GCS
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 2
+          shell: bash
+          command: gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
       # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
       - uses: ./.github/actions/restore-shared-m2
@@ -1420,8 +1477,8 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -1497,8 +1554,8 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
@@ -1511,7 +1568,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1639,16 +1696,17 @@ jobs:
       - identity-tests
       - integration-tests
       - physical-tenant-acceptance-tests
+      - physical-tenant-identity-tests
+      - physical-tenant-history-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      pull-requests: write
+      pull-requests: write  # read prior state from + write updated state to the gate's PR comment
       contents: read
-      actions: read  # read the prior per-PR sticky-state run artifact via the Artifacts API
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 5
         with:
           # Sticky alert reconciliation uses `git log -L` for method-level
@@ -1666,42 +1724,41 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read Zeebe unit tests matrix outputs
+      # cloudposse/github-action-matrix-outputs-read downloads the run's ENTIRE
+      # artifact set on every invocation (no `name:` filter). With 6 matrix jobs
+      # to read, calling it 6x re-downloaded that same growing pool 6x. Download
+      # once here, then reuse the composite action's own extraction logic
+      # (find + jq) locally per matrix-step-name below — no repeat network cost.
+      - name: Download matrix output artifacts
         if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: zeebe-matrix-read
-        with:
-          matrix-step-name: zeebe-unit-tests
-      - name: Read Integration tests matrix outputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+
+      - name: Setup jq
         if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: integration-matrix-read
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
         with:
-          matrix-step-name: integration-tests
-      - name: Read Physical-tenant acceptance tests matrix outputs
+          version: 1.8.2
+          force: 'true'
+
+      - name: Read matrix outputs
         if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: physical-tenant-acceptance-matrix-read
-        with:
-          matrix-step-name: physical-tenant-acceptance-tests
-      - name: Read Database integration tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: database-integration-matrix-read
-        with:
-          matrix-step-name: database-integration-tests
-      - name: Read history tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: history-matrix-read
-        with:
-          matrix-step-name: history-tests
-      - name: Read identity tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: identity-matrix-read
-        with:
-          matrix-step-name: identity-tests
+        id: matrix-read
+        shell: bash
+        run: |
+          for pair in \
+            "zeebe:zeebe-unit-tests" \
+            "integration:integration-tests" \
+            "physical-tenant-acceptance:physical-tenant-acceptance-tests" \
+            "physical-tenant-identity:physical-tenant-identity-tests" \
+            "physical-tenant-history:physical-tenant-history-tests" \
+            "database-integration:database-integration-tests" \
+            "history:history-tests" \
+            "identity:identity-tests"; do
+            output_name="${pair%%:*}"
+            artifact_name="${pair#*:}"
+            result="$(find . -maxdepth 2 -name "${artifact_name}" -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+            echo "${output_name}=${result}" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Collect flaky test results
         if: steps.bypass.outputs.present != 'true'
@@ -1711,21 +1768,25 @@ jobs:
           general-unit-tests-result: ${{ needs.general-unit-tests.result }}
           general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
           database-integration-tests-result: ${{ needs.database-integration-tests.result }}
-          database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
+          database-matrix-output-result: ${{ steps.matrix-read.outputs.database-integration }}
           history-tests-result: ${{ needs.history-tests.result }}
-          history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
+          history-matrix-output-result: ${{ steps.matrix-read.outputs.history }}
           identity-tests-result: ${{ needs.identity-tests.result }}
-          identity-matrix-output-result: ${{ steps.identity-matrix-read.outputs.result }}
+          identity-matrix-output-result: ${{ steps.matrix-read.outputs.identity }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
-          zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
+          zeebe-matrix-output-result: ${{ steps.matrix-read.outputs.zeebe }}
           integration-tests-result: ${{ needs.integration-tests.result }}
-          integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+          integration-matrix-output-result: ${{ steps.matrix-read.outputs.integration }}
           physical-tenant-acceptance-tests-result: ${{ needs.physical-tenant-acceptance-tests.result }}
-          physical-tenant-acceptance-matrix-output-result: ${{ steps.physical-tenant-acceptance-matrix-read.outputs.result }}
+          physical-tenant-acceptance-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-acceptance }}
+          physical-tenant-identity-tests-result: ${{ needs.physical-tenant-identity-tests.result }}
+          physical-tenant-identity-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-identity }}
+          physical-tenant-history-tests-result: ${{ needs.physical-tenant-history-tests.result }}
+          physical-tenant-history-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-history }}
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.present != 'true'
@@ -1841,7 +1902,7 @@ jobs:
           pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data || ''[]'' }}'
           known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
-          blocking: 'false'  # pilot: observe + comment only, do not fail check-results yet
+          blocking: 'true'  # fail check-results when a PR-introduced flake stays active
           ran-jobs-json: ${{ steps.ran-jobs.outputs.json || '[]' }}
           bypass-label-present: ${{ steps.bypass.outputs.present }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -1870,10 +1931,10 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: 'npm'
@@ -1913,16 +1974,48 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true  # snapshot failure falls back to auto-parse; gate still runs
+    # Expose the real submit-step outcome so pr-vuln-check can fail closed on a
+    # failed snapshot. needs.<job>.result cannot be used here: job-level
+    # continue-on-error masks a failed job to result == 'success' (actions/toolkit#1739),
+    # which would silently no-op the gate's head-snapshot-succeeded guard.
+    outputs:
+      submitted: ${{ steps.submit.outcome }}
     permissions:
       contents: write  # required by Dependency Submission API
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: '21'
+      # HeroDevs NES artifacts (e.g. spring-boot-dependencies on stable) are private and served from
+      # Nexus, so the snapshot resolution needs authenticated access via the nexus.camunda.cloud mirror.
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Configure Maven credentials
+        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Submit Maven dependency snapshot
+        id: submit
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
         with:
           token: ${{ github.token }}
@@ -1955,21 +2048,23 @@ jobs:
     needs: [ detect-changes, pr-maven-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true # pilot phase: observe without blocking merges
     permissions:
       contents: read
       pull-requests: write
       actions: read  # required to list snapshot-workflow runs for base resolution (Workstream D)
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
           base-ref: ${{ github.event.pull_request.base.ref }}
           snapshot-workflow: maven-dependency-snapshot.yml
+          # Real submit-step outcome, not needs.<job>.result (masked to 'success' by
+          # the snapshot job's continue-on-error). Empty (job died before the step) → fail closed.
+          head-snapshot-succeeded: ${{ needs.pr-maven-snapshot.outputs.submitted || 'failure' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2052,10 +2147,10 @@ jobs:
       run:
         working-directory: ${{ env.SUITE_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       - name: Install dependencies
@@ -2090,8 +2185,8 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - id: pr-body
         name: Fetch latest PR body
@@ -2106,7 +2201,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         # by the default the action will compare against the base branch, or if on push, against the
         # previous commit
-      - uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1.4.0
+      - uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
         if: |
           !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
             contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
@@ -2139,11 +2234,11 @@ jobs:
       # renovate: datasource=npm depName=@camunda8/spectral-cli
       SPECTRAL_VERSION: '6.16.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Setup Node.js for Spectral
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       - name: Install Spectral CLI
@@ -2206,9 +2301,9 @@ jobs:
     env:
       VERIFIER_DIR: .github/scripts/x-added-in-version-check
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Checkout PR
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
           # Pin the checkout to the PR head SHA so the working tree matches
@@ -2220,7 +2315,7 @@ jobs:
           # base branch gains a new operation between fork and CI run.
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
       - name: Configure git auth for transitive clones
@@ -2283,10 +2378,10 @@ jobs:
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       - run: |
@@ -2308,13 +2403,40 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - name: Install bats
-        run: sudo apt-get install -y bats
+      - name: Install bats and xmllint
+        run: sudo apt-get install -y bats libxml2-utils
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
+      - name: Run flattened-pom validation tests
+        run: bats .github/scripts/validate-flattened-poms.bats
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  scripts-tests:
+    if: needs.detect-changes.outputs.scripts-changes == 'true'
+    name: "Scripts / Python Unit Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+      - name: Install pytest
+        run: pip install --quiet pytest
+      - name: Run unit tests
+        run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2359,18 +2481,22 @@ jobs:
       - java-checks
       - junit-vintage-check
       - load-test-golden-tests
+      - load-test-helm-lockfile
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
       - physical-tenant-acceptance-tests
+      - physical-tenant-identity-tests
+      - physical-tenant-history-tests
       - pin-check
       - pr-maven-snapshot
       - pr-vuln-check
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
+      - scripts-tests
       - setup-tests
       - shell-script-tests
       - tasklist-ci
@@ -2381,7 +2507,7 @@ jobs:
     env:
       SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Check for aborted jobs
         continue-on-error: true
@@ -2451,8 +2577,8 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -2525,8 +2651,8 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -2597,8 +2723,8 @@ jobs:
     env:
       TEST_OWNER: '@camunda/core-features'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -2613,10 +2739,11 @@ jobs:
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
+      # -am fixes a race with deploy-snapshots by building reactor deps from source instead of Nexus
       - name: Build zeebe-protocol from source
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -pl zeebe/protocol -Dquickly
+          parameters: install -pl zeebe/protocol -am -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:

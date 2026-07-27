@@ -404,6 +404,54 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  void shouldSkipClockResetIfDisabled() throws Exception {
+    // given
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+    runtimeConfiguration.setClockResetEnabled(false);
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(runtimeConfiguration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listener);
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaManagementClient, never()).resetTime();
+  }
+
+  @Test
+  void shouldSkipDataDeletionIfDisabled() throws Exception {
+    // given
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+    runtimeConfiguration.setDataDeletionEnabled(false);
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(runtimeConfiguration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listener);
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaManagementClient, never()).purgeCluster();
+  }
+
+  @Test
   void shouldCollectProcessCoverage() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =

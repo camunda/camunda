@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -48,8 +51,10 @@ public final class MessageEventProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -65,6 +70,7 @@ public final class MessageEventProcessors {
     final var elementInstanceState = processingState.getElementInstanceState();
     final var bannedInstanceState = processingState.getBannedInstanceState();
     final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
+    final var cslCheck = new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig);
 
     typedRecordProcessors
         .onCommand(
@@ -82,11 +88,12 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
-                authCheckBehavior,
+                cslCheck,
                 routingInfo,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                bpmnBehaviors.variableBehavior()))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -153,7 +160,7 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                authCheckBehavior,
+                cslCheck,
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
@@ -175,7 +182,6 @@ public final class MessageEventProcessors {
                 keyGenerator,
                 clock,
                 businessIdUniquenessEnabled,
-                config.getMessageStartAskRetryGrace(),
                 writers))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
@@ -185,21 +191,27 @@ public final class MessageEventProcessors {
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
                 config.getMessageStartDedupExpirationSweepBatchLimit(),
-                config.getMessageStartAskRetryGrace(),
                 clock))
         // Reply command processors on P_K - these handle the cross-partition replies from P_B
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.START,
-            new MessageStartProcessInstanceRequestStartProcessor(writers.state(), messageState))
+            new MessageStartProcessInstanceRequestStartProcessor(
+                writers.state(), writers.response(), messageState, messageCorrelationState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
-            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(
+                writers.state(), writers.response(), messageCorrelationState, messageState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
-            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
+                writers.state(), writers.response(), messageCorrelationState, messageState))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
+            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state()))
         // Holder-liveness release query handler on P_B - answers whether a cross-partition
         // message-start holder instance is still active, so P_K can release its correlation-key
         // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.
@@ -227,8 +239,7 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageStartDedupExpirationSweepScheduler(
                 config.getMessageStartDedupExpirationSweepInterval(),
-                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState(),
-                config.getMessageStartAskRetryGrace()))
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
         .withListener(
             new PendingMessageStartAskCheckScheduler(
                 subscriptionCommandSender,

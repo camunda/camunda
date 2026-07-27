@@ -12,12 +12,14 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -138,9 +140,9 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
    * operation fails immediately.
    */
   @Override
-  public ActorFuture<Void> awaitModeApplied(final Mode mode) {
+  public ActorFuture<Set<Integer>> awaitModeApplied(final Mode mode) {
     final var concurrencyControl = concurrencyControl();
-    final var result = concurrencyControl.<Void>createFuture();
+    final var result = concurrencyControl.<Set<Integer>>createFuture();
     concurrencyControl.run(
         () -> {
           final var expectedRecovering = mode == Mode.RECOVERING;
@@ -153,10 +155,10 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
           }
           final var expectedPartitions = expectedLocalPartitionIds();
           if (expectedPartitions.isEmpty()) {
-            result.complete(null);
+            result.complete(Set.of());
             return;
           }
-          pollPartitionsReady(expectedPartitions, readyRolesFor(mode), result);
+          pollPartitionsReady(expectedPartitions, mode, result);
         });
     return result;
   }
@@ -255,28 +257,72 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
 
   private void pollPartitionsReady(
       final Set<Integer> expectedPartitions,
-      final Set<PartitionRole> targetRoles,
-      final ActorFuture<Void> result) {
+      final Mode mode,
+      final ActorFuture<Set<Integer>> result) {
+    final var targetRoles = readyRolesFor(mode);
     concurrencyControl()
         .runOnCompletion(
             topologyManager.getLocalPartitionRoles(),
-            (roles, error) -> {
-              if (error != null) {
-                result.completeExceptionally(error);
+            (roles, rolesError) -> {
+              if (rolesError != null) {
+                result.completeExceptionally(rolesError);
                 return;
               }
               final var pendingRolePartitions =
                   expectedPartitions.stream()
                       .filter(partitionId -> !targetRoles.contains(roles.get(partitionId)))
                       .toList();
-              if (pendingRolePartitions.isEmpty()) {
-                result.complete(null);
-              } else {
+              if (!pendingRolePartitions.isEmpty()) {
                 result.completeExceptionally(
                     new IllegalStateException(
                         "Partition group %s: partitions %s have not yet reached roles %s (current roles: %s); the operation will be retried"
                             .formatted(partitionGroup, pendingRolePartitions, targetRoles, roles)));
+                return;
               }
+              if (mode != Mode.RECOVERING) {
+                result.complete(expectedPartitions);
+                return;
+              }
+              pollHealthAndComplete(expectedPartitions, result);
+            });
+  }
+
+  private void pollHealthAndComplete(
+      final Set<Integer> expectedPartitions, final ActorFuture<Set<Integer>> result) {
+    concurrencyControl()
+        .runOnCompletion(
+            topologyManager.getLocalPartitionHealth(),
+            (health, healthError) -> {
+              if (healthError != null) {
+                result.completeExceptionally(healthError);
+                return;
+              }
+              final var pendingHealthPartitions =
+                  expectedPartitions.stream()
+                      .filter(partitionId -> !health.containsKey(partitionId))
+                      .toList();
+              if (!pendingHealthPartitions.isEmpty()) {
+                result.completeExceptionally(
+                    new IllegalStateException(
+                        "Partition group %s: partitions %s have not yet reported health; the operation will be retried"
+                            .formatted(partitionGroup, pendingHealthPartitions)));
+                return;
+              }
+              final var healthyPartitions =
+                  expectedPartitions.stream()
+                      .filter(
+                          partitionId -> health.get(partitionId) == PartitionHealthStatus.HEALTHY)
+                      .collect(Collectors.toSet());
+              if (healthyPartitions.size() < expectedPartitions.size()) {
+                final var unhealthyPartitions = new HashSet<>(expectedPartitions);
+                unhealthyPartitions.removeAll(healthyPartitions);
+                LOG.warn(
+                    "Partition group {}: partitions {} are not healthy during recovery transition - {}",
+                    partitionGroup,
+                    unhealthyPartitions,
+                    health);
+              }
+              result.complete(healthyPartitions);
             });
   }
 

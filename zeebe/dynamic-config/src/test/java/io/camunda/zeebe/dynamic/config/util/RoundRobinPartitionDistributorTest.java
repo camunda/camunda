@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -103,8 +108,7 @@ final class RoundRobinPartitionDistributorTest {
   @Test
   void shouldDistributePartitionsAcrossZoneAwareMembers() {
     // given
-    final var members =
-        Set.of(MemberId.from("eu-west_0"), MemberId.from("eu-west_1"), MemberId.from("eu-west_2"));
+    final var members = new HashSet<>(ZONE_A_NODES);
 
     // when
     final var distribution =
@@ -130,10 +134,80 @@ final class RoundRobinPartitionDistributorTest {
         });
   }
 
+  @Test
+  void shouldPreserveRoundRobinSlotsForMixedBareAndZonedMembersWhenZoneOrderIsConfigured() {
+    // given
+    final var originalMembers = bareNodes(4);
+    final var mixedMembers = Set.of(BARE_0, BARE_2, ZONE_B_0, ZONE_B_1);
+    final var expectedMapping =
+        Map.of(
+            BARE_0, BARE_0, // no change
+            BARE_1, ZONE_B_0, // to zoned
+            BARE_2, BARE_2, // no change
+            BARE_3, ZONE_B_1 // to zoned
+            );
+
+    final var originalDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
+    final var mixedDistribution =
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
+            .distributePartitions(mixedMembers, getSortedPartitionIds(4), 4);
+
+    // then
+    assertThat(partitionMembers(mixedDistribution))
+        .isEqualTo(remapMembers(originalDistribution, expectedMapping));
+  }
+
+  @Test
+  void shouldPreserveRoundRobinSlotsForFullyZonedMembersWhenZoneOrderIsConfigured() {
+    // given
+    final var originalMembers =
+        Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
+    final var zonedMembers = Set.of(ZONE_A_0, ZONE_B_0, ZONE_A_1, ZONE_B_1);
+    final var expectedMapping =
+        Map.of(
+            BARE_0, ZONE_A_0, // to primary
+            BARE_1, ZONE_B_0, // to secondary
+            BARE_2, ZONE_A_1, // to primary
+            BARE_3, ZONE_B_1 // to secondary
+            );
+
+    // when
+    final var originalDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
+    final var zonedDistribution =
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
+            .distributePartitions(zonedMembers, getSortedPartitionIds(4), 4);
+
+    // then
+    assertThat(partitionMembers(zonedDistribution))
+        .isEqualTo(remapMembers(originalDistribution, expectedMapping));
+  }
+
+  private Map<Integer, Set<MemberId>> partitionMembers(final Set<PartitionMetadata> distribution) {
+    return distribution.stream()
+        .collect(
+            Collectors.toMap(
+                metadata -> metadata.id().number(), metadata -> Set.copyOf(metadata.members())));
+  }
+
+  private Map<Integer, Set<MemberId>> remapMembers(
+      final Set<PartitionMetadata> distribution, final Map<MemberId, MemberId> mapping) {
+    final var remapped = new HashMap<Integer, Set<MemberId>>();
+    distribution.forEach(
+        metadata ->
+            remapped.put(
+                metadata.id().number(),
+                metadata.members().stream().map(mapping::get).collect(Collectors.toSet())));
+    return remapped;
+  }
+
   private Set<MemberId> getMembers(final int nodeCount) {
     final Set<MemberId> members = new HashSet<>();
     for (int i = 0; i < nodeCount; i++) {
-      members.add(MemberId.from(String.valueOf(i)));
+      members.add(MemberId.from(i));
     }
     return members;
   }

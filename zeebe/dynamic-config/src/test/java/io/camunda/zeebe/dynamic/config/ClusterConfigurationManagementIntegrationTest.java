@@ -318,7 +318,11 @@ class ClusterConfigurationManagementIntegrationTest {
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
             new ClusterConfigurationGossiperConfig(
-                Duration.ofSeconds(1), Duration.ofMillis(100), 2, Duration.ofSeconds(1)),
+                Duration.ofSeconds(1),
+                Duration.ofMillis(100),
+                2,
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(5)),
             new NoopClusterChangeExecutor(),
             meterRegistry);
     return new TestNode(cluster, service);

@@ -30,6 +30,7 @@ public class Camunda {
   @NestedConfigurationProperty private License license = new License();
   @NestedConfigurationProperty private Document document = new Document();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
+  @NestedConfigurationProperty private Secrets secrets = new Secrets();
 
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
@@ -145,5 +146,13 @@ public class Camunda {
 
   public void setDocument(final Document document) {
     this.document = document;
+  }
+
+  public Secrets getSecrets() {
+    return secrets;
+  }
+
+  public void setSecrets(final Secrets secrets) {
+    this.secrets = secrets;
   }
 }

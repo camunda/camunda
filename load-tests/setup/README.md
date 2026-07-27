@@ -28,7 +28,7 @@ Some of the necessary steps you need to take are:
 
 ```sh
 ## Authenticate to the benchmark cluster via Teleport
-tsh login --proxy=camunda.teleport.sh:443
+tsh login --proxy=camunda.teleport.sh:443 --auth=okta
 tsh kube login camunda-benchmark-prod
 
 ## Log in to the Harbor container registry
@@ -75,7 +75,7 @@ When following the instructions above, execute all commands that deal with Docke
 By default, a load test deploys the full Camunda Platform, including:
 
 * **Orchestration cluster** (Gateway, Webapps incl. Identity, Operate, Tasklist and Zeebe brokers as Camunda application)
-* **Elasticsearch** as secondary storage
+* **Elasticsearch** as secondary storage, deployed as an [ECK](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s)-managed cluster via the `load-test-setup` chart
 * **Optimize** with history cleanup (1-day TTL)
 * **Connectors** with OIDC authentication
 * **Identity + Keycloak** for OIDC-based authentication
@@ -100,14 +100,13 @@ The rest of this section documents the `main` setup.
 Running `newLoadTest.sh` without arguments shows the `main` help:
 
 ```sh
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
@@ -153,6 +152,7 @@ The load-test-setup chart owns all the resources deployed for a single load test
 * the `camunda-credentials` secret
 * the leader-balancer cronjob
 * the chaos-killer cronjob (optional, disabled by default)
+* the Elasticsearch ECK custom resource (optional, disabled by default but auto-enabled when using the `elasticsearch` secondary storage, or by Optimize, when the secondary storage is not directly usable by Optimize)
 
 It is parameterized by a values file baked at scaffold time:
 
@@ -178,6 +178,61 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+
+#### ECK Elasticsearch
+
+Elasticsearch is deployed via the [Elastic Cloud on Kubernetes (ECK) operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s). ECK manages the full lifecycle of the Elasticsearch cluster — node creation, configuration, scaling, and rolling upgrades — through a dedicated `Elasticsearch` [custom resource (CRD)](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-api-reference.html). When configured with `elasticsearch.enabled=true`, the `load-test-setup` chart will deploy this custom resource.
+
+> [!TIP]
+> Reference:
+> * [Deploy an Elasticsearch cluster](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-deployment-quickstart)
+> * [Elasticsearch configuration](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration)
+> * [`Elasticsearch` custom resource](https://doc.crds.dev/github.com/elastic/cloud-on-k8s/elasticsearch.k8s.elastic.co/Elasticsearch/v1) ([official doc](https://www.elastic.co/docs/reference/cloud-on-k8s/api-reference/3_4_1#elasticsearchk8selasticcov1))
+
+The ECK operator creates a Kubernetes service named `elasticsearch-es-http` for HTTP access to the cluster. All components that connect to Elasticsearch (Camunda, Optimize, the metrics exporter) must use this service name.
+
+The default ECK Elasticsearch configuration (defined in `charts/load-test-setup/values.yaml`) is:
+
+|     Setting      |               Default                |
+|------------------|--------------------------------------|
+| Version          | 8.18.0                               |
+| Node count       | 3                                    |
+| CPU per node     | 7 cores                              |
+| Memory per node  | 8 Gi                                 |
+| JVM heap         | 3 Gi                                 |
+| Storage per node | 512 Gi (`benchmark-ssd-zonal-v1`)    |
+| TLS              | Disabled (HTTP API)                  |
+| Authentication   | Anonymous superuser (load-test only) |
+
+##### Local modifications
+
+All Elasticsearch configuration options (version, node count, resources, storage, …) are exposed as values of the `load-test-setup` Helm chart — see `charts/load-test-setup/values.yaml` for the full list. The values file for your specific load test (`load-test-setup-values.yaml`) is generated by `./newLoadTest.sh` and lives at the root of your namespace folder. **This is the preferred place for local modifications** — edit `load-test-setup-values.yaml` and run `make install-load-test-setup` to apply.
+
+To override defaults at install time without editing the file (e.g. during a one-off test), pass them via `additional_load_test_setup_configuration`:
+
+```sh
+make install additional_load_test_setup_configuration="--set elasticsearch.version=8.17.0 --set elasticsearch.count=1"
+```
+
+##### Live modifications inside Kubernetes
+
+> [!Important]
+>
+> Because the Elasticsearch cluster is managed by the ECK operator, **live modifications must be made through the `Elasticsearch` custom resource**, not through the underlying StatefulSet. Changes applied directly to the StatefulSet will be overwritten by the operator on its next reconciliation loop.
+>
+> To inspect the current custom resource:
+>
+> ```sh
+> kubectl -n <namespace> get elasticsearch elasticsearch -o yaml
+> ```
+>
+> To edit the Elasticsearch cluster, edit the custom resource instead:
+>
+> ```sh
+> kubectl -n <namespace> edit elasticsearch elasticsearch
+> ```
+>
+> See the [reference links](#eck-elasticsearch) for more details about the available options.
 
 #### Disabling Optimize
 
@@ -279,7 +334,7 @@ To override the default schedule or target patterns, pass them via `additional_l
 ```sh
 make install chaos=true \
   additional_load_test_setup_configuration="--set chaosKiller.schedule='*/15 * * * *' \
-  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-* keycloak-*'"
+  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-*'"
 ```
 
 To preview the rendered manifests before installing:
@@ -289,6 +344,45 @@ make template-load-test-setup-chaos
 ```
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
+
+#### Optional second physical tenant
+
+A load test can exercise **two physical tenants** (`default` and `testfoo`) on a single cluster that
+share one RDBMS, isolated by table prefix (`DEFAULT_` / `TESTFOO_`). This validates physical-tenant
+isolation and independent load per tenant.
+
+Because physical tenants are isolated by RDBMS table prefix, this only works with an rdbms
+`secondary_storage` (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`); any other value fails fast.
+
+```sh
+make install physical_tenants=true secondary_storage=postgresql scenario=typical
+```
+
+When enabled, the Makefile:
+
+- Applies `camunda-platform-two-physical-tenants-shared-rdbms.yaml` (a copy of
+  `camunda-platform-values-rdbms.yaml` that also declares the `testfoo` tenant: its `TESTFOO_` prefix,
+  OIDC provider assignment, and orchestration-client authorizations) instead of the plain rdbms values.
+- Clones the generated `load-test-credentials` secret into `load-test-credentials-testfoo`, overriding
+  only the REST address to the tenant path `http://camunda:8080/physical-tenants/testfoo`.
+- Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
+  tester, renames them to `starter-testfoo`/`worker-testfoo`, and applies them. The testfoo tester uses
+  REST (`global.preferRest.enabled=true`) because gRPC only routes to the default physical tenant.
+
+A second Helm release is not used because the `camunda-load-tests` subchart hardcodes the
+`starter`/`worker` resource names, which would collide in the same namespace.
+
+In the GitHub workflow, set the `physical-tenants` input to `true` (with an rdbms
+`secondary-storage-type`).
+
+Verify both tenants receive writes:
+
+```sh
+kubectl exec -n <namespace> postgresql-0 -- env PGPASSWORD=camunda \
+  psql -U camunda -d camunda -c "
+SELECT 'default' AS tenant, COUNT(*) FROM default_process_instance
+UNION ALL SELECT 'testfoo', COUNT(*) FROM testfoo_process_instance;"
+```
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
@@ -332,13 +426,13 @@ make template-load-test scenario=max  # renders load test manifests
 
 ### Accessing Services
 
-Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works. Keycloak itself runs in the shared `keycloak-operator` namespace, as a Service named after the load test namespace, not inside `<namespace>` (see [Keycloak in the load test setup chart README](charts/load-test-setup/README.md#keycloak)).
 
 1. Port-forward both Camunda and Keycloak:
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
+kubectl -n keycloak-operator port-forward svc/<namespace> 18080:18080 &
 wait
 ```
 
@@ -350,18 +444,27 @@ kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identi
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
 
+#### Keycloak admin credentials
+
+The Keycloak admin console user is `admin` (or whatever `keycloak.adminUser.username` is set to). Its password is generated the same way as every other credential in this chart (see [Where credentials come from](#where-credentials-come-from)) and stored under the `identity-keycloak-admin-password` key:
+
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-keycloak-admin-password}" | base64 --decode
+```
+
 #### Using c8ctl (CLI access)
 
 To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forward the REST gateway and Keycloak, then export the credentials from the namespace secrets:
 
 ```sh
-kubectl -n <namespace> port-forward svc/camunda-gateway 8080:8080 &
-kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
+export NAMESPACE="..."
+kubectl -n $NAMESPACE port-forward svc/camunda-gateway 8080:8080 &
+kubectl -n keycloak-operator port-forward svc/$NAMESPACE 18080:18080 &
 
 export CAMUNDA_BASE_URL=http://localhost:8080
 export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
 export CAMUNDA_CLIENT_ID=orchestration
-export CAMUNDA_CLIENT_SECRET=$(kubectl -n <namespace> get secret camunda-credentials \
+export CAMUNDA_CLIENT_SECRET=$(kubectl -n $NAMESPACE get secret camunda-credentials \
   -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 --decode)
 export CAMUNDA_TOKEN_AUDIENCE=orchestration-api
 ```
@@ -382,6 +485,12 @@ make clean
 ```
 
 This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter + load-test-setup), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+
+`make clean` also explicitly deletes the Keycloak resources `keycloak-operator` namespace since they
+don't live in the namespace being torn down.
+If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without `make
+clean`), you must also delete those separately, or they leak forever — see [Cleanup in the load test
+setup chart README](charts/load-test-setup/README.md#cleanup).
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 

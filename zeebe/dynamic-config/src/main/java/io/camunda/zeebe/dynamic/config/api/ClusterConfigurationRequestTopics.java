@@ -20,14 +20,18 @@ public enum ClusterConfigurationRequestTopics {
   DISABLE_EXPORTER("topology-exporter-disable"),
   ENABLE_EXPORTER("topology-exporter-enable"),
   DELETE_EXPORTER("topology-exporter-delete"),
-
   SCALE_CLUSTER("topology-cluster-scale"),
   PATCH_CLUSTER("topology-cluster-patch"),
   PURGE("topology-cluster-purge"),
   FORCE_REMOVE_BROKERS("topology-broker-force-remove"),
   UPDATE_ROUTING_STATE("topology-cluster-update-routing-state"),
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
-  MODE_CHANGE("topology-mode-change");
+  MODE_CHANGE("topology-mode-change"),
+  RESTORE("cluster-restore"),
+  ZONE_MIGRATION("topology-cluster-zone-migration"),
+  ADD_ZONE("topology-add-zone"),
+  FORCE_REMOVE_ZONE("topology-force-remove-zone"),
+  UPDATE_ZONE_PRIORITIES("topology-update-zone-priorities");
 
   private final String topic;
 

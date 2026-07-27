@@ -9,6 +9,8 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -76,6 +78,31 @@ public interface ConfigurationChangeCoordinator {
      */
     Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
         final ClusterConfiguration clusterConfiguration);
+
+    /**
+     * Returns the phases to execute for this request, on the new multi-partition-group model. The
+     * default implementation derives them from {@link #operations(ClusterConfiguration)} using the
+     * same operation-kind-run splitting that {@link CurrentClusterConfiguration#toPhases(List)}
+     * applies when migrating a legacy plan: each maximal run of consecutive operations of the same
+     * kind becomes one phase, and every {@link
+     * io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation} run targets the default group.
+     *
+     * <p>This is the only method the new-model coordinator path calls to determine what to validate
+     * and apply — {@link #operations(ClusterConfiguration)} is not called directly on that path. A
+     * future request implementation that targets non-default groups only needs to override this
+     * method to build {@link
+     * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase}s for
+     * those groups; no change is needed in the coordinator, the manager, or any other new-model
+     * code.
+     *
+     * @param clusterConfiguration the current cluster configuration
+     * @return Either with the list of phases to apply or an exception if the request is not valid.
+     */
+    default Either<Exception, List<Phase>> phases(
+        final CurrentClusterConfiguration clusterConfiguration) {
+      return operations(clusterConfiguration.toLegacyDefault())
+          .map(CurrentClusterConfiguration::toPhases);
+    }
 
     default boolean isForced() {
       return false;

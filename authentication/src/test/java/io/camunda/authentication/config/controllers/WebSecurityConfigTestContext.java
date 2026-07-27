@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -29,6 +30,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,7 +43,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.context.annotation.RequestScope;
 
 /**
  * Slice-test bootstrap. Mirrors the previous {@code WebSecurityConfigTestContext} by importing the
@@ -59,7 +60,6 @@ import org.springframework.web.context.annotation.RequestScope;
 public class WebSecurityConfigTestContext {
 
   @Bean
-  @RequestScope
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
       final HttpServletRequest request, final CamundaSecurityLibraryProperties properties) {
     return new HttpSessionBasedAuthenticationHolder(request, properties.getAuthentication());
@@ -129,6 +129,13 @@ public class WebSecurityConfigTestContext {
   @Bean
   public ResourceAccessProvider createResourceAccessProvider() {
     return new DisabledResourceAccessProvider();
+  }
+
+  @Bean
+  public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
+      final ResourceAccessProvider resourceAccessProvider) {
+    return new PhysicalTenantResourceAccessProvider(
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, resourceAccessProvider));
   }
 
   /**

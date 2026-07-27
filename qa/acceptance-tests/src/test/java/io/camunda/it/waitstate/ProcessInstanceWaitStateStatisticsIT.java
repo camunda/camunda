@@ -313,22 +313,24 @@ public class ProcessInstanceWaitStateStatisticsIT {
     assertThat(problemException.code()).isEqualTo(404);
   }
 
-  // Barrier: wait until the expected number of wait states for this instance are visible in
-  // secondary storage before asserting on the statistics endpoint.
+  // Wait for both the process-instance and wait-state indices, since they lag independently and the
+  // statistics endpoint needs both (it 404s until the process instance is visible).
   private static void waitForWaitStates(final long processInstanceKey, final int expected) {
     Awaitility.await(
             "%d wait states visible for instance %d".formatted(expected, processInstanceKey))
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .until(
-            () ->
-                camundaClient
-                    .newElementInstanceWaitStateSearchRequest()
-                    .filter(f -> f.processInstanceKey(processInstanceKey))
-                    .send()
-                    .join()
-                    .items()
-                    .size(),
+            () -> {
+              camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+              return camundaClient
+                  .newElementInstanceWaitStateSearchRequest()
+                  .filter(f -> f.processInstanceKey(processInstanceKey))
+                  .send()
+                  .join()
+                  .items()
+                  .size();
+            },
             size -> size == expected);
   }
 

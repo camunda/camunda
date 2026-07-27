@@ -8,6 +8,8 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -19,7 +21,9 @@ public record ClusterVariableEntity(
     @Nullable String fullValue,
     @Nullable Boolean isPreview,
     ClusterVariableScope scope,
-    @Nullable String tenantId)
+    @Nullable String tenantId,
+    @Nullable List<MetadataEntry> metadata,
+    @Nullable ClusterVariableKind kind)
     implements TenantOwnedEntity {
 
   public ClusterVariableEntity {
@@ -27,10 +31,31 @@ public record ClusterVariableEntity(
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(scope, "scope");
+    metadata = metadata != null ? new ArrayList<>(metadata) : new ArrayList<>();
+  }
+
+  // Used by the RDBMS resultMap's <constructor>, whose args mirror this signature; the
+  // <collection> for metadata is mapped separately and hydrated onto the mutable list below.
+  public ClusterVariableEntity(
+      final String id,
+      final String name,
+      final String value,
+      final String fullValue,
+      final Boolean isPreview,
+      final ClusterVariableScope scope,
+      final String tenantId,
+      final @Nullable ClusterVariableKind kind) {
+    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>(), kind);
   }
 
   @Override
   public boolean hasTenantScope() {
     return ClusterVariableScope.TENANT.equals(scope);
+  }
+
+  public record MetadataEntry(String key, @Nullable String value, @Nullable Double valueNumber) {
+    public MetadataEntry {
+      Objects.requireNonNull(key, "key");
+    }
   }
 }

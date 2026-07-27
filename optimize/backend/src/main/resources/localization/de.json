@@ -1613,6 +1613,7 @@
       "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion.",
       "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
       "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiToolCallsFootnote": "Ein anhaltender Anstieg der Tool-Aufrufe ohne entsprechenden Anstieg der Ausführungen kann auf Schleifen oder ineffiziente Tool-Nutzung hindeuten. Untersuchen Sie die Prozesse und Prozessknoten, die den Anstieg verursachen.",
       "agenticToolCallsHeatmapName": "Tool-Aufrufe je Prozessknoten",
       "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
       "agenticDurationHeatmapName": "Dauer je Prozessknoten",

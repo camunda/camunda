@@ -46,6 +46,7 @@ tags:
   - name: Audit Log
   - name: Authentication
   - name: Authorization
+  - name: Backup
   - name: Batch operation
   - name: Clock
   - name: Cluster
@@ -56,6 +57,7 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Exporting
   - name: Expression
   - name: Form
   - name: Global listener
@@ -72,6 +74,7 @@ tags:
   - name: Recovery
   - name: Resource
   - name: Role
+  - name: Secret
   - name: Setup
   - name: Signal
   - name: System
@@ -110,6 +113,16 @@ paths:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
   /authorizations/{authorizationKey}:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
+
+  # Backup endpoints
+  /backups/runtime:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime'
+  /backups/runtime/state:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state'
+  /backups/runtime/state/sync:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state~1sync'
+  /backups/runtime/{backupId}:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1{backupId}'
 
   # Batch operation endpoints
   /batch-operation-items/search:
@@ -206,6 +219,12 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
+
+  # Exporting endpoints
+  /exporting/pause:
+    $ref: 'exporting.yaml#/paths/~1exporting~1pause'
+  /exporting/resume:
+    $ref: 'exporting.yaml#/paths/~1exporting~1resume'
 
   # Expression endpoints
   /expression/evaluation:
@@ -318,6 +337,8 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1form'
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
+  /process-definitions/{processDefinitionKey}/variable-names/search:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1variable-names~1search'
   /process-definitions/{processDefinitionKey}/xml:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
   /process-definitions/statistics/process-instances-by-version:
@@ -336,10 +357,16 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1migration'
   /process-instances/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1modification'
+  /process-instances/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1resumption'
   /process-instances/search:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1search'
+  /process-instances/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1suspension'
   /process-instances/{processInstanceKey}:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
+  /process-instances/{processInstanceKey}/business-id-assignment:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1business-id-assignment'
   /process-instances/{processInstanceKey}/call-hierarchy:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
   /process-instances/{processInstanceKey}/cancellation:
@@ -354,12 +381,16 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1migration'
   /process-instances/{processInstanceKey}/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1modification'
+  /process-instances/{processInstanceKey}/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1resumption'
   /process-instances/{processInstanceKey}/sequence-flows:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1sequence-flows'
   /process-instances/{processInstanceKey}/statistics/element-instances:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
   /process-instances/{processInstanceKey}/statistics/wait-states:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1wait-states'
+  /process-instances/{processInstanceKey}/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1suspension'
 
   # Resource endpoints
   /resources/search:
@@ -396,6 +427,10 @@ paths:
     $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1search'
   /roles/{roleId}/users/{username}:
     $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1{username}'
+
+  # Secret endpoints
+  /secrets/resolve:
+    $ref: 'secrets.yaml#/paths/~1secrets~1resolve'
 
   # Setup endpoints
   /setup/user:
@@ -448,6 +483,8 @@ paths:
     $ref: 'cluster.yaml#/paths/~1topology'
   /mode:
     $ref: 'cluster.yaml#/paths/~1mode'
+  /restore:
+    $ref: 'cluster.yaml#/paths/~1restore'
 
   # User endpoints
   /users:

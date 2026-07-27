@@ -19,24 +19,23 @@ data:
   info: |-
     - name: c8-golden-main-rdbms-stable
       namespace: c8-golden-main-rdbms-stable
-      version: 15.0.0-alpha1
+      version: 15.0.0-alpha3
       tags:
       - dev
       custom-properties: []
       components:
       - name: Keycloak
         id: keycloak
-        version: 26.3.3
-        url: http://localhost:18080/auth
+        url: http://c8-golden-main-rdbms-stable.keycloak-operator.svc:18080/auth/
       - name: Identity
         id: identity
-        version: 8.10.0-alpha1
+        version: 8.10.0-alpha3
         url: http://localhost:8080
         readiness: http://identity.c8-golden-main-rdbms-stable:82/actuator/health
         metrics: http://identity.c8-golden-main-rdbms-stable:82/actuator/prometheus
       - name: Connectors
         id: connectors
-        version: 8.10.0-alpha1
+        version: 8.10.0-alpha3
         url: http://connectors.c8-golden-main-rdbms-stable:8080
         readiness: http://connectors.c8-golden-main-rdbms-stable:8080/actuator/health/readiness
         metrics: http://connectors.c8-golden-main-rdbms-stable:8080/actuator/prometheus
@@ -53,7 +52,7 @@ data:
         readiness: http://camunda.c8-golden-main-rdbms-stable:9600/actuator/health/readiness
         metrics: http://camunda.c8-golden-main-rdbms-stable:9600/actuator/prometheus
       - name: Orchestration Admin
-        id: orchestrationIdentity
+        id: admin
         version: SNAPSHOT
         url: http://localhost:8080/admin
         readiness: http://camunda.c8-golden-main-rdbms-stable:9600/actuator/health/readiness

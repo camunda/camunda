@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -57,9 +58,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
+// Backs off when CSL is active (optimize.security.csl.enabled=true) to avoid colliding chains. See
+// https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = true)
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
@@ -106,6 +113,32 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
         new FilterRegistrationBean<>();
     registration.setFilter(new CCSMRequestAdjustmentFilter());
     registration.addUrlPatterns("/*");
+    return registration;
+  }
+
+  /**
+   * Registers the OIDC redirect diagnostics filter when {@code
+   * security.auth.ccsm.diagnosticsEnabled=true}. The filter logs DEBUG/WARN diagnostics about
+   * forwarded-header mismatches and session-cookie issues in the OIDC redirect flow.
+   */
+  @Bean
+  @Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+  FilterRegistrationBean<OidcRedirectDiagnosticsFilter> oidcRedirectDiagnosticsFilter() {
+    final var registration = new FilterRegistrationBean<OidcRedirectDiagnosticsFilter>();
+    final boolean enabled =
+        configurationService
+            .getAuthConfiguration()
+            .getCcsmAuthConfiguration()
+            .isDiagnosticsEnabled();
+    final String callbackPath = REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
+    registration.setFilter(new OidcRedirectDiagnosticsFilter(callbackPath));
+    registration.addUrlPatterns("/*");
+    registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE);
+    registration.setEnabled(enabled);
+    if (enabled) {
+      LOG.info(
+          "OIDC redirect diagnostics filter enabled (security.auth.ccsm.diagnosticsEnabled=true)");
+    }
     return registration;
   }
 

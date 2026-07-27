@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -52,7 +54,8 @@ public record BrokerClientTopologyImpl(
             List.of(),
             NO_COMPLETED_LAST_CHANGE_ID,
             NO_CLUSTER_ID,
-            UNINITIALIZED_INCARNATION_NUMBER));
+            UNINITIALIZED_INCARNATION_NUMBER,
+            Map.of()));
   }
 
   @Override
@@ -133,6 +136,18 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
+  public PartitionState.State getPartitionState(
+      final BrokerMemberId brokerId, final int partitionId) {
+    final var brokerPartitionStates = configuredClusterState.partitionStates().get(brokerId);
+
+    if (brokerPartitionStates == null) {
+      return PartitionState.State.UNKNOWN;
+    } else {
+      return brokerPartitionStates.getOrDefault(partitionId, PartitionState.State.UNKNOWN);
+    }
+  }
+
+  @Override
   public long getLastCompletedChangeId() {
     return configuredClusterState.lastChangeId;
   }
@@ -154,7 +169,8 @@ public record BrokerClientTopologyImpl(
       List<Integer> partitionIds,
       long lastChangeId,
       String clusterId,
-      long incarnationNumber) {}
+      long incarnationNumber,
+      Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates) {}
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;

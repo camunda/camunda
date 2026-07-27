@@ -33,6 +33,7 @@ final class MessageStartProcessInstanceRequestRecordTest {
     assertThat(record.getStartEventId()).isEmpty();
     assertThat(record.getMessageStartEventSubscriptionKey()).isEqualTo(-1L);
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getMessageTtl()).isEqualTo(0L);
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(record.getVariables()).isEmpty();
   }
@@ -54,6 +55,8 @@ final class MessageStartProcessInstanceRequestRecordTest {
             .setVariables(
                 new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{\"orderId\":\"order-42\"}")))
             .setProcessInstanceKey(2251799813685300L)
+            .setMessageDeadline(1_000_000L)
+            .setMessageTtl(60_000L)
             .setTenantId("acme");
 
     // when
@@ -72,6 +75,8 @@ final class MessageStartProcessInstanceRequestRecordTest {
     assertThat(copy.getMessageStartEventSubscriptionKey())
         .isEqualTo(original.getMessageStartEventSubscriptionKey());
     assertThat(copy.getProcessInstanceKey()).isEqualTo(original.getProcessInstanceKey());
+    assertThat(copy.getMessageDeadline()).isEqualTo(original.getMessageDeadline());
+    assertThat(copy.getMessageTtl()).isEqualTo(original.getMessageTtl());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
     assertThat(copy.getVariables()).containsExactlyEntriesOf(Map.of("orderId", "order-42"));
   }
@@ -98,6 +103,7 @@ final class MessageStartProcessInstanceRequestRecordTest {
 
     // then — defaults survive the round-trip; this pins forward-compat between request and reply
     assertThat(copy.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(copy.getMessageTtl()).isEqualTo(0L);
     assertThat(copy.getVariables()).isEmpty();
     assertThat(copy.getMessageKey()).isEqualTo(7L);
     assertThat(copy.getBusinessId()).isEqualTo("BIZ-7");

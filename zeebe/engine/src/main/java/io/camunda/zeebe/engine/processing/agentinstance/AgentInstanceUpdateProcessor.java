@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMe
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -34,15 +37,14 @@ import java.util.Set;
 public final class AgentInstanceUpdateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord> {
 
-  static final String ATTR_STATUS = "status";
-  static final String ATTR_METRICS = "metrics";
-  static final String ATTR_TOOLS = "tools";
-
   // Iteration order matters: it determines the order of names in the emitted changedAttributes
   // list and must be stable across JVMs and replays. Used both as the allow-list for incoming
   // changedAttributes and as the iteration order for applying the patch.
   private static final List<String> ALLOWED_ATTRIBUTES =
-      List.of(ATTR_STATUS, ATTR_METRICS, ATTR_TOOLS);
+      List.of(
+          AgentInstanceRecord.ATTR_STATUS,
+          AgentInstanceRecord.ATTR_METRICS,
+          AgentInstanceRecord.ATTR_TOOLS);
 
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to update agent instance with key '%d', but no such agent instance was found.";
@@ -80,18 +82,18 @@ public final class AgentInstanceUpdateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public AgentInstanceUpdateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -106,17 +108,26 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(current.getTenantId())
-            .addResourceId(current.getBpmnProcessId())
-            .build();
-    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResult.isLeft()) {
-      final var rejection = authResult.getLeft();
+    final var isAuthorized =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(current.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            current.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND, ERROR_MSG_NOT_FOUND.formatted(agentInstanceKey)));
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -194,7 +205,8 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    if (changed.contains(ATTR_METRICS) && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
+    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
+        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
       final var metrics = commandValue.getMetrics();
       writeRejection(
           command,
@@ -207,7 +219,7 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    if (changed.contains(ATTR_STATUS)) {
+    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
       final var from = current.getStatus();
       final var to = commandValue.getStatus();
       if (!isAllowedTransition(from, to)) {
@@ -227,7 +239,7 @@ public final class AgentInstanceUpdateProcessor
     current.setChangedAttributes(applyPatch(current, commandValue, changed));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
@@ -253,21 +265,21 @@ public final class AgentInstanceUpdateProcessor
         continue;
       }
       switch (attr) {
-        case ATTR_STATUS -> {
+        case AgentInstanceRecord.ATTR_STATUS -> {
           if (!delta.getStatus().equals(current.getStatus())) {
-            effective.add(ATTR_STATUS);
+            effective.add(AgentInstanceRecord.ATTR_STATUS);
           }
           current.setStatus(delta.getStatus());
         }
-        case ATTR_METRICS -> {
+        case AgentInstanceRecord.ATTR_METRICS -> {
           if (applyMetricDeltas(current.getMetrics(), delta.getMetrics())) {
-            effective.add(ATTR_METRICS);
+            effective.add(AgentInstanceRecord.ATTR_METRICS);
           }
         }
-        case ATTR_TOOLS -> {
+        case AgentInstanceRecord.ATTR_TOOLS -> {
           if (!toolsEqual(current.getTools(), delta.getTools())) {
             current.setTools(delta.getTools());
-            effective.add(ATTR_TOOLS);
+            effective.add(AgentInstanceRecord.ATTR_TOOLS);
           }
         }
       }
@@ -345,6 +357,6 @@ public final class AgentInstanceUpdateProcessor
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 }

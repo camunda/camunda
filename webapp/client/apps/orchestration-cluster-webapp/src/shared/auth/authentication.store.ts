@@ -15,12 +15,7 @@ import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local
 import {z} from 'zod';
 
 type Status =
-	| 'initial'
-	| 'logged-in'
-	| 'logged-out'
-	| 'session-expired'
-	| 'session-invalid'
-	| 'invalid-third-party-session';
+	'initial' | 'logged-in' | 'logged-out' | 'session-expired' | 'session-invalid' | 'invalid-third-party-session';
 
 const DEFAULT_STATUS: Status = 'initial';
 

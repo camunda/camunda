@@ -24,4 +24,12 @@ import io.camunda.client.CamundaClient;
  */
 public interface CamundaClientClosingEvent {
   CamundaClient getClient();
+
+  /**
+   * The configured name of the client; the per-client name in multi-client mode, or {@link
+   * CamundaClientCreatedEvent#DEFAULT_CLIENT_NAME} in single-client mode.
+   */
+  default String getClientName() {
+    return CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
+  }
 }

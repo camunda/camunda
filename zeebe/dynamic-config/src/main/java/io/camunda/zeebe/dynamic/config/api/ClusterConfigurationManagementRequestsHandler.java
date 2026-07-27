@@ -9,22 +9,27 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
@@ -32,8 +37,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -48,14 +55,17 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private final RequestValidatorRegistry validatorRegistry;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
-      final ConcurrencyControl executor) {
+      final ConcurrencyControl executor,
+      final RequestValidatorRegistry validatorRegistry) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.validatorRegistry = validatorRegistry;
   }
 
   @Override
@@ -90,7 +100,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
-
     return handleRequest(
         leavePartitionRequest.dryRun(),
         ignore ->
@@ -124,13 +133,11 @@ public final class ClusterConfigurationManagementRequestsHandler
     final Optional<Integer> optionalNewReplicationFactor =
         forceScaleDownRequest.newReplicationFactor();
     if (optionalNewReplicationFactor.isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
       final String errorMessage =
           String.format(
               "The replication factor cannot be changed to requested value '%s' during force scale down. It will be automatically changed based on which brokers are removed. Do not provide any replication factor in the request",
               optionalNewReplicationFactor.get());
-      failedFuture.completeExceptionally(new InvalidRequest(errorMessage));
-      return failedFuture;
+      return CompletableActorFuture.completedExceptionally(new InvalidRequest(errorMessage));
     }
 
     return handleRequest(
@@ -141,7 +148,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
       final ClusterScaleRequest clusterScaleRequest) {
-
     return handleRequest(
         clusterScaleRequest.dryRun(),
         new ClusterScaleRequestTransformer(
@@ -154,7 +160,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
-
     return handleRequest(
         clusterPatchRequest.dryRun(),
         new ClusterPatchRequestTransformer(
@@ -180,8 +185,15 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
+  public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
+      final ClusterZoneMigrationRequest zoneMigrationRequest) {
+    return handleRequest(
+        zoneMigrationRequest.dryRun(),
+        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
+  }
 
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
     return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
   }
 
@@ -192,6 +204,34 @@ public final class ClusterConfigurationManagementRequestsHandler
         forceRemoveBrokersRequest.dryRun(),
         new ForceRemoveBrokersRequestTransformer(
             forceRemoveBrokersRequest.membersToRemove(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveZone(
+      final ForceZoneRemoveRequest forceZoneRemoveRequest) {
+    return handleRequest(
+        forceZoneRemoveRequest.dryRun(),
+        new ForceRemoveZoneTransformer(forceZoneRemoveRequest.zoneId()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> addZone(
+      final AddZoneRequest addZoneRequest) {
+    return handleRequest(
+        addZoneRequest.dryRun(),
+        new AddZoneTransformer(
+            addZoneRequest.zoneId(),
+            addZoneRequest.numberOfReplicas(),
+            addZoneRequest.priority(),
+            addZoneRequest.brokers()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> updateZonePriorities(
+      final UpdateZonePrioritiesRequest updateZonePrioritiesRequest) {
+    return handleRequest(
+        updateZonePrioritiesRequest.dryRun(),
+        new UpdateZonePrioritiesTransformer(updateZonePrioritiesRequest.zoneOrder()));
   }
 
   @Override
@@ -235,6 +275,12 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfiguration> getTopology() {
     return coordinator.getClusterConfiguration();
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
+    return handleRequest(
+        request.dryRun(), new RestoreRequestTransformer(request, validatorRegistry));
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

@@ -165,6 +165,62 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldKeepFlatOidcSlotWhenProviderOverlayReplacesProvidersSubtree() {
+    // given root sets the flat oidc slot AND a named provider the tenant partially overrides —
+    // the provider overlay installer must replace only the providers subtree, leaving the
+    // two-bind-resolved sibling authentication fields (like the flat slot) untouched
+    setProperties(
+        Map.of(
+            "camunda.security.authentication.oidc.issuer-uri",
+                "http://localhost:8081/realms/default",
+            "camunda.security.authentication.providers.oidc.shared.issuer-uri",
+                "http://localhost:8082/realms/shared",
+            "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.shared.client-id",
+                "tenanta-client",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then the flat slot survives and the named provider is deep-merged next to it
+    final var authentication = tenantA.getSecurity().getAuthentication();
+    assertThat(authentication.getOidc().getIssuerUri())
+        .isEqualTo("http://localhost:8081/realms/default");
+    final var shared = authentication.getProviders().getOidc().get("shared");
+    assertThat(shared.getIssuerUri()).isEqualTo("http://localhost:8082/realms/shared");
+    assertThat(shared.getClientId()).isEqualTo("tenanta-client");
+  }
+
+  @Test
+  void shouldKeepRootProvidersWhenTenantOverlayHasEmptyProvidersMap() {
+    // given root declares a named provider and the tenant's only providers overlay is an empty
+    // map — Spring Boot 4.1 surfaces `providers: {}` as an empty property value, which must mean
+    // "nothing to overlay" through the full resolver path (bind, overlay, installer), not a reset
+    // of the inherited providers
+    setProperties(
+        Map.of(
+            "camunda.security.authentication.providers.oidc.shared.issuer-uri",
+                "http://localhost:8082/realms/shared",
+            "camunda.security.authentication.providers.oidc.shared.client-id", "shared-client",
+            "camunda.physical-tenants.tenanta.security.authentication.providers", "",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then the inherited provider survives the empty overlay
+    final var shared = tenantA.getSecurity().getAuthentication().getProviders().getOidc();
+    assertThat(shared).containsKey("shared");
+    assertThat(shared.get("shared").getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/shared");
+    assertThat(shared.get("shared").getClientId()).isEqualTo("shared-client");
+  }
+
+  @Test
   void shouldSynthesizeDefaultTenantFromRootWhenNoTenantsAreDeclared() {
     // given only root configuration is set
     setProperties(Map.of("camunda.cluster.size", 5));
@@ -293,6 +349,53 @@ class PhysicalTenantResolverTest {
         "tenantb");
 
     // when / then resolution succeeds
+    final PhysicalTenantResolver resolver = newResolver();
+    assertThat(resolver.getAll())
+        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldRejectRetentionEnabledTenantsSharingLifecyclePolicyOnSharedCluster() {
+    // given two tenants on the same Elasticsearch cluster with distinct index prefixes (so the
+    // isolation rule passes) but both with retention enabled and the default policy name — the
+    // cluster-global ILM policy would be overwritten
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.retention.enabled", "true"),
+        "tenanta",
+        "tenantb");
+
+    // when / then resolution fails fast at boot on the shared lifecycle policy
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("lifecycle");
+  }
+
+  @Test
+  void shouldResolveWhenSharedClusterButDistinctLifecyclePolicyNames() {
+    // given two retention-enabled tenants on the same cluster (distinct index prefixes) that give
+    // their history lifecycle policies distinct names
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.history.policy-name",
+                "tenanta-policy",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.history.policy-name",
+                "tenantb-policy"),
+        "tenanta",
+        "tenantb");
+
+    // when / then distinct policy names isolate the tenants — resolution succeeds
     final PhysicalTenantResolver resolver = newResolver();
     assertThat(resolver.getAll())
         .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);

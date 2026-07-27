@@ -55,7 +55,7 @@ services:
       - ./docker-compose-init/02-grant-camunda-create-mysql.sql:/docker-entrypoint-initdb.d/02-grant-camunda-create-mysql.sql:ro
 
   mysql:
-    image: mysql:${IMAGE_VERSION:-9.6}
+    image: mysql:${IMAGE_VERSION:-9.7}
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
@@ -79,6 +79,8 @@ services:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
       APP_USER_PASSWORD: camunda
+    volumes:
+      - ./docker-compose-init/03-grant-camunda-create-oracle-free.sql:/container-entrypoint-initdb.d/03-grant-camunda-create-oracle.sql:ro
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]
@@ -98,6 +100,8 @@ services:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
       APP_USER_PASSWORD: camunda
+    volumes:
+      - ./docker-compose-init/03-grant-camunda-create-oracle-xe.sql:/container-entrypoint-initdb.d/03-grant-camunda-create-oracle.sql:ro
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]
@@ -130,6 +134,26 @@ services:
     volumes:
       - ./els-snapshots:/usr/local/els-snapshots
 
+  elasticsearch-tenant:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.19.16}
+    container_name: elasticsearch-tenant
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch-tenant
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9201:9200
+    networks:
+      - zeebe_network
+    restart: always
+
   opensearch:
     image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.5}
     container_name: opensearch
@@ -154,6 +178,32 @@ services:
     ports:
       - 9200:9200
       - 9605:9605 # required for Performance Analyzer
+    networks:
+      - zeebe_network
+
+  opensearch-tenant:
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.5}
+    container_name: opensearch-tenant
+    environment:
+      - cluster.name=opensearch-tenant
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - bootstrap.memory_lock=true
+      # matches the root opensearch service: the PT node handles one full schema per concurrent
+      # test fork, and at 1g heap its shard initialization falls behind in CI, leaving every
+      # fork's SchemaManager.startup in a permanent "all shards failed" retry loop
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx2048m"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - 9201:9200
     networks:
       - zeebe_network
 

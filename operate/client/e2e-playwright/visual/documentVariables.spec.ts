@@ -23,6 +23,9 @@ const JSON_DOCUMENT = readFileSync(
 const IMAGE_DOCUMENT = readFileSync(
   join(import.meta.dirname, '../mocks/resources/test_image.png'),
 );
+const PDF_DOCUMENT = readFileSync(
+  join(import.meta.dirname, '../mocks/resources/test_document.pdf'),
+);
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -223,5 +226,43 @@ test.describe('document variable visualization', () => {
 
     await expect(page.getByText(/Failed to load image preview/)).toBeVisible();
     await expect(page).toHaveScreenshot();
+  });
+
+  test('PDF preview', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: documentReferenceProcessInstance.detail,
+        callHierarchy: documentReferenceProcessInstance.callHierarchy,
+        elementInstances: documentReferenceProcessInstance.elementInstances,
+        statistics: documentReferenceProcessInstance.statistics,
+        sequenceFlows: documentReferenceProcessInstance.sequenceFlows,
+        variables: documentReferenceProcessInstance.variables,
+        xml: documentReferenceProcessInstance.xml,
+      }),
+    );
+    await page.route('/v2/documents/*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        body: PDF_DOCUMENT,
+      }),
+    );
+    const pdfVariable = page.getByTestId('variable-pdf_doc');
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: documentReferenceProcessInstance.detail.processInstanceKey,
+    });
+
+    await expect(pdfVariable).toBeVisible();
+    await pdfVariable.getByRole('button', {name: 'Preview'}).click();
+
+    const dialog = page.getByRole('dialog', {
+      name: 'Preview: test_document.pdf',
+    });
+    await expect(dialog).toBeVisible();
+    const preview = dialog.getByTitle('test_document.pdf');
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveAttribute('src', /\/v2\/documents\//);
   });
 });

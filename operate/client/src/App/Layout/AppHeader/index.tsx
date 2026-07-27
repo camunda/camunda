@@ -10,7 +10,13 @@ import {IS_NAV_V2_ENABLED} from 'modules/feature-flags';
 import {AppHeaderV2} from './AppHeaderV2';
 import {LegacyAppHeader} from './LegacyAppHeader';
 
-const AppHeader: React.FC = () =>
-  IS_NAV_V2_ENABLED ? <AppHeaderV2 /> : <LegacyAppHeader />;
+const AppHeader: React.FC<{hideNavLinks?: boolean}> = ({
+  hideNavLinks = false,
+}) =>
+  IS_NAV_V2_ENABLED ? (
+    <AppHeaderV2 hideNavLinks={hideNavLinks} />
+  ) : (
+    <LegacyAppHeader />
+  );
 
 export {AppHeader};

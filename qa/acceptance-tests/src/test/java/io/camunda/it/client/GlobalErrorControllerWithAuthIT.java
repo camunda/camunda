@@ -31,8 +31,15 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.physical-tenant",
+    matches = ".+",
+    disabledReason =
+        "System endpoints (/v2/system/*) are global, not tenant-scoped; a physical-tenant client"
+            + " prefixes /physical-tenants/<id>/ and gets 401")
 public class GlobalErrorControllerWithAuthIT {
 
   private static final String ADMIN = "admin";

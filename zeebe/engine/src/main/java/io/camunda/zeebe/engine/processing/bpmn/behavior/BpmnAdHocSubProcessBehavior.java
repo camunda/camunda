@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -69,14 +71,22 @@ public final class BpmnAdHocSubProcessBehavior {
 
     if (variablesBuffer != NO_VARIABLES && variablesBuffer.capacity() > 0) {
       // set local variable in the scope of the inner instance
-      variableBehavior.mergeLocalDocument(
-          adHocSubProcessInnerInstanceKey,
-          context.getProcessDefinitionKey(),
-          context.getProcessInstanceKey(),
-          context.getRootProcessInstanceKey(),
-          context.getBpmnProcessId(),
-          context.getTenantId(),
-          variablesBuffer);
+      try {
+        variableBehavior.mergeLocalDocument(
+            adHocSubProcessInnerInstanceKey,
+            context.getProcessDefinitionKey(),
+            context.getProcessInstanceKey(),
+            context.getRootProcessInstanceKey(),
+            context.getBpmnProcessId(),
+            context.getTenantId(),
+            variablesBuffer);
+      } catch (final ValidationException e) {
+        throw new BpmnProcessingException(
+            context,
+            String.format(
+                "Failed to activate ad-hoc sub-process element '%s': %s",
+                elementIdToActivate, e.getMessage()));
+      }
     }
 
     final ExecutableFlowNode elementToActivate =

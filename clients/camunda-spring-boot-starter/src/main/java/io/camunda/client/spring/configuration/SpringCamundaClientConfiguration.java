@@ -83,6 +83,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public boolean prefixPhysicalTenantPath() {
+    return camundaClientProperties.getPrefixPhysicalTenantPath();
+  }
+
+  @Override
   public List<String> getDefaultJobWorkerTenantIds() {
     return camundaClientProperties.getWorker().getDefaults().getTenantIds();
   }

@@ -18,6 +18,8 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {reaction} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {elementInstancesTreeStore} from './ElementInstanceLog/ElementInstancesTree/elementInstancesTreeStore';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {
@@ -177,6 +179,8 @@ const ProcessInstance: React.FC = observer(() => {
       instanceHistoryModificationStore.reset();
       elementTimeStampStore.reset();
       modificationsStore.reset();
+      elementInstancesTreeStore.reset();
+      executionCountToggleStore.reset();
     };
   }, [processInstanceId]);
 

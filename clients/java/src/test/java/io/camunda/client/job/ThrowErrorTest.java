@@ -86,6 +86,73 @@ public final class ThrowErrorTest extends ClientTest {
   }
 
   @Test
+  public void shouldThrowErrorWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final String leaseToken = "lease-token";
+
+    // when
+    client
+        .newThrowErrorCommand(jobKey)
+        .errorCode(errorCode)
+        .withLeaseToken(leaseToken)
+        .send()
+        .join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String errorCode = "errorCode";
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final String errorCode = "errorCode";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+
+    // when
+    client.newThrowErrorCommand(jobKey).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

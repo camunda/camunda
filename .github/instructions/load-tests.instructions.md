@@ -20,7 +20,9 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    cd load-tests/setup/test && make update-golden
    ```
    then review `git diff golden/`. See `load-tests/setup/test/README.md` for the
-   suite, layout, and how to add a stable version.
+   suite, layout, and how to add a stable version. Or apply the `generate-golden`
+   label to same-repository PRs. Renovate PRs touching `load-tests/setup/**`
+   are handled automatically by `.github/workflows/load-test-golden-update.yml`.
 
 3. **Versioned setup folders**: For changes to `load-tests/setup/`, do **not**
    propose backports to stable branches. Instead, update the relevant versioned
@@ -41,6 +43,21 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    ```
    This lets Renovate automatically track Helm chart patch updates on that stable branch.
    See `load-tests/setup/README.md#helm-chart-version-management` for full details.
+
+4. **Command-line flag precedence**: A flag added via `+=` to
+   `additional_load_test_setup_configuration` or `additional_load_test_configuration` in a
+   `load-tests/setup/*/Makefile` is silently dropped when CI passes that same variable on the
+   `make` command line (as `camunda-load-test.yml` always does) — GNU Make blocks any later `+=`
+   to a variable once it has command-line origin, even if the CLI value is empty
+   ([Overriding](https://www.gnu.org/software/make/manual/html_node/Overriding.html),
+   [Override Directive](https://www.gnu.org/software/make/manual/html_node/Override-Directive.html)).
+   Route makefile-computed defaults through a dedicated accumulator instead (see
+   `_load_test_setup_flags` in any versioned Makefile), and verify with:
+   ```sh
+   make -n <target> ... additional_load_test_setup_configuration="--set foo=bar"
+   ```
+   A plain `make -n <target>` dry run — or the golden file tests, which never set this variable on
+   the command line — will not catch this class of regression.
 
 ## What gets backported
 

@@ -10,6 +10,7 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public interface SearchEntityReader<T, Q extends TypedSearchQuery<?, ?>>
     extends SearchClientReader {
@@ -20,7 +21,7 @@ public interface SearchEntityReader<T, Q extends TypedSearchQuery<?, ?>>
    *
    * @param resourceAccessChecks to be applied when retrieving the entity, if applicable
    */
-  default T getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+  default @Nullable T getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
     throw new UnsupportedOperationException("SearchClientReader#getById() not supported");
   }
 
@@ -30,7 +31,7 @@ public interface SearchEntityReader<T, Q extends TypedSearchQuery<?, ?>>
    *
    * @param resourceAccessChecks to be applied when retrieving the entity, if applicable.
    */
-  default T getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+  default @Nullable T getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
     throw new UnsupportedOperationException("SearchClientReader#getByKey() not supported");
   }
 

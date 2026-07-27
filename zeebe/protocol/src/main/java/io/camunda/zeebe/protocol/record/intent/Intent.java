@@ -15,19 +15,35 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public interface Intent {
 
   Map<ValueType, Class<? extends Intent>> VALUE_TYPE_TO_INTENT_MAP = computeValueTypeToIntentMap();
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       VALUE_TYPE_TO_INTENT_MAP.values().stream().distinct().collect(Collectors.toList());
+  Map<Class<? extends Intent>, Int2ObjectHashMap<Intent>> PROTOCOL_VALUE_TO_INTENT_MAP =
+      INTENT_CLASSES.stream()
+          .collect(
+              Collectors.toMap(
+                  Function.identity(),
+                  intentClass -> {
+                    final Int2ObjectHashMap<Intent> map = new Int2ObjectHashMap<>();
+                    for (final Intent intentValue : intentClass.getEnumConstants()) {
+                      map.put(intentValue.value(), intentValue);
+                    }
+                    return map;
+                  }));
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -87,6 +103,9 @@ public interface Intent {
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);
     map.put(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.class);
+    map.put(
+        ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND, ProcessInstanceBufferedCommandIntent.class);
+    map.put(ValueType.PROCESS_INSTANCE_BUSINESS_ID, ProcessInstanceBusinessIdIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.class);
@@ -98,6 +117,7 @@ public interface Intent {
     map.put(ValueType.ROLE, RoleIntent.class);
     map.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionIntent.class);
     map.put(ValueType.SCALE, ScaleIntent.class);
+    map.put(ValueType.SECRET_REFERENCE, SecretReferenceIntent.class);
     map.put(ValueType.SIGNAL, SignalIntent.class);
     map.put(ValueType.SIGNAL_SUBSCRIPTION, SignalSubscriptionIntent.class);
     map.put(ValueType.TENANT, TenantIntent.class);
@@ -135,12 +155,8 @@ public interface Intent {
       return Intent.UNKNOWN;
     }
     final Class<? extends Intent> intentClass = fromValueType(valueType);
-    for (final Intent intentValue : intentClass.getEnumConstants()) {
-      if (intentValue.value() == intent) {
-        return intentValue;
-      }
-    }
-    return Intent.UNKNOWN;
+    return requireNonNull(PROTOCOL_VALUE_TO_INTENT_MAP.get(intentClass))
+        .getOrDefault(intent, UNKNOWN);
   }
 
   @SuppressWarnings("unchecked")

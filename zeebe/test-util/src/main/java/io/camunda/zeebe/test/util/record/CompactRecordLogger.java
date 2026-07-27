@@ -119,6 +119,8 @@ import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
@@ -133,6 +135,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -282,6 +285,10 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
     valueLoggers.put(
+        ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND, this::summarizeProcessInstanceBufferedCommand);
+    valueLoggers.put(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID, this::summarizeProcessInstanceBusinessId);
+    valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, this::summarizeAdHocSubProcessInstruction);
@@ -340,6 +347,7 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
+    valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -563,7 +571,7 @@ public class CompactRecordLogger {
     result
         .append(shortenKey(value.getAgentInstanceKey()))
         .append("#")
-        .append(value.getIteration())
+        .append(value.getLoopIteration())
         .append(" ")
         .append(value.getRole())
         .append(" @")
@@ -631,6 +639,26 @@ public class CompactRecordLogger {
               toolCalls.stream()
                   .map(AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue::getToolName)
                   .collect(Collectors.joining(", ")));
+    }
+
+    return result.toString();
+  }
+
+  private String summarizeSecretReference(final Record<?> record) {
+    final var value = (SecretReferenceRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append("store:")
+        .append(value.getStoreId())
+        .append(" ref:")
+        .append(value.getSecretReference())
+        .append(" state:")
+        .append(value.getResolutionState());
+
+    final var jobKeys = value.getJobKeys();
+    if (jobKeys != null && !jobKeys.isEmpty()) {
+      result.append(" jobs:").append(jobKeys.size());
     }
 
     return result.toString();
@@ -1983,6 +2011,30 @@ public class CompactRecordLogger {
     }
 
     return summary.toString();
+  }
+
+  private String summarizeProcessInstanceBufferedCommand(final Record<?> record) {
+    final var value = (ProcessInstanceBufferedCommandRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append(shortenKey(value.getProcessInstanceKey()))
+        .append(" elementInstanceKey: ")
+        .append(shortenKey(value.getElementInstanceKey()))
+        .append(" ")
+        .append(value.getValueType())
+        .append(" ")
+        .append(value.getIntent())
+        .toString();
+  }
+
+  private String summarizeProcessInstanceBusinessId(final Record<?> record) {
+    final var value = (ProcessInstanceBusinessIdRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append(shortenKey(value.getProcessInstanceKey()))
+        .append(" businessId: ")
+        .append(formatId(value.getBusinessId()))
+        .toString();
   }
 
   private String summarizeProcessInstanceMigration(final Record<?> record) {

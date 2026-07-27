@@ -18,7 +18,7 @@ public class GlobalListenerEntityMapper {
       return null;
     }
     return new GlobalListenerEntity(
-        dbModel.id(),
+        nullToEmpty(dbModel.id()),
         nullToEmpty(dbModel.listenerId()),
         nullToEmpty(dbModel.type()),
         dbModel.eventTypes(),

@@ -180,6 +180,11 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "operate-fe-visual-regression-merge"
         job_id != "generate-db-versions"
         job_id != "generate-matrix"
+        # not enforced on wait jobs from load tests
+        job_id != "warmup-grpc"
+        job_id != "warmup-rest"
+        job_id != "soak-grpc"
+        job_id != "soak-rest"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"

@@ -21,6 +21,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
@@ -34,8 +35,10 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruct
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -137,6 +140,26 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceRequest(
+      final SuspendProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateResumeProcessInstanceRequest(
+      final ResumeProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
   public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
       final ProcessInstanceMigrationBatchOperationRequest request) {
     return validate(
@@ -188,6 +211,18 @@ public class ProcessInstanceRequestValidator {
             validateMappingInstructions(request.getMappingInstructions(), violations);
           }
           validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateAssignProcessInstanceBusinessIdRequest(
+      final ProcessInstanceBusinessIdAssignmentInstruction request) {
+    return validate(
+        violations -> {
+          if (StringUtils.isBlank(request.getBusinessId())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("businessId"));
+          } else {
+            validateBusinessId(request.getBusinessId(), violations);
+          }
         });
   }
 

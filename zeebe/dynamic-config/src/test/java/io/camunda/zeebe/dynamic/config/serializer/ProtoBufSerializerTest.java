@@ -13,34 +13,51 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,6 +65,47 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class ProtoBufSerializerTest {
 
   private final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
+
+  @Test
+  void shouldEncodeAndDecodeClusterZoneMigrationRequest() {
+    // given
+    final var request = new ClusterZoneMigrationRequest("us-west-1", true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterZoneMigrationRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterZoneMigrationRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeForceRemoveZoneRequest() {
+    // given
+    final var request = new ForceZoneRemoveRequest("us-west-1", true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeForceRemoveZoneRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeForceRemoveZoneRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeAddZoneRequest() {
+    // given
+    final var request =
+        new AddZoneRequest(
+            "us-west-1", 3, 1, Set.of(MemberId.from("1"), MemberId.from("2")), false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeAddZoneRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeAddZoneRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
 
   @Test
   void shouldEncodeAndDecodeAddMembersRequest() {
@@ -131,6 +189,21 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeExporterDisableRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(exporterDisableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExportingStateChangeRequest() {
+    // given
+    final var request =
+        new ExportingStateChangeRequest(
+            io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED, false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeExportingStateChangeRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExportingStateChangeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
   }
 
   @Test
@@ -241,7 +314,10 @@ final class ProtoBufSerializerTest {
                 new MemberLeaveOperation(MemberId.from("1")),
                 new PartitionJoinOperation(MemberId.from("2"), 1, 2),
                 new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)));
+                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                new PartitionPreRestoreOperation(MemberId.from("1"), 1),
+                new PartitionRestoreOperation(
+                    MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
@@ -250,6 +326,66 @@ final class ProtoBufSerializerTest {
     final var decodedResponse =
         protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionGroupChangeOperationForPartitionPreRestore() {
+    // given
+    final var groupId = "default";
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        groupId,
+                        List.of(new PartitionPreRestoreOperation(MemberId.from("1"), 1))))),
+            Instant.now());
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionGroupChangeOperationForPartitionRestore() {
+    // given
+    final var groupId = "default";
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        groupId,
+                        List.of(
+                            new PartitionRestoreOperation(
+                                MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))))))),
+            Instant.now());
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
   }
 
   @Test
@@ -293,5 +429,25 @@ final class ProtoBufSerializerTest {
 
     // then
     assertThat(deserialized.state()).isEqualTo(ExportingState.UNKNOWN);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionStateRecovering() {
+    // given
+    final var partitionConfig = DynamicPartitionConfig.init();
+    final var clusterConfiguration =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(clusterConfiguration);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration()).isEqualTo(clusterConfiguration);
   }
 }

@@ -23,5 +23,5 @@ public interface AgentInstanceHistorySort extends SearchRequestSort<AgentInstanc
 
   AgentInstanceHistorySort historyItemKey();
 
-  AgentInstanceHistorySort iteration();
+  AgentInstanceHistorySort loopIteration();
 }

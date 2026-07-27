@@ -49,11 +49,12 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
+  private final LongProperty messageTtlProp = new LongProperty("messageTtl", 0L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageStartProcessInstanceRequestRecord() {
-    super(12);
+    super(13);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -65,6 +66,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
         .declareProperty(variablesProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageDeadlineProp)
+        .declareProperty(messageTtlProp)
         .declareProperty(tenantIdProp);
   }
 
@@ -80,6 +82,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
     setVariables(record.getVariablesBuffer());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setMessageDeadline(record.getMessageDeadline());
+    setMessageTtl(record.getMessageTtl());
     setTenantId(record.getTenantId());
   }
 
@@ -250,6 +253,16 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
 
   public MessageStartProcessInstanceRequestRecord setMessageDeadline(final long messageDeadline) {
     messageDeadlineProp.setValue(messageDeadline);
+    return this;
+  }
+
+  @Override
+  public long getMessageTtl() {
+    return messageTtlProp.getValue();
+  }
+
+  public MessageStartProcessInstanceRequestRecord setMessageTtl(final long messageTtl) {
+    messageTtlProp.setValue(messageTtl);
     return this;
   }
 

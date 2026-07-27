@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
+import io.camunda.application.commons.hub.ping.M2MCredentials;
+import io.camunda.application.commons.hub.ping.M2MTokenProvider;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -34,15 +36,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+/**
+ * Pings the Camunda Console endpoint on a scheduled basis.
+ *
+ * @deprecated Use {@code camunda.hub.ping} configuration instead. This runner is retained for
+ *     backwards compatibility and will be removed in a future release. It is disabled automatically
+ *     when {@code camunda.hub.ping.enabled=true}.
+ *     <p><b>Important:</b> The ping endpoint now requires authentication regardless of which
+ *     configuration path is used. Before upgrading, you must add M2M credentials under {@code
+ *     camunda.console.ping.credentials} ({@code token-endpoint}, {@code client-id}, {@code
+ *     client-secret}). Missing credentials will cause all pings to fail at startup validation.
+ */
+@Deprecated
 @Component
 @EnableConfigurationProperties({ConsolePingConfiguration.class})
-@ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
+@ConditionalOnExpression(
+    "'${camunda.console.ping.enabled:false}' == 'true' "
+        + "and '${camunda.hub.ping.enabled:false}' != 'true'")
 public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListener {
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
@@ -66,6 +82,8 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
 
   @Override
   public void run(final ApplicationArguments args) {
+    LOGGER.warn(
+        "camunda.console.ping is deprecated. Please migrate to camunda.hub.ping configuration.");
     waitForClusterId()
         .thenAccept(this::buildLicensePayload)
         .thenRun(
@@ -80,17 +98,17 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   }
 
   private void startPingTask() {
-
     LOGGER.info(
-        "Console ping is enabled cluster ID of {}, with endpoint: {}, and period of {}.",
+        "Console ping is enabled for cluster ID of {}, with endpoint: {}, and period of {}.",
         brokerTopologyManager.getClusterConfiguration().clusterId().get(),
         pingConfiguration.endpoint(),
         pingConfiguration.pingPeriod());
+    final var tokenProvider = new M2MTokenProvider(pingConfiguration.credentials());
     final var executor = createTaskExecutor();
     executor.scheduleAtFixedRate(
-        new PingConsoleTask(pingConfiguration, licensePayload.get()),
+        new PingConsoleTask(pingConfiguration, tokenProvider, licensePayload.get()),
         1000,
-        pingConfiguration.pingPeriod.toMillis(),
+        pingConfiguration.pingPeriod().toMillis(),
         TimeUnit.MILLISECONDS);
   }
 
@@ -99,10 +117,10 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     if (pingConfiguration.endpoint() == null) {
       return Either.left("Ping endpoint must not be null.");
     }
-    if (pingConfiguration.endpoint.getScheme() == null
-        || pingConfiguration.endpoint.getHost() == null) {
+    if (pingConfiguration.endpoint().getScheme() == null
+        || pingConfiguration.endpoint().getHost() == null) {
       return Either.left(
-          String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
+          String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint()));
     }
     if (brokerTopologyManager.getClusterConfiguration().clusterId().get().isBlank()) {
       return Either.left("Cluster ID must not be null or empty.");
@@ -121,7 +139,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         return Either.left("Retry delay multiplier must be greater than zero.");
       }
       if (pingConfiguration.retry().getMaxRetryDelay().isZero()
-          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
+          || pingConfiguration.retry().getMaxRetryDelay().isNegative()) {
         return Either.left("Max retry delay must be greater than zero.");
       }
       if (pingConfiguration.retry().getMinRetryDelay().isZero()
@@ -135,6 +153,27 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
           < 0) {
         return Either.left("Max retry delay must be greater than or equal to min retry delay.");
       }
+    }
+    if (pingConfiguration.credentials() == null) {
+      return Either.left("M2M credentials must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint() == null) {
+      return Either.left("M2M token endpoint must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint().getScheme() == null
+        || pingConfiguration.credentials().tokenEndpoint().getHost() == null) {
+      return Either.left(
+          String.format(
+              "M2M token endpoint %s must be a valid URI.",
+              pingConfiguration.credentials().tokenEndpoint()));
+    }
+    if (pingConfiguration.credentials().clientId() == null
+        || pingConfiguration.credentials().clientId().isBlank()) {
+      return Either.left("M2M client ID must not be null or empty.");
+    }
+    if (pingConfiguration.credentials().clientSecret() == null
+        || pingConfiguration.credentials().clientSecret().isBlank()) {
+      return Either.left("M2M client secret must not be null or empty.");
     }
     if (licensePayload.isLeft()) {
       return Either.left(
@@ -156,14 +195,13 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         .toList();
   }
 
-  public ScheduledThreadPoolExecutor createTaskExecutor() {
+  private ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
             .name("console-license-ping-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOGGER))
             .factory();
     final var executor = new ScheduledThreadPoolExecutor(1, threadFactory);
-    // if the executor is shut down, there is no need to continue executing existing tasks
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
@@ -180,13 +218,14 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
             managementServices.getCamundaLicenseExpiresAt() == null
                 ? null
                 : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+    final List<String> activeProfiles = getActiveProfiles();
     final LicensePayload payload =
         new LicensePayload(
             license,
             clusterId,
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
-            getActiveProfiles(),
+            activeProfiles.isEmpty() ? null : activeProfiles,
             pingConfiguration.properties());
     try {
       licensePayload = Either.right(objectMapper.writeValueAsString(payload));
@@ -221,5 +260,6 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,
-      Map<String, String> properties) {}
+      Map<String, String> properties,
+      M2MCredentials credentials) {}
 }

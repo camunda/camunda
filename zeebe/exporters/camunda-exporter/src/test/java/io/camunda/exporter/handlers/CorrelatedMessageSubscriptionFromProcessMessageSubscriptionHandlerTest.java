@@ -8,9 +8,11 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -29,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 
 final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -276,12 +277,13 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final CorrelatedMessageSubscriptionEntity entity =
         underTest.createNewEntity(underTest.generateIds(record).getFirst());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(expectedIndexName, entity);
+    verify(mockRequest, times(1)).add(index, entity);
   }
 }

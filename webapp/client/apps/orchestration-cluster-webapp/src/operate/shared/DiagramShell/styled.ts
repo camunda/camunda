@@ -33,14 +33,18 @@ const LoadingContainer = styled.div`
 
 const getMessageStyles = ($position: 'center' | 'top' = 'top') => {
 	return css`
-		${$position === 'center' &&
-		css`
-			align-self: center;
-		`}
-		${$position === 'top' &&
-		css`
-			margin-top: var(--cds-spacing-08);
-		`}
+		${
+			$position === 'center' &&
+			css`
+				align-self: center;
+			`
+		}
+		${
+			$position === 'top' &&
+			css`
+				margin-top: var(--cds-spacing-08);
+			`
+		}
 	`;
 };
 

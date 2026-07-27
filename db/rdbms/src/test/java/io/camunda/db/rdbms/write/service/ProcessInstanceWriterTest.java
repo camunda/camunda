@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateSuspendedStateDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -65,5 +66,57 @@ class ProcessInstanceWriterTest {
                     1L,
                     "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
                     new EndProcessInstanceDto(1L, ProcessInstanceState.COMPLETED, NOW))));
+  }
+
+  @Test
+  void whenSuspendCanBeMergedWithInsertNoItemShouldBeEnqueued() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(true);
+
+    writer.suspend(1L, NOW);
+
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void whenSuspendCannotBeMergedWithInsertItemShouldBeEnqueued() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
+
+    writer.suspend(1L, NOW);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.PROCESS_INSTANCE,
+                    WriteStatementType.UPDATE,
+                    1L,
+                    "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState",
+                    new UpdateSuspendedStateDto(1L, ProcessInstanceState.SUSPENDED, NOW))));
+  }
+
+  @Test
+  void whenResumeCanBeMergedWithInsertNoItemShouldBeEnqueued() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(true);
+
+    writer.resume(1L);
+
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void whenResumeCannotBeMergedWithInsertItemShouldBeEnqueued() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
+
+    writer.resume(1L);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.PROCESS_INSTANCE,
+                    WriteStatementType.UPDATE,
+                    1L,
+                    "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState",
+                    new UpdateSuspendedStateDto(1L, ProcessInstanceState.ACTIVE, null))));
   }
 }

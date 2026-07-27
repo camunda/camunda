@@ -282,7 +282,7 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\", action=~\"exported\",partition=~\"$partition\", valueType!~\"MESSAGE_SUBSCRIPTION|MESSAGE|JOB_BATCH\"}[$__rate_interval]))",
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\", action=~\"exported\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", valueType!~\"MESSAGE_SUBSCRIPTION|MESSAGE|JOB_BATCH\"}[$__rate_interval]))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -396,7 +396,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
               "legendFormat": "Processing latency",
@@ -409,7 +409,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_exporting_latency_sum{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_exporting_latency_count{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(rate(zeebe_exporting_latency_sum{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_exporting_latency_count{namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
               "legendFormat": "Exporting latency",
@@ -936,7 +936,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -1007,7 +1007,7 @@
               },
               "editorMode": "builder",
               "exemplar": true,
-              "expr": "rate(zeebe_camunda_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_camunda_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
@@ -1101,7 +1101,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "increase(zeebe_camunda_exporter_flush_failure_type_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[1m])",
+              "expr": "increase(zeebe_camunda_exporter_flush_failure_type_total{cluster=~\"$cluster\", namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[1m])",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -1194,8 +1194,8 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "min by (partition) (zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
-              "legendFormat": "partition-{{partition}}",
+              "expr": "min by (physicalTenant, partition) (zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "legendFormat": "{{physicalTenant}} partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1287,8 +1287,8 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=~\"(?i)camundaexporter\"}) by (partition)",
-              "legendFormat": "partition {{partition}}",
+              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", exporter=~\"(?i)camundaexporter\"}) by (physicalTenant, partition)",
+              "legendFormat": "{{physicalTenant}} partition {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1383,11 +1383,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / \nsum(increase(zeebe_camunda_exporter_bulk_size_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition) / \nsum(increase(zeebe_camunda_exporter_bulk_size_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "partition-{{partition}}",
+              "legendFormat": "{{physicalTenant}} partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1487,9 +1487,9 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "min by (partition) (\n  rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]) / \n  rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])\n)",
+              "expr": "min by (physicalTenant, partition) (\n  rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]) / \n  rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])\n)",
               "interval": "",
-              "legendFormat": "Partition {{partition}}",
+              "legendFormat": "{{physicalTenant}} Partition {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1585,9 +1585,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_evictions_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_evictions_total{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition)",
               "instant": false,
-              "legendFormat": "Evictions {{partition}}",
+              "legendFormat": "{{physicalTenant}} Evictions {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1685,10 +1685,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition)",
               "hide": false,
               "instant": false,
-              "legendFormat": "Cache access {{partition}}",
+              "legendFormat": "{{physicalTenant}} Cache access {{partition}}",
               "range": true,
               "refId": "A"
             },
@@ -1698,10 +1698,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (partition, type)",
+              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition, type)",
               "hide": false,
               "instant": false,
-              "legendFormat": "P{{partition}} - {{type}}",
+              "legendFormat": "{{physicalTenant}} P{{partition}} - {{type}}",
               "range": true,
               "refId": "B"
             }
@@ -1784,7 +1784,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "interval": "30s",
@@ -1800,7 +1800,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -1900,7 +1900,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"search\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", type=\"search\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -1983,7 +1983,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"reindex\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", type=\"reindex\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -2066,7 +2066,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"delete\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", type=\"delete\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -2165,12 +2165,12 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_success_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_success_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition)",
               "format": "heatmap",
               "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "Success p{{partition}}",
+              "legendFormat": "{{physicalTenant}} Success p{{partition}}",
               "range": true,
               "refId": "A"
             },
@@ -2180,10 +2180,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (physicalTenant, partition)",
               "hide": false,
               "instant": false,
-              "legendFormat": "Failure p{{partition}}",
+              "legendFormat": "{{physicalTenant}} Failure p{{partition}}",
               "range": true,
               "refId": "B"
             }
@@ -2275,8 +2275,8 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "max by (partition) (zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
-              "legendFormat": "Partition {{partition}}",
+              "expr": "max by (physicalTenant, partition) (zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "legendFormat": "{{physicalTenant}} Partition {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -2355,7 +2355,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -2460,9 +2460,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (physicalTenant, partition, state)",
               "instant": false,
-              "legendFormat": "{{state}} process instances [p{{partition}}]",
+              "legendFormat": "{{physicalTenant}} {{state}} process instances [p{{partition}}]",
               "range": true,
               "refId": "A"
             },
@@ -2472,10 +2472,10 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (physicalTenant, partition, state)",
               "hide": false,
               "instant": false,
-              "legendFormat": "{{state}} batch operations [p{{partition}}]",
+              "legendFormat": "{{physicalTenant}} {{state}} batch operations [p{{partition}}]",
               "range": true,
               "refId": "B"
             }
@@ -2569,7 +2569,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -2669,7 +2669,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "exemplar": true,
-              "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "refId": "A"
@@ -2750,7 +2750,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(increase(zeebe_elasticsearch_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_elasticsearch_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -2849,11 +2849,11 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} p{{partition}}",
+              "legendFormat": "{{physicalTenant}} {{pod}} p{{partition}}",
               "refId": "A"
             }
           ],
@@ -2946,7 +2946,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_rdbms_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3042,7 +3042,7 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "rate(zeebe_rdbms_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) > 0",
+              "expr": "rate(zeebe_rdbms_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) > 0",
               "interval": "1",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
@@ -3112,7 +3112,7 @@
               },
               "editorMode": "builder",
               "exemplar": true,
-              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
@@ -3194,7 +3194,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_rdbms_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3297,7 +3297,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
               "format": "time_series",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3312,7 +3312,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+              "expr": "sum(increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3382,7 +3382,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (statementId)",
+              "expr": "sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (statementId)",
               "format": "time_series",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3481,7 +3481,7 @@
             {
               "disableTextWrap": false,
               "editorMode": "builder",
-              "expr": "rate(zeebe_rdbms_exporter_queue_memory_bytes_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_queue_memory_bytes_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_rdbms_exporter_queue_memory_bytes_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_queue_memory_bytes_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
               "format": "time_series",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -3675,14 +3675,35 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
+        "definition": "label_values(zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},physicalTenant)",
+        "includeAll": true,
+        "multi": true,
+        "name": "physicalTenant",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},physicalTenant)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
         "includeAll": true,
         "multi": true,
         "name": "partition",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

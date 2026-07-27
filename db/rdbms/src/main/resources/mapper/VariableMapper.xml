@@ -270,6 +270,52 @@
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </select>
 
+  <!-- Returns distinct, name-narrowed, authorized variable names, ordered alphabetically and capped at the limit. -->
+  <select id="findVariableNames" parameterType="io.camunda.db.rdbms.read.domain.VariableNameDbQuery"
+    resultType="java.lang.String">
+    SELECT DISTINCT l.VAR_NAME
+    FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP l
+    JOIN ${prefix}PROCESS_DEFINITION pd ON pd.PROCESS_DEFINITION_KEY = l.PROCESS_DEFINITION_KEY
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pd.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pd.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND l.PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND l.VAR_NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+    </where>
+    ORDER BY l.VAR_NAME
+    <choose>
+      <when test="_databaseId == 'mssql'">
+        OFFSET 0 ROWS FETCH NEXT #{limit} ROWS ONLY
+      </when>
+      <when test="_databaseId == 'oracle'">
+        FETCH FIRST #{limit} ROWS ONLY
+      </when>
+      <otherwise>
+        LIMIT #{limit}
+      </otherwise>
+    </choose>
+  </select>
+
   <!-- Removes all lookup entries for the given process definitions, used when a process definition is deleted. -->
   <delete id="deleteLookupByProcessDefinitionKeys">
     DELETE FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP

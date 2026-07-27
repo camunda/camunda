@@ -1,6 +1,6 @@
 # description: Daily compatibility tests for Camunda Spring Boot Starter across server versions
 # type: CI
-# owner: @camunda/camundaex
+# owner: @camunda/core-features
 name: Camunda Spring Boot Starter Compatibility Tests
 
 on:
@@ -31,7 +31,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/camundaex'
+  TEST_OWNER: '@camunda/core-features'
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
       is-main: ${{ steps.branch-info.outputs.is-main }}
       branch-name: ${{ steps.branch-info.outputs.branch-name }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Fetch all history for git tags
 
@@ -369,7 +369,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare-versions.outputs.branch-name }}
           fetch-depth: 0
@@ -446,7 +446,7 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Restore previous tested combinations
         env:
@@ -528,7 +528,7 @@ jobs:
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions: {}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
@@ -541,7 +541,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Notify failure
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -116,7 +115,7 @@ final class RemoteStreamerTest {
     // then
     Mockito.verify(communicationService, Mockito.timeout(5_000).times(1))
         .send(
-            Mockito.eq(StreamTopics.PUSH.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            Mockito.eq(StreamTopics.PUSH.legacyTopic()),
             Mockito.eq(new PushStreamRequest().streamId(streamId.streamId()).payload(payload)),
             Mockito.any(),
             Mockito.any(),

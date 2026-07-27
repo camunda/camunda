@@ -16,7 +16,7 @@ public class SequenceFlowEntityMapper {
 
   public static SequenceFlowEntity toEntity(final SequenceFlowDbModel dbModel) {
     return new SequenceFlowEntity(
-        dbModel.sequenceFlowId(),
+        nullToEmpty(dbModel.sequenceFlowId()),
         nullToEmpty(dbModel.flowNodeId()),
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),

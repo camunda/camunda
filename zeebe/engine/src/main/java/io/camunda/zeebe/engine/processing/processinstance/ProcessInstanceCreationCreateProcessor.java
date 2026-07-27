@@ -10,12 +10,14 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -63,7 +65,13 @@ public final class ProcessInstanceCreationCreateProcessor
         .flatMap(process -> helper.isAuthorized(command, process))
         .flatMap(process -> helper.validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(command, process),
+            process -> {
+              try {
+                createProcessInstance(command, process);
+              } catch (final ValidationException e) {
+                reject(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
+              }
+            },
             rejection -> reject(command, rejection.type(), rejection.reason()));
   }
 
@@ -74,7 +82,7 @@ public final class ProcessInstanceCreationCreateProcessor
       // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
@@ -87,12 +95,13 @@ public final class ProcessInstanceCreationCreateProcessor
       final String reason) {
     rejectionWriter.appendRejection(command, type, reason);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectionOnCommand(command, type, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, type, reason);
     }
   }
 
   private void createProcessInstance(
-      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process) {
+      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process)
+      throws VariableValidationException {
 
     final long processInstanceKey = keyGenerator.nextKey();
     final var commandKey = command.getKey();
@@ -128,7 +137,7 @@ public final class ProcessInstanceCreationCreateProcessor
     if (command.hasRequestMetadata()) {
       // set variables back to return them in the response
       record.setVariables(variablesBuffer);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }
 

@@ -24,6 +24,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class LicenseControllerTest extends RestControllerTest {
 
   static final String LICENSE_URL = "/v2/license";
+  static final String PT_LICENSE_URL = "/physical-tenants/foo/v2/license";
 
   static final String EXPECTED_LICENSE_RESPONSE =
       """
@@ -58,6 +59,34 @@ public class LicenseControllerTest extends RestControllerTest {
     webClient
         .get()
         .uri(LICENSE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_LICENSE_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(managementServices).isCamundaLicenseValid();
+    verify(managementServices).getCamundaLicenseType();
+    verify(managementServices).isCommercialCamundaLicense();
+    verify(managementServices).getCamundaLicenseExpiresAt();
+  }
+
+  @Test
+  void shouldReturnLicenseForPhysicalTenantPath() {
+    // given
+    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
+    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
+    when(managementServices.getCamundaLicenseExpiresAt())
+        .thenReturn(OffsetDateTime.parse("2024-10-29T15:14:13Z"));
+
+    // when / then
+    webClient
+        .get()
+        .uri(PT_LICENSE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()

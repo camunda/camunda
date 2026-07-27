@@ -10,10 +10,6 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  # No secondary storage in this configuration: Elasticsearch is disabled and
-  # `noSecondaryStorage` short-circuits all secondary-storage-dependent components.
-  elasticsearch:
-    enabled: false
   noSecondaryStorage: true
 
 optimize:
@@ -61,9 +57,3 @@ orchestration:
   history:
     retention:
       enabled: false
-
-########################################################################################
-################################################### Elasticsearch cluster configuration
-########################################################################################
-elasticsearch:
-  enabled: false

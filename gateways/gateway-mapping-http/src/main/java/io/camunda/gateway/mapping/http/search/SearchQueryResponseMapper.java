@@ -52,6 +52,7 @@ import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
@@ -129,6 +130,8 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionSta
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchResult;
 import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
@@ -184,6 +187,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -211,6 +215,7 @@ import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
@@ -243,6 +248,7 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -910,6 +916,9 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
         .hasStartForm(StringUtils.isNotBlank(entity.formId()))
+        .state(
+            ProcessDefinitionResult.StateEnum.fromValue(
+                requireNonNullElse(entity.state(), ProcessDefinitionState.ACTIVE).name()))
         .build();
   }
 
@@ -967,6 +976,7 @@ public final class SearchQueryResponseMapper {
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDateOrNull(p.endDate()))
         .state(toProtocolState(requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)))
+        .suspendedDate(formatDateOrNull(p.suspendedDate()))
         .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())
         .processInstanceKey(keyToString(p.processInstanceKey()))
@@ -1578,6 +1588,24 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
+  public static ProcessDefinitionVariableNameSearchQueryResult toVariableNameSearchResponse(
+      final List<String> names) {
+    return ProcessDefinitionVariableNameSearchQueryResult.Builder.create()
+        .page(
+            SearchQueryPageResponse.Builder.create()
+                .totalItems((long) names.size())
+                .hasMoreTotalItems(false)
+                .startCursor(null)
+                .endCursor(null)
+                .build())
+        .items(names.stream().map(SearchQueryResponseMapper::toVariableNameResult).toList())
+        .build();
+  }
+
+  private static ProcessDefinitionVariableNameSearchResult toVariableNameResult(final String name) {
+    return ProcessDefinitionVariableNameSearchResult.Builder.create().name(name).build();
+  }
+
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {
     return VariableResult.Builder.create()
         .name(variableEntity.name())
@@ -1634,6 +1662,8 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(toMetadataMap(clusterVariableEntity))
+        .kind(toKindEnum(clusterVariableEntity.kind()))
         .value(
             requireNonNull(
                 !truncateValues
@@ -1660,8 +1690,34 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(toMetadataMap(clusterVariableEntity))
+        .kind(toKindEnum(clusterVariableEntity.kind()))
         .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"))
         .build();
+  }
+
+  private static Map<String, Object> toMetadataMap(
+      final ClusterVariableEntity clusterVariableEntity) {
+    final var metadata = clusterVariableEntity.metadata();
+    if (metadata == null || metadata.isEmpty()) {
+      return Map.of();
+    }
+    final Map<String, Object> result = new LinkedHashMap<>();
+    metadata.forEach(
+        entry ->
+            result.put(
+                entry.key(), entry.valueNumber() != null ? entry.valueNumber() : entry.value()));
+    return result;
+  }
+
+  private static ClusterVariableKindEnum toKindEnum(final @Nullable ClusterVariableKind kind) {
+    if (kind == null) {
+      return ClusterVariableKindEnum.JSON;
+    }
+    return switch (kind) {
+      case SECRET_REFERENCE -> ClusterVariableKindEnum.SECRET_REFERENCE;
+      case JSON -> ClusterVariableKindEnum.JSON;
+    };
   }
 
   private static @Nullable String getFullValueIfPresent(
@@ -2153,12 +2209,17 @@ public final class SearchQueryResponseMapper {
             .orElseGet(Collections::emptyList);
 
     final var m = entity.metrics();
-    final var metrics =
-        AgentInstanceHistoryItemMetrics.Builder.create()
-            .inputTokens(m.inputTokens())
-            .outputTokens(m.outputTokens())
-            .durationMs(m.durationMs())
-            .build();
+    final AgentInstanceHistoryItemMetrics metrics;
+    if (m == null) {
+      metrics = null;
+    } else {
+      metrics =
+          AgentInstanceHistoryItemMetrics.Builder.create()
+              .inputTokens(m.inputTokens())
+              .outputTokens(m.outputTokens())
+              .durationMs(m.durationMs())
+              .build();
+    }
 
     return AgentInstanceHistoryItemResult.Builder.create()
         .historyItemKey(keyToString(entity.historyItemKey()))
@@ -2166,7 +2227,7 @@ public final class SearchQueryResponseMapper {
         .elementInstanceKey(keyToString(entity.elementInstanceKey()))
         .jobKey(keyToString(entity.jobKey()))
         .jobLease(entity.jobLease())
-        .iteration(entity.iteration())
+        .loopIteration(entity.loopIteration())
         .role(AgentInstanceHistoryRoleEnum.fromValue(entity.role().name()))
         .content(content)
         .toolCalls(toolCalls)

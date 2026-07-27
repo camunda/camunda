@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
 
@@ -118,6 +118,12 @@ jobs:
             jdbc-url: "jdbc:mysql://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
+          - database-name: "MySQL 9.7"
+            database-type: "mysql"
+            database-image-version: "9.7"
+            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
           # MariaDB
           - database-name: "MariaDB 10.11"
             database-type: "mariadb"
@@ -176,7 +182,7 @@ jobs:
         run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
 
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
 
@@ -195,14 +201,14 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Setup Java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
 
@@ -260,7 +266,7 @@ jobs:
             mysql)
               echo "Installing MySQL driver"
               curl -L -o dev-dist/lib/mysql-connector.jar \
-                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar
               ;;
             mariadb)
               echo "Installing MariaDB driver"
@@ -349,7 +355,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm

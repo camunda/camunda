@@ -187,16 +187,27 @@ paths:
   /partition-distribution:
     put:
       summary:
-        Update the partition distribution configuration for a zone-aware cluster. The
-        new configuration is applied immediately by computing and executing the necessary
-        partition join, leave, and priority-reconfiguration operations. Only ZONE_AWARE
-        clusters and ZONE_AWARE config bodies are accepted.
+        Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
+
+        Setting `config` persists a new configuration and applies it immediately by computing the necessary
+        partition join, leave, and priority-reconfiguration operations. When migrating a bare or partially zoned
+        cluster to zone-aware (see `PUT /cluster/zones`), list zones in `config.zones` in the order they should
+        receive the existing (bare) nodes — the first zone receives node 0, the second node 1, and so on, wrapping
+        around by zone count. This order only matters for that one-time migration; once all zones are migrated,
+        every other API addresses zones by name.
+
+        Setting `zonePriorities` re-orders the zones' priorities on a fully zone-aware cluster. The
+        priorities values are reused and they are just reassigned to a different zone based on the order of the zones in the
+        request. The first zone gets the highest existing priority value, the second zone the next highest, and so on. No new
+        priority values are introduced. This only updates the priorities; it does not itself move partition
+        leaders. Leaders move to the newly-preferred zone on the next election (e.g. triggered by a separate
+        rebalance). It must list exactly the currently configured zones; idempotent.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+              $ref: "components.yaml#/schemas/UpdatePartitionDistributionRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
       responses:
@@ -217,6 +228,99 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /zones/{zoneId}:
+    delete:
+      summary: Force-remove a zone
+      description: Force-evicts the given zone's brokers from the cluster and drops the zone from
+        the persisted partition distribution configuration, in one atomic change. Use this when a
+        zone is down and its brokers are unreachable.
+      parameters:
+        - $ref: '#/components/parameters/ZoneId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+    post:
+      summary: Add back a previously force-removed zone
+      description: Re-adds the operator-supplied brokers and re-includes the given zone in the
+        persisted partition distribution configuration, with the supplied replica count and
+        priority, in one atomic change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/AddZoneRequest"
+      parameters:
+        - $ref: '#/components/parameters/ZoneId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+  /zones:
+    put:
+      summary:
+        Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
+        contains only the zone name. Before migrating a zone, update the persisted partition
+        distribution with `PUT /cluster/partition-distribution` with a zone aware partition distribution.
+        For dual-region clusters, migrate the secondary zone first (odd-numbered nodes) and then the primary zone.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/ClusterZoneMigrationRequest"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
+
 components:
   parameters:
     BrokerId:
@@ -226,6 +330,13 @@ components:
       description: Id of the broker
       schema:
         $ref: 'components.yaml#/schemas/BrokerId'
+    ZoneId:
+      name: zoneId
+      required: true
+      in: path
+      description: Name of the zone
+      schema:
+        type: string
     DryRunParameter:
       name: dryRun
       description: If true, requested changes are only simulated and not actually applied.

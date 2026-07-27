@@ -15,6 +15,7 @@ import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
 import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
+import io.camunda.gateway.protocol.model.AdvancedMetadataValueFilter;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.filter.Operation;
@@ -450,6 +451,58 @@ class AdvancedSearchFilterUtilTest {
 
     // then — null element causes the whole operation to be dropped
     assertThat(actual).isEmpty();
+  }
+
+  @Test
+  void shouldPreserveStringValuesInUntypedOperations() {
+    // given
+    final var filter = AdvancedMetadataValueFilter.Builder.create().build();
+    filter.set$Eq("this");
+    filter.set$In(List.of("a", "b"));
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(filter);
+
+    // then — string values are preserved as String, not coerced
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new Operation<>(Operator.EQUALS, List.of("this")),
+            new Operation<>(Operator.IN, List.of("a", "b")));
+  }
+
+  @Test
+  void shouldPreserveNumericValuesInUntypedOperations() {
+    // given
+    final var filter = AdvancedMetadataValueFilter.Builder.create().build();
+    filter.set$Eq(5);
+    filter.set$In(List.of(1, 2));
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(filter);
+
+    // then — numeric values keep their runtime type (Number), not stringified
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new Operation<>(Operator.EQUALS, List.of(5)),
+            new Operation<>(Operator.IN, List.of(1, 2)));
+    assertThat(actual).allSatisfy(op -> assertThat(op.values()).allMatch(v -> v instanceof Number));
+  }
+
+  @Test
+  void shouldMapBooleanToExistsInUntypedOperations() {
+    // given
+    final var existsFilter = AdvancedMetadataValueFilter.Builder.create().build();
+    existsFilter.set$Exists(true);
+    final var notExistsFilter = AdvancedMetadataValueFilter.Builder.create().build();
+    notExistsFilter.set$Exists(false);
+
+    // when
+    final var exists = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(existsFilter);
+    final var notExists = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(notExistsFilter);
+
+    // then
+    assertThat(exists).containsExactly(Operation.exists(true));
+    assertThat(notExists).containsExactly(Operation.exists(false));
   }
 
   /** Creates an ArrayList that allows null elements (unlike List.of). */

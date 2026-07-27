@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
@@ -270,6 +271,118 @@ public class JobUpdateTimeoutTest {
         .hasRejectionReason(
             "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
                 .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldUpdateTimeoutOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withLease()
+            .activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var updatedRecord = ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
+
+    // then
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
+  }
+
+  @Test
+  public void shouldUpdateTimeoutOnLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withLease()
+            .activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(timeout)
+            .withLeaseToken(leaseToken)
+            .updateTimeout();
+
+    // then
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
+  }
+
+  @Test
+  public void shouldRejectUpdateTimeoutOnLeasedJobWithStaleLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withLease()
+            .activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(timeout)
+            .withLeaseToken("stale-lease-token")
+            .expectRejection()
+            .updateTimeout();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("rejection reason should explain the mismatch without echoing the token")
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldUpdateTimeoutOnNonLeasedJobEvenWhenLeaseSupplied() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(timeout)
+            .withLeaseToken("some-token")
+            .updateTimeout();
+
+    // then
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
   }
 
   private static void assertJobDeadline(

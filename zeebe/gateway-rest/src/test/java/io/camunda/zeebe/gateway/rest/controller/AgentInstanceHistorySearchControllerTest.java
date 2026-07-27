@@ -79,7 +79,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
             "jobLease": "job-lease-1",
-            "iteration": 1,
+            "loopIteration": 1,
             "role": "USER",
             "content": [{ "contentType": "TEXT", "text": "Hello agent" }],
             "toolCalls": [],
@@ -241,5 +241,50 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
                             .build())
                     .build()),
             any());
+  }
+
+  @Test
+  void shouldSearchAgentHistoryReturnsNullMetricsWhenNotSet() {
+    // given — entity with metrics == null (history item created without metrics)
+    final var entityNoMetrics =
+        new AgentInstanceHistoryEntity(
+            HISTORY_ITEM_KEY,
+            AGENT_INSTANCE_KEY,
+            ELEMENT_INSTANCE_KEY,
+            9007199254741001L,
+            9007199254740992L,
+            "myProcess",
+            "<default>",
+            JOB_KEY,
+            "job-lease-1",
+            1,
+            AgentInstanceHistoryRole.USER,
+            List.of(new ContentItem(ContentType.TEXT, "Hello agent", null, null)),
+            List.of(),
+            null,
+            AgentInstanceHistoryCommitStatus.COMMITTED,
+            PRODUCED_AT);
+
+    when(agentHistoryServices.search(any(AgentInstanceHistoryQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceHistoryEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(entityNoMetrics))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(HISTORY_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.items[0].metrics")
+        .isEqualTo(null);
   }
 }

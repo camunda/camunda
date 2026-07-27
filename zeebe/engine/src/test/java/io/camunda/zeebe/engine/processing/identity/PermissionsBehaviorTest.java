@@ -11,12 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.context.TokenClaimsAuthenticationResolver;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -36,7 +37,7 @@ final class PermissionsBehaviorTest {
   @Mock private ProcessingState processingState;
   @Mock private AuthorizationState authorizationState;
   @Mock private AuthorizationCheckPort authCheckPort;
-  @Mock private LazyTokenClaimsConverter claimsConverter;
+  @Mock private TokenClaimsAuthenticationResolver claimsConverter;
   @Mock private AuthenticationConfiguration authConfig;
   @Mock private TypedRecord<AuthorizationRecord> command;
 
@@ -94,6 +95,7 @@ final class PermissionsBehaviorTest {
             new InitializationConfiguration(),
             EngineSecurityConfigurations.ID_VALIDATION_PATTERN,
             EngineSecurityConfigurations.GROUP_ID_VALIDATION_PATTERN);
-    return new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
+    final var cslCheck = new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig);
+    return new PermissionsBehavior(processingState, cslCheck);
   }
 }

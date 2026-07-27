@@ -17,8 +17,10 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticIni
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
@@ -27,12 +29,14 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
@@ -43,8 +47,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -61,7 +69,9 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final ClusterMembershipService membershipService;
   private final MemberId localMemberId;
+  private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
   private ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
@@ -81,6 +91,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
+    membershipService = memberShipService;
     localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
@@ -107,7 +118,7 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor));
+                configurationChangeCoordinator, localMemberId, managerActor, validators));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -115,10 +126,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
-    final var otherKnownMembers =
-        staticConfiguration.clusterMembers().stream()
-            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
-            .toList();
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
         // This is important so that we don't silently revert to uninitialized configuration when
@@ -131,7 +139,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(
             new GossipInitializer(
                 clusterConfigurationGossiper,
@@ -155,10 +164,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
-    final var otherKnownMembers =
-        staticConfiguration.clusterMembers().stream()
-            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
-            .toList();
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
@@ -166,7 +172,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(new StaticInitializer(staticConfiguration))
         .andThen(
             new ExporterStateInitializer(
@@ -178,6 +185,17 @@ public final class ClusterConfigurationManagerService
         // Must be initialized by the coordinator only
         .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
+  }
+
+  private Supplier<List<MemberId>> initializationMembers(
+      final StaticConfiguration staticConfiguration) {
+    return () ->
+        Stream.concat(
+                staticConfiguration.clusterMembers().stream(),
+                membershipService.getMembers().stream().map(member -> member.id()))
+            .filter(memberId -> !memberId.equals(localMemberId))
+            .distinct()
+            .toList();
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
@@ -248,6 +266,16 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+    registerPartitionChangeExecutors(
+        partitionChangeExecutor,
+        partitionScalingChangeExecutor,
+        new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+  }
+
+  public void registerPartitionChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
     managerActor.run(
         () -> {
           Objects.requireNonNull(
@@ -259,7 +287,8 @@ public final class ClusterConfigurationManagerService
                   new NoopClusterMembershipChangeExecutor(),
                   partitionScalingChangeExecutor,
                   clusterChangeExecutor,
-                  modeChangeExecutor));
+                  modeChangeExecutor,
+                  restoreChangeExecutor));
         });
   }
 
@@ -281,6 +310,18 @@ public final class ClusterConfigurationManagerService
 
   public void removeTopologyChangedListener() {
     clusterConfigurationManager.removeTopologyChangedListener();
+  }
+
+  public void registerRequestValidator(
+      final @Nullable String physicalTenantId,
+      final ClusterConfigurationRequestValidator<?, ?> validator) {
+    managerActor.run(() -> validators.registerValidator(physicalTenantId, validator));
+  }
+
+  public void removeRequestValidator(
+      final @Nullable String physicalTenantId,
+      final Class<? extends ClusterConfigurationManagementRequest> requestType) {
+    managerActor.run(() -> validators.deregisterValidator(physicalTenantId, requestType));
   }
 
   @Override

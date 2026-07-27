@@ -47,6 +47,17 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
       implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
 
   /**
+   * Operation to change the exporting state of every partition replica owned by the given member.
+   * Applied by the target member, which sets the requested {@link ExportingState} on all of its
+   * local partitions after the local exporters have reached that state.
+   *
+   * @param memberId the member id of the member that will apply this operation
+   * @param state the exporting state to apply to all of the member's partitions
+   */
+  record ExportingStateChangeOperation(MemberId memberId, ExportingState state)
+      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+
+  /**
    * Verifies that a member's partition manager has finished starting in the target mode. Emitted
    * after the {@link ModeChangeOperation}s of a mode change so that the cluster change only
    * completes once every member's partitions are up. It changes no member state; it only gates the
@@ -204,6 +215,30 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
           final int priority,
           final boolean initializeFromSnapshot) {
         this(memberId, partitionId, priority, Optional.empty(), initializeFromSnapshot);
+      }
+    }
+
+    /**
+     * Operation to drop a member's local data for a single partition in preparation for a restore.
+     * Only valid while the member is in recovery mode and already replicates the partition.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition whose local data is dropped
+     */
+    record PartitionPreRestoreOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to restore a single local partition from the given backups.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition to restore
+     * @param backupIds the ids of the backups to restore, in ascending order
+     */
+    record PartitionRestoreOperation(MemberId memberId, int partitionId, SortedSet<Long> backupIds)
+        implements PartitionChangeOperation {
+      public PartitionRestoreOperation {
+        backupIds = ImmutableSortedSet.copyOf(backupIds);
       }
     }
   }

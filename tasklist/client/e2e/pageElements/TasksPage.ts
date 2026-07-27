@@ -10,11 +10,7 @@ import type {Page, Locator} from '@playwright/test';
 import {TasksFilterModal} from './TasksFilterModal';
 
 type FilterParam =
-  | 'all-open'
-  | 'unassigned'
-  | 'assigned-to-me'
-  | 'completed'
-  | 'custom';
+  'all-open' | 'unassigned' | 'assigned-to-me' | 'completed' | 'custom';
 type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion' | 'priority';
 
 class TasksPage {

@@ -438,10 +438,75 @@
 				"fetchErrorDescription": "Actualisez la page pour réessayer"
 			},
 			"processes": {
-				"title": "Processus"
+				"title": "Processus",
+				"filters": {
+					"processSection": "Processus",
+					"name": "Nom",
+					"searchByName": "Rechercher par nom de processus",
+					"version": "Version",
+					"selectVersion": "Sélectionner une version de processus",
+					"allVersions": "Toutes les versions",
+					"element": "Élément",
+					"searchByElement": "Rechercher par élément de processus",
+					"instancesStates": "États des instances",
+					"runningInstances": "Instances en cours",
+					"finishedInstances": "Instances terminées",
+					"active": "Actif",
+					"incidents": "Incidents",
+					"completed": "Terminé",
+					"canceled": "Annulé",
+					"tenant": "Client",
+					"processInstanceKey": "Clé(s) d'instance de processus",
+					"processInstanceKeyPlaceholder": "séparées par un espace ou une virgule",
+					"businessId": "Business ID",
+					"batchOperationKey": "Clé d'opération par lot",
+					"parentProcessInstanceKey": "Clé de l'instance de processus parente",
+					"errorMessage": "Message d'erreur",
+					"hasRetriesLeft": "Tâche échouée avec des tentatives restantes",
+					"startDateRange": "Plage de dates de début",
+					"endDateRange": "Plage de dates de fin",
+					"removeFilter": "Supprimer le filtre {{label}}",
+					"startDatePopoverTitle": "Filtrer les instances par date de début",
+					"endDatePopoverTitle": "Filtrer les instances par date de fin"
+				},
+				"diagramHeader": {
+					"title": "Processus",
+					"processName": "Nom du processus",
+					"processId": "ID du processus",
+					"versionTag": "Étiquette de version"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus \"{{name}}\"",
+					"selectSingleVersion": "Pour voir un diagramme, sélectionnez une seule version",
+					"noProcessSelected": "Aucun processus n'est sélectionné",
+					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres"
+				}
 			},
 			"decisions": {
 				"title": "Décisions"
+			},
+			"decisionInstance": {
+				"title": "Instance de décision Operate",
+				"pageTitle": "Operate : Instance de décision {{decisionInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "L'instance de décision {{decisionInstanceId}} n'a pas pu être trouvée",
+				"header": {
+					"decisionInstanceKeyColumn": "Clé d'instance de décision",
+					"versionColumn": "Version",
+					"businessIdColumn": "ID métier",
+					"tenantColumn": "Client",
+					"evaluationDateColumn": "Date d'évaluation",
+					"processInstanceColumn": "Clé d'instance de processus",
+					"versionLinkTitle": "Afficher les instances de la décision \"{{name}} version {{version}}\"",
+					"versionLinkTitleWithTenant": "Afficher les instances de la décision \"{{name}} version {{version}}\" - {{tenant}}",
+					"processInstanceLinkTitle": "Afficher l'instance de processus {{processInstanceKey}}",
+					"noProcessInstance": "Aucune",
+					"openDrdButton": "Ouvrir le diagramme des exigences de décision"
+				},
+				"forbidden": {
+					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMoreLink": "En savoir plus sur les autorisations"
+				}
 			},
 			"operations": {
 				"title": "Opérations"
@@ -473,6 +538,48 @@
 				"filtersPanel": {
 					"label": "Filtre",
 					"resetFilters": "Réinitialiser les filtres"
+				},
+				"validators": {
+					"ids": "La clé doit être un nombre de 16 à 19 chiffres, séparé par un espace ou une virgule",
+					"parentInstanceId": "La clé doit être un nombre de 16 à 19 chiffres",
+					"batchOperationKey": "La clé doit être un nombre de 16 à 19 chiffres ou un UUID",
+					"time": "L'heure doit être au format hh:mm:ss",
+					"timeRange": "L'heure « de » est postérieure à l'heure « à »"
+				},
+				"tenantField": {
+					"selectTenant": "Sélectionner un client",
+					"tenant": "Client",
+					"allTenants": "Tous les clients"
+				},
+				"optionalFiltersMenu": {
+					"moreFilters": "Plus de filtres"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "est égal à",
+					"operatorNotEquals": "n'est pas égal à",
+					"operatorContains": "contient",
+					"operatorIsOneOf": "correspond à l'un de",
+					"operatorIsNotOneOf": "ne correspond à aucun de",
+					"operatorExists": "existe",
+					"operatorListPlaceholder": "séparés par un espace ou une virgule",
+					"operatorExistsPlaceholder": "true ou false",
+					"operatorTypeLabel": "Type de filtre {{label}}",
+					"selectOperator": "Sélectionner un opérateur"
+				},
+				"instanceHeader": {
+					"incidentsCount_one": "{{count}} incident",
+					"incidentsCount_other": "{{count}} incidents"
+				},
+				"copyButton": {
+					"copy": "Copier",
+					"copied": "Copié",
+					"copyToClipboard": "Copier dans le presse-papiers",
+					"copiedToClipboard": "Copié dans le presse-papiers"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Supprimer",
+					"cancelButton": "Annuler",
+					"confirmationError": "Veuillez cocher cette case si vous souhaitez continuer."
 				}
 			}
 		}

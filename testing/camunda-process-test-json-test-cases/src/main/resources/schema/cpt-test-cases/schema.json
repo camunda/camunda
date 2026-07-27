@@ -1020,6 +1020,10 @@
           "description": "The ID of the child process to mock.",
           "type": "string"
         },
+        "versionTag": {
+          "description": "The version tag to assign to the deployed stub process. Optional. Required when the call activity uses bindingType=\"versionTag\".",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to set for the mocked child process. Optional.",
           "type": "object",
@@ -1332,6 +1336,11 @@
         "elementSelector": {
           "description": "The selector to identify the element for local variables. Optional.",
           "$ref": "#/definitions/ElementSelector"
+        },
+        "createLocalVariables": {
+          "description": "Whether to create variables locally in the scope of the element (requires elementSelector). When true, variables are created in the element's local scope and are not propagated to parent scopes. Optional, defaults to false.",
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

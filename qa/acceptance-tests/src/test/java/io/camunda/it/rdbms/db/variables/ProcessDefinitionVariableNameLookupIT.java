@@ -18,6 +18,11 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.query.VariableNameQuery;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -142,6 +147,175 @@ public class ProcessDefinitionVariableNameLookupIT {
                 .getVariableReader()
                 .findLookupVariableNames(procDefKey))
         .isEmpty();
+  }
+
+  // ===== searchVariableNames =====
+
+  @TestTemplate
+  public void shouldSearchVariableNamesOrderedAlphabeticallyAndCappedAtLimit(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "charlie");
+    createInstanceWithVariable(rdbmsService, procDefKey, "alpha");
+    createInstanceWithVariable(rdbmsService, procDefKey, "bravo");
+
+    // when
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(
+                    b -> b.filter(f -> f.processDefinitionKeys(procDefKey)).page(p -> p.size(2))),
+                authorizedFor(processDef.processDefinitionId(), processDef.tenantId()));
+
+    // then: alphabetical order, capped at limit
+    assertThat(names).containsExactly("alpha", "bravo");
+  }
+
+  @TestTemplate
+  public void shouldSearchVariableNamesNarrowedByPrefix(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "amount");
+    createInstanceWithVariable(rdbmsService, procDefKey, "amendment");
+    createInstanceWithVariable(rdbmsService, procDefKey, "total");
+
+    // when
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(
+                    b ->
+                        b.filter(
+                            f ->
+                                f.processDefinitionKeys(procDefKey)
+                                    .nameOperations(
+                                        io.camunda.search.filter.Operation.like("am*")))),
+                authorizedFor(processDef.processDefinitionId(), processDef.tenantId()));
+
+    // then
+    assertThat(names).containsExactly("amendment", "amount");
+  }
+
+  @TestTemplate
+  public void shouldEscapeLiteralWildcardCharactersInPrefix(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "50*off");
+    createInstanceWithVariable(rdbmsService, procDefKey, "50xoff");
+
+    // when: the literal asterisk must be escaped, not treated as the wildcard character
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(
+                    b ->
+                        b.filter(
+                            f ->
+                                f.processDefinitionKeys(procDefKey)
+                                    .nameOperations(
+                                        io.camunda.search.filter.Operation.like("50\\**")))),
+                authorizedFor(processDef.processDefinitionId(), processDef.tenantId()));
+
+    // then
+    assertThat(names).containsExactly("50*off");
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyListWhenCallerUnauthorizedOnProcessDefinition(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "amount");
+
+    // when: caller is authorized on a different process definition
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(procDefKey))),
+                authorizedFor("some-other-process", processDef.tenantId()));
+
+    // then: no names leaked
+    assertThat(names).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyListWhenCallerUnauthorizedOnTenant(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "amount");
+
+    // when: caller is authorized on the correct process definition but a different tenant
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(procDefKey))),
+                authorizedFor(processDef.processDefinitionId(), "some-other-tenant"));
+
+    // then: no names leaked across tenants
+    assertThat(names).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyListWhenNoProcessDefinitionKeyGiven(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // when
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(b -> b), authorizedFor("any-process", "any-tenant"));
+
+    // then
+    assertThat(names).isEmpty();
+  }
+
+  private ResourceAccessChecks authorizedFor(
+      final String processDefinitionId, final String tenantId) {
+    return ResourceAccessChecks.of(
+        AuthorizationCheck.enabled(
+            RequiredAuthorization.of(
+                a ->
+                    a.processDefinition()
+                        .readProcessInstance()
+                        .resourceIds(List.of(processDefinitionId)))),
+        TenantCheck.enabled(List.of(tenantId)));
   }
 
   // ---------------------------------------------------------------------------

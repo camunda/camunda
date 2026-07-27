@@ -9,9 +9,13 @@ package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record DbQueryPage(
-    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination) {
+    Integer size,
+    @Nullable Integer from,
+    @Nullable Integer maxTotalHits,
+    @Nullable List<KeySetPagination> keySetPagination) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
 
@@ -30,7 +34,7 @@ public record DbQueryPage(
     public static final class Builder {
       private final String fieldName;
       private final Object fieldValue;
-      private SortOrder order;
+      private @Nullable SortOrder order;
       private boolean isSearchAfter;
 
       private Builder(final String fieldName, final Object fieldValue) {
@@ -49,18 +53,27 @@ public record DbQueryPage(
       }
 
       public KeySetPaginationFieldEntry build() {
+        // NULL ordering is standardized across all supported databases (see Commons.xml orderBy):
+        // ASC sorts NULLs FIRST, DESC sorts NULLs LAST. The strict comparator for a NULL cursor
+        // value therefore depends on the direction: for the boundary where NULLs are on the far
+        // side of the traversal there is no row beyond them, which must yield NO_MATCH rather than
+        // IS_NULL (which would match every NULL row and stall the cursor).
         final Operator operator;
         if (isSearchAfter) {
           operator =
               order == SortOrder.ASC
+                  // ASC NULLs FIRST: rows after a NULL cursor are the non-NULL rows
                   ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER
-                  : fieldValue == null ? Operator.IS_NULL : Operator.LOWER;
+                  // DESC NULLs LAST: nothing sorts after a NULL cursor
+                  : fieldValue == null ? Operator.NO_MATCH : Operator.LOWER;
         } else {
-          // searchBefore: mirror of searchAfter with directions reversed
+          // searchBefore: traverse the result set backwards
           operator =
               order == SortOrder.ASC
-                  ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.LOWER
-                  : fieldValue == null ? Operator.IS_NULL : Operator.GREATER;
+                  // ASC NULLs FIRST: nothing sorts before a NULL cursor
+                  ? fieldValue == null ? Operator.NO_MATCH : Operator.LOWER
+                  // DESC NULLs LAST: rows before a NULL cursor are the non-NULL rows
+                  : fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER;
         }
         return new KeySetPaginationFieldEntry(fieldName, operator, fieldValue);
       }
@@ -72,7 +85,10 @@ public record DbQueryPage(
     IS_NOT_NULL("IS NOT NULL"),
     GREATER(">"),
     LOWER("<"),
-    EQUALS("=");
+    EQUALS("="),
+    // marks an OR-group that can never match (e.g. nothing sorts beyond a boundary NULL); such
+    // groups are dropped before rendering SQL and never reach the mapper
+    NO_MATCH("");
 
     private final String symbol;
 

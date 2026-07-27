@@ -259,6 +259,19 @@ public final class SearchQueryBuilders {
     return hasChild(q -> q.query(query).type(type)).toSearchQuery();
   }
 
+  public static SearchNestedQuery.Builder nested() {
+    return new SearchNestedQuery.Builder();
+  }
+
+  public static SearchNestedQuery nested(
+      final Function<SearchNestedQuery.Builder, ObjectBuilder<SearchNestedQuery>> fn) {
+    return fn.apply(nested()).build();
+  }
+
+  public static SearchQuery nestedQuery(final String path, final SearchQuery query) {
+    return nested(q -> q.path(path).query(query)).toSearchQuery();
+  }
+
   public static SearchTermQuery.Builder term() {
     return new SearchTermQuery.Builder();
   }
@@ -329,6 +342,17 @@ public final class SearchQueryBuilders {
     }
   }
 
+  public static SearchQuery doubleTerms(final String field, final Collection<Double> values) {
+    final var fieldValues = withoutNull(values);
+    if (fieldValues == null || fieldValues.isEmpty()) {
+      return null;
+    } else if (fieldValues.size() == 1) {
+      return term(field, fieldValues.getFirst());
+    } else {
+      return SearchTermsQuery.of(q -> q.field(field).doubleTerms(fieldValues)).toSearchQuery();
+    }
+  }
+
   public static SearchQuery stringTerms(final String field, final Collection<String> values) {
     final var fieldValues = withoutNull(values);
     if (fieldValues == null || fieldValues.isEmpty()) {
@@ -340,7 +364,7 @@ public final class SearchQueryBuilders {
     }
   }
 
-  public static SearchQuery objectTerms(final String field, final Collection<Object> values) {
+  public static SearchQuery objectTerms(final String field, final Collection<?> values) {
     final var fieldValues = withoutNull(values);
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
@@ -419,6 +443,43 @@ public final class SearchQueryBuilders {
           case IN -> queries.add(longTerms(field, op.values()));
           case NOT_IN -> queries.add(mustNot(longTerms(field, op.values())));
           default -> throw unexpectedOperation("Long", op.operator());
+        }
+      }
+
+      // Add the consolidated range query if any range operations were processed
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+
+      return queries;
+    }
+  }
+
+  public static <C extends List<Operation<Double>>> List<SearchQuery> doubleOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return List.of();
+    } else {
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+
+      for (final Operation<Double> op : operations) {
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, op.value()));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, op.value())));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(op.value()));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(op.value()));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(op.value()));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
+          case IN -> queries.add(doubleTerms(field, op.values()));
+          case NOT_IN -> queries.add(mustNot(doubleTerms(field, op.values())));
+          default -> throw unexpectedOperation("Double", op.operator());
         }
       }
 
@@ -627,21 +688,17 @@ public final class SearchQueryBuilders {
     // Consolidate range operations for numeric types
     final var type = operation.type();
     if (type.equals(ValueTypeEnum.LONG) || type.equals(ValueTypeEnum.DOUBLE)) {
-      SearchRangeQuery.Builder rangeQueryBuilder = null;
+      final SearchRangeQuery.Builder rangeQueryBuilder;
 
       switch (operation.operator()) {
         case GREATER_THAN ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.gt(operation.value()));
         case GREATER_THAN_EQUALS ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.gte(operation.value()));
         case LOWER_THAN ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.lt(operation.value()));
         case LOWER_THAN_EQUALS ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.lte(operation.value()));
         default -> throw unexpectedOperation("Variable (numeric)", operation.operator());
       }
 

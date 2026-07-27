@@ -9,9 +9,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.ResponseMapper;
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -28,7 +26,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -46,7 +43,8 @@ public class StreamJobsHandler extends Actor {
   public void handle(
       final String jobType,
       final JobActivationProperties jobActivationProperties,
-      final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+      final ServerCallStreamObserver<ActivatedJob> responseObserver,
+      final String physicalTenantId) {
     // TODO(#14452): move validations to RequestMapper and convert
     //  to exceptions that can be used in the GrpcErrorMapper
     if (jobType.isBlank()) {
@@ -61,11 +59,6 @@ public class StreamJobsHandler extends Actor {
           Long.toString(jobActivationProperties.timeout()));
       return;
     }
-
-    final var physicalTenantId =
-        Objects.requireNonNullElse(
-            InterceptorUtil.getPhysicalTenantIdKey().get(),
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     handleInternal(jobType, jobActivationProperties, responseObserver, physicalTenantId);
   }
 
@@ -75,7 +68,7 @@ public class StreamJobsHandler extends Actor {
       final ServerCallStreamObserver<ActivatedJob> responseObserver,
       final String physicalTenantId) {
     final var streamType = wrapString(jobType);
-    final var consumer = new JobStreamConsumer(responseObserver, actor);
+    final var consumer = new JobStreamConsumer(responseObserver, actor, physicalTenantId);
     final var cleaner = new AsyncJobStreamRemover(jobStreamer, actor);
 
     // setting the handlers has to be done before the call is started, so we cannot do it in the
@@ -126,13 +119,16 @@ public class StreamJobsHandler extends Actor {
   static final class JobStreamConsumer implements ClientStreamConsumer {
     private final ServerCallStreamObserver<ActivatedJob> responseObserver;
     private final ConcurrencyControl executor;
+    private final String physicalTenantId;
 
     @VisibleForTesting("Allow unit testing behavior")
     JobStreamConsumer(
         final ServerCallStreamObserver<ActivatedJob> responseObserver,
-        final ConcurrencyControl executor) {
+        final ConcurrencyControl executor,
+        final String physicalTenantId) {
       this.responseObserver = responseObserver;
       this.executor = executor;
+      this.physicalTenantId = physicalTenantId;
     }
 
     @Override
@@ -166,7 +162,7 @@ public class StreamJobsHandler extends Actor {
       // fail push on serialization errors, but no need to close the client stream
       try {
         deserializedJob.wrap(payload);
-        activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+        activatedJob = ResponseMapper.toActivatedJob(deserializedJob, physicalTenantId);
       } catch (final Exception e) {
         result.completeExceptionally(e);
         return;

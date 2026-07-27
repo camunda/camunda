@@ -46,12 +46,14 @@ const TableExpandRow = styled(BaseTableExpandRow)<Props>`
         background-color: var(--cds-layer) !important;
       }
 
-      ${!$isExpandable &&
-      css`
-        button {
-          display: none;
-        }
-      `}
+      ${
+        !$isExpandable &&
+        css`
+          button {
+            display: none;
+          }
+        `
+      }
     `;
   }}
 `;

@@ -40,6 +40,8 @@ public class RoleMemberFilterTransformer extends IndexFilterTransformer<RoleMemb
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(
       final RequiredAuthorization<?> authorization) {
-    return stringTerms(RoleIndex.ROLE_ID, authorization.resourceIds());
+    return hasParentQuery(
+        IdentityJoinRelationshipType.ROLE.getType(),
+        stringTerms(RoleIndex.ROLE_ID, authorization.resourceIds()));
   }
 }

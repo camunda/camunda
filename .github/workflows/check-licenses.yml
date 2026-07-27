@@ -1,7 +1,7 @@
 # description: Checks for license issues by using FOSSA. If a PR introduces a denied or flagged license, this check will fail
 # test location: /
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Check Licenses
 
@@ -20,19 +20,39 @@ on:
     - synchronize
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  detect-changes:
+    name: Detect dependency file changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      fossa-changes: ${{ steps.filter.outputs.fossa-changes }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      timeout-minutes: 1
+    - name: Detect changes
+      uses: ./.github/actions/paths-filter
+      id: filter
+
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
+    needs: [detect-changes]
     permissions:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
     runs-on: ${{ matrix.project.runner }}
-    # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
-    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+    # Never run on fork PRs (no FOSSA credentials). Otherwise run when fossa-changes is true, which the
+    # paths-filter sets for every push event (keeping the base-branch FOSSA baseline current) and, on
+    # pull requests, when dependency manifests or CI-relevant GitHub Actions/workflow files changed.
+    if: >-
+      (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) &&
+      needs.detect-changes.outputs.fossa-changes == 'true'
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
     timeout-minutes: 65
@@ -56,8 +76,8 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -78,7 +98,7 @@ jobs:
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-    - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       if: matrix.project.name == 'c8run'
       with:
         go-version: '>=1.23.1'
@@ -161,13 +181,14 @@ jobs:
   observe-aborted-jobs:
     needs:
     - analyze
-    if: failure()
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions:
+      actions: read # required to read raw job logs for runner-abort detection
       checks: read
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

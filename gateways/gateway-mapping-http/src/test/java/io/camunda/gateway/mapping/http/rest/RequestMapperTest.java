@@ -10,170 +10,21 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobChangeset;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
-import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ProblemDetail;
 
 class RequestMapperTest {
-
-  @Test
-  void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
-    // given
-    final var mappingInstruction =
-        MigrateProcessInstanceMappingInstruction.Builder.create()
-            .sourceElementId("source1")
-            .targetElementId("target1")
-            .build();
-    final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
-            .targetProcessDefinitionKey("123")
-            .mappingInstructions(List.of(mappingInstruction))
-            .build();
-    final var filter =
-        ProcessInstanceFilter.Builder.create()
-            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
-            .build();
-    final var batchOperationInstruction =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
-            .filter(filter)
-            .migrationPlan(migrationPlan)
-            .build();
-
-    // when
-    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
-
-    // then
-    assertThat(result.isRight()).isTrue();
-    final var request = result.get();
-    assertThat(request.targetProcessDefinitionKey()).isEqualTo(123L);
-    assertThat(request.mappingInstructions())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            instruction -> {
-              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
-              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
-            });
-  }
-
-  @Test
-  void shouldReturnProblemDetailForInvalidInput() {
-    // given
-    final var mappingInstruction =
-        MigrateProcessInstanceMappingInstruction.Builder.create()
-            .sourceElementId("")
-            .targetElementId("")
-            .build();
-    final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
-            .targetProcessDefinitionKey("123")
-            .mappingInstructions(List.of(mappingInstruction))
-            .build();
-    final var filter = ProcessInstanceFilter.Builder.create().build();
-    final var batchOperationRequest =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
-            .filter(filter)
-            .migrationPlan(migrationPlan)
-            .build();
-
-    // when
-    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationRequest);
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    final var problemDetail = result.getLeft();
-    assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
-    assertThat(problemDetail.getDetail()).contains("are required");
-  }
-
-  @Test
-  void shouldMapProcessInstanceModifyBatchOperationRequest() {
-    // given
-    final var moveInstruction =
-        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.create()
-            .sourceElementId("source1")
-            .targetElementId("target1")
-            .build();
-    final var filter =
-        ProcessInstanceFilter.Builder.create()
-            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
-            .build();
-    final var modificationRequest =
-        ProcessInstanceModificationBatchOperationRequest.Builder.create()
-            .filter(filter)
-            .moveInstructions(List.of(moveInstruction))
-            .build();
-
-    // when
-    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
-
-    // then
-    assertThat(result.isRight()).isTrue();
-    final var request = result.get();
-    assertThat(request.moveInstructions())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            instruction -> {
-              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
-              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
-              assertThat(instruction.getAncestorScopeKey()).isEqualTo(-1L);
-              assertThat(instruction.isInferAncestorScopeFromSourceHierarchy()).isTrue();
-              assertThat(instruction.isUseSourceParentKeyAsAncestorScopeKey()).isFalse();
-              assertThat(instruction.getVariableInstructions()).isEmpty();
-            });
-  }
-
-  @Test
-  void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
-    // given
-    // Use empty targetElementId to trigger "No targetElementId provided." validation
-    final var moveInstruction =
-        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.create()
-            .sourceElementId("source1")
-            .targetElementId("")
-            .build();
-    final var filter =
-        ProcessInstanceFilter.Builder.create()
-            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
-            .build();
-    final var modificationRequest =
-        ProcessInstanceModificationBatchOperationRequest.Builder.create()
-            .filter(filter)
-            .moveInstructions(List.of(moveInstruction))
-            .build();
-
-    // when
-    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    final var problemDetail = result.getLeft();
-    assertThat(problemDetail.getStatus()).isEqualTo(400);
-    assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
-  }
 
   @Nested
   class ResourceDeletionRequestMappingTest {
@@ -310,6 +161,45 @@ class RequestMapperTest {
       assertThat(activateJobsRequest.timeout()).isEqualTo(5000L);
       assertThat(activateJobsRequest.tenantIds()).containsExactly("tenant-a", "tenant-b");
       assertThat(activateJobsRequest.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+    }
+
+    @Test
+    void shouldMapJobActivationWithLease() {
+      // given
+      final var request =
+          JobActivationRequest.Builder.create()
+              .type("test-job")
+              .maxJobsToActivate(10)
+              .timeout(5000L)
+              .tenantIds(List.of("tenant-a"))
+              .withLease(true)
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobsActivationRequest(request, true);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().withLease()).isTrue();
+    }
+
+    @Test
+    void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var request =
+          JobActivationRequest.Builder.create()
+              .type("test-job")
+              .maxJobsToActivate(10)
+              .timeout(5000L)
+              .tenantIds(List.of("tenant-a"))
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobsActivationRequest(request, true);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().withLease()).isFalse();
     }
 
     @Test
@@ -645,6 +535,168 @@ class RequestMapperTest {
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
       assertThat(result.getLeft().getDetail()).contains("retries", "timeout", "priority");
+    }
+  }
+
+  @Nested
+  class LeaseTokenMappingTest {
+
+    @Test
+    void shouldMapLeaseTokenOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("biz-1").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().businessId()).isEqualTo("biz-1");
+    }
+
+    @Test
+    void shouldMapAbsentBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().businessId()).isNull();
+    }
+
+    @Test
+    void shouldRejectEmptyBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("businessId");
+    }
+
+    @Test
+    void shouldRejectBlankBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("   ").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("businessId");
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobFail() {
+      // given
+      final var request = JobFailRequest.Builder.create().leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobFail() {
+      // given
+      final var request = JobFailRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobError() {
+      // given
+      final var request =
+          JobErrorRequest.Builder.create().errorCode("error-1").leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobError() {
+      // given
+      final var request = JobErrorRequest.Builder.create().errorCode("error-1").build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request =
+          JobUpdateRequest.Builder.create().changeset(changeset).leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isNull();
     }
   }
 }

@@ -10,12 +10,7 @@ import isEqual from 'lodash/isEqual';
 import {makeAutoObservable, runInAction} from 'mobx';
 
 type VariableFilterOperator =
-  | 'equals'
-  | 'notEqual'
-  | 'contains'
-  | 'oneOf'
-  | 'exists'
-  | 'doesNotExist';
+  'equals' | 'notEqual' | 'contains' | 'oneOf' | 'exists' | 'doesNotExist';
 
 type VariableConditionWithValue = {
   name: string;
@@ -30,8 +25,7 @@ type VariableConditionWithoutValue = {
 };
 
 type VariableCondition =
-  | VariableConditionWithValue
-  | VariableConditionWithoutValue;
+  VariableConditionWithValue | VariableConditionWithoutValue;
 
 type State = {
   conditions: VariableCondition[];

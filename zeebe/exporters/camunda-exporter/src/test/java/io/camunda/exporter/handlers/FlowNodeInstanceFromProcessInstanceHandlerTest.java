@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -178,6 +179,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setTreePath("444/356/111")
             .setLevel(1)
             .setPosition(333L);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -199,10 +201,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.POSITION, inputEntity.getPosition());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -216,9 +218,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
-            .setFlowNodeId("flowNodeName")
+            .setFlowNodeName(null)
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -235,10 +238,44 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldOmitFlowNodeNameForInnerInstanceWhenNull() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .setState(FlowNodeState.COMPLETED)
+            .setFlowNodeId("adHocSubProcess#innerInstance")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    underTest.flush(index, inputEntity, mockRequest);
+
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test

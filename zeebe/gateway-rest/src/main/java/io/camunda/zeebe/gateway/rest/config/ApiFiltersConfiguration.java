@@ -14,15 +14,24 @@ import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PAT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
@@ -52,6 +61,8 @@ public class ApiFiltersConfiguration {
   // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
   private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
 
+  private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
+
   private static List<PathPattern> patterns(final String... patterns) {
     return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
   }
@@ -69,7 +80,42 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
-  @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
+  /**
+   * Scopes {@code /v2/status} to the default physical tenant (ADR 001 D3): rejects every {@code
+   * /physical-tenants/{id}/v2/status} request for a non-default id with a uniform 404, before
+   * Spring Security selects a per-tenant chain, so a configured non-default tenant and an unknown
+   * one are indistinguishable to unauthenticated callers.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantStatusScopeFilter> physicalTenantStatusScopeFilter() {
+    final FilterRegistrationBean<PhysicalTenantStatusScopeFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantStatusScopeFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Redirects/forwards Swagger UI requests reached via a tenant-prefixed path to their real,
+   * unprefixed handler. Unlike {@link #physicalTenantFilter()}, this must run after Spring
+   * Security, since the filter does not itself validate the tenant id — see {@link
+   * PhysicalTenantSwaggerFilter}.
+   */
+  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnProperty(
+      name = "camunda.rest.swagger.enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantSwaggerFilter> physicalTenantSwaggerFilter() {
+    final FilterRegistrationBean<PhysicalTenantSwaggerFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantSwaggerFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_SWAGGER_FILTER_ORDER);
+    return registration;
+  }
+
+  @Conditional(GroupsClaimConfiguredCondition.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
       final ObjectMapper objectMapper) {
@@ -115,5 +161,26 @@ public class ApiFiltersConfiguration {
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
+  }
+
+  /**
+   * Matches when the OIDC groups-claim property is configured, meaning groups are managed
+   * externally via the identity provider. {@code GROUPS_CLAIM_PROPERTY} is camelCase ({@code
+   * groupsClaim}); querying the {@link ConditionContext#getEnvironment()} with that exact string
+   * only matches a camelCase-configured property. Canonicalizing it first makes the lookup match a
+   * kebab-case ({@code groups-claim}) YAML key too, relying on Spring Boot's relaxed property
+   * binding.
+   */
+  static final class GroupsClaimConfiguredCondition implements Condition {
+
+    private static final String CANONICAL_GROUPS_CLAIM_PROPERTY =
+        ConfigurationPropertyName.adapt(GROUPS_CLAIM_PROPERTY, '.').toString();
+
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final String groupsClaim =
+          context.getEnvironment().getProperty(CANONICAL_GROUPS_CLAIM_PROPERTY);
+      return groupsClaim != null && !groupsClaim.isEmpty();
+    }
   }
 }

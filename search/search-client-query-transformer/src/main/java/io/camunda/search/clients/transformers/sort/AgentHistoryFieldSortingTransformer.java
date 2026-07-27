@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.ITERATION;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.LOOP_ITERATION;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.PRODUCED_AT;
 
 public class AgentHistoryFieldSortingTransformer implements FieldSortingTransformer {
@@ -17,7 +17,7 @@ public class AgentHistoryFieldSortingTransformer implements FieldSortingTransfor
   public String apply(final String domainField) {
     return switch (domainField) {
       case "historyItemKey" -> KEY;
-      case "iteration" -> ITERATION;
+      case "loopIteration" -> LOOP_ITERATION;
       case "producedAt" -> PRODUCED_AT;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };

@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ final class EnterRecoveryApplierTest {
         }
 
         @Override
-        public CompletableActorFuture<Void> awaitModeApplied(final Mode mode) {
+        public CompletableActorFuture<Set<Integer>> awaitModeApplied(final Mode mode) {
           return CompletableActorFuture.completedExceptionally(
               new RuntimeException("Force failure"));
         }

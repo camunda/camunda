@@ -553,6 +553,40 @@ public class UserTaskClaimAuthorizationTest {
                 .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
   }
 
+  @Test
+  public void shouldBeUnauthorizedToClaimUserTaskWhenCandidateUserButNoStoredPropertyGrant() {
+    // given - the user is a candidate user of the task, but holds NO stored USER_TASK
+    // property-scoped grant. Matching the candidate value alone must not authorize: property
+    // authorization requires both a stored property-scoped grant AND an evaluator match
+    // (deny-by-default). A value-only evaluation would wrongly allow this.
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(
+            process(
+                t -> t.zeebeCandidateUsers("faramir, %s, boromir".formatted(user.getUsername()))));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+
+    // when
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee(user.getUsername())
+            .expectRejection()
+            .claim(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' or resource must match property constraints '[candidateUsers]'; \
+                and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' or resource must match property constraints '[candidateUsers]'"""
+                .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()

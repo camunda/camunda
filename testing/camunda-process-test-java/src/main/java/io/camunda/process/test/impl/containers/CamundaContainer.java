@@ -17,19 +17,16 @@ package io.camunda.process.test.impl.containers;
 
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.*;
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.DATABASE_TYPE;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_DATABASE_URL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_TYPE;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MAXHISTORYCLEANUPINTERVAL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MINHISTORYCLEANUPINTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
@@ -55,9 +52,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
-
-  private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
-  private static final String CAMUNDA_EXPORTER_BULK_SIZE = "1";
 
   public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
@@ -123,45 +117,23 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public CamundaContainer withH2() {
-    withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
-        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE, DATABASE_TYPE)
+    withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE, DATABASE_TYPE)
         .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL, databaseUrL(UUID.randomUUID()))
         .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME, DATABASE_USERNAME)
         .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, DATABASE_PASSWORD)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL, RDBMS_FLUSH_INTERVAL)
         .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME)
+            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL,
+            RDBMS_DEFAULT_HISTORY_TTL)
         .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL)
+            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MINHISTORYCLEANUPINTERVAL,
+            RDBMS_MIN_HISTORY_CLEANUP_INTERVAL)
         .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL)
+            CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_MAXHISTORYCLEANUPINTERVAL,
+            RDBMS_MAX_HISTORY_CLEANUP_INTERVAL)
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS, LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS)
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS, LOGGING_LEVEL_ORG_MYBATIS);
 
-    return this;
-  }
-
-  public CamundaContainer withElasticsearchUrl(final String url) {
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_CLASSNAME, CAMUNDA_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_CONNECT_URL, url);
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_BULK_SIZE,
-        CAMUNDA_EXPORTER_BULK_SIZE);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
-
-    withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;
   }
 
@@ -248,14 +220,10 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     public static final String DATABASE_TYPE = "rdbms";
     public static final String DATABASE_USERNAME = "sa";
     public static final String DATABASE_PASSWORD = "";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME =
-        "io.camunda.exporter.rdbms.RdbmsExporter";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL = "PT0S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL = "PT2S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL =
-        "PT2S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL =
-        "PT5S";
+    public static final String RDBMS_FLUSH_INTERVAL = "PT0S";
+    public static final String RDBMS_DEFAULT_HISTORY_TTL = "PT2S";
+    public static final String RDBMS_MIN_HISTORY_CLEANUP_INTERVAL = "PT2S";
+    public static final String RDBMS_MAX_HISTORY_CLEANUP_INTERVAL = "PT5S";
     public static final String LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS = "DEBUG";
     public static final String LOGGING_LEVEL_ORG_MYBATIS = "DEBUG";
 

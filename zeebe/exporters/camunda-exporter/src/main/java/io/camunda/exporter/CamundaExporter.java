@@ -32,6 +32,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUB
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_BUSINESS_ID;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
@@ -399,6 +400,7 @@ public class CamundaExporter implements Exporter {
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
+            PROCESS_INSTANCE_BUSINESS_ID,
             PROCESS_INSTANCE_CREATION,
             PROCESS_INSTANCE_MIGRATION,
             PROCESS_INSTANCE_MODIFICATION,

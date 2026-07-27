@@ -16,6 +16,8 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
+import java.util.Map;
 
 /**
  * Represents a request to create a globally-scoped cluster variable.
@@ -50,4 +52,20 @@ public interface GloballyScopedClusterVariableCreationCommandStep1
    * @return this builder for method chaining
    */
   GloballyScopedClusterVariableCreationCommandStep1 create(String name, Object value);
+
+  /**
+   * Sets the kind of the cluster variable (optional, defaults to JSON).
+   *
+   * @param kind the kind (JSON or SECRET_REFERENCE)
+   * @return this builder for method chaining
+   */
+  GloballyScopedClusterVariableCreationCommandStep1 kind(ClusterVariableKind kind);
+
+  /**
+   * Sets the metadata bag of the cluster variable (optional). Values must be strings or numbers.
+   *
+   * @param metadata a map of metadata key to value
+   * @return this builder for method chaining
+   */
+  GloballyScopedClusterVariableCreationCommandStep1 metadata(Map<String, Object> metadata);
 }

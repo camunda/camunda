@@ -26,12 +26,15 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceResumeRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceSuspendRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
@@ -39,6 +42,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -92,11 +96,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/deletion";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
+  static final String ASSIGN_BUSINESS_ID_URL =
+      PROCESS_INSTANCES_START_URL + "/%s/business-id-assignment";
+  static final String SUSPEND_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/suspension";
+  static final String RESUME_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/resumption";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
+  @Captor ArgumentCaptor<AssignProcessInstanceBusinessIdRequest> assignBusinessIdRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceSuspendRequest> suspendRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceResumeRequest> resumeRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -1096,6 +1107,186 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSuspendProcessInstance() {
+    // given
+    when(processInstanceServices.suspendProcessInstance(
+            any(ProcessInstanceSuspendRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    final var request =
+        """
+            {
+              "operationReference": 123
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .suspendProcessInstance(suspendRequestCaptor.capture(), any());
+    final var capturedRequest = suspendRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldSuspendProcessInstanceWithNoBody() {
+    // given
+    when(processInstanceServices.suspendProcessInstance(
+            any(ProcessInstanceSuspendRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .suspendProcessInstance(suspendRequestCaptor.capture(), any());
+    final var capturedRequest = suspendRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": -123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldResumeProcessInstance() {
+    // given
+    when(processInstanceServices.resumeProcessInstance(
+            any(ProcessInstanceResumeRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    final var request =
+        """
+            {
+              "operationReference": 123
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .resumeProcessInstance(resumeRequestCaptor.capture(), any());
+    final var capturedRequest = resumeRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldResumeProcessInstanceWithNoBody() {
+    // given
+    when(processInstanceServices.resumeProcessInstance(
+            any(ProcessInstanceResumeRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .resumeProcessInstance(resumeRequestCaptor.capture(), any());
+    final var capturedRequest = resumeRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": -123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldReturnGatewayTimeoutWhenCancelProcessInstanceTimesOut() {
     // given
     when(processInstanceServices.cancelProcessInstance(
@@ -1243,6 +1434,191 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldAssignProcessInstanceBusinessId() {
+    // given
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceBusinessIdRecord()));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .assignProcessInstanceBusinessId(assignBusinessIdRequestCaptor.capture(), any());
+    final var capturedRequest = assignBusinessIdRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.businessId()).isEqualTo("order-12345");
+  }
+
+  @Test
+  void shouldRejectAssignProcessInstanceBusinessIdWithoutBusinessId() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No businessId provided.",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectAssignProcessInstanceBusinessIdWithBlankBusinessId() {
+    // given
+    final var request =
+        """
+            {
+              "businessId": "   "
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No businessId provided.",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapNotFoundWhenAssigningBusinessIdToUnknownProcessInstance() {
+    // given
+    final var rejectionReason =
+        "Expected to assign a business id to process instance with key '1', but no such process instance was found";
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.NOT_FOUND)));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"NOT_FOUND",
+                "status":404,
+                "detail":"%s",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }"""
+            .formatted(rejectionReason);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapConflictWhenProcessInstanceNotEligibleForBusinessIdAssignment() {
+    // given
+    final var rejectionReason =
+        "Expected to assign a business id to process instance with key '1', but it already has a business id assigned";
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.INVALID_STATE)));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_STATE",
+                "status":409,
+                "detail":"%s",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }"""
+            .formatted(rejectionReason);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
@@ -2214,6 +2590,92 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSuspendProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+
+    when(processInstanceServices.suspendProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"SUSPEND_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices)
+        .suspendProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldResumeProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(456L);
+    record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
+
+    when(processInstanceServices.resumeProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"456","batchOperationType":"RESUME_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices)
+        .resumeProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
   void shouldModifyProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
@@ -2655,6 +3117,194 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)

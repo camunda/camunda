@@ -89,6 +89,7 @@ describe('<ProcessOperations />', () => {
       visibleIds: ['1', '2'],
       visibleRunningIds: ['1', '2'],
       visibleFinishedIds: [],
+      visibleIncidentIds: ['1', '2'],
     });
     processInstancesSelectionStore.select('1');
     processInstancesSelectionStore.select('2');
@@ -161,6 +162,72 @@ describe('<ProcessOperations />', () => {
       }),
     ).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Discard'})).toBeEnabled();
+  });
+
+  it('should disable retry when no instance with an incident is selected', async () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1', '2', '3'],
+      visibleFinishedIds: [],
+      visibleIncidentIds: [],
+    });
+    // INCLUDE mode with a partial selection (selecting all would flip to ALL mode)
+    processInstancesSelectionStore.resetState();
+    processInstancesSelectionStore.select('1');
+    processInstancesSelectionStore.select('2');
+
+    render(<Toolbar selectedInstancesCount={2} />, {wrapper: Wrapper});
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Retry',
+        description:
+          'No process instances with an incident selected. Please select at least one process instance with an incident to retry.',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('should enable retry when an instance with an incident is selected', async () => {
+    render(<Toolbar selectedInstancesCount={2} />, {wrapper: Wrapper});
+
+    expect(screen.getByRole('button', {name: 'Retry'})).toBeEnabled();
+  });
+
+  it('should warn that instances without an incident will be ignored', async () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 2,
+      visibleIds: ['1', '2'],
+      visibleRunningIds: ['1', '2'],
+      visibleFinishedIds: [],
+      visibleIncidentIds: ['1'],
+    });
+
+    const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(screen.getByTestId('retry-batch-operation'));
+
+    expect(
+      screen.getByText(
+        /instances without an incident in your selection will be ignored/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should not warn when all selected instances have an incident', async () => {
+    const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(screen.getByTestId('retry-batch-operation'));
+
+    expect(
+      screen.queryByText(
+        /instances without an incident in your selection will be ignored/i,
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('should perform cancel batch operation successfully', async () => {

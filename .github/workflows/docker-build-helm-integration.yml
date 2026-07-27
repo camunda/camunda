@@ -72,7 +72,11 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            # This whole workflow is owned by Distribution (see TEST_OWNER
+            # above) -- a should-run gate failure is this pipeline's own
+            # plumbing, not something the monorepo-ci-medic has a runbook
+            # for. Route to the actual owner instead.
+            OWNER_TEAM="@camunda/distribution"
             FAILURE_CATEGORY="orchestration_should_run"
           fi
           jq -n \
@@ -119,6 +123,11 @@ jobs:
     # preflight failures pass through here would defeat the entire rationale.
     permissions: { }
     steps:
+      - name: Checkout (for observe-build-status)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Verify required org secrets are set
         id: check-secrets
         env:
@@ -213,9 +222,6 @@ jobs:
 
       # Same CI Health observability hook every other job in this workflow
       # uses. Without it the Monorepo CI Health linter flags this job.
-      - name: Checkout (for observe-build-status)
-        if: always()
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -237,7 +243,7 @@ jobs:
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
@@ -293,7 +299,7 @@ jobs:
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
@@ -349,7 +355,7 @@ jobs:
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
@@ -408,7 +414,7 @@ jobs:
       image-tag: ${{ steps.set-image-tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build
@@ -558,7 +564,9 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            # Same reasoning as should-run above: this pipeline's own
+            # plumbing is Distribution's to fix, not monorepo-ci-medic's.
+            OWNER_TEAM="@camunda/distribution"
             FAILURE_CATEGORY="orchestration_identifier"
           fi
           jq -n \
@@ -618,19 +626,19 @@ jobs:
     timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions:
-
       contents: read
+      actions: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
       # Standardised AlwaysGreen feedback → also post a Verdict/Evidence/Next-steps
       # comment on the PR (resolved from the merge_group head_ref). Best-effort.
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: failure()
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Import Slack token
         id: slack-secrets
         if: failure()
@@ -657,17 +665,45 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
+      - name: Classify helm failure type
+        id: classify
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # playwright-results-json-* artifacts are uploaded only when the E2E step ran.
+          # If they exist, the Helm install succeeded but the E2E tests failed
+          # → test-automation-team owns. If absent, the install/setup failed
+          # before tests ever ran → distribution owns.
+          E2E_ARTIFACTS=$(gh api \
+            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.name | startswith("playwright-results-json"))] | length' \
+            || echo 0)
+          if [[ "$E2E_ARTIFACTS" -gt 0 ]]; then
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/test-automation-team"
+              echo "evidence=Playwright E2E tests failed after Helm install."
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/distribution"
+              echo "evidence=Helm install or setup failed before E2E tests could run."
+            } >> "$GITHUB_OUTPUT"
+          fi
       - name: Post AlwaysGreen failure feedback
         if: failure()
         continue-on-error: true
         uses: ./.github/actions/post-failure-feedback
         with:
-          failure_category: test-infra
+          failure_category: ${{ steps.classify.outputs.failure_category || 'test-infra' }}
           stage: helm-integration
-          owner_team: "@camunda/distribution"
+          owner_team: ${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}
           run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           status: failure
-          evidence: "Helm chart Integration Tests failed."
+          evidence: ${{ steps.classify.outputs.evidence || 'Helm chart Integration Tests failed.' }}
           pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
           # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
           # as alwaysgreen-streak-detector.yml.
@@ -691,7 +727,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/distribution"
+            OWNER_TEAM="${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}"
             FAILURE_CATEGORY="helm_install_or_it"
           fi
           jq -n \
@@ -720,7 +756,7 @@ jobs:
     permissions: { }
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
@@ -984,13 +1020,14 @@ jobs:
                 # The artifact was unreachable. Distinguish this from a
                 # genuinely "unknown" categorisation so consumers don't
                 # confuse "we couldn't tell" with "we tried and the data
-                # was ambiguous". Routing falls to monorepo-devops since
-                # this is an integration / permissions problem with the
-                # parent workflow, not a downstream test failure.
+                # was ambiguous". This is an integration / permissions
+                # problem with the parent workflow (owned by Distribution,
+                # see TEST_OWNER above) -- not a downstream test failure,
+                # and not something monorepo-ci-medic has a runbook for.
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
                 echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
                 DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                DOWNSTREAM_OWNER="@camunda/monorepo-devops-team"
+                DOWNSTREAM_OWNER="@camunda/distribution"
                 {
                   echo "### Downstream Category Unavailable"
                   echo ""
@@ -1057,13 +1094,11 @@ jobs:
           FAILURE_CATEGORY="none"
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="@camunda/test-automation-team"
-              FAILURE_CATEGORY="saas_e2e"
-            else
-              OWNER_TEAM="@camunda/monorepo-devops-team"
-              FAILURE_CATEGORY="orchestration_dispatch_or_wait"
-            fi
+            # SaaS E2E is owned end-to-end by test-automation-team, including
+            # this job's own dispatch/wait mechanism -- always route here
+            # rather than splitting on downstream_conclusion.
+            OWNER_TEAM="@camunda/test-automation-team"
+            FAILURE_CATEGORY="saas_e2e"
           fi
 
           jq -n \

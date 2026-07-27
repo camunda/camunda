@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.junit.BeforeClass;
@@ -349,5 +350,117 @@ public final class UpdateClusterVariableTest {
         .hasIntent(ClusterVariableIntent.UPDATED)
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
+  }
+
+  @Test
+  public void shouldPreserveKindFromStoredStateOnGlobalUpdate() {
+    // given
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_GLOBAL")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .create();
+
+    // when — update command carries no kind (defaults to JSON)
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_GLOBAL")
+            .setGlobalScope()
+            .withValue("\"UPDATED_VALUE\"")
+            .update();
+
+    // then — UPDATED event must carry the original stored kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+  }
+
+  @Test
+  public void shouldPreserveKindFromStoredStateOnTenantUpdate() {
+    // given
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_TENANT")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue("\"VALUE\"")
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .create();
+
+    // when — update command carries no kind (defaults to JSON)
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_TENANT")
+            .setTenantScope()
+            .withTenantId(TENANT)
+            .withValue("\"UPDATED_VALUE\"")
+            .update();
+
+    // then — UPDATED event must carry the original stored kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+  }
+
+  @Test
+  public void shouldIgnoreKindOnCommandForGlobalUpdate() {
+    // given — variable created with default JSON kind
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_IGNORE_GLOBAL")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
+
+    // when — update command explicitly carries SECRET_REFERENCE kind
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_IGNORE_GLOBAL")
+            .setGlobalScope()
+            .withValue("\"UPDATED_VALUE\"")
+            .withKind(ClusterVariableKind.SECRET_REFERENCE)
+            .update();
+
+    // then — UPDATED event must carry the stored JSON kind, not the command's kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.JSON);
+  }
+
+  @Test
+  public void shouldIgnoreKindOnCommandForTenantUpdate() {
+    // given — variable created with default JSON kind
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_IGNORE_TENANT")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue("\"VALUE\"")
+        .create();
+
+    // when — update command explicitly carries SECRET_REFERENCE kind
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_IGNORE_TENANT")
+            .setTenantScope()
+            .withTenantId(TENANT)
+            .withValue("\"UPDATED_VALUE\"")
+            .withKind(ClusterVariableKind.SECRET_REFERENCE)
+            .update();
+
+    // then — UPDATED event must carry the stored JSON kind, not the command's kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 }

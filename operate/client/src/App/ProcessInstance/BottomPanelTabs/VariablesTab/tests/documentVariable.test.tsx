@@ -7,7 +7,7 @@
  */
 
 import {VariablesTab} from '../index';
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {createVariable, searchResult} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -41,6 +41,21 @@ const makeDocumentRef = (
   } as DocumentReference;
 };
 
+const expectExpiredTooltip = async (
+  user: ReturnType<typeof render>['user'],
+  button: HTMLElement,
+): Promise<void> => {
+  const wrapper = button.parentElement!;
+  await user.hover(wrapper);
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    'Document has expired',
+  );
+  await user.unhover(wrapper);
+  await waitFor(() =>
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument(),
+  );
+};
+
 describe('VariablesTab document variables', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -62,7 +77,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const downloadButton = variableRow.getByLabelText(
-      'Download document for variable myDocument',
+      'Download document for myDocument',
     );
     expect(downloadButton).toHaveAttribute(
       'href',
@@ -89,7 +104,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
-      variableRow.queryByLabelText(/download document for variable/i),
+      variableRow.queryByLabelText(/download document for/i),
     ).not.toBeInTheDocument();
   });
 
@@ -115,7 +130,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myImage'));
     const previewButton = variableRow.getByLabelText(
-      'Preview document for variable myImage',
+      'Preview document for myImage',
     );
     expect(previewButton).toBeEnabled();
   });
@@ -142,7 +157,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const previewButton = variableRow.getByLabelText(
-      'Preview document for variable myDocument',
+      'Preview document for myDocument',
     );
     expect(previewButton).toBeDisabled();
   });
@@ -165,7 +180,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
-      variableRow.queryByLabelText(/preview document for variable/i),
+      variableRow.queryByLabelText(/preview document for/i),
     ).not.toBeInTheDocument();
   });
 
@@ -225,17 +240,23 @@ describe('VariablesTab document variables', () => {
       ]),
     );
 
-    render(<VariablesTab />, {wrapper: getWrapper()});
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     expect(variableRow.getByText('Expired')).toBeInTheDocument();
-    expect(
-      variableRow.getByLabelText('Download document for variable myDocument'),
-    ).toBeDisabled();
-    expect(
-      variableRow.getByLabelText('Preview document for variable myDocument'),
-    ).toBeDisabled();
+
+    const downloadButton = variableRow.getByLabelText(
+      'Download document for myDocument',
+    );
+    const previewButton = variableRow.getByLabelText(
+      'Preview document for myDocument',
+    );
+    expect(downloadButton).toBeDisabled();
+    expect(previewButton).toBeDisabled();
+
+    await expectExpiredTooltip(user, previewButton);
+    await expectExpiredTooltip(user, downloadButton);
   });
 
   it('should not show Expired badge for non-expired documents', async () => {
@@ -259,10 +280,10 @@ describe('VariablesTab document variables', () => {
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     expect(variableRow.queryByText('Expired')).not.toBeInTheDocument();
     expect(
-      variableRow.getByLabelText('Download document for variable myDocument'),
+      variableRow.getByLabelText('Download document for myDocument'),
     ).toBeEnabled();
     expect(
-      variableRow.getByLabelText('Preview document for variable myDocument'),
+      variableRow.getByLabelText('Preview document for myDocument'),
     ).toBeEnabled();
   });
 
@@ -274,13 +295,13 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-testVariableName'));
     expect(
-      variableRow.queryByLabelText(/download document for variable/i),
+      variableRow.queryByLabelText(/download document for/i),
     ).not.toBeInTheDocument();
     expect(
       variableRow.queryByLabelText(/view documents for variable/i),
     ).not.toBeInTheDocument();
     expect(
-      variableRow.queryByLabelText(/preview document for variable/i),
+      variableRow.queryByLabelText(/preview document for/i),
     ).not.toBeInTheDocument();
   });
 });

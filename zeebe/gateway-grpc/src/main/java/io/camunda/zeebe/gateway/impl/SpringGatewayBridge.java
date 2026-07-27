@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
@@ -22,24 +23,34 @@ import org.springframework.stereotype.Component;
 public class SpringGatewayBridge {
 
   private Supplier<Status> gatewayStatusSupplier;
-  private Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
+  private Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
   public void registerGatewayStatusSupplier(final Supplier<Status> gatewayStatusSupplier) {
     this.gatewayStatusSupplier = gatewayStatusSupplier;
   }
 
-  public void registerClusterStateSupplier(
-      final Supplier<Optional<BrokerClusterState>> clusterStateSupplier) {
-    this.clusterStateSupplier = clusterStateSupplier;
+  /**
+   * Registers a supplier of the cluster topology for every known physical tenant (partition group),
+   * keyed by physical tenant id. Used by health indicators that must aggregate across all physical
+   * tenants rather than the default one only.
+   */
+  public void registerClusterStatesSupplier(
+      final Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier) {
+    this.clusterStatesSupplier = clusterStatesSupplier;
   }
 
   public Optional<Status> getGatewayStatus() {
     return Optional.ofNullable(gatewayStatusSupplier).map(Supplier::get);
   }
 
-  public Optional<BrokerClusterState> getClusterState() {
-    return Optional.ofNullable(clusterStateSupplier).flatMap(Supplier::get);
+  /**
+   * Returns the cluster topology for every known physical tenant, keyed by physical tenant id.
+   * Returns an empty map when no supplier has been registered yet or the registered supplier yields
+   * {@code null}.
+   */
+  public Map<String, BrokerClusterState> getClusterStates() {
+    return Optional.ofNullable(clusterStatesSupplier).map(Supplier::get).orElse(Map.of());
   }
 
   public Optional<JobStreamClient> getJobStreamClient() {

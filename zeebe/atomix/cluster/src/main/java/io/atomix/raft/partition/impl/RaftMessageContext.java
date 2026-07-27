@@ -33,6 +33,7 @@ class RaftMessageContext {
   final String leaveSubject;
   final String installSubject;
   final String transferSubject;
+  final String timeoutNowSubject;
   final String pollSubject;
   final String voteSubject;
   final String appendV1subject;
@@ -54,6 +55,7 @@ class RaftMessageContext {
     leaveSubject = getSubject(prefix, "leave");
     installSubject = getSubject(prefix, "install");
     transferSubject = getSubject(prefix, "transfer");
+    timeoutNowSubject = getSubject(prefix, "timeout-now");
     pollSubject = getSubject(prefix, "poll");
     voteSubject = getSubject(prefix, "vote");
     appendV1subject = getSubject(prefix, "append");
@@ -103,6 +105,10 @@ class RaftMessageContext {
 
   String getTransferSubject() {
     return transferSubject;
+  }
+
+  String getTimeoutNowSubject() {
+    return timeoutNowSubject;
   }
 
   private static String getSubject(final String prefix, final String type) {

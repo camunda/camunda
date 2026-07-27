@@ -24,7 +24,6 @@ import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
@@ -34,7 +33,6 @@ import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilder;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilderConfiguration;
 import io.camunda.security.spring.security.BaseSecurityConfiguration;
-import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
@@ -46,7 +44,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -468,18 +465,9 @@ class PhysicalTenantApiChainIsolationIT {
     final var scopedJwtDecoderFactory =
         new ScopedJwtDecoderFactory(registrationFactory, decoderFactory);
 
-    // CSL chain builder from the Spring context (so it inherits the wired SecurityPathPort etc.)
-    final var properties = ctx.getBean(CamundaSecurityLibraryProperties.class);
-    final var authFailureHandler =
-        ctx.getBean(io.camunda.security.spring.handler.AuthFailureHandler.class);
-    final var pathPort = ctx.getBean(SecurityPathPort.class);
-    @SuppressWarnings("unchecked")
-    final ObjectProvider<OidcResourceServerCustomizer> customizers =
-        (ObjectProvider<OidcResourceServerCustomizer>)
-            ctx.getBeanProvider(OidcResourceServerCustomizer.class);
-
-    final var chainBuilder =
-        new ScopedApiSecurityChainBuilder(properties, authFailureHandler, pathPort, customizers);
+    // CSL chain builder from the Spring context (so it inherits the wired SecurityPathPort etc.
+    // and stays resilient to constructor changes in ScopedApiSecurityChainBuilderConfiguration).
+    final var chainBuilder = ctx.getBean(ScopedApiSecurityChainBuilder.class);
 
     final var chains = new java.util.ArrayList<SecurityFilterChain>();
     for (final var descriptor : descriptors) {

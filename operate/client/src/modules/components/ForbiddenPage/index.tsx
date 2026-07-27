@@ -14,7 +14,7 @@ import {Description, Title, Grid, Content, ForbiddenIcon} from './styled';
 const ForbiddenPage: React.FC = () => {
   return (
     <>
-      <AppHeader />
+      <AppHeader hideNavLinks />
       <Grid>
         <Content gap={6}>
           <ForbiddenIcon />

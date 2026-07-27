@@ -7,7 +7,7 @@
 ---
 name: Observe Build Status
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Records the build status remotely for analytic purposes
 

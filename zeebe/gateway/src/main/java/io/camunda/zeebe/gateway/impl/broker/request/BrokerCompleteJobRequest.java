@@ -36,6 +36,16 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
     requestDto.setResult(result);
   }
 
+  public BrokerCompleteJobRequest setLeaseToken(final String leaseToken) {
+    requestDto.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  public BrokerCompleteJobRequest setBusinessId(final String businessId) {
+    requestDto.setBusinessId(businessId);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

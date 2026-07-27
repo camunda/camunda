@@ -186,12 +186,14 @@ const TableCell = styled(BaseTableCell)<TableCellProps>`
   ${({$hideCellPadding}) => {
     return css`
       white-space: nowrap;
-      ${$hideCellPadding &&
-      css`
-        white-space: normal;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-      `}
+      ${
+        $hideCellPadding &&
+        css`
+          white-space: normal;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        `
+      }
     `;
   }}
 `;
@@ -204,12 +206,14 @@ const TableHead = styled(BaseTableHead)<TableHeadProps>`
   ${({$stickyHeader}) => {
     return css`
       white-space: nowrap;
-      ${$stickyHeader &&
-      css`
-        position: sticky;
-        top: 0;
-        z-index: 1;
-      `}
+      ${
+        $stickyHeader &&
+        css`
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        `
+      }
     `;
   }}
 `;

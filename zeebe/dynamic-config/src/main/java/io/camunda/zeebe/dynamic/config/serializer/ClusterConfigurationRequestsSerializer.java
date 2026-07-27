@@ -9,11 +9,17 @@ package io.camunda.zeebe.dynamic.config.serializer;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.Either;
@@ -61,6 +67,14 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeUpdatePartitionDistributorConfigRequest(
       UpdatePartitionDistributorConfigRequest request);
+
+  byte[] encodeClusterZoneMigrationRequest(ClusterZoneMigrationRequest request);
+
+  byte[] encodeForceRemoveZoneRequest(ForceZoneRemoveRequest request);
+
+  byte[] encodeAddZoneRequest(AddZoneRequest request);
+
+  byte[] encodeUpdateZonePrioritiesRequest(UpdateZonePrioritiesRequest request);
 
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
@@ -118,7 +132,23 @@ public interface ClusterConfigurationRequestsSerializer {
   UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
       byte[] bytes);
 
+  ClusterZoneMigrationRequest decodeClusterZoneMigrationRequest(byte[] bytes);
+
+  ForceZoneRemoveRequest decodeForceRemoveZoneRequest(byte[] bytes);
+
+  AddZoneRequest decodeAddZoneRequest(byte[] bytes);
+
+  UpdateZonePrioritiesRequest decodeUpdateZonePrioritiesRequest(byte[] bytes);
+
   byte[] encodeModeChangeRequest(ModeChangeRequest modeChangeRequest);
 
   ModeChangeRequest decodeModeChangeRequest(byte[] encodedRequest);
+
+  byte[] encodeExportingStateChangeRequest(ExportingStateChangeRequest request);
+
+  ExportingStateChangeRequest decodeExportingStateChangeRequest(byte[] encodedRequest);
+
+  byte[] encodeRestoreRequest(RestoreRequest request);
+
+  RestoreRequest decodeRestoreRequest(byte[] encodedRequest);
 }

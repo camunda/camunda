@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -67,6 +67,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
+  private final AgentInstanceBehavior agentInstanceBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -78,11 +79,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final DueDateTimerCheckScheduler timerChecker,
       final JobStreamer jobStreamer,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final CslAuthorizationCheck cslCheck) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -157,7 +159,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             routingInfo,
             clock,
             transientProcessMessageSubscriptionState,
-            config.getMaxNameFieldLength());
+            config.getMaxNameFieldLength(),
+            evaluateBoundaryEventCorrelationKeyInActivityScope);
 
     stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 
@@ -168,7 +171,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers,
             processingState,
             stateBehavior,
-            conditionalBehavior);
+            variableBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
@@ -225,7 +228,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            authCheckBehavior);
+            cslCheck);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
@@ -275,13 +278,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
-            userTaskBehavior);
+            userTaskBehavior,
+            config.getMaxWorkerTypeLength());
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
-    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, authCheckBehavior, writers);
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, cslCheck, writers);
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(
@@ -290,6 +294,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    agentInstanceBehavior = new AgentInstanceBehavior(processingState, writers);
   }
 
   @Override
@@ -405,6 +411,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public AgentInstanceBehavior agentInstanceBehavior() {
+    return agentInstanceBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
@@ -111,6 +112,38 @@ class BatchOperationCreatedHandlerTest {
     assertThat(entity.getActorId()).isNull();
 
     verify(batchOperationCache).put(eq(entity.getId()), any());
+  }
+
+  @Test
+  void shouldUpdateEntityWithSuspendAndResumeProcessInstanceTypes() {
+    // given
+    for (final var type :
+        java.util.List.of(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.RESUME_PROCESS_INSTANCE)) {
+      final var recordValue =
+          io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue
+              .builder()
+              .from(factory.generateObject(BatchOperationCreationRecordValue.class))
+              .withBatchOperationType(type)
+              .build();
+      final Record<BatchOperationCreationRecordValue> record =
+          factory.generateRecord(
+              ValueType.BATCH_OPERATION_CREATION,
+              r ->
+                  r.withIntent(BatchOperationIntent.CREATED)
+                      .withValue(recordValue)
+                      .withBrokerVersion("8.8.0")
+                      .withAuthorizations(Map.of()));
+
+      final var entity = new BatchOperationEntity();
+
+      // when
+      underTest.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getType()).isEqualTo(OperationType.valueOf(type.name()));
+    }
   }
 
   @Test
@@ -214,15 +247,16 @@ class BatchOperationCreatedHandlerTest {
             .setType(OperationType.RESOLVE_INCIDENT)
             .setActorType(AuditLogActorType.USER)
             .setActorId("username");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsert(
-            eq(indexName),
+            eq(index),
             eq("123"),
             eq(entity),
             eq(

@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.agenthistory.DbAgentHistoryState;
 import io.camunda.zeebe.engine.state.agentinstance.DbAgentInstanceState;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
@@ -92,7 +94,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
@@ -101,13 +105,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
 import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -134,6 +141,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
   private final MutableBannedInstanceState bannedInstanceState;
+  private final MutableSuspensionState suspensionState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableFormState formState;
@@ -159,6 +167,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableSecretReferenceState secretReferenceState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -180,8 +189,13 @@ public class ProcessingDbState implements MutableProcessingState {
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
     agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
     agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
-    processState =
-        new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
+    // Transformation only parses expressions — the clock is never consulted. A fixed epoch
+    // clock satisfies the ExpressionLanguage constructor contract while keeping cache-miss
+    // rebuilds deterministic during replay.
+    final BpmnTransformer stateTransformer =
+        BpmnFactory.createTransformer(
+            InstantSource.fixed(Instant.EPOCH), expressionLanguageMetrics, Integer.MAX_VALUE);
+    processState = new DbProcessState(zeebeDb, transactionContext, config, stateTransformer);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
@@ -204,6 +218,7 @@ public class ProcessingDbState implements MutableProcessingState {
     messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
+    suspensionState = new DbSuspensionState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
     resourceState = new DbResourceState(zeebeDb, transactionContext, config);
@@ -229,6 +244,7 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
+    secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -303,6 +319,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableBannedInstanceState getBannedInstanceState() {
     return bannedInstanceState;
+  }
+
+  @Override
+  public MutableSuspensionState getSuspensionState() {
+    return suspensionState;
   }
 
   @Override
@@ -458,6 +479,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableJobMetricsState getJobMetricsState() {
     return jobMetricsState;
+  }
+
+  @Override
+  public MutableSecretReferenceState getSecretReferenceState() {
+    return secretReferenceState;
   }
 
   @Override

@@ -31,6 +31,9 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
   @BeforeVersion880 private Boolean isPublic;
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
+  @SinceVersion("8.10.0")
+  private ProcessDefinitionState state = ProcessDefinitionState.ACTIVE;
+
   public String getName() {
     return name;
   }
@@ -78,7 +81,8 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         formId,
         formKey,
         isFormEmbedded,
-        isPublic);
+        isPublic,
+        state);
   }
 
   @Override
@@ -104,7 +108,8 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         && Objects.equals(formId, that.formId)
         && Objects.equals(formKey, that.formKey)
         && Objects.equals(isFormEmbedded, that.isFormEmbedded)
-        && Objects.equals(isPublic, that.isPublic);
+        && Objects.equals(isPublic, that.isPublic)
+        && state == that.state;
   }
 
   @Override
@@ -144,6 +149,8 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
         + isFormEmbedded
         + ", isPublic="
         + isPublic
+        + ", state="
+        + state
         + ", tenantId='"
         + tenantId
         + '\''
@@ -260,6 +267,15 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
 
   public ProcessEntity setIsPublic(final Boolean isPublic) {
     this.isPublic = isPublic;
+    return this;
+  }
+
+  public ProcessDefinitionState getState() {
+    return state;
+  }
+
+  public ProcessEntity setState(final ProcessDefinitionState state) {
+    this.state = state;
     return this;
   }
 }

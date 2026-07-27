@@ -81,7 +81,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldMergeLocalDocument() {
+  void shouldMergeLocalDocument() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
@@ -137,7 +137,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldNotMergeLocalDocumentIfEmpty() {
+  void shouldNotMergeLocalDocumentIfEmpty() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long scopeKey = 1;
@@ -162,7 +162,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldMergeDocumentWithoutPropagatingMoreThanOnce() {
+  void shouldMergeDocumentWithoutPropagatingMoreThanOnce() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
@@ -207,7 +207,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldMergeDocumentPropagatingToRoot() {
+  void shouldMergeDocumentPropagatingToRoot() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
@@ -259,7 +259,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldMergeDocumentWithoutUpdatingUnmodifiedVariable() {
+  void shouldMergeDocumentWithoutUpdatingUnmodifiedVariable() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
@@ -301,7 +301,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldMergeDocumentWithoutPropagatingExistingVariables() {
+  void shouldMergeDocumentWithoutPropagatingExistingVariables() throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
@@ -345,7 +345,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldNotMergeDocumentIfEmpty() {
+  void shouldNotMergeDocumentIfEmpty() throws VariableValidationException {
     // given
     final int processDefinitionKey = 1;
     final int parentScopeKey = 1;
@@ -602,7 +602,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldAssignCustomTenantOnMergeLocalDocument() {
+  void shouldAssignCustomTenantOnMergeLocalDocument() throws VariableValidationException {
     // given
     final var tenantId = "foo";
 
@@ -660,7 +660,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldAssignCustomTenantOnMergeDocument() {
+  void shouldAssignCustomTenantOnMergeDocument() throws VariableValidationException {
     // given
     final var tenantId = "foo";
 
@@ -718,13 +718,13 @@ final class VariableBehaviorTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void shouldMergeDocumentWithVariableSource(final boolean isApiSource) {
+  void shouldMergeDocumentWithVariableSource(final boolean isApiSource)
+      throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
-    final long elementInstanceKey = 42;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
@@ -762,7 +762,8 @@ final class VariableBehaviorTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void shouldMergeLocalDocumentWithVariableSource(final boolean isApiSource) {
+  void shouldMergeLocalDocumentWithVariableSource(final boolean isApiSource)
+      throws VariableValidationException {
     // given
     final long processDefinitionKey = 1;
     final long parentScopeKey = 1;

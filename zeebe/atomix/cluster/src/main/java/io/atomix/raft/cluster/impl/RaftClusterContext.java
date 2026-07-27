@@ -26,6 +26,8 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.JointConsensusVoteQuorum;
 import io.atomix.raft.utils.SimpleVoteQuorum;
@@ -36,7 +38,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,9 +46,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
 public final class RaftClusterContext implements RaftCluster, AutoCloseable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftClusterContext.class);
+
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
   private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
@@ -74,13 +79,17 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     raft.getThreadContext()
         .execute(
             () -> {
-              // If a configuration is stored, use the stored configuration, otherwise configure the
-              // server
-              // with the user provided configuration.
+              // Start from the stored configuration, which reflects the newest committed
+              // configuration, and apply any newer configuration entry from the log on top:
+              // configurations take effect as soon as they are appended, so an appended but not
+              // yet committed configuration must survive a restart. Only if neither source has a
+              // configuration, configure the server with the user provided configuration.
               final var storedConfiguration = raft.getMetaStore().loadConfiguration();
               if (storedConfiguration != null) {
                 updateConfiguration(storedConfiguration);
-              } else {
+              }
+              reloadConfigurationFromLog();
+              if (configuration == null) {
                 createInitialConfig(cluster);
               }
               raft.transition(localMember.getType());
@@ -160,25 +169,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Function<RaftMemberContext, T> calculateMemberValue) {
-    final var contexts = new ArrayList<>(remoteActiveMembers);
-
     if (configuration.requiresJointConsensus()) {
       final var oldMembers = configuration.oldMembers();
       final var newMembers = configuration.newMembers();
 
-      final var oldContexts =
-          contexts.stream()
-              .filter(context -> oldMembers.contains(context.getMember()))
-              .collect(Collectors.toCollection(ArrayList::new));
-      final var newContexts =
-          contexts.stream()
-              .filter(context -> newMembers.contains(context.getMember()))
-              .collect(Collectors.toCollection(ArrayList::new));
-
-      final var oldQuorum =
-          getQuorumFor(oldContexts, calculateMemberValue, oldMembers.contains(localMember));
-      final var newQuorum =
-          getQuorumFor(newContexts, calculateMemberValue, newMembers.contains(localMember));
+      final var oldQuorum = getQuorumFor(oldMembers, calculateMemberValue);
+      final var newQuorum = getQuorumFor(newMembers, calculateMemberValue);
       if (oldQuorum.isPresent() && newQuorum.isPresent()) {
         return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
       } else if (oldQuorum.isPresent()) {
@@ -188,14 +184,25 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    return getQuorumFor(
-        contexts, calculateMemberValue, configuration.newMembers().contains(localMember));
+    return getQuorumFor(configuration.newMembers(), calculateMemberValue);
   }
 
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
-      final List<RaftMemberContext> contexts,
-      final Function<RaftMemberContext, T> calculateMemberValue,
-      final boolean includeLocalMemberInQuorum) {
+      final Collection<RaftMember> members,
+      final Function<RaftMemberContext, T> calculateMemberValue) {
+    // Under joint consensus, `remoteMemberContexts` is not authoritative, because it contains
+    // entries from old and new configurations. So filter for members that actually are in the
+    // configuration.
+    final var activeMembers =
+        members.stream().filter(member -> member.getType() == Type.ACTIVE).toList();
+    final var includeLocalMemberInQuorum =
+        activeMembers.stream().anyMatch(member -> member.memberId().equals(localMember.memberId()));
+    final var contexts =
+        activeMembers.stream()
+            .filter(member -> !member.memberId().equals(localMember.memberId()))
+            .map(member -> remoteMemberContexts.get(member.memberId()))
+            .collect(Collectors.toCollection(ArrayList::new));
+
     if (contexts.isEmpty()) {
       return Optional.empty();
     }
@@ -263,9 +270,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new JointConsensusVoteQuorum(
               callback,
               configuration.oldMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     } else {
@@ -273,6 +282,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new SimpleVoteQuorum(
               callback,
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     }
@@ -281,16 +291,56 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   /**
-   * Resets the cluster state to the persisted state.
-   *
-   * @return The cluster state.
+   * Applies the newest configuration entry from the log if it is newer than the current
+   * configuration. Configurations take effect as soon as they are appended, so the newest
+   * configuration entry in the log is authoritative, whether it is committed or not.
    */
-  public RaftClusterContext reset() {
-    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-    if (storedConfiguration != null) {
-      configure(storedConfiguration);
+  public void reloadConfigurationFromLog() {
+    raft.checkThread();
+    final var currentConfiguration = configuration;
+    if (currentConfiguration != null && currentConfiguration.force()) {
+      // A forced configuration is authoritative until a new leader appends the configuration that
+      // leaves the forced state. The log may still contain a stale, higher-index configuration
+      // entry from a reconfiguration that was in flight before the force - recovering it would
+      // resurrect exactly the configuration that the force configure was meant to replace. The
+      // force-leaving configuration is not needed from the log either, a leader will disseminate
+      // it via configure requests.
+      return;
     }
-    return this;
+    IndexedRaftLogEntry lastConfigurationEntry = null;
+    // The reader needs to be uncommitted because the configuration entry might not be committed yet
+    // on this node, but committed on the leader already.
+    try (final var reader = raft.getLog().openUncommittedReader()) {
+      if (currentConfiguration != null) {
+        // Entries covered by the current configuration or the commit index can be skipped: the
+        // configuration guard ignores older indexes anyway, and a committed configuration entry is
+        // always persisted before the commit index that covers it, so it is already reflected in
+        // the current configuration. Without a current configuration (the join path and members
+        // without a meta store), the whole log has to be searched.
+        reader.seek(Math.max(currentConfiguration.index(), raft.getCommitIndex()) + 1);
+      }
+      while (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.entry() instanceof ConfigurationEntry) {
+          lastConfigurationEntry = entry;
+        }
+      }
+      if (lastConfigurationEntry != null) {
+        final var configurationEntry = (ConfigurationEntry) lastConfigurationEntry.entry();
+        LOGGER.info(
+            "Reloading configuration {} from log entry at index {}",
+            configurationEntry,
+            lastConfigurationEntry.index());
+        configure(
+            new Configuration(
+                lastConfigurationEntry.index(),
+                lastConfigurationEntry.term(),
+                configurationEntry.timestamp(),
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers(),
+                false));
+      }
+    }
   }
 
   /**

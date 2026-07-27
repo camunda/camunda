@@ -30,6 +30,7 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+      PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
       PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB,
       PermissionType.READ,
       PermissionType.UPDATE),
@@ -64,7 +65,8 @@ public enum AuthorizationResourceType {
       PermissionType.MODIFY_PROCESS_INSTANCE,
       PermissionType.COMPLETE_USER_TASK,
       PermissionType.CANCEL_PROCESS_INSTANCE,
-      PermissionType.DELETE_PROCESS_INSTANCE),
+      PermissionType.DELETE_PROCESS_INSTANCE,
+      PermissionType.SUSPEND_PROCESS_INSTANCE),
   RESOURCE(
       PermissionType.CREATE,
       PermissionType.READ,
@@ -82,7 +84,10 @@ public enum AuthorizationResourceType {
   UNSPECIFIED(),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER_TASK(
-      PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE);
+      PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE),
+  SECRET(PermissionType.READ, PermissionType.REVEAL),
+  BACKUP(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE, PermissionType.RESTORE),
+  EXPORTER(PermissionType.PAUSE);
 
   private final Set<PermissionType> supportedPermissionTypes;
 

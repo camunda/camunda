@@ -17,4 +17,13 @@ public interface MutableAgentInstanceState extends AgentInstanceState {
 
   /** Updates the record stored under {@code agentInstanceKey}. */
   void update(long agentInstanceKey, AgentInstanceRecord record);
+
+  /** Deletes the record stored under {@code agentInstanceKey}, including the secondary index. */
+  void delete(long agentInstanceKey);
+
+  /**
+   * Deletes the record stored under {@code agentInstanceKey} using the provided {@code record} to
+   * locate the secondary index entry, avoiding an extra state lookup.
+   */
+  void delete(long agentInstanceKey, AgentInstanceRecord record);
 }

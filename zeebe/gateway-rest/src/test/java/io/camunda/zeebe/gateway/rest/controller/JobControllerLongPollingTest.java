@@ -31,7 +31,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
@@ -425,7 +425,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
                   GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
               .setRequestCanceledExceptionProvider(
                   GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-              .setMetrics(LongPollingMetrics.noop())
+              .setMetricsFactory(LongPollingMetricsFactory.noop())
               .build();
       final var future = new CompletableFuture<>();
       final var actor =

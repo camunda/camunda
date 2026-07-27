@@ -393,6 +393,18 @@ components:
             The tenant filtering strategy - determines whether to use provided tenant IDs or
             assigned tenant IDs from the authenticated principal's authorized tenants.
           default: PROVIDED
+        withLease:
+          description: >
+            Whether to activate the jobs with a lease. When true, each activated job is assigned a
+            distinct, opaque lease token, returned as ActivatedJobResult.leaseToken. The lease
+            fences the complete, fail, and throw-error commands against a superseded activation of
+            the same job (for example, after the job timed out or failed and was re-activated by
+            another worker): a command carrying a stale lease token is rejected rather than racing
+            with the newer activation. Once a job has been activated with a lease, it is served
+            only to leasing workers of that job type; a homogeneous fleet per job type is
+            recommended. Omit or set to false to activate jobs without a lease.
+          type: boolean
+          nullable: true
       required:
         - type
         - maxJobsToActivate
@@ -400,6 +412,8 @@ components:
       x-properties-added-in-version:
         - propertyName: tenantFilter
           addedInVersion: "8.9"
+        - propertyName: withLease
+          addedInVersion: "8.10"
 
     JobActivationResult:
       description: The list of activated jobs
@@ -441,6 +455,8 @@ components:
         - tags
         - userTask
         - priority
+        - leaseToken
+        - physicalTenantId
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -486,6 +502,11 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The ID of the tenant that owns the job.
+        physicalTenantId:
+          type: string
+          description: |
+            The ID of the physical tenant that the job-activation request was routed to;
+            the default physical tenant when the request did not specify one.
         jobKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
@@ -537,6 +558,12 @@ components:
             Jobs created before 8.10 have no stored priority; the API returns 0 for such jobs.
           type: integer
           format: int32
+        leaseToken:
+          description: >
+            The lease token identifying this activation. This is `null` when the job was
+            activated without a lease.
+          nullable: true
+          type: string
       x-properties-added-in-version:
         - propertyName: kind
           addedInVersion: "8.8"
@@ -551,6 +578,10 @@ components:
         - propertyName: priority
           addedInVersion: "8.10"
         - propertyName: businessId
+          addedInVersion: "8.10"
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
+        - propertyName: physicalTenantId
           addedInVersion: "8.10"
 
     UserTaskProperties:
@@ -1004,6 +1035,23 @@ components:
             associated task.
           type: object
           additionalProperties: true
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
+      x-properties-added-in-version:
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobErrorRequest:
       type: object
@@ -1024,8 +1072,25 @@ components:
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
       required:
         - errorCode
+      x-properties-added-in-version:
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobCompletionRequest:
       type: object
@@ -1038,9 +1103,42 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
+        businessId:
+          nullable: true
+          description: >
+            An optional business id to assign to the process instance the job belongs to, as part
+            of completing the job, letting a worker set the identifier from work it just performed.
+
+            The business id can only be assigned to a root process instance: if the job belongs to
+            a child process instance (one started by a call activity), the completion is rejected.
+            An empty business id is likewise rejected. The assignment is single and irreversible and
+            is only accepted while business id uniqueness is disabled. Only artifacts created after
+            the assignment carry the business id; already-existing ones are not enriched. Completing
+            with a business id that differs from one already assigned rejects the whole completion,
+            leaving the job open; re-sending the identical business id is an idempotent no-op.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
       x-properties-added-in-version:
         - propertyName: result
           addedInVersion: "8.8"
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     JobResult:
       description: >
@@ -1182,11 +1280,30 @@ components:
           $ref: '#/components/schemas/JobChangeset'
         operationReference:
           $ref: "keys.yaml#/components/schemas/OperationReference"
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, a supplied token is validated to prove the command comes from the
+            worker that holds the current lease; a command carrying a stale token is rejected,
+            fencing the job against a superseded activation (for example, after the job timed out or
+            failed and was re-activated by another worker).
+
+            An update without a token always applies to support operator and bulk updates of
+            leased jobs. Note that this is different from lifecycle requests like complete, fail, and
+            throw-error that always require a token for leased jobs.
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
       required:
         - changeset
       x-properties-added-in-version:
         - propertyName: operationReference
           addedInVersion: "8.8"
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobChangeset:
       description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.

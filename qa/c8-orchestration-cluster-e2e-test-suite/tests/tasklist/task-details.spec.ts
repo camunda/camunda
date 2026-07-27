@@ -13,6 +13,9 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {findUserTask, expectProcessState} from '@requestHelpers';
+import {buildUrl, jsonHeaders} from 'utils/http';
+import {defaultAssertionOptions} from 'utils/constants';
 
 test.beforeAll(async () => {
   await deploy([
@@ -47,6 +50,10 @@ test.beforeAll(async () => {
     './resources/bigVariableProcessWithForm.bpmn',
     './resources/bigVariableForm.form',
     './resources/user_task_with_form_assigned_filter.bpmn',
+    './resources/employee_registration_no_output_mapping.bpmn',
+    './resources/employee_details_form.form',
+    './resources/employee_confirmation_form.form',
+    './resources/usertask_with_custom_headers.bpmn',
   ]);
   await sleep(1000);
 
@@ -83,6 +90,8 @@ test.beforeAll(async () => {
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('zeebe_and_job_worker_process', 1, 1),
     createInstances('bigVariableProcessWithForm', 1, 1),
+    createInstances('employee_registration_no_output_mapping', 1, 1),
+    createInstances('usertask_with_custom_headers', 1, 1),
   ]);
 
   await sleep(1000);
@@ -362,6 +371,38 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Name*', 'Stuart');
   });
 
+  test('variables are passed along the forms if no output variables are defined', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Employee Details');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.fillTextInput('Employee Name', 'Gaius Julius Caesar');
+    await taskDetailsPage.fillTextInput('Department', 'Rome');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+
+    await taskPanelPage.filterBy('Unassigned');
+    // The next task can take a moment to be indexed/rendered right after
+    // the previous one completes, so allow more time than the default 10s.
+    await taskPanelPage.openTask('Confirm Employee Details', {
+      timeout: 30000,
+    });
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.assertFieldValue(
+      'Employee Name',
+      'Gaius Julius Caesar',
+    );
+    await taskDetailsPage.assertFieldValue('Department', 'Rome');
+
+    await taskDetailsPage.checkChecklistBox('Confirm');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+  });
+
   test('task completion with number form by input', async ({
     taskPanelPage,
     taskDetailsPage,
@@ -570,6 +611,50 @@ test.describe('task details page', () => {
 
     await expect(taskDetailsPage.form).toContainText('Hello Jane');
     await expect(taskDetailsPage.form).toContainText('You are 50 years old');
+  });
+
+  test('user task with custom headers can be completed and process continues', async ({
+    request,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    let processInstanceKey = '';
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-instances/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId: 'usertask_with_custom_headers',
+            state: 'ACTIVE',
+          },
+        },
+      });
+      const body = await res.json();
+      expect(body.items.length).toBe(1);
+      processInstanceKey = body.items[0].processInstanceKey;
+    }).toPass(defaultAssertionOptions);
+
+    const userTaskKey = await findUserTask(
+      request,
+      processInstanceKey,
+      'CREATED',
+    );
+
+    const userTaskRes = await request.get(
+      buildUrl(`/user-tasks/${userTaskKey}`),
+      {headers: jsonHeaders()},
+    );
+    expect((await userTaskRes.json()).customHeaders).toEqual({
+      TaskHeaderTest: 'TaskHeaderValue',
+    });
+
+    await taskPanelPage.openTask('Task with custom headers');
+    await taskDetailsPage.clickAssignToMeButton();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+
+    await expectProcessState(request, processInstanceKey, 'COMPLETED');
   });
 
   test('show process model', async ({taskPanelPage, taskDetailsPage}) => {

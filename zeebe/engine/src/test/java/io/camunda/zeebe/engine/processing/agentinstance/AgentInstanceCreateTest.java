@@ -402,10 +402,9 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldTreatSecondCreateForSameElementInstanceAsIdempotentSuccess() {
-    // given -- only one agent instance can exist per element instance; the public API has no 409.
-    // The engine short-circuits a second CREATE: a rejection lands on the stream (suppressing a
-    // second CREATED event), and the client response carries the existing record.
+  public void shouldRejectDuplicateCreateWithAlreadyExistsOnStream() {
+    // given -- only one agent instance can exist per element instance. A second CREATE is always
+    // rejected with ALREADY_EXISTS on the stream.
     ENGINE
         .deployment()
         .withXmlResource(
@@ -495,7 +494,7 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldReturnExistingRecordForRetryAfterElementInstanceLeftActive() {
+  public void shouldRejectDuplicateCreateWithAlreadyExistsEvenWhenElementInstanceLeftActive() {
     // given -- an element instance that successfully got an agent created, then transitioned out
     // of ACTIVE (parked in COMPLETING behind an incident from a faulty output expression). The
     // element instance still exists in state and carries the back-link to the agent instance.
@@ -529,9 +528,8 @@ public class AgentInstanceCreateTest {
             .expectRejection()
             .create();
 
-    // then -- the retry is short-circuited as an idempotent success against the existing record,
-    // not rejected as INVALID_STATE. The stream still carries ALREADY_EXISTS to suppress a
-    // duplicate CREATED event.
+    // then -- the stream rejection is ALREADY_EXISTS, not INVALID_STATE: the existence check
+    // precedes the active-state guard, so a late retry is not misidentified as an invalid state.
     assertThat(retryRejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(retryRejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
     assertThat(retryRejection.getRejectionReason())

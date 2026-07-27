@@ -22,6 +22,7 @@ import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
@@ -32,6 +33,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -41,6 +43,9 @@ import io.camunda.client.api.search.response.Variable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -50,9 +55,33 @@ public class CamundaDataSource {
   private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
   private final CamundaClient client;
+  private final OffsetDateTime testCaseStartTime;
 
   public CamundaDataSource(final CamundaClient client) {
+    this(client, null);
+  }
+
+  /**
+   * Creates a data source that filters all query results to only include data created at or after
+   * the given {@code testCaseStartTime}. When {@code testCaseStartTime} is {@code null}, no time
+   * filter is applied.
+   *
+   * @param client the Camunda client to use for queries
+   * @param testCaseStartTime the start time of the current test case, as reported by the runtime
+   *     clock; may be {@code null} to disable filtering
+   */
+  public CamundaDataSource(final CamundaClient client, final Instant testCaseStartTime) {
     this.client = client;
+    this.testCaseStartTime =
+        testCaseStartTime != null ? testCaseStartTime.atOffset(ZoneOffset.UTC) : null;
+  }
+
+  /**
+   * Returns the test case start time used for time-scoping queries, or {@code null} if no filter is
+   * set.
+   */
+  public OffsetDateTime getTestCaseStartTime() {
+    return testCaseStartTime;
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
@@ -114,12 +143,21 @@ public class CamundaDataSource {
   public List<ElementInstance> findElementInstances(final Consumer<ElementInstanceFilter> filter) {
     return client
         .newElementInstanceSearchRequest()
-        .filter(filter)
+        .filter(withElementInstanceStartTimeFilter(filter))
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()
         .items();
+  }
+
+  private Consumer<ElementInstanceFilter> withElementInstanceStartTimeFilter(
+      final Consumer<ElementInstanceFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<ElementInstanceFilter>) f -> f.startDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<Variable> findGlobalVariablesByProcessInstanceKey(final long processInstanceKey) {
@@ -159,7 +197,7 @@ public class CamundaDataSource {
   public List<ProcessInstance> findProcessInstances(final Consumer<ProcessInstanceFilter> filter) {
     return client
         .newProcessInstanceSearchRequest()
-        .filter(filter)
+        .filter(withProcessInstanceStartTimeFilter(filter))
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -167,10 +205,19 @@ public class CamundaDataSource {
         .items();
   }
 
+  private Consumer<ProcessInstanceFilter> withProcessInstanceStartTimeFilter(
+      final Consumer<ProcessInstanceFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<ProcessInstanceFilter>) f -> f.startDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
   public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
     return client
         .newIncidentSearchRequest()
-        .filter(filter)
+        .filter(withIncidentStartTimeFilter(filter))
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -178,10 +225,19 @@ public class CamundaDataSource {
         .items();
   }
 
+  private Consumer<IncidentFilter> withIncidentStartTimeFilter(
+      final Consumer<IncidentFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<IncidentFilter>) f -> f.creationTime(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
   public List<UserTask> findUserTasks(final Consumer<UserTaskFilter> filter) {
     return client
         .newUserTaskSearchRequest()
-        .filter(filter)
+        .filter(withUserTaskStartTimeFilter(filter))
         .sort(sort -> sort.creationDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -189,9 +245,50 @@ public class CamundaDataSource {
         .items();
   }
 
+  private Consumer<UserTaskFilter> withUserTaskStartTimeFilter(
+      final Consumer<UserTaskFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
+  public List<Job> findJobs(final Consumer<JobFilter> filter) {
+    return client
+        .newJobSearchRequest()
+        .filter(withJobStartTimeFilter(filter))
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  private Consumer<JobFilter> withJobStartTimeFilter(final Consumer<JobFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<JobFilter>) f -> f.creationTime(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
-    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
+    return client
+        .newDecisionInstanceSearchRequest()
+        .filter(withDecisionInstanceStartTimeFilter(filter))
+        .send()
+        .join()
+        .items();
+  }
+
+  private Consumer<DecisionInstanceFilter> withDecisionInstanceStartTimeFilter(
+      final Consumer<DecisionInstanceFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<DecisionInstanceFilter>) f -> f.evaluationDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
@@ -228,7 +325,7 @@ public class CamundaDataSource {
       final Consumer<MessageSubscriptionFilter> filter) {
     return client
         .newMessageSubscriptionSearchRequest()
-        .filter(filter)
+        .filter(withMessageSubscriptionStartTimeFilter(filter))
         .sort(sort -> sort.lastUpdatedDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -236,15 +333,35 @@ public class CamundaDataSource {
         .items();
   }
 
+  private Consumer<MessageSubscriptionFilter> withMessageSubscriptionStartTimeFilter(
+      final Consumer<MessageSubscriptionFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<MessageSubscriptionFilter>)
+            f -> f.lastUpdatedDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
   public List<CorrelatedMessageSubscription> findCorrelatedMessages(
       final Consumer<CorrelatedMessageSubscriptionFilter> filter) {
     return client
         .newCorrelatedMessageSubscriptionSearchRequest()
-        .filter(filter)
+        .filter(withCorrelatedMessageStartTimeFilter(filter))
         .sort(sort -> sort.correlationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()
         .items();
+  }
+
+  private Consumer<CorrelatedMessageSubscriptionFilter> withCorrelatedMessageStartTimeFilter(
+      final Consumer<CorrelatedMessageSubscriptionFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<CorrelatedMessageSubscriptionFilter>)
+            f -> f.correlationTime(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 }

@@ -19,17 +19,24 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.conditions.ArchConditions;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationService;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.function.Function;
 
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.processing..",
@@ -80,28 +87,12 @@ public class AuthorizationArchTest {
     return new ArchCondition<>("check authorization") {
       @Override
       public void check(final JavaClass item, final ConditionEvents events) {
-        // The processor should directly check authorizations
+        // The processor should have delegated authorization to one of the supported pathways
+        // (JobUpdateBehaviour, PermissionsBehavior, ProcessInstanceCreationHelper,
+        // AuthorizationCheckPort/AuthorizationService, CslAuthorizationCheck, or
+        // UserTaskAuthorizationCheck)
         ArchConditions.callMethod(
-                AuthorizationCheckBehavior.class, "isAuthorized", AuthorizationRequest.class)
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAnyAuthorized",
-                    AuthorizationRequest[].class))
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAuthorizedOrInternalCommand",
-                    AuthorizationRequest.class))
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAnyAuthorizedOrInternalCommand",
-                    AuthorizationRequest[].class))
-            // Or the processor should have delegated authorization to the JobUpdateBehaviour
-            .or(
-                ArchConditions.callMethod(
-                    JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class))
+                JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class)
             // Or the processor should have delegate authorization to the PermissionsBehavior
             .or(
                 ArchConditions.callMethod(
@@ -114,10 +105,119 @@ public class AuthorizationArchTest {
                     PermissionType.class))
             .or(
                 ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorized",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class))
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorized",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class,
+                    String.class))
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorizedWithResourceIdentifiers",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class,
+                    String.class))
+            .or(
+                ArchConditions.callMethod(
                     ProcessInstanceCreationHelper.class,
                     "isAuthorized",
                     TypedRecord.class,
                     DeployedProcess.class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationCheckPort.class,
+                    "check",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationService.class,
+                    "check",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            // Or the processor should delegate the skip-logic + check to CslAuthorizationCheck
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkForDistributedCommand",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class))
+            // Or the processor should delegate the combined RBAC+tenant check to
+            // CslAuthorizationCheck.checkAuthorizationAndTenant
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    String.class,
+                    Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class,
+                    String.class,
+                    Rejection.class))
+            // Or the class should delegate an already-resolved-principal check to
+            // CslAuthorizationCheck.checkAuth (used by UserTaskAuthorizationCheck for the
+            // per-alternative resource-id and property-scoped grants)
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuth",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuth",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class,
+                    Object.class))
+            // Or the UserTask processors should delegate the OR-orchestration to
+            // UserTaskAuthorizationCheck
+            .or(
+                ArchConditions.callMethod(
+                    UserTaskAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    UserTaskRecord.class,
+                    UserTaskAuthorizationCheck.Alt[].class))
             .check(item, events);
       }
     };
@@ -129,6 +229,7 @@ public class AuthorizationArchTest {
       public boolean test(final JavaClass javaClass) {
         return Predicates.assignableFrom(JobUpdateBehaviour.class)
             .or(Predicates.assignableFrom(PermissionsBehavior.class))
+            .or(Predicates.assignableFrom(UserTaskAuthorizationCheck.class))
             .test(javaClass);
       }
     };

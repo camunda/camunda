@@ -71,6 +71,12 @@ jobs:
       slack_base_text: ${{ steps.slack.outputs.base_text }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
@@ -609,10 +615,6 @@ jobs:
             /tmp/failed_runs.json
           retention-days: 14
           if-no-files-found: warn
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -664,7 +666,7 @@ jobs:
           repositories: camunda
 
       - name: Checkout (for ledger git operations)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ steps.github-token.outputs.token }}
@@ -969,7 +971,7 @@ jobs:
           echo "$response" | jq '.'
           [ "$(echo "$response" | jq -r '.ok')" = "true" ] || echo "::warning::Slack update failed"
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
       - name: Observe build status

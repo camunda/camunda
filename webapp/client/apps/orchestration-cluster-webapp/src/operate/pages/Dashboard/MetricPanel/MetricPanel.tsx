@@ -9,6 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Title, LabelContainer, Label} from './styled';
 
 type RunningInstancesCount = {
@@ -28,7 +29,8 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 		<>
 			<Title
 				data-testid="total-instances-link"
-				to="/"
+				to="/operate/processes"
+				search={runningOrAllInstancesFilter(count.total)}
 				onClick={() => {
 					tracking.track({
 						eventName: 'operate:navigation',
@@ -42,7 +44,8 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 			<LabelContainer>
 				<Label
 					data-testid="incident-instances-link"
-					to="/"
+					to="/operate/processes"
+					search={{active: false, incidents: true, completed: false, canceled: false}}
 					onClick={() => {
 						tracking.track({
 							eventName: 'operate:navigation',
@@ -54,7 +57,8 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 				</Label>
 				<Label
 					data-testid="active-instances-link"
-					to="/"
+					to="/operate/processes"
+					search={{active: true, incidents: false, completed: false, canceled: false}}
 					onClick={() => {
 						tracking.track({
 							eventName: 'operate:navigation',

@@ -123,19 +123,23 @@ const Container = styled(Stack)<ContainerProps>`
       background-color: ${backgroundColor};
       color: white;
       padding: var(--cds-spacing-02);
-      ${$showStatistic &&
-      css`
-        padding-right: var(--cds-spacing-03);
-        transform: translateX(-50%);
-      `}
+      ${
+        $showStatistic &&
+        css`
+          padding-right: var(--cds-spacing-03);
+          transform: translateX(-50%);
+        `
+      }
 
-      ${$state === 'completed' &&
-      css`
-        border: 1px solid var(--cds-border-inverse);
-        color: var(--cds-border-inverse);
-        font-weight: 400;
-        padding: var(--cds-spacing-02) var(--cds-spacing-05);
-      `}
+      ${
+        $state === 'completed' &&
+        css`
+          border: 1px solid var(--cds-border-inverse);
+          color: var(--cds-border-inverse);
+          font-weight: 400;
+          padding: var(--cds-spacing-02) var(--cds-spacing-05);
+        `
+      }
     `;
   }}
 `;

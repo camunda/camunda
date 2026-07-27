@@ -1,5 +1,5 @@
 # type: CI Helper - Manual
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Update Identity Version
 
 on:
@@ -33,7 +33,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.targetBranch }}
       - name: Git User Setup
@@ -42,7 +42,7 @@ jobs:
           git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
       - name: Get current identity version from `./parent/pom.xml`
         id: get-current-identity-version
-        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
+        uses: mavrosxristoforos/get-xml-info@d4791bc1e5928088858438ef383383f431983475 # 2.2.0
         with:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
@@ -128,7 +128,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -154,7 +154,7 @@ jobs:
             }
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
       - name: Observe build status

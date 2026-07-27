@@ -18,6 +18,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogUncommittedReader;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.Scheduled;
@@ -29,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 final class RaftClusterContextTest {
 
@@ -233,6 +239,100 @@ final class RaftClusterContextTest {
     verify(callback).accept(true);
   }
 
+  @ParameterizedTest
+  @EnumSource(value = Type.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+  void shouldIgnoreVoteFromNonActiveMember(final Type nonActiveMemberType) {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var activeMember = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var nonActiveMember =
+        new DefaultRaftMember(new MemberId("3"), nonActiveMemberType, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, activeMember, nonActiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(nonActiveMember.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(activeMember.memberId());
+    verify(callback).accept(true);
+  }
+
+  @Test
+  void shouldNotCountVoteFromNonActiveLocalMember() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var activeMember1 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var activeMember2 = new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1, 1, Instant.now().toEpochMilli(), List.of(localMember, activeMember1, activeMember2));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(activeMember1.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(activeMember2.memberId());
+    verify(callback).accept(true);
+  }
+
+  @Test
+  void shouldIgnoreVotesFromNonActiveMembersInJointConsensus() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldActiveMember =
+        new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var oldPassiveMember =
+        new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now());
+    final var newActiveMember =
+        new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now());
+    final var newPromotableMember =
+        new DefaultRaftMember(new MemberId("5"), Type.PROMOTABLE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, newActiveMember, newPromotableMember),
+            List.of(localMember, oldActiveMember, oldPassiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(oldPassiveMember.memberId());
+    quorum.succeed(newPromotableMember.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(oldActiveMember.memberId());
+    verifyNoInteractions(callback);
+
+    quorum.succeed(newActiveMember.memberId());
+    verify(callback).accept(true);
+  }
+
   @Test
   void shouldCalculateQuorum() {
     // given
@@ -258,6 +358,116 @@ final class RaftClusterContextTest {
 
     // then
     assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(4L);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = Type.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+  void shouldIgnoreNonActiveMemberWhenCalculatingQuorum(final Type nonActiveMemberType) {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var activeMember1 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var activeMember2 = new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var nonActiveMember =
+        new DefaultRaftMember(new MemberId("4"), nonActiveMemberType, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, activeMember1, activeMember2, nonActiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    context.getMemberContext(activeMember1.memberId()).setMatchIndex(2);
+    context.getMemberContext(activeMember2.memberId()).setMatchIndex(3);
+    context.getMemberContext(nonActiveMember.memberId()).setMatchIndex(5);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(3L);
+  }
+
+  @Test
+  void shouldNotCountNonActiveLocalMemberWhenCalculatingQuorum() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var activeMember1 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var activeMember2 = new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1, 1, Instant.now().toEpochMilli(), List.of(localMember, activeMember1, activeMember2));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    context.getMemberContext(activeMember1.memberId()).setMatchIndex(2);
+    context.getMemberContext(activeMember2.memberId()).setMatchIndex(3);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+  }
+
+  @Test
+  void shouldUseActiveMembersFromEachConfigurationWhenCalculatingJointConsensusQuorum() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldActiveMember =
+        new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var newPassiveMember =
+        new DefaultRaftMember(new MemberId("2"), Type.PASSIVE, Instant.now());
+    final var newActiveMember =
+        new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, newPassiveMember, newActiveMember),
+            List.of(localMember, oldActiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    context.getMemberContext(oldActiveMember.memberId()).setMatchIndex(5);
+    context.getMemberContext(newActiveMember.memberId()).setMatchIndex(2);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+  }
+
+  @Test
+  void shouldCountLocalMemberOnlyWhenActiveInJointConsensusConfiguration() {
+    // given
+    final var oldLocalMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var newLocalMember =
+        new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var oldActiveMember =
+        new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var newActiveMember1 =
+        new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var newActiveMember2 =
+        new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(newLocalMember, newActiveMember1, newActiveMember2),
+            List.of(oldLocalMember, oldActiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(oldLocalMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    context.getMemberContext(oldActiveMember.memberId()).setMatchIndex(5);
+    context.getMemberContext(newActiveMember1.memberId()).setMatchIndex(4);
+    context.getMemberContext(newActiveMember2.memberId()).setMatchIndex(3);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(3L);
   }
 
   @Test
@@ -447,6 +657,40 @@ final class RaftClusterContextTest {
         .containsExactly(new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()));
   }
 
+  @ParameterizedTest
+  @EnumSource(value = Type.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+  void shouldTreatMembersActiveInEitherConfigurationAsVotingInJointConsensus(
+      final Type nonActiveType) {
+    // given -- a joint consensus configuration where member 2 is only active in the old
+    // configuration, member 3 is only active in the new configuration and member 4 is not active
+    // in either configuration
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldMembers =
+        List.<RaftMember>of(
+            localMember,
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), nonActiveType, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), nonActiveType, Instant.now()));
+    final var newMembers =
+        List.<RaftMember>of(
+            localMember,
+            new DefaultRaftMember(new MemberId("2"), nonActiveType, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), nonActiveType, Instant.now()));
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // then -- members that are active in either the old or the new configuration are voting
+    // members and receive poll and vote requests, the member that is active in neither does not
+    assertThat(context.getVotingMembers())
+        .map(RaftMember::memberId)
+        .containsExactlyInAnyOrder(new MemberId("2"), new MemberId("3"));
+  }
+
   @Test
   void shouldKeepMembersWithHighestType() {
     // given - three active members
@@ -486,7 +730,46 @@ final class RaftClusterContextTest {
             new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
   }
 
-  private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
+  @Test
+  void shouldRecoverAppendedConfigurationFromLogOnBootstrap() {
+    // given -- a stored configuration and a newer configuration entry in the log
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var otherMember = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var storedConfiguration =
+        new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember, otherMember));
+    final var configurationEntry =
+        new ConfigurationEntry(
+            Instant.now().toEpochMilli(), List.of(localMember), List.of(localMember, otherMember));
+    final var raft =
+        raftWithStoredConfiguration(storedConfiguration, logEntry(2, 1, configurationEntry));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    context.bootstrap(List.of()).join();
+
+    // then -- the configuration from the log entry is applied on top of the stored one
+    assertThat(context.getConfiguration())
+        .isEqualTo(
+            new Configuration(
+                2,
+                1,
+                configurationEntry.timestamp(),
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers(),
+                false));
+  }
+
+  private static IndexedRaftLogEntry logEntry(
+      final long index, final long term, final ConfigurationEntry entry) {
+    final var logEntry = mock(IndexedRaftLogEntry.class, withSettings().stubOnly());
+    when(logEntry.index()).thenReturn(index);
+    when(logEntry.term()).thenReturn(term);
+    when(logEntry.entry()).thenReturn(entry);
+    return logEntry;
+  }
+
+  private RaftContext raftWithStoredConfiguration(
+      final Configuration configuration, final IndexedRaftLogEntry... logEntries) {
     final var threadContext =
         new ThreadContext() {
           @Override
@@ -508,9 +791,16 @@ final class RaftClusterContextTest {
         };
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
+    final var log = mock(RaftLog.class, withSettings().stubOnly());
+    final var reader = mock(RaftLogUncommittedReader.class, withSettings().stubOnly());
+    final var entries = List.of(logEntries).iterator();
     when(raft.getThreadContext()).thenReturn(threadContext);
     when(metaStore.loadConfiguration()).thenReturn(configuration);
     when(raft.getMetaStore()).thenReturn(metaStore);
+    when(raft.getLog()).thenReturn(log);
+    when(log.openUncommittedReader()).thenReturn(reader);
+    when(reader.hasNext()).thenAnswer(invocation -> entries.hasNext());
+    when(reader.next()).thenAnswer(invocation -> entries.next());
     return raft;
   }
 }

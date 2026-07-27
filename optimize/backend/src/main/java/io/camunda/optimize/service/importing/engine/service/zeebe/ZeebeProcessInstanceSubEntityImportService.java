@@ -94,6 +94,11 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
       final Long processInstanceId,
       final Long processDefinitionId,
       final String tenantId) {
+    if (processDefinitionKey == null || processDefinitionKey.isBlank()) {
+      throw new IllegalArgumentException(
+          "Expected Zeebe record for process instance [%s], process definition [%s], tenant [%s] to contain a bpmnProcessId, but it was missing."
+              .formatted(processInstanceId, processDefinitionId, tenantId));
+    }
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
     processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
     processInstanceDto.setProcessInstanceId(String.valueOf(processInstanceId));

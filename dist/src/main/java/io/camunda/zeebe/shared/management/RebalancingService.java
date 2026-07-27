@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,23 +17,30 @@ import org.springframework.stereotype.Component;
 public final class RebalancingService {
 
   private final BrokerClient client;
+  private final PhysicalTenantIds physicalTenantIds;
 
   @Autowired
-  public RebalancingService(final BrokerClient client) {
+  public RebalancingService(final BrokerClient client, final PhysicalTenantIds physicalTenantIds) {
     this.client = client;
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   public void rebalanceCluster() {
-    client
-        .getTopologyManager()
-        .getTopology()
-        .getPartitions()
+    physicalTenantIds
+        .known()
         .forEach(
-            (partition) -> {
-              final var request = new BrokerAdminRequest();
-              request.setPartitionId(partition);
-              request.stepDownIfNotPrimary();
-              client.sendRequest(request);
-            });
+            physicalTenantId ->
+                client
+                    .getTopologyManager()
+                    .getTopology(physicalTenantId)
+                    .getPartitions()
+                    .forEach(
+                        (partition) -> {
+                          final var request = new BrokerAdminRequest();
+                          request.setPartitionGroup(physicalTenantId);
+                          request.setPartitionId(partition);
+                          request.stepDownIfNotPrimary();
+                          client.sendRequest(request);
+                        }));
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.it.rdbms.db.websession;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.spi.SessionStoreAdapter;
+import io.camunda.authentication.config.spi.PhysicalTenantScopedSessionStorePortProvider;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
@@ -19,12 +19,11 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
+import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.security.api.model.session.PersistentSession;
-import io.camunda.security.core.port.out.SessionStorePort;
-import io.camunda.spring.utils.PhysicalTenantContext;
+import io.camunda.security.core.port.out.ScopedSessionStorePortProvider;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -33,17 +32,24 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
+/**
+ * Verifies that per-physical-tenant session stores are isolated at rest against real RDBMS (H2).
+ *
+ * <p>Post ADR-0029 each scope resolves its own single-store {@code SessionStorePort} via the {@link
+ * ScopedSessionStorePortProvider}; there is no cross-tenant routing/fan-out adapter. A session
+ * written through one tenant's store is invisible to another tenant's store, and survives a restart
+ * in its own store.
+ */
 @Tag("rdbms")
 class PhysicalTenantWebSessionIsolationIT {
 
   private static final String URL_TENANTA =
       "jdbc:h2:mem:ws-isol-tenanta;DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private static final String TENANT_A = "tenanta";
-  private static final String DEFAULT_TENANT = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+  private static final String BASE_TENANT_A = "/physical-tenants/" + TENANT_A;
+  private static final String BASE_DEFAULT =
+      "/physical-tenants/" + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   private CamundaRdbmsTestApplication app;
   private CamundaRdbmsTestApplication app2;
@@ -55,7 +61,6 @@ class PhysicalTenantWebSessionIsolationIT {
 
   @AfterEach
   void tearDown() {
-    RequestContextHolder.resetRequestAttributes();
     if (app2 != null) {
       app2.close();
       app2 = null;
@@ -84,12 +89,6 @@ class PhysicalTenantWebSessionIsolationIT {
             TENANT_A + "-admin");
   }
 
-  private static void setRequestContext(final String tenantId) {
-    final var req = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(req, tenantId);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(req));
-  }
-
   private static PersistentSession session(final String id) {
     final long now = System.currentTimeMillis();
     return new PersistentSession(
@@ -98,103 +97,49 @@ class PhysicalTenantWebSessionIsolationIT {
 
   @Test
   void shouldIsolateSessionsAcrossPhysicalTenants() {
-    // given
-    final var adapter = app.bean(SessionStorePort.class);
+    // given — per-scope single-store ports for tenant A and the default tenant
+    final var provider = app.bean(ScopedSessionStorePortProvider.class);
+    final var tenantAStore = provider.forBasePath(BASE_TENANT_A);
+    final var defaultStore = provider.forBasePath(BASE_DEFAULT);
     final String id = UUID.randomUUID().toString();
-    final PersistentSession session = session(id);
 
-    // when — write as tenanta
-    setRequestContext(TENANT_A);
-    adapter.upsert(session);
+    // when — write through tenant A's store
+    tenantAStore.upsert(session(id));
 
-    // then — tenanta can read it
-    final PersistentSession found = adapter.get(id);
+    // then — tenant A can read it, the default store cannot
+    final PersistentSession found = tenantAStore.get(id);
     assertThat(found).isNotNull();
     assertThat(found.id()).isEqualTo(id);
-
-    // and — default cannot read it
-    setRequestContext(DEFAULT_TENANT);
-    assertThat(adapter.get(id)).isNull();
+    assertThat(defaultStore.get(id)).isNull();
   }
 
   @Test
   void shouldSurviveRestartInCorrectPhysicalTenantStore() {
-    // given — write via app1
-    final var adapter1 = app.bean(SessionStorePort.class);
+    // given — write via app1's tenant A store
     final String id = UUID.randomUUID().toString();
+    app.bean(ScopedSessionStorePortProvider.class).forBasePath(BASE_TENANT_A).upsert(session(id));
 
-    setRequestContext(TENANT_A);
-    adapter1.upsert(session(id));
-
-    // simulate restart: close app1, start fresh app2 with same H2 URLs
+    // simulate restart: close app1, start fresh app2 with the same H2 URLs
     app.close();
     app = null;
     app2 = buildApp().start();
 
-    // when — read from app2 as tenanta
-    final var adapter2 = app2.bean(SessionStorePort.class);
-    setRequestContext(TENANT_A);
-    final PersistentSession found = adapter2.get(id);
+    // when — read from app2's tenant A store
+    final PersistentSession found =
+        app2.bean(ScopedSessionStorePortProvider.class).forBasePath(BASE_TENANT_A).get(id);
 
     // then
     assertThat(found).isNotNull();
     assertThat(found.id()).isEqualTo(id);
   }
 
-  @Test
-  void shouldAggregateGetAllAcrossAllPhysicalTenants() {
-    // given — one session per PT
-    final var adapter = app.bean(SessionStorePort.class);
-    final String defaultId = UUID.randomUUID().toString();
-    final String tenantaId = UUID.randomUUID().toString();
-
-    setRequestContext(DEFAULT_TENANT);
-    adapter.upsert(session(defaultId));
-
-    setRequestContext(TENANT_A);
-    adapter.upsert(session(tenantaId));
-
-    // when — off-request getAll
-    RequestContextHolder.resetRequestAttributes();
-    final List<PersistentSession> all = adapter.getAll();
-
-    // then — both sessions present (may contain more from prior tests)
-    assertThat(all).extracting(PersistentSession::id).contains(defaultId, tenantaId);
-  }
-
-  @Test
-  void shouldFanOutDeleteAcrossAllPhysicalTenantsWhenOffRequest() {
-    // given — write same session ID to both PT stores
-    final var adapter = app.bean(SessionStorePort.class);
-    final String id = UUID.randomUUID().toString();
-    final PersistentSession s = session(id);
-
-    setRequestContext(DEFAULT_TENANT);
-    adapter.upsert(s);
-
-    setRequestContext(TENANT_A);
-    adapter.upsert(s);
-
-    // when — off-request delete
-    RequestContextHolder.resetRequestAttributes();
-    adapter.delete(id);
-
-    // then — gone from both stores
-    setRequestContext(DEFAULT_TENANT);
-    assertThat(adapter.get(id)).isNull();
-
-    setRequestContext(TENANT_A);
-    assertThat(adapter.get(id)).isNull();
-  }
-
-  /** Wires {@link SessionStorePort} directly from per-PT RDBMS infra, no condition gating. */
+  /** Exposes the per-scope session store provider over per-PT RDBMS infra (ADR-0029). */
   @Configuration
   static class SessionStoreConfiguration {
 
     @Bean
-    SessionStorePort sessionStorePort(
-        final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-        final PhysicalTenantIds physicalTenants) {
+    PhysicalTenantScoped<PersistentWebSessionClient> sessionClientProvider(
+        final Map<String, RdbmsMapperBundle> rdbmsMapperBundles) {
       final var byTenant = new LinkedHashMap<String, PersistentWebSessionClient>();
       rdbmsMapperBundles.forEach(
           (tenantId, bundle) -> {
@@ -205,8 +150,13 @@ class PhysicalTenantWebSessionIsolationIT {
                     new PersistentWebSessionDbReader(mapper),
                     new PersistentWebSessionWriter(mapper)));
           });
-      final var provider = new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
-      return new SessionStoreAdapter(provider, physicalTenants);
+      return new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
+    }
+
+    @Bean
+    ScopedSessionStorePortProvider scopedSessionStorePortProvider(
+        final PhysicalTenantScoped<PersistentWebSessionClient> sessionClientProvider) {
+      return new PhysicalTenantScopedSessionStorePortProvider(sessionClientProvider);
     }
   }
 }

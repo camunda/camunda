@@ -8,6 +8,7 @@
 package io.camunda.authentication.config.spi;
 
 import io.camunda.security.core.port.out.SecurityPathPort;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -22,7 +23,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
   // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
   // owned exclusively by the per-tenant scoped security chains that PhysicalTenantScopeProvider
   // contributes (CSL derives each scope's matcher as basePath + these apiPaths, e.g.
-  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_WEBAPP_API, so
+  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_API, so
   // listing the tenant prefix here would let the cluster chain also match a tenant request and, if
   // it wins the same-order tie-break, validate the token against the cluster's providers instead of
   // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.
@@ -38,20 +39,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/.well-known/oauth-protected-resource/**");
 
   private static final Set<String> UNPROTECTED_PATHS =
-      Set.of(
-          "/error",
-          "/actuator/**",
-          "/ready",
-          "/health",
-          "/startup",
-          "/post-logout",
-          "/swagger/**",
-          "/swagger-ui/**",
-          "/v3/api-docs/**",
-          "/v2/rest-api.yaml",
-          "/new/**",
-          "/tasklist/new/**",
-          "/favicon.ico");
+      Set.of("/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
 
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
@@ -64,6 +52,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/",
           "/sso-callback/**",
           "/oauth2/authorization/**",
+          "/post-logout",
           "/processes",
           "/processes/*",
           "/{regex:[\\d]+}",
@@ -73,18 +62,31 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/decisions/*",
           "/instances",
           "/instances/*",
-          "/default-ui.css");
+          "/default-ui.css",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
 
   private static final Set<String> UNAUTHENTICATED_WEBAPP_PATHS =
       Set.of(
+          "/post-logout",
           "/default-ui.css",
           "/tasklist/assets/**",
           "/tasklist/client-config.js",
           "/tasklist/custom.css",
           "/tasklist/favicon.ico",
+          "/operate/assets/**",
+          "/operate/client-config.js",
+          "/operate/custom.css",
+          "/operate/favicon.ico",
+          "/admin/assets/**",
+          "/admin/favicon.ico",
           "/webapp/assets/**",
           "/webapp/custom.css",
-          "/webapp/favicon.ico");
+          "/webapp/favicon.ico",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
 
   // Single source of truth for the web component names; see WebAppProviderAdapter#WEB_APPS.
   private static final Set<String> WEB_COMPONENT_NAMES = WebAppProviderAdapter.WEB_APPS;
@@ -136,6 +138,11 @@ public class SecurityPathAdapter implements SecurityPathPort {
   @Override
   public Set<String> adminFilterBypassPaths() {
     return ADMIN_FILTER_BYPASS_PATHS;
+  }
+
+  @Override
+  public Optional<String> postLogoutRedirectPath() {
+    return Optional.of("/post-logout");
   }
 
   // staticResourceSuffixes() inherits the SPI default which already matches OC's source set.

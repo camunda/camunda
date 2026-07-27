@@ -10,10 +10,11 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public interface DecisionRequirementsReader
     extends SearchEntityReader<DecisionRequirementsEntity, DecisionRequirementsQuery> {
 
-  DecisionRequirementsEntity getByKey(
+  @Nullable DecisionRequirementsEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks, final boolean includeXml);
 }

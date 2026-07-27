@@ -71,7 +71,8 @@ graph TD
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
-    WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
+    DAILY -- "always profiles first<br/>30min of both runs" --> PROFILE
+    WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
@@ -115,7 +116,9 @@ The setup for all of our load tests is equal for better comparability, and consi
 
 By default, the full Camunda Platform is deployed, including Orchestration Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always run load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
 
-An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster. The Elasticsearch cluster is managed by the [Elastic Cloud on Kubernetes (ECK) operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) via an `Elasticsearch` custom resource — see the [setup README](setup/README.md#eck-elasticsearch) for configuration details.
+
+Keycloak is deployed via the [Keycloak Operator](https://www.keycloak.org/guides#operator) into a `keycloak-operator` namespace shared across all load tests on the cluster, backed by its own dedicated PostgreSQL cluster — see the [load test setup chart README](setup/charts/load-test-setup/README.md#keycloak) for the cross-namespace deployment model.
 
 Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
 
@@ -131,7 +134,7 @@ For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Plat
 
 Load tests can be configured with different secondary storage backends to validate Camunda's performance and reliability across various deployment scenarios:
 
-* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
+* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster managed by the [ECK operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s). This is the standard configuration used to validate exporter performance and archiving throughput.
 * **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
 * **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
 * **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
@@ -327,7 +330,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL) plus the [latency test](../docs/testing/reliability-testing.md#latency-load-test).
+The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL).
 
 **Goal:** Validating the reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
@@ -335,7 +338,6 @@ The weekly tests cover, for example, the [realistic load](../docs/testing/reliab
 
 Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>`):
 
-- `medic-y-2025-cw-22-a60d64da-test-latency`
 - `medic-y-2025-cw-22-a60d64da-test-realistic`
 - `medic-y-2025-cw-22-a60d64da-test-rdbms-realistic`
 
@@ -354,6 +356,8 @@ Daily stress tests run against the state of the **main** branch via the [Camunda
 - Daily sanity check that load tests work with current Helm charts and application
 
 **Validation:** TBD — explicit dashboard with KPIs is tracked in [#42274](https://github.com/camunda/camunda/issues/42274).
+
+**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for both the gRPC and REST runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
 
 ### Ad-hoc load tests
 

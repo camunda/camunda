@@ -39,6 +39,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCan
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceSuspendResumeAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
@@ -64,16 +65,69 @@ class RdbmsExporterWrapperTest {
     final var configuration = new ExporterConfiguration();
     configuration.setFlushInterval(Duration.ofMillis(-1000));
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
-    when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
-        .thenReturn(configuration);
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
 
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
-            mock(RdbmsServiceFactory.class), mock(RdbmsSchemaManagerRegistry.class));
+            mock(RdbmsServiceFactory.class),
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
 
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))
         .hasMessageContaining("flushInterval must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWhenNoConfigurationForPhysicalTenant() {
+    // given
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    when(context.getPhysicalTenantId()).thenReturn("unknowntenant");
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            mock(RdbmsServiceFactory.class),
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", new ExporterConfiguration()));
+
+    // when / then
+    assertThatThrownBy(() -> exporterWrapper.configure(context))
+        .hasMessageContaining(
+            "No RDBMS exporter configuration for physical tenant 'unknowntenant'");
+  }
+
+  @Test
+  public void shouldUseConfigurationOfTheContextPhysicalTenant() {
+    // given - two physical tenants with different queue sizes
+    final var tenantAConfig = new ExporterConfiguration();
+    tenantAConfig.setQueueSize(7);
+    final var tenantBConfig = new ExporterConfiguration();
+    tenantBConfig.setQueueSize(13);
+
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
+    final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
+    when(context.getPartitionId()).thenReturn(1);
+    when(context.getPhysicalTenantId()).thenReturn("tenantb");
+    when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", tenantAConfig, "tenantb", tenantBConfig));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then - the writer config uses the context tenant's (tenant-b) queue size
+    final ArgumentCaptor<RdbmsWriterConfig> configCaptor =
+        ArgumentCaptor.forClass(RdbmsWriterConfig.class);
+    verify(rdbmsService).createWriter(configCaptor.capture());
+    assertThat(configCaptor.getValue().queueSize()).isEqualTo(13);
   }
 
   @Test
@@ -87,14 +141,15 @@ class RdbmsExporterWrapperTest {
     when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
         .thenReturn(rdbmsService);
 
-    when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
-        .thenReturn(configuration);
     when(context.getPartitionId()).thenReturn(1);
-    when(context.getPhysicalTenantId()).thenReturn("tenantId");
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
 
     // when
     exporterWrapper.configure(context);
@@ -132,6 +187,8 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
+            Map.entry(
+                ProcessInstanceSuspendResumeAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
             Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
             Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
             Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
@@ -169,14 +226,15 @@ class RdbmsExporterWrapperTest {
     when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
         .thenReturn(rdbmsService);
 
-    when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
-        .thenReturn(configuration);
     when(context.getPartitionId()).thenReturn(1);
-    when(context.getPhysicalTenantId()).thenReturn("tenantId");
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
 
     // when
     exporterWrapper.configure(context);
@@ -236,14 +294,15 @@ class RdbmsExporterWrapperTest {
     when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
         .thenReturn(rdbmsService);
 
-    when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
-        .thenReturn(configuration);
     when(context.getPartitionId()).thenReturn(2);
-    when(context.getPhysicalTenantId()).thenReturn("tenantId");
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
 
     // when
     exporterWrapper.configure(context);
@@ -303,14 +362,15 @@ class RdbmsExporterWrapperTest {
     when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
         .thenReturn(rdbmsService);
 
-    when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
-        .thenReturn(configuration);
     when(context.getPartitionId()).thenReturn(1);
-    when(context.getPhysicalTenantId()).thenReturn("my-custom-tenant");
+    when(context.getPhysicalTenantId()).thenReturn("mycustomtenant");
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("mycustomtenant", configuration));
 
     // when
     exporterWrapper.configure(context);
@@ -320,7 +380,7 @@ class RdbmsExporterWrapperTest {
         ArgumentCaptor.forClass(RdbmsWriterConfig.class);
     verify(rdbmsService).createWriter(configCaptor.capture());
 
-    assertThat(configCaptor.getValue().physicalTenantId()).isEqualTo("my-custom-tenant");
+    assertThat(configCaptor.getValue().physicalTenantId()).isEqualTo("mycustomtenant");
   }
 
   private void assertAuditLogExportPresent(

@@ -194,13 +194,20 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   private long validateProcessedCount(
       final String operation, final long processedCount, final int expectedCount) {
-    if (processedCount != expectedCount) {
+    if (processedCount < expectedCount) {
       throw new BatchCountMismatchException(
           operation,
           String.format(
               "The '%s' operation for a batch when archiving %s processed %d docs, however was "
                   + "expecting %d docs",
               operation, sourceIdx, processedCount, expectedCount));
+    } else if (processedCount > expectedCount) {
+      logger.warn(
+          "The '{}' operation for a batch when archiving {} processed {} docs, however was expecting {} docs",
+          operation,
+          sourceIdx,
+          processedCount,
+          expectedCount);
     }
     return processedCount;
   }

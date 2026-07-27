@@ -11,7 +11,6 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -49,6 +47,7 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.monitoring.BrokerRootMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
@@ -66,6 +65,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -74,11 +74,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -127,18 +127,18 @@ public final class SystemContext {
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
-  private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
@@ -150,27 +150,29 @@ public final class SystemContext {
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
-      final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
-    this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
-    this.meterRegistry = meterRegistry;
-    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.meterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry, BrokerRootMetrics.rootTags(brokerCfg.getCluster().getMemberId()));
+
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -178,6 +180,7 @@ public final class SystemContext {
         Objects.requireNonNull(
             oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -201,7 +204,8 @@ public final class SystemContext {
     validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
 
-    validateExporters(brokerCfg.getExporters());
+    // Exporter configuration is validated by SystemContextLoader before the SystemContext is
+    // constructed, so that per-physical-tenant exporter configs are checked as they are loaded.
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
@@ -244,21 +248,6 @@ public final class SystemContext {
     if (!errors.isEmpty()) {
       throw new InvalidConfigurationException(
           "Invalid ConfigManager configuration: " + String.join(", ", errors), null);
-    }
-  }
-
-  private void validateExporters(final Map<String, ExporterCfg> exporters) {
-    final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
-    final var badExportersNames =
-        entries.stream()
-            .filter(entry -> entry.getValue().getClassName() == null)
-            .map(Entry::getKey)
-            .toList();
-
-    if (!badExportersNames.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters "
-              + badExportersNames);
     }
   }
 
@@ -495,7 +484,7 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
-    physicalTenantEngineContexts.forEach(
+    physicalTenantContexts.forEach(
         (physicalTenantId, ctx) ->
             validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
   }
@@ -696,10 +685,6 @@ public final class SystemContext {
     return brokerCfg;
   }
 
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
-  }
-
   public AtomixCluster getCluster() {
     return cluster;
   }
@@ -721,8 +706,8 @@ public final class SystemContext {
   }
 
   /** Returns the per-physical-tenant engine context map (unmodifiable). */
-  public Map<String, PhysicalTenantEngineContext> getPhysicalTenantEngineContexts() {
-    return physicalTenantEngineContexts;
+  public Map<String, PhysicalTenantContext> getPhysicalTenantContexts() {
+    return physicalTenantContexts;
   }
 
   /**
@@ -730,11 +715,11 @@ public final class SystemContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
-    return physicalTenantEngineContexts.get(physicalTenantId);
+    return physicalTenantContexts.get(physicalTenantId);
   }
 
   /**
@@ -745,7 +730,7 @@ public final class SystemContext {
    *     physical tenant
    */
   public EngineSecurityConfig getSecurityConfiguration() {
-    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    final var ctx = physicalTenantContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     if (ctx == null) {
       throw new IllegalStateException(
           "No security configuration registered for the default physical tenant");
@@ -771,6 +756,11 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  /** Returns the per-physical-tenant RDBMS exported-position supplier map (unmodifiable). */
+  public Map<String, IntFunction<Long>> getExportedPositionSuppliers() {
+    return exportedPositionSuppliers;
   }
 
   public NodeIdProvider getNodeIdProvider() {

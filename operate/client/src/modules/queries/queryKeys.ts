@@ -48,8 +48,8 @@ const queryKeys = {
     ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
     latestAgentMessage: (agentInstanceKey: string) => [
       'agentInstanceHistorySearch',
-      'latestAgentMessage',
       agentInstanceKey,
+      'latestAgentMessage',
     ],
   },
   variables: {
@@ -185,6 +185,10 @@ const queryKeys = {
     ) => {
       return ['elementInstancesSearchByScope', ...Object.values(payload)];
     },
+    searchPaginated: (payload?: QueryElementInstancesRequestBody) =>
+      payload
+        ? ['elementInstancesSearchPaginated', payload]
+        : ['elementInstancesSearchPaginated'],
   },
   processInstances: {
     base: () => ['processInstances'],

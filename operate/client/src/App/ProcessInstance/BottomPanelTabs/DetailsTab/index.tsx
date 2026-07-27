@@ -25,10 +25,18 @@ import {useMessageSubscriptions} from 'modules/queries/messageSubscriptions/useM
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
-import {EmptyMessageContainer, Container, Callout} from './styled';
+import {
+  EmptyMessageContainer,
+  Container,
+  Callout,
+  SectionContainer,
+  SectionHeading,
+  ElementInstanceHint,
+} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useAgentInstancesForElement} from 'modules/queries/agentInstances/useAgentInstancesForElement';
 import {AgentDetails} from './AgentDetails';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
@@ -51,14 +59,21 @@ const DetailsTab: React.FC = () => {
   const clientConfig = getClientConfig();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {
+    hasSelection,
     resolvedElementInstance,
     selectedElementId,
+    selectedElementInstanceKey,
     selectedAnchorElementId,
     selectedInstancesCount,
+    isSelectedInstanceMultiInstanceBody,
     isFetchingElement,
   } = useProcessInstanceElementSelection();
 
+  // No element selected means the process scope (the PROCESS root row).
+  const isProcessScope = !hasSelection;
+
   const {data: processInstance} = useProcessInstance();
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
   const {data: xmlData} = useProcessInstanceXml({
     processDefinitionKey: processInstance?.processDefinitionKey,
   });
@@ -72,23 +87,29 @@ const DetailsTab: React.FC = () => {
     resolvedElementInstance?.elementInstanceKey ?? null;
   const resolvedElementType = resolvedElementInstance?.type;
 
+  // For the process scope the wait state is anchored on the PROCESS container,
+  // whose element instance key equals the process instance key.
+  const inspectionElementInstanceKey = isProcessScope
+    ? processInstanceId
+    : (elementInstanceKey ?? undefined);
+
   const {data: inspectionData} = useElementInstanceInspection({
     processInstanceKey: processInstanceId,
-    elementInstanceKey: elementInstanceKey ?? undefined,
+    elementInstanceKey: inspectionElementInstanceKey,
     enabled:
       clientConfig.waitStatesEnabled &&
-      !!elementInstanceKey &&
-      processInstance?.state === 'ACTIVE' &&
-      resolvedElementInstance?.state === 'ACTIVE',
+      !!inspectionElementInstanceKey &&
+      isProcessInstanceRunning &&
+      (isProcessScope || resolvedElementInstance?.state === 'ACTIVE'),
   });
 
-  const elementWaitStates = useMemo(() => {
+  const waitStates = useMemo(() => {
     return (
       inspectionData?.items?.filter(
-        (item) => item.elementInstanceKey === elementInstanceKey,
+        (item) => item.elementInstanceKey === inspectionElementInstanceKey,
       ) ?? []
     );
-  }, [inspectionData, elementInstanceKey]);
+  }, [inspectionData, inspectionElementInstanceKey]);
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
     {
@@ -153,11 +174,34 @@ const DetailsTab: React.FC = () => {
 
   const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
 
+  /**
+   * Alias to {@linkcode selectedElementInstanceKey} if non multi-instance elements
+   * are selected. For multi-instance elements, agent instances data is linked to
+   * the inner instances and not the multi-instance element instance.
+   *
+   * **Note:** Intentionally uses {@linkcode selectedElementInstanceKey} and not the resolved
+   * element-instance key to keep agent details stable when an element is activated again.
+   * An agent instance can be reused across multiple element activations, and the agent details
+   * can be viewed just fine without an explicit element instance being selected/resolved.
+   */
+  const agentElementInstanceKey = isSelectedInstanceMultiInstanceBody
+    ? null
+    : selectedElementInstanceKey;
+
   const {
-    agentInstance,
-    isLoading: isAgentLoading,
+    data: agentInstancesResult,
+    isLoading: isAgentInstancesLoading,
     isError: isAgentError,
-  } = useAgentInstanceForElement(effectiveElementId, elementInstanceKey);
+  } = useAgentInstancesForElement({
+    processInstanceKey: processInstance?.processInstanceKey ?? '',
+    elementId: effectiveElementId ?? '',
+    elementInstanceKey: agentElementInstanceKey,
+    enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
+    enablePeriodicRefetch: isProcessInstanceRunning,
+  });
+  const showAgentInstance =
+    (agentInstancesResult && agentInstancesResult.items.length > 0) ||
+    isAgentError;
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
@@ -479,19 +523,30 @@ const DetailsTab: React.FC = () => {
     messageSubscription,
   ]);
 
-  if (isFetchingElement) {
-    return <StructuredListSkeleton rowCount={5} />;
+  if (isProcessScope) {
+    // The process scope only surfaces the process-level wait state status
+    // (the Details tab is only shown when such a wait state exists).
+    return (
+      <Container data-testid="details-tab">
+        <WaitingStatus waitStates={waitStates} />
+      </Container>
+    );
   }
 
-  if (resolvedElementInstance === null) {
-    const isMultiInstance =
-      selectedInstancesCount !== null && selectedInstancesCount > 1;
+  const hasMultipleInstances =
+    selectedInstancesCount !== null && selectedInstancesCount > 1;
 
+  if (
+    resolvedElementInstance === null &&
+    !isFetchingElement &&
+    !isAgentInstancesLoading &&
+    !showAgentInstance
+  ) {
     return (
       <EmptyMessageContainer>
         <EmptyMessage
           message={
-            isMultiInstance
+            hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'
               : 'There is no element selected.'
           }
@@ -499,9 +554,6 @@ const DetailsTab: React.FC = () => {
       </EmptyMessageContainer>
     );
   }
-
-  const showAgentInstance =
-    agentInstance !== undefined || isAgentLoading || isAgentError;
 
   return (
     <Container data-testid="details-tab">
@@ -514,26 +566,42 @@ const DetailsTab: React.FC = () => {
             subtitle="Consider migrating to Camunda user tasks."
           />
         )}
-      {!showAgentInstance && clientConfig.waitStatesEnabled && (
-        <WaitingStatus waitStates={elementWaitStates} />
-      )}
-      <StructuredList
-        label="Element Instance Details"
-        headerSize="sm"
-        headerColumns={[
-          {cellContent: 'Property', width: '30%'},
-          {cellContent: 'Value', width: '70%'},
-        ]}
-        rows={rows}
-      />
       {showAgentInstance && (
         <AgentDetails
-          agentInstance={agentInstance}
-          isLoading={isAgentLoading}
+          agentInstances={agentInstancesResult?.items ?? []}
+          totalAgentsCount={agentInstancesResult?.page.totalItems ?? 0}
+          hasMoreTotalItems={
+            agentInstancesResult?.page.hasMoreTotalItems ?? false
+          }
           isError={isAgentError}
-          selectedElementInstanceKey={elementInstanceKey}
+          selectedElementInstanceKey={agentElementInstanceKey}
         />
       )}
+      {!showAgentInstance && clientConfig.waitStatesEnabled && (
+        <WaitingStatus waitStates={waitStates} />
+      )}
+      <SectionContainer>
+        <SectionHeading>Element Instance</SectionHeading>
+        {isFetchingElement ? (
+          <StructuredListSkeleton rowCount={5} />
+        ) : resolvedElementInstance === null ? (
+          <ElementInstanceHint>
+            {hasMultipleInstances
+              ? 'To view the details, select a single element instance in the instance history.'
+              : 'There is no element instance selected.'}
+          </ElementInstanceHint>
+        ) : (
+          <StructuredList
+            label="Element Instance Details"
+            headerSize="sm"
+            headerColumns={[
+              {cellContent: 'Property', width: '30%'},
+              {cellContent: 'Value', width: '70%'},
+            ]}
+            rows={rows}
+          />
+        )}
+      </SectionContainer>
     </Container>
   );
 };

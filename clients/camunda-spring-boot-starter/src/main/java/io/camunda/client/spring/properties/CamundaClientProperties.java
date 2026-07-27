@@ -112,6 +112,13 @@ public class CamundaClientProperties {
    */
   private String physicalTenantId;
 
+  /**
+   * If true, prefixes the REST base path with the physical tenant path when a physical tenant ID is
+   * set. Set to false to use the configured REST address as is, for example behind a reverse proxy
+   * that already routes to the physical tenant.
+   */
+  private boolean prefixPhysicalTenantPath = DEFAULT_PREFIX_PHYSICAL_TENANT_PATH;
+
   /** The request timeout to use when not overridden by a specific command. */
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
@@ -170,6 +177,14 @@ public class CamundaClientProperties {
 
   public void setPhysicalTenantId(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
+  }
+
+  public boolean getPrefixPhysicalTenantPath() {
+    return prefixPhysicalTenantPath;
+  }
+
+  public void setPrefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    this.prefixPhysicalTenantPath = prefixPhysicalTenantPath;
   }
 
   public CamundaClientWorkerProperties getWorker() {

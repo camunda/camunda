@@ -15,7 +15,6 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,9 +50,8 @@ import org.awaitility.Awaitility;
  *   @Test
  *   void shouldIsolate() {
  *     try (final var client = TENANTS.newClientBuilder(broker, "tenanta").build()) {
- *       // gRPC scoped to tenanta
+ *       // both gRPC and REST calls are scoped to tenanta
  *     }
- *     final URI restBase = TENANTS.restBaseFor(broker, "tenanta"); // .../physical-tenants/tenanta/v2
  *   }
  * }
  * }</pre>
@@ -185,23 +183,12 @@ public final class PhysicalTenantsITHelper {
       final TestGateway<?> gateway, final String tenantId) {
     final CamundaClientBuilder builder = gateway.newClientBuilder();
     if (!DEFAULT_TENANT_ID.equals(tenantId)) {
-      // gRPC is scoped via the header; REST is scoped by pointing the client at the tenant-prefixed
-      // root (the client appends /v2). Workaround until the client applies physicalTenantId to
-      // REST.
-      builder.physicalTenantId(tenantId).restAddress(restRootFor(gateway, tenantId));
+      // The client scopes both transports to the physical tenant: gRPC via the
+      // Camunda-Physical-Tenant header, and REST by auto-prefixing /physical-tenants/<id> onto the
+      // base REST address.
+      builder.physicalTenantId(tenantId);
     }
     return builder;
-  }
-
-  public URI restBaseFor(final TestGateway<?> gateway, final String tenantId) {
-    return URI.create(restRootFor(gateway, tenantId) + "/v2");
-  }
-
-  private static URI restRootFor(final TestGateway<?> gateway, final String tenantId) {
-    final String base = gateway.restAddress().toString().replaceAll("/+$", "");
-    final String tenantPrefix =
-        DEFAULT_TENANT_ID.equals(tenantId) ? "" : "/physical-tenants/" + tenantId;
-    return URI.create(base + tenantPrefix);
   }
 
   public Set<String> tenantIds() {
@@ -273,12 +260,37 @@ public final class PhysicalTenantsITHelper {
     }
   }
 
+  private record ElasticsearchStorage(String url, String indexPrefix) implements Storage {
+
+    @Override
+    public void applyTo(final TestStandaloneBroker broker, final String tenantId) {
+      if (DEFAULT_TENANT_ID.equals(tenantId)) {
+        broker.withSecondaryStorageType(SecondaryStorageType.elasticsearch);
+        broker.withDataConfig(data -> applyElasticsearch(data.getSecondaryStorage()));
+      } else {
+        broker.withPtConfig(
+            tenantId, camunda -> applyElasticsearch(camunda.getData().getSecondaryStorage()));
+      }
+    }
+
+    private void applyElasticsearch(final SecondaryStorage secondaryStorage) {
+      secondaryStorage.setType(SecondaryStorageType.elasticsearch);
+      final var elasticsearch = secondaryStorage.getElasticsearch();
+      elasticsearch.setUrl(url);
+      elasticsearch.setIndexPrefix(indexPrefix);
+    }
+  }
+
   public interface Storage {
 
     void applyTo(TestStandaloneBroker broker, String tenantId);
 
     static Storage none() {
       return new NoneStorage();
+    }
+
+    static Storage elasticsearch(final String url, final String indexPrefix) {
+      return new ElasticsearchStorage(url, indexPrefix);
     }
 
     static Storage rdbms(final String url, final String username, final String password) {

@@ -214,6 +214,51 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     }
   }
 
+  @Test
+  void shouldPreferResolvedTenantValuesWithoutRootUnifiedProperties() {
+    // given
+    final Camunda tenantConfig = new Camunda();
+    tenantConfig.getDocument().setDefaultStoreId("aws");
+    tenantConfig.getDocument().setThreadPoolSize(12);
+    final Document.AwsStore awsStore = new Document.AwsStore();
+    awsStore.setBucketPath("documents/tenanta");
+    tenantConfig.getDocument().getAws().put("aws", awsStore);
+
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "legacy");
+    mockEnv.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
+    mockEnv.setProperty("DOCUMENT_STORE_AWS_BUCKET", "shared-bucket");
+    mockEnv.setProperty("DOCUMENT_STORE_AWS_BUCKET_PATH", "documents");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
+    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "legacy");
+    System.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
+    System.setProperty(
+        "DOCUMENT_STORE_AWS_CLASS", "io.camunda.document.store.aws.AwsDocumentStoreProvider");
+    System.setProperty("DOCUMENT_STORE_AWS_BUCKET", "shared-bucket");
+    System.setProperty("DOCUMENT_STORE_AWS_BUCKET_PATH", "documents");
+
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(tenantConfig).loadConfiguration();
+
+      // then
+      assertThat(configuration.defaultDocumentStoreId()).isEqualTo("aws");
+      assertThat(configuration.threadPoolSize()).isEqualTo(12);
+      assertThat(store("aws", configuration.documentStores()).properties())
+          .containsEntry("BUCKET", "shared-bucket")
+          .containsEntry("BUCKET_PATH", "documents/tenanta");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+      System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
+      System.clearProperty("DOCUMENT_THREAD_POOL_SIZE");
+      System.clearProperty("DOCUMENT_STORE_AWS_CLASS");
+      System.clearProperty("DOCUMENT_STORE_AWS_BUCKET");
+      System.clearProperty("DOCUMENT_STORE_AWS_BUCKET_PATH");
+    }
+  }
+
   private static DocumentStoreConfigurationRecord store(
       final String id, final List<DocumentStoreConfigurationRecord> stores) {
     return stores.stream().filter(store -> store.id().equals(id)).findFirst().orElseThrow();

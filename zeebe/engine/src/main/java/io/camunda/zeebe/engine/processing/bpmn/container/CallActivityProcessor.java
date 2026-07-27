@@ -93,6 +93,7 @@ public final class CallActivityProcessor
             processId ->
                 getCalledProcess(
                     processId, element.getBindingType(), element.getVersionTag(), context))
+        .flatMap(this::rejectIfDraining)
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .flatMap(
@@ -283,7 +284,10 @@ public final class CallActivityProcessor
       final BpmnElementContext context, final ExecutableCallActivity element) {
     final var businessIdExpression = element.getCalledElementBusinessId();
     if (businessIdExpression == null) {
-      return Either.right(context.getBusinessId());
+      // No explicit business id: inherit the parent's. Read it from the process-scope element
+      // instance (not the call-activity element's record copy) so a Business ID assigned late to a
+      // running instance is inherited by children started afterwards.
+      return Either.right(getParentBusinessId(context));
     }
     if (businessIdExpression.isStatic()) {
       return validateBusinessId(businessIdExpression.getExpression(), context);
@@ -292,6 +296,11 @@ public final class CallActivityProcessor
         .evaluateAnyExpression(
             businessIdExpression, context.getElementInstanceKey(), context.getTenantId())
         .flatMap(result -> resolveBusinessIdFromResult(result, context));
+  }
+
+  private String getParentBusinessId(final BpmnElementContext context) {
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    return processInstance != null ? processInstance.getValue().getBusinessId() : "";
   }
 
   private Either<Failure, String> resolveBusinessIdFromResult(
@@ -425,6 +434,20 @@ public final class CallActivityProcessor
                             """,
                             BufferUtil.bufferAsString(processId), versionTag),
                         ErrorType.CALLED_ELEMENT_ERROR)));
+  }
+
+  private Either<Failure, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.isDraining()) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected to call process with BPMN process id '%s' and version %d (key %d), but it is being deleted.",
+                  BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey()),
+              ErrorType.CALLED_ELEMENT_ERROR));
+    }
+    return Either.right(process);
   }
 
   private Either<Failure, DeployedProcess> checkProcessHasNoneStartEvent(

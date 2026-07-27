@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -31,7 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,7 +71,7 @@ public final class StateControllerImplTest {
             0,
             1,
             tempFolderRule.newFolder("data").toPath(),
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             meterRegistry);
     actorSchedulerRule.submitActor(store).join();
 

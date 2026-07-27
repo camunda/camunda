@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -59,7 +60,8 @@ public final class ProcessInstanceStateTransitionGuard {
 
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
-          hasActiveFlowScopeInstance(context)
+          canActivateDrainingDefinition(context)
+              .flatMap(ok -> hasActiveFlowScopeInstance(context))
               .flatMap(ok -> hasActiveProcessInstance(context))
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
@@ -227,6 +229,24 @@ public final class ProcessInstanceStateTransitionGuard {
     } else {
       return Either.right(context);
     }
+  }
+
+  private Either<String, ?> canActivateDrainingDefinition(final BpmnElementContext context) {
+    if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
+      return Either.right(null);
+    }
+    return stateBehavior
+        .getProcess(context.getProcessDefinitionKey(), context.getTenantId())
+        .filter(DeployedProcess::isDraining)
+        .<Either<String, ?>>map(
+            process ->
+                Either.left(
+                    String.format(
+                        ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING,
+                        BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                        process.getVersion(),
+                        process.getKey())))
+        .orElseGet(() -> Either.right(null));
   }
 
   private Either<String, ?> canActivateParallelGateway(

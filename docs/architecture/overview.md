@@ -192,8 +192,8 @@ from OIDC tokens. Update all consumers before changing the mapping.
 
 ## Further detail
 
-- Data layer guide (ES/OS and RDBMS best practices): `docs/data-layer/working-with-secondary-storage.md`
-- Archiving (active vs archive indices, archiver jobs): `docs/data-layer/archiving.md`
+- Data layer guide (ES/OS and RDBMS best practices): `docs/monorepo-docs/architecture/components/secondary-storage/working-with-secondary-storage.md`
+- Archiving (active vs archive indices, archiver jobs): `docs/monorepo-docs/architecture/components/secondary-storage/archiving.md`
 - Cross-cutting ADRs: `docs/adr/`
 - Module-specific ADRs: `<module>/docs/adr/`
 - Zeebe internals: `docs/zeebe/`

@@ -29,6 +29,7 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -83,7 +84,8 @@ public class MockJobWorkerTest {
             clockClient,
             DevAwaitBehavior::expectSuccess,
             jsonMapper,
-            new ConditionalBehaviorEngine());
+            new ConditionalBehaviorEngine(),
+            () -> new CamundaDataSource(camundaClient));
   }
 
   @Test

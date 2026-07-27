@@ -18,10 +18,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 
 public class TestWebappClient {
+
+  // Generous upper bound, not the expected wait. On ES/OS the default user only becomes
+  // searchable once it is exported and the index refreshes (gated behind schema init and the
+  // exporter's backoff), which can lag startup by several seconds under CI load. The retry is
+  // condition-based and returns as soon as login is accepted, so this only bites when something
+  // is genuinely wrong.
+  private static final Duration LOGIN_TIMEOUT = Duration.ofSeconds(60);
 
   private final URI endpoint;
 
@@ -29,30 +40,55 @@ public class TestWebappClient {
     this.endpoint = endpoint;
   }
 
-  public TestLoggedInWebappClient logIn(String username, String password) {
+  public TestLoggedInWebappClient logIn(final String username, final String password) {
 
     final var cookieManager = new CookieManager();
     final var httpClient = HttpClient.newBuilder().cookieHandler(cookieManager).build();
-    final var loginUri = endpoint.resolve("login");
+    final var loginRequest = buildLoginRequest(username, password);
+    final var lastResponse = new AtomicReference<HttpResponse<String>>();
 
-    final var loginRequest =
-        HttpRequest.newBuilder()
-            .uri(loginUri)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(
-                HttpRequest.BodyPublishers.ofString(
-                    "username=" + username + "&password=" + password))
-            .build();
-
-    final var loginResponse = sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
+    // Retry until the login is accepted (see LOGIN_TIMEOUT): until the user is searchable the
+    // username lookup misses and login is rejected, and handing back an unauthenticated client here
+    // would only surface later as a confusing 401 on the first authenticated request.
+    try {
+      Awaitility.await("login of user '%s'".formatted(username))
+          .atMost(LOGIN_TIMEOUT)
+          .pollDelay(Duration.ZERO)
+          .pollInterval(Duration.ofMillis(100))
+          .until(
+              () -> {
+                lastResponse.set(sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest));
+                return isSuccessful(lastResponse.get());
+              });
+    } catch (final ConditionTimeoutException e) {
+      final var response = lastResponse.get();
+      throw new IllegalStateException(
+          "Login of user '%s' did not succeed within %s; last response status was %s"
+              .formatted(username, LOGIN_TIMEOUT, response == null ? "n/a" : response.statusCode()),
+          e);
+    }
 
     final var csrfToken =
-        loginResponse
+        lastResponse
+            .get()
             .headers()
             .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
             .orElse(null);
 
     return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
+  }
+
+  private HttpRequest buildLoginRequest(final String username, final String password) {
+    return HttpRequest.newBuilder()
+        .uri(endpoint.resolve("login"))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .POST(HttpRequest.BodyPublishers.ofString("username=" + username + "&password=" + password))
+        .build();
+  }
+
+  private static boolean isSuccessful(final HttpResponse<?> response) {
+    final int status = response.statusCode();
+    return status >= 200 && status < 300;
   }
 
   private static Either<Exception, HttpResponse<String>> sendRequest(

@@ -1,4 +1,4 @@
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: GCS build-cache auth
 description: >-
   Vault-fetch the monorepo-build-cache service account and authenticate gcloud

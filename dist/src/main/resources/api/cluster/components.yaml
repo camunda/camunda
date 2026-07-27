@@ -149,6 +149,25 @@ schemas:
       partitionDistribution:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
 
+  UpdatePartitionDistributionRequest:
+    description: >
+      Request body for `PUT /cluster/partition-distribution`. Exactly one of `config` and
+      `zonePriorities` must be set.
+    type: object
+    properties:
+      config:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      zonePriorities:
+        type: array
+        minItems: 1
+        items:
+          type: string
+        description: >
+          Leader switchover: desired zone order for Raft leader-election priority, highest first.
+          Must list exactly the currently configured zones. The existing priority values are kept
+          and re-assigned in this order. Mutually exclusive with `config`.
+        example: ["zone-a", "zone-b"]
+
   PartitionDistributionConfig:
     description: The partition distributor configuration agreed on by the cluster.
     type: object
@@ -164,7 +183,12 @@ schemas:
           defined in each broker's local configuration.
       zones:
         type: array
-        description: Zone specifications; present only when type is ZONE_AWARE.
+        description: >
+          Zone specifications; present only when type is ZONE_AWARE. While migrating a bare or
+          partially zoned cluster to zone-aware, the order of this array matters: it determines
+          which existing (bare) nodes get migrated into which zone. Outside of migration, order is
+          irrelevant — every operation addresses a zone by its `name`, never by its position in
+          this array.
         items:
           $ref: "components.yaml#/schemas/ZoneSpec"
 
@@ -190,6 +214,49 @@ schemas:
         format: int32
         description: Preferred-leader ranking; higher value wins
         example: 1000
+
+  AddZoneRequest:
+    description: Request body for adding back a previously force-removed zone. The zone name is
+      given in the path.
+    type: object
+    required:
+      - numberOfReplicas
+      - priority
+      - brokers
+    properties:
+      numberOfReplicas:
+        type: integer
+        format: int32
+        description: Number of partition replicas placed in the zone
+        example: 2
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking; higher value wins
+        example: 1000
+      brokers:
+        type: array
+        description: The brokers to re-add to the zone
+        items:
+          $ref: "components.yaml#/schemas/BrokerId"
+
+  ClusterZoneMigrationRequest:
+    description: >
+      Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
+      priorities, and replica counts must already be persisted through the partition-distribution
+      configuration — that persisted order is what determines which existing (bare) nodes are
+      migrated into this zone. When all configured zones have been migrated, the cluster becomes
+      fully zoned and subsequent operations address zones by name.
+    type: object
+    required:
+      - zone
+    properties:
+      zone:
+        type: string
+        description: >
+          Name of the zone to migrate. The zone must already exist in the persisted
+          partition-distribution configuration.
+        example: eu-west-1
 
   RoutingState:
     description: The routing state, i.e. where requests are sent to and how messages are correlated
@@ -373,6 +440,8 @@ schemas:
           - PARTITION_ENABLE_EXPORTER
           - START_PARTITION_SCALE_UP
           - PARTITION_BOOTSTRAP
+          - PARTITION_PRE_RESTORE
+          - PARTITION_RESTORE
           - AWAIT_REDISTRIBUTION
           - AWAIT_RELOCATION
           - UPDATE_ROUTING_STATE
@@ -385,6 +454,7 @@ schemas:
           - ENTER_RECOVERY
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
+          - EXPORTING_STATE_CHANGE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -402,6 +472,8 @@ schemas:
         $ref: "components.yaml#/schemas/ExporterId"
       partitionDistributionConfig:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      exportingState:
+        $ref: "components.yaml#/schemas/ExportingState"
 
   BrokerState:
     title: BrokerState
@@ -495,6 +567,7 @@ schemas:
       - JOINING
       - ACTIVE
       - LEAVING
+      - RECOVERING
 
   TopologyVersion:
     title: TopologyVersion
@@ -534,3 +607,10 @@ schemas:
     description: The ID of an exporter
     type: string
     example: "my-exporter"
+
+  ExportingState:
+    enum:
+      - EXPORTING
+      - PAUSED
+      - SOFT_PAUSED
+      - UNKNOWN

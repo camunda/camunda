@@ -37,6 +37,10 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     return new PartitionState(State.LEAVING, priority, config);
   }
 
+  public PartitionState toRecovering() {
+    return new PartitionState(State.RECOVERING, priority, config);
+  }
+
   public PartitionState updateConfig(final DynamicPartitionConfig config) {
     return new PartitionState(state, priority, config);
   }
@@ -58,6 +62,7 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     JOINING,
     ACTIVE,
     LEAVING,
-    BOOTSTRAPPING
+    BOOTSTRAPPING,
+    RECOVERING
   }
 }

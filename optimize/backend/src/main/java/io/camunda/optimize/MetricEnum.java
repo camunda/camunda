@@ -16,6 +16,14 @@ public enum MetricEnum {
       MetricType.IMPORT,
       "indexingDuration",
       "Records the time spent indexing data from Zeebe into Optimize Elasticsearch indexes"),
+  IMPORT_CYCLE_DURATION_METRIC(
+      MetricType.IMPORT,
+      "cycleDuration",
+      "Records the total import cycle time (ES fetch + DB write) per mediator"),
+  IMPORT_MEDIATOR_ERROR_METRIC(
+      MetricType.IMPORT,
+      "mediatorErrors",
+      "Counts import errors per mediator, tagged with record type and partition"),
   NEW_PAGE_FETCH_TIME_METRIC(
       MetricType.IMPORT,
       "newPageFetchTime",

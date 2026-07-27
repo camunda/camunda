@@ -119,8 +119,9 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobCompletionRequest completionRequest) {
-    return completeJob(
-        physicalTenantId, RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
+    return RequestMapper.toJobCompletionRequest(completionRequest, jobKey)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse, r -> completeJob(physicalTenantId, r));
   }
 
   @CamundaPatchMapping(path = "/{jobKey}")
@@ -238,6 +239,7 @@ public class JobController {
                 failJobRequest.errorMessage(),
                 failJobRequest.retryBackoff(),
                 failJobRequest.variables(),
+                failJobRequest.leaseToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -251,6 +253,7 @@ public class JobController {
                 errorJobRequest.errorCode(),
                 errorJobRequest.errorMessage(),
                 errorJobRequest.variables(),
+                errorJobRequest.leaseToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -263,6 +266,8 @@ public class JobController {
                 completeJobRequest.jobKey(),
                 completeJobRequest.variables(),
                 completeJobRequest.result(),
+                completeJobRequest.leaseToken(),
+                completeJobRequest.businessId(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -275,6 +280,7 @@ public class JobController {
                 updateJobRequest.jobKey(),
                 updateJobRequest.operationReference(),
                 updateJobRequest.changeset(),
+                updateJobRequest.leaseToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 

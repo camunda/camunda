@@ -1,5 +1,48 @@
 # Changelog
 
+## v0.0.84
+
+### 🚀 Enhancements
+
+- Add `SECRET` authorization resource type and `REVEAL` permission ([#58391](https://github.com/camunda/camunda/pull/58391))
+
+### ❤️ Contributors
+
+- [@HeleneW-dot](https://github.com/HeleneW-dot)
+
+## v0.0.83
+
+### 🚀 Enhancements
+
+- Add `suspendedDate` to the 8.10 process-instance schemas — nullable date-time on the `ProcessInstance` result, an advanced date-time filter, and a new sort field — completing the `SUSPENDED` state support added in [#58035](https://github.com/camunda/camunda/pull/58035) ([#58564](https://github.com/camunda/camunda/issues/58564))
+
+### ❤️ Contributors
+
+- [@danielkelemen](https://github.com/danielkelemen)
+
+## v0.0.82
+
+### 🩹 Fixes
+
+- Mark `AgentInstanceHistoryItemMetrics` sub-fields as nullable in preparation for the upcoming API contract change ([#57703](https://github.com/camunda/camunda/issues/57703)). The following fields are now nullable:
+  - `inputTokens`
+  - `outputTokens`
+  - `durationMs`
+
+### ❤️ Contributors
+
+- [@ce-dmelnych](https://github.com/ce-dmelnych)
+
+## v0.0.81
+
+### 🚀 Enhancements
+
+- Rename `iteration` to `loopIteration` in agent instance history schemas (`AgentInstanceHistoryItem`, filter, and sort) ([#56504](https://github.com/camunda/camunda/issues/56504))
+
+### ❤️ Contributors
+
+- [@fabiopaini-camunda](https://github.com/fabiopaini-camunda)
+
 ## v0.0.80
 
 ### 🚀 Enhancements
@@ -122,7 +165,7 @@
 
 - Add typed variable filter schemas for `8.10/process-instance`
   - `processInstanceVariableValueFilterSchema` a discriminated union of single-key operator objects (`$eq` / `$neq` / `$like` / `$in` / `$notIn` / `$exists`) plus the shorthand bare-string form; mirrors
-     backend schema
+    backend schema
   - `processInstanceVariableFilterSchema` now uses the tighter value schema and is exported top-level
   - `ProcessInstanceVariableFilter` and `ProcessInstanceVariableValueFilter` types exported
   - Tightens variable filter validation: rejects multi-operator combinations (e.g. `{$eq: "x", $neq: "y"}`), unknown keys, and operator-shape mismatches
@@ -130,7 +173,6 @@
 ### ❤️ Contributors
 
 - Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
-
 
 ## v0.0.69
 
@@ -1074,3 +1116,4 @@ Accidental empty release
 ### ❤️ Contributors
 
 - Vinicius Goulart
+

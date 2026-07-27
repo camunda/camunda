@@ -12,22 +12,15 @@ import static io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCES
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
 
 class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
   private final AsyncScheduleServiceContext context;
-  private final SimpleProcessingScheduleService processorActorService;
-  private final boolean alwaysAsync;
 
   public ExtendedProcessingScheduleServiceImpl(
-      final AsyncScheduleServiceContext asyncScheduleServiceContext,
-      final SimpleProcessingScheduleService processorActorService,
-      final boolean alwaysAsync) {
+      final AsyncScheduleServiceContext asyncScheduleServiceContext) {
     context = asyncScheduleServiceContext;
-    this.processorActorService = processorActorService;
-    this.alwaysAsync = alwaysAsync;
   }
 
   @Override
@@ -90,65 +83,45 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
-    if (alwaysAsync) {
-      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
-      final var actorService = actor.getScheduleService();
-      final var futureScheduledTask = actor.<ScheduledTask>createFuture();
-      actor.run(
-          () -> {
-            // we must run in different actor in order to schedule task
-            final var scheduledTask = actorService.runDelayed(delay, task);
-            futureScheduledTask.complete(scheduledTask);
-          });
-      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
-    } else {
-      return processorActorService.runDelayed(delay, task);
-    }
+    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+    final var actorService = actor.getScheduleService();
+    final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+    actor.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          final var scheduledTask = actorService.runDelayed(delay, task);
+          futureScheduledTask.complete(scheduledTask);
+        });
+    return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Task task) {
-    if (alwaysAsync) {
-      return runDelayedAsync(delay, task);
-    } else {
-      return processorActorService.runDelayed(delay, task);
-    }
+    return runDelayedAsync(delay, task);
   }
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Task task) {
-    if (alwaysAsync) {
-      return runAtAsync(timestamp, task);
-    } else {
-      return processorActorService.runAt(timestamp, task);
-    }
+    return runAtAsync(timestamp, task);
   }
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
-    if (alwaysAsync) {
-      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
-      final var actorService = actor.getScheduleService();
-      final var futureScheduledTask = actor.<ScheduledTask>createFuture();
-      actor.run(
-          () -> {
-            // we must run in different actor in order to schedule task
-            final var scheduledTask = actorService.runAt(timestamp, task);
-            futureScheduledTask.complete(scheduledTask);
-          });
-      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
-    } else {
-      return processorActorService.runAt(timestamp, task);
-    }
+    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+    final var actorService = actor.getScheduleService();
+    final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+    actor.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          final var scheduledTask = actorService.runAt(timestamp, task);
+          futureScheduledTask.complete(scheduledTask);
+        });
+    return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
   }
 
   @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
-    if (alwaysAsync) {
-      runAtFixedRateAsync(delay, task);
-    } else {
-      processorActorService.runAtFixedRate(delay, task);
-    }
+    runAtFixedRateAsync(delay, task);
   }
 
   /**

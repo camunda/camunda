@@ -131,6 +131,12 @@ public class AuditLogTransformerConfigs {
           .withIntents(ProcessInstanceIntent.CANCELING)
           .withRejections(ProcessInstanceIntent.CANCEL, RejectionType.INVALID_STATE);
 
+  public static final TransformerConfig PROCESS_INSTANCE_SUSPEND_RESUME_CONFIG =
+      TransformerConfig.with(ValueType.PROCESS_INSTANCE)
+          .withIntents(ProcessInstanceIntent.SUSPENDED, ProcessInstanceIntent.RESUMED)
+          .withRejections(ProcessInstanceIntent.SUSPEND, ProcessInstanceIntent.RESUME)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
+
   public static final TransformerConfig PROCESS_INSTANCE_CREATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_CREATION)
           .withIntents(ProcessInstanceCreationIntent.CREATED);

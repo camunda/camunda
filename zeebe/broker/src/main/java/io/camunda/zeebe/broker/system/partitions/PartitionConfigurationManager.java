@@ -9,8 +9,10 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;
 import org.slf4j.Logger;
@@ -115,6 +117,59 @@ final class PartitionConfigurationManager {
         });
 
     return exportedDeleted;
+  }
+
+  /**
+   * Sets the overall exporting state of this partition. This information is added to the
+   * PartitionContext so that it can be used in the next role transitions, and applied to the
+   * running ExporterDirector if there is one.
+   *
+   * <p>This method access and updates PartitionContext. Hence, it must be executed from the
+   * ZeebePartition actor.
+   *
+   * @param exportingState the target exporting state
+   * @return the future that completes when the exporting state is applied
+   */
+  ActorFuture<Void> setExporterState(final ExportingState exportingState) {
+    final var stateChanged = executor.<Void>createFuture();
+
+    // Update the config in PartitionContext so that the next role transitions use the latest config
+    final var updatedConfig =
+        context
+            .getDynamicPartitionConfig()
+            .updateExporting(config -> config.withState(exportingState));
+    context.setDynamicPartitionConfig(updatedConfig);
+
+    final var exporterDirector = context.getExporterDirector();
+    if (exporterDirector != null) {
+      final ActorFuture<Void> directorUpdated =
+          switch (exportingState) {
+            case PAUSED -> exporterDirector.pauseExporting();
+            case SOFT_PAUSED -> exporterDirector.softPauseExporting();
+            case EXPORTING -> exporterDirector.resumeExporting();
+            case UNKNOWN ->
+                CompletableActorFuture.completedExceptionally(
+                    new IllegalArgumentException(
+                        "Expected exporting state to be a valid value, but was " + exportingState));
+          };
+      directorUpdated.onComplete(stateChanged);
+    } else {
+      // The operation succeeds even if the ExporterDirector is not available because during the
+      // next role transition, the transition step can access the latest state from the
+      // PartitionContext.
+      stateChanged.complete(null);
+    }
+
+    stateChanged.onComplete(
+        (nothing, error) -> {
+          if (error == null) {
+            logger.debug("Exporting state set to {}", exportingState);
+          } else {
+            logger.warn("Failed to set exporting state to {}", exportingState, error);
+          }
+        });
+
+    return stateChanged;
   }
 
   /**

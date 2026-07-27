@@ -35,30 +35,37 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    final var logStream = context.getLogStream();
-    if (logStream != null
-        && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
-            || targetRole == Role.INACTIVE)) {
-      context.setStreamClock(null);
-      logStream.close();
-      context.setLogStream(null);
+    try {
+      final var logStream = context.getLogStream();
+      if (logStream != null
+          && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
+              || targetRole == Role.INACTIVE)) {
+        context.setStreamClock(null);
+        logStream.close();
+        context.setLogStream(null);
+      }
+      return CompletableActorFuture.completed(null);
+    } catch (final Exception e) {
+      return CompletableActorFuture.completedExceptionally(e);
     }
-    return CompletableActorFuture.completed(null);
   }
 
   @Override
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
-        || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final var clockSource =
-          ActorClock.current() != null ? ActorClock.current() : InstantSource.system();
-      context.setStreamClock(StreamClock.controllable(clockSource));
-      context.setLogStream(buildLogStream(context));
-
+    try {
+      if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
+          || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
+        final var clockSource =
+            ActorClock.current() != null ? ActorClock.current() : InstantSource.system();
+        context.setStreamClock(StreamClock.controllable(clockSource));
+        context.setLogStream(buildLogStream(context));
+      }
       return CompletableActorFuture.completed(null);
-    } else {
-      return CompletableActorFuture.completed(null);
+    } catch (final Exception e) {
+      context.setStreamClock(null);
+      context.setLogStream(null);
+      return CompletableActorFuture.completedExceptionally(e);
     }
   }
 

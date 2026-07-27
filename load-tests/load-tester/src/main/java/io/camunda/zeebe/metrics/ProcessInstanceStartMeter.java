@@ -51,6 +51,9 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
+    MicrometerUtil.buildGauge(
+            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, startedInstances::size)
+        .register(registry);
   }
 
   /** Starts the periodic checking for process instance availability. */

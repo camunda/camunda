@@ -41,13 +41,13 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
   private int partitionId;
   private long jobKey;
   private String jobLease;
-  private Integer iteration;
+  private Integer loopIteration;
   private AgentInstanceHistoryRole role;
   private AgentInstanceHistoryCommitStatus commitStatus;
   private OffsetDateTime producedAt;
-  private long inputTokens;
-  private long outputTokens;
-  private long durationMs;
+  private Long inputTokens;
+  private Long outputTokens;
+  private Long durationMs;
   private String content;
   private List<ContentItem> contentItems;
   private String toolCalls;
@@ -75,7 +75,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
         .partitionId(partitionId)
         .jobKey(jobKey)
         .jobLease(jobLease)
-        .iteration(iteration)
+        .loopIteration(loopIteration)
         .role(role)
         .commitStatus(commitStatus)
         .producedAt(producedAt)
@@ -184,12 +184,12 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     }
   }
 
-  public Integer iteration() {
-    return iteration;
+  public Integer loopIteration() {
+    return loopIteration;
   }
 
-  public void iteration(final Integer iteration) {
-    this.iteration = iteration;
+  public void loopIteration(final Integer loopIteration) {
+    this.loopIteration = loopIteration;
   }
 
   public AgentInstanceHistoryRole role() {
@@ -216,27 +216,27 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     this.producedAt = producedAt;
   }
 
-  public long inputTokens() {
+  public Long inputTokens() {
     return inputTokens;
   }
 
-  public void inputTokens(final long inputTokens) {
+  public void inputTokens(final Long inputTokens) {
     this.inputTokens = inputTokens;
   }
 
-  public long outputTokens() {
+  public Long outputTokens() {
     return outputTokens;
   }
 
-  public void outputTokens(final long outputTokens) {
+  public void outputTokens(final Long outputTokens) {
     this.outputTokens = outputTokens;
   }
 
-  public long durationMs() {
+  public Long durationMs() {
     return durationMs;
   }
 
-  public void durationMs(final long durationMs) {
+  public void durationMs(final Long durationMs) {
     this.durationMs = durationMs;
   }
 
@@ -375,13 +375,13 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     private int partitionId;
     private long jobKey;
     private String jobLease;
-    private Integer iteration;
+    private Integer loopIteration;
     private AgentInstanceHistoryRole role;
     private AgentInstanceHistoryCommitStatus commitStatus;
     private OffsetDateTime producedAt;
-    private long inputTokens;
-    private long outputTokens;
-    private long durationMs;
+    private Long inputTokens;
+    private Long outputTokens;
+    private Long durationMs;
     private List<ContentItem> contentItems;
     private List<ToolCall> toolCallValues;
 
@@ -440,8 +440,8 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       return this;
     }
 
-    public Builder iteration(final Integer iteration) {
-      this.iteration = iteration;
+    public Builder loopIteration(final Integer loopIteration) {
+      this.loopIteration = loopIteration;
       return this;
     }
 
@@ -460,17 +460,17 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       return this;
     }
 
-    public Builder inputTokens(final long inputTokens) {
+    public Builder inputTokens(final Long inputTokens) {
       this.inputTokens = inputTokens;
       return this;
     }
 
-    public Builder outputTokens(final long outputTokens) {
+    public Builder outputTokens(final Long outputTokens) {
       this.outputTokens = outputTokens;
       return this;
     }
 
-    public Builder durationMs(final long durationMs) {
+    public Builder durationMs(final Long durationMs) {
       this.durationMs = durationMs;
       return this;
     }
@@ -499,7 +499,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       result.partitionId(partitionId);
       result.jobKey(jobKey);
       result.jobLease(jobLease);
-      result.iteration(iteration);
+      result.loopIteration(loopIteration);
       result.role(role);
       result.commitStatus(commitStatus);
       result.producedAt(producedAt);

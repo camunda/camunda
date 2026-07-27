@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -202,6 +204,70 @@ class ResponseMapperTest {
       assertThat(result.getBusinessId()).isEqualTo("order-123");
     }
 
+    @Test
+    void shouldMapLeaseTokenToActivatedJob() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      when(jobRecord.getLeaseToken()).thenReturn("lease-token-123");
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.hasLeaseToken()).isTrue();
+      assertThat(result.getLeaseToken()).isEqualTo("lease-token-123");
+    }
+
+    @Test
+    void shouldNotSetLeaseTokenWhenNotLeased() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.hasLeaseToken()).isFalse();
+    }
+
+    @Test
+    void shouldMapPhysicalTenantIdFromActivationResponse() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      final JobBatchRecord batchRecord = mock(JobBatchRecord.class);
+      final ValueArray<JobRecord> jobs = mockValueArray(jobRecord);
+      when(batchRecord.jobs()).thenReturn(jobs);
+      final LongValue jobKey = mock(LongValue.class);
+      when(jobKey.getValue()).thenReturn(123L);
+      final ValueArray<LongValue> jobKeys = mockValueArray(jobKey);
+      when(batchRecord.jobKeys()).thenReturn(jobKeys);
+
+      // when
+      final var result =
+          ResponseMapper.toActivateJobsResponse(
+              new JobActivationResponse(1L, batchRecord, Long.MAX_VALUE, "riskproduction"));
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs(0).getPhysicalTenantId())
+          .isEqualTo("riskproduction");
+    }
+
+    @Test
+    void shouldMapDefaultPhysicalTenantIdForStreamedJob() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.getPhysicalTenantId())
+          .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    }
+
     @ParameterizedTest
     @EnumSource(JobListenerEventType.class)
     void shouldMapActivatedJobWithListenerEventType(final JobListenerEventType listenerEventType) {
@@ -240,6 +306,7 @@ class ResponseMapperTest {
       when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(jobRecord.getLength()).thenReturn(1);
       when(jobRecord.getBusinessId()).thenReturn("");
+      when(jobRecord.getLeaseToken()).thenReturn("");
       return jobRecord;
     }
 

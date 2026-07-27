@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, AccordionSkeleton, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, Tag} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -25,12 +25,15 @@ import {
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
+  AgentHeader,
   AgentHeading,
+  AgentInstanceKey,
   ErrorHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
 } from './styled';
+import {AgentSelector, type SelectableAgentInstance} from './AgentSelector';
 import {ModelCallsMetric} from './AgentMetrics/ModelCallsMetric';
 import {TokensUsedMetric} from './AgentMetrics/TokensUsedMetric';
 import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
@@ -39,7 +42,6 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
-import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -69,33 +71,47 @@ function StatusIcon({status}: {status: AgentInstanceStatus}) {
 
 type AgentDetailsProps = {
   selectedElementInstanceKey: string | null;
-  agentInstance: AgentInstance | undefined;
-  isLoading: boolean;
+  agentInstances: AgentInstance[];
+  totalAgentsCount: number;
+  hasMoreTotalItems: boolean;
   isError: boolean;
 };
 
 const AgentDetails: React.FC<AgentDetailsProps> = ({
   selectedElementInstanceKey,
-  agentInstance,
-  isLoading,
+  agentInstances,
+  totalAgentsCount,
+  hasMoreTotalItems,
   isError,
 }) => {
   const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
     useState(false);
+  const [selectedAgentInstanceKey, setSelectedAgentInstanceKey] = useState<
+    string | null
+  >(null);
 
-  if (isLoading) {
-    return (
-      <AgentDetailsContainer>
-        <AgentHeading>AI Agent</AgentHeading>
-        <AccordionSkeleton
-          align="start"
-          count={4}
-          open={false}
-          data-testid="agent-details-skeleton"
-        />
-      </AgentDetailsContainer>
-    );
-  }
+  const currentAgentInstanceKey =
+    selectedAgentInstanceKey ?? agentInstances[0]?.agentInstanceKey;
+
+  const agentInstance = useMemo(
+    () =>
+      agentInstances.find(
+        (agent) => agent.agentInstanceKey === currentAgentInstanceKey,
+      ) ?? null,
+    [agentInstances, currentAgentInstanceKey],
+  );
+
+  const selectableAgentInstances = useMemo(
+    () =>
+      agentInstances.map<SelectableAgentInstance>((agent) => {
+        const statusLabel = STATUS_LABELS[agent.status] ?? agent.status;
+        return {
+          agentInstanceKey: agent.agentInstanceKey,
+          label: `${agent.agentInstanceKey} - ${statusLabel}`,
+        };
+      }),
+    [agentInstances],
+  );
 
   if (isError || !agentInstance) {
     return (
@@ -110,6 +126,11 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
 
+  const remainingAgentsCount =
+    agentInstances.length < totalAgentsCount
+      ? `${totalAgentsCount - agentInstances.length}${hasMoreTotalItems ? '+' : ''}`
+      : undefined;
+
   return (
     <AgentDetailsContainer
       data-testid="agent-details"
@@ -123,7 +144,19 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         }
       }}
     >
-      <AgentHeading>AI Agent</AgentHeading>
+      <AgentHeader>
+        <AgentHeading>AI Agent</AgentHeading>
+        {selectableAgentInstances.length > 1 ? (
+          <AgentSelector
+            agents={selectableAgentInstances}
+            remainingAgentsCount={remainingAgentsCount}
+            selectedAgentInstanceKey={agentInstance.agentInstanceKey}
+            onChange={setSelectedAgentInstanceKey}
+          />
+        ) : (
+          <AgentInstanceKey>{agentInstance.agentInstanceKey}</AgentInstanceKey>
+        )}
+      </AgentHeader>
       <Accordion align="start">
         <AccordionItem
           data-testid="agent-status-section"
@@ -136,7 +169,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <LatestAgentMessage
             agentInstanceKey={agentInstance.agentInstanceKey}
-            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+            agentInstanceStatus={agentInstance.status}
           />
         </AccordionItem>
         <AccordionItem
@@ -183,9 +216,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <ConversationHistory
             agentInstanceKey={agentInstance.agentInstanceKey}
+            agentInstanceStatus={agentInstance.status}
             availableTools={agentInstance.tools}
             isVisible={isConversationHistoryOpen}
-            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             selectedElementInstanceKey={selectedElementInstanceKey}
             agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
           />

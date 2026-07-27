@@ -801,10 +801,14 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
         processInstanceKey,
         processDefinitionId,
         processDefinitionName,
+        state,
         ...rest
       } = processInstance;
       return {
         ...rest,
+        // Element instances have no SUSPENDED state; a suspended process
+        // instance is still running, so its root element is ACTIVE.
+        state: state === 'SUSPENDED' ? 'ACTIVE' : state,
         type: 'PROCESS',
         processInstanceKey,
         processDefinitionId,
@@ -826,11 +830,9 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
           enablePolling,
         },
       );
-    }, [processInstance.processInstanceKey, enablePolling]);
 
-    useEffect(() => {
-      return elementInstancesTreeStore.reset;
-    }, []);
+      return elementInstancesTreeStore.stopPolling;
+    }, [processInstance.processInstanceKey, enablePolling]);
 
     const rootNodeData = elementInstancesTreeStore.state.nodes.get(
       processInstance.processInstanceKey,

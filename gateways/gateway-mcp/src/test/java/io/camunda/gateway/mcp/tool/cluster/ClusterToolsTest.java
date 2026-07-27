@@ -17,6 +17,7 @@ import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.Partition;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
+import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
@@ -117,6 +118,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                   List.of(
                       BrokerInfo.Builder.create()
                           .nodeId(0)
+                          .brokerId("0")
                           .host("localhost")
                           .port(26501)
                           .partitions(
@@ -125,11 +127,13 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.LEADER)
                                       .health(HealthEnum.HEALTHY)
+                                      .state(StateEnum.UNKNOWN)
                                       .build()))
                           .version(version)
                           .build(),
                       BrokerInfo.Builder.create()
                           .nodeId(1)
+                          .brokerId("1")
                           .host("localhost")
                           .port(26502)
                           .partitions(
@@ -138,11 +142,13 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.FOLLOWER)
                                       .health(HealthEnum.HEALTHY)
+                                      .state(StateEnum.UNKNOWN)
                                       .build()))
                           .version(version)
                           .build(),
                       BrokerInfo.Builder.create()
                           .nodeId(2)
+                          .brokerId("2")
                           .host("localhost")
                           .port(26503)
                           .partitions(
@@ -151,6 +157,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.INACTIVE)
                                       .health(HealthEnum.UNHEALTHY)
+                                      .state(StateEnum.UNKNOWN)
                                       .build()))
                           .version(version)
                           .build()))
@@ -169,21 +176,27 @@ class ClusterToolsTest extends OperationalToolsTest {
                       0,
                       "localhost",
                       26501,
-                      List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.LEADER, Health.HEALTHY, TopologyServices.State.UNKNOWN)),
                       version),
                   new Broker(
                       null,
                       1,
                       "localhost",
                       26502,
-                      List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.FOLLOWER, Health.HEALTHY, TopologyServices.State.UNKNOWN)),
                       version),
                   new Broker(
                       null,
                       2,
                       "localhost",
                       26503,
-                      List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.INACTIVE, Health.UNHEALTHY, TopologyServices.State.UNKNOWN)),
                       version)),
               "cluster-id",
               3,

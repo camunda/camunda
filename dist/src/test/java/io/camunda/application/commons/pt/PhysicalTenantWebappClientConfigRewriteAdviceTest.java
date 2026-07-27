@@ -28,6 +28,8 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
       "window.clientConfig = {\"isEnterprise\":true,\"contextPath\":\"\",\"baseName\":\"/operate\"};";
   private static final String TASKLIST_BODY =
       "window.clientConfig = {\"contextPath\":\"\",\"baseName\":\"/tasklist\",\"clientMode\":\"v2\"};";
+  private static final String OPERATE_BODY_WITH_CONTEXT_PATH =
+      "window.clientConfig = {\"contextPath\":\"/core\",\"baseName\":\"/core/operate\"};";
 
   private final PhysicalTenantWebappClientConfigRewriteAdvice advice =
       new PhysicalTenantWebappClientConfigRewriteAdvice();
@@ -103,6 +105,23 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
         .contains("\"contextPath\":\"/physical-tenants/default\"")
         .contains("\"baseName\":\"/physical-tenants/default/tasklist\"")
         .contains("\"clientMode\":\"v2\"");
+  }
+
+  @Test
+  void shouldInsertPhysicalTenantPrefixAfterServletContextPath() throws NoSuchMethodException {
+    // given
+    final MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+    httpRequest.setContextPath("/core");
+    PhysicalTenantContext.setPhysicalTenantId(httpRequest, "tenanta");
+
+    // when
+    final String result = rewrite(OPERATE_BODY_WITH_CONTEXT_PATH, httpRequest);
+
+    // then
+    assertThat(result)
+        .contains("\"contextPath\":\"/core/physical-tenants/tenanta\"")
+        .contains("\"baseName\":\"/core/physical-tenants/tenanta/operate\"")
+        .doesNotContain("/physical-tenants/tenanta/core");
   }
 
   @Test

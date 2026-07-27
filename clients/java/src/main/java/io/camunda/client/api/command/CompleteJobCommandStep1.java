@@ -84,6 +84,47 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 withResult(
       Function<CompleteJobCommandJobResultStep, CompleteJobResult> consumer);
 
+  /**
+   * Sets the lease token identifying the job's activation, fencing this command against a
+   * superseded activation of the same job. Obtain it from {@link
+   * io.camunda.client.api.response.ActivatedJob#getLeaseToken() ActivatedJob#getLeaseToken()}.
+   *
+   * <p>For a leased job, the matching token must be supplied to prove the command comes from the
+   * worker that holds the current lease; a command with no token is rejected. A command carrying a
+   * stale token is likewise rejected, fencing the job against a superseded activation (e.g. after
+   * the job timed out or failed and was re-activated by another worker). A job that was activated
+   * without a lease requires no token.
+   *
+   * <p>When this command is created from an activated job (e.g. {@code
+   * newCompleteCommand(activatedJob)}) the job's lease token is carried automatically, so this
+   * method is only needed when building the command from a job key.
+   *
+   * @param leaseToken the opaque lease token the worker received when the job was activated
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  CompleteJobCommandStep1 withLeaseToken(String leaseToken);
+
+  /**
+   * Assigns the given business id to the job's root process instance as part of completing the job,
+   * letting a worker derive the identifier from work it just performed.
+   *
+   * <p>The assignment is single and irreversible and is only accepted while business id uniqueness
+   * is disabled. Only artifacts created after the assignment carry the business id;
+   * already-existing ones are not enriched. Completing with a business id that differs from one
+   * already assigned rejects the whole completion, leaving the job open; re-sending the identical
+   * business id is an idempotent no-op.
+   *
+   * <p>Passing {@code null} leaves the business id unset (no assignment is requested). A blank
+   * business id is rejected with an {@link IllegalArgumentException}.
+   *
+   * @param businessId the business id to assign to the root process instance
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   * @throws IllegalArgumentException if {@code businessId} is blank
+   */
+  CompleteJobCommandStep1 withBusinessId(String businessId);
+
   interface CompleteJobCommandJobResultStep {
     /**
      * Initializes the job result to allow corrections or a denial to be configured.

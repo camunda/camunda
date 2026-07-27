@@ -40,7 +40,7 @@ public final class AgentHistoryFixtures extends CommonFixtures {
             .partitionId(1)
             .jobKey(nextKey())
             .jobLease("lease-" + key)
-            .iteration(1)
+            .loopIteration(1)
             .role(AgentInstanceHistoryRole.USER)
             .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)
             .producedAt(OffsetDateTime.now())

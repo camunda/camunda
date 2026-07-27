@@ -9,6 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -162,6 +164,120 @@ class ArchiveByIdTaskSupplierTest {
     // then - should throw immediately without retrying
     assertThatThrownBy(future::join).isInstanceOf(CompletionException.class);
     verify(metrics, times(0)).recordArchiverBatchRetry();
+  }
+
+  @Test
+  void shouldRetryAndNotLogWarningWhenReindexProcessesFewerDocsThanExpected() {
+    // given - reindex reports processing only 1 of the 2 expected docs
+    final var logger = mock(Logger.class);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
+                        List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture(1L),
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            logger);
+
+    // when - the undercount is treated as a retryable BatchCountMismatchException
+    final var result = taskSupplier.moveNextBatch().join();
+
+    // then
+    assertThat(result).isEqualTo(0L);
+    assertThat(taskSupplier.isComplete()).isFalse();
+    verify(metrics, times(1)).recordArchiverBatchRetry();
+    // an undercount throws before reaching the "processedCount > expectedCount" warning
+    verify(logger, times(0)).warn(any(String.class), any(), any(), any(), any());
+  }
+
+  @Test
+  void shouldNotThrowAndLogWarningWhenReindexProcessesMoreDocsThanExpected() {
+    // given - reindex reports processing more docs than were sent; only an undercount
+    // (processedCount < expectedCount) is treated as a mismatch
+    final var logger = mock(Logger.class);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture(2L),
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            logger);
+
+    // when
+    final var result = taskSupplier.moveNextBatch().join();
+
+    // then - no exception, no retry, but the overcount is logged
+    assertThat(result).isEqualTo(1L);
+    assertThat(taskSupplier.isComplete()).isFalse();
+    verify(metrics, times(0)).recordArchiverBatchRetry();
+    verify(logger).warn(any(String.class), eq("reindex"), eq("source-idx"), eq(2L), eq(1));
+  }
+
+  @Test
+  void shouldNotThrowAndLogWarningWhenDeleteProcessesMoreDocsThanExpected() {
+    // given - delete reports processing more docs than were sent
+    final var logger = mock(Logger.class);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            (source, ids) -> CompletableFuture.completedFuture(2L),
+            DIRECT_EXECUTOR,
+            metrics,
+            logger);
+
+    // when
+    final var result = taskSupplier.moveNextBatch().join();
+
+    // then - no exception, no retry, but the overcount is logged
+    assertThat(result).isEqualTo(2L);
+    assertThat(taskSupplier.isComplete()).isFalse();
+    verify(metrics, times(0)).recordArchiverBatchRetry();
+    verify(logger).warn(any(String.class), eq("delete"), eq("source-idx"), eq(2L), eq(1));
+  }
+
+  @Test
+  void shouldNotLogWarningWhenProcessedCountMatchesExpected() {
+    // given - reindex and delete both process exactly the expected number of docs
+    final var logger = mock(Logger.class);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            logger);
+
+    // when
+    final var result = taskSupplier.moveNextBatch().join();
+
+    // then - an exact match is neither a mismatch nor an overcount, so no warning is logged
+    assertThat(result).isEqualTo(1L);
+    verify(logger, times(0)).warn(any(String.class), any(), any(), any(), any());
   }
 
   @Test

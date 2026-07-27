@@ -9,11 +9,11 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -24,7 +24,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 @SpringBootTest(
@@ -53,15 +52,14 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
   @Test
   public void shouldRequireCsrfTokenWithSessionAuthentication() {
-    // given
-    final MockHttpSession mockHttpSession = new MockHttpSession();
+    // given: a real, cookie-backed session established via login
+    final var sessionCookie = logInAsDemoAndGetSessionCookie();
 
     // when
     final MvcTestResult result =
         mockMvcTester
             .post()
-            .session(mockHttpSession)
-            .with(user("demo"))
+            .cookie(sessionCookie)
             .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
             .exchange();
 
@@ -69,17 +67,31 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
     assertMissingCsrfToken(result);
   }
 
+  private Cookie logInAsDemoAndGetSessionCookie() {
+    final MvcTestResult loginResult =
+        mockMvcTester
+            .post()
+            .uri("https://localhost/login")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .formField("username", TestUserDetailsService.DEMO_USERNAME)
+            .formField("password", TestUserDetailsService.DEMO_USERNAME)
+            .exchange();
+    final Cookie sessionCookie =
+        loginResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
+    return sessionCookie;
+  }
+
   @Test
   public void shouldNotRequireCsrfTokenWithGetEndpoint() {
-    // given
-    final MockHttpSession mockHttpSession = new MockHttpSession();
+    // given: a real, cookie-backed session
+    final var sessionCookie = logInAsDemoAndGetSessionCookie();
 
     // when
     final MvcTestResult result =
         mockMvcTester
             .get()
-            .session(mockHttpSession)
-            .with(user("demo"))
+            .cookie(sessionCookie)
             .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
             .exchange();
 
@@ -89,15 +101,14 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
   @Test
   public void shouldSucceedWithCsrfTokenAndSessionAuthentication() {
-    // given
-    final MockHttpSession mockHttpSession = new MockHttpSession();
+    // given: a real, cookie-backed session
+    final var sessionCookie = logInAsDemoAndGetSessionCookie();
 
     // when
     final MvcTestResult result =
         mockMvcTester
             .post()
-            .session(mockHttpSession)
-            .with(user("demo"))
+            .cookie(sessionCookie)
             .with(csrf())
             .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
             .exchange();

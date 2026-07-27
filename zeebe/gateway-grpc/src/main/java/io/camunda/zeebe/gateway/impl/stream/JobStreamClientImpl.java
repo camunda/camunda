@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.stream;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -25,17 +23,10 @@ import java.util.Collection;
  * A thin adapter around a {@link ClientStreamService} instance specifically for streaming jobs.
  * It's intended to be the main entry point when setting up the client side of job streaming in the
  * gateway.
- *
- * <p>NOTE: most methods are synchronized to avoid dealing with concurrency issues with
- * startup/shutdown, and that's not on any hot path. Can be reconsidered if this is not true
- * anymore, or not the only constraint.
  */
 public final class JobStreamClientImpl implements JobStreamClient {
   private final ActorSchedulingService schedulingService;
   private final ClientStreamService<JobActivationProperties> streamService;
-
-  private boolean started;
-  private ActorFuture<Void> startedFuture;
 
   public JobStreamClientImpl(
       final ActorSchedulingService schedulingService,
@@ -46,26 +37,17 @@ public final class JobStreamClientImpl implements JobStreamClient {
         new TransportFactory(schedulingService)
             .createRemoteStreamClient(
                 clusterCommunicationService,
-                new JobClientStreamMetrics(meterRegistry),
-                DEFAULT_PHYSICAL_TENANT_ID);
+                physicalTenantId -> new JobClientStreamMetrics(meterRegistry, physicalTenantId));
   }
 
   @Override
-  public synchronized void brokerAdded(final BrokerMemberId memberId) {
-    if (!started) {
-      return;
-    }
-
-    streamService.onServerJoined(memberId.memberId());
+  public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
+    streamService.onServerJoined(memberId.memberId(), physicalTenantId);
   }
 
   @Override
-  public synchronized void brokerRemoved(final BrokerMemberId memberId) {
-    if (!started) {
-      return;
-    }
-
-    streamService.onServerRemoved(memberId.memberId());
+  public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
+    streamService.onServerRemoved(memberId.memberId(), physicalTenantId);
   }
 
   @Override
@@ -74,13 +56,8 @@ public final class JobStreamClientImpl implements JobStreamClient {
   }
 
   @Override
-  public synchronized ActorFuture<Void> start() {
-    if (startedFuture == null) {
-      startedFuture = streamService.start(schedulingService);
-      started = true;
-    }
-
-    return startedFuture;
+  public ActorFuture<Void> start() {
+    return streamService.start(schedulingService);
   }
 
   @Override
@@ -89,12 +66,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
   }
 
   @Override
-  public synchronized void close() {
-    if (!started) {
-      return;
-    }
-
-    started = false;
+  public void close() {
     streamService.closeAsync().join();
   }
 }

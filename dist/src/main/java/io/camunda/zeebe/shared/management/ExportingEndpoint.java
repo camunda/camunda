@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -22,11 +25,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  final ExportingControlApi exportingService;
+  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
 
   @Autowired
-  public ExportingEndpoint(final ExportingControlApi exportingService) {
-    this.exportingService = exportingService;
+  public ExportingEndpoint(final BrokerClient brokerClient) {
+    this(new ExportingRequestBroadcaster(brokerClient));
+  }
+
+  ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
+    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -35,23 +42,23 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
-      final boolean softPause = soft;
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingService.resumeExporting();
+            case RESUME -> exportingRequestBroadcaster.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
             case PAUSE ->
-                softPause
-                    ? exportingService.softPauseExporting()
-                    : exportingService.pauseExporting();
+                soft
+                    ? exportingRequestBroadcaster.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
+                    : exportingRequestBroadcaster.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
             default -> throw new UnsupportedOperationException();
           };
       result.join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          e.getCause(), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      final var message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+      return new WebEndpointResponse<>(message, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(e, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return new WebEndpointResponse<>(
+          e.getMessage(), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
   }
 }

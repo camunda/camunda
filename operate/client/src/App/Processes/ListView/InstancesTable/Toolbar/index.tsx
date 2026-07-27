@@ -152,6 +152,15 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       messages.push(
         'This permanently deletes the selected process instances and their history. This cannot be undone.',
       );
+    } else if (modalMode === 'RESOLVE_INCIDENT') {
+      const incidentInstancesCount =
+        processInstancesSelectionStore.checkedIncidentIds.length;
+
+      if (selectedInstancesCount > incidentInstancesCount) {
+        messages.push(
+          'Instances without an incident in your selection will be ignored.',
+        );
+      }
     } else if (selectedInstancesCount > runningInstancesCount) {
       messages.push('Finished instances in your selection will be ignored.');
     }
@@ -228,13 +237,13 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
             onClick={() => setModalMode('RESOLVE_INCIDENT')}
             disabled={
               batchModificationStore.state.isEnabled ||
-              !processInstancesSelectionStore.hasSelectedRunningInstances
+              !processInstancesSelectionStore.hasSelectedInstancesWithIncidents
             }
             title={
               batchModificationStore.state.isEnabled
                 ? 'Not available in batch modification mode'
-                : !processInstancesSelectionStore.hasSelectedRunningInstances
-                  ? 'No running process instances selected. Please select at least one active or incident process instance to retry.'
+                : !processInstancesSelectionStore.hasSelectedInstancesWithIncidents
+                  ? 'No process instances with an incident selected. Please select at least one process instance with an incident to retry.'
                   : undefined
             }
             data-testid="retry-batch-operation"

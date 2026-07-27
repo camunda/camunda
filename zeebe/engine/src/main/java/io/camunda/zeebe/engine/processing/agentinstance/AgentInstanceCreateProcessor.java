@@ -7,20 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -32,6 +34,9 @@ import java.util.List;
 public final class AgentInstanceCreateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord> {
 
+  // CAUTION: callers may parse this message to extract the existing agentInstanceKey from the
+  // second '%d'. Wording changes that alter the position of the numeric values are a breaking
+  // contract change — update connector-side parsing logic in sync.
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
 
@@ -50,22 +55,20 @@ public final class AgentInstanceCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final AgentInstanceState agentInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
-    agentInstanceState = processingState.getAgentInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
   }
 
@@ -84,43 +87,43 @@ public final class AgentInstanceCreateProcessor
     }
 
     final var elementInstanceValue = elementInstance.getValue();
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(elementInstanceValue.getTenantId())
-            .addResourceId(elementInstanceValue.getBpmnProcessId())
-            .build();
-    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResult.isLeft()) {
-      final var rejection = authResult.getLeft();
+    final var isAuthorized =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(elementInstanceValue.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            elementInstanceValue.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND.formatted(elementInstanceKey)));
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
-    // Idempotent CREATE: if an agent instance already exists, return the existing one to the
-    // client (the public API has no 409). Reject on the stream to suppress a duplicate CREATED
-    // event, but respond with the existing record so the client sees the same result as the
-    // original CREATE. This check runs before the active-state and element-type guards so that a
-    // late retry against an element instance that has since left ACTIVE (e.g. parked in
-    // COMPLETING behind an incident) still returns the existing record rather than INVALID_STATE.
+    // Reject CREATE when an agent instance already exists for this element instance. The existence
+    // check runs before the active-state and element-type guards so that a late retry against an
+    // element instance that has since left ACTIVE (e.g. parked in COMPLETING behind an incident)
+    // gets ALREADY_EXISTS rather than INVALID_STATE. Both the stream rejection and the HTTP
+    // response are consistent: no success event is emitted.
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
-      final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
-      // The stored record carries the changedAttributes from the last UPDATE that touched it. On
-      // CREATED that field is contractually empty (see
-      // AgentInstanceRecordValue#getChangedAttributes),
-      // so strip it before responding. getRecord returns a fresh deserialization, so this mutation
-      // does not leak back into state.
-      existingRecord.setChangedAttributes(List.of());
-      rejectionWriter.appendRejection(
+      writeRejection(
           command,
           RejectionType.ALREADY_EXISTS,
           ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
               elementInstanceKey, existingAgentInstanceKey));
-      responseWriter.writeEventOnCommand(
-          existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
       return;
     }
 
@@ -175,7 +178,7 @@ public final class AgentInstanceCreateProcessor
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
   }
 
@@ -184,6 +187,6 @@ public final class AgentInstanceCreateProcessor
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 }

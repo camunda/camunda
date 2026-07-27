@@ -9,7 +9,7 @@
     "settings": {
       "index": {
         "number_of_shards": "1",
-        "number_of_replicas": "0",
+        "number_of_replicas": "1",
         "queries": {
           "cache": {
             "enabled": false
@@ -181,10 +181,26 @@
                 },
                 "leaseToken": {
                   "type": "keyword"
+                },
+                "secretReferences": {
+                  "properties": {
+                    "storeId": {
+                      "type": "keyword"
+                    },
+                    "secretReference": {
+                      "type": "keyword"
+                    },
+                    "path": {
+                      "type": "keyword"
+                    }
+                  }
                 }
               }
             },
             "truncated": {
+              "type": "boolean"
+            },
+            "withLease": {
               "type": "boolean"
             },
             "tenantIds": {

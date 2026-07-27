@@ -58,7 +58,7 @@ other PRs e.g. from Renovate to be automatically merged even though they fail CI
    is needed and why the merge queue needs to be bypassed.
 2. Ask a repository admin to temporarily change the
    [unified-ci-merges-*-branch ruleset for the desired branch](https://github.com/camunda/camunda/settings/rules)
-   to add your group (`Monorepo DevOps Team`) to the `Bypass list` and save.
+   to add your group (`Engineering Operations Team`) to the `Bypass list` and save.
 3. Merge your Pull Request with admin override.
 4. Ask a repository admin to temporarily change the
    [unified-ci-merges-*-branch ruleset for the desired branch](https://github.com/camunda/camunda/settings/rules)

@@ -351,7 +351,11 @@ public class ExporterMigrationTestHelper {
                       Map.of(
                           "url", containerAddress,
                           "bulk", Map.of("size", 1),
-                          "index", Map.of("createTemplate", false)));
+                          "index",
+                              Map.of(
+                                  "createTemplate", false,
+                                  "job", true,
+                                  "optimizeModeEnabled", false)));
                 })
             .withCreateSchema(false)
             .withProperty("camunda.database.type", "NONE")

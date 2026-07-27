@@ -231,6 +231,8 @@ public class CamundaProcessTestDefaultConfigurationTest {
   @TestPropertySource(
       properties = {
         "camunda.process-test.connectors-enabled=true",
+        "camunda.process-test.clock-reset-enabled=false",
+        "camunda.process-test.data-deletion-enabled=false",
         "camunda.process-test.camunda-docker-image-version=8.8.0-new",
         "camunda.process-test.camunda-docker-image-name=camunda/camunda-new",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy",
@@ -242,6 +244,8 @@ public class CamundaProcessTestDefaultConfigurationTest {
     @Test
     void shouldReadConfigurationWithNewPrefix() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
+      assertThat(configuration.isClockResetEnabled()).isFalse();
+      assertThat(configuration.isDataDeletionEnabled()).isFalse();
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-new");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-new");
     }
@@ -261,6 +265,8 @@ public class CamundaProcessTestDefaultConfigurationTest {
     @Test
     void shouldUseLegacyConfiguration() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
+      assertThat(configuration.isClockResetEnabled()).isTrue();
+      assertThat(configuration.isDataDeletionEnabled()).isTrue();
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-legacy");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-legacy");
     }

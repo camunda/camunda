@@ -14,18 +14,18 @@
     "@inquirer/prompts": "^8.0.0",
     "@playwright/test": "^1.51.0",
     "@types/node": "^24.0.0",
-    "@typescript-eslint/eslint-plugin": "8.60.0",
-    "@typescript-eslint/parser": "8.60.0",
+    "@typescript-eslint/eslint-plugin": "8.65.0",
+    "@typescript-eslint/parser": "8.65.0",
     "assert-json-body": "^1.7.1",
-    "eslint": "9.39.4",
+    "eslint": "9.39.5",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.9.0",
-    "eslint-plugin-playwright": "2.10.4",
+    "eslint-plugin-playwright": "2.10.5",
     "eslint-plugin-prettier": "5.5.6",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.0",
     "playwright-slack-report": "1.1.112",
-    "prettier": "3.8.3",
+    "prettier": "3.9.6",
     "typescript": "5.9.3",
     "valibot": "1.4.2",
     "zeebe-node": "^8.3.2"
@@ -41,5 +41,5 @@
     "dotenv": "^17.0.0",
     "mailslurp-client": "^17.0.0"
   },
-  "packageManager": "npm@11.16.0"
+  "packageManager": "npm@12.0.1"
 }

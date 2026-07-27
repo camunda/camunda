@@ -117,6 +117,47 @@ describe('<InstancesByProcess />', () => {
 		await expect.element(screen.getByText('Page Two Process')).toBeVisible();
 	});
 
+	it('should link each row to the processes page filtered by process', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'p1',
+								latestProcessDefinitionName: 'Alpha Process',
+								activeInstancesWithoutIncidentCount: 5,
+								activeInstancesWithIncidentCount: 1,
+							}),
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'p2',
+								latestProcessDefinitionName: 'Beta Process',
+								activeInstancesWithoutIncidentCount: 0,
+								activeInstancesWithIncidentCount: 0,
+							}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+
+		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
+		await expect
+			.element(screen.getByText('Alpha Process').element().closest('a')!)
+			.toHaveAttribute(
+				'href',
+				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false',
+			);
+		await expect
+			.element(screen.getByText('Beta Process').element().closest('a')!)
+			.toHaveAttribute('href', '/operate/processes?process=p2&active=true&incidents=true&completed=true&canceled=true');
+	});
+
 	it('should show an error state when the request fails', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({

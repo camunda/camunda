@@ -8,6 +8,7 @@
 package io.camunda.webapps.backup.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.webapps.backup.Metadata;
 import org.junit.jupiter.api.Test;
@@ -22,5 +23,33 @@ public class WebappsSnapshotNameProviderTest {
     assertThat(snapshotNameProvider.extractMetadataFromSnapshotName(snapshotName))
         .isEqualTo(metadata);
     assertThat(snapshotNameProvider.extractBackupId(snapshotName)).isEqualTo(metadata.backupId());
+  }
+
+  @Test
+  void shouldBuildAndExtractTenantPrefixedSnapshotName() {
+    final SnapshotNameProvider physicalTenantProvider = new WebappsSnapshotNameProvider("tenant1");
+
+    final var snapshotName = physicalTenantProvider.getSnapshotName(metadata);
+
+    assertThat(snapshotName).startsWith("tenant1_camunda_webapps_");
+    assertThat(physicalTenantProvider.extractMetadataFromSnapshotName(snapshotName))
+        .isEqualTo(metadata);
+    assertThat(physicalTenantProvider.extractBackupId(snapshotName)).isEqualTo(metadata.backupId());
+  }
+
+  @Test
+  void shouldNotExtractMetadataFromAnotherTenantsSnapshotName() {
+    final SnapshotNameProvider physicalTenantProvider = new WebappsSnapshotNameProvider("tenant1");
+    final var snapshotName = physicalTenantProvider.getSnapshotName(metadata);
+
+    assertThatThrownBy(() -> snapshotNameProvider.extractMetadataFromSnapshotName(snapshotName))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldKeepDefaultNamesUnprefixed() {
+    assertThat(snapshotNameProvider.getSnapshotName(metadata))
+        .isEqualTo("camunda_webapps_12312938123_8.7.3_part_11_of_13");
+    assertThat(snapshotNameProvider.snapshotNamePrefix()).isEqualTo("camunda_webapps_");
   }
 }

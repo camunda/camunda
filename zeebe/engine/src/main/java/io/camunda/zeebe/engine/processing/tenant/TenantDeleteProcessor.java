@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -44,31 +45,37 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final MembershipState membershipState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
+  private final MembershipStateAdapter membershipStateAdapter;
+  private final SideEffectWriter sideEffectWriter;
 
   public TenantDeleteProcessor(
       final ProcessingState state,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
+      final MembershipStateAdapter membershipStateAdapter) {
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     userState = state.getUserState();
     membershipState = state.getMembershipState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -83,16 +90,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       return;
     }
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.TENANT)
-            .permissionType(PermissionType.DELETE)
-            .addResourceId(persistedTenantRecord.get().getTenantId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, AuthorizationResourceType.TENANT, PermissionType.DELETE, tenantId);
+    if (authResult.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, authResult.getLeft());
       return;
     }
 
@@ -106,12 +108,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
-    sideEffectWriter.appendSideEffect(
-        () -> {
-          authCheckBehavior.clearAuthorizationsCache();
-          return true;
-        });
+    responseWriter.writeAcceptedResponseOnCommand(tenantKey, TenantIntent.DELETED, record, command);
+    invalidateAuthorizationCaches();
 
     distributeCommand(command);
   }
@@ -127,11 +125,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), TenantIntent.DELETED, command.getValue());
-              sideEffectWriter.appendSideEffect(
-                  () -> {
-                    authCheckBehavior.clearAuthorizationsCache();
-                    return true;
-                  });
+              invalidateAuthorizationCaches();
             },
             () ->
                 rejectCommand(
@@ -152,7 +146,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final RejectionType type,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {
@@ -160,6 +154,20 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .withKey(keyGenerator.nextKey())
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+  }
+
+  /**
+   * Flushes both authorization caches after a tenant is deleted. Deleting a tenant removes its
+   * memberships (stale in {@link MembershipStateAdapter}'s cache) and its authorization grants
+   * (stale in the {@link AuthorizationScopeStateAdapter} scope cache), so both must be invalidated.
+   */
+  private void invalidateAuthorizationCaches() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authorizationScopeStateAdapter.invalidateAll();
+          membershipStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private void removeAssignedEntities(final TenantRecord record) {

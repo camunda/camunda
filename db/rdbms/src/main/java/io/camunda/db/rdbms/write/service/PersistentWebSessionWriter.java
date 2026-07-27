@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 
-public class PersistentWebSessionWriter implements RdbmsWriter {
+public class PersistentWebSessionWriter {
 
   private final PersistentWebSessionMapper persistentWebSessionMapper;
 

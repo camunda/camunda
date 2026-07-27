@@ -162,7 +162,7 @@ class CompactRecordLoggerTest {
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
                       .withJobLease("1")
-                      .withIteration(2)
+                      .withLoopIteration(2)
                       .withMetrics(
                           ImmutableAgentHistoryMetricsValue.builder()
                               .withInputTokens(100)
@@ -215,7 +215,7 @@ class CompactRecordLoggerTest {
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.TOOL_RESULT)
                       .withJobLease("1")
-                      .withIteration(3)
+                      .withLoopIteration(3)
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()
                               .withContentType(AgentHistoryContentType.OBJECT)
@@ -273,7 +273,7 @@ class CompactRecordLoggerTest {
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
                       .withJobLease("1")
-                      .withIteration(1)
+                      .withLoopIteration(1)
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()
                               .withContentType(AgentHistoryContentType.DOCUMENT)

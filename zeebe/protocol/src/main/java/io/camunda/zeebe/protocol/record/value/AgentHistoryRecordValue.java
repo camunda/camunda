@@ -70,8 +70,11 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
    */
   String getJobLease();
 
-  /** Returns the iteration counter (conversation round with the LLM). */
-  int getIteration();
+  /**
+   * Returns the loopIteration counter: one pass through the agent feedback loop (one LLM call, its
+   * tool dispatches, and their results).
+   */
+  int getLoopIteration();
 
   /** Returns the role of the message author (e.g. USER, ASSISTANT, TOOL_RESULT). */
   AgentHistoryRole getRole();

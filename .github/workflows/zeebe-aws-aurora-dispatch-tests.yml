@@ -25,13 +25,13 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] Camunda QA Integration Module. Aurora"
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
       actions: write
     runs-on: aws-core-8-default
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import secrets from Vault
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=2
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
@@ -147,7 +147,7 @@ jobs:
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
-      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
       with:
         webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
         webhook-type: webhook-trigger
@@ -161,7 +161,7 @@ jobs:
                 text: "AWS Aurora Manual/Scheduled Run Integration Tests FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
     - name: Checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         sparse-checkout: .github
     - name: Observe build status

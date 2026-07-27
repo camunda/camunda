@@ -396,6 +396,20 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE);
   }
 
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionSuspendProcessInstance() {
+    checkAuthorized(
+        BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+        PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionResumeProcessInstance() {
+    checkAuthorized(
+        BatchOperationType.RESUME_PROCESS_INSTANCE,
+        PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE);
+  }
+
   public void checkAuthorized(
       final BatchOperationType batchOperationType, final PermissionType permissionType) {
     // given

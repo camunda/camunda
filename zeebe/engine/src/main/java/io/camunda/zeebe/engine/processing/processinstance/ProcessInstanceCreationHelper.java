@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -17,9 +18,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -43,6 +46,8 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationHelper {
+  public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
@@ -55,6 +60,8 @@ public class ProcessInstanceCreationHelper {
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
+  private static final String ERROR_MESSAGE_PROCESS_NOT_FOUND =
+      "Expected to create an instance of process with key '%d', but no such process was found";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -63,7 +70,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
   private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
@@ -75,13 +82,13 @@ public class ProcessInstanceCreationHelper {
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
@@ -91,18 +98,38 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
+    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
-        return getProcess(bpmnProcessId, record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+    return process.flatMap(this::rejectIfDraining);
+  }
+
+  /**
+   * A process definition that is being deleted is kept in state so its already-running instances
+   * can finish, but no new instances may be created for it.
+   */
+  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.isDraining()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              String.format(
+                  ERROR_MESSAGE_PROCESS_IS_DRAINING,
+                  bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey())));
+    }
+    return Either.right(process);
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(
@@ -169,35 +196,24 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
-    // skip authorization and multi-tenancy checks if all such checks are disabled
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Either.right(deployedProcess);
-    }
-
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(processId)
-            .build();
-
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
-    if (isAuthorized.isRight()) {
-      return Either.right(deployedProcess);
-    }
-
-    final var rejection = isAuthorized.getLeft();
-    final String errorMessage =
-        RejectionType.NOT_FOUND.equals(rejection.type())
-            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "create an instance of process",
-                command.getValue().getProcessDefinitionKey(),
-                "such process")
-            : rejection.reason();
-    return Either.left(new Rejection(rejection.type(), errorMessage));
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION))
+                    .permissionType(
+                        AuthzModelMapper.fromProtocol(PermissionType.CREATE_PROCESS_INSTANCE))
+                    .resourceId(processId)),
+        deployedProcess,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.CREATE_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION),
+        command.getValue().getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MESSAGE_PROCESS_NOT_FOUND.formatted(
+                command.getValue().getProcessDefinitionKey())));
   }
 
   public Either<Rejection, DeployedProcess> validateCommand(
@@ -238,8 +254,8 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer) {
-
+      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
+      throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
         processInstance.getProcessDefinitionKey(),

@@ -126,6 +126,7 @@ describe('Modification Dropdown', () => {
       rootProcessInstanceKey: null,
       tags: [],
       businessId: null,
+      suspendedDate: null,
     };
 
     mockFetchElementInstancesStatistics().withSuccess({
@@ -586,6 +587,7 @@ describe('Modification Dropdown', () => {
       rootProcessInstanceKey: null,
       tags: [],
       businessId: null,
+      suspendedDate: null,
     });
 
     mockFetchProcessDefinitionXml().withSuccess(

@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 /**
@@ -75,11 +74,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   @Override
   public void takeSnapshot() {
     actor.call(this::takeSnapshotOnAllPartitions);
-  }
-
-  @Override
-  public void prepareForUpgrade() {
-    actor.call(this::prepareAllPartitionsForSafeUpgrade);
   }
 
   @Override
@@ -216,17 +210,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private Optional<String> getSnapshotId(final ZeebePartition partition) {
     return partition.getSnapshotStore().getLatestSnapshot().map(PersistedSnapshot::getId);
-  }
-
-  private void prepareAllPartitionsForSafeUpgrade() {
-    LOG.info("Preparing for safe upgrade.");
-
-    final var pauseProcessingCompleted = pauseStreamProcessingOnAllPartitions();
-    final var pauseExportingCompleted = pauseExportingOnAllPartitions();
-    final var pauseAll =
-        Stream.of(pauseProcessingCompleted, pauseExportingCompleted).collect(Collectors.toList());
-
-    actor.runOnCompletion(pauseAll, t -> takeSnapshotOnAllPartitions());
   }
 
   private ActorFuture<List<Void>> pauseStreamProcessingOnAllPartitions() {

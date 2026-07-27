@@ -23,6 +23,11 @@ public class BrokerUpdateJobTimeoutRequest extends BrokerExecuteCommand<JobRecor
     requestDto.setTimeout(timeout);
   }
 
+  public BrokerUpdateJobTimeoutRequest setLeaseToken(final String leaseToken) {
+    requestDto.setLeaseToken(leaseToken);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

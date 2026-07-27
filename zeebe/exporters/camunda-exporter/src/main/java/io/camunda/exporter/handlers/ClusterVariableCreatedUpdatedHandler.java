@@ -8,9 +8,12 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ClusterVariableCreatedUpdatedHandler
@@ -74,6 +78,8 @@ public class ClusterVariableCreatedUpdatedHandler
         .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope()))
         .setName(recordValue.getName());
 
+    entity.setKind(ClusterVariableKind.fromProtocol(recordValue.getKind()));
+
     if (ClusterVariableScope.TENANT.equals(entity.getScope())) {
       entity.setTenantId(recordValue.getTenantId());
     }
@@ -87,12 +93,25 @@ public class ClusterVariableCreatedUpdatedHandler
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
+
+    final Map<String, Object> metadata = recordValue.getMetadata();
+    entity.setMetadata(
+        metadata.entrySet().stream()
+            .filter(e -> e.getValue() != null)
+            .map(
+                e ->
+                    new MetadataEntry(
+                        e.getKey(),
+                        String.valueOf(e.getValue()),
+                        e.getValue() instanceof final Number n ? n.doubleValue() : null))
+            .toList());
   }
 
   @Override
-  public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final ClusterVariableEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

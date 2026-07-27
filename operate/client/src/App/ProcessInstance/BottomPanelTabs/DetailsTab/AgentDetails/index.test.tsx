@@ -49,8 +49,9 @@ describe('<AgentDetails />', () => {
   it('should render AI Agent heading and status for TOOL_CALLING', () => {
     render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -67,8 +68,9 @@ describe('<AgentDetails />', () => {
   it('should render status for THINKING', () => {
     render(
       <AgentDetails
-        agentInstance={{...agentInstance, status: 'THINKING'}}
-        isLoading={false}
+        agentInstances={[{...agentInstance, status: 'THINKING'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -84,8 +86,9 @@ describe('<AgentDetails />', () => {
   it('should render status for IDLE', () => {
     render(
       <AgentDetails
-        agentInstance={{...agentInstance, status: 'IDLE'}}
-        isLoading={false}
+        agentInstances={[{...agentInstance, status: 'IDLE'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -99,8 +102,9 @@ describe('<AgentDetails />', () => {
   it('should render status for COMPLETED', () => {
     render(
       <AgentDetails
-        agentInstance={{...agentInstance, status: 'COMPLETED'}}
-        isLoading={false}
+        agentInstances={[{...agentInstance, status: 'COMPLETED'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -116,8 +120,9 @@ describe('<AgentDetails />', () => {
   it('should render status for INITIALIZING', () => {
     render(
       <AgentDetails
-        agentInstance={{...agentInstance, status: 'INITIALIZING'}}
-        isLoading={false}
+        agentInstances={[{...agentInstance, status: 'INITIALIZING'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -133,8 +138,9 @@ describe('<AgentDetails />', () => {
   it('should render status for TOOL_DISCOVERY', () => {
     render(
       <AgentDetails
-        agentInstance={{...agentInstance, status: 'TOOL_DISCOVERY'}}
-        isLoading={false}
+        agentInstances={[{...agentInstance, status: 'TOOL_DISCOVERY'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -147,25 +153,12 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render loading state', () => {
-    render(
-      <AgentDetails
-        agentInstance={undefined}
-        isLoading={true}
-        isError={false}
-        selectedElementInstanceKey={null}
-      />,
-    );
-
-    expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-details-skeleton')).toBeInTheDocument();
-  });
-
   it('should render error state when fetch fails', () => {
     render(
       <AgentDetails
-        agentInstance={undefined}
-        isLoading={false}
+        agentInstances={[]}
+        totalAgentsCount={0}
+        hasMoreTotalItems={false}
         isError={true}
         selectedElementInstanceKey={null}
       />,
@@ -184,8 +177,9 @@ describe('<AgentDetails />', () => {
 
     render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -211,8 +205,9 @@ describe('<AgentDetails />', () => {
   it('should render usage metrics', () => {
     render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -253,8 +248,9 @@ describe('<AgentDetails />', () => {
   it('should render the model provider and name', () => {
     render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -273,13 +269,16 @@ describe('<AgentDetails />', () => {
   it('should render tools available for the agent instance', () => {
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance({
-          tools: [
-            {name: 'get_weather', description: null, elementId: null},
-            {name: 'tell_joke', description: null, elementId: null},
-          ],
-        })}
-        isLoading={false}
+        agentInstances={[
+          mockAgentInstance({
+            tools: [
+              {name: 'get_weather', description: null, elementId: null},
+              {name: 'tell_joke', description: null, elementId: null},
+            ],
+          }),
+        ]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -299,8 +298,9 @@ describe('<AgentDetails />', () => {
   it('should render the system prompt with copy and expand options', () => {
     render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -332,8 +332,9 @@ describe('<AgentDetails />', () => {
 
     const {user} = render(
       <AgentDetails
-        agentInstance={agentInstance}
-        isLoading={false}
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
         isError={false}
         selectedElementInstanceKey={null}
       />,
@@ -357,5 +358,107 @@ describe('<AgentDetails />', () => {
     );
 
     expect(historySpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should display the agent instance key and not render a selector when only one agent exists', () => {
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.queryByRole('combobox', {name: 'Current AI agent'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(agentInstance.agentInstanceKey),
+    ).toBeInTheDocument();
+  });
+
+  it('should default the agent selector to the first agent and switch on selection change', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    const thinkingAgent = mockAgentInstance({
+      agentInstanceKey: '1',
+      status: 'THINKING',
+    });
+    const completedAgent = mockAgentInstance({
+      agentInstanceKey: '2',
+      status: 'COMPLETED',
+    });
+
+    const {user} = render(
+      <AgentDetails
+        agentInstances={[thinkingAgent, completedAgent]}
+        totalAgentsCount={2}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.getByRole('combobox', {name: 'Current AI agent'}),
+    ).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Thinking'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
+    const firstOption = screen.getByRole('option', {
+      name: '1 - Thinking',
+    });
+    const secondOption = screen.getByRole('option', {
+      name: '2 - Completed',
+    });
+    expect(firstOption).toBeVisible();
+    expect(secondOption).toBeVisible();
+    await user.click(secondOption);
+
+    expect(
+      within(statusSection).getByText('Status: Completed'),
+    ).toBeInTheDocument();
+  });
+
+  it('should display a hint when more agents exists than visible', async () => {
+    const thinkingAgent = mockAgentInstance({
+      agentInstanceKey: '1',
+      status: 'THINKING',
+    });
+    const completedAgent = mockAgentInstance({
+      agentInstanceKey: '2',
+      status: 'COMPLETED',
+    });
+
+    const {user} = render(
+      <AgentDetails
+        agentInstances={[thinkingAgent, completedAgent]}
+        totalAgentsCount={10}
+        hasMoreTotalItems={true}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
+    const firstOption = screen.getByRole('option', {
+      name: '1 - Thinking',
+    });
+    const secondOption = screen.getByRole('option', {
+      name: '2 - Completed',
+    });
+    const moreAgentsHint = screen.getByRole('option', {
+      name: '8+ AI agents not shown',
+    });
+    expect(firstOption).toBeVisible();
+    expect(secondOption).toBeVisible();
+    expect(moreAgentsHint).toBeVisible();
   });
 });

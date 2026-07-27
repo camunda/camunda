@@ -30,56 +30,116 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
 
-      - name: Set CAMUNDA_DOCKER_IMAGE
+      - name: Set CAMUNDA_DOCKER_IMAGE and OPTIMIZE_DOCKER_IMAGE
         run: |
           branch="${{ inputs.branch }}"
           if [[ "$branch" == "main" ]]; then
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:SNAPSHOT" >> "$GITHUB_ENV"
           elif [[ "$branch" == stable/* ]]; then
             minor="${branch#stable/}"
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
+
+      - name: Import Docker Hub secrets
+        id: dockerhub-secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY | dockerhub-token;
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          username: ${{ steps.dockerhub-secrets.outputs.dockerhub-username }}
+          password: ${{ steps.dockerhub-secrets.outputs.dockerhub-token }}
 
       - name: Start Camunda
         run: |
-          # Retry to absorb transient Docker Hub registry timeouts during the
-          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
-          # deadline exceeded"). docker compose up -d is idempotent, so a retry
-          # simply resumes the pull and starts the container.
-          start_camunda() {
-            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-              echo "Using single services for Camunda 8.7"
-              DATABASE=elasticsearch docker compose up -d operate tasklist
+          # Authenticated pulls (see "Log in to Docker Hub" above) plus a
+          # retry-with-backoff pre-pull absorb transient Docker Hub registry
+          # outages observed in the nightly (e.g. "Get
+          # https://registry-1.docker.io/v2/: context deadline exceeded").
+          # Pulling is separated from `up -d` so a network blip only retries the
+          # pull; both commands are idempotent.
+          up_env=(DATABASE=elasticsearch)
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            echo "Using single services for Camunda 8.7"
+            services=(operate tasklist)
+          else
+            echo "Using standalone camunda container"
+            services=(camunda)
+            if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
+              echo "Starting with Tasklist V1 mode enabled"
+              up_env+=(CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
             else
-              echo "Using standalone camunda container"
-              if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
-                echo "Starting with Tasklist V1 mode enabled"
-                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
-              else
-                echo "Starting with default Tasklist V2 mode"
-                DATABASE=elasticsearch docker compose up -d camunda
-              fi
+              echo "Starting with default Tasklist V2 mode"
             fi
+          fi
+
+          attempts=5
+          delay=15
+          pulled=false
+          for attempt in $(seq 1 "$attempts"); do
+            if env "${up_env[@]}" docker compose pull --include-deps "${services[@]}"; then
+              pulled=true
+              break
+            fi
+            echo "Attempt ${attempt}/${attempts} to pull Camunda images failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in ${delay}s..."
+              sleep "$delay"
+              delay=$(( delay * 2 ))
+            fi
+          done
+
+          if [[ "$pulled" != "true" ]]; then
+            echo "Failed to pull Camunda images after ${attempts} attempts."
+            exit 1
+          fi
+
+          env "${up_env[@]}" docker compose up -d "${services[@]}"
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Start Optimize
+        # Optimize is a separate application that only exists in the compose file
+        # on branches where it has been added. Gate on its presence so this step
+        # is a no-op on branches that do not (yet) define the service.
+        run: |
+          if ! DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+            echo "optimize service not defined in this branch's compose; skipping."
+            exit 0
+          fi
+
+          start_optimize() {
+            DATABASE=elasticsearch docker compose up -d optimize
           }
 
           attempts=3
           for attempt in $(seq 1 "$attempts"); do
-            if start_camunda; then
-              echo "Camunda started on attempt ${attempt}."
+            if start_optimize; then
+              echo "Optimize started on attempt ${attempt}."
               exit 0
             fi
-            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            echo "Attempt ${attempt}/${attempts} to start Optimize failed."
             if [[ "$attempt" -lt "$attempts" ]]; then
               echo "Retrying in 15s..."
               sleep 15
             fi
           done
 
-          echo "Failed to start Camunda after ${attempts} attempts."
+          echo "Failed to start Optimize after ${attempts} attempts."
           exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -131,6 +191,34 @@ jobs:
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
+      - name: Wait for Optimize to be ready
+        # Only runs when Optimize was started (service present in this branch).
+        run: |
+          if ! docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container not running; skipping wait."
+            exit 0
+          fi
+
+          # An unauthenticated request to Optimize's root always redirects to the
+          # OIDC login (HTTP 302); that is the expected ready state. A 200 would
+          # mean auth is not wired as expected, so it is not treated as ready.
+          echo "Waiting for Optimize to be reachable on http://localhost:8083 ..."
+          for i in {1..60}; do
+            status="$(curl -s -o /dev/null -w '%{http_code}' -m 5 http://localhost:8083/ || true)"
+            status="${status:-000}"
+            if [[ "$status" == "302" ]]; then
+              echo "Optimize is ready (HTTP $status)."
+              exit 0
+            fi
+            echo "Waiting for Optimize... ($i/60) HTTP $status"
+            sleep 10
+          done
+
+          echo "Optimize failed to become ready in time."
+          docker logs optimize --tail 100 || true
+          exit 1
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Print Docker logs before failing
         if: failure()
         # DATABASE must be set: docker-compose.yml interpolates it into the
@@ -144,10 +232,13 @@ jobs:
           else
             DATABASE=elasticsearch docker compose logs camunda
           fi
+          if docker ps -a --format '{{.Names}}' | grep -qx optimize; then
+            DATABASE=elasticsearch docker compose logs optimize
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
@@ -181,7 +272,7 @@ jobs:
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
 
@@ -196,6 +287,7 @@ jobs:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ inputs.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ inputs.tasklist_mode == 'v2' && 'true' || 'false' }}
+          OPTIMIZE_BASE_URL: "http://localhost:8083"
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -206,16 +298,27 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
 
+          # Include the Optimize startup check in the same Playwright run (so it
+          # shares one JUnit/JSON/HTML report) only when the Optimize container is
+          # running — i.e. on branches whose compose defines the service.
+          OPTIMIZE_ARGS=""
+          if docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container detected; including the optimize-startup project."
+            OPTIMIZE_ARGS="--project=optimize-startup"
+          else
+            echo "Optimize container not running; optimize-startup project will be skipped."
+          fi
+
           if [[ "${{ inputs.tasklist_mode }}" == "v2" ]]; then
             if [[ "${{ inputs.branch }}" == "main" ]]; then
               echo "Running all tests in V2 mode on main"
-              npm run test -- --project=chromium
+              npm run test -- --project=chromium $OPTIMIZE_ARGS
             elif [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
               echo "Running all tests in V2 mode on ${{ inputs.branch }}, excluding V1-specific tests"
-              npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
+              npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
               echo "Running all tests in V2 mode: excluding @v1-only tests"
-              npm run test -- --project=chromium --grep-invert "@v1-only"
+              npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "@v1-only"
             fi
           else
             if [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
@@ -226,7 +329,7 @@ jobs:
               npm run test -- --project=chromium tests/tasklist/ tests/common-flows/
             else
               echo "Running all tests in V1 mode"
-              npm run test -- --project=chromium
+              npm run test -- --project=chromium $OPTIMIZE_ARGS
             fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite

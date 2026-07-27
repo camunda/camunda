@@ -8,21 +8,26 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -67,10 +72,21 @@ public interface ClusterConfigurationManagementApi {
   ActorFuture<ClusterConfigurationChangeResponse> updatePartitionDistribution(
       UpdatePartitionDistributorConfigRequest request);
 
+  ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
+      ClusterZoneMigrationRequest zoneMigrationRequest);
+
   ActorFuture<ClusterConfigurationChangeResponse> purge(PurgeRequest purgeRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
       ForceRemoveBrokersRequest forceRemoveBrokersRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> forceRemoveZone(
+      ForceZoneRemoveRequest forceZoneRemoveRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> addZone(AddZoneRequest addZoneRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> updateZonePriorities(
+      UpdateZonePrioritiesRequest updateZonePrioritiesRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
       ExporterDisableRequest exporterDisableRequest);
@@ -87,4 +103,6 @@ public interface ClusterConfigurationManagementApi {
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
 
   ActorFuture<ClusterConfiguration> getTopology();
+
+  ActorFuture<ClusterConfigurationChangeResponse> restore(RestoreRequest request);
 }

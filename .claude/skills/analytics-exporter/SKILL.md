@@ -265,7 +265,24 @@ void shouldEmitMyEventWhenRecordExported() {
 > `zeebe-protocol-immutables`, e.g. `ImmutableProcessInstanceRecordValue.builder()`. See the
 > existing handler tests in `handler/*HandlerTest.java` for exact usage.
 
-## Step 6 — Build and verify
+## Step 6 — Update the module README
+
+Open `zeebe/exporters/analytics-exporter/README.md` and update it in lockstep with the code
+changes above — the README is the source of truth downstream consumers read to understand
+what the exporter emits, and it drifts silently if this step is skipped:
+
+- Add a row for the new event to the **Event types** table (source record, intent, event
+  name, and a short note on when it's emitted).
+- Document the event's *specific* attributes — not just the common ones already covered in
+  **Common log record attributes**. Add a new event-specific attributes section/table using
+  the same format as the existing per-event sections (e.g. **Heartbeat attributes**).
+- **Verify attribute names against `AnalyticsAttributes.java`.** Every attribute key string
+  written in the README must match the actual constant value in code, not just look
+  plausible. Cross-check each one you add (and, ideally, any existing ones you touch)
+  against the real `AttributeKey`/string constant — README prose can drift from the code
+  over time, so don't introduce or perpetuate that class of mismatch.
+
+## Step 7 — Build and verify
 
 ```bash
 # Format before committing (mandatory when touching Java/markdown/pom.xml)
@@ -277,7 +294,7 @@ void shouldEmitMyEventWhenRecordExported() {
 
 All tests must pass before committing.
 
-## Step 7 — Final review checklist
+## Step 8 — Final review checklist
 
 Before opening the PR, go through this checklist:
 
@@ -290,6 +307,9 @@ Before opening the PR, go through this checklist:
 4. **Handler is registered** — `.register(ValueType, Intent, handler)` call is present in
    `AnalyticsExporter.configure()`.
 5. **Tests pass** — `./mvnw verify -pl zeebe/exporters/analytics-exporter -DskipTests=false -Dquickly -T1C` is green.
+6. **`zeebe/exporters/analytics-exporter/README.md` updated** — the new event type is listed in the **Event types** table and
+   its specific attributes are documented, with attribute names matching the
+   `AnalyticsAttributes` constants.
 
 ## Quick-reference: key files
 
@@ -301,3 +321,4 @@ Before opening the PR, go through this checklist:
 | `TestOtelSdkManager.java` | Test factory — `inMemory()` for log-only, `inMemoryWithMetrics()` for both |
 | `handler/*HandlerTest.java` | Pattern to follow for handler unit tests |
 | `AnalyticsExporterTest.java` | Integration-level wiring test to extend |
+| `zeebe/exporters/analytics-exporter/README.md` | Update when adding/changing event types or attributes |

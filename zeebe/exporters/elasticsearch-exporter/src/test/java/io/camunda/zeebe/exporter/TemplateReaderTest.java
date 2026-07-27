@@ -44,7 +44,7 @@ final class TemplateReaderTest {
         .isNullOrEmpty();
     assertThat(template.template().settings())
         .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
+        .containsEntry("number_of_replicas", 1)
         .containsEntry("index.queries.cache.enabled", false);
   }
 
@@ -124,7 +124,7 @@ final class TemplateReaderTest {
     assertThat(template.priority()).isEqualTo(20);
     assertThat(template.template().settings())
         .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
+        .containsEntry("number_of_replicas", 1)
         .containsEntry("index.queries.cache.enabled", false);
   }
 

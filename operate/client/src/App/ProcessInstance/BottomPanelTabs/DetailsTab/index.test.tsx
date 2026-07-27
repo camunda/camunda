@@ -24,16 +24,21 @@ import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscr
 import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
 import {searchResult} from 'modules/testUtils';
 import * as clientConfig from 'modules/utils/getClientConfig';
-import type {
-  ElementInstance,
-  Job,
-  ProcessInstance,
-  DecisionInstance,
-  UserTask,
-  MessageSubscription,
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
+import {
+  endpoints,
+  type ElementInstance,
+  type Job,
+  type ProcessInstance,
+  type DecisionInstance,
+  type UserTask,
+  type MessageSubscription,
+  type QueryAgentInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
+import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -149,6 +154,7 @@ const mockCalledProcessInstance = {
   processDefinitionVersionTag: null,
   endDate: null,
   businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 const mockProcessInstance = {
@@ -168,6 +174,7 @@ const mockProcessInstance = {
   processDefinitionVersionTag: null,
   endDate: null,
   businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 const mockCalledDecisionInstance = {
@@ -296,8 +303,46 @@ describe('<DetailsTab />', () => {
     mockSearchDecisionInstances().withSuccess(searchResult([]));
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
     mockSearchAgentInstances().withSuccess(searchResult([]));
-    mockSearchAgentInstances().withSuccess(searchResult([]));
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
     mockSearchElementInstanceInspection().withSuccess(searchResult([]));
+  });
+
+  it('should show the process-level wait state status for the process scope', async () => {
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: PROCESS_INSTANCE_ID,
+          elementId: 'process-def-1',
+          elementType: 'PROCESS',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'process-start-listener',
+            jobKind: 'EXECUTION_LISTENER',
+            listenerEventType: 'START',
+            retries: 3,
+          },
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByTestId('details-tab')).toBeInTheDocument();
+    expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Waiting for execution listener: process-start-listener',
+      ),
+    ).toBeInTheDocument();
+    // No process property rows are shown for the process scope.
+    expect(screen.queryByText('Process ID')).not.toBeInTheDocument();
   });
 
   it('should show multi-instance message when multiple instances exist', async () => {
@@ -314,6 +359,71 @@ describe('<DetailsTab />', () => {
         'To view the details, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should render agent-details and a multi-instance message when multiple element instances are activated', async () => {
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance, mockElementInstance], 2),
+    );
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1'),
+    });
+
+    expect(
+      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Element Instance', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'To view the details, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render agent-details for a multi-instance element instance by filtering on elementId only', async () => {
+    let agentFilter: QueryAgentInstancesRequestBody['filter'] | undefined;
+    mockServer.use(
+      http.post(
+        endpoints.queryAgentInstances.getUrl(),
+        async ({request}) => {
+          const body = (await request.json()) as QueryAgentInstancesRequestBody;
+          agentFilter = body.filter;
+          return HttpResponse.json(
+            searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+          );
+        },
+        {once: true},
+      ),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    mockFetchElementInstance('999000111').withSuccess({
+      ...mockElementInstance,
+      elementInstanceKey: '999000111',
+      type: 'MULTI_INSTANCE_BODY',
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(
+        'elementId=Task_1&elementInstanceKey=999000111&isMultiInstanceBody=true',
+      ),
+    });
+
+    expect(
+      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Element Instance', level: 5}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('999000111')).toBeInTheDocument();
+
+    expect(agentFilter?.elementId).toEqual('Task_1');
+    expect(agentFilter?.elementInstanceKeys).toBeUndefined();
   });
 
   it('should render element instance details when a single instance is resolved', async () => {
@@ -986,6 +1096,31 @@ describe('<DetailsTab />', () => {
     expect(screen.getByText('Waiting for job: customJob')).toBeInTheDocument();
   });
 
+  it('should render AgentDetails before the element instance details', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const agentHeading = await screen.findByRole('heading', {
+      name: 'AI Agent',
+      level: 5,
+    });
+    const elementInstanceHeading = await screen.findByRole('heading', {
+      name: 'Element Instance',
+      level: 5,
+    });
+
+    expect(
+      agentHeading.compareDocumentPosition(elementInstanceHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('should render the WaitingStatus before the element instance details', async () => {
     mockFetchElementInstance('123456789').withSuccess({
       ...mockElementInstance,
@@ -1018,11 +1153,17 @@ describe('<DetailsTab />', () => {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
     });
 
-    const waitingStatus = await screen.findByTestId('waiting-status');
-    const elementInstanceKey = await screen.findByText('Element Instance Key');
+    const waitingStatusHeading = await screen.findByRole('heading', {
+      name: 'Status',
+      level: 5,
+    });
+    const elementInstanceHeading = await screen.findByRole('heading', {
+      name: 'Element Instance',
+      level: 5,
+    });
 
     expect(
-      waitingStatus.compareDocumentPosition(elementInstanceKey) &
+      waitingStatusHeading.compareDocumentPosition(elementInstanceHeading) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });

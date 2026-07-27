@@ -9,21 +9,26 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.Either;
@@ -245,12 +250,78 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      migrateToZones(final ClusterZoneMigrationRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ZONE_MIGRATION.topic(),
+        request,
+        serializer::encodeClusterZoneMigrationRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      forceRemoveZone(final ForceZoneRemoveRequest request) {
+    final var coordinator = coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
+    if (coordinator.isEmpty()) {
+      // No member outside the zone means it is the only remaining zone; removing it is invalid and
+      // there is no live coordinator to reject it, so short-circuit here.
+      return CompletableFuture.completedFuture(
+          Either.left(
+              new ErrorResponse(
+                  ErrorResponse.ErrorCode.INVALID_REQUEST,
+                  "Cannot force remove zone '%s' because it is the last remaining zone."
+                      .formatted(request.zoneId()))));
+    }
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.FORCE_REMOVE_ZONE.topic(),
+        request,
+        serializer::encodeForceRemoveZoneRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinator.get(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> addZone(
+      final AddZoneRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ADD_ZONE.topic(),
+        request,
+        serializer::encodeAddZoneRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updateZonePriorities(final UpdateZonePrioritiesRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_ZONE_PRIORITIES.topic(),
+        request,
+        serializer::encodeUpdateZonePrioritiesRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> modeChange(
       final ModeChangeRequest request) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         request,
         serializer::encodeModeChangeRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(
+      final RestoreRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.RESTORE.topic(),
+        request,
+        serializer::encodeRestoreRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

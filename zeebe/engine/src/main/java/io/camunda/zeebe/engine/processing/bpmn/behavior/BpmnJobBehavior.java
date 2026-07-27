@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -109,6 +110,7 @@ public final class BpmnJobBehavior {
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -123,6 +125,7 @@ public final class BpmnJobBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final int maxJobTypeLength;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -135,7 +138,8 @@ public final class BpmnJobBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
-      final BpmnUserTaskBehavior userTaskBehavior) {
+      final BpmnUserTaskBehavior userTaskBehavior,
+      final int maxJobTypeLength) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -148,6 +152,7 @@ public final class BpmnJobBehavior {
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
     this.userTaskBehavior = userTaskBehavior;
+    this.maxJobTypeLength = maxJobTypeLength;
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -389,7 +394,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        element.getJobWorkerProperties().getTaskHeaders(),
+        element.getSecretReferences());
   }
 
   public void createNewExecutionListenerJob(
@@ -404,7 +410,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
-        executionListener.getJobWorkerProperties().getTaskHeaders());
+        executionListener.getJobWorkerProperties().getTaskHeaders(),
+        Map.of());
   }
 
   public void createNewTaskListenerJob(
@@ -421,7 +428,8 @@ public final class BpmnJobBehavior {
                     JobKind.TASK_LISTENER,
                     fromTaskListenerEventType(listener.getEventType()),
                     extractUserTaskHeaders(
-                        taskRecordValue, changedAttributes, listener.getJobWorkerProperties())))
+                        taskRecordValue, changedAttributes, listener.getJobWorkerProperties()),
+                    Map.of()))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -434,7 +442,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        element.getJobWorkerProperties().getTaskHeaders(),
+        element.getSecretReferences());
   }
 
   private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
@@ -516,16 +525,27 @@ public final class BpmnJobBehavior {
     return expressionBehavior
         .evaluateStringExpression(type, scopeKey, tenantId)
         .flatMap(
-            result ->
-                Strings.isNullOrEmpty(result)
-                    ? Either.left(
-                        new Failure(
-                            String.format(
-                                "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
-                                type.getExpression()),
-                            ErrorType.EXTRACT_VALUE_ERROR,
-                            scopeKey))
-                    : Either.right(result));
+            result -> {
+              if (Strings.isNullOrEmpty(result)) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
+                            type.getExpression()),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              if (result.length() > maxJobTypeLength) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected result of the expression '%s' to be a string with a maximum length of %d, but was a string with a length of %d.",
+                            type.getExpression(), maxJobTypeLength, result.length()),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              return Either.right(result);
+            });
   }
 
   private Either<Failure, Long> evalRetriesExp(
@@ -582,7 +602,8 @@ public final class BpmnJobBehavior {
       final JobProperties props,
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
-      final Map<String, String> taskHeaders) {
+      final Map<String, String> taskHeaders,
+      final Map<String, Set<SecretReference>> secretReferences) {
 
     final var encodedHeaders = encodeHeaders(taskHeaders, props);
 
@@ -604,11 +625,21 @@ public final class BpmnJobBehavior {
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
+    setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
     jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
+  }
+
+  private void setJobSecretReferences(final Map<String, Set<SecretReference>> secretReferences) {
+    // the shared jobRecord is reused across job creations, so reset before populating
+    jobRecord.resetSecretReferences();
+    secretReferences.forEach(
+        (path, secrets) ->
+            secrets.forEach(
+                secret -> jobRecord.addSecretReference(secret.storeId(), secret.name(), path)));
   }
 
   private BpmnElementType getBpmnElementTypeForLogging(

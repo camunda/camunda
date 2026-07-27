@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.AgentInstanceFixtures.createAndSav
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -44,6 +45,37 @@ public class AgentInstanceIT {
     assertThat(entity).isNotNull();
     assertThat(entity.agentInstanceKey()).isEqualTo(model.agentInstanceKey());
     assertFieldsMatch(model, entity);
+  }
+
+  @TestTemplate
+  public void shouldUpdateDefinitionFieldsOnMigration(
+      final CamundaRdbmsTestApplication testApplication) {
+    final AgentInstanceDbModel model = createAndSaveRandomAgentInstance(testApplication, b -> b);
+
+    final AgentInstanceDbModel migrated =
+        model.copy(
+            b ->
+                ((AgentInstanceDbModel.Builder) b)
+                    .processDefinitionId("migrated-" + nextStringId())
+                    .processDefinitionKey(model.processDefinitionKey() + 1)
+                    .processDefinitionVersion(model.processDefinitionVersion() + 1)
+                    .versionTag("v2")
+                    .elementId("migrated-element"));
+    final RdbmsWriters rdbmsWriters = testApplication.getRdbmsService().createWriter(0);
+    rdbmsWriters.getAgentInstanceWriter().update(migrated);
+    rdbmsWriters.flush();
+
+    final var entity =
+        testApplication
+            .getRdbmsService()
+            .getAgentInstanceDbReader()
+            .getByKey(model.agentInstanceKey(), ResourceAccessChecks.disabled());
+
+    assertThat(entity.processDefinitionId()).isEqualTo(migrated.processDefinitionId());
+    assertThat(entity.processDefinitionKey()).isEqualTo(migrated.processDefinitionKey());
+    assertThat(entity.processDefinitionVersion()).isEqualTo(migrated.processDefinitionVersion());
+    assertThat(entity.versionTag()).isEqualTo("v2");
+    assertThat(entity.elementId()).isEqualTo("migrated-element");
   }
 
   @TestTemplate

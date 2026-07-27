@@ -435,10 +435,75 @@
 				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
 			},
 			"processes": {
-				"title": "Procesos"
+				"title": "Procesos",
+				"filters": {
+					"processSection": "Proceso",
+					"name": "Nombre",
+					"searchByName": "Buscar por nombre de proceso",
+					"version": "Versión",
+					"selectVersion": "Seleccionar una versión de proceso",
+					"allVersions": "Todas las versiones",
+					"element": "Elemento",
+					"searchByElement": "Buscar por elemento de proceso",
+					"instancesStates": "Estados de instancias",
+					"runningInstances": "Instancias en ejecución",
+					"finishedInstances": "Instancias finalizadas",
+					"active": "Activo",
+					"incidents": "Incidentes",
+					"completed": "Completado",
+					"canceled": "Cancelado",
+					"tenant": "Arrendatario",
+					"processInstanceKey": "Clave(s) de instancia de proceso",
+					"processInstanceKeyPlaceholder": "separadas por espacio o coma",
+					"businessId": "Business ID",
+					"batchOperationKey": "Clave de operación por lotes",
+					"parentProcessInstanceKey": "Clave de la instancia de proceso padre",
+					"errorMessage": "Mensaje de error",
+					"hasRetriesLeft": "Trabajo fallido con reintentos restantes",
+					"startDateRange": "Rango de fecha de inicio",
+					"endDateRange": "Rango de fecha de fin",
+					"removeFilter": "Eliminar el filtro {{label}}",
+					"startDatePopoverTitle": "Filtrar instancias por fecha de inicio",
+					"endDatePopoverTitle": "Filtrar instancias por fecha de fin"
+				},
+				"diagramHeader": {
+					"title": "Proceso",
+					"processName": "Nombre del proceso",
+					"processId": "ID del proceso",
+					"versionTag": "Etiqueta de versión"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
+					"selectSingleVersion": "Para ver un diagrama, seleccione una única versión",
+					"noProcessSelected": "No hay ningún proceso seleccionado",
+					"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros"
+				}
 			},
 			"decisions": {
 				"title": "Decisiones"
+			},
+			"decisionInstance": {
+				"title": "Instancia de decisión de Operate",
+				"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "No se pudo encontrar la instancia de decisión {{decisionInstanceId}}",
+				"header": {
+					"decisionInstanceKeyColumn": "Clave de instancia de decisión",
+					"versionColumn": "Versión",
+					"businessIdColumn": "ID de negocio",
+					"tenantColumn": "Arrendatario",
+					"evaluationDateColumn": "Fecha de evaluación",
+					"processInstanceColumn": "Clave de instancia de proceso",
+					"versionLinkTitle": "Ver instancias de la decisión \"{{name}} versión {{version}}\"",
+					"versionLinkTitleWithTenant": "Ver instancias de la decisión \"{{name}} versión {{version}}\" - {{tenant}}",
+					"processInstanceLinkTitle": "Ver instancia de proceso {{processInstanceKey}}",
+					"noProcessInstance": "Ninguna",
+					"openDrdButton": "Abrir diagrama de requisitos de decisión"
+				},
+				"forbidden": {
+					"heading": "403 - No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMoreLink": "Más información sobre los permisos"
+				}
 			},
 			"operations": {
 				"title": "Operaciones"
@@ -470,6 +535,48 @@
 				"filtersPanel": {
 					"label": "Filtro",
 					"resetFilters": "Restablecer filtros"
+				},
+				"validators": {
+					"ids": "La clave debe ser un número de 16 a 19 dígitos, separado por un espacio o una coma",
+					"parentInstanceId": "La clave debe ser un número de 16 a 19 dígitos",
+					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID",
+					"time": "La hora debe tener el formato hh:mm:ss",
+					"timeRange": "La hora \"desde\" es posterior a la hora \"hasta\""
+				},
+				"tenantField": {
+					"selectTenant": "Seleccionar un Arrendatario",
+					"tenant": "Arrendatario",
+					"allTenants": "Todos los arrendatarios"
+				},
+				"optionalFiltersMenu": {
+					"moreFilters": "Más filtros"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "es igual a",
+					"operatorNotEquals": "no es igual a",
+					"operatorContains": "contiene",
+					"operatorIsOneOf": "es uno de",
+					"operatorIsNotOneOf": "no es ninguno de",
+					"operatorExists": "existe",
+					"operatorListPlaceholder": "separados por espacio o coma",
+					"operatorExistsPlaceholder": "true o false",
+					"operatorTypeLabel": "Tipo de filtro {{label}}",
+					"selectOperator": "Seleccionar operador"
+				},
+				"instanceHeader": {
+					"incidentsCount_one": "{{count}} incidente",
+					"incidentsCount_other": "{{count}} incidentes"
+				},
+				"copyButton": {
+					"copy": "Copiar",
+					"copied": "Copiado",
+					"copyToClipboard": "Copiar al portapapeles",
+					"copiedToClipboard": "Copiado al portapapeles"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Eliminar",
+					"cancelButton": "Cancelar",
+					"confirmationError": "Marque esta casilla si desea continuar."
 				}
 			}
 		}

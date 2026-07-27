@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -37,7 +38,7 @@ public enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getAdditionalKeyNames() {
-      return GatewayKeyNames.values();
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
     }
   };
 

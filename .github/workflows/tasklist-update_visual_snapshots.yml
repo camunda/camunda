@@ -8,11 +8,12 @@ on:
   pull_request:
     types: [labeled, synchronize]
 
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
-# Exception for main branch: complete builds for every commit needed for confidenence
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
+# Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
 env:
   CLIENT_DIR: ./tasklist/client
@@ -27,9 +28,9 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup NodeJS
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       - name: Install node dependencies
@@ -43,7 +44,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
         run: npm run test:visual --update-snapshots
       - name: Commit screenshots
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
         with:
           commit_message: "test: updated tasklist snapshots"
           file_pattern: "tasklist/client/**/*.png"

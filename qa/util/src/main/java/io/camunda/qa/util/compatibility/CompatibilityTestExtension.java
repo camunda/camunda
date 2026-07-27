@@ -283,7 +283,8 @@ public class CompatibilityTestExtension
           "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUER_URI",
           keycloakContainer.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENT_ID", "example");
-      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "example.com");
+      camundaContainer.withEnv(
+          "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "https://example.com");
     }
 
     camundaContainer.start();

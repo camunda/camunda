@@ -133,7 +133,7 @@ public final class PersistedClusterConfiguration {
   }
 
   public static final class UnexpectedVersion extends RuntimeException {
-    private UnexpectedVersion(final Path topologyFile, final byte version) {
+    UnexpectedVersion(final Path topologyFile, final byte version) {
       super(
           "Topology file %s had version '%s', but expected version '%s'"
               .formatted(topologyFile, version, VERSION));
@@ -141,7 +141,7 @@ public final class PersistedClusterConfiguration {
   }
 
   public static final class MissingHeader extends RuntimeException {
-    private MissingHeader(final Path topologyFile, final Object fileSize) {
+    MissingHeader(final Path topologyFile, final Object fileSize) {
       super(
           "Topology file %s is too small to contain the expected header: %s bytes"
               .formatted(topologyFile, fileSize));
@@ -149,7 +149,7 @@ public final class PersistedClusterConfiguration {
   }
 
   public static final class ChecksumMismatch extends RuntimeException {
-    private ChecksumMismatch(
+    ChecksumMismatch(
         final Path topologyFile, final long expectedChecksum, final long actualChecksum) {
       super(
           "Corrupted topology file: %s. Expected checksum: '%d', actual checksum: '%d'"

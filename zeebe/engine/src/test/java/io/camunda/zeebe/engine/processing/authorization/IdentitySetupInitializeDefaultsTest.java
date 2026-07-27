@@ -125,7 +125,8 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.COMPLETE_USER_TASK,
                         PermissionType.CANCEL_PROCESS_INSTANCE,
                         PermissionType.MODIFY_PROCESS_INSTANCE,
-                        PermissionType.DELETE_PROCESS_INSTANCE),
+                        PermissionType.DELETE_PROCESS_INSTANCE,
+                        PermissionType.SUSPEND_PROCESS_INSTANCE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
@@ -191,6 +192,7 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+                        PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB,
                         PermissionType.UPDATE,
                         PermissionType.READ),
@@ -214,7 +216,23 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CREATE_TASK_LISTENER,
                         PermissionType.READ_TASK_LISTENER,
                         PermissionType.UPDATE_TASK_LISTENER,
-                        PermissionType.DELETE_TASK_LISTENER));
+                        PermissionType.DELETE_TASK_LISTENER),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.SECRET)
+                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.REVEAL),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.BACKUP)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE,
+                        PermissionType.READ,
+                        PermissionType.DELETE,
+                        PermissionType.RESTORE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.EXPORTER)
+                    .hasOnlyPermissionTypes(PermissionType.PAUSE));
   }
 
   @Test
@@ -322,7 +340,15 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.GLOBAL_LISTENER)
-                    .hasOnlyPermissionTypes(PermissionType.READ_TASK_LISTENER));
+                    .hasOnlyPermissionTypes(PermissionType.READ_TASK_LISTENER),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.SECRET)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.BACKUP)
+                    .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
   @Test

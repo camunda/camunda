@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.nodeid.fs;
 
 import io.camunda.zeebe.dynamic.nodeid.Version;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @param initializedAt epoch in milliseconds when the directory was initialized
@@ -16,7 +17,7 @@ import io.camunda.zeebe.dynamic.nodeid.Version;
  *     the first initialization
  */
 public record DirectoryInitializationInfo(
-    long initializedAt, Version version, Version initializedFrom) {
+    long initializedAt, Version version, @Nullable Version initializedFrom) {
   public DirectoryInitializationInfo {
     if (initializedAt < 0L) {
       throw new IllegalArgumentException("initializedAt cannot be negative");
@@ -27,7 +28,7 @@ public record DirectoryInitializationInfo(
   }
 
   static DirectoryInitializationInfo copiedFrom(
-      final Version currentVersion, final Version copiedFromVersion) {
+      final Version currentVersion, final @Nullable Version copiedFromVersion) {
     return new DirectoryInitializationInfo(
         System.currentTimeMillis(), currentVersion, copiedFromVersion);
   }

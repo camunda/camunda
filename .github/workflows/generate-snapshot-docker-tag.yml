@@ -22,7 +22,7 @@
 # because each stable branch maps to exactly one version.
 #
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Generate Docker Snapshot Tag
 
 permissions:
@@ -81,7 +81,7 @@ jobs:
           github.ref == 'refs/heads/main' ||
           startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/') ||
           (github.event_name == 'pull_request' && github.base_ref == 'main')
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
           sparse-checkout: |

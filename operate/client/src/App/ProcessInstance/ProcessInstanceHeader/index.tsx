@@ -20,6 +20,8 @@ import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {getWaitStateLabel} from 'modules/utils/waitStates';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
@@ -95,6 +97,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
       enabled: hasIncident,
     },
   );
+  const {data: waitStateStatistics} = useWaitStateStatistics({
+    enabled: getClientConfig().waitStatesEnabled,
+  });
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -108,12 +113,16 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const hasBusinessId = !isNil(businessId);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
-
+  const processLevelWaitingCount =
+    waitStateStatistics?.find(
+      ({elementId}) => elementId === processDefinitionId,
+    )?.waitingCount ?? 0;
   return (
     <InstanceHeader
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
       incidentsCount={hasIncident ? incidentsCount : 0}
+      nameSubtitle={getWaitStateLabel(processLevelWaitingCount) ?? undefined}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;

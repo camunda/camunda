@@ -247,3 +247,233 @@ test.describe.parallel('Job API Tests', () => {
     });
   });
 });
+
+test.describe.parallel('Job Priority API Tests', () => {
+  const state: Record<string, unknown> = {};
+  const runSuffix = randomUUID().slice(0, 8);
+  const processId = `processWithJobPriority-${runSuffix}`;
+  const priorityJobType = `priorityJobType-${runSuffix}`;
+
+  // Priorities are defined statically per task in resources/processWithJobPriority.bpmn.
+  // All three tasks share one job type so priority is the only thing that can
+  // distinguish the resulting jobs from each other.
+  const priorityByElementId: Record<string, number> = {
+    Activity_PriorityHigh: 90,
+    Activity_PriorityMid: 50,
+    Activity_PriorityLow: 10,
+  };
+
+  test.beforeAll(async () => {
+    await deployWithSubstitutions('./resources/processWithJobPriority.bpmn', {
+      processWithJobPriority: processId,
+      priorityJobType: priorityJobType,
+    });
+    const processInstance = await createInstances(processId, 1, 1);
+    state['processInstanceKey'] = processInstance[0].processInstanceKey;
+  });
+
+  test.afterAll(async () => {
+    await cancelProcessInstance(state['processInstanceKey'] as string);
+  });
+
+  test('Search Jobs - priority field matches the value defined at deploy time', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: state['processInstanceKey']},
+          },
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      expect(json.items).toHaveLength(3);
+      const actualPriorityByElementId = Object.fromEntries(
+        json.items.map((item: {elementId: string; priority: number}) => [
+          item.elementId,
+          item.priority,
+        ]),
+      );
+      expect(actualPriorityByElementId).toEqual(priorityByElementId);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test("Search Jobs - sorted by field 'priority' descending returns the highest priority job first", async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          sort: [
+            {
+              field: 'priority',
+              order: 'DESC',
+            },
+          ],
+          filter: {
+            processInstanceKey: {$eq: state['processInstanceKey']},
+          },
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      const actualPriorityList = json.items.map(
+        (item: {priority: number}) => item.priority,
+      );
+      expect(actualPriorityList).toEqual([90, 50, 10]);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Jobs - filter priority $gte 50 returns only the mid and high priority jobs', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: state['processInstanceKey']},
+            priority: {$gte: 50},
+          },
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      const actualPriorities = json.items
+        .map((item: {priority: number}) => item.priority)
+        .sort((a: number, b: number) => a - b);
+      expect(actualPriorities).toEqual([50, 90]);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Jobs - filter priority $lt 50 returns only the low priority job', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: state['processInstanceKey']},
+            priority: {$lt: 50},
+          },
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      expect(json.items).toHaveLength(1);
+      expect(json.items[0].priority).toBe(10);
+    }).toPass(defaultAssertionOptions);
+  });
+});
+
+test.describe.parallel('Activate Jobs API Tests - priority order', () => {
+  const runSuffix = randomUUID().slice(0, 8);
+  const processId = `processWithJobPriority-${runSuffix}`;
+  const priorityJobType = `priorityJobType-${runSuffix}`;
+  const processInstanceKeysToCancel: string[] = [];
+
+  test.beforeAll(async () => {
+    await deployWithSubstitutions('./resources/processWithJobPriority.bpmn', {
+      processWithJobPriority: processId,
+      priorityJobType: priorityJobType,
+    });
+  });
+
+  test.afterAll(async () => {
+    for (const processInstanceKey of processInstanceKeysToCancel) {
+      await cancelProcessInstance(processInstanceKey);
+    }
+  });
+
+  test('Activate Jobs - jobs of the same type are activated in descending priority order', async ({
+    request,
+  }) => {
+    const [processInstance] = await createInstances(processId, 1, 1);
+    processInstanceKeysToCancel.push(
+      String(processInstance.processInstanceKey),
+    );
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: processInstance.processInstanceKey},
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(json.items).toHaveLength(3);
+    }).toPass(defaultAssertionOptions);
+
+    const activatedPriorities: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const res = await request.post(buildUrl('/jobs/activation'), {
+        headers: jsonHeaders(),
+        data: {
+          type: priorityJobType,
+          timeout: 10000,
+          maxJobsToActivate: 1,
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/activation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      expect(json.jobs).toHaveLength(1);
+      expect(json.jobs[0].priority).not.toBeUndefined();
+      activatedPriorities.push(json.jobs[0].priority);
+    }
+
+    expect(activatedPriorities).toEqual([90, 50, 10]);
+  });
+});

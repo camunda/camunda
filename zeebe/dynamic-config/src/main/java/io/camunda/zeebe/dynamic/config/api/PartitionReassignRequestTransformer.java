@@ -24,7 +24,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -64,7 +66,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                   "Cannot reassign partitions if no brokers are provided")));
     }
 
-    return generatePartitionDistributionOperations(clusterConfiguration, members);
+    return generatePartitionDistributionOperations(clusterConfiguration, members).mapLeft(x -> x);
   }
 
   private int getReplicationFactor(final ClusterConfiguration clusterConfiguration) {
@@ -75,7 +77,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     return newPartitionCount.orElse(clusterConfiguration.partitionCount());
   }
 
-  private Either<Exception, List<ClusterConfigurationChangeOperation>>
+  private Either<InvalidRequest, List<ClusterConfigurationChangeOperation>>
       generatePartitionDistributionOperations(
           final ClusterConfiguration currentConfiguration, final Set<MemberId> brokers) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
@@ -127,12 +129,16 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
-    final var newDistribution =
-        currentConfiguration
-            .partitionDistributor()
-            .distributePartitions(brokers, allPartitions, replicationFactor)
-            .stream()
-            .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    final var distributor = currentConfiguration.partitionDistributor();
+    final Map<PartitionId, PartitionMetadata> newDistribution;
+    try {
+      newDistribution =
+          // in rare cases the distributor might throw an exception
+          distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
+              .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    } catch (final Exception e) {
+      return Either.left(new InvalidRequest(e));
+    }
 
     for (final PartitionId partition : oldPartitions) {
       final var newMetadata = newDistribution.get(partition);
@@ -175,7 +181,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
             primary, partitionId, newMetadata.getPriority(primary), true));
 
     // Join each remaining members to the partition
-    for (final MemberId member : newMetadata.members()) {
+    for (final MemberId member : newMetadata.members().stream().sorted().toList()) {
       if (!member.equals(primary)) {
         operations.add(
             new PartitionJoinOperation(member, partitionId, newMetadata.getPriority(member)));
@@ -197,11 +203,13 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                 newMember ->
                     new PartitionJoinOperation(
                         newMember, partitionId, newMetadata.getPriority(newMember)))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
     final var membersToLeave =
         oldMetadata.members().stream()
             .filter(member -> !newMetadata.members().contains(member))
             .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, 1))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
     final var membersToChangePriority =
         oldMetadata.members().stream()
@@ -212,6 +220,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                 memberId ->
                     new PartitionReconfigurePriorityOperation(
                         memberId, partitionId, newMetadata.getPriority(memberId)))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
 
     // TODO: interleave join and leave operation

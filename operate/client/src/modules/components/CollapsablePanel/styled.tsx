@@ -31,31 +31,39 @@ const Collapsable = styled.section<CollapsableProps>`
     return css`
       height: 100%;
 
-      ${$isCollapsed
-        ? css`
-            min-width: ${COLLAPSABLE_PANEL_MIN_WIDTH};
-          `
-        : css`
-            min-width: ${$maxWidth}px;
-            width: ${$maxWidth}px;
-          `};
+      ${
+        $isCollapsed
+          ? css`
+              min-width: ${COLLAPSABLE_PANEL_MIN_WIDTH};
+            `
+          : css`
+              min-width: ${$maxWidth}px;
+              width: ${$maxWidth}px;
+            `
+      };
 
-      ${$isOverlay
-        ? css`
-            position: absolute;
-            z-index: ${zOverlayCollapsable};
-            ${isRight
-              ? css`
-                  right: 0;
-                `
-              : ''}
-            ${isLeft
-              ? css`
-                  left: 0;
-                `
-              : ''}
-          `
-        : ''};
+      ${
+        $isOverlay
+          ? css`
+              position: absolute;
+              z-index: ${zOverlayCollapsable};
+              ${
+                isRight
+                  ? css`
+                      right: 0;
+                    `
+                  : ''
+              }
+              ${
+                isLeft
+                  ? css`
+                      left: 0;
+                    `
+                  : ''
+              }
+            `
+          : ''
+      };
     `;
   }}
 `;
@@ -73,23 +81,27 @@ const Panel = styled.div<Props>`
       display: flex;
       flex-direction: column;
 
-      ${$panelPosition === 'LEFT'
-        ? css`
-            border-right: 1px solid var(--cds-border-subtle-01);
-          `
-        : css`
-            border-left: 1px solid var(--cds-border-subtle-01);
-          `};
+      ${
+        $panelPosition === 'LEFT'
+          ? css`
+              border-right: 1px solid var(--cds-border-subtle-01);
+            `
+          : css`
+              border-left: 1px solid var(--cds-border-subtle-01);
+            `
+      };
 
-      ${$isClickable &&
-      css`
-        padding: var(--cds-spacing-03);
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--cds-spacing-06);
-      `}
+      ${
+        $isClickable &&
+        css`
+          padding: var(--cds-spacing-03);
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--cds-spacing-06);
+        `
+      }
     `;
   }}
 `;
@@ -101,14 +113,18 @@ type IconProps = {
 const IconStyles = css<Props>`
   ${({$panelPosition}) => {
     return css`
-      ${$panelPosition === 'LEFT' &&
-      css`
-        transform: rotate(-90deg);
-      `}
-      ${$panelPosition === 'RIGHT' &&
-      css`
-        transform: rotate(90deg);
-      `}
+      ${
+        $panelPosition === 'LEFT' &&
+        css`
+          transform: rotate(-90deg);
+        `
+      }
+      ${
+        $panelPosition === 'RIGHT' &&
+        css`
+          transform: rotate(90deg);
+        `
+      }
     `;
   }}
 `;
@@ -135,12 +151,14 @@ const Header = styled(BaseHeader)<HeaderProps>`
   ${({$panelPosition}) => {
     return css`
       justify-content: space-between;
-      ${$panelPosition === 'RIGHT' &&
-      css`
-        flex-direction: row-reverse;
-        justify-content: flex-end;
-        gap: var(--cds-spacing-06);
-      `}
+      ${
+        $panelPosition === 'RIGHT' &&
+        css`
+          flex-direction: row-reverse;
+          justify-content: flex-end;
+          gap: var(--cds-spacing-06);
+        `
+      }
     `;
   }}
 `;

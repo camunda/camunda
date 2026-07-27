@@ -22,6 +22,17 @@ public class Rest {
   /** Set the executor configuration */
   @NestedConfigurationProperty private Executor executor = new Executor();
 
+  /** Set the cluster variable configuration */
+  @NestedConfigurationProperty private ClusterVariable clusterVariable = new ClusterVariable();
+
+  public ClusterVariable getClusterVariable() {
+    return clusterVariable;
+  }
+
+  public void setClusterVariable(final ClusterVariable clusterVariable) {
+    this.clusterVariable = clusterVariable;
+  }
+
   public List<Filter> getFilters() {
     return filters;
   }

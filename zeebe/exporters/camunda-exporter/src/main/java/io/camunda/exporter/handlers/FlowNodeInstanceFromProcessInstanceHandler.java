@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -151,7 +152,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   }
 
   @Override
-  public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final FlowNodeInstanceEntity entity,
+      final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.ID, entity.getId());
     updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
@@ -162,7 +166,19 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
-    updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    // The ad-hoc subprocess inner instance has no name of its own: its synthetic id is absent from
+    // the BPMN, so the name resolves to null here. Its name is instead written by
+    // FlowNodeInstanceNameFromAdHocActivityHandler, derived from the activated entry element.
+    //
+    // We therefore skip writing a null name for the inner instance, so this handler's later
+    // lifecycle records (e.g. COMPLETED, TERMINATED) don't clobber that resolved name.
+    //
+    // Normal elements always write their name, including a null that must clear a name
+    // (e.g. migration to an unnamed target).
+    if (entity.getType() != FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+        || entity.getFlowNodeName() != null) {
+      updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    }
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
@@ -175,7 +191,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     if (entity.getPosition() != null) {
       updateFields.put(FlowNodeInstanceTemplate.POSITION, entity.getPosition());
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

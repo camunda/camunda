@@ -52,6 +52,10 @@ public final class DeployedProcess {
     return persistedProcess.getState();
   }
 
+  public boolean isDraining() {
+    return persistedProcess.getState() == PersistedProcessState.DRAINING;
+  }
+
   public String getTenantId() {
     return persistedProcess.getTenantId();
   }

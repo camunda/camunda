@@ -10,11 +10,14 @@ package io.camunda.zeebe.shared.management;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
@@ -22,8 +25,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -36,10 +39,10 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +53,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -145,13 +147,10 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          withValidMembers(
-              List.of(id),
-              members ->
-                  ClusterApiUtils.mapOperationResponse(
-                      requestSender
-                          .removeMembers(new RemoveMembersRequest(Set.copyOf(members), dryRun))
-                          .join()));
+          ClusterApiUtils.mapOperationResponse(
+              requestSender
+                  .removeMembers(new RemoveMembersRequest(Set.of(MemberId.from(id)), dryRun))
+                  .join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
       case changes -> {
         if (dryRun) {
@@ -292,17 +291,10 @@ public class ClusterEndpoint {
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
-    final var allIds =
-        Stream.concat(brokersToAdd.stream(), brokersToRemove.stream()).collect(Collectors.toSet());
-    return withValidMemberIds(
-        allIds,
-        members -> {
-          final var patchRequest =
-              new ClusterPatchRequest(
-                  brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
-          return ClusterApiUtils.mapOperationResponse(
-              requestSender.patchCluster(patchRequest).join());
-        });
+    final var patchRequest =
+        new ClusterPatchRequest(
+            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+    return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
   }
 
   private ResponseEntity<?> forceRemoveBrokers(
@@ -488,14 +480,75 @@ public class ClusterEndpoint {
 
   @PutMapping(path = "/partition-distribution", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
-      @RequestBody final PartitionDistributionConfig partitionDistributionConfig,
+      @RequestBody final UpdatePartitionDistributionRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var internalConfig =
-          ClusterApiUtils.toPartitionDistributorConfig(partitionDistributionConfig);
-      final var updateRequest = new UpdatePartitionDistributorConfigRequest(internalConfig, dryRun);
+      final var partitionDistributionConfig = Optional.ofNullable(request.getConfig());
+      final var zonePriorities = Optional.ofNullable(request.getZonePriorities()).orElse(List.of());
+      if (partitionDistributionConfig.isPresent() == !zonePriorities.isEmpty()) {
+        return invalidRequest("Exactly one of config and zonePriorities must be set.");
+      }
+      final var result =
+          partitionDistributionConfig.isPresent()
+              ? requestSender.updatePartitionDistribution(
+                  new UpdatePartitionDistributorConfigRequest(
+                      ClusterApiUtils.toPartitionDistributorConfig(
+                          partitionDistributionConfig.get()),
+                      dryRun))
+              : requestSender.updateZonePriorities(
+                  new UpdateZonePrioritiesRequest(zonePriorities, dryRun));
+      return ClusterApiUtils.mapOperationResponse(result.join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @PutMapping(path = "/zones", consumes = "application/json")
+  public ResponseEntity<?> migrateZone(
+      @RequestBody final io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var migrationRequest = new ClusterZoneMigrationRequest(request.getZone(), dryRun);
       return ClusterApiUtils.mapOperationResponse(
-          requestSender.updatePartitionDistribution(updateRequest).join());
+          requestSender.migrateToZones(migrationRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @DeleteMapping(path = "/zones/{zoneId}")
+  public ResponseEntity<?> forceRemoveZone(
+      @PathVariable final String zoneId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var forceRemoveRequest = new ForceZoneRemoveRequest(zoneId, dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.forceRemoveZone(forceRemoveRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @PostMapping(path = "/zones/{zoneId}", consumes = "application/json")
+  public ResponseEntity<?> addZone(
+      @PathVariable final String zoneId,
+      @RequestBody final io.camunda.zeebe.management.cluster.AddZoneRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var brokerIds = request.getBrokers().stream().map(BrokerId::toString).toList();
+      return withValidMembers(
+          brokerIds,
+          members -> {
+            final var addZoneRequest =
+                new AddZoneRequest(
+                    zoneId,
+                    request.getNumberOfReplicas(),
+                    request.getPriority(),
+                    Set.copyOf(members),
+                    dryRun);
+            return ClusterApiUtils.mapOperationResponse(
+                requestSender.addZone(addZoneRequest).join());
+          });
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
@@ -526,26 +579,6 @@ public class ClusterEndpoint {
       return List.of();
     }
     return items.stream().map(BrokerId::of).map(BrokerId::toString).toList();
-  }
-
-  /**
-   * Checks whether the current cluster topology is zone-aware by inspecting the members. A cluster
-   * is zone-aware if any of its members have a zone set.
-   */
-  boolean isClusterZoneAware() {
-    try {
-      final var result = requestSender.getTopology().join();
-      if (result.isRight()) {
-        return isZoneAware(result.get());
-      }
-    } catch (final Exception ignored) {
-      // If we can't determine zone-awareness, assume non-zone-aware for backward compatibility
-    }
-    return false;
-  }
-
-  static boolean isZoneAware(final ClusterConfiguration config) {
-    return config.members().keySet().stream().anyMatch(m -> m.zone() != null);
   }
 
   ResponseEntity<?> withValidMember(
@@ -579,40 +612,7 @@ public class ClusterEndpoint {
     if (!errors.isEmpty()) {
       return invalidRequest(String.join("; ", errors));
     }
-    return withValidMemberIds(parsed, action);
-  }
-
-  /**
-   * Parses and validates the given member ID strings against the cluster's zone-awareness, then
-   * passes the parsed {@link MemberId}s to the given action. Returns a 400 error response
-   * accumulating all validation errors if any ID is invalid.
-   */
-  ResponseEntity<?> withValidMemberIds(
-      final Collection<MemberId> ids,
-      final Function<Collection<MemberId>, ResponseEntity<?>> action) {
-    final boolean clusterIsZoneAware = isClusterZoneAware();
-    final List<String> errors = new ArrayList<>();
-
-    for (final var memberId : ids) {
-      if (clusterIsZoneAware && memberId.zone() == null) {
-        errors.add(
-            "'"
-                + memberId
-                + "' is a bare node ID, but this cluster is zone-aware — "
-                + "use '$zone_$nodeId' (e.g. 'zone-a_0')");
-      } else if (!clusterIsZoneAware && memberId.zone() != null) {
-        errors.add(
-            "'"
-                + memberId
-                + "' is a composite member ID, but this cluster is not zone-aware — "
-                + "use a bare integer node ID (e.g. '0')");
-      }
-    }
-
-    if (!errors.isEmpty()) {
-      return invalidRequest(String.join("; ", errors));
-    }
-    return action.apply(ids);
+    return action.apply(parsed);
   }
 
   public record PartitionAddRequest(int priority) {}

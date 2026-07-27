@@ -118,7 +118,8 @@ public final class VariableInputMappingTransformerTest {
   @Test
   public void shouldApplyMappings() {
     // given
-    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
+    final var expression =
+        transformer.transformInputMappings(mappings, expressionLanguage).expression();
 
     assertThat(expression.isValid())
         .describedAs("Expected valid expression: %s", expression.getFailureMessage())

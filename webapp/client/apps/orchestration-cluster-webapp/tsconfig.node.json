@@ -5,6 +5,7 @@
 		"lib": ["ES2022"],
 		"module": "ESNext",
 		"moduleResolution": "bundler",
+		"types": ["node"],
 		"paths": {
 			"#/pw-modules/*": ["./test/pw-modules/*"],
 			"#/pages/*": ["./test/pages/*"],

@@ -105,6 +105,16 @@ public class ProcessInstanceSortIT {
   }
 
   @TestTemplate
+  public void shouldSortBySuspendedDateAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.suspendedDate().asc(),
+        Comparator.comparing(
+            ProcessInstanceEntity::suspendedDate,
+            Comparator.nullsFirst(Comparator.naturalOrder())));
+  }
+
+  @TestTemplate
   public void shouldSortByParentProcessInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

@@ -41,8 +41,9 @@ metricsExporter:
     tag: latest
 
   database:
-    # -- The URL to the database (Elasticsearch or OpenSearch) endpoint to fetch metrics from.
-    url: http://elastic:9200
+    # -- URL of the database (Elasticsearch or OpenSearch) HTTP endpoint for metrics queries.
+    # Defaults to the ECK-generated ClusterIP service name for Elasticsearch.
+    url: http://elasticsearch-es-http:9200
 
 # -- Configuration for the optional chaos-killer CronJob.
 # When enabled, one randomly-selected matching pod is deleted per run to simulate
@@ -68,7 +69,11 @@ loadTest:
     oidc:
       clientId: orchestration
       zeebeRestAddress: http://camunda:8080
-      authServer: http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token
+      # -- The complete "/token" URL endpoint of the authentication server.
+      # Either set the complete URL used to fetch OIDC token from the
+      # authentication server, or keep it at the default empty value to use the
+      # built-in Keycloak instance. (Keycloak *must* also be enabled in this case.)
+      authServer:
       zeebeGrpcAddress: http://camunda:26500
       authorizationAudience: orchestration-api
       # -- The name of the key used to generate credentials for the load test client applications.
@@ -77,3 +82,166 @@ loadTest:
       # 2. While configuring the load test application, to create the same password as used by Keycloak.
       secret:
         key: orchestration-security-authentication-oidc-secret
+
+# -- Configuration for the ECK-managed Elasticsearch cluster.
+# When enabled, deploys an `Elasticsearch` custom resource managed by the ECK operator.
+# The HTTP API is served over plain HTTP (TLS disabled) with anonymous superuser access —
+# appropriate for load-test environments, not production.
+elasticsearch:
+  # -- Set to true to deploy an Elasticsearch cluster via the ECK operator.
+  enabled: false
+
+  # -- The name of the underlying Elasticsearch resource.
+  # Changing this also changes the names of the other resources deployed by the
+  # ECK Operator, like the Kubernetes Services exposing the access to
+  # Elasticsearch.
+  name: elasticsearch
+
+  # -- Elasticsearch version to deploy. Must be within the range supported by the installed ECK operator (>= 8.x)
+  # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s#stack-compatibility
+  version: 8.18.0
+
+  # -- Number of Elasticsearch nodes in the cluster.
+  count: 3
+
+  # -- Environment variables injected into the Elasticsearch container.
+  # Use ES_JAVA_OPTS to tune JVM heap size relative to the container memory limit.
+  # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/manage-compute-resources#k8s-elasticsearch-memory
+  env:
+  - name: ES_JAVA_OPTS
+    value: -Xms3g -Xmx3g
+
+  # -- CPU and memory resource requests and limits for the Elasticsearch container.
+  resources:
+    limits:
+      cpu: "7"
+      memory: 8Gi
+    requests:
+      cpu: "7"
+      memory: 8Gi
+
+  # -- Persistent storage configuration for each Elasticsearch node.
+  storage:
+    # -- Kubernetes StorageClass for the PersistentVolumeClaim.
+    storageClassName: benchmark-ssd-zonal-v1
+    # -- Storage capacity requested per Elasticsearch node.
+    requests: 512Gi
+
+  # -- Node selector labels for Elasticsearch pod scheduling.
+  # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-8
+
+  # -- Tolerations applied to Elasticsearch pods.
+  tolerations:
+  - effect: NoSchedule
+    key: nodepool
+    operator: Equal
+    value: n2-standard-8
+
+
+# -- Configure the Keycloak deployment.
+keycloak:
+  # -- Whether to deploy Keycloak or not.
+  enabled: true
+
+  # -- The Keycloak image to be deployed.
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/camunda/keycloak
+    tag: quay-optimized-26.6.4
+
+  # -- CPU and memory resource requests and limits for the Keycloak instance.
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  http:
+    # -- The port Keycloak listens on for HTTP traffic.
+    # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
+    # during port-forwarding.
+    port: 18080
+
+  # -- Node selector labels for Keycloak pod scheduling.
+  # The top-level `topologyZone` value is also applied as
+  # `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  # -- Tolerations applied to the Keycloak pod.
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  adminUser:
+    # -- The name of the initial "admin" user in Keycloak.
+    # This should be the same user as configured in Identity's `global.identity.keycloak.auth.adminUser`.
+    username: admin
+    secret:
+      # -- The name of the key used to generate credentials for the Keycloak admin user.
+      # This key is used:
+      # 1. To generate the "admin" password when creating the Keycloak instance
+      # 2. To configure the credentials used by Identity when connecting to Keycloak.
+      # It should match the key configured in Identity's
+      # `global.identity.keycloak.auth.secret.existingSecretKey`.
+      key: identity-keycloak-admin-password
+
+  # -- The namespace to host the Keycloak instance.
+  # We deploy Keycloak using the Keycloak Operator, which is currently limited
+  # to managed custom resources in a single namespace only.
+  # As such, we **have** to deploy Keycloak in the same namespace as the
+  # Keycloak Operator and we can't simply Keycloak in the load test namespace.
+  # This option allows to configure in which namespace Keycloak will be
+  # managed.
+  # This probably should not be changed.
+  namespace: keycloak-operator
+
+  # -- Configure the PostgreSQL cluster to be used by Keycloak.
+  postgresql:
+    # -- The name of the CNPG Cluster resource deployed for Keycloak.
+    clusterName: postgresql-keycloak
+
+    # -- The name of the PostgreSQL database created for Keycloak.
+    databaseName: keycloak
+
+    # -- The name of the PostgreSQL user Keycloak uses to connect to its database.
+    databaseUser: keycloak
+
+    # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
+    # PostgreSQL cluster.
+    image:
+      registry: europe-west1-docker.pkg.dev/camunda-benchmark
+      repository: ghcrio/cloudnative-pg/postgresql
+      tag: "18.4"
+
+    # -- CPU and memory resource requests and limits for the PostgreSQL cluster.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 150m
+        memory: 192Mi
+
+    # -- Persistent storage configuration for the PostgreSQL cluster.
+    storage:
+      size: 1Gi
+      storageClass: benchmark-ssd-zonal-v1
+
+    # -- Node selector labels for PostgreSQL pod scheduling
+    # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+    nodeSelector:
+      component: benchmark-n2-standard-4
+
+    # -- Tolerations applied to PostgreSQL pods.
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule

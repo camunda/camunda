@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,10 @@ public class ProcessDefinitionReaderIT extends AbstractBrokerlessZeebeCCSMIT {
     final var def = it.next();
     assertThat(def.getKey()).isEqualTo(key);
     assertThat(def.getVersion()).isEqualTo("1");
+    assertThat(def.getName()).isEqualTo(key);
+    assertThat(def.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(def.getType()).isEqualTo(DefinitionType.PROCESS);
+    assertThat(def.getBpmn20Xml()).isNull();
 
     assertThat(it).isExhausted();
   }

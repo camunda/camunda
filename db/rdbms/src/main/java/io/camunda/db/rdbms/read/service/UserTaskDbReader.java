@@ -27,6 +27,7 @@ import io.camunda.util.NumberParsingUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,8 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
   }
 
   @Override
-  public UserTaskEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable UserTaskEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
 

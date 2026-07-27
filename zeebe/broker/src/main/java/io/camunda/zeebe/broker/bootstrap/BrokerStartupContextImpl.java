@@ -12,23 +12,20 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -51,7 +48,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -59,23 +58,22 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
-  private final ExporterRepository exporterRepository;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
 
@@ -86,10 +84,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
+  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
-  private BrokerAdminServiceImpl brokerAdminService;
-  private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private CheckpointSchedulingService checkpointSchedulingService;
@@ -97,22 +95,21 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
-      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
-      final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -121,18 +118,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
-    this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
-    this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
     this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
@@ -151,11 +147,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerCfg getBrokerConfiguration() {
     return configuration;
-  }
-
-  @Override
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
   }
 
   @Override
@@ -185,6 +176,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  @Override
+  public @Nullable IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
+    return exportedPositionSuppliers.get(physicalTenantId);
   }
 
   @Override
@@ -273,8 +269,18 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
+  }
+
+  @Override
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
+  }
+
+  @Override
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
   }
 
   @Override
@@ -304,23 +310,19 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public BrokerAdminServiceImpl getBrokerAdminService() {
-    return brokerAdminService;
+  public BrokerAdminServiceImpl getBrokerAdminService(final String physicalTenantId) {
+    return brokerAdminServices.get(physicalTenantId);
   }
 
   @Override
-  public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
-    this.brokerAdminService = brokerAdminService;
+  public void addBrokerAdminService(
+      final String physicalTenantId, final BrokerAdminServiceImpl brokerAdminService) {
+    brokerAdminServices.put(physicalTenantId, brokerAdminService);
   }
 
   @Override
-  public JobStreamService getJobStreamService() {
-    return jobStreamService;
-  }
-
-  @Override
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+  public void removeBrokerAdminService(final String physicalTenantId) {
+    brokerAdminServices.remove(physicalTenantId);
   }
 
   @Override
@@ -360,21 +362,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public EngineSecurityConfig getSecurityConfiguration() {
-    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (ctx == null) {
-      throw new IllegalStateException(
-          "No security configuration registered for the default physical tenant");
-    }
-    return ctx.securityConfig();
-  }
-
-  @Override
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
-    return physicalTenantEngineContexts.get(physicalTenantId);
+    return physicalTenantContexts.get(physicalTenantId);
   }
 
   @Override

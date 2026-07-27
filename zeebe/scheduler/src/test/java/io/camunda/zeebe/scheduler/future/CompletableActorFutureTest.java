@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +26,36 @@ import org.junit.jupiter.api.Test;
 public class CompletableActorFutureTest {
 
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
+
+  @Nested
+  public class Catching {
+    @Test
+    public void shouldReturnExceptionalFutureWhenSupplierThrows() {
+      // given
+      final Supplier<ActorFuture<Void>> supplier =
+          () -> {
+            throw new RuntimeException("Expected");
+          };
+
+      // when
+      final var future = CompletableActorFuture.catching(supplier);
+
+      assertThat(future.getException()).hasMessage("Expected");
+    }
+
+    @Test
+    public void shouldReturnFutureWhenSupplierCompletes() {
+      // given
+      final Supplier<ActorFuture<String>> supplier =
+          () -> CompletableActorFuture.completed("value");
+
+      // when
+      final var future = CompletableActorFuture.catching(supplier);
+
+      // then
+      assertThat(future.join()).isEqualTo("value");
+    }
+  }
 
   @Nested
   class VoidContinuations {

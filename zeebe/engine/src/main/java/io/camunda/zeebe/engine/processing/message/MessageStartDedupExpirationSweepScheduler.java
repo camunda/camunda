@@ -37,25 +37,22 @@ public final class MessageStartDedupExpirationSweepScheduler
 
   private final Duration executionInterval;
   private final MessageStartProcessInstanceDedupState dedupState;
-  private final Duration retryGrace;
 
   private ProcessingScheduleService scheduleService;
   private InstantSource clock;
 
   public MessageStartDedupExpirationSweepScheduler(
-      final Duration executionInterval,
-      final MessageStartProcessInstanceDedupState dedupState,
-      final Duration retryGrace) {
+      final Duration executionInterval, final MessageStartProcessInstanceDedupState dedupState) {
     this.executionInterval = executionInterval;
     this.dedupState = dedupState;
-    this.retryGrace = retryGrace;
   }
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    // a row is swept only once it is grace past its deadline, matching the request processor's
-    // grace-extended dedup-hit window
-    if (dedupState.hasExpiredEntry(clock.millis() - retryGrace.toMillis())) {
+    // a row is swept once its deletionDeadline (= the message deadline) has passed on this
+    // partition's clock — the same single-clock threshold the request processor's dedup lookup and
+    // the TTL-gated expiry guard use
+    if (dedupState.hasExpiredEntry(clock.millis())) {
       taskResultBuilder.appendCommandRecord(
           MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
           new MessageStartProcessInstanceRequestRecord());

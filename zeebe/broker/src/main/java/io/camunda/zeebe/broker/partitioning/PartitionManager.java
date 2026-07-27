@@ -15,7 +15,9 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -67,30 +69,45 @@ public interface PartitionManager {
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
-    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+    final var physicalTenantContext =
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId);
+
+    final var jobStreamService =
+        Objects.requireNonNull(
+            brokerStartupContext.getJobStreamService(physicalTenantId),
+            "JobStreamService not initialized for tenant " + physicalTenantId);
+
+    // Combine global listeners with this tenant's error handler so each handler only ever
+    // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
+    final var partitionListeners = new ArrayList<>(brokerStartupContext.getPartitionListeners());
+    partitionListeners.add(jobStreamService.errorHandlerService());
+
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
+        // Use the physicalTenantConfig which contains both the shared broker-wide properties and
+        // the properties overridden for the physical tenant.
+        physicalTenantContext.config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getClusterServices(),
         brokerStartupContext.getHealthCheckService(),
         brokerStartupContext.getDiskSpaceUsageMonitor(),
-        brokerStartupContext.getPartitionListeners(),
+        partitionListeners,
         brokerStartupContext.getPartitionRaftListeners(),
         brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
+        physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
-        brokerStartupContext.getJobStreamService().jobStreamer(),
+        jobStreamService.jobStreamer(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
-        engineContext.securityConfig(),
+        physicalTenantContext.securityConfig(),
         brokerStartupContext.getSearchClientsProxy(),
-        engineContext.authorizationConverter(),
-        engineContext.featureFlags(),
+        physicalTenantContext.authorizationConverter(),
+        physicalTenantContext.featureFlags(),
+        physicalTenantContext.secretStoreRegistry(),
         topologyManager);
   }
 
@@ -101,7 +118,7 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId).config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),
@@ -109,6 +126,7 @@ public interface PartitionManager {
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getGatewayBrokerTransport(),
+        brokerStartupContext.getExportedPositionSupplier(physicalTenantId),
         topologyManager);
   }
 }

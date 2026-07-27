@@ -57,10 +57,11 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
+  private final LongProperty messageTtlProp = new LongProperty("messageTtl", 0L);
   private final LongProperty rejectionCountProp = new LongProperty("rejectionCount", 0L);
 
   public MessageStartProcessInstanceAsk() {
-    super(12);
+    super(13);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -72,6 +73,7 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
         .declareProperty(messageDeadlineProp)
+        .declareProperty(messageTtlProp)
         .declareProperty(rejectionCountProp);
   }
 
@@ -94,6 +96,7 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
     setMessageDeadline(record.getMessageDeadline());
+    setMessageTtl(record.getMessageTtl());
     return this;
   }
 
@@ -114,6 +117,7 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
     record.setVariables(getVariablesBuffer());
     record.setTenantId(getTenantIdBuffer());
     record.setMessageDeadline(getMessageDeadline());
+    record.setMessageTtl(getMessageTtl());
   }
 
   public long getMessageKey() {
@@ -243,6 +247,20 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
 
   public MessageStartProcessInstanceAsk setMessageDeadline(final long messageDeadline) {
     messageDeadlineProp.setValue(messageDeadline);
+    return this;
+  }
+
+  /**
+   * The TTL (millis) of the originating published message, re-emitted verbatim on every retry so
+   * {@code P_B}'s expiry guard sees the same value the first ask carried. Defaults to {@code 0}
+   * (fire-and-forget), matching {@code MessageRecord.timeToLive}.
+   */
+  public long getMessageTtl() {
+    return messageTtlProp.getValue();
+  }
+
+  public MessageStartProcessInstanceAsk setMessageTtl(final long messageTtl) {
+    messageTtlProp.setValue(messageTtl);
     return this;
   }
 

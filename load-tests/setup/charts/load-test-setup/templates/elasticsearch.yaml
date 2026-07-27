@@ -1,0 +1,89 @@
+{{- /*
+Deploys an ECK-managed Elasticsearch cluster.
+ECK names the underlying Kubernetes service `<metadata.name>-es-http`, in this case `elasticsearch-es-http`.
+Services which are connecting to Elasticsearch **must** be configured to use this service name to access Elasticsearch.
+
+References:
+
+* https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration
+* https://www.elastic.co/docs/reference/cloud-on-k8s/api-reference
+*/ -}}
+{{- if .Values.elasticsearch.enabled -}}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{ .Values.elasticsearch.name }}
+  labels:
+    camunda.io/created-by: "{{ .Values.author }}"
+    camunda.io/purpose: load-test
+spec:
+  version: {{ .Values.elasticsearch.version }}
+
+  nodeSets:
+  - config:
+      # Disable mmap for compatibility with containers that lack the required vm.max_map_count sysctl
+      node.store.allow_mmap: "false"
+
+      # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
+      logger.org.elasticsearch.deprecation: "OFF"
+
+      # Authenticate unauthenticated requests as the "anonymous" user with the "superuser" role.
+      # This is not a recommended production configuration, but is OK for the load tests environment.
+      # See https://www.elastic.co/docs/deploy-manage/users-roles/cluster-or-deployment-auth/file-based#k8s-basic for additional users.
+      xpack.security.authc:
+        # https://www.elastic.co/docs/deploy-manage/users-roles/cluster-or-deployment-auth/anonymous-access
+        anonymous:
+          username: anonymous
+          roles: superuser
+
+    count: {{ .Values.elasticsearch.count }}
+    name: masters
+
+    podTemplate:
+      metadata:
+        labels:
+          app.kubernetes.io/component: master
+          app.kubernetes.io/name: elasticsearch
+          camunda.io/created-by: "{{ .Values.author }}"
+          camunda.io/purpose: load-test
+
+      spec:
+        containers:
+        - name: elasticsearch
+          {{- if .Values.elasticsearch.env }}
+          env:
+          {{- toYaml .Values.elasticsearch.env | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.elasticsearch.resources }}
+          resources:
+          {{- toYaml .Values.elasticsearch.resources | nindent 12 }}
+          {{- end }}
+
+        nodeSelector:
+          topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
+          {{- toYaml .Values.elasticsearch.nodeSelector | nindent 10 }}
+
+        {{- with .Values.elasticsearch.tolerations }}
+        tolerations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        storageClassName: {{ .Values.elasticsearch.storage.storageClassName }}
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: {{ .Values.elasticsearch.storage.requests }}
+
+  http:
+    tls:
+      selfSignedCertificate:
+        # Disable TLS on the HTTP API.
+        # This is not a recommended production configuration, but is OK for the load tests environment.
+        # See https://www.elastic.co/docs/deploy-manage/security/k8s-https-settings#k8s-disable-tls for more details.
+        disabled: true
+{{- end -}}

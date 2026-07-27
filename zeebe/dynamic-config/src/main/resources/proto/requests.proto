@@ -43,7 +43,7 @@ message ClusterScaleRequest {
   optional uint32 newPartitionCount = 2;
   optional uint32 newReplicationFactor = 3;
   bool dryRun = 4;
-  optional string zone= 5;
+  optional string zone = 5;
 }
 
 message ClusterPatchRequest {
@@ -64,8 +64,31 @@ message UpdatePartitionDistributorConfigRequest {
   bool dryRun = 2;
 }
 
+message ClusterZoneMigrationRequest {
+  string zone = 1;
+  bool dryRun = 2;
+}
+
 message ForceRemoveBrokersRequest {
   repeated string membersToRemove = 1;
+  bool dryRun = 2;
+}
+
+message ForceRemoveZoneRequest {
+  string zoneId = 1;
+  bool dryRun = 2;
+}
+
+message AddZoneRequest {
+  string zoneId = 1;
+  int32 numberOfReplicas = 2;
+  int32 priority = 3;
+  repeated string brokers = 4;
+  bool dryRun = 5;
+}
+
+message UpdateZonePrioritiesRequest {
+  repeated string zoneOrder = 1;
   bool dryRun = 2;
 }
 
@@ -97,6 +120,11 @@ enum Mode {
   PROCESSING = 2;
 }
 
+message ExportingStateChangeRequest {
+  topology_protocol.ExportingStateEnum state = 1;
+  bool dryRun = 2;
+}
+
 message ModeChangeRequest {
   Mode mode = 1;
   bool dryRun = 2;
@@ -104,6 +132,16 @@ message ModeChangeRequest {
 
 message CancelTopologyChangeRequest {
   int64 changeId = 1;
+}
+
+message RestoreRequest {
+  repeated int64 backupIds = 1;
+  optional string from = 2;
+  optional string to = 3;
+  string databaseType = 4;
+  bool continuousBackups = 5;
+  bool dryRun = 6;
+  string physicalTenantId = 7;
 }
 
 message TopologyChangeResponse {
@@ -131,4 +169,6 @@ enum ErrorCode {
   OPERATION_NOT_ALLOWED = 1;
   CONCURRENT_MODIFICATION = 2;
   INTERNAL_ERROR = 3;
+  INVALID_STATE = 4;
+  NOT_FOUND = 5;
 }

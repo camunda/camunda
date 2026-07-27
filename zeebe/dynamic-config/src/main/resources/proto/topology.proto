@@ -5,7 +5,13 @@ import "google/protobuf/timestamp.proto";
 
 option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
-message GossipState { ClusterTopology clusterTopology = 1; }
+// During a rolling upgrade both fields are populated (dual-write): field 1
+// carries the legacy single-group view (read by old brokers), field 2 carries
+// the full multi-partition-group configuration (read by upgraded brokers).
+message GossipState {
+  ClusterTopology clusterTopology = 1;
+  CurrentClusterConfiguration currentClusterConfiguration = 2;
+}
 
 // ---- New multi-partition-group configuration model (8.10) ----
 
@@ -33,11 +39,10 @@ message GlobalConfiguration {
 message PartitionGroupConfiguration {
   int64 version = 1;
   int64 incarnationNumber = 2;
-  bool recovery = 3;
-  map<string, BrokerPartitionState> members = 4;
-  RoutingState routingState = 5;
-  ClusterChangePlan pendingChanges = 6;
-  CompletedChange lastChange = 7;
+  map<string, BrokerPartitionState> members = 3;
+  RoutingState routingState = 4;
+  ClusterChangePlan pendingChanges = 5;
+  CompletedChange lastChange = 6;
 }
 
 // Broker lifecycle state. Holds State and timestamps; no partition assignment.
@@ -48,10 +53,14 @@ message BrokerState {
 }
 
 // A broker's partition assignment within a single group. No lifecycle State.
+// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING,
+// the structural equivalent of the legacy State.RECOVERING), scoped to this
+// group only.
 message BrokerPartitionState {
   int64 version = 1;
   google.protobuf.Timestamp lastUpdated = 2;
   map<int32, PartitionState> partitions = 3;
+  Mode mode = 4;
 }
 
 // Pre-computed sequence of phases for cluster-spanning operations.
@@ -134,6 +143,9 @@ message PartitionGroupChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 15;
     ModeChangeOperation modeChange = 16;
     AwaitModeChangeOperation awaitModeChange = 17;
+    ExportingStateChangeOperation exporterStateChange = 18;
+    PartitionPreRestoreOperation partitionPreRestore = 19;
+    PartitionRestoreOperation partitionRestore = 20;
   }
 }
 
@@ -243,6 +255,9 @@ message TopologyChangeOperation {
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
     ModeChangeOperation modeChange = 24;
     AwaitModeChangeOperation awaitModeChange = 25;
+    ExportingStateChangeOperation exporterStateChange = 26;
+    PartitionPreRestoreOperation partitionPreRestore = 27;
+    PartitionRestoreOperation partitionRestore = 28;
   }
 }
 
@@ -298,7 +313,16 @@ message PartitionBootstrapOperation {
   bool initializeFromConfig = 4;
 }
 
-message StartPartitionScaleUpOperation { int32 desiredPartitionCount = 2; }
+message StartPartitionScaleUpOperation {int32 desiredPartitionCount = 2;}
+
+message PartitionPreRestoreOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionRestoreOperation {
+  int32 partitionId = 1;
+  repeated int64 backupIds = 2;
+}
 
 message AwaitRedistributionCompletion {
   int32 desiredPartitionCount = 1;
@@ -352,6 +376,10 @@ message MemberRemoveOperation { string memberToRemove = 1; }
 
 message ModeChangeOperation {
   Mode mode = 1;
+}
+
+message ExportingStateChangeOperation {
+  ExportingStateEnum state = 1;
 }
 
 message AwaitModeChangeOperation {

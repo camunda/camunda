@@ -7,9 +7,21 @@
  */
 
 import {useMemo} from 'react';
-import {DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@carbon/react';
+import {
+	DataTable,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	type DataTableHeader,
+} from '@carbon/react';
+import {Information} from '@carbon/react/icons';
+import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import {cn} from '#/shared/cn';
 import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
 import type {TaskDetailsHistorySearch} from '../sortUtils';
@@ -48,32 +60,50 @@ const HEADERS_MAP = {
 		sortKey: 'timestamp',
 		isDisabled: false,
 	},
+	actions: {
+		key: 'actions',
+		header: '',
+		sortKey: undefined,
+		isDisabled: true,
+	},
 } as const satisfies Record<string, HeaderConfig>;
 
-const HEADERS = [HEADERS_MAP.operation, HEADERS_MAP.details, HEADERS_MAP.actor, HEADERS_MAP.date];
+const HEADERS = [HEADERS_MAP.operation, HEADERS_MAP.details, HEADERS_MAP.actor, HEADERS_MAP.date, HEADERS_MAP.actions];
 
 function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 	return key in HEADERS_MAP;
 }
 
+type RowData = {
+	id: string;
+	operation: string;
+	details: React.ReactNode;
+	actor: string;
+	date: string;
+	actions: string;
+};
+
+type RowCellValues = [RowData['operation'], RowData['details'], RowData['actor'], RowData['date'], RowData['actions']];
+
 type Props = {
+	userTaskKey: string;
 	auditLogs: AuditLog[];
 	search: TaskDetailsHistorySearch;
 };
 
-const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
+const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 	const {t} = useTranslation();
 
-	const headers = useMemo(
+	const headers = useMemo<DataTableHeader[]>(
 		() =>
 			HEADERS.map((header) => ({
 				...header,
-				header: t(header.header),
+				header: header.header === '' ? '' : t(header.header),
 			})),
 		[t],
 	);
 
-	const rows = useMemo(
+	const rows = useMemo<RowData[]>(
 		() =>
 			auditLogs.map((log) => ({
 				id: log.auditLogKey,
@@ -89,14 +119,15 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 					),
 				actor: log.actorId,
 				date: formatHistoryDate(log.timestamp),
+				actions: log.auditLogKey,
 			})),
 		[auditLogs, t],
 	);
 
 	return (
-		<DataTable rows={rows} headers={headers} isSortable>
+		<DataTable<RowData, RowCellValues> rows={rows} headers={headers} isSortable>
 			{({rows, headers, getTableProps, getRowProps}) => (
-				<TableContainer>
+				<TableContainer className={styles.tableContainer}>
 					<Table {...getTableProps()} size="sm" isSortable>
 						<TableHead>
 							<TableRow>
@@ -108,7 +139,7 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 									return (
 										<ColumnHeader
 											key={key}
-											label={t(HEADERS_MAP[key].header)}
+											label={HEADERS_MAP[key].header === '' ? '' : t(HEADERS_MAP[key].header)}
 											search={search}
 											sortKey={HEADERS_MAP[key].sortKey}
 											isDisabled={HEADERS_MAP[key].isDisabled}
@@ -122,10 +153,33 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 						<TableBody>
 							{rows.map((row) => {
 								const {key, ...rowProps} = getRowProps({row});
+								const auditLogKey = row.id;
+
 								return (
 									<TableRow key={key} {...rowProps}>
 										{row.cells.map((cell) => (
-											<TableCell key={cell.id}>{cell.value}</TableCell>
+											<TableCell key={cell.id}>
+												{cell.info.header === 'actions' ? (
+													<Link
+														className={cn(
+															'cds--btn',
+															'cds--btn--sm',
+															'cds--layout--size-sm',
+															'cds--btn--ghost',
+															'cds--btn--icon-only',
+														)}
+														to="/tasklist/$userTaskKey/history/$auditLogKey"
+														params={{userTaskKey, auditLogKey}}
+														search={search}
+														aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
+														title={t('tasklist.taskDetailsHistoryDetailsLabel')}
+													>
+														<Information />
+													</Link>
+												) : (
+													cell.value
+												)}
+											</TableCell>
 										))}
 									</TableRow>
 								);

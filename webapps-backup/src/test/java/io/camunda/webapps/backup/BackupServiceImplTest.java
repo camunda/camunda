@@ -73,9 +73,7 @@ public class BackupServiceImplTest {
 
     return new BackupServiceImpl(
         executor,
-        backupPriorities,
-        backupRepositoryProps,
-        backupRepository,
+        new BackupWiring(backupPriorities, backupRepositoryProps, backupRepository),
         searchEngineConfiguration,
         List.of(),
         List.of());

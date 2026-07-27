@@ -198,7 +198,12 @@ final class JournalAppendTest {
       // when
       final var invalidChecksumRecord =
           new TestJournalRecord(
-              record.index(), record.asqn(), -1, record.data(), record.serializedRecord());
+              record.index(),
+              record.asqn(),
+              -1,
+              record.data(),
+              record.serializedRecord(),
+              record.size());
 
       // then
       assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))

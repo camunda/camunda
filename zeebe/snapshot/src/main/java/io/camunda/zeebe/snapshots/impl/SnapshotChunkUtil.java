@@ -111,5 +111,10 @@ final class SnapshotChunkUtil {
     public long getTotalFileSize() {
       return totalFileSize;
     }
+
+    @Override
+    public long getContentLength() {
+      return content.remaining();
+    }
   }
 }

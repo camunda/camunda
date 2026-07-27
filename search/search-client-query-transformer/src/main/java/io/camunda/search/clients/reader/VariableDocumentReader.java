@@ -7,18 +7,32 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.VariableNameAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class VariableDocumentReader extends DocumentBasedReader implements VariableReader {
 
   public VariableDocumentReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
     super(executor, indexDescriptor);
+  }
+
+  @Override
+  public List<String> searchVariableNames(
+      final VariableNameQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    if (query.filter().processDefinitionKeyOperations().isEmpty()) {
+      return List.of();
+    }
+    return getSearchExecutor()
+        .aggregate(query, VariableNameAggregationResult.class, resourceAccessChecks)
+        .items();
   }
 
   @Override

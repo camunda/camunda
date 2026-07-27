@@ -4,7 +4,7 @@
 ---
 name: Build Docker Image
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Builds the Docker image
 
@@ -69,7 +69,7 @@ runs:
       id: is-fork
 
     - name: Set up multi-platform support
-      uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+      uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       with:
         # only cache on persistent branches where reuse is likely
         cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
@@ -83,7 +83,7 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       with:
         # to be able to push to local registry, which we use in our tests, we need to use host network
         driver-opts: network=host
@@ -103,7 +103,7 @@ runs:
 
     - name: Build image names from params and/or project version
       id: get-image
-      uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
       with:
         images: ${{ inputs.repository }}
         tags: ${{ inputs.version || steps.get-version.outputs.result }}
@@ -137,7 +137,7 @@ runs:
         fi
 
     - name: Build Docker image
-      uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+      uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
       env:
         DOCKER_BUILD_SUMMARY: false
         DOCKER_BUILD_RECORD_UPLOAD: false
@@ -146,9 +146,10 @@ runs:
         file: ${{ inputs.dockerfile }}
         tags: ${{ steps.get-image.outputs.tags }}
         load: ${{ inputs.push != 'true' }}
-        push: ${{ inputs.push }}
+        push: false
         platforms: ${{ inputs.platforms }}
         provenance: false
+        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}

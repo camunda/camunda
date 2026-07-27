@@ -47,7 +47,13 @@ import org.springframework.context.annotation.Import;
  * available in Spring Boot 3.x.
  */
 @ConditionalOnCamundaClientEnabled
-@Import({AnnotationProcessorConfiguration.class, JsonMapperConfiguration.class})
+@Import({
+  AnnotationProcessorConfiguration.class,
+  JsonMapperConfiguration.class,
+  // fasterxml-based fallback JsonMapper (not Jackson 3.x specific) so a JsonMapper is always
+  // available on the unified path, even without a Spring ObjectMapper bean
+  DefaultJsonMapperConfiguration.class
+})
 @EnableConfigurationProperties({CamundaClientProperties.class})
 public class CamundaClientAllAutoConfiguration {
 

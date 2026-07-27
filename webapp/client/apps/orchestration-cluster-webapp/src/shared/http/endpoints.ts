@@ -9,9 +9,11 @@
 import {
 	endpoints as unifiedAPIEndpoints,
 	type QueryUserTasksRequestBody,
+	type QueryVariablesByUserTaskRequestBody,
 	type QueryProcessDefinitionsRequestBody,
 	type GetProcessDefinitionInstanceStatisticsRequestBody,
 	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
@@ -20,6 +22,8 @@ import {
 	type QueryUserTaskAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
+	type AuditLog,
+	type DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -28,6 +32,54 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
 	credentials: 'include',
 	mode: 'cors',
 };
+
+type CreateDocumentMetadata = {
+	customProperties?: Record<string, unknown>;
+};
+
+type CreateDocumentsFileEntry = {
+	files: File[];
+	metadata?: CreateDocumentMetadata;
+};
+
+function buildDocumentMultipart(documentPayload: Map<string, CreateDocumentsFileEntry>): {
+	body: Blob;
+	headers: Record<string, string>;
+} {
+	const boundary = `----FormBoundary${Math.random().toString(36).substring(2)}`;
+	const contentType = `multipart/form-data; boundary=${boundary}`;
+	const startBoundary = `--${boundary}`;
+	const endBoundary = `--${boundary}--`;
+	const CRLF = '\r\n';
+	const parts = Array.from(documentPayload.values())
+		.map(({files, metadata}) => {
+			const fileParts = files.map((file) => {
+				const header = [
+					startBoundary,
+					`Content-Disposition: form-data; name="files"; filename="${file.name}"`,
+					`Content-Type: ${file.type}`,
+					...(metadata === undefined ? [] : [`X-Document-Metadata: ${JSON.stringify(metadata)}`]),
+					'',
+					'',
+				].join(CRLF);
+
+				return new Blob([header, file, CRLF], {type: file.type});
+			});
+
+			fileParts.push(new Blob([CRLF, startBoundary, CRLF]));
+
+			return fileParts;
+		})
+		.flat();
+
+	parts.pop();
+	parts.push(new Blob([endBoundary]));
+
+	return {
+		body: new Blob(parts, {type: contentType}),
+		headers: {'Content-Type': contentType},
+	};
+}
 
 function getFullURL(url: string) {
 	if (typeof window.location.origin !== 'string') {
@@ -157,12 +209,67 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	getUserTaskForm: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTaskForm.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTaskForm.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariablesByUserTask: ({
+		userTaskKey,
+		truncateValues,
+		...body
+	}: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody & {truncateValues?: boolean}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariablesByUserTask.getUrl({userTaskKey, truncateValues})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariablesByUserTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDocuments: ({documentsPayload}: {documentsPayload: Map<string, CreateDocumentsFileEntry>}) => {
+		const {body, headers} = buildDocumentMultipart(documentsPayload);
+
+		return new Request(getFullURL(unifiedAPIEndpoints.createDocuments.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDocuments.method,
+			body,
+			headers,
+		});
+	},
+
+	getDocument: ({documentId, contentHash}: {documentId: string; contentHash?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDocument.getUrl({documentId, contentHash})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDocument.method,
+		}),
+
 	getProcessDefinitionXml: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionXml.getUrl({processDefinitionKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessDefinitionXml.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
+
+	getProcessDefinitionStatistics: ({
+		processDefinitionKey,
+		...body
+	}: Pick<ProcessDefinition, 'processDefinitionKey'> & GetProcessDefinitionStatisticsRequestBody) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessDefinitionStatistics.getUrl({
+					processDefinitionKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessDefinitionStatistics.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
 
 	assignTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & AssignTaskRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.assignTask.getUrl({userTaskKey})), {
@@ -192,6 +299,20 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryUserTaskAuditLogs.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getAuditLog: ({auditLogKey}: Pick<AuditLog, 'auditLogKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuditLog.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionInstance: ({decisionEvaluationInstanceKey}: Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionInstance.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

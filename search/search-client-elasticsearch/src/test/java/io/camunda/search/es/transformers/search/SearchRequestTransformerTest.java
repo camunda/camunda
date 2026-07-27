@@ -213,6 +213,28 @@ public class SearchRequestTransformerTest {
   }
 
   @Test
+  public void shouldTransformSearchAfterWithNullSortValue() {
+    // given a searchAfter cursor whose first element is null (e.g. a null businessId at the
+    // boundary between rows without and with a businessId)
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(
+            b ->
+                b.index("operate-list-view-8.3.0_")
+                    .sort((s) -> s.field((f) -> f.field("businessId").asc()))
+                    .searchAfter(new Object[] {null, "2251799813685249"}));
+
+    // when the request is transformed and serialized (as it is when sent to Elasticsearch)
+    final SearchRequest actual = transformer.apply(request);
+
+    // then the null must be carried as an explicit null FieldValue and serialization must not
+    // throw (a raw null previously produced an NPE, surfacing as HTTP 500 for the caller)
+    assertThat(actual.searchAfter()).hasSize(2);
+    assertThat(actual.searchAfter().getFirst().isNull()).isTrue();
+    assertThat(esQuerySerializer.serialize(actual))
+        .contains("\"search_after\":[null,\"2251799813685249\"]");
+  }
+
+  @Test
   public void shouldTransformSort() {
     // given
     final SearchQueryRequest request =

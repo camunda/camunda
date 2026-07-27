@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.MainSupport;
@@ -15,11 +14,15 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,12 +34,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.http.client.ReactorResourceFactory;
 
 public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
@@ -84,6 +89,15 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+
+    // give each application a Tomcat base directory that survives until the JVM exits. Since
+    // Spring Boot 4.1, auto-generated base directories are deleted when the owning web server is
+    // destroyed, but Tomcat publishes the first server's base directory as the JVM-global
+    // catalina.home; once that directory is missing, concurrently starting web servers (e.g. a
+    // TestCluster restart) race to re-create it, and the losers fail startup with "Unable to
+    // create the directory [...] to use as the home directory" (see #56666). Configured base
+    // directories are not managed (and thus not deleted) by Spring Boot.
+    overridePropertyIfAbsent("server.tomcat.basedir", createJvmLifetimeTomcatBaseDir());
     overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
     overridePropertyIfAbsent("camunda.rest.response-validation.enabled", "true");
@@ -208,6 +222,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    */
   @Override
   public T withUnifiedConfig(final Consumer<Camunda> modifier) {
+    // Unified-config getters such as SecondaryStorage#getType() validate against legacy
+    // properties read from the Environment statically pinned in UnifiedConfigurationHelper.
+    // In the test JVM that static still points at the Environment of whichever embedded test
+    // application booted last, so a previous test's legacy values would leak into this
+    // configuration. Re-pin a clean Environment before evaluating the modifier.
+    new UnifiedConfigurationHelper(new StandardEnvironment());
     modifier.accept(unifiedConfig);
     return self();
   }
@@ -285,7 +305,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withCreateSchema(final boolean createSchema) {
-    return withProperty(CREATE_SCHEMA_PROPERTY, String.valueOf(createSchema));
+    return withUnifiedConfig(
+        cfg ->
+            Stream.of(
+                    cfg.getData().getSecondaryStorage().getElasticsearch(),
+                    cfg.getData().getSecondaryStorage().getOpensearch())
+                .forEach(storage -> storage.setCreateSchema(createSchema)));
   }
 
   /**
@@ -356,6 +381,15 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private void overridePropertyIfAbsent(final String key, final Object value) {
     if (!propertyOverrides.containsKey(key)) {
       propertyOverrides.put(key, value);
+    }
+  }
+
+  private static String createJvmLifetimeTomcatBaseDir() {
+    try {
+      // intentionally never deleted; see the comment on the server.tomcat.basedir override
+      return Files.createTempDirectory("tomcat-basedir").toString();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

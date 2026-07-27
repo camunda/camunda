@@ -20,6 +20,10 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -37,7 +41,10 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -49,8 +56,6 @@ import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.Tag;
-import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -63,8 +68,6 @@ public class AwsDocumentStore implements DocumentStore {
   public static final String SIZE_METADATA_KEY = "size";
   public static final String CONTENT_TYPE_METADATA_KEY = "content-type";
   private static final Logger LOGGER = LoggerFactory.getLogger(AwsDocumentStore.class);
-  private static final Tag NO_AUTO_DELETE_TAG =
-      Tag.builder().key("NoAutoDelete").value("true").build();
 
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
   private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
@@ -75,13 +78,52 @@ public class AwsDocumentStore implements DocumentStore {
   private final S3Presigner preSigner;
   private final Long defaultTTL;
   private final String bucketPath;
+  private final boolean requiresBuffering;
 
   public AwsDocumentStore(
       final String bucketName,
       final Long defaultTTL,
       final String bucketPath,
       final ExecutorService executor) {
-    this(bucketName, defaultTTL, bucketPath, S3Client.create(), executor, S3Presigner.create());
+    this(bucketName, defaultTTL, bucketPath, executor, null, null, null);
+  }
+
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled) {
+    this(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        endpointOverride,
+        forcePathStyle,
+        chunkedEncodingEnabled,
+        null);
+  }
+
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    this(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        buildClient(endpointOverride, forcePathStyle, chunkedEncodingEnabled, supportLegacyMd5),
+        executor,
+        buildPresigner(endpointOverride, forcePathStyle, chunkedEncodingEnabled),
+        Boolean.FALSE.equals(chunkedEncodingEnabled));
   }
 
   public AwsDocumentStore(
@@ -91,12 +133,76 @@ public class AwsDocumentStore implements DocumentStore {
       final S3Client client,
       final ExecutorService executor,
       final S3Presigner preSigner) {
+    this(bucketName, defaultTTL, bucketPath, client, executor, preSigner, false);
+  }
+
+  AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final S3Client client,
+      final ExecutorService executor,
+      final S3Presigner preSigner,
+      final boolean requiresBuffering) {
     this.bucketName = bucketName;
     this.defaultTTL = defaultTTL;
     this.bucketPath = bucketPath;
     this.client = client;
     this.executor = executor;
     this.preSigner = preSigner;
+    this.requiresBuffering = requiresBuffering;
+  }
+
+  private static S3Client buildClient(
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    if (endpointOverride == null
+        && forcePathStyle == null
+        && chunkedEncodingEnabled == null
+        && !Boolean.TRUE.equals(supportLegacyMd5)) {
+      return S3Client.create();
+    }
+    final S3ClientBuilder builder = S3Client.builder();
+    if (endpointOverride != null) {
+      builder.endpointOverride(endpointOverride);
+    }
+    if (Boolean.TRUE.equals(supportLegacyMd5)) {
+      builder.addPlugin(LegacyMd5Plugin.create());
+    }
+    builder.serviceConfiguration(
+        buildS3Configuration(endpointOverride, forcePathStyle, chunkedEncodingEnabled));
+    return builder.build();
+  }
+
+  private static S3Presigner buildPresigner(
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled) {
+    if (endpointOverride == null && forcePathStyle == null && chunkedEncodingEnabled == null) {
+      return S3Presigner.create();
+    }
+    final S3Presigner.Builder builder = S3Presigner.builder();
+    if (endpointOverride != null) {
+      builder.endpointOverride(endpointOverride);
+    }
+    builder.serviceConfiguration(
+        buildS3Configuration(endpointOverride, forcePathStyle, chunkedEncodingEnabled));
+    return builder.build();
+  }
+
+  private static S3Configuration buildS3Configuration(
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled) {
+    final boolean usePathStyle = forcePathStyle != null ? forcePathStyle : endpointOverride != null;
+    final S3Configuration.Builder s3config =
+        S3Configuration.builder().pathStyleAccessEnabled(usePathStyle);
+    if (chunkedEncodingEnabled != null) {
+      s3config.chunkedEncodingEnabled(chunkedEncodingEnabled);
+    }
+    return s3config.build();
   }
 
   @Override
@@ -288,39 +394,14 @@ public class AwsDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> uploadDocument(
       final DocumentCreationRequest request, final String documentId) {
     final String fileName = resolveFileName(request.metadata(), documentId);
-
-    final var putObjectRequest =
-        PutObjectRequest.builder()
-            .key(resolveKey(documentId))
-            .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata(), fileName, ""))
-            .tagging(generateExpiryTag(request.metadata().expiresAt()))
-            .contentType(request.metadata().contentType())
-            .build();
+    final OffsetDateTime effectiveExpiry = resolveEffectiveExpiry(request.metadata().expiresAt());
 
     final String hash;
     try {
       hash =
-          InputStreamHashCalculator.streamAndCalculateHash(
-              request.contentInputStream(),
-              stream ->
-                  client.putObject(
-                      putObjectRequest,
-                      RequestBody.fromInputStream(stream, request.metadata().size())));
-
-      final var copyObjectRequest =
-          CopyObjectRequest.builder()
-              .sourceKey(resolveKey(documentId))
-              .destinationKey(resolveKey(documentId))
-              .sourceBucket(bucketName)
-              .destinationBucket(bucketName)
-              .metadata(toS3MetaData(request.metadata(), fileName, hash))
-              .metadataDirective(MetadataDirective.REPLACE)
-              .tagging(generateExpiryTag(request.metadata().expiresAt()))
-              .contentType(request.metadata().contentType())
-              .build();
-
-      client.copyObject(copyObjectRequest);
+          requiresBuffering
+              ? uploadBuffered(request, documentId, fileName, effectiveExpiry)
+              : uploadStreaming(request, documentId, fileName, effectiveExpiry);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
@@ -329,7 +410,7 @@ public class AwsDocumentStore implements DocumentStore {
         new DocumentMetadataModel(
             request.metadata().contentType(),
             resolveFileName(request.metadata(), documentId),
-            request.metadata().expiresAt(),
+            effectiveExpiry,
             request.metadata().size(),
             request.metadata().processDefinitionId(),
             request.metadata().processInstanceKey(),
@@ -337,8 +418,87 @@ public class AwsDocumentStore implements DocumentStore {
     return Either.right(new DocumentReference(documentId, hash, updatedMetadata));
   }
 
+  private String uploadStreaming(
+      final DocumentCreationRequest request,
+      final String documentId,
+      final String fileName,
+      final OffsetDateTime effectiveExpiry)
+      throws Exception {
+    final var putObjectRequest =
+        PutObjectRequest.builder()
+            .key(resolveKey(documentId))
+            .bucket(bucketName)
+            .metadata(toS3MetaData(request.metadata(), fileName, "", effectiveExpiry))
+            .contentType(request.metadata().contentType())
+            .build();
+
+    final String hash =
+        InputStreamHashCalculator.streamAndCalculateHash(
+            request.contentInputStream(),
+            stream ->
+                client.putObject(
+                    putObjectRequest,
+                    RequestBody.fromInputStream(stream, request.metadata().size())));
+
+    final var copyObjectRequest =
+        CopyObjectRequest.builder()
+            .sourceKey(resolveKey(documentId))
+            .destinationKey(resolveKey(documentId))
+            .sourceBucket(bucketName)
+            .destinationBucket(bucketName)
+            .metadata(toS3MetaData(request.metadata(), fileName, hash, effectiveExpiry))
+            .metadataDirective(MetadataDirective.REPLACE)
+            .contentType(request.metadata().contentType())
+            .build();
+
+    client.copyObject(copyObjectRequest);
+    return hash;
+  }
+
+  /**
+   * Uploads the document by spooling the request body to a temp file before invoking S3.
+   *
+   * @implNote S3-compatible backends that disable chunked encoding force the SDK to compute the
+   *     payload SHA-256 before sending, and then re-read the stream to send the body. HTTP request
+   *     streams aren't markable, so we spool to a temp file once (computing the hash on the way
+   *     through) and upload directly with the hash already in the metadata — which also lets us
+   *     skip the metadata-replacing copy that the streaming path performs.
+   */
+  private String uploadBuffered(
+      final DocumentCreationRequest request,
+      final String documentId,
+      final String fileName,
+      final OffsetDateTime effectiveExpiry)
+      throws Exception {
+    final Path temp = Files.createTempFile("camunda-document-upload-", ".bin");
+    try {
+      final String hash =
+          InputStreamHashCalculator.spoolToFileAndCalculateHash(request.contentInputStream(), temp);
+
+      final var putObjectRequest =
+          PutObjectRequest.builder()
+              .key(resolveKey(documentId))
+              .bucket(bucketName)
+              .metadata(toS3MetaData(request.metadata(), fileName, hash, effectiveExpiry))
+              .contentType(request.metadata().contentType())
+              .build();
+
+      client.putObject(putObjectRequest, RequestBody.fromFile(temp));
+      return hash;
+    } finally {
+      try {
+        Files.deleteIfExists(temp);
+      } catch (final IOException e) {
+        LOGGER.warn("Failed to delete temp file {}", temp, e);
+      }
+    }
+  }
+
   private Map<String, String> toS3MetaData(
-      final DocumentMetadataModel metadata, final String fileName, final String contentHash) {
+      final DocumentMetadataModel metadata,
+      final String fileName,
+      final String contentHash,
+      final OffsetDateTime effectiveExpiry) {
     if (metadata == null) {
       return Collections.emptyMap();
     }
@@ -348,7 +508,7 @@ public class AwsDocumentStore implements DocumentStore {
     putIfPresent(CONTENT_TYPE_METADATA_KEY, metadata.contentType(), metadataMap);
     putIfPresent(SIZE_METADATA_KEY, metadata.size(), metadataMap);
     putIfPresent(FILENAME_METADATA_KEY, fileName, metadataMap);
-    putIfPresent(EXPIRES_AT_METADATA_KEY, metadata.expiresAt(), metadataMap);
+    putIfPresent(EXPIRES_AT_METADATA_KEY, effectiveExpiry, metadataMap);
 
     metadataMap.put(CONTENT_HASH_METADATA_KEY, contentHash);
 
@@ -364,6 +524,17 @@ public class AwsDocumentStore implements DocumentStore {
     return metadataMap;
   }
 
+  private OffsetDateTime resolveEffectiveExpiry(final OffsetDateTime requestedExpiry) {
+    if (defaultTTL == null || requestedExpiry == null) {
+      return requestedExpiry;
+    }
+    final OffsetDateTime maxExpiry = OffsetDateTime.now().plus(Duration.ofDays(defaultTTL));
+    if (requestedExpiry.isAfter(maxExpiry)) {
+      return maxExpiry;
+    }
+    return requestedExpiry;
+  }
+
   private <T> void putIfPresent(
       final String key, final T value, final Map<String, String> metadataMap) {
     if (value != null) {
@@ -377,20 +548,6 @@ public class AwsDocumentStore implements DocumentStore {
       return new DocumentNotFound(documentId);
     }
     return new UnknownDocumentError(e);
-  }
-
-  private Tagging generateExpiryTag(final OffsetDateTime expiryDate) {
-    final boolean isExpiryDateBeyondBucketTTL =
-        expiryDate != null
-            && defaultTTL != null
-            && expiryDate.isAfter(OffsetDateTime.now().plus(Duration.ofDays(defaultTTL)));
-
-    return Tagging.builder()
-        .tagSet(
-            isExpiryDateBeyondBucketTTL
-                ? Collections.singletonList(NO_AUTO_DELETE_TAG)
-                : Collections.emptyList())
-        .build();
   }
 
   private String resolveKey(final String documentId) {

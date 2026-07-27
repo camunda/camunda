@@ -43,7 +43,9 @@ public record ProcessInstanceEntity(
     String tenantId,
     @Nullable String treePath,
     Set<String> tags,
-    @Nullable String businessId)
+    @Nullable String businessId,
+    // not set by the primary handler; populated once the exporter/appliers for SUSPEND/RESUME land.
+    @Nullable OffsetDateTime suspendedDate)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
@@ -90,7 +92,48 @@ public record ProcessInstanceEntity(
         tenantId,
         treePath,
         new HashSet<>(),
-        businessId);
+        businessId,
+        null);
+  }
+
+  public ProcessInstanceEntity(
+      final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final String processDefinitionId,
+      final String processDefinitionName,
+      final Integer processDefinitionVersion,
+      final String processDefinitionVersionTag,
+      final Long processDefinitionKey,
+      final Long parentProcessInstanceKey,
+      final Long parentFlowNodeInstanceKey,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final ProcessInstanceState state,
+      final Boolean hasIncident,
+      final String tenantId,
+      final String treePath,
+      final String businessId,
+      final OffsetDateTime suspendedDate) {
+
+    this(
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        processDefinitionVersionTag,
+        processDefinitionKey,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        startDate,
+        endDate,
+        state,
+        hasIncident,
+        tenantId,
+        treePath,
+        new HashSet<>(),
+        businessId,
+        suspendedDate);
   }
 
   public enum ProcessInstanceState {

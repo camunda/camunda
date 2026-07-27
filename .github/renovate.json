@@ -49,10 +49,7 @@
     {
       "hostType": "docker",
       "matchHost": "https://docker.elastic.co",
-      "timeout": 30000
-    },
-    {
-      "timeout": 10000
+      "timeout": 150000
     }
   ],
   "packageRules": [
@@ -165,7 +162,7 @@
       "enabled": false
     },
     {
-      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Engineering Operations team.",
       "matchManagers": [
         "dockerfile",
         "maven-wrapper",
@@ -179,7 +176,24 @@
       ]
     },
     {
-      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "description": "Do not let Renovate edit generated agentic-workflow lock files *.lock.yml and managed upstream. Update by upgrading the gh-aw toolchain and recompiling, never via Renovate.",
+      "matchFileNames": [
+        ".github/workflows/*.lock.yml"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep the hand-authored copilot-setup-steps.yml gh-aw CLI installer in lockstep with the compiler version used for the *.lock.yml files. Upgrade the gh-aw toolchain deliberately (bump here + recompile), not via Renovate.",
+      "matchFileNames": [
+        ".github/workflows/copilot-setup-steps.yml"
+      ],
+      "matchPackageNames": [
+        "/^github/gh-aw-actions(/.+)?$/"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Engineering Operations team.",
       "matchManagers": [
         "custom.regex"
       ],
@@ -490,6 +504,29 @@
       "enabled": false
     },
     {
+      "description": "Disable Maven lookup for internal monorepo parent POMs (operate-qa, tasklist-qa, camunda-qa) that are never published to any external registry. depType 'parent' (non-root) is not covered by the parent-root exclusion above.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "io.camunda:operate-qa",
+        "io.camunda:camunda-qa",
+        "io.camunda:tasklist-qa"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable Docker updates for private registries used in load tests that Renovate cannot authenticate to: registry.camunda.cloud (internal Harbor) and europe-west1-docker.pkg.dev/camunda-benchmark (GCP AR pull-through cache for quay.io/prometheuscommunity/elasticsearch-exporter — track upstream manually).",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "registry.camunda.cloud/team-zeebe",
+        "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
       "matchManagers": [
         "maven"
@@ -784,6 +821,12 @@
         "docker.io/camunda/camunda"
       ],
       "allowedVersions": "<= {{{major}}}.{{{minor}}}"
+    },
+    {
+      "description": "Pin slackapi/slack-github-action to v3.x. v4.0.0 re-bundled @slack/webhook onto a new global-fetch stack that no longer accepts the bare 200 returned by Slack Workflow Builder webhook-trigger endpoints as success. The default retries then re-deliver the same message 3-5 times and the escalating back-off blows past the job timeout (jobs show as cancelled). Remove this pin once webhook-trigger handling is fixed upstream.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["slackapi/slack-github-action"],
+      "allowedVersions": "<4"
     }
   ],
   "ignorePaths": [
@@ -818,7 +861,7 @@
     {
       "description": "Track camunda-platform-helm chart tags pinned in load test scripts.",
       "customType": "regex",
-      "managerFilePatterns": ["load-tests/setup/*/newLoadTest.sh"],
+      "managerFilePatterns": ["load-tests/setup/newLoadTest.sh"],
       "matchStrings": [
         "renovate: version=(?<parentVersion>.*?)\\s+camunda_platform_helm_chart_version=\"(?<currentValue>[^\"]+)\""
       ],

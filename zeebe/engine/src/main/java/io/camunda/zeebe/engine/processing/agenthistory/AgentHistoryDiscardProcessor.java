@@ -36,6 +36,8 @@ public final class AgentHistoryDiscardProcessor
   public void processRecord(final TypedRecord<AgentHistoryRecord> command) {
     final long jobKey = command.getValue().getJobKey();
     final String jobLease = command.getValue().getJobLease();
+    // Items in state are already trimmed to identity fields by AgentHistoryCreatedApplier,
+    // so the DISCARDED event emitted here carries that same trimmed shape for free.
     final AgentHistoryState.AgentHistoryVisitor visitor =
         item ->
             stateWriter.appendFollowUpEvent(

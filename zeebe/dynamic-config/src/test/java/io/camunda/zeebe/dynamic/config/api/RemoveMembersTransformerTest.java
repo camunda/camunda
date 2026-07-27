@@ -11,11 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.util.MemberIdArbitraries;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.domains.Domain;
 import org.junit.jupiter.api.Test;
 
 class RemoveMembersTransformerTest {
@@ -67,5 +73,23 @@ class RemoveMembersTransformerTest {
     EitherAssert.assertThat(result).isRight();
 
     assertThat(result.get()).isEmpty();
+  }
+
+  @Property(tries = 100)
+  @Domain(MemberIdArbitraries.class)
+  void shouldSortOperationsByMemberId(@ForAll final Set<MemberId> candidateMembers) {
+    // given
+    final var removeRequest = new RemoveMembersTransformer(candidateMembers);
+
+    // when
+    final var result = removeRequest.operations(currentTopology);
+
+    EitherAssert.assertThat(result)
+        .isRight()
+        .right()
+        .isEqualTo(
+            result.get().stream()
+                .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
+                .toList());
   }
 }

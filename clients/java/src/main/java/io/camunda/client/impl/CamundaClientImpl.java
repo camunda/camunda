@@ -28,6 +28,7 @@ import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignProcessInstanceBusinessIdCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
@@ -85,10 +86,12 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.SuspendProcessInstanceCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
@@ -221,6 +224,7 @@ import io.camunda.client.impl.command.AssignClientToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToTenantCommandImpl;
+import io.camunda.client.impl.command.AssignProcessInstanceBusinessIdCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToClientCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToMappingRuleCommandImpl;
@@ -278,10 +282,12 @@ import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
+import io.camunda.client.impl.command.ResumeProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StatusRequestImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
+import io.camunda.client.impl.command.SuspendProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
@@ -755,6 +761,18 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public AssignProcessInstanceBusinessIdCommandStep1 newAssignProcessInstanceBusinessIdCommand(
+      final long processInstanceKey) {
+    return new AssignProcessInstanceBusinessIdCommandImpl(
+        processInstanceKey,
+        asyncStub,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
+  }
+
+  @Override
   public CancelProcessInstanceCommandStep1 newCancelInstanceCommand(final long processInstanceKey) {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
@@ -763,6 +781,19 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         config,
         jsonMapper);
+  }
+
+  @Override
+  public SuspendProcessInstanceCommandStep1 newSuspendProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new SuspendProcessInstanceCommandImpl(
+        processInstanceKey, config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new ResumeProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 
   @Override
@@ -844,7 +875,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final ActivatedJob job) {
-    return newUpdateRetriesCommand(job.getKey());
+    final JobUpdateRetriesCommandImpl command =
+        (JobUpdateRetriesCommandImpl) newUpdateRetriesCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -861,7 +895,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final ActivatedJob job) {
-    return newUpdateTimeoutCommand(job.getKey());
+    final JobUpdateTimeoutCommandImpl command =
+        (JobUpdateTimeoutCommandImpl) newUpdateTimeoutCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -878,7 +915,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(final ActivatedJob job) {
-    return newUpdateJobPriorityCommand(job.getKey());
+    final JobUpdatePriorityCommandImpl command =
+        (JobUpdatePriorityCommandImpl) newUpdateJobPriorityCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -930,7 +970,9 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final ActivatedJob job) {
-    return newUpdateJobCommand(job.getKey());
+    final UpdateJobCommandImpl command = (UpdateJobCommandImpl) newUpdateJobCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -1830,7 +1872,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
-    return newCompleteCommand(job.getKey());
+    return jobClient.newCompleteCommand(job);
   }
 
   @Override
@@ -1840,7 +1882,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
-    return newFailCommand(job.getKey());
+    return jobClient.newFailCommand(job);
   }
 
   @Override
@@ -1850,7 +1892,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
-    return newThrowErrorCommand(job.getKey());
+    return jobClient.newThrowErrorCommand(job);
   }
 
   @Override

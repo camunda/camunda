@@ -233,9 +233,8 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
         .singleElement()
         .satisfies(instance -> assertThat(instance.getFlowNodeInstances()).isEmpty());
 
-    // when importing the second and third record based on position (note only records with relevant
+    // when importing the second record based on position (note only records with relevant
     // intent are imported)
-    importAllZeebeEntitiesFromLastIndex(); // process activated - fetched but not imported
     importAllZeebeEntitiesFromLastIndex(); // startEvent activating (first record with sequence) -
     // imported
 
@@ -255,8 +254,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
             + "Zeebe records will now be fetched based on sequence.");
 
     // when
-    importAllZeebeEntitiesFromLastIndex(); // start event activated - fetched but not imported
-    importAllZeebeEntitiesFromLastIndex(); // start event completing - fetched but not imported
     importAllZeebeEntitiesFromLastIndex(); // start event completed - imported
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();

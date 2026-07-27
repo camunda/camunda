@@ -17,13 +17,6 @@ declaration to your broker configuration; to disable it again, remove the declar
 The configuration can be provided via YAML or as environment variables — both styles are
 shown below.
 
-The exact shape of the configuration depends on your Camunda version:
-
-- **8.10 and later:** the exporter ships with Zeebe; you only need to declare it.
-- **8.9 and earlier:** the exporter is not shipped, so you must install the
-  [standalone JAR](#install-on-older-clusters-standalone-jar) and reference it via
-  `jarPath`.
-
 ### Prerequisites
 
 The exporter requires a Camunda license key and a cluster ID.
@@ -67,8 +60,6 @@ camunda:
     exporters:
       analytics:
         class-name: io.camunda.exporter.analytics.AnalyticsExporter
-        # jar-path is required on 8.9 only; omit on 8.10+
-        jar-path: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
           endpoint: https://analytics.cloud.camunda.io
           push-interval: PT5M
@@ -102,8 +93,6 @@ The same settings can be provided via environment variables.
 
 ```sh
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-# JARPATH is required on 8.9 only; omit on 8.10+
-CAMUNDA_DATA_EXPORTERS_ANALYTICS_JARPATH=/usr/local/zeebe/exporters/camunda-analytics-exporter.jar
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
@@ -114,7 +103,6 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
 
 ```sh
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_JARPATH=/usr/local/zeebe/exporters/camunda-analytics-exporter.jar
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
@@ -159,17 +147,64 @@ variables, or any other end-user data.
 | `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                           |
 | `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                 |
 | `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped. |
+| `USER_TASK`                 | `CREATED`           | `user_task_created`          | Emitted for every new user task.                                                  |
 | —                           | —                   | `heartbeat`                  | Emitted periodically by the partition leader (see `heartbeat-interval`).          |
 
 ### Common log record attributes
 
 These attributes are set on every log record:
 
-|         Attribute         |  Type  |                                               Description                                                |
-|---------------------------|--------|----------------------------------------------------------------------------------------------------------|
-| `event.name`              | string | Event type identifier (one of the names in the table above).                                             |
-| `camunda.log.position`    | long   | Log stream position. Used as a deduplication key.                                                        |
-| `camunda.sequence_number` | long   | Monotonic per-partition counter incremented for each emitted event. Used for ordering and gap detection. |
+|            Attribute            |  Type  |                                               Description                                                |
+|---------------------------------|--------|----------------------------------------------------------------------------------------------------------|
+| `event.name`                    | string | Event type identifier (one of the names in the table above).                                             |
+| `camunda.log.position`          | long   | Log stream position. Used as a deduplication key.                                                        |
+| `camunda.event.sequence_number` | long   | Monotonic per-partition counter incremented for each emitted event. Used for ordering and gap detection. |
+
+### Per-event attributes
+
+Beyond the common attributes above, each event type carries its own additional fields:
+
+**`process_instance_created`**
+
+|              Attribute              |  Type  |                  Description                   |
+|-------------------------------------|--------|------------------------------------------------|
+| `camunda.process.id`                | string | BPMN process ID.                               |
+| `camunda.process.version`           | long   | Deployed process version.                      |
+| `camunda.process.definition_key`    | long   | Process definition key.                        |
+| `camunda.process.instance_key`      | long   | Process instance key.                          |
+| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
+| `camunda.tenant.id`                 | string | Tenant ID.                                     |
+
+**`user_task_created`**
+
+|            Attribute             |  Type  |            Description            |
+|----------------------------------|--------|-----------------------------------|
+| `camunda.process.id`             | string | BPMN process ID.                  |
+| `camunda.process.definition_key` | long   | Process definition key.           |
+| `camunda.process.instance_key`   | long   | Process instance key.             |
+| `camunda.element.id`             | string | BPMN element ID of the user task. |
+| `camunda.tenant.id`              | string | Tenant ID.                        |
+
+Note: unlike `process_instance_created`, this event does not carry `camunda.process.version`.
+
+**`adhoc_subprocess_activated`**
+
+|            Attribute             |  Type  |                Description                 |
+|----------------------------------|--------|--------------------------------------------|
+| `camunda.process.id`             | string | BPMN process ID.                           |
+| `camunda.process.definition_key` | long   | Process definition key.                    |
+| `camunda.process.instance_key`   | long   | Process instance key.                      |
+| `camunda.element.id`             | string | BPMN element ID of the ad-hoc sub-process. |
+| `camunda.tenant.id`              | string | Tenant ID.                                 |
+
+**`usage_metric_exported`**
+
+|               Attribute               |  Type  |                                                Description                                                 |
+|---------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
+| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (running process instances), `EDI` (executed decision instances), or `TU` (task users). |
+| `camunda.usage_metric.count`          | long   | Count for this metric type in this export interval.                                                        |
+| `camunda.usage_metric.interval_start` | long   | Epoch-ms start of the export window.                                                                       |
+| `camunda.usage_metric.interval_end`   | long   | Epoch-ms end of the export window.                                                                         |
 
 ### Heartbeat attributes
 
@@ -221,17 +256,6 @@ of these attributes as a composite key.
   other potentially sensitive fields are never sent.
 - **Fixed event set.** The exporter emits a small, hardcoded set of event types. There is
   no runtime configuration to add, remove, or filter event types.
-
-## Install on older clusters (standalone JAR)
-
-For clusters that do not ship the exporter as part of their distribution, a standalone
-JAR will be provided. Drop the JAR onto the broker classpath (for example, into
-`/usr/local/zeebe/exporters/`), point the exporter configuration at it with `jarPath`,
-and provide the `CAMUNDA_LICENSE_KEY` and `ZEEBE_BROKER_CLUSTER_CLUSTERID` environment
-variables described in [Prerequisites](#prerequisites).
-
-For the general procedure for adding custom exporters to a broker, see
-[installing Zeebe exporters](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/zeebe/exporters/install-zeebe-exporters/).
 
 ## How it works
 

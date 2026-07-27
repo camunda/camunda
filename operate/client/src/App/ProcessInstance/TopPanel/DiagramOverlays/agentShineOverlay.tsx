@@ -13,12 +13,12 @@ import {createPortal} from 'react-dom';
 import styled, {keyframes} from 'styled-components';
 import {AGENT_SHINE} from 'modules/bpmn-js/badgePositions';
 import {PURPLE_30, PURPLE_40, PURPLE_60} from './agentStatusOverlay';
-import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {
   AgentShinePayload,
   OverlayData,
 } from 'modules/bpmn-js/overlayTypes';
 import type {DiagramOverlay} from './types';
+import type {AgentInstancesStatusMap} from './agentInstances';
 
 const AGENT_SHINE_OVERLAY_TYPE = 'agentShine';
 
@@ -73,19 +73,22 @@ type Size = {
 };
 
 const useAgentShineOverlaysData = (
-  agentInstances: AgentInstance[],
+  agentInstancesStatusMap: AgentInstancesStatusMap,
 ): OverlayData[] =>
   useMemo(
     () =>
-      agentInstances.map((agentInstance) => ({
-        type: AGENT_SHINE_OVERLAY_TYPE,
-        elementId: agentInstance.elementId,
-        position: AGENT_SHINE,
-        payload: {
-          agentInstanceKey: agentInstance.agentInstanceKey,
-        } satisfies AgentShinePayload,
-      })),
-    [agentInstances],
+      Array.from(
+        agentInstancesStatusMap.entries(),
+        ([elementId, statusInfo]) => ({
+          type: AGENT_SHINE_OVERLAY_TYPE,
+          elementId,
+          position: AGENT_SHINE,
+          payload: {
+            agentInstanceKey: statusInfo.agentInstanceKey,
+          } satisfies AgentShinePayload,
+        }),
+      ),
+    [agentInstancesStatusMap],
   );
 
 const AgentShineOverlay: React.FC<{overlay: DiagramOverlay}> = ({overlay}) => {

@@ -38,7 +38,7 @@
       "jobLease": {
         "type": "keyword"
       },
-      "iteration": {
+      "loopIteration": {
         "type": "integer"
       },
       "role": {

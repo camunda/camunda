@@ -1,7 +1,7 @@
 ---
 name: Setup build
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Sets up the required stack to build, install, and run monorepo projects
 
@@ -161,7 +161,7 @@ runs:
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
   - name: Setup Java
-    uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+    uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
     with:
       distribution: ${{ inputs.java-distribution }}
       java-version: ${{ inputs.java-version }}
@@ -256,30 +256,50 @@ runs:
         inputs.dockerhub == 'true' ||
         inputs.dockerhub-readonly == 'true'
       )
-    uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
     with:
-      username: ${{ steps.secrets.outputs.dockerhub-username }}
-      password: ${{ steps.secrets.outputs.dockerhub-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.harbor == 'true'
-    uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.ci-account-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.ci-account-password }}
     with:
-      registry: registry.camunda.cloud
-      username: ${{ steps.secrets.outputs.ci-account-username }}
-      password: ${{ steps.secrets.outputs.ci-account-password }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
+          --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Minimus
     # Minimus login is disabled for fork PRs
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'
-    uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
     with:
-      registry: reg.mini.dev
-      username: minimus
-      password: ${{ steps.secrets.outputs.minimus-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
+          --username minimus --password-stdin
   - name: Authenticate to GCS build-cache
     # GCS build-cache auth is disabled for fork PRs (no Vault access)
     if: >-

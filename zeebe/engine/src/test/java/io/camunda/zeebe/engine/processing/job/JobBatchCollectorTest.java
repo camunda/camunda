@@ -8,16 +8,30 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.InMemorySecretCache;
+import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.api.context.TokenClaimsAuthenticationResolver;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationRejection;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -38,7 +52,6 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -61,6 +74,11 @@ final class JobBatchCollectorTest {
   private final RecordLengthEvaluator lengthEvaluator = new RecordLengthEvaluator();
   private final ControllableStreamClock clock =
       new ControllableStreamClockImpl(InstantSource.system());
+  private final InMemorySecretCache secretCache = new InMemorySecretCache();
+  private final JobSecretInjector secretInjector =
+      new JobSecretInjector(
+          new SecretStoreRegistry(
+              Map.of("default", new NoopSecretStore()), Map.of("default", secretCache)));
 
   @SuppressWarnings("unused") // injected by the extension
   private MutableProcessingState state;
@@ -69,13 +87,136 @@ final class JobBatchCollectorTest {
 
   @BeforeEach
   void beforeEach() {
-    final var authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(
+    final var securityConfig = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+    // Both authorization and multi-tenancy are disabled, so authzService and claimsConverter
+    // are never invoked by the collector — pass nulls to satisfy the CslAuthorizationCheck ctor.
+    final var cslCheck = new CslAuthorizationCheck(null, null, securityConfig);
+    collector =
+        new JobBatchCollector(
             state,
-            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
-            new EngineConfiguration(),
-            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
-    collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior, clock);
+            lengthEvaluator,
+            cslCheck,
+            clock,
+            mock(JobProcessingMetrics.class),
+            secretInjector);
+  }
+
+  @Test
+  void shouldNotActivateJobsWhenPrincipalIsNotAuthorized() {
+    // given
+    final var authzService = mock(AuthorizationCheckPort.class);
+    when(authzService.check(any(CamundaAuthentication.class), any()))
+        .thenReturn(
+            io.camunda.security.api.model.Either.left(
+                new AuthorizationRejection.Permission(
+                    AuthorizationResourceType.PROCESS_DEFINITION,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    "process")));
+    final var authorizedCollector = collectorWithAuthzService(authzService);
+    final var record = createRecordWithAuth(AuthorizationUtil.getAuthInfo("user"));
+    createJob(state.getKeyGenerator().nextKey());
+
+    // when
+    authorizedCollector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord).hasNoJobKeys();
+  }
+
+  @Test
+  void shouldActivateJobsWhenPrincipalIsAuthorized() {
+    // given
+    final var authzService = mock(AuthorizationCheckPort.class);
+    when(authzService.check(any(CamundaAuthentication.class), any()))
+        .thenReturn(io.camunda.security.api.model.Either.right(null));
+    final var authorizedCollector = collectorWithAuthzService(authzService);
+    final var record = createRecordWithAuth(AuthorizationUtil.getAuthInfo("user"));
+    final var job = createJob(state.getKeyGenerator().nextKey());
+
+    // when
+    authorizedCollector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(job.key);
+  }
+
+  private JobBatchCollector collectorWithAuthzService(final AuthorizationCheckPort authzService) {
+    final var claimsConverter = mock(TokenClaimsAuthenticationResolver.class);
+    when(claimsConverter.resolve(any())).thenReturn(mock(CamundaAuthentication.class));
+    final var securityConfig = EngineSecurityConfigurations.defaultConfig();
+    final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
+    return new JobBatchCollector(
+        state, lengthEvaluator, cslCheck, clock, mock(JobProcessingMetrics.class), secretInjector);
+  }
+
+  @Test
+  void shouldSkipJobWithUncachedSecretWithoutConsumingBatchSlot() {
+    // given - a job with an uncached secret reference created before a plain job, and a single
+    // batch slot
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    final long scopeKey = state.getKeyGenerator().nextKey();
+    createJobWithSecretReference(scopeKey, "uncached");
+    final var plainJob = createJob(scopeKey);
+    record.getValue().setMaxJobsToActivate(1);
+
+    // when
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - the skipped job does not consume the slot; the plain job behind it is collected
+    EitherAssert.assertThat(result).right().isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    JobBatchRecordValueAssert.assertThat(record.getValue())
+        .hasOnlyJobKeys(plainJob.key)
+        .isNotTruncated();
+  }
+
+  @Test
+  void shouldStopCollectingWhenSkippedUncachedSecretJobsReachLimit() {
+    // given - a plain job, one more uncached-secret job than the skip limit, and a plain job
+    // behind them
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    final long scopeKey = state.getKeyGenerator().nextKey();
+    final var firstPlainJob = createJob(scopeKey);
+    for (int i = 0; i <= EngineConfiguration.MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION; i++) {
+      createJobWithSecretReference(scopeKey, "uncached-" + i);
+    }
+    createJob(scopeKey);
+
+    // when
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - collection stops at the skip limit, keeping the jobs collected before it; the plain
+    // job behind the skipped ones is not reached
+    EitherAssert.assertThat(result).right().isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    JobBatchRecordValueAssert.assertThat(record.getValue())
+        .hasOnlyJobKeys(firstPlainJob.key)
+        .isNotTruncated();
+  }
+
+  @Test
+  void shouldCollectJobWithCachedSecretAndInjectItsValue() {
+    // given
+    secretCache.put("token", "resolved");
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    final long scopeKey = state.getKeyGenerator().nextKey();
+    setVariables(scopeKey, Map.of("auth", "camunda.secrets.token"));
+    final var cachedJob = createJobWithSecretReference(scopeKey, "token");
+    final var plainJob = createJob(scopeKey);
+
+    // when
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - both jobs are collected and the secret job's value is injected on a response copy at
+    // its batch position
+    JobBatchRecordValueAssert.assertThat(record.getValue()).hasJobKeys(cachedJob.key, plainJob.key);
+    assertThat(secretInjector.hasSecretsToInject()).isTrue();
+    final var response = new JobBatchRecord();
+    response.copyFrom(record.getValue());
+    secretInjector.injectSecretValues(response, record.getValue());
+    assertThat(response.jobs().iterator().next().getVariables()).containsEntry("auth", "resolved");
   }
 
   @Test
@@ -539,6 +680,28 @@ final class JobBatchCollectorTest {
     return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
   }
 
+  private TypedRecord<JobBatchRecord> createRecordWithAuth(final AuthInfo authInfo) {
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(JobBatchIntent.ACTIVATE)
+            .valueType(ValueType.JOB_BATCH)
+            // a non-null request id/stream id makes the command non-internal, so the collector's
+            // authorization branch actually runs
+            .requestId(1L)
+            .requestStreamId(1)
+            .authorization(authInfo);
+    final var batchRecord =
+        new JobBatchRecord()
+            .setTimeout(Duration.ofSeconds(10).toMillis())
+            .setMaxJobsToActivate(10)
+            .setType(JOB_TYPE)
+            .setWorker("test");
+    batchRecord.setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
+  }
+
   private TypedRecord<JobBatchRecord> createRecordWithTenantFilter(
       final TenantFilter tenantFilter, final String... tenantIds) {
     final RecordMetadata metadata =
@@ -585,6 +748,21 @@ final class JobBatchCollectorTest {
       final long variableScopeKey, final Map<String, String> variables) {
     setVariables(variableScopeKey, variables);
     createJob(variableScopeKey);
+  }
+
+  private Job createJobWithSecretReference(final long variableScopeKey, final String secretName) {
+    final var jobRecord =
+        new JobRecord()
+            .setBpmnProcessId("process")
+            .setElementId("element")
+            .setElementInstanceKey(variableScopeKey)
+            .setType(JOB_TYPE)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    jobRecord.addSecretReference("", secretName, "/auth");
+    final long jobKey = state.getKeyGenerator().nextKey();
+
+    state.getJobState().create(jobKey, jobRecord);
+    return new Job(jobKey, jobRecord);
   }
 
   private void setVariables(final long variableScopeKey, final Map<String, String> variables) {

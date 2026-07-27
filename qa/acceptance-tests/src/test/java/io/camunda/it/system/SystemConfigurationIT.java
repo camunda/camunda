@@ -29,6 +29,12 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.physical-tenant",
+    matches = ".+",
+    disabledReason =
+        "System endpoints (/v2/system/*) are global, not tenant-scoped; a physical-tenant client"
+            + " prefixes /physical-tenants/<id>/ and gets 401")
 public class SystemConfigurationIT {
 
   private static final String SYSTEM_CONFIGURATION_PATH = "v2/system/configuration";

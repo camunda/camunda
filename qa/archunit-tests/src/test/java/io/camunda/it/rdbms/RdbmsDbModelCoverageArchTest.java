@@ -55,8 +55,10 @@ class RdbmsDbModelCoverageArchTest {
           "UsageMetricTUStatisticsDbModel", // TU statistics variant; covered by UsageMetricIT
           "UsageMetricTenantStatisticsDbModel", // tenant statistics variant; covered by
           // UsageMetricIT
-          "UsageMetricTUTenantStatisticsDbModel"); // TU tenant statistics variant; covered by
-  // UsageMetricIT
+          "UsageMetricTUTenantStatisticsDbModel", // TU tenant statistics variant; covered by
+          // UsageMetricIT
+          "ClusterVariableMetadataDbModel"); // metadata sub-entity of ClusterVariable; covered by
+  // ClusterVariableIT
 
   // IT class simple names scanned from test-jars once at class-load time.
   static final Set<String> IT_SIMPLE_NAMES =

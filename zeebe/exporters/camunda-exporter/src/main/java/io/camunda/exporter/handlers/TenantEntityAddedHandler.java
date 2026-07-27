@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
@@ -68,9 +69,10 @@ public class TenantEntityAddedHandler
   }
 
   @Override
-  public void flush(final TenantMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final TenantMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
+    batchRequest.addWithRouting(index, entity, entity.getJoin().parent());
   }
 
   @Override

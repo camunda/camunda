@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.camunda.authentication.config.spi.PhysicalTenantScopedSessionStorePortProvider;
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
@@ -89,6 +90,26 @@ class WebSessionRepositoryConfigurationTest {
                   .isNotNull();
               assertThatThrownBy(() -> provider.withPhysicalTenant("unknown-pt"))
                   .isInstanceOf(IllegalStateException.class);
+            });
+  }
+
+  @Test
+  void shouldShareTheDefaultTenantStoreBetweenTheGlobalFilterAndTheDefaultScope() {
+    // The default-surface sessionStorePort bean and the default scope's forPhysicalTenant lookup
+    // must resolve to the SAME instance, so CSL's expiry-sweep dedup (ADR-0029 §4) actually
+    // collapses the otherwise-duplicate default store.
+    runner
+        .withPropertyValues("camunda.security.session.persistent.enabled=true")
+        .run(
+            ctx -> {
+              final var defaultSurfaceStore = ctx.getBean(SessionStorePort.class);
+              final var scopedProvider =
+                  ctx.getBean(PhysicalTenantScopedSessionStorePortProvider.class);
+              assertThat(
+                      scopedProvider.forPhysicalTenant(
+                          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+                  .as("default scope's store must be the same instance as the global filter's")
+                  .isSameAs(defaultSurfaceStore);
             });
   }
 

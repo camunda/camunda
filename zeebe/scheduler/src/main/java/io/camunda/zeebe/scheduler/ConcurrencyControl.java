@@ -65,7 +65,12 @@ public interface ConcurrencyControl extends Executor {
   <T> ActorFuture<T> call(final Callable<T> callable);
 
   /** Schedule a task to be executed after a delay */
-  ScheduledTimer schedule(final Duration delay, final Runnable runnable);
+  default ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    return schedule(delay.toMillis(), runnable);
+  }
+
+  /** Schedule a task to be executed after a delay */
+  ScheduledTimer schedule(final long delayMs, final Runnable runnable);
 
   /**
    * Create a new future object

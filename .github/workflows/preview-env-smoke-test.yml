@@ -1,5 +1,5 @@
 # type: Preview Environment
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Preview Environment Smoke Test
 
@@ -25,20 +25,100 @@ on:
         required: false
         type: boolean
         default: false
+      existing-host:
+        description: |
+          Iteration shortcut (8.10 only): reuse an already-deployed preview env
+          (host FQDN, e.g. smoke810-123.camunda.camunda.cloud) instead of
+          building images and deploying. Chart changes reach the existing env
+          via ArgoCD branch tracking, so a push + this input skips ~20min of
+          build/deploy per iteration.
+        required: false
+        type: string
+        default: ''
+      fast-feedback:
+        description: |
+          Iteration shortcut: run Playwright with --retries=0 so a red result
+          arrives in minutes instead of retry-multiplied timeouts.
+        required: false
+        type: boolean
+        default: false
+      ref-8-8:
+        description: |
+          Git ref to build and deploy the 8.8 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.8 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.8'
+      ref-8-9:
+        description: |
+          Git ref to build and deploy the 8.9 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.9 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.9'
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
   E2E_DIR: e2e-tests
 
 jobs:
+  # Gate for the free-form ref-8-8/ref-8-9 dispatch inputs: they are forwarded
+  # as `ref` into the reusable deploy/teardown workflows, where they end up in
+  # shell-built ArgoCD arguments (--revision, --helm-set), so restrict them to
+  # git-ref characters before anything consumes them. Always runs (trivially
+  # green on scheduled runs, where inputs are empty) so the deploy jobs'
+  # implicit success() dependency doesn't skip the default path.
+  validate-ref-inputs:
+    name: Validate ref override inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate refs
+        env:
+          REF_8_8: ${{ inputs.ref-8-8 }}
+          REF_8_9: ${{ inputs.ref-8-9 }}
+        run: |
+          for ref in "$REF_8_8" "$REF_8_9"; do
+            if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+              echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
+              exit 1
+            fi
+          done
+          echo "✅ ref overrides valid (or empty)"
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   deploy-8-8:
     name: Deploy 8.8 Preview Environment
     if: contains(fromJSON('["all", "8.8", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.8
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      # The || fallback stays despite the input default: input defaults only
+      # apply to workflow_dispatch — on scheduled runs the inputs context is
+      # empty, and an empty ref would make the cross-branch reusable workflow
+      # fall back to the caller's SHA (main). Same for every ref below.
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -49,11 +129,12 @@ jobs:
   deploy-8-9:
     name: Deploy 8.9 Preview Environment
     if: contains(fromJSON('["all", "8.9", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.9
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -63,7 +144,7 @@ jobs:
 
   deploy-8-10:
     name: Deploy 8.10 Preview Environment
-    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version) && inputs.existing-host == ''
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
@@ -81,8 +162,9 @@ jobs:
     - deploy-8-8
     - deploy-8-9
     - deploy-8-10
-    # Run if at least one deploy succeeded
-    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success')
+    # Run if at least one deploy succeeded (or an existing 8.10 preview is
+    # reused; existing-host only applies when the version selection includes 8.10)
+    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -100,12 +182,20 @@ jobs:
           host: ${{ needs.deploy-8-9.outputs.host-name }}
           run: ${{ needs.deploy-8-9.result == 'success' }}
         - version: '8.10'
-          host: ${{ needs.deploy-8-10.outputs.host-name }}
-          run: ${{ needs.deploy-8-10.result == 'success' }}
+          host: ${{ inputs.existing-host || needs.deploy-8-10.outputs.host-name }}
+          run: ${{ needs.deploy-8-10.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)) }}
         exclude:
         - deployment:
             run: false
     steps:
+      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
+      # observe-build-status) resolve.
+      - name: Check out .github for local actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Install Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
@@ -141,9 +231,36 @@ jobs:
           fi
           echo "✅ Teleport TCP tunnel running on port 443"
 
-          # Map preview hostname to localhost
+          # Map preview hostname to localhost. PREVIEW_HOST may come from the
+          # user-provided existing-host dispatch input, so allow only hostname
+          # characters before writing it to /etc/hosts.
+          if [[ ! "${PREVIEW_HOST}" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; then
+            echo "::error::Invalid preview host: ${PREVIEW_HOST}"
+            exit 1
+          fi
           echo "127.0.0.1 ${PREVIEW_HOST}" | sudo tee -a /etc/hosts
           echo "✅ Added ${PREVIEW_HOST} to /etc/hosts"
+
+          # Backends behind Traefik emit absolute http:// Locations for their
+          # trailing-slash redirects (they ignore X-Forwarded-Proto). In production
+          # Traefik's :80 entrypoint bounces those back to https; the tsh tunnel
+          # only serves :443, so mirror that bounce with a tiny redirector on :80.
+          sudo python3 -c '
+          import http.server, socketserver
+          class R(http.server.BaseHTTPRequestHandler):
+              def _r(self):
+                  self.send_response(308)
+                  self.send_header("Location", "https://" + (self.headers.get("Host") or "") + self.path)
+                  self.end_headers()
+              do_GET = do_POST = do_HEAD = do_PUT = do_DELETE = do_PATCH = _r
+              def log_message(self, *a): pass
+          socketserver.TCPServer(("127.0.0.1", 80), R).serve_forever()' &
+          sleep 2
+          if ! nc -z 127.0.0.1 80; then
+            echo "::error::Failed to start http->https redirector on port 80"
+            exit 1
+          fi
+          echo "✅ http->https redirector running on port 80"
 
       - name: Generate GitHub Token
         id: github-token
@@ -160,15 +277,8 @@ jobs:
           owner: camunda
           repositories: c8-cross-component-e2e-tests
 
-      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
-      # observe-build-status) resolve.
-      - name: Check out .github for local actions
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          sparse-checkout: .github
-
       - name: Checkout Smoke Tests
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
@@ -176,7 +286,7 @@ jobs:
           ref: main
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
@@ -199,6 +309,11 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
           PROJECT: chromium
           CI: true
+          # Preview envs are deployed with internalAuthBypass.enabled=true: the
+          # client tunnels in from the internal (10/8) network via Teleport, and
+          # internal source IPs skip Vouch at the gateway (see c8sm chart
+          # global.preview.ingress.internalAuthBypass). No client-side header is
+          # required.
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
           DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
           DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
@@ -207,7 +322,7 @@ jobs:
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
             --reporter=list,html \
-            --retries=2
+            --retries=${{ inputs.fast-feedback && '0' || '2' }}
 
       - name: Upload Test Artifacts
         if: failure()
@@ -243,7 +358,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
 
   teardown-8-9:
     name: Teardown 8.9 Preview Environment
@@ -259,7 +374,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
@@ -283,10 +398,10 @@ jobs:
       always() &&
       github.event_name == 'schedule' &&
       (
-        needs.deploy-8-8.result == 'failure' ||
-        needs.deploy-8-9.result == 'failure' ||
-        needs.deploy-8-10.result == 'failure' ||
-        needs.test.result == 'failure'
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-8.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-9.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-10.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.test.result)
       )
     needs:
     - deploy-8-8
@@ -299,6 +414,12 @@ jobs:
       actions: read
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Import secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -322,11 +443,11 @@ jobs:
             echo "jobs<<EOF"
             gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --jq '
               .jobs
-              | map(select(.conclusion == "failure"))
+              | map(select(.conclusion == "failure" or .conclusion == "cancelled"))
               | map(
-                  (.name | capture("(?<v>8\\.[0-9]+)").v) as $ver |
+                  (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
                   (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
-                  "• *\($ver)* <\(.html_url)|\($type) failed>"
+                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
                 )
               | join("\n")
             '
@@ -334,7 +455,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Notify Slack on Failure
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -357,10 +478,6 @@ jobs:
                 }
               ]
             }
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true

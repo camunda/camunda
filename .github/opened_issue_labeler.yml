@@ -1,6 +1,6 @@
 component/c8-api:
   '(C8-API-)'
-component/C8Run:
+component/c8run:
   '(C8Run-)'
 component/camunda-process-test:
   '(Camunda Process Test-)'

@@ -29,54 +29,54 @@ export const membershipMutations = {
     mutationOptions({
       mutationFn: (body: Pick<Group, "groupId"> & Pick<User, "username">) =>
         unwrap(assignGroupMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["groups", "members", variables.groupId],
+          queryKey: ["enrichedMembers", "groups"],
         }),
     }),
   unassignGroupMember: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Group, "groupId"> & Pick<User, "username">) =>
         unwrap(unassignGroupMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["groups", "members", variables.groupId],
+          queryKey: ["enrichedMembers", "groups"],
         }),
     }),
   assignTenantMember: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<User, "username">) =>
         unwrap(assignTenantMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["tenants", "members", variables.tenantId],
+          queryKey: ["enrichedMembers", "tenants"],
         }),
     }),
   unassignTenantMember: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<User, "username">) =>
         unwrap(unassignTenantMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["tenants", "members", variables.tenantId],
+          queryKey: ["enrichedMembers", "tenants"],
         }),
     }),
   assignRoleMember: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Role, "roleId"> & Pick<User, "username">) =>
         unwrap(assignRoleMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["roles", "members", variables.roleId],
+          queryKey: ["enrichedMembers", "roles"],
         }),
     }),
   unassignRoleMember: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Role, "roleId"> & Pick<User, "username">) =>
         unwrap(unassignRoleMember(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
+      onSuccess: () =>
         qc.invalidateQueries({
-          queryKey: ["roles", "members", variables.roleId],
+          queryKey: ["enrichedMembers", "roles"],
         }),
     }),
 };

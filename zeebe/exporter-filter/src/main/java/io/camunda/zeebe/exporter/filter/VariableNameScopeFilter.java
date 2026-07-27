@@ -67,8 +67,8 @@ public final class VariableNameScopeFilter implements ExporterRecordFilter, Reco
       accepted = !hasRootRules || rootFilter.accept(variableRecordValue.getName());
     }
 
-    if (!accepted && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (!accepted && LOG.isTraceEnabled()) {
+      LOG.trace(
           "VariableNameScopeFilter rejected record {}: {} variable name '{}' did not match name rules",
           record.getKey(),
           scope,

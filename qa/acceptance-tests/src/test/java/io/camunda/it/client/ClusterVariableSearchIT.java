@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.it.util.TestHelper;
@@ -192,6 +193,7 @@ public class ClusterVariableSearchIT {
     assertThat(result.getTenantId()).isNull();
     assertThat(result.getScope()).isEqualTo(ClusterVariableScope.GLOBAL);
     assertThat(result.isTruncated()).isFalse();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 
   @Test
@@ -210,6 +212,7 @@ public class ClusterVariableSearchIT {
     assertThat(result.getTenantId()).isEqualTo(tenantId);
     assertThat(result.getScope()).isEqualTo(ClusterVariableScope.TENANT);
     assertThat(result.isTruncated()).isFalse();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 
   // ============ SEARCH TESTS ============
@@ -966,5 +969,36 @@ public class ClusterVariableSearchIT {
 
     // Verify the full value contains the original repeated characters
     assertThat(fullVar.getValue()).contains("xxx");
+  }
+
+  @Test
+  void shouldSearchReturnKindInResults() {
+    // when
+    final var results =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(globalVarName1))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getKind()).isEqualTo(ClusterVariableKind.JSON);
+  }
+
+  @Test
+  void shouldSearchFilterByKind() {
+    // when — all test variables are JSON kind
+    final var results =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.kind(ClusterVariableKind.JSON).scope(ClusterVariableScope.GLOBAL))
+            .send()
+            .join();
+
+    // then — global JSON variables should be returned
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items())
+        .allSatisfy(v -> assertThat(v.getKind()).isEqualTo(ClusterVariableKind.JSON));
   }
 }

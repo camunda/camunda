@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.response;
 
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 
 public interface CreateClusterVariableResponse {
@@ -26,4 +27,6 @@ public interface CreateClusterVariableResponse {
   ClusterVariableScope getScope();
 
   String getTenantId();
+
+  ClusterVariableKind getKind();
 }

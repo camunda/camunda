@@ -164,6 +164,25 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   @Override
+  public long bytesUntilEnd() {
+    // Prevent segments from being removed or closed while traversing them.
+    // This lock does not serialize with appends, so getting a consistent view requires appropriate
+    // thread confinement.
+    final var stamp = journal.acquireReadlock();
+    try {
+      long bytes = (long) currentSegment.appendedBytes() - currentReader.getOffsetInSegment();
+      Segment next = journal.getNextSegment(currentSegment.index());
+      while (next != null) {
+        bytes += next.appendedBytes();
+        next = journal.getNextSegment(next.index());
+      }
+      return Math.max(0, bytes);
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
   public void close() {
     currentReader.close();
     journal.closeReader(this);

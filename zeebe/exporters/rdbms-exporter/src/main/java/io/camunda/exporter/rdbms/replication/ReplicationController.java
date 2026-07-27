@@ -16,7 +16,5 @@ public interface ReplicationController extends AutoCloseable {
    *
    * @return if the replication is in sync
    */
-  default boolean isReplicationInSync() {
-    return true;
-  }
+  boolean isReplicationInSync();
 }

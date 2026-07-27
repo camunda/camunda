@@ -37,9 +37,9 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
   ClusterConfiguration getClusterConfiguration();
 
   /**
-   * Adds the topology listener. For each existing brokers, the listener will be notified via {@link
-   * BrokerTopologyListener#brokerAdded(BrokerMemberId)}. After that, the listener gets notified of
-   * every new broker added or removed events.
+   * Adds the topology listener. For each existing broker-group pair, the listener will be notified
+   * via {@link BrokerTopologyListener#brokerAdded(BrokerMemberId, String)}. After that, the
+   * listener gets notified of every new broker added or removed events.
    *
    * @param listener the topology listener
    */

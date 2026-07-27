@@ -21,4 +21,15 @@
     <artifactId>maven-build-cache-extension</artifactId>
     <version>1.2.3</version>
   </extension>
+
+  <!--
+       Branch-Scoped Local Repository https://github.com/lenaschoenburg/branch-scoped-local-repository
+       Installs locally-built artifacts under a branch-scoped path so multiple worktrees/branches of
+       the monorepo don't clobber each other's installed SNAPSHOTs. Requires Maven 3.9.x.
+  -->
+  <extension>
+    <groupId>io.github.lenaschoenburg</groupId>
+    <artifactId>branch-scoped-local-repository</artifactId>
+    <version>0.2.0</version>
+  </extension>
 </extensions>

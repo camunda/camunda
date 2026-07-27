@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,6 +43,7 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
+  private Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> timeoutNowHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -54,8 +56,11 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private final Map<Class<?>, ResponseInterceptor<?>> responseInterceptors =
       new ConcurrentHashMap<>();
 
+  private final MemberId memberId;
+
   public TestRaftServerProtocol(
       final MemberId memberId, final Map<MemberId, TestRaftServerProtocol> servers) {
+    this.memberId = memberId;
     this.servers = servers;
     servers.put(memberId, this);
   }
@@ -145,6 +150,16 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<TimeoutNowResponse> timeoutNow(
+      final MemberId memberId, final TimeoutNowRequest request) {
+    return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, TimeoutNowRequest.class))
+        .thenCompose(listener -> listener.timeoutNow(request))
+        .thenCompose(response -> transformResponse(response, TimeoutNowResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return getServer(memberId)
         .thenCompose(listener -> intercept(listener, request, PollRequest.class))
@@ -187,6 +202,17 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     transferHandler = null;
+  }
+
+  @Override
+  public void registerTimeoutNowHandler(
+      final Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> handler) {
+    timeoutNowHandler = handler;
+  }
+
+  @Override
+  public void unregisterTimeoutNowHandler() {
+    timeoutNowHandler = null;
   }
 
   @Override
@@ -336,6 +362,14 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
     }
   }
 
+  CompletableFuture<TimeoutNowResponse> timeoutNow(final TimeoutNowRequest request) {
+    if (timeoutNowHandler != null) {
+      return timeoutNowHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
   CompletableFuture<InstallResponse> install(final InstallRequest request) {
     if (installHandler != null) {
       return intercept(null, request, InstallRequest.class)
@@ -391,6 +425,23 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
         requestType,
         (request, listener) -> {
           interceptor.accept((T) request);
+          return CompletableFuture.completedFuture(listener);
+        });
+  }
+
+  /**
+   * interceptor is called before the request is handled by the receiver, with the receiver's member
+   * id as the first argument. Some requests are intercepted twice, once on the sending and once on
+   * the receiving protocol.
+   */
+  public <T> void interceptRequest(
+      final Class<T> requestType, final BiConsumer<MemberId, T> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          // listener is null when intercepting on the receiving protocol
+          final var receiver = listener != null ? listener.memberId : memberId;
+          interceptor.accept(receiver, (T) request);
           return CompletableFuture.completedFuture(listener);
         });
   }

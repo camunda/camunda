@@ -45,6 +45,7 @@ final class TestSupport {
       case PROCESS_INSTANCE_CREATION -> config.processInstanceCreation = value;
       case PROCESS_INSTANCE_MIGRATION -> config.processInstanceMigration = value;
       case PROCESS_INSTANCE_MODIFICATION -> config.processInstanceModification = value;
+      case PROCESS_INSTANCE_BUSINESS_ID -> config.processInstanceBusinessId = value;
       case ERROR -> config.error = value;
       case PROCESS -> config.process = value;
       case DECISION -> config.decision = value;
@@ -147,7 +148,9 @@ final class TestSupport {
             ValueType.CONDITIONAL_EVALUATION,
             ValueType.EXPRESSION,
             ValueType.JOB_METRICS_BATCH,
-            ValueType.RESOURCE_REEXPORT);
+            ValueType.RESOURCE_REEXPORT,
+            ValueType.SECRET_REFERENCE,
+            ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

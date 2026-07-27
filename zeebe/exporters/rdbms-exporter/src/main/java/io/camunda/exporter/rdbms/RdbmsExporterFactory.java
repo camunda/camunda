@@ -12,17 +12,21 @@ import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterInstantiationException;
 import io.camunda.zeebe.exporter.api.Exporter;
+import java.util.Map;
 
 public class RdbmsExporterFactory implements ExporterFactory {
 
   private final RdbmsServiceFactory rdbmsServiceFactory;
   private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
+  private final Map<String, ExporterConfiguration> exporterConfigByPhysicalTenantId;
 
   public RdbmsExporterFactory(
       final RdbmsServiceFactory rdbmsServiceFactory,
-      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
+      final Map<String, ExporterConfiguration> exporterConfigByPhysicalTenantId) {
     this.rdbmsServiceFactory = rdbmsServiceFactory;
     this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
+    this.exporterConfigByPhysicalTenantId = Map.copyOf(exporterConfigByPhysicalTenantId);
   }
 
   @Override
@@ -32,7 +36,8 @@ public class RdbmsExporterFactory implements ExporterFactory {
 
   @Override
   public Exporter newInstance() throws ExporterInstantiationException {
-    return new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+    return new RdbmsExporterWrapper(
+        rdbmsServiceFactory, rdbmsSchemaManagerRegistry, exporterConfigByPhysicalTenantId);
   }
 
   @Override

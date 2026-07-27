@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
@@ -15,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -48,7 +49,7 @@ final class LongPollingActivateJobsHandlerPurgeTest {
   @BeforeEach
   void setUp() {
     handler =
-        LongPollingActivateJobsHandler.<Object>newBuilder()
+        LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
             .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
@@ -79,7 +80,7 @@ final class LongPollingActivateJobsHandlerPurgeTest {
                     })
             .setResourceExhaustedExceptionProvider(RuntimeException::new)
             .setRequestCanceledExceptionProvider(RuntimeException::new)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
 
     activateJobsStub = new ActivateJobsStub();
@@ -149,6 +150,7 @@ final class LongPollingActivateJobsHandlerPurgeTest {
     requestWriter.setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE);
     when(brokerRequest.getRequestWriter()).thenReturn(requestWriter);
     when(brokerRequest.getPartitionId()).thenReturn(1);
+    when(brokerRequest.getPartitionGroup()).thenReturn(DEFAULT_PHYSICAL_TENANT_ID);
 
     final ResponseObserver<Object> observer =
         new ResponseObserver<>() {

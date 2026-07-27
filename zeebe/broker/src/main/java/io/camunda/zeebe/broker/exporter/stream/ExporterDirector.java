@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
@@ -632,10 +633,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    * Handles a replay request from an exporter container. Seeks the log reader to {@code
    * lastExportedPosition} so that records from that position onward will be re-exported.
    *
-   * <p>Replay is only valid during startup, i.e. while exporters are still being opened. If all
-   * exporters have already been opened ({@code allExportersOpened == true}) or the director is
-   * currently mid-export ({@code inExportingPhase == true}), the request is rejected with a warning
-   * and {@code false} is returned.
+   * <p>Replay may be requested at any time once the log stream reader has been created, both during
+   * the initial startup handshake and while exporting is already under way, e.g. when an exporter
+   * reopens after detecting that its secondary storage has fallen behind (an automatic failover to
+   * a lagging async replica). If a request is accepted while a record is currently mid-export
+   * ({@code inExportingPhase == true}), the container's {@link ExporterContainer#exportRecord}
+   * caller abandons that record instead of retrying it in place, so the rewound reader redelivers
+   * it - and everything the requesting exporter missed before it - strictly in order on the next
+   * read.
    *
    * @param lastExportedPosition the position to seek the log reader to for replay
    * @return {@code true} if the seek succeeded, {@code false} if the request was rejected or the
@@ -645,13 +650,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     if (logStreamReader == null) {
       LOG.warn(
           "Cannot process replay request at position {}: log stream reader is not available.",
-          lastExportedPosition);
-      return false;
-    }
-
-    if (allExportersOpened || inExportingPhase) {
-      LOG.warn(
-          "Replay requested at position {}, but all exporters are already opened and exporting started. Request should only be triggered during exporter opening. Ignoring replay request.",
           lastExportedPosition);
       return false;
     }
@@ -756,8 +754,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return;
     }
 
+    final AtomicReference<ExportOutcome> lastOutcome = new AtomicReference<>();
     final ActorFuture<Boolean> retryFuture =
-        exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
+        exportingRetryStrategy.runWithRetry(
+            () -> {
+              final ExportOutcome outcome = recordExporter.export();
+              lastOutcome.set(outcome);
+              return outcome != ExportOutcome.RETRY;
+            },
+            this::isClosed);
 
     actor.runOnCompletion(
         retryFuture,
@@ -765,6 +770,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
             onFailure();
+          } else if (lastOutcome.get() == ExportOutcome.ABORT_REPLAY) {
+            // the record was abandoned because a reopened exporter's replay request rewound the
+            // log reader; it will be redelivered, in order, once reading resumes below
+            inExportingPhase = false;
+            actor.submit(this::readNextEvent);
           } else {
             logStream.getFlowControl().onExported(recordExporter.getTypedEvent().getPosition());
             metrics.eventExported(recordExporter.getTypedEvent().getValueType());

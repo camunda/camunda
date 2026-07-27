@@ -22,16 +22,20 @@ const Header = styled.header<HeaderProps>`
       display: flex;
       align-items: center;
 
-      ${$size === 'md' &&
-      css`
-        min-height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
-        height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
-      `}
-      ${$size === 'sm' &&
-      css`
-        min-height: var(--cds-spacing-08);
-        height: var(--cds-spacing-08);
-      `}
+      ${
+        $size === 'md' &&
+        css`
+          min-height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
+          height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
+        `
+      }
+      ${
+        $size === 'sm' &&
+        css`
+          min-height: var(--cds-spacing-08);
+          height: var(--cds-spacing-08);
+        `
+      }
     `;
   }}
 `;

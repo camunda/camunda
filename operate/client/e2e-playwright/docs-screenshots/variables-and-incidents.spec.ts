@@ -56,6 +56,7 @@ test.describe('variables and incidents', () => {
               processDefinitionVersion: 2,
               startDate: '2023-09-29T07:16:22.701+0000',
               endDate: null,
+              suspendedDate: null,
               state: 'ACTIVE',
               processDefinitionId: 'order-process',
               tenantId: '<default>',

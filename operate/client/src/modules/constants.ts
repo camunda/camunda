@@ -32,6 +32,7 @@ const INSTANCE_HISTORY_LEFT_PADDING = 'var(--cds-spacing-05)';
 const COLLAPSABLE_PANEL_HEADER_HEIGHT = 'var(--cds-spacing-09)';
 const ARROW_ICON_WIDTH = 'var(--cds-spacing-08)';
 const DEFAULT_TENANT = '<default>';
+const WAITING_BADGE_BORDER_RADIUS = '11px';
 
 export {
   TOKEN_OPERATIONS,
@@ -42,4 +43,5 @@ export {
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
   ARROW_ICON_WIDTH,
   DEFAULT_TENANT,
+  WAITING_BADGE_BORDER_RADIUS,
 };

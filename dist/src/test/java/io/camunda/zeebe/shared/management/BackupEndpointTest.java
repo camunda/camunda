@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -119,7 +121,7 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).takeBackup(anyLong());
+      doThrow(failure).when(api).takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.take(1);
@@ -141,7 +143,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new BackupAlreadyExistException(2, 1);
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).takeBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(failure))
+          .when(api)
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.take(1);
@@ -161,7 +165,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).takeBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var response = endpoint.take(1);
@@ -285,12 +291,12 @@ final class BackupEndpointTest {
 
       doAnswer(
               invocation -> {
-                final Long backupId = invocation.getArgument(0);
+                final Long backupId = invocation.getArgument(1);
                 return CompletableFuture.completedFuture(backupId);
               })
           .when(requestHandler)
-          .takeBackup(anyLong());
-      when(requestHandler.takeBackup()).thenCallRealMethod();
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
+      when(requestHandler.takeBackup(DEFAULT_PHYSICAL_TENANT_ID)).thenCallRealMethod();
 
       // when
       final var now = Instant.now();
@@ -299,7 +305,7 @@ final class BackupEndpointTest {
       final WebEndpointResponse<?> secondBackup = endpoint.take();
 
       // then
-      verify(requestHandler, times(2)).takeBackup();
+      verify(requestHandler, times(2)).takeBackup(DEFAULT_PHYSICAL_TENANT_ID);
       assertThat(firstBackup.getStatus()).isEqualTo(202);
       final var firstBody = (TakeBackupRuntimeResponse) firstBackup.getBody();
       final var backupId1 = firstBody.getBackupId();
@@ -331,21 +337,21 @@ final class BackupEndpointTest {
       when(config.getOffset()).thenReturn(offset);
       final var endpoint = new BackupEndpoint(requestHandler, config);
 
-      when(requestHandler.takeBackup()).thenCallRealMethod();
+      when(requestHandler.takeBackup(DEFAULT_PHYSICAL_TENANT_ID)).thenCallRealMethod();
       doAnswer(
               invocation -> {
-                final var backupId = invocation.getArgument(0);
+                final var backupId = invocation.getArgument(1);
                 return CompletableFuture.completedFuture(backupId);
               })
           .when(requestHandler)
-          .takeBackup(anyLong());
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var now = Instant.now();
       final WebEndpointResponse<?> response = endpoint.take();
 
       // then
-      verify(requestHandler, times(1)).takeBackup(anyLong());
+      verify(requestHandler, times(1)).takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
       assertThat(response.getStatus()).isEqualTo(202);
       final var body = (TakeBackupRuntimeResponse) response.getBody();
       final var backupId = body.getBackupId();
@@ -365,7 +371,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(true);
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -384,7 +391,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(false);
       when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
       when(config.getCheckpointInterval()).thenReturn(null);
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -403,7 +411,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(false);
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -422,7 +431,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(true);
       when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
       when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -445,7 +455,7 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).getStatus(anyLong());
+      doThrow(failure).when(api).getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.query("1");
@@ -467,7 +477,9 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api, config);
       final var backupStatus =
           new BackupStatus(1, State.DOES_NOT_EXIST, Optional.empty(), List.of());
-      doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(backupStatus))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.query("1");
@@ -489,7 +501,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var response = endpoint.query("1");
@@ -513,7 +527,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createPartitionBackupStatus();
-      doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(status))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       final String expectedJson =
           """
@@ -569,7 +585,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createFailedBackupStatus();
-      doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(status))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       final String expectedJson =
           """
@@ -668,7 +686,7 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).listBackups("*");
+      doThrow(failure).when(api).listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
       final WebEndpointResponse<?> response = endpoint.listAll();
@@ -689,7 +707,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups("*");
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
       final var response = endpoint.listAll();
@@ -726,7 +746,7 @@ final class BackupEndpointTest {
               List.of(createPartialPartitionStatus(BackupStatusCode.IN_PROGRESS)));
       doReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)))
           .when(api)
-          .listBackups("*");
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       final String expectedJson =
           """
@@ -782,7 +802,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups("*");
+      doReturn(CompletableFuture.completedFuture(List.of()))
+          .when(api)
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
       final WebEndpointResponse<?> response = endpoint.listAll();
@@ -821,7 +843,7 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).deleteBackup(1);
+      doThrow(failure).when(api).deleteBackup(DEFAULT_PHYSICAL_TENANT_ID, 1);
 
       // when
       final WebEndpointResponse<?> response = endpoint.delete("1");
@@ -842,7 +864,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .deleteBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var response = endpoint.delete("1");
@@ -865,7 +889,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
+      doReturn(CompletableFuture.completedFuture(null))
+          .when(api)
+          .deleteBackup(DEFAULT_PHYSICAL_TENANT_ID, 1);
 
       // when
       final WebEndpointResponse<?> response = endpoint.delete("1");
@@ -884,7 +910,9 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteRuntimeState();
+      doReturn(CompletableFuture.completedFuture(null))
+          .when(api)
+          .deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
       final WebEndpointResponse<?> response = endpoint.delete("state");
@@ -900,7 +928,9 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).deleteRuntimeState();
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
       final var response = endpoint.delete("state");
@@ -921,7 +951,7 @@ final class BackupEndpointTest {
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).deleteRuntimeState();
+      doThrow(failure).when(api).deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
       final WebEndpointResponse<?> response = endpoint.delete("state");
@@ -958,8 +988,10 @@ final class BackupEndpointTest {
                   new CheckpointInfo(
                       10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, endTimestamp))));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges()).thenReturn(CompletableFuture.completedFuture(rangesResponse));
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(rangesResponse));
 
       // when
       final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
@@ -1015,8 +1047,9 @@ final class BackupEndpointTest {
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
                   1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L, 5L)));
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
@@ -1056,8 +1089,9 @@ final class BackupEndpointTest {
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
                   1, 2L, CheckpointType.MARKER, 30L, 50L)));
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
@@ -1101,8 +1135,9 @@ final class BackupEndpointTest {
 
       final var stateResponse = new CheckpointStateResponse();
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
@@ -1146,8 +1181,9 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
       stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
@@ -1228,8 +1264,9 @@ final class BackupEndpointTest {
       stateResponse.setBackupStates(
           Set.of(new CheckpointStateResponse.PartitionCheckpointState(1, 1L, null, 20L, 10L)));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when

@@ -33,8 +33,10 @@ public final class VariableMappingTransformerTest {
   public void shouldCreateValidExpression() {
     // when
     final var expression =
-        transformer.transformInputMappings(
-            List.of(mapping("x", "a"), mapping("_x", "b")), expressionLanguage);
+        transformer
+            .transformInputMappings(
+                List.of(mapping("x", "a"), mapping("_x", "b")), expressionLanguage)
+            .expression();
 
     // then
     assertThat(expression.isValid())
@@ -46,7 +48,9 @@ public final class VariableMappingTransformerTest {
   public void shouldEvaluateToObject() {
     // given
     final var expression =
-        transformer.transformInputMappings(List.of(mapping("x", "a")), expressionLanguage);
+        transformer
+            .transformInputMappings(List.of(mapping("x", "a")), expressionLanguage)
+            .expression();
 
     // when
     final var result =
@@ -85,7 +89,8 @@ public final class VariableMappingTransformerTest {
   public void shouldEvaluateWithNotExistingVariable() {
     // given
     final var mappings = List.of(mapping("=x", "a"));
-    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
+    final var expression =
+        transformer.transformInputMappings(mappings, expressionLanguage).expression();
 
     // when
     final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
@@ -104,14 +109,16 @@ public final class VariableMappingTransformerTest {
   public void shouldNotEscapeCharactersInStaticExpression() {
     // when
     final var expression =
-        transformer.transformInputMappings(
-            List.of(
-                mapping("Hello\tWorld", "tab"),
-                mapping("Hello\nWorld", "newline"),
-                mapping("Hello\rWorld", "carriageReturn"),
-                mapping("\"My Name is \"Zeebe\", nice to meet you\"", "doubleQoutes"),
-                mapping("My Name is &#34;Zeebe&#34;, nice to meet you", "encodedQuotes")),
-            expressionLanguage);
+        transformer
+            .transformInputMappings(
+                List.of(
+                    mapping("Hello\tWorld", "tab"),
+                    mapping("Hello\nWorld", "newline"),
+                    mapping("Hello\rWorld", "carriageReturn"),
+                    mapping("\"My Name is \"Zeebe\", nice to meet you\"", "doubleQoutes"),
+                    mapping("My Name is &#34;Zeebe&#34;, nice to meet you", "encodedQuotes")),
+                expressionLanguage)
+            .expression();
 
     // then
     assertThat(expression.isValid())
@@ -126,7 +133,8 @@ public final class VariableMappingTransformerTest {
   public void shouldHandleNullSource() {
     // given
     final var mappings = List.of(mapping(null, "a"));
-    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
+    final var expression =
+        transformer.transformInputMappings(mappings, expressionLanguage).expression();
 
     // when
     final var result = expressionLanguage.evaluateExpression(expression, name -> null);

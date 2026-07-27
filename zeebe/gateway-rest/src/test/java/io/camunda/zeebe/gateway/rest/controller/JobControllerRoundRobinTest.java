@@ -121,6 +121,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "<default>",
+              "physicalTenantId": "default",
               "tags": [],
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
@@ -138,7 +139,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "rootProcessInstanceKey": null,
               "businessId": null,
               "userTask": null,
-              "priority": 80
+              "priority": 80,
+              "leaseToken": null
             },
             {
               "jobKey": "%d",
@@ -150,6 +152,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "<default>",
+              "physicalTenantId": "default",
               "tags": [],
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
@@ -167,7 +170,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "rootProcessInstanceKey": null,
               "businessId": null,
               "userTask": null,
-              "priority": 80
+              "priority": 80,
+              "leaseToken": null
             }
           ]
         }"""

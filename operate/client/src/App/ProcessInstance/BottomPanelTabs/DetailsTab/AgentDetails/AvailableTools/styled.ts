@@ -35,7 +35,7 @@ const EmptyHint = styled.span`
   line-height: var(--cds-body-compact-01-line-height);
   letter-spacing: var(--cds-body-compact-01-letter-spacing);
   font-weight: var(--cds-body-compact-01-font-weight);
-  color: var(--cds-text-primary);
+  color: var(--cds-text-secondary);
 `;
 
 export {ToolList, ToolName, ToolDescription, EmptyHint};

@@ -14,13 +14,9 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
-import java.time.Duration;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchiverJob> {
   @Override
   protected String getExpectedLifecyclePolicyName() {
@@ -43,7 +39,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
   @TestTemplate
   void shouldArchiveOldUsageMetricTU(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -52,13 +48,13 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           final var metric = usageMetricTU("2020-01-15T10:00:00+00:00");
           store(template, client, metric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, metric, "2020-01-01");
         });
   }
@@ -66,7 +62,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
   @TestTemplate
   void shouldNotArchiveRecentUsageMetricTU(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - one old metric and one recent metric
@@ -78,13 +74,13 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, oldMetric);
           store(template, client, recentMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only old metric should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, oldMetric, "2020-01-01");
           verifyNotMoved(template, client, recentMetric);
         });
@@ -93,7 +89,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
   @TestTemplate
   void shouldArchiveMultipleUsageMetricTUWithSameEndTime(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - multiple metrics with the same endTime are batched together
@@ -105,13 +101,13 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, metric1);
           store(template, client, metric2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - both should be archived to the same dated index in a single batch
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
           verifyMoved(template, client, metric1, "2020-03-01");
           verifyMoved(template, client, metric2, "2020-03-01");
         });
@@ -120,7 +116,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
   @TestTemplate
   void shouldArchiveMetricTUFromDifferentMonthsInSeparateBatches(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - metrics from different months require separate execute calls
@@ -132,22 +128,22 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, januaryMetric);
           store(template, client, marchMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - first execution archives the oldest batch
           final var firstBatch = job.execute();
 
           // then
-          assertThat(firstBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(firstBatch).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, januaryMetric, "2020-01-01");
           verifyNotMoved(template, client, marchMetric);
 
           // when - second execution archives the next batch
-          client.refresh();
+          client.refresh(testPrefix);
           final var secondBatch = job.execute();
 
           // then
-          assertThat(secondBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(secondBatch).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, marchMetric, "2020-03-01");
         });
   }

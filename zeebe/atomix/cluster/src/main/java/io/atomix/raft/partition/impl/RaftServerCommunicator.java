@@ -40,6 +40,8 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VersionedAppendRequest;
@@ -130,6 +132,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<TimeoutNowResponse> timeoutNow(
+      final MemberId memberId, final TimeoutNowRequest request) {
+    return sendAndReceive(sendingSubject.getTimeoutNowSubject(), request, memberId);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return sendAndReceive(sendingSubject.getPollSubject(), request, memberId);
   }
@@ -160,6 +168,17 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     unregisterHandler(RaftMessageContext::getTransferSubject);
+  }
+
+  @Override
+  public void registerTimeoutNowHandler(
+      final Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> handler) {
+    registerHandler(RaftMessageContext::getTimeoutNowSubject, handler);
+  }
+
+  @Override
+  public void unregisterTimeoutNowHandler() {
+    unregisterHandler(RaftMessageContext::getTimeoutNowSubject);
   }
 
   @Override

@@ -63,9 +63,11 @@ public final class ActivateJobsTest extends ClientTest {
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
             .setTenantId("test-tenant-1")
+            .setPhysicalTenantId("riskproduction")
             .setKind(JobKind.BPMN_ELEMENT)
             .setListenerEventType(ListenerEventType.START)
             .setBusinessId("order-123")
+            .setLeaseToken("lease-token-1")
             .build();
 
     final ActivatedJob activatedJob2 =
@@ -124,6 +126,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getPhysicalTenantId()).isEqualTo(activatedJob1.getPhysicalTenantId());
     assertThat(job.getKind())
         .isEqualTo(
             EnumUtil.convert(
@@ -134,6 +137,7 @@ public final class ActivateJobsTest extends ClientTest {
                 activatedJob1.getListenerEventType(),
                 io.camunda.client.api.search.enums.ListenerEventType.class));
     assertThat(job.getBusinessId()).isEqualTo("order-123");
+    assertThat(job.getLeaseToken()).isEqualTo("lease-token-1");
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -163,6 +167,7 @@ public final class ActivateJobsTest extends ClientTest {
                 activatedJob2.getListenerEventType(),
                 io.camunda.client.api.search.enums.ListenerEventType.class));
     assertThat(job.getBusinessId()).isNull();
+    assertThat(job.getLeaseToken()).isNull();
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");
@@ -556,6 +561,32 @@ public final class ActivateJobsTest extends ClientTest {
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getWorker()).isEqualTo(workerName);
+  }
+
+  @Test
+  public void shouldSetWithLease() {
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSetWithLeaseByDefault() {
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(1).send().join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isFalse();
   }
 
   @Test

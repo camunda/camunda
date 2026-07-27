@@ -29,11 +29,7 @@ import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {useHasPendingCancelOrMoveModification} from './elementSelection';
 
 type ModificationOption =
-  | 'add'
-  | 'cancel-all'
-  | 'cancel-instance'
-  | 'move-all'
-  | 'move-instance';
+  'add' | 'cancel-all' | 'cancel-instance' | 'move-all' | 'move-instance';
 
 const useWillAllElementsBeCanceled = () => {
   const {data: statistics} = useElementInstancesStatistics();

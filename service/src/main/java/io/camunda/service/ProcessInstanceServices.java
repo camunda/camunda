@@ -42,6 +42,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -49,11 +50,14 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessInstanceRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -386,6 +390,30 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
+  public CompletableFuture<ProcessInstanceRecord> suspendProcessInstance(
+      final ProcessInstanceSuspendRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerSuspendProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessInstanceRecord> resumeProcessInstance(
+      final ProcessInstanceResumeRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerResumeProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(
           final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
@@ -393,6 +421,30 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      suspendProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      resumeProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE)
             .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest, authentication);
@@ -459,6 +511,16 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessInstanceBusinessIdRecord> assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerAssignProcessInstanceBusinessIdRequest()
+            .setProcessInstanceKey(request.processInstanceKey())
+            .setBusinessId(request.businessId());
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -656,11 +718,18 @@ public final class ProcessInstanceServices
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 
+  public record ProcessInstanceSuspendRequest(Long processInstanceKey, Long operationReference) {}
+
+  public record ProcessInstanceResumeRequest(Long processInstanceKey, Long operationReference) {}
+
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
       Long operationReference) {}
+
+  public record AssignProcessInstanceBusinessIdRequest(
+      Long processInstanceKey, String businessId) {}
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,

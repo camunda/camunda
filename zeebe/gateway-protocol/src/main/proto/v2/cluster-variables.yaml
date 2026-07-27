@@ -455,6 +455,10 @@ paths:
 
 components:
   schemas:
+    ClusterVariableKindEnum:
+      type: string
+      enum: [JSON, SECRET_REFERENCE]
+      description: The kind of a cluster variable. JSON is the default. SECRET_REFERENCE allows the value to contain camunda.secrets.X references that are resolved at job activation time.
     ClusterVariableScopeEnum:
       type: string
       enum: [ GLOBAL, TENANT ]
@@ -472,6 +476,27 @@ components:
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable. Values must be
+            strings or numbers. Limited to 100 entries and a configurable maximum serialized size
+            (default: 100 entries at max key length of a cluster variable name (256 chars) plus the
+            maximum value length, 8192 characters).
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+        kind:
+          description: The kind of the cluster variable. Defaults to JSON if not specified.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
+        - propertyName: "kind"
+          addedInVersion: "8.10"
     UpdateClusterVariableRequest:
       type: object
       required:
@@ -480,6 +505,21 @@ components:
         value:
           type: object
           description: The new value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable. Values must be
+            strings or numbers. Limited to 100 entries and a configurable maximum serialized size
+            (default: 100 entries at max key length of a cluster variable name (256 chars) plus the
+            maximum value length, 8192 characters).
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
     ClusterVariableResult:
       type: object
       required:
@@ -512,6 +552,8 @@ components:
         - name
         - scope
         - tenantId
+        - metadata
+        - kind
       properties:
         name:
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
@@ -523,6 +565,23 @@ components:
           type: string
           nullable: true
           description: Only provided if the cluster variable scope is TENANT. Null for global scope variables.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable. Values are
+            strings or numbers.
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+        kind:
+          $ref: '#/components/schemas/ClusterVariableKindEnum'
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
+        - propertyName: "kind"
+          addedInVersion: "8.10"
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
@@ -578,6 +637,61 @@ components:
           description: |
             Filter cluster variables by truncation status of their stored values. When true, returns only variables whose stored values are truncated (i.e., the value exceeds the storage size limit and is truncated in storage). When false, returns only variables with non-truncated stored values. This filter is based on the underlying storage characteristic, not the response format.
           type: boolean
+        metadata:
+          description: >-
+            Filter by metadata entries. A map of metadata key to an advanced filter on that key's
+            value. Metadata values are strings or numbers.
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdvancedMetadataValueFilter'
+        kind:
+          description: The kind filter for cluster variables.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: "kind"
+          addedInVersion: "8.10"
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
+    AdvancedMetadataValueFilter:
+      title: Advanced filter
+      description: Advanced filter on a metadata value (string or number).
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          oneOf:
+            - type: string
+            - type: number
+        $neq:
+          description: Checks for inequality with the provided value.
+          oneOf:
+            - type: string
+            - type: number
+        $exists:
+          description: Checks if the metadata key exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: number
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: number
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: number
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: number
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
     ClusterVariableScopeFilterProperty:
       description: ClusterVariableScopeEnum property with full advanced search capabilities.
       oneOf:
@@ -608,6 +722,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+    ClusterVariableKindFilterProperty:
+      description: ClusterVariableKindEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        - $ref: '#/components/schemas/AdvancedClusterVariableKindFilter'
+    AdvancedClusterVariableKindFilter:
+      title: Advanced filter
+      description: Advanced ClusterVariableKindEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterVariableKindEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
     ClusterVariableSearchQueryResult:

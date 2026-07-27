@@ -164,6 +164,11 @@ public final class SnapshotChunkImpl
   }
 
   @Override
+  public long getContentLength() {
+    return content.capacity();
+  }
+
+  @Override
   public String toString() {
     return "SnapshotChunkImpl{"
         + "snapshotId="

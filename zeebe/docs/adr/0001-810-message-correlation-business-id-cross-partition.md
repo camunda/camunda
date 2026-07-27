@@ -86,6 +86,58 @@ local match: a message without a `businessId` correlates regardless; a message w
 only to a subscription whose stored `businessId` matches exactly. Only start events need a uniqueness
 check, and only `P_B` can answer it — hence the asymmetry with D2.
 
+**D6. A synchronous `correlate` defers its response; the `P_K` reply processors resolve it.** D2–D5
+describe the asynchronous `publish`, which has no waiting client — a delegated start simply proceeds
+and a rejected one stays buffered. A synchronous `POST /messages/correlation`, by contrast, has a
+client blocked on the outcome. When the only correlation on `P_K` was a start delegated to `P_B`,
+`P_K` must not answer `NOT_FOUND`: the instance is being created remotely, so the response is
+deferred. The `CORRELATING` event already records the request (`requestId`, `requestStreamId`) keyed
+by `messageKey` — the same deferral used for cross-partition catch-event correlation — and the three
+reply processors resolve it: `STARTED` → `CORRELATED` + accepted response; `REJECT_UNIQUENESS` /
+`REJECT_NO_SUBSCRIPTION` → `NOT_CORRELATED` + a `NOT_FOUND` rejected response carrying the reason.
+Resolution is idempotent (the terminal applier removes the stored request) and a no-op for a
+`publish` (no stored request). The deferral is scoped to a genuine delegation (`P_B != P_K`): a
+start the local partition attempted but could not create — its definition draining or removed, so
+the local trigger reports "nothing started" — is not a delegation and is answered `NOT_FOUND`
+immediately, never deferred.
+
+**A rejected correlate is single-attempt: its message is expired, not buffered for retry.** This is
+the correlate/publish split of D2. A correlate carries no TTL (fire-and-forget), so on a
+`REJECT_UNIQUENESS` / `REJECT_NO_SUBSCRIPTION` the reply processor expires the buffered message — the
+same `EXPIRED` the success path already writes — which both removes the message and clears the
+pending ask, stopping the retry scheduler. Without this, the ask (backed off by the rejection
+applier, cleared only by a success or by the message's TTL) would keep retrying and could start an
+instance _after_ the client already received `NOT_FOUND`. A `publish` keeps the opposite contract:
+its rejected message stays buffered and is retried until it starts or its TTL expires (D2 /
+[ADR 0002](0002-810-message-start-rejection-retry.md)).
+
+**The rejection is reported as `NOT_FOUND` (HTTP 404), matching the single-partition path.** The
+local active-instance block already answers a correlate with `NOT_FOUND`, and the cross-partition
+arm answers with the same rejection type and status, so the client-visible outcome does not depend
+on whether `hash(businessId)` and `hash(correlationKey)` co-locate.
+
+The deferred correlate response, layered on the D2 ask/reply:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant P_K as P_K = hash(correlationKey)
+    participant P_B as P_B = hash(businessId)
+
+    Client->>P_K: correlate(name, correlationKey, businessId)
+    Note over P_K: CORRELATING stores requestId/requestStreamId by messageKey<br/>response deferred (no NOT_FOUND)
+    P_K->>P_B: REQUEST (cross-partition ask, D2)
+    alt instance created
+        P_B-->>P_K: STARTED
+        Note over P_K: CORRELATED + accepted response<br/>message EXPIRED
+        P_K-->>Client: 200 CORRELATED (processInstanceKey)
+    else uniqueness / no-subscription rejection
+        P_B-->>P_K: REJECT_UNIQUENESS / REJECT_NO_SUBSCRIPTION
+        Note over P_K: NOT_CORRELATED + NOT_FOUND response<br/>message EXPIRED (single attempt, no retry)
+        P_K-->>Client: 404 NOT_FOUND (reason)
+    end
+```
+
 ## Alternatives considered
 
 - **Combined-hash routing `hash(correlationKey + businessId)`.** Co-locates the lock and the
@@ -106,6 +158,9 @@ check, and only `P_B` can answer it — hence the asymmetry with D2.
   stays observable from one partition per correlation key.
 - New cross-partition machinery is confined to the message-start path: an ask with three reply
   outcomes, a per-`P_K` record of remotely held locks, and the dedup row on `P_B`.
+- A synchronous `correlate` to a cross-partition start is answered exactly once, when its remote
+  outcome is known, by reusing the existing request-deferral state — so it never reports a spurious
+  `NOT_FOUND` while the instance is being created (D6, closing camunda/camunda#58207).
 - The pull keeps all reaction-to-completion logic on the partition that owns the work and is
   self-healing, at the cost of added latency on the release path (bounded by the poll interval and
   back-off).

@@ -16,9 +16,7 @@ import {Button, type ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type:
-    | 'RESOLVE_INCIDENT'
-    | 'CANCEL_PROCESS_INSTANCE'
-    | 'ENTER_MODIFICATION_MODE';
+    'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | 'ENTER_MODIFICATION_MODE';
   onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
   disabled?: boolean;

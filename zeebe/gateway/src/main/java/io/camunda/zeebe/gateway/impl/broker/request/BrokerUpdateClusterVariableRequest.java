@@ -44,6 +44,11 @@ public class BrokerUpdateClusterVariableRequest
     return this;
   }
 
+  public BrokerUpdateClusterVariableRequest setMetadata(final DirectBuffer metadata) {
+    requestDto.setMetadata(metadata);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

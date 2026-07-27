@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesReques
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -152,6 +154,9 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobRetriesRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -162,6 +167,9 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobTimeoutRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -176,6 +184,9 @@ public final class RequestMapper extends RequestUtil {
     }
     final var brokerRequest =
         new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -183,26 +194,44 @@ public final class RequestMapper extends RequestUtil {
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
-    return new BrokerFailJobRequest(
-            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerFailJobRequest(
+                grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
-    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(
       final CompleteJobRequest grpcRequest) {
 
-    return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(),
-        ensureJsonSet(grpcRequest.getVariables()),
-        getJobResultOrDefault(grpcRequest),
-        maxVariableNameLength);
+    final var brokerRequest =
+        new BrokerCompleteJobRequest(
+            grpcRequest.getJobKey(),
+            ensureJsonSet(grpcRequest.getVariables()),
+            getJobResultOrDefault(grpcRequest),
+            maxVariableNameLength);
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    if (grpcRequest.hasBusinessId()) {
+      brokerRequest.setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+    }
+    return brokerRequest;
   }
 
   private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {
@@ -399,7 +428,8 @@ public final class RequestMapper extends RequestUtil {
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
         .setTenantIds(tenantIds)
-        .setTenantFilter(tenantFilter);
+        .setTenantFilter(tenantFilter)
+        .setWithLease(grpcRequest.getWithLease());
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -441,6 +471,14 @@ public final class RequestMapper extends RequestUtil {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
     return brokerRequest;
+  }
+
+  public static BrokerAssignProcessInstanceBusinessIdRequest
+      toAssignProcessInstanceBusinessIdRequest(
+          final AssignProcessInstanceBusinessIdRequest grpcRequest) {
+    return new BrokerAssignProcessInstanceBusinessIdRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
   }
 
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
@@ -515,6 +553,13 @@ public final class RequestMapper extends RequestUtil {
           "business id exceeds the limit of %d characters".formatted(MAX_BUSINESS_ID_LENGTH));
     }
     return businessId;
+  }
+
+  public static String ensureRequiredBusinessIdValid(final String businessId) {
+    if (StringUtils.isBlank(businessId)) {
+      throw new InvalidBusinessIdException(businessId, "no business id was provided");
+    }
+    return ensureBusinessIdValid(businessId);
   }
 
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {

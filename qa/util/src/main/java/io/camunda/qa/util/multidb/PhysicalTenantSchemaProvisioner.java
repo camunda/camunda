@@ -11,6 +11,7 @@ import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,20 +28,21 @@ import org.slf4j.LoggerFactory;
  *       path segment in the JDBC URL is replaced.
  *   <li>SQL Server: a dedicated <em>database</em>; the {@code databaseName} property in the
  *       semicolon-delimited JDBC URL is replaced.
- *   <li>Oracle: a per-tenant <em>table prefix</em> in the shared {@code camunda} schema — not a
- *       dedicated schema. Oracle's schema == user, so a schema-per-PT would need {@code CREATE
- *       USER} (DBA-only); more fundamentally, the production secondary-storage isolation check
- *       ({@code SecondaryStorageIsolationValidation}) keys a location on (type, connection url,
- *       table prefix) and deliberately ignores the user, so two Oracle users on the same URL are
- *       treated as the same location and rejected. A distinct table prefix is the validator's
- *       explicitly-allowed "shared connection, distinct prefix" mode and needs no privileges, so
- *       Oracle uses it instead of a per-PT schema.
+ *   <li>Oracle: a dedicated <em>schema</em>, which on Oracle == a dedicated <em>user</em>. Each PT
+ *       gets a {@code CREATE USER <namespace>} (with {@code CONNECT}/{@code RESOURCE} and an
+ *       unlimited tablespace quota) and connects as that user, so its tables live in its own schema
+ *       and no table prefix is needed. The PT's {@code database-vendor-id} is pinned to {@code
+ *       oracle} so the production isolation check ({@code SecondaryStorageIsolationValidation})
+ *       recognizes distinct Oracle users on the same JDBC URL as distinct locations (see <a
+ *       href="https://github.com/camunda/camunda/issues/56402">#56402</a>). This exercises the same
+ *       schema-per-user topology as the other dialects; the {@code CREATE USER}/{@code DROP USER}
+ *       bootstrap requires the base connection to be a privileged (DBA-grade) Oracle user.
  * </ul>
  *
  * <p>The namespace name is {@code <basePrefix>_<tenantId>}, where {@code basePrefix} is the
  * run-unique 10-character random token generated for the current test run (so concurrent CI matrix
  * runs targeting the same server cannot collide). For the schema/database dialects it names the
- * schema/database; for Oracle it is the per-PT table prefix.
+ * schema/database; for Oracle it names the per-PT user/schema.
  */
 @NullMarked
 final class PhysicalTenantSchemaProvisioner {
@@ -48,11 +50,19 @@ final class PhysicalTenantSchemaProvisioner {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(PhysicalTenantSchemaProvisioner.class);
 
+  /**
+   * Vendor id pinned on Oracle PTs so the production isolation check keys on the connecting user.
+   */
+  private static final String ORACLE_VENDOR_ID = "oracle";
+
+  /** ORA-01918: "user '…' does not exist" — the expected DROP USER outcome when none is present. */
+  private static final int ORA_USER_DOES_NOT_EXIST = 1918;
+
   private PhysicalTenantSchemaProvisioner() {}
 
   /**
    * Builds the namespace name for a physical tenant: {@code <basePrefix>_<tenantId>} — the schema
-   * or database name on the schema/database dialects, or the table prefix on Oracle.
+   * or database name on the schema/database dialects, or the user/schema name on Oracle.
    */
   static String buildNamespace(final String basePrefix, final String tenantId) {
     return basePrefix + "_" + tenantId;
@@ -139,22 +149,25 @@ final class PhysicalTenantSchemaProvisioner {
       case RDBMS_POSTGRES, RDBMS_AURORA -> {
         createPostgresSchema(baseUrl, baseUsername, basePassword, namespace);
         yield new PtStorageConfig(
-            derivePostgresUrl(baseUrl, namespace), baseUsername, basePassword, "");
+            derivePostgresUrl(baseUrl, namespace), baseUsername, basePassword, "", null);
       }
       case RDBMS_MYSQL, RDBMS_MARIADB -> {
         createMysqlDatabase(baseUrl, baseUsername, basePassword, namespace);
         yield new PtStorageConfig(
-            deriveMysqlUrl(baseUrl, namespace), baseUsername, basePassword, "");
+            deriveMysqlUrl(baseUrl, namespace), baseUsername, basePassword, "", null);
       }
       case RDBMS_MSSQL -> {
         createMssqlDatabase(baseUrl, baseUsername, basePassword, namespace);
         yield new PtStorageConfig(
-            deriveMssqlUrl(baseUrl, namespace), baseUsername, basePassword, "");
+            deriveMssqlUrl(baseUrl, namespace), baseUsername, basePassword, "", null);
       }
-      case RDBMS_ORACLE ->
-          // Oracle isolates by table prefix in the shared schema (see class javadoc): no DDL, the
-          // base connection is reused and the namespace becomes the per-PT table prefix.
-          new PtStorageConfig(baseUrl, baseUsername, basePassword, namespace);
+      case RDBMS_ORACLE -> {
+        // Oracle isolates by schema-per-user: create a dedicated user (== schema) and connect as it
+        // (see class javadoc). No table prefix; the vendor id is pinned so the production isolation
+        // check keys the location on the distinct user rather than rejecting the shared URL.
+        createOracleUser(baseUrl, baseUsername, basePassword, namespace, basePassword);
+        yield new PtStorageConfig(baseUrl, namespace, basePassword, "", ORACLE_VENDOR_ID);
+      }
       default ->
           throw new IllegalArgumentException(
               "provisionAndDerive called for unsupported database type: " + databaseType);
@@ -181,17 +194,63 @@ final class PhysicalTenantSchemaProvisioner {
   }
 
   /**
+   * Creates a dedicated Oracle user (== schema) for a physical tenant and grants it the privileges
+   * needed to own its own tables ({@code CONNECT}, {@code RESOURCE}, and an unlimited tablespace
+   * quota). Oracle has no {@code CREATE USER IF NOT EXISTS}, so any leftover user from a prior
+   * same-JVM rerun is dropped first (best-effort) to guarantee a fresh schema per run. Requires the
+   * bootstrap connection to be a privileged (DBA-grade) Oracle user.
+   */
+  private static void createOracleUser(
+      final String url,
+      final String adminUser,
+      final String adminPass,
+      final String namespace,
+      final String userPassword) {
+    try {
+      executeDdl(url, adminUser, adminPass, "DROP USER " + namespace + " CASCADE");
+    } catch (final RuntimeException e) {
+      // Only ignore "user does not exist" (ORA-01918) — the expected case when there is no leftover
+      // user from a prior same-JVM rerun. Any other failure (privileges, connectivity) is real and
+      // must surface here rather than masquerading as a later CREATE USER failure.
+      if (isOracleUserDoesNotExist(e)) {
+        LOGGER.debug("No pre-existing Oracle user '{}' to drop before create", namespace);
+      } else {
+        throw e;
+      }
+    }
+    executeDdl(
+        url,
+        adminUser,
+        adminPass,
+        "CREATE USER "
+            + namespace
+            + " IDENTIFIED BY \""
+            + escapeOracleQuotedLiteral(userPassword)
+            + "\"",
+        "GRANT CONNECT, RESOURCE TO " + namespace,
+        "GRANT UNLIMITED TABLESPACE TO " + namespace);
+  }
+
+  private static boolean isOracleUserDoesNotExist(final RuntimeException e) {
+    return e.getCause() instanceof final SQLException sqlException
+        && sqlException.getErrorCode() == ORA_USER_DOES_NOT_EXIST;
+  }
+
+  /** Escapes a double-quoted Oracle literal by doubling any embedded double quotes. */
+  private static String escapeOracleQuotedLiteral(final String value) {
+    return value.replace("\"", "\"\"");
+  }
+
+  /**
    * Best-effort drop of a previously provisioned namespace, used for per-run cleanup so persistent
    * shared instances (notably Aurora) don't accumulate orphaned schemas/databases across CI runs.
    *
    * <p>Failures are logged and swallowed: cleanup must never fail a test run, and the {@code IF
    * EXISTS} guards make repeated invocations harmless.
    *
-   * <p>Oracle and H2 have no namespace object to drop and are no-ops: H2 uses a throwaway in-memory
-   * database per PT, and Oracle isolates by table prefix in the shared schema. Oracle's per-run
-   * prefixed tables are therefore <em>not</em> dropped here — the run-unique prefix keeps separate
-   * runs from colliding, and the Oracle matrix runs against a fresh container per run, so they
-   * don't accumulate on a long-lived shared instance the way schema/database namespaces would.
+   * <p>H2 has no namespace object to drop and is a no-op: it uses a throwaway in-memory database
+   * per PT. Oracle drops the per-PT user with {@code DROP USER ... CASCADE} (which removes the
+   * schema and all its objects), matching the schema/database dialects.
    */
   static void dropNamespace(
       final DatabaseType databaseType,
@@ -205,7 +264,8 @@ final class PhysicalTenantSchemaProvisioner {
           case RDBMS_MYSQL, RDBMS_MARIADB -> "DROP DATABASE IF EXISTS `" + namespace + "`";
           case RDBMS_MSSQL ->
               "IF DB_ID('" + namespace + "') IS NOT NULL DROP DATABASE [" + namespace + "]";
-          // Oracle / H2: nothing to drop (table-prefix isolation / per-PT in-memory DB).
+          case RDBMS_ORACLE -> "DROP USER " + namespace + " CASCADE";
+          // H2: nothing to drop (per-PT in-memory DB).
           default -> null;
         };
     if (ddl == null) {
@@ -219,20 +279,29 @@ final class PhysicalTenantSchemaProvisioner {
   }
 
   private static void executeDdl(
-      final String url, final String user, final String pass, final String ddl) {
-    LOGGER.debug("Executing bootstrap DDL: {}", ddl);
+      final String url, final String user, final String pass, final String... ddls) {
     try (final var conn = DriverManager.getConnection(url, user, pass);
         final var stmt = conn.createStatement()) {
-      stmt.execute(ddl);
+      for (final String ddl : ddls) {
+        LOGGER.debug("Executing bootstrap DDL: {}", ddl);
+        stmt.execute(ddl);
+      }
     } catch (final SQLException e) {
-      throw new RuntimeException("Failed to execute bootstrap DDL: " + ddl, e);
+      throw new RuntimeException("Failed to execute bootstrap DDL: " + String.join("; ", ddls), e);
     }
   }
 
   /**
    * Holds the derived per-physical-tenant JDBC connection parameters. {@code prefix} is the table
-   * prefix to apply: empty for the schema/database dialects (isolation is at the schema/database
-   * level), or the namespace for Oracle (isolation is by table prefix in the shared schema).
+   * prefix to apply: empty for every RDBMS dialect (isolation is at the schema/database/user
+   * level). {@code databaseVendorId}, when non-null, pins the PT's {@code database-vendor-id} — set
+   * to {@code oracle} so the production isolation check keys the storage location on the connecting
+   * user.
    */
-  record PtStorageConfig(String url, String username, String password, String prefix) {}
+  record PtStorageConfig(
+      String url,
+      String username,
+      String password,
+      String prefix,
+      @Nullable String databaseVendorId) {}
 }

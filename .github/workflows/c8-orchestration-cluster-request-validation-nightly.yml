@@ -1,7 +1,7 @@
-# description: Runs Request Validation tests on the C8 Orchestration Cluster REST API for 8.8+ versions nightly
+# description: Runs Request Validation tests on the C8 Orchestration Cluster REST API nightly
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/request-validation
 # type: CI
-# owner: @camunda-ex-team
+# owner: @camunda/core-features
 ---
 name: C8 Orchestration Cluster V2 Stateless Tests Nightly
 
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda-ex-team'
+  TEST_OWNER: '@camunda/core-features'
 
 jobs:
   request-validation-tests:
@@ -21,11 +21,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.8, main]
+        branch: [main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.branch }}
 
@@ -94,7 +94,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
@@ -109,7 +109,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Setup Node.js for request validation test generator
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
 
@@ -140,7 +140,7 @@ jobs:
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
 

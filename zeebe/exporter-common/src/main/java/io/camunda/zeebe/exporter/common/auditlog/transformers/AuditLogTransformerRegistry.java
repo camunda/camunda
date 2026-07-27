@@ -111,6 +111,7 @@ public final class AuditLogTransformerRegistry {
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,
         ProcessInstanceModificationAuditLogTransformer::new,
+        ProcessInstanceSuspendResumeAuditLogTransformer::new,
         UserTaskAuditLogTransformer::new,
         VariableAddUpdateAuditLogTransformer::new);
   }

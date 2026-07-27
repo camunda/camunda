@@ -8,8 +8,8 @@
 package io.camunda.authentication.config;
 
 import com.nimbusds.jose.jwk.JWK;
-import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -32,16 +32,13 @@ public class OidcTokenEndpointCustomizer
     implements io.camunda.security.spring.oidc.OidcTokenEndpointCustomizer {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcTokenEndpointCustomizer.class);
-  private final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository;
+
   private final AssertionJwkProvider assertionJwkProvider;
   private final Map<String, JWK> resolvedJwks;
   private final RestClient restClient;
 
   public OidcTokenEndpointCustomizer(
-      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
-      final AssertionJwkProvider assertionJwkProvider,
-      final RestClient restClient) {
-    this.oidcAuthenticationConfigurationRepository = oidcAuthenticationConfigurationRepository;
+      final AssertionJwkProvider assertionJwkProvider, final RestClient restClient) {
     this.assertionJwkProvider = assertionJwkProvider;
     resolvedJwks = new ConcurrentHashMap<>();
     this.restClient = restClient;
@@ -75,19 +72,33 @@ public class OidcTokenEndpointCustomizer
     return converter;
   }
 
-  private Converter<OAuth2AuthorizationCodeGrantRequest, MultiValueMap<String, String>>
+  Converter<OAuth2AuthorizationCodeGrantRequest, MultiValueMap<String, String>>
       createResourceParameterConverter() {
     return request -> {
-      final var clientRegistration = request.getClientRegistration();
-      final var clientRegistrationId = clientRegistration.getRegistrationId();
-      final var oidcConfig =
-          oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurationById(
-              clientRegistrationId);
-      final var resource = oidcConfig.getResource();
-      if (resource != null && !resource.isEmpty()) {
+      final var resource =
+          request
+              .getAuthorizationExchange()
+              .getAuthorizationRequest()
+              .getAdditionalParameters()
+              .get(OAuth2ParameterNames.RESOURCE);
+      if (resource instanceof final Collection<?> resources && !resources.isEmpty()) {
         final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
-        parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, resource);
+        resources.forEach(
+            value -> parametersToAdd.add(OAuth2ParameterNames.RESOURCE, value.toString()));
         return parametersToAdd;
+      }
+      if (resource instanceof final String resourceValue && !resourceValue.isBlank()) {
+        final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
+        parametersToAdd.add(OAuth2ParameterNames.RESOURCE, resourceValue);
+        return parametersToAdd;
+      }
+      if (resource != null
+          && !(resource instanceof Collection<?>)
+          && !(resource instanceof String)) {
+        LOG.warn(
+            "Ignoring OIDC resource parameter with unsupported type {} for client registration {}",
+            resource.getClass().getName(),
+            request.getClientRegistration().getRegistrationId());
       }
       return null;
     };

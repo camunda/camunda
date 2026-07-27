@@ -239,7 +239,7 @@ Changes to the release process are done in these steps:
   * If testable in isolation/with dry run: demonstrate that change works
   * If not testable with dry run: wait for next release
 * Review:
-  * Get a peer review from a Monorepo DevOps team member or C8 engineer familiar with the process
+  * Get a peer review from a Engineering Operations team member or C8 engineer familiar with the process
 * Rollout:
   * Merge the Pull Request
   * If necessary, migrate currently running process instances in [Operate](#runtime) to new version of the process
@@ -277,6 +277,16 @@ _Caveat: Not all steps with "QA" in the name mean that the QA team is actually i
 Zeebe Medic: can help with Zeebe-specific questions and tasks.
 
 Core Features Medic: can help with questions and tasks related to Operate, Tasklist, and other core features.
+
+CPT Medic: can help with Camunda Process Test (CPT, formerly Zeebe Process Test / ZPT) questions and tasks. Call the CPT Medic when any of these or similar issues arise:
+
+- CPT/ZPT CI workflows fail after a Zeebe version bump (patch or minor).
+- The CPT/ZPT release or `deploy-artifact` job fails with a compilation error.
+- CPT/ZPT Maven Central publishing is blocked by missing metadata.
+- A CPT/ZPT PR needs review to unblock an RC or release step.
+- The CPT/ZPT merge-back PR after a release has failing CI due to API incompatibility.
+
+Reliability/Testing Medic: can help with questions and tasks related to reliability and load testing.
 
 ## Backporting Guidelines
 

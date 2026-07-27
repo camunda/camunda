@@ -25,6 +25,10 @@ import java.util.List;
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
 
+  public static final String ATTR_STATUS = "status";
+  public static final String ATTR_METRICS = "metrics";
+  public static final String ATTR_TOOLS = "tools";
+
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final ArrayProperty<LongValue> elementInstanceKeysProp =

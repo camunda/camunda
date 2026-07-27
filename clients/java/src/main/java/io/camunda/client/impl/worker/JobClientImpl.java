@@ -69,7 +69,7 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
-    return newCompleteCommand(job.getKey());
+    return newCompleteCommand(job.getKey()).withLeaseToken(job.getLeaseToken());
   }
 
   @Override
@@ -86,7 +86,9 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
-    return newFailCommand(job.getKey());
+    final FailJobCommandImpl command = (FailJobCommandImpl) newFailCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -103,7 +105,10 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
-    return newThrowErrorCommand(job.getKey());
+    final ThrowErrorCommandImpl command =
+        (ThrowErrorCommandImpl) newThrowErrorCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override

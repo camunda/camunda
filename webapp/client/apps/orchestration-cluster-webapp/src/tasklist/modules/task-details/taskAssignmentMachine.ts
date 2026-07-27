@@ -38,10 +38,7 @@ type MachineContext = {
 };
 
 type TaskAssignmentStatusTag =
-	| 'status:assigning'
-	| 'status:unassigning'
-	| 'status:assignment_successful'
-	| 'status:unassignment_successful';
+	'status:assigning' | 'status:unassigning' | 'status:assignment_successful' | 'status:unassignment_successful';
 
 async function resolveFailureSubtitle(
 	error: unknown,

@@ -80,6 +80,10 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/%s/cancellation";
   private static final String URL_PROCESS_INSTANCE_DELETION =
       REST_API_PATH + "/process-instances/%s/deletion";
+  private static final String URL_PROCESS_INSTANCE_SUSPENSION =
+      REST_API_PATH + "/process-instances/%s/suspension";
+  private static final String URL_PROCESS_INSTANCE_RESUMPTION =
+      REST_API_PATH + "/process-instances/%s/resumption";
   private static final String URL_PROCESS_INSTANCE_CALL_HIERARCHY =
       REST_API_PATH + "/process-instances/%s/call-hierarchy";
   private static final String URL_PROCESS_INSTANCE_SEQUENCE_FLOWS =
@@ -89,6 +93,10 @@ public class RestGatewayPaths {
   private static final String URL_PROCESS_INSTANCES = REST_API_PATH + "/process-instances";
   private static final String URL_PROCESS_INSTANCES_CANCELLATION =
       REST_API_PATH + "/process-instances/cancellation";
+  private static final String URL_PROCESS_INSTANCES_SUSPENSION =
+      REST_API_PATH + "/process-instances/suspension";
+  private static final String URL_PROCESS_INSTANCES_RESUMPTION =
+      REST_API_PATH + "/process-instances/resumption";
   private static final String URL_PROCESS_INSTANCES_DELETION =
       REST_API_PATH + "/process-instances/deletion";
   private static final String URL_PROCESS_INSTANCES_INCIDENT_RESOLUTION =
@@ -236,6 +244,14 @@ public class RestGatewayPaths {
     return String.format(URL_PROCESS_INSTANCE_DELETION, processInstanceKey);
   }
 
+  public static String getSuspendProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_SUSPENSION, processInstanceKey);
+  }
+
+  public static String getResumeProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_RESUMPTION, processInstanceKey);
+  }
+
   public static String getBroadcastSignalUrl() {
     return URL_SIGNAL_BROADCAST;
   }
@@ -325,6 +341,14 @@ public class RestGatewayPaths {
 
   public static String getProcessInstancesCancelUrl() {
     return URL_PROCESS_INSTANCES_CANCELLATION;
+  }
+
+  public static String getProcessInstancesSuspendUrl() {
+    return URL_PROCESS_INSTANCES_SUSPENSION;
+  }
+
+  public static String getProcessInstancesResumeUrl() {
+    return URL_PROCESS_INSTANCES_RESUMPTION;
   }
 
   public static String getProcessInstancesDeletionUrl() {

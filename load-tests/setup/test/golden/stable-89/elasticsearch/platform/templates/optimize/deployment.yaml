@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.9.11
+          image: camunda/optimize:8.9.13
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -62,7 +62,7 @@ spec:
           env:
             
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "elastic"
+              value: "elasticsearch-es-http"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: OPTIMIZE_LOG_APPENDER
@@ -73,6 +73,8 @@ spec:
               value: "3"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
               value: "1000"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+              value: "false"
           resources:
             limits:
               cpu: 2000m
@@ -96,7 +98,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:8.9.11
+          image: camunda/optimize:8.9.13
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -109,7 +111,7 @@ spec:
           env:
             
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "elastic"
+              value: "elasticsearch-es-http"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE
@@ -133,6 +135,8 @@ spec:
               value: "3"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
               value: "1000"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+              value: "false"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-89-elasticsearch-camunda-platform-identity-env-vars

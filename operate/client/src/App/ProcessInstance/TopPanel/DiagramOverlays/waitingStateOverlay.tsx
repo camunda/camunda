@@ -15,6 +15,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {WaitingStateOverlay as WaitingState} from 'modules/components/WaitingStateOverlay';
 import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {getWaitStateLabel} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
@@ -56,6 +57,8 @@ const useWaitingStateOverlaysData = (
     enabled: clientConfig.waitStatesEnabled,
   });
   const {data: businessObjects} = useBusinessObjects();
+  const {data: processInstance} = useProcessInstance();
+  const processDefinitionId = processInstance?.processDefinitionId;
 
   return useMemo(() => {
     if (!waitStateStatistics?.length) {
@@ -65,6 +68,13 @@ const useWaitingStateOverlaysData = (
     const overlays: OverlayData[] = [];
 
     for (const {elementId, waitingCount} of waitStateStatistics) {
+      // The process-level wait state (e.g. a process-level start execution
+      // listener) targets the PROCESS container, which has no diagram shape.
+      // Its "Waiting" label is surfaced in the instance header instead of on
+      // the diagram.
+      if (elementId === processDefinitionId) {
+        continue;
+      }
       // Hide the waiting state when an agent instance exists for the element.
       if (elementsWithAgent.has(elementId)) {
         continue;
@@ -87,7 +97,12 @@ const useWaitingStateOverlaysData = (
     }
 
     return overlays;
-  }, [waitStateStatistics, businessObjects, elementsWithAgent]);
+  }, [
+    waitStateStatistics,
+    businessObjects,
+    elementsWithAgent,
+    processDefinitionId,
+  ]);
 };
 
 const WaitingStateOverlay: React.FC<{overlay: DiagramOverlay}> = ({

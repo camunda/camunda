@@ -29,7 +29,8 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
   // Controllers on other paths are therefore never auto-enrolled in PT routing.
   private static final Set<String> PREFIXABLE_ROOTS =
       Stream.concat(
-              Stream.of("/v2", "/webapp"), WebAppProviderAdapter.WEB_APPS.stream().map("/"::concat))
+              Stream.of("/v2", "/webapp", "/v3/api-docs", "/post-logout"),
+              WebAppProviderAdapter.WEB_APPS.stream().map("/"::concat))
           .collect(Collectors.toUnmodifiableSet());
 
   @Override

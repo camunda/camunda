@@ -26,13 +26,14 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeRejectionOnCommand(
+  public void writeRejectedResponseOnCommand(
       final TypedRecord<?> command, final RejectionType type, final String reason) {
-    writeRejection(command, type, reason, command.getRequestId(), command.getRequestStreamId());
+    writeRejectedResponseOnCommand(
+        command, type, reason, command.getRequestId(), command.getRequestStreamId());
   }
 
   @Override
-  public void writeRejection(
+  public void writeRejectedResponseOnCommand(
       final TypedRecord<?> command,
       final RejectionType type,
       final String reason,
@@ -52,7 +53,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeRejection(
+  public void writeRejectedResponse(
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
@@ -75,8 +76,8 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeEvent(final TypedRecord<?> event) {
-    writeResponse(
+  public void writeAcceptedResponse(final TypedRecord<?> event) {
+    writeAcceptedResponse(
         event.getKey(),
         event.getIntent(),
         event.getValue(),
@@ -86,12 +87,12 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeEventOnCommand(
+  public void writeAcceptedResponseOnCommand(
       final long eventKey,
       final Intent eventState,
       final UnpackedObject eventValue,
       final TypedRecord<?> command) {
-    writeResponse(
+    writeAcceptedResponse(
         eventKey,
         eventState,
         eventValue,
@@ -101,7 +102,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeResponse(
+  public void writeAcceptedResponse(
       final long eventKey,
       final Intent eventState,
       final UnpackedObject eventValue,

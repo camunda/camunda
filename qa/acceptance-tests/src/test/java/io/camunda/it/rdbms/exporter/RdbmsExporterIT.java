@@ -19,6 +19,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -57,6 +58,7 @@ import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -115,6 +117,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -157,16 +160,24 @@ class RdbmsExporterIT {
             DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     exporterPositionMapper =
         rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
-    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+    final var exporterConfiguration = new ExporterConfiguration("foo", Map.of("queueSize", 0));
+    exporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                exporterConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     exporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration("foo", Map.of("queueSize", 0)),
+            exporterConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     exporter.open(controller);
   }
 
@@ -242,6 +253,30 @@ class RdbmsExporterIT {
     assertThat(rootCompletedProcessInstance.get().parentProcessInstanceKey()).isNull();
     assertThat(rootCompletedProcessInstance.get().parentFlowNodeInstanceKey()).isNull();
     verifyRootProcessInstanceKey(rootCompletedProcessInstance.get(), rootProcessInstanceRecord);
+  }
+
+  @Test
+  public void shouldUpdateBusinessIdOnLateAssignment() {
+    // given - a running process instance is exported
+    final var startedRecord = FIXTURES.getProcessInstanceStartedRecord();
+    exporter.export(startedRecord);
+    final var key = ((ProcessInstanceRecordValue) startedRecord.getValue()).getProcessInstanceKey();
+    final var before = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(before).isNotEmpty();
+
+    // when - a business id is assigned late to that running instance
+    final var assignedRecord =
+        FIXTURES.getProcessInstanceBusinessIdAssignedRecord(key, "late-business-id");
+    exporter.export(assignedRecord);
+
+    // then - only the business id of the existing row changed, nothing else
+    final var after = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(after).isNotEmpty();
+    assertThat(after.get().businessId()).isEqualTo("late-business-id");
+    assertThat(after.get().state()).isEqualTo(before.get().state());
+    assertThat(after.get().processDefinitionId()).isEqualTo(before.get().processDefinitionId());
+    assertThat(after.get().processDefinitionKey()).isEqualTo(before.get().processDefinitionKey());
+    assertThat(after.get().startDate()).isEqualTo(before.get().startDate());
   }
 
   @Test
@@ -1474,17 +1509,25 @@ class RdbmsExporterIT {
     // given - create a separate exporter with interval-based flush (queueSize > 0, not per-record)
     // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
     final var intervalController = new ExporterTestController();
+    final var intervalConfiguration =
+        new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100));
     final var intervalExporter =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                intervalConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     intervalExporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
+            intervalConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 2),
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     intervalExporter.open(intervalController);
 
     // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
@@ -1530,10 +1573,16 @@ class RdbmsExporterIT {
     tamperExporterPosition(tamperedPosition);
     final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
     assertThatThrownBy(() -> exporter.export(processInstanceRecord))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Exporter position mismatch for partition 1")
+        .isInstanceOf(ExporterException.class)
+        .satisfies(
+            ex ->
+                assertThat(((ExporterException) ex).getCompensation())
+                    .isEqualTo(ExporterException.Compensation.REOPEN))
+        .hasCauseInstanceOf(ExporterPositionMismatchException.class)
+        .rootCause()
+        .hasMessageContaining("partition 1")
         .hasMessageContaining("expected " + currentPosition)
-        .hasMessageContaining("but found " + tamperedPosition);
+        .hasMessageContaining(String.valueOf(tamperedPosition));
 
     // cleanup because the H2 is shared
     FIXTURES.resetPosition(currentPosition);

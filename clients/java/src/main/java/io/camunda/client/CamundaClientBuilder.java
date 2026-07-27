@@ -86,6 +86,17 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder physicalTenantId(String physicalTenantId);
 
   /**
+   * Controls whether the client prefixes the REST base path with {@code /physical-tenants/<id>}
+   * when a {@link #physicalTenantId(String) physical tenant id} is set (default {@code true}). Set
+   * to {@code false} to use the configured REST address verbatim — e.g. when a reverse proxy or a
+   * custom path layout already routes to the physical tenant. Has no effect on the gRPC {@code
+   * Camunda-Physical-Tenant} header, which is always sent when a physical tenant id is set.
+   *
+   * @param prefixPhysicalTenantPath whether to auto-prefix the REST base path per physical tenant
+   */
+  CamundaClientBuilder prefixPhysicalTenantPath(boolean prefixPhysicalTenantPath);
+
+  /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
    *     tenant identifiers are set. The default value contains only {@link
    *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.

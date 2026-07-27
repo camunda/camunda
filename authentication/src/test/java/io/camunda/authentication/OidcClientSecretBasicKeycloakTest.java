@@ -17,22 +17,29 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static io.camunda.security.spring.oidc.OidcAuthenticationConfigurationRepository.REGISTRATION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.client.BasicCredentials;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
+import jakarta.servlet.http.Cookie;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -42,18 +49,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.core.OAuth2RefreshToken;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -106,10 +101,12 @@ class OidcClientSecretBasicKeycloakTest {
   static final String ENDPOINT_WELL_KNOWN_OIDC =
       "/realms/" + REALM + "/.well-known/openid-configuration";
   static final String ENDPOINT_TOKEN = "/realms/" + REALM + "/oauth/token";
+  static final String ENDPOINT_USERINFO = "/realms/" + REALM + "/userinfo";
+
+  // Test RSA JWK used to sign ID tokens and exposed via JWKS
+  private static RSAKey rsaJwk;
 
   @Autowired MockMvcTester mockMvcTester;
-  @Autowired OAuth2AuthorizedClientService authorizedClientService;
-  @Autowired ClientRegistrationRepository clientRegistrationRepository;
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
@@ -119,13 +116,29 @@ class OidcClientSecretBasicKeycloakTest {
   }
 
   @BeforeAll
-  static void stubWellKnownForStartup() {
+  static void stubWellKnownForStartup() throws JOSEException {
+    rsaJwk =
+        new RSAKeyGenerator(2048)
+            .keyID("test-kid")
+            .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+
     stubFor(
         get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
                     .withBody(wellKnownResponse())));
+  }
+
+  private static void stubJwks() {
+    final String jwksBody =
+        JSONObjectUtils.toJSONString(new JWKSet(rsaJwk.toPublicJWK()).toJSONObject());
+    stubFor(
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
+            .willReturn(
+                aResponse().withHeader("Content-Type", "application/json").withBody(jwksBody)));
   }
 
   @Test
@@ -139,44 +152,54 @@ class OidcClientSecretBasicKeycloakTest {
 
   @Test
   public void shouldSendClientAssertionToTokenEndpointDuringAuthCodeExchange() {
-    stubIdpEndpoints();
-
-    // with an established session, we notify Spring Security we want to authenticate
-    // which builds and saves an authorizationRequest
-    // and we get a state reference that can be matched upon the redirect from the IdP
-    final MockHttpSession session = new MockHttpSession();
-    final var state = beginAuthenticationFlow(session);
+    // notifying Spring Security we want to authenticate builds and saves an authorizationRequest,
+    // giving us a state/nonce reference to match upon the redirect from the IdP, and a real
+    // session cookie that must be replayed so the follow-up request resolves the same session
+    final var authorizationRedirect = beginAuthenticationFlow();
+    stubTokenEndpoint(signedIdToken(authorizationRedirect.nonceHash()), null, 3600L);
 
     // when inducing an auth code for token exchange
-    mockAuthenticatedRedirectFromIdp(session, state);
+    mockAuthenticatedRedirectFromIdp(authorizationRedirect);
 
     // then the IdP receives the authorization code
     // with the Spring Security client authenticating using client_secret_basic
     verifyRequestStructure();
   }
 
-  private static void stubIdpEndpoints() {
-    // having an IdP token endpoint
+  private static void stubTokenEndpoint(
+      final String idToken, final String refreshToken, final long accessTokenExpiresInSeconds) {
     stubFor(
         post(urlEqualTo(ENDPOINT_TOKEN))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
-                    .withBody(tokenResponse())));
-
-    // and a dummy jwks well-known endpoint to prevent Spring from breaking
+                    .withBody(tokenResponse(idToken, refreshToken, accessTokenExpiresInSeconds))));
     stubFor(
-        get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
-            .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
+        get(urlEqualTo(ENDPOINT_USERINFO))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(userInfoResponse())));
+    stubJwks();
   }
 
-  private String beginAuthenticationFlow(final MockHttpSession session) {
+  private static String userInfoResponse() {
+    return """
+      {
+        "sub": "1234567890",
+        "name": "Camundo Camundovski",
+        "preferred_username": "camundo",
+        "email": "camundo@example.com"
+      }
+      """;
+  }
+
+  private AuthorizationRedirect beginAuthenticationFlow() {
     final var redirectResult =
         mockMvcTester
             .get()
             .uri("/oauth2/authorization/oidc")
             .accept(MediaType.TEXT_HTML)
-            .session(session)
             .exchange();
     assertThat(redirectResult).hasStatus3xxRedirection();
     final String redirectUrl = redirectResult.getResponse().getHeader("Location");
@@ -184,18 +207,26 @@ class OidcClientSecretBasicKeycloakTest {
     final var queryParams =
         UriComponentsBuilder.fromUriString(redirectUrl).build().getQueryParams();
     assertThat(queryParams).containsKey("state");
-    return URLDecoder.decode(
-        Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8);
+    final var sessionCookie =
+        redirectResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
+    return new AuthorizationRedirect(
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8),
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("nonce")), StandardCharsets.UTF_8),
+        sessionCookie);
   }
 
-  private void mockAuthenticatedRedirectFromIdp(final MockHttpSession session, final String state) {
-    mockMvcTester
+  private MvcTestResult mockAuthenticatedRedirectFromIdp(
+      final AuthorizationRedirect authorizationRedirect) {
+    return mockMvcTester
         .get()
         .uri("/sso-callback")
         .accept(MediaType.TEXT_HTML)
-        .session(session)
+        .cookie(authorizationRedirect.sessionCookie())
         .queryParam("code", "test_authorization_code")
-        .queryParam("state", state)
+        .queryParam("state", authorizationRedirect.state())
         .queryParam("session_state", "test_session_state")
         .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/" + REALM)
         .exchange();
@@ -218,36 +249,29 @@ class OidcClientSecretBasicKeycloakTest {
 
   @Test
   public void shouldSendBasicBearerTokenToTokenEndpointDuringRefreshToken() {
-    stubIdpEndpoints();
+    // log in for real so the resulting session holds a genuine, repository-backed authorized
+    // client; the IdP hands out a token that expires immediately, so the very next request must
+    // trigger OAuth2RefreshTokenFilter to refresh it using the stored refresh token. The same
+    // token-endpoint stub also answers the follow-up refresh-token request.
+    final var authorizationRedirect = beginAuthenticationFlow();
+    stubTokenEndpoint(signedIdToken(authorizationRedirect.nonceHash()), "refresh_token_value", 1L);
+    final var loginResult = mockAuthenticatedRedirectFromIdp(authorizationRedirect);
+    // successful authentication regenerates the session id (session-fixation protection), so the
+    // pre-login cookie is now stale — the post-login cookie must be used for the next request
+    final var postLoginSessionCookie =
+        loginResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(postLoginSessionCookie).isNotNull();
 
-    final var principalName = "a_user";
-    final var client = createExpiredAuthorizedClientWithRefreshToken(principalName);
-
-    final var oauth2User =
-        new DefaultOAuth2User(
-            Set.of(() -> "USER"),
-            java.util.Map.of("sub", principalName, "name", "Test User"),
-            "sub");
-
-    final var authenticationToken =
-        new OAuth2AuthenticationToken(oauth2User, Set.of(() -> "USER"), REGISTRATION_ID);
-    authenticationToken.setAuthenticated(true);
-    authorizedClientService.saveAuthorizedClient(client, authenticationToken);
-
-    final var session = new MockHttpSession();
-    final SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(authenticationToken);
-    session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
-    session.setAttribute(
-        "org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository.AUTHORIZED_CLIENTS",
-        Map.of(REGISTRATION_ID, client));
+    // OAuth2RefreshTokenFilter only applies its 60s clock-skew tolerance to tokens whose lifetime
+    // exceeds 2x the skew; a 1-second token falls back to a plain now-is-after-expiry check, so
+    // sleeping past that single second is what makes the token actually look expired.
+    awaitTokenExpiry();
 
     mockMvcTester
         .get()
         .uri(TestApiController.DUMMY_WEBAPP_ENDPOINT)
         .accept(MediaType.TEXT_HTML)
-        .with(SecurityMockMvcRequestPostProcessors.authentication(authenticationToken))
-        .session(session)
+        .cookie(postLoginSessionCookie)
         .exchange();
 
     verify(
@@ -260,26 +284,13 @@ class OidcClientSecretBasicKeycloakTest {
             .withRequestBody(containing("refresh_token=refresh_token_value")));
   }
 
-  private OAuth2AuthorizedClient createExpiredAuthorizedClientWithRefreshToken(
-      final String principalName) {
-    final var now = Instant.now();
-    final var expiredAccessToken =
-        new OAuth2AccessToken(
-            OAuth2AccessToken.TokenType.BEARER,
-            "access_token",
-            now.minus(2, ChronoUnit.HOURS),
-            now.minus(1, ChronoUnit.HOURS),
-            Set.of("read", "write"));
-
-    final var refreshToken =
-        new OAuth2RefreshToken(
-            "refresh_token_value", now.minus(2, ChronoUnit.HOURS), now.plus(30, ChronoUnit.DAYS));
-
-    final var clientRegistration =
-        clientRegistrationRepository.findByRegistrationId(REGISTRATION_ID);
-
-    return new OAuth2AuthorizedClient(
-        clientRegistration, principalName, expiredAccessToken, refreshToken);
+  private static void awaitTokenExpiry() {
+    try {
+      Thread.sleep(1500);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   private static String wellKnownResponse() {
@@ -317,14 +328,62 @@ class OidcClientSecretBasicKeycloakTest {
         .replaceAll("KEYCLOAKREALM", REALM);
   }
 
-  private static String tokenResponse() {
+  private static String tokenResponse(
+      final String idToken, final String refreshToken, final long expiresInSeconds) {
+    final var refreshTokenField =
+        refreshToken == null ? "" : "\"refresh_token\": \"%s\",".formatted(refreshToken);
     return """
             {
-                "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkNhbXVuZG8gQ2FtdW5kb3Zza2kiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNzU2OTQwMjk5fQ.Tih2EbvzaCkREp4yNaP7Y_opD1YyO3bE95te66bVpTXtOOl9jL8Ovv2nCNm44HMpQPZVyVlR3bDd3tcWf6mRolkeFMrhe2mkz0xr_-WptpgkigrIKVhWZzjz6YEawJpYFNH6pwn74WVPlnruyzeqnItdcbM-0dQ9gsIOPPgubajKnTs1qA6NwkOWU9AI6Y5aQcflRpPewkPMHKL-KIe0lIGfLUaQhUZEAbQC7u6Pujx8l2cuom-xpWAeYHCoNfKbsssUWHY3DZ4yZGk6vQe_dLt5iYxlVcp-SSOnOKNd6EU_Rf4cD0zNWTX44YfwYM5ZYBBJd9QiwSj_xmzLLbBFmA",
-                "expires_in": 3600,
+                "access_token": "dummy-access-token",
+                "expires_in": %d,
+                %s
                 "token_type": "Bearer",
-                "id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkNhbXVuZG8gQ2FtdW5kb3Zza2kiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNzU2OTQwMjk5fQ.Tih2EbvzaCkREp4yNaP7Y_opD1YyO3bE95te66bVpTXtOOl9jL8Ovv2nCNm44HMpQPZVyVlR3bDd3tcWf6mRolkeFMrhe2mkz0xr_-WptpgkigrIKVhWZzjz6YEawJpYFNH6pwn74WVPlnruyzeqnItdcbM-0dQ9gsIOPPgubajKnTs1qA6NwkOWU9AI6Y5aQcflRpPewkPMHKL-KIe0lIGfLUaQhUZEAbQC7u6Pujx8l2cuom-xpWAeYHCoNfKbsssUWHY3DZ4yZGk6vQe_dLt5iYxlVcp-SSOnOKNd6EU_Rf4cD0zNWTX44YfwYM5ZYBBJd9QiwSj_xmzLLbBFmA"
+                "id_token": "%s"
             }
-        """;
+        """
+        .formatted(expiresInSeconds, refreshTokenField, idToken);
   }
+
+  /**
+   * Builds a real RS256-signed ID token whose {@code nonce} claim echoes the given hash. The ID
+   * token's own expiry is unrelated to the access token's {@code expires_in} — it is fixed at an
+   * hour, comfortably longer than any test run.
+   */
+  private static String signedIdToken(final String nonceHash) {
+    final String issuer = "http://localhost:" + wireMock.getPort() + "/realms/" + REALM;
+    final var now = new java.util.Date();
+    final var exp = new java.util.Date(now.getTime() + 3600_000L);
+    final JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer(issuer)
+            .audience(CLIENT_ID)
+            .subject("1234567890")
+            .claim("name", "Camundo Camundovski")
+            .claim("admin", true)
+            .issueTime(now)
+            .expirationTime(exp)
+            .claim("nonce", nonceHash)
+            .build();
+
+    final SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID()).build(), claims);
+    try {
+      signedJWT.sign(new RSASSASigner(rsaJwk.toPrivateKey()));
+    } catch (final JOSEException e) {
+      throw new RuntimeException(e);
+    }
+    return signedJWT.serialize();
+  }
+
+  /**
+   * Holds what the test needs from the initial authorization redirect: {@code state} and {@code
+   * nonceHash} are plain query parameters on the redirect to the IdP (standard OIDC behaviour, not
+   * something read back out of the session — {@code nonceHash} is already the SHA-256 hash Spring
+   * Security computed from the raw nonce it stores server-side), and {@code sessionCookie} is the
+   * real Spring-Session-backed cookie the server issued — it must be replayed on the follow-up
+   * request so the server resolves the same session (and the {@code OAuth2AuthorizationRequest}
+   * stored in it) rather than starting a new one.
+   */
+  private record AuthorizationRedirect(String state, String nonceHash, Cookie sessionCookie) {}
 }

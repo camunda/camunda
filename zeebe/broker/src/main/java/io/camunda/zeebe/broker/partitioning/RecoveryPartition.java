@@ -10,9 +10,9 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PARTITION_ID;
 import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PHYSICAL_TENANT;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.startup.steps.recovery.RecoveryBackupApiRequestHandlerStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.recovery.RecoveryBackupServiceStep;
-import io.camunda.zeebe.broker.partitioning.startup.steps.recovery.RecoveryBackupStoreStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import java.util.List;
@@ -45,7 +45,6 @@ public final class RecoveryPartition {
                 partitionId.group()),
             LOGGER,
             List.of(
-                new RecoveryBackupStoreStep(partitionId),
                 new RecoveryBackupServiceStep(partitionId),
                 new RecoveryBackupApiRequestHandlerStep(partitionId))));
   }
@@ -86,5 +85,9 @@ public final class RecoveryPartition {
               });
         });
     return result;
+  }
+
+  PartitionId partitionId() {
+    return context.partitionId();
   }
 }

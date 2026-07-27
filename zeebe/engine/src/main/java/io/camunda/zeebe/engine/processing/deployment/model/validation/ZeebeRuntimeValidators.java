@@ -46,6 +46,8 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isOptional)
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
+        // reject secret references used as a string literal in an input mapping
+        new SecretReferenceLiteralValidator(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
             .hasValidExpression(

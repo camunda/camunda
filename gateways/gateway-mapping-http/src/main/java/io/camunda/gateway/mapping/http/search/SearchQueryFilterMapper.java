@@ -29,12 +29,14 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
@@ -46,6 +48,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
@@ -359,14 +362,27 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static ClusterVariableFilter toClusterVariableFilter(
-      final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
+  static Either<List<String>, VariableFilter> toVariableNameFilter(
+      final long processDefinitionKey, final @Nullable ProcessDefinitionVariableNameFilter filter) {
+    final var builder = FilterBuilders.variable().processDefinitionKeys(processDefinitionKey);
 
-    if (filter == null) {
-      return FilterBuilders.clusterVariable().build();
+    if (filter != null) {
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
 
+    return Either.right(builder.build());
+  }
+
+  static Either<List<String>, ClusterVariableFilter> toClusterVariableFilter(
+      final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
+
     final var builder = FilterBuilders.clusterVariable();
+
+    if (filter == null) {
+      return Either.right(builder.build());
+    }
+
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
@@ -375,8 +391,14 @@ public class SearchQueryFilterMapper {
         .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getMetadata())
+        .map(metadata -> ClusterVariableMapper.toMetadataValueFilters(metadata, validationErrors))
+        .ifPresent(builder::metadataOperations);
+    ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static BatchOperationFilter toBatchOperationFilter(
@@ -594,6 +616,9 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
       ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+      ofNullable(filter.getState())
+          .map(state -> ProcessDefinitionState.valueOf(state.name()))
+          .ifPresent(builder::state);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
@@ -704,6 +729,9 @@ public class SearchQueryFilterMapper {
               mapToStringOperations("state", validationErrors, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+      ofNullable(filter.getSuspendedDate())
+          .map(mapToOffsetDateTimeOperations("suspendedDate", validationErrors))
+          .ifPresent(builder::suspendedDateOperations);
       ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
@@ -1620,9 +1648,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getJobKey())
           .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
-      ofNullable(filter.getIteration())
-          .map(mapToIntegerOperations("iteration", validationErrors))
-          .ifPresent(builder::iterationOperations);
+      ofNullable(filter.getLoopIteration())
+          .map(mapToIntegerOperations("loopIteration", validationErrors))
+          .ifPresent(builder::loopIterationOperations);
       ofNullable(filter.getCommitStatus())
           .map(mapToStringOperations())
           .ifPresent(builder::commitStatusOperations);

@@ -19,20 +19,24 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -74,7 +78,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           5,
           "alpha",
           "<default>",
-          "formId");
+          "formId",
+          ProcessDefinitionState.ACTIVE);
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
@@ -85,7 +90,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "version": 5,
           "versionTag": "alpha",
           "tenantId": "<default>",
-          "hasStartForm": true
+          "hasStartForm": true,
+          "state": "ACTIVE"
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -99,7 +105,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "version": 5,
                   "versionTag": "alpha",
                   "tenantId": "<default>",
-                  "hasStartForm": true
+                  "hasStartForm": true,
+                  "state": "ACTIVE"
               }
           ],
           "page": {
@@ -123,7 +130,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       5,
                       "alpha",
                       "<default>",
-                      "formId")))
+                      "formId",
+                      ProcessDefinitionState.ACTIVE)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -140,6 +148,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @MockitoBean ProcessDefinitionServices processDefinitionServices;
 
   @MockitoBean FormServices formServices;
+  @MockitoBean VariableServices variableServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
 
@@ -156,6 +165,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     lenient()
         .when(serviceRegistry.processDefinitionServices(any()))
         .thenReturn(processDefinitionServices);
+    lenient().when(serviceRegistry.variableServices(any())).thenReturn(variableServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -233,6 +243,77 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getByKey(eq(23L), any());
+  }
+
+  @Test
+  public void shouldReturnDeletedStateForDeletedProcessDefinition() {
+    // given
+    final var deletedEntity =
+        new ProcessDefinitionEntity(
+            23L,
+            "Complex process",
+            "complexProcess",
+            "<xml/>",
+            "complexProcess.bpmn",
+            5,
+            "alpha",
+            "<default>",
+            "formId",
+            ProcessDefinitionState.DELETED);
+    when(processDefinitionServices.getByKey(eq(23L), any())).thenReturn(deletedEntity);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+                "processDefinitionKey": "23",
+                "name": "Complex process",
+                "processDefinitionId": "complexProcess",
+                "resourceName": "complexProcess.bpmn",
+                "version": 5,
+                "versionTag": "alpha",
+                "tenantId": "<default>",
+                "hasStartForm": true,
+                "state": "DELETED"
+            }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  public void shouldDefaultToActiveStateForLegacyNullState() {
+    // given - a row/document written before the state field existed
+    final var legacyEntity =
+        new ProcessDefinitionEntity(
+            23L,
+            "Complex process",
+            "complexProcess",
+            "<xml/>",
+            "complexProcess.bpmn",
+            5,
+            "alpha",
+            "<default>",
+            "formId",
+            null);
+    when(processDefinitionServices.getByKey(eq(23L), any())).thenReturn(legacyEntity);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(PROCESS_DEFINITION_ENTITY_JSON, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
@@ -435,6 +516,94 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices, never()).elementStatistics(any(), any());
+  }
+
+  @Test
+  void shouldSearchVariableNamesWithPrefixAndLimit() {
+    // given
+    when(variableServices.searchVariableNames(any(VariableNameQuery.class), any()))
+        .thenReturn(List.of("amount", "total"));
+    final var request =
+        """
+            {
+                "filter": {
+                    "name": {"$like": "a*"}
+                },
+                "page": {
+                    "limit": 5
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "123/variable-names/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+                {
+                    "items": [
+                        {"name": "amount"},
+                        {"name": "total"}
+                    ],
+                    "page": {
+                        "totalItems": 2,
+                        "hasMoreTotalItems": false
+                    }
+                }""",
+            JsonCompareMode.LENIENT);
+
+    verify(variableServices)
+        .searchVariableNames(
+            eq(
+                VariableNameQuery.of(
+                    b ->
+                        b.filter(
+                                f ->
+                                    f.processDefinitionKeys(123L)
+                                        .nameOperations(Operation.like("a*")))
+                            .page(p -> p.size(5)))),
+            any());
+  }
+
+  @Test
+  void shouldSearchVariableNamesWithEmptyBody() {
+    // given
+    when(variableServices.searchVariableNames(any(VariableNameQuery.class), any()))
+        .thenReturn(List.of());
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "123/variable-names/search")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+                {
+                    "items": [],
+                    "page": {
+                        "totalItems": 0,
+                        "hasMoreTotalItems": false
+                    }
+                }""",
+            JsonCompareMode.LENIENT);
+
+    verify(variableServices)
+        .searchVariableNames(
+            eq(VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(123L)))), any());
   }
 
   @Test

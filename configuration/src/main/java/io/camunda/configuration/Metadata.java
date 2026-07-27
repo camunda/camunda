@@ -39,6 +39,12 @@ public class Metadata {
   /** The number of nodes to which a cluster topology is gossiped. */
   private int gossipFanout = ClusterConfigurationGossiperConfig.DEFAULT_GOSSIP_FANOUT;
 
+  /**
+   * The maximum time to wait for a sync response with an initialized configuration before falling
+   * back to generating a new configuration from the static configuration.
+   */
+  private Duration bootstrapTimeout = ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT;
+
   public Duration getSyncDelay() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".sync-delay", syncDelay, Duration.class, SUPPORTED, LEGACY_SYNC_DELAY_PROPERTIES);
@@ -80,5 +86,13 @@ public class Metadata {
 
   public void setSyncInitializerDelay(final Duration delay) {
     syncInitializerDelay = delay;
+  }
+
+  public Duration getBootstrapTimeout() {
+    return bootstrapTimeout;
+  }
+
+  public void setBootstrapTimeout(final Duration bootstrapTimeout) {
+    this.bootstrapTimeout = bootstrapTimeout;
   }
 }

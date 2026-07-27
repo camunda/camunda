@@ -56,6 +56,10 @@ public final class ExporterUtil {
     return value <= 0 ? null : value;
   }
 
+  public static Long nullIfNegative(final long value) {
+    return value < 0 ? null : value;
+  }
+
   public static String toStringOrDefault(final Object object, final String defaultString) {
     return object == null ? defaultString : object.toString();
   }

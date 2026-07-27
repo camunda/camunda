@@ -20,8 +20,8 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -46,21 +47,21 @@ public class PartitionRestoreService {
   final Path rootDirectory;
   private final RaftPartition partition;
   private final int brokerId;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private final MeterRegistry meterRegistry;
 
   public PartitionRestoreService(
       final BackupStore backupStore,
       final RaftPartition partition,
       final int brokerId,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     partitionId = partition.id().number();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerId = brokerId;
-    this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
     this.meterRegistry = meterRegistry;
   }
 
@@ -247,7 +248,7 @@ public class PartitionRestoreService {
             brokerId,
             partition.id(),
             partition.dataDirectory().toPath(),
-            checksumProvider,
+            fileInfoProvider,
             meterRegistry);
 
     try {
@@ -279,7 +280,10 @@ public class PartitionRestoreService {
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
-            .orElseThrow(() -> new BackupNotFoundException(checkpointId));
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "Could not find a completed backup with id %d.".formatted(checkpointId)));
     validator.validateStatus(validStatus);
     return validStatus.id();
   }

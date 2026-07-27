@@ -137,6 +137,16 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
+  public UpdateRetriesJobCommandStep2 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  @Override
   public UpdateRetriesJobCommandStep1 useRest() {
     useRest = true;
     return this;

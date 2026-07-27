@@ -185,11 +185,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   private static long metadataProcessedPosition(final PersistedSnapshot snapshot) {
-    final var metadata = snapshot.getMetadata();
-    if (metadata == null) {
-      throw new NullPointerException();
-    }
-    return metadata.processedPosition();
+    return snapshot.getMetadata().processedPosition();
   }
 
   /**

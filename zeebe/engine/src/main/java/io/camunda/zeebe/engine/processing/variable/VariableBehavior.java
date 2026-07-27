@@ -7,17 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.engine.util.validation.NestingDepthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -93,12 +98,13 @@ public final class VariableBehavior {
       final long rootProcessInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
     }
-
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
@@ -146,12 +152,13 @@ public final class VariableBehavior {
       final long rootProcessInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
     }
-
     long currentScope = scopeKey;
     long parentScope;
     final List<VariableEvent> variableEvents = new ArrayList<>();
@@ -271,5 +278,32 @@ public final class VariableBehavior {
     variableRecordCopy.copyFrom(variableRecord);
 
     return variableRecordCopy;
+  }
+
+  /**
+   * Validates the given variable buffer. This is exposed for clients that need validation upfront
+   * or are not using {@code mergeDocument}/{@code mergeLocalDocument}.
+   *
+   * @param variableBuffer buffer to validate
+   * @return Either with Rejection if validation fails, or Void if validation succeeds
+   */
+  public Either<Rejection, Void> validateVariables(final DirectBuffer variableBuffer) {
+    return NestingDepthValidator.validate(variableBuffer)
+        .mapLeft(
+            failure ->
+                new Rejection(
+                    RejectionType.INVALID_ARGUMENT,
+                    "Failed to validate variables: " + failure.getMessage()));
+  }
+
+  private void validateBuffer(final long scopeKey, final DirectBuffer variableBuffer)
+      throws VariableValidationException {
+    final Either<Failure, Void> validate = NestingDepthValidator.validate(variableBuffer);
+    if (validate.isLeft()) {
+      throw new VariableValidationException(
+          String.format(
+              "Failed to validate variable document in scope %d: %s",
+              scopeKey, validate.getLeft().getMessage()));
+    }
   }
 }

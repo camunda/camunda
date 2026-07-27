@@ -20,11 +20,13 @@ const Title = styled.h2<Props>`
       ${styles.headingCompact01};
       color: var(--cds-text-primary);
 
-      ${$isVertical &&
-      css`
-        writing-mode: vertical-lr;
-        transform: rotate(-180deg);
-      `}
+      ${
+        $isVertical &&
+        css`
+          writing-mode: vertical-lr;
+          transform: rotate(-180deg);
+        `
+      }
     `;
   }}
 `;

@@ -382,6 +382,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         targetPartitionId,
@@ -398,6 +399,7 @@ public class SubscriptionCommandSender {
             messageStartEventSubscriptionKey,
             variables,
             messageDeadline,
+            messageTtl,
             tenantId));
   }
 
@@ -419,6 +421,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     interPartitionCommandSender.sendCommand(
         targetPartitionId,
@@ -435,6 +438,7 @@ public class SubscriptionCommandSender {
             messageStartEventSubscriptionKey,
             variables,
             messageDeadline,
+            messageTtl,
             tenantId));
   }
 
@@ -484,6 +488,20 @@ public class SubscriptionCommandSender {
       final MessageStartProcessInstanceRequestRecord request) {
     return sendStartProcessInstanceRejection(
         request, MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#REJECT_EXPIRED} reply from {@code
+   * P_B} back to {@code P_K} when the deterministic TTL-gated expiry guard refused a past-deadline
+   * request ({@code messageDeadline <= now} and {@code messageTtl > 0}). {@code P_K} keeps the
+   * message buffered; the {@code EXPIRED_REJECTED} applier backs the pending ask off (identical
+   * semantics to the other two rejections), and the ask is finally removed only by {@code P_K}'s
+   * own message-expiry path — never by this reply.
+   */
+  public boolean sendStartProcessInstanceExpiredRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
   }
 
   private boolean sendStartProcessInstanceRejection(
@@ -560,6 +578,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     return new MessageStartProcessInstanceRequestRecord()
         .setMessageKey(messageKey)
@@ -572,6 +591,7 @@ public class SubscriptionCommandSender {
         .setMessageStartEventSubscriptionKey(messageStartEventSubscriptionKey)
         .setVariables(variables)
         .setMessageDeadline(messageDeadline)
+        .setMessageTtl(messageTtl)
         .setTenantId(tenantId);
   }
 

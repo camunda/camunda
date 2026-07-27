@@ -36,7 +36,7 @@ public interface AgentInstanceHistory {
 
   String getJobLease();
 
-  Integer getIteration();
+  Integer getLoopIteration();
 
   AgentInstanceHistoryRole getRole();
 

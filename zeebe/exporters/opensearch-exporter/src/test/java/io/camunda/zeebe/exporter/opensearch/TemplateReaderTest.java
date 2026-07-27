@@ -39,7 +39,7 @@ final class TemplateReaderTest {
 
     // then component template settings set
     assertThat(template.template().settings().index().numberOfShards()).isEqualTo(1);
-    assertThat(template.template().settings().index().numberOfReplicas()).isEqualTo(0);
+    assertThat(template.template().settings().index().numberOfReplicas()).isEqualTo(1);
     assertThat(template.template().settings().index().queries().cache().enabled()).isFalse();
 
     // then template settings not set
@@ -64,7 +64,7 @@ final class TemplateReaderTest {
 
     // then
     assertThat(request.template().settings().index().numberOfShards()).isEqualTo(1);
-    assertThat(request.template().settings().index().numberOfReplicas()).isEqualTo(0);
+    assertThat(request.template().settings().index().numberOfReplicas()).isEqualTo(1);
     assertThat(request.template().settings().index().queries().cache().enabled()).isFalse();
 
     final Map<String, Property> expectedProperties =
@@ -133,7 +133,7 @@ final class TemplateReaderTest {
     assertThat(
             templateReader.readComponentTemplate().template().settings().index().numberOfReplicas())
         .as("should have the default number of shards in template")
-        .isEqualTo(0);
+        .isEqualTo(1);
 
     // when
     final PutComponentTemplateRequest request =
@@ -169,7 +169,7 @@ final class TemplateReaderTest {
         .containsExactlyEntriesOf(Map.of("zeebe-record-variable", Alias.builder().build()));
 
     assertThat(template.template().settings().index().numberOfShards()).isEqualTo(1);
-    assertThat(template.template().settings().index().numberOfReplicas()).isEqualTo(0);
+    assertThat(template.template().settings().index().numberOfReplicas()).isEqualTo(1);
     assertThat(template.template().settings().index().queries().cache().enabled()).isFalse();
   }
 
@@ -199,7 +199,7 @@ final class TemplateReaderTest {
         .containsExactlyEntriesOf(Map.of("custom-alias", Alias.builder().build()));
 
     assertThat(request.template().settings().index().numberOfShards()).isEqualTo(1);
-    assertThat(request.template().settings().index().numberOfReplicas()).isEqualTo(0);
+    assertThat(request.template().settings().index().numberOfReplicas()).isEqualTo(1);
     assertThat(request.template().settings().index().queries().cache().enabled()).isFalse();
 
     final Map<String, Property> expectedProperties =
@@ -284,7 +284,7 @@ final class TemplateReaderTest {
                 .index()
                 .numberOfReplicas())
         .as("should have the default number of shards in template")
-        .isEqualTo(0);
+        .isEqualTo(1);
 
     // when
     final PutIndexTemplateRequest request =

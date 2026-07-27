@@ -45,7 +45,7 @@ class AgentHistoryEntityTransformerTest {
     source.setPartitionId(1);
     source.setJobKey(500L);
     source.setJobLease("lease-token");
-    source.setIteration(3);
+    source.setLoopIteration(3);
     source.setRole(AgentHistoryRole.ASSISTANT);
     source.setCommitStatus(AgentHistoryCommitStatus.COMMITTED);
     source.setProducedAt(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
@@ -78,7 +78,7 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.jobKey()).isEqualTo(500L);
     assertThat(result.jobLease()).isEqualTo("lease-token");
-    assertThat(result.iteration()).isEqualTo(3);
+    assertThat(result.loopIteration()).isEqualTo(3);
     assertThat(result.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(result.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(result.producedAt()).isEqualTo(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
@@ -122,16 +122,16 @@ class AgentHistoryEntityTransformerTest {
   }
 
   @Test
-  void shouldMapNullIterationAsNull() {
+  void shouldMapNullLoopIterationAsNull() {
     // given
     final var source = buildSource();
-    source.setIteration(null);
+    source.setLoopIteration(null);
 
     // when
     final AgentInstanceHistoryEntity result = transformer.apply(source);
 
     // then
-    assertThat(result.iteration()).isNull();
+    assertThat(result.loopIteration()).isNull();
   }
 
   @Test
@@ -225,5 +225,38 @@ class AgentHistoryEntityTransformerTest {
     // then — 1:1 name mapping
     assertThat(result.commitStatus()).isNotNull();
     assertThat(result.commitStatus().name()).isEqualTo(schemaStatus.name());
+  }
+
+  @Test
+  void shouldMapAllNullMetricsToNullMetrics() {
+    // given — all three metric fields null means metrics were never provided
+    final var source = buildSource();
+    source.setInputTokens(null);
+    source.setOutputTokens(null);
+    source.setDurationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.metrics()).isNull();
+  }
+
+  @Test
+  void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
+    // given — inputTokens and outputTokens set, durationMs absent
+    final var source = buildSource();
+    source.setInputTokens(100L);
+    source.setOutputTokens(200L);
+    source.setDurationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.metrics()).isNotNull();
+    assertThat(result.metrics().inputTokens()).isEqualTo(100L);
+    assertThat(result.metrics().outputTokens()).isEqualTo(200L);
+    assertThat(result.metrics().durationMs()).isNull();
   }
 }

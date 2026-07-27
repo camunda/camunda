@@ -91,6 +91,11 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
+  protected void clearDiscovered() {
+    deploymentValues.clear();
+  }
+
+  @Override
   public void start(final CamundaClient client) {
     if (deploymentValues.isEmpty()) {
       return;

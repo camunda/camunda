@@ -114,6 +114,29 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
+  public CompleteJobCommandStep1 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep1 withBusinessId(final String businessId) {
+    if (businessId == null) {
+      return this;
+    }
+    if (businessId.trim().isEmpty()) {
+      throw new IllegalArgumentException("businessId must not be blank");
+    }
+    grpcRequestObjectBuilder.setBusinessId(businessId);
+    httpRequestObject.setBusinessId(businessId);
+    return this;
+  }
+
+  @Override
   public CompleteUserTaskJobResultImpl forUserTask() {
     return new CompleteUserTaskJobResultImpl();
   }

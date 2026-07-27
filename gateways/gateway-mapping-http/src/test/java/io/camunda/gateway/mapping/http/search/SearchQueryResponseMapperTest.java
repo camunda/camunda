@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
@@ -39,6 +40,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -190,6 +195,67 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldMapSuspendedDateForProcessInstance() {
+    // given
+    final var suspendedDate = OffsetDateTime.parse("2025-01-15T11:53:00Z");
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.SUSPENDED, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            null, // businessId
+            suspendedDate); // suspendedDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getSuspendedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
+  }
+
+  @Test
+  void shouldMapNullSuspendedDateForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            null, // businessId
+            null); // suspendedDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getSuspendedDate()).isNull();
   }
 
   @Test
@@ -1214,6 +1280,93 @@ class SearchQueryResponseMapperTest {
         .containsExactly("create", "update");
   }
 
+  @Test
+  void shouldMapClusterVariableGetResult() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(
+                new MetadataEntry("kind", "CREDENTIAL", null),
+                new MetadataEntry("schemaVersion", null, 2.0)),
+            null);
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getMetadata())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL", "schemaVersion", 2.0));
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
+  }
+
+  @Test
+  void shouldMapClusterVariableGetResultWithoutMetadata() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id", "name", "value", null, false, ClusterVariableScope.GLOBAL, null, List.of(), null);
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getMetadata()).isEmpty();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
+  }
+
+  @Test
+  void shouldMapClusterVariableSearchResult() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(new MetadataEntry("kind", "CREDENTIAL", null)),
+            null);
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableSearchResult(entity, true);
+
+    // then
+    assertThat(result.getMetadata())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL"));
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
+  }
+
+  @Test
+  void shouldMapClusterVariableGetResultWithExplicitKind() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(),
+            ClusterVariableKind.SECRET_REFERENCE);
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
+  }
+
   @Nested
   class AgentHistoryItemResult {
 
@@ -1236,7 +1389,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
-              new Metrics(10, 20, 30),
+              new Metrics(10L, 20L, 30L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               producedAt);
 
@@ -1249,7 +1402,7 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getElementInstanceKey()).isEqualTo("300");
       assertThat(result.getJobKey()).isEqualTo("600");
       assertThat(result.getJobLease()).isEqualTo("lease-1");
-      assertThat(result.getIteration()).isEqualTo(3);
+      assertThat(result.getLoopIteration()).isEqualTo(3);
       assertThat(result.getRole().getValue()).isEqualTo("USER");
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
@@ -1280,7 +1433,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
               List.of(),
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.PENDING,
               OffsetDateTime.now());
 
@@ -1312,7 +1465,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.TOOL_RESULT,
               null,
               null,
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.DISCARDED,
               OffsetDateTime.now());
 
@@ -1343,7 +1496,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(toolCall),
-              new Metrics(5, 10, 100),
+              new Metrics(5L, 10L, 100L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
 
@@ -1375,7 +1528,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(),
               List.of(),
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
       final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
@@ -1386,6 +1539,67 @@ class SearchQueryResponseMapperTest {
       // then
       assertThat(response.getItems()).hasSize(1);
       assertThat(response.getItems().get(0).getHistoryItemKey()).isEqualTo("42");
+    }
+
+    @Test
+    void shouldReturnNullMetricsWhenEntityMetricsIsNull() {
+      // given — metrics null means they were never provided at creation time
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.USER,
+              List.of(),
+              List.of(),
+              null,
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getMetrics()).isNull();
+    }
+
+    @Test
+    void shouldMapPartialMetricsWithNullDurationMs() {
+      // given — inputTokens and outputTokens set, durationMs absent
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(),
+              List.of(),
+              new Metrics(100L, 200L, null),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getMetrics()).isNotNull();
+      assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
+      assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getDurationMs()).isNull();
     }
   }
 }

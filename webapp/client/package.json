@@ -26,18 +26,18 @@
 		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas",
 		"prettier:format": "prettier --write ."
 	},
-	"packageManager": "npm@11.16.0",
+	"packageManager": "npm@12.0.1",
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
-		"@tanstack/eslint-plugin-query": "5.101.2",
-		"@vitest/eslint-plugin": "1.6.21",
-		"eslint": "10.5.0",
-		"eslint-plugin-import-x": "4.16.2",
+		"@tanstack/eslint-plugin-query": "5.101.4",
+		"@vitest/eslint-plugin": "1.6.24",
+		"eslint": "10.7.0",
+		"eslint-plugin-import-x": "4.17.1",
 		"eslint-plugin-license-header": "0.9.0",
 		"eslint-plugin-react-hooks": "7.1.1",
 		"eslint-plugin-react-refresh": "0.5.3",
-		"globals": "17.6.0",
-		"prettier": "3.8.4",
-		"typescript-eslint": "8.61.0"
+		"globals": "17.7.0",
+		"prettier": "3.9.6",
+		"typescript-eslint": "8.65.0"
 	}
 }

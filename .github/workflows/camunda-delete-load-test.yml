@@ -39,7 +39,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Set up Teleport
@@ -89,6 +89,10 @@ jobs:
         run: |
           set -euo pipefail
           kubectl delete namespace --wait=false --ignore-not-found "$NAMESPACE"
+          # Also delete the Keycloak instance and its Secrets in the keycloak-operator
+          # namespace. This could be removed once Keycloak instances can be part of
+          # the same namespace as the load test itself.
+          kubectl delete keycloak,secret --ignore-not-found --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$NAMESPACE"
       - name: Write summary
         if: always()
         env:

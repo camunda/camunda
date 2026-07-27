@@ -8,6 +8,7 @@
 
 import {type Mixpanel} from 'mixpanel-browser';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10/authentication';
+import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getStage} from '#/shared/config/getStage';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 
@@ -119,11 +120,21 @@ type Events =
 				| 'dashboard-process-instances-by-name-all-versions'
 				| 'dashboard-process-instances-by-name-single-version'
 				| 'dashboard-process-incidents-by-error-message-all-processes'
-				| 'dashboard-process-incidents-by-error-message-single-version';
+				| 'dashboard-process-incidents-by-error-message-single-version'
+				| 'decision-details-version'
+				| 'decision-details-parent-process-details';
 	  }
 	| {
 			eventName: 'operate:dashboard-link-clicked';
 			link: 'operate-docs' | 'modeler';
+	  }
+	| {
+			eventName: 'operate:decision-instance-details-loaded';
+			state: DecisionInstanceState;
+	  }
+	| {
+			eventName: 'operate:drd-panel-interaction';
+			action: 'open';
 	  }
 	| {
 			eventName: 'operate:batch-operation-details-opened';
@@ -134,6 +145,24 @@ type Events =
 			eventName: 'operate:batch-operations-sorted';
 			sortBy: string;
 			sortOrder: 'asc' | 'desc';
+	  }
+	| {
+			eventName: 'operate:date-range-applied';
+			methods: {
+				datePicker: boolean;
+				dateInput: boolean;
+				quickFilter: boolean;
+				timeInput: boolean;
+			};
+			filterName: string;
+	  }
+	| {
+			eventName: 'operate:date-range-popover-opened';
+			filterName: string;
+	  }
+	| {
+			eventName: 'operate:optional-filter-selected';
+			filterName: string;
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

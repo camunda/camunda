@@ -96,6 +96,8 @@ public final class RaftOperation {
         RaftOperation.of(
             "Drop next message",
             (raftContexts, m) -> raftContexts.getServerProtocol(m).dropNextMessage()));
+    defaultRaftOperation.add(
+        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadershipTo));
     return defaultRaftOperation;
   }
 }

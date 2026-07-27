@@ -54,7 +54,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -74,7 +74,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -98,7 +98,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -135,7 +135,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -180,7 +180,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -227,7 +227,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -246,6 +246,46 @@ describe('<ConversationHistory />', () => {
       toolResultMessage.getByRole('heading', {name: 'search'}),
     ).toBeInTheDocument();
     expect(toolResultMessage.getByText('Tool output here')).toBeInTheDocument();
+  });
+
+  it('should trigger a refetch when the agent instance status changes', async () => {
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-2'})]),
+    );
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-1'})]),
+    );
+
+    const {rerender} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="IDLE"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-1')).toBeVisible(),
+    );
+
+    rerender(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="TOOL_CALLING"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-2')).toBeVisible(),
+    );
   });
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
@@ -267,7 +307,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -329,7 +369,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -409,7 +449,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -424,10 +464,10 @@ describe('<ConversationHistory />', () => {
     const message = within(screen.getByTestId('conversation-message-1'));
     expect(message.getByText('Here are the documents.')).toBeInTheDocument();
     expect(
-      message.getByRole('button', {name: 'report.txt'}),
+      message.getByRole('listitem', {name: 'report.txt'}),
     ).toBeInTheDocument();
     expect(
-      message.getByRole('button', {name: 'screenshot.png'}),
+      message.getByRole('listitem', {name: 'screenshot.png'}),
     ).toBeInTheDocument();
   });
 
@@ -460,7 +500,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -476,11 +516,11 @@ describe('<ConversationHistory />', () => {
       screen.getByTestId('conversation-message-1'),
     );
     expect(
-      assistantMessage.getByRole('button', {name: '"greet" tool call.'}),
-    ).toBeDisabled();
+      assistantMessage.getByRole('listitem', {name: 'greet'}),
+    ).toBeInTheDocument();
     expect(
-      assistantMessage.getByRole('button', {name: '"search" tool call.'}),
-    ).toBeDisabled();
+      assistantMessage.getByRole('listitem', {name: 'search'}),
+    ).toBeInTheDocument();
   });
 
   it('should render metrics when they are available for a message', async () => {
@@ -505,7 +545,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey={null}
         agentsElementInstanceKeys={[]}
@@ -549,7 +589,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111']}
@@ -569,7 +609,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -588,7 +628,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -626,7 +666,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
         isVisible
         selectedElementInstanceKey="111"
         agentsElementInstanceKeys={['111', '222']}
@@ -656,5 +696,134 @@ describe('<ConversationHistory />', () => {
         expect.objectContaining({elementInstanceKey: '111'}),
       ),
     );
+  });
+
+  it('should insert loop iteration markers after messages in most-recent sorting order', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '3',
+          loopIteration: 2,
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 3'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '2',
+          loopIteration: 2,
+          role: 'USER',
+          content: [{contentType: 'TEXT', text: 'message 2'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          loopIteration: 1,
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 1'}],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const firstMarker = screen.getByText('1. loop iteration');
+    expect(firstMarker).toBeVisible();
+    const firstMessage = screen.getByTestId('conversation-message-1');
+    expect(
+      firstMarker.compareDocumentPosition(firstMessage) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+
+    const secondMarker = screen.getByText('2. loop iteration');
+    expect(secondMarker).toBeVisible();
+    const secondMessage = screen.getByTestId('conversation-message-2');
+    const thirdMessage = screen.getByTestId('conversation-message-3');
+    expect(
+      secondMarker.compareDocumentPosition(secondMessage) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    expect(
+      secondMarker.compareDocumentPosition(thirdMessage) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it('should insert loop iteration markers before messages in oldest first sorting order', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          loopIteration: 1,
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 1'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '2',
+          loopIteration: 2,
+          role: 'USER',
+          content: [{contentType: 'TEXT', text: 'message 2'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '3',
+          loopIteration: 2,
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 3'}],
+        }),
+      ]),
+    );
+    // Mock data for initial "most recent" sorting
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Most recent first'}));
+    expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
+
+    const firstMarker = await screen.findByText('1. loop iteration');
+    expect(firstMarker).toBeVisible();
+    const firstMessage = screen.getByTestId('conversation-message-1');
+    expect(
+      firstMarker.compareDocumentPosition(firstMessage) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const secondMarker = screen.getByText('2. loop iteration');
+    expect(secondMarker).toBeVisible();
+    const secondMessage = screen.getByTestId('conversation-message-2');
+    const thirdMessage = screen.getByTestId('conversation-message-3');
+    expect(
+      secondMarker.compareDocumentPosition(secondMessage) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      secondMarker.compareDocumentPosition(thirdMessage) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

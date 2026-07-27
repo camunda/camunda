@@ -126,6 +126,9 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private CamundaDataSource dataSource;
+  private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
+  private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
 
   private CamundaProcessTestContext camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -187,7 +190,8 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -313,8 +317,8 @@ public class CamundaProcessTestExtension
     }
 
     // initialize assertions
-    final CamundaDataSource dataSource =
-        new CamundaDataSource(camundaProcessTestContext.createClient());
+    final Instant testCaseStartTime = readCurrentRuntimeTime();
+    dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -378,8 +382,6 @@ public class CamundaProcessTestExtension
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource =
-          new CamundaDataSource(camundaProcessTestContext.createClient());
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
           context.getRequiredTestClass(),
@@ -398,8 +400,17 @@ public class CamundaProcessTestExtension
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
-    resetRuntimeClock();
-    deleteRuntimeData();
+    if (clockResetEnabled) {
+      resetRuntimeClock();
+    } else {
+      LOG.info("Runtime clock reset is disabled. Skipping.");
+    }
+
+    if (dataDeletionEnabled) {
+      deleteRuntimeData();
+    } else {
+      LOG.info("Runtime data deletion is disabled. Skipping.");
+    }
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
@@ -462,6 +473,18 @@ public class CamundaProcessTestExtension
           "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  private Instant readCurrentRuntimeTime() {
+    try {
+      return camundaManagementClient.getCurrentTime();
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to read the current runtime time. Test case isolation by start time will be "
+              + "disabled for this test case.",
+          e);
+      return null;
     }
   }
 
@@ -750,6 +773,28 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
     runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Enable or disable runtime clock reset after each test. By default, clock reset is enabled.
+   *
+   * @param enabled set {@code true} to enable runtime clock reset
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withClockResetEnabled(final boolean enabled) {
+    clockResetEnabled = enabled;
+    return this;
+  }
+
+  /**
+   * Enable or disable runtime data deletion after each test. By default, data deletion is enabled.
+   *
+   * @param enabled set {@code true} to enable runtime data deletion
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withDataDeletionEnabled(final boolean enabled) {
+    dataDeletionEnabled = enabled;
     return this;
   }
 

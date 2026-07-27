@@ -64,6 +64,70 @@ public final class JobUpdatePriorityTest extends ClientTest {
   }
 
   @Test
+  public void shouldUpdatePriorityWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(5).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final UpdateJobPriorityRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateJobPriorityCommand(job).priority(5).send().join();
+
+    // then
+    final UpdateJobPriorityRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected the activated job's lease token to be carried automatically")
+        .isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateJobPriorityCommand(job).priority(5).send().join();
+
+    // then
+    final UpdateJobPriorityRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the activated job carries none")
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(5).send().join();
+
+    // then
+    final UpdateJobPriorityRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken())
+        .describedAs("Expected no lease token when the command is built from a job key")
+        .isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

@@ -19,6 +19,7 @@ import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -159,11 +161,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             maxVariableNameLength,
             physicalTenantIds);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
-    springGatewayBridge.registerClusterStateSupplier(
-        () ->
-            Optional.ofNullable(gateway.getBrokerClient())
-                .map(BrokerClient::getTopologyManager)
-                .map(BrokerTopologyManager::getTopology));
+    springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     atomixClusterStartFuture.join();
@@ -171,6 +169,34 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * Builds the cluster topology for every configured physical tenant (partition group), keyed by
+   * physical tenant id. Used by health indicators that must not privilege the default physical
+   * tenant and instead aggregate readiness across all of them (OR-semantics).
+   *
+   * <p>Groups for which {@link BrokerTopologyManager#getTopology(String)} returns {@code null}
+   * (permitted by its contract) are skipped rather than collected, since {@link
+   * java.util.stream.Collectors#toMap} does not tolerate null values.
+   */
+  private Map<String, BrokerClusterState> clusterStatesByPhysicalTenant() {
+    final var topologyManager =
+        Optional.ofNullable(gateway.getBrokerClient())
+            .map(BrokerClient::getTopologyManager)
+            .orElse(null);
+    if (topologyManager == null) {
+      return Map.of();
+    }
+
+    final Map<String, BrokerClusterState> clusterStates = new HashMap<>();
+    for (final var physicalTenantId : physicalTenantIds.known()) {
+      final var topology = topologyManager.getTopology(physicalTenantId);
+      if (topology != null) {
+        clusterStates.put(physicalTenantId, topology);
+      }
+    }
+    return clusterStates;
   }
 
   @Override

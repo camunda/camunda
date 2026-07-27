@@ -107,7 +107,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTenantFilter(request.tenantFilter())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
+            .setVariables(request.fetchVariable())
+            .setWithLease(request.withLease());
     // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
     // partition group) so job activation round-robins over the tenant's partition group. The
     // handler reads brokerRequest.getPartitionGroup() when selecting partitions.
@@ -122,11 +123,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Long retryBackOff,
       final Map<String, Object> variables,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
             .setErrorMessage(errorMessage);
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -135,11 +140,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -147,23 +156,35 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Map<String, Object> variables,
       final JobResult result,
+      final String leaseToken,
+      final String businessId,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var request =
         new BrokerCompleteJobRequest(
-            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength),
-        authentication);
+            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength);
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
+    if (businessId != null) {
+      request.setBusinessId(businessId);
+    }
+    return sendBrokerRequest(request, authentication);
   }
 
   public CompletableFuture<JobRecord> updateJob(
       final long jobKey,
       final Long operationReference,
       final UpdateJobChangeset changeset,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(
             jobKey, changeset.retries(), changeset.timeout(), changeset.priority());
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
+    }
+    if (leaseToken != null) {
+      brokerRequest.setLeaseToken(leaseToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }
@@ -266,7 +287,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       long timeout,
       String worker,
       List<String> fetchVariable,
-      long requestTimeout) {}
+      long requestTimeout,
+      boolean withLease) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
 

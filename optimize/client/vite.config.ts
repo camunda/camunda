@@ -10,7 +10,7 @@ import {type PluginOption, defineConfig, transformWithOxc} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import {readdirSync} from 'node:fs';
-import sbom from '@vzeta/rollup-plugin-sbom';
+import sbom from 'rollup-plugin-sbom';
 
 const outDir = 'dist';
 
@@ -54,7 +54,7 @@ export default defineConfig(({mode}) => ({
       },
     },
   },
-  plugins: mode === 'sbom' ? [...plugins, sbom() as PluginOption] : plugins,
+  plugins: mode === 'sbom' ? [...plugins, sbom({specVersion: '1.6'}) as PluginOption] : plugins,
   optimizeDeps: {
     force: true,
     rolldownOptions: {

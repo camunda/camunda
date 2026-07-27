@@ -14,6 +14,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -47,8 +48,13 @@ public class RandomizedRaftJoinTest {
     // Initialize the two member IDs for the 2-node cluster
     member0 = MemberId.from("0");
     member1 = MemberId.from("1");
-    // Create ControllableRaftContexts with 2 nodes
-    raftContexts = new ControllableRaftContexts(2);
+    // Create ControllableRaftContexts with 2 nodes. Reduce the quorum response timeout to make
+    // the wall-clock gated leader step-down reachable under the deterministic scheduler: a leader
+    // then steps down after minStepDownFailureCount consecutive failures to reach the joining
+    // member, as it does in production when the joiner is unreachable for two election timeouts.
+    raftContexts =
+        new ControllableRaftContexts(
+            2, config -> config.setMaxQuorumResponseTimeout(Duration.ofMillis(1)));
     operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
   }
 
@@ -71,7 +77,7 @@ public class RandomizedRaftJoinTest {
       throws Exception {
     setUpRaftNodes(new Random(seed));
 
-    var joinFuture = raftContexts.join(member1, Set.of(member0));
+    var joinFuture = raftContexts.join(member1, Set.of(member0, member1));
 
     // given - when there are failures such as message loss
     final var memberIter = raftMembers.iterator();
@@ -82,7 +88,7 @@ public class RandomizedRaftJoinTest {
       if (joinFuture.isCompletedExceptionally()) {
         // retry join
         LOG.info("Join failed. Retrying...");
-        joinFuture = raftContexts.join(member1, Set.of(member0));
+        joinFuture = raftContexts.join(member1, Set.of(member0, member1));
       }
     }
 
@@ -104,7 +110,7 @@ public class RandomizedRaftJoinTest {
       if (joinFuture.isCompletedExceptionally()) {
         // retry join
         LOG.info("Join failed. Retrying...");
-        joinFuture = raftContexts.join(member1, Set.of(member0));
+        joinFuture = raftContexts.join(member1, Set.of(member0, member1));
       }
 
       raftContexts.runUntilDone();

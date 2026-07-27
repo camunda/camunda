@@ -83,8 +83,8 @@ public final class VariableTypeScopeFilter implements ExporterRecordFilter, Reco
       final VariableValueType inferredType =
           VariableValueType.infer(objectMapper, variableRecordValue.getValue());
       final boolean accepted = allowedLocalTypes.contains(inferredType);
-      if (!accepted && LOG.isDebugEnabled()) {
-        LOG.debug(
+      if (!accepted && LOG.isTraceEnabled()) {
+        LOG.trace(
             "VariableTypeScopeFilter rejected record {}: {} variable '{}' has inferred type {} which is not in allowed {} types {}",
             record.getKey(),
             scope,
@@ -101,8 +101,8 @@ public final class VariableTypeScopeFilter implements ExporterRecordFilter, Reco
       final VariableValueType inferredType =
           VariableValueType.infer(objectMapper, variableRecordValue.getValue());
       final boolean accepted = allowedRootTypes.contains(inferredType);
-      if (!accepted && LOG.isDebugEnabled()) {
-        LOG.debug(
+      if (!accepted && LOG.isTraceEnabled()) {
+        LOG.trace(
             "VariableTypeScopeFilter rejected record {}: {} variable '{}' has inferred type {} which is not in allowed {} types {}",
             record.getKey(),
             scope,

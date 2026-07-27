@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -43,7 +45,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -127,7 +131,8 @@ final class ClusterApiUtils {
     final var errorCode =
         switch (response.code()) {
           case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
-          case CONCURRENT_MODIFICATION -> 409;
+          case NOT_FOUND -> 404;
+          case CONCURRENT_MODIFICATION, INVALID_STATE -> 409;
           case INTERNAL_ERROR -> 500;
         };
     final var error = new Error();
@@ -246,6 +251,16 @@ final class ClusterApiUtils {
               .brokerId(brokerIdValue(bootstrapOperation.memberId()))
               .partitionId(bootstrapOperation.partitionId())
               .priority(bootstrapOperation.priority());
+      case final PartitionPreRestoreOperation preRestoreOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_PRE_RESTORE)
+              .brokerId(brokerIdValue(preRestoreOperation.memberId()))
+              .partitionId(preRestoreOperation.partitionId());
+      case final PartitionRestoreOperation restoreOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_RESTORE)
+              .brokerId(brokerIdValue(restoreOperation.memberId()))
+              .partitionId(restoreOperation.partitionId());
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new Operation().operation(OperationEnum.DELETE_HISTORY);
       case final AwaitRedistributionCompletion redistributionCompletion ->
@@ -300,6 +315,11 @@ final class ClusterApiUtils {
           new Operation()
               .operation(OperationEnum.AWAIT_MODE_CHANGE)
               .brokerId(brokerIdValue(modeChange.memberId()));
+      case final ExportingStateChangeOperation exportingStateChangeOperation ->
+          new Operation()
+              .operation(OperationEnum.EXPORTING_STATE_CHANGE)
+              .brokerId(brokerIdValue(exportingStateChangeOperation.memberId()))
+              .exportingState(mapExportingState(exportingStateChangeOperation.state()));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -372,11 +392,22 @@ final class ClusterApiUtils {
     };
   }
 
+  private static io.camunda.zeebe.management.cluster.ExportingState mapExportingState(
+      final ExportingState state) {
+    return switch (state) {
+      case EXPORTING -> io.camunda.zeebe.management.cluster.ExportingState.EXPORTING;
+      case PAUSED -> io.camunda.zeebe.management.cluster.ExportingState.PAUSED;
+      case SOFT_PAUSED -> io.camunda.zeebe.management.cluster.ExportingState.SOFT_PAUSED;
+      case UNKNOWN -> io.camunda.zeebe.management.cluster.ExportingState.UNKNOWN;
+    };
+  }
+
   private static PartitionStateCode mapPartitionState(final State state) {
     return switch (state) {
       case JOINING -> PartitionStateCode.JOINING;
       case ACTIVE -> PartitionStateCode.ACTIVE;
       case LEAVING -> PartitionStateCode.LEAVING;
+      case RECOVERING -> PartitionStateCode.RECOVERING;
       // TODO: Define state code for BootStrapping
       case BOOTSTRAPPING, UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
@@ -586,6 +617,16 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(bootstrapOperation.memberId()))
                   .partitionId(bootstrapOperation.partitionId())
                   .priority(bootstrapOperation.priority());
+          case final PartitionPreRestoreOperation preRestoreOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PRE_RESTORE)
+                  .brokerId(brokerIdValue(preRestoreOperation.memberId()))
+                  .partitionId(preRestoreOperation.partitionId());
+          case final PartitionRestoreOperation restoreOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_RESTORE)
+                  .brokerId(brokerIdValue(restoreOperation.memberId()))
+                  .partitionId(restoreOperation.partitionId());
           case final DeleteHistoryOperation deleteHistoryOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.DELETE_HISTORY);

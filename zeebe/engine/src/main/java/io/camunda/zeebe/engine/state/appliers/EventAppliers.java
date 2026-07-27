@@ -58,6 +58,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -70,6 +72,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -102,6 +105,8 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
     registerProcessInstanceMigrationAppliers();
+    registerProcessInstanceBusinessIdAppliers(state);
+    registerProcessInstanceBufferedCommandAppliers(state);
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
@@ -167,7 +172,22 @@ public final class EventAppliers implements EventApplier {
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
     registerAgentHistoryEventAppliers(state);
+    registerSecretReferenceEventAppliers(state);
     return this;
+  }
+
+  private void registerSecretReferenceEventAppliers(final MutableProcessingState state) {
+    register(
+        SecretReferenceIntent.RESOLUTION_REQUESTED,
+        new SecretReferenceResolutionRequestedApplier(state.getSecretReferenceState()));
+    register(
+        SecretReferenceIntent.RESOLUTION_COMPLETED,
+        new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
+    register(SecretReferenceIntent.RESOLUTION_FAILED, NOOP_EVENT_APPLIER);
+    register(
+        SecretReferenceIntent.BATCH_JOBS_REACTIVATED,
+        new SecretReferenceBatchJobsReactivatedApplier(state));
+    register(SecretReferenceIntent.BATCH_INCIDENTS_CREATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
@@ -185,7 +205,12 @@ public final class EventAppliers implements EventApplier {
         AgentInstanceIntent.UPDATED,
         new AgentInstanceUpdatedApplier(
             state.getAgentInstanceState(), state.getElementInstanceState()));
-    register(AgentInstanceIntent.COMPLETED, NOOP_EVENT_APPLIER);
+    register(
+        AgentInstanceIntent.COMPLETED,
+        new AgentInstanceCompletedApplier(state.getAgentInstanceState()));
+    register(
+        AgentInstanceIntent.MIGRATED,
+        new AgentInstanceMigratedApplier(state.getAgentInstanceState()));
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
@@ -245,6 +270,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
+    register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
@@ -397,6 +423,12 @@ public final class EventAppliers implements EventApplier {
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
     register(ProcessInstanceIntent.CANCELING, NOOP_EVENT_APPLIER);
+    register(
+        ProcessInstanceIntent.RESUMED,
+        new ProcessInstanceResumedApplier(state.getSuspensionState()));
+    register(
+        ProcessInstanceIntent.SUSPENDED,
+        new ProcessInstanceSuspendedApplier(state.getSuspensionState()));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -426,6 +458,23 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceMigrationIntent.MIGRATED, NOOP_EVENT_APPLIER);
   }
 
+  private void registerProcessInstanceBusinessIdAppliers(final MutableProcessingState state) {
+    register(
+        ProcessInstanceBusinessIdIntent.ASSIGNED,
+        1,
+        new ProcessInstanceBusinessIdAssignedV1Applier(state.getElementInstanceState()));
+  }
+
+  private void registerProcessInstanceBufferedCommandAppliers(final MutableProcessingState state) {
+    final var suspensionState = state.getSuspensionState();
+    register(
+        ProcessInstanceBufferedCommandIntent.BUFFERED,
+        new ProcessInstanceBufferedCommandBufferedApplier(suspensionState));
+    register(
+        ProcessInstanceBufferedCommandIntent.DRAINED,
+        new ProcessInstanceBufferedCommandDrainedApplier(suspensionState));
+  }
+
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
     register(JobIntent.CANCELED, 1, new JobCanceledV1Applier(state));
     register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
@@ -435,15 +484,20 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
     register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
     register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
+    register(JobIntent.CREATED, 3, new JobCreatedV3Applier(state));
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
     register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
-    register(JobIntent.YIELDED, new JobYieldedApplier(state));
+    register(JobIntent.FAILED, 3, new JobFailedV3Applier(state));
+    register(JobIntent.YIELDED, 1, new JobYieldedApplier(state));
+    register(JobIntent.YIELDED, 2, new JobYieldedV2Applier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, 1, new JobTimedOutV1Applier(state));
     register(JobIntent.TIMED_OUT, 2, new JobTimedOutV2Applier(state));
-    register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
+    register(JobIntent.TIMED_OUT, 3, new JobTimedOutV3Applier(state));
+    register(JobIntent.RECURRED_AFTER_BACKOFF, 1, new JobRecurredApplier(state));
+    register(JobIntent.RECURRED_AFTER_BACKOFF, 2, new JobRecurredV2Applier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
     register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));
     register(JobIntent.UPDATED, 2, NOOP_EVENT_APPLIER);
@@ -529,12 +583,25 @@ public final class EventAppliers implements EventApplier {
    *       when the success reply is processed; removes the pending-ask entry so the scheduler stops
    *       retrying.
    *   <li>{@code UNIQUENESS_REJECTED}: applied on {@code P_K} when the rejection reply is
-   *       processed; removes the pending-ask entry.
+   *       processed; backs the pending-ask entry off (increments its rejection count, keeps it) so
+   *       the scheduler re-sends it under exponential back-off until the holder frees the {@code
+   *       businessId} or the buffered message expires.
    *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
-   *       processed; removes the pending-ask entry.
+   *       processed; backs the pending-ask entry off (increments its rejection count, keeps it) so
+   *       the scheduler re-sends it under exponential back-off until the subscription reaches
+   *       {@code P_B} or the buffered message expires.
+   *   <li>{@code EXPIRED_REJECTED}: applied on {@code P_K} when the TTL-gated expiry guard's
+   *       rejection reply is processed; backs the pending-ask entry off (does not remove it —
+   *       removal stays owned by {@code P_K}'s message-expiry path).
    *   <li>{@code EXPIRED_DEDUP_DELETED}: removes a dedup entry after its post-completion expired
    *       dedup entry window has passed; emitted by the scheduled sweep.
    * </ul>
+   *
+   * <p>All three rejection intents ({@code UNIQUENESS_REJECTED}, {@code NO_SUBSCRIPTION_REJECTED},
+   * {@code EXPIRED_REJECTED}) share the same {@code askState.backOff(...)} semantics: the pending
+   * ask is kept with an incremented rejection count, never removed. Ask removal is owned
+   * exclusively by success ({@code STARTED}) and by {@code P_K}'s message-expiry path, which drops
+   * the buffered message and its ask at the message TTL.
    */
   private void registerMessageStartProcessInstanceRequestAppliers(
       final MutableProcessingState state) {
@@ -559,6 +626,10 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
         new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED,
+        new MessageStartProcessInstanceExpiredRejectedV1Applier(
             state.getMessageStartProcessInstanceAskState()));
   }
 
@@ -600,6 +671,11 @@ public final class EventAppliers implements EventApplier {
         IncidentIntent.RESOLVED,
         3,
         new IncidentResolvedV3Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        4,
+        new IncidentResolvedV4Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }

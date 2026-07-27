@@ -67,6 +67,15 @@ public interface JobBatchRecordValue extends RecordValue {
   boolean isTruncated();
 
   /**
+   * When a batch is activated with a lease, the engine generates a distinct lease token for each
+   * activated job and carries it on the job. The token lets the engine distinguish items produced
+   * by this activation from those of a superseded one.
+   *
+   * @return whether the jobs in this batch are activated with a lease
+   */
+  boolean isWithLease();
+
+  /**
    * Since a job batch contains many jobs, it is possible that the jobs belong to different tenants.
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated

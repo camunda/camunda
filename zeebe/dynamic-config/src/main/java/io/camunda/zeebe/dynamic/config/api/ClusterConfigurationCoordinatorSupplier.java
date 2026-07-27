@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -19,6 +20,14 @@ public interface ClusterConfigurationCoordinatorSupplier {
   MemberId getNextCoordinator(Collection<MemberId> members);
 
   MemberId getNextCoordinatorExcluding(Set<MemberId> memberIds);
+
+  /**
+   * Returns a coordinator that is not a member of the given zone, or empty if no such member
+   * exists. Used by zone force-removal, where the zone's brokers (including the default
+   * coordinator) may be down and unreachable. An empty result means every member is in the zone,
+   * i.e. it is the only remaining zone and removing it is invalid.
+   */
+  Optional<MemberId> getNextCoordinatorExcludingZone(String zone);
 
   static ClusterConfigurationCoordinatorSupplier ofMembers(final Set<MemberId> members) {
     return ofMembers(() -> members);
@@ -51,6 +60,13 @@ public interface ClusterConfigurationCoordinatorSupplier {
         final var currentMembers = memberSupplier.get();
         final var newMembers = currentMembers.stream().filter(m -> !memberIds.contains(m)).toList();
         return lowestMemberId(newMembers);
+      }
+
+      @Override
+      public Optional<MemberId> getNextCoordinatorExcludingZone(final String zone) {
+        final var newMembers =
+            memberSupplier.get().stream().filter(m -> !m.isInZone(zone)).toList();
+        return newMembers.isEmpty() ? Optional.empty() : Optional.of(lowestMemberId(newMembers));
       }
     };
   }

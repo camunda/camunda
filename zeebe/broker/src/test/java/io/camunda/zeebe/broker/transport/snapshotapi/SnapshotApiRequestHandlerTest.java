@@ -34,6 +34,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
@@ -50,7 +51,6 @@ import io.netty.util.NetUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -137,7 +137,7 @@ public class SnapshotApiRequestHandlerTest {
                 0,
                 partitionId,
                 senderDirectory,
-                snapshotPath -> Map.of(),
+                snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
     final var transferService =
@@ -155,7 +155,7 @@ public class SnapshotApiRequestHandlerTest {
                 0,
                 partitionId,
                 receiverDirectory,
-                snapshotPath -> Map.of(),
+                snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
     client = new SnapshotTransferServiceClient(brokerClient);

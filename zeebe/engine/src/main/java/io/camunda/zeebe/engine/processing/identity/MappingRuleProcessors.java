@@ -8,28 +8,31 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class MappingRuleProcessors {
   public static void addMappingRuleProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
+    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.MAPPING_RULE,
         MappingRuleIntent.CREATE,
         new MappingRuleCreateProcessor(
             processingState.getMappingRuleState(),
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
@@ -38,7 +41,7 @@ public class MappingRuleProcessors {
         MappingRuleIntent.DELETE,
         new MappingRuleDeleteProcessor(
             processingState,
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
@@ -47,7 +50,7 @@ public class MappingRuleProcessors {
         MappingRuleIntent.UPDATE,
         new MappingRuleUpdateProcessor(
             processingState.getMappingRuleState(),
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -337,7 +338,8 @@ public class FileBasedTransientSnapshotTest {
 
   private FileBasedSnapshotStore createStore(final Path root) throws IOException {
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+        new FileBasedSnapshotStore(
+            0, 1, root, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
     scheduler.submitActor(store);
     return store;
   }

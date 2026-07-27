@@ -12,6 +12,7 @@ import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {jsonHeaders} from 'utils/http';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -228,19 +229,30 @@ test.describe('Decision Navigation', () => {
       ).not.toHaveCount(0);
     });
 
+    const viewDecisionInstanceLink = operateDecisionsPage.decisionInstancesList
+      .getByRole('row')
+      .filter({
+        hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
+      })
+      .getByRole('link', {name: /View decision instance/})
+      .first();
+
     await test.step('Open the first Assign Approver Group decision instance', async () => {
-      await operateDecisionsPage.decisionInstancesList
-        .getByRole('row')
-        .filter({
-          hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
-        })
-        .getByRole('link', {name: /View decision instance/})
-        .first()
-        .click();
+      await viewDecisionInstanceLink.click();
     });
 
     await test.step('Verify we are on the Assign Approver Group decision instance', async () => {
-      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+      // The decision instances list live-updates as new instances are indexed;
+      // a re-render can drop the SPA navigation triggered by the row link click,
+      // leaving the app on the list page. Re-click until the instance renders.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+        },
+        onFailure: async () => {
+          await viewDecisionInstanceLink.click();
+        },
+      });
       // Input column header for Assign Approver Group is "Invoice Classification"
       await expect(
         operateDecisionInstancePage.decisionPanel.getByText(

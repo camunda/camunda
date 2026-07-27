@@ -101,6 +101,10 @@ final class SegmentWriter {
     return lastEntryPosition;
   }
 
+  int getAppendedBytes() {
+    return buffer.position() - descriptorLength;
+  }
+
   long getNextIndex() {
     if (lastEntry != null) {
       return lastEntry.index() + 1;
@@ -269,7 +273,8 @@ final class SegmentWriter {
             metadata,
             data,
             new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength + metadataLength, recordLength));
+                writeBuffer, startPosition + frameLength + metadataLength, recordLength),
+            frameLength + metadataLength + recordLength);
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
     lastEntryPosition = startPosition;
@@ -346,7 +351,7 @@ final class SegmentWriter {
   private void advanceToNextEntry(final long nextIndex) {
     final int position = buffer.position();
     FrameUtil.readVersion(buffer);
-    lastEntry = recordUtil.read(buffer, nextIndex);
+    lastEntry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
     updateLastAsqn(lastEntry.asqn());
     lastEntryPosition = position;
     index.index(lastEntry, position);

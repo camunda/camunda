@@ -196,6 +196,18 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>aws-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>auth</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.jeasy</groupId>
       <artifactId>easy-random-core</artifactId>
       <scope>test</scope>
@@ -267,6 +279,11 @@
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -576,6 +593,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
@@ -676,6 +698,11 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -721,12 +748,9 @@
             <printStderrOnFailure>true</printStderrOnFailure>
             <printStderrOnSuccess>false</printStderrOnSuccess>
           </statelessTestsetInfoReporter>
-          <systemProperties>
-            <property>
-              <name>identity.docker.image.version</name>
-              <value>${version.identity}</value>
-            </property>
-          </systemProperties>
+          <systemPropertyVariables>
+            <identity.docker.image.version>${version.identity}</identity.docker.image.version>
+          </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
@@ -862,6 +886,7 @@
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
               <excludes>
+                <exclude>${identity-packages}</exclude>
                 <!-- Excluded under physical tenant pending follow-up; see #56134. -->
                 <exclude>**/auth/UsageMetricAuthorizationIT.java</exclude>
                 <exclude>**/*$*.java</exclude>
@@ -872,6 +897,63 @@
                 <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
                 <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>
               </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("multiDbTest") for the identity related
+    packages, under a physical tenant. Mirrors identity-tests, but scoped to the physical-tenant
+    exclusions above.
+    -->
+    <profile>
+      <id>physical-tenant-identity</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
+              <includes>
+                <include>${identity-packages}</include>
+              </includes>
+              <excludes>
+                <!-- Excluded under physical tenant pending follow-up; see #56134. -->
+                <exclude>**/auth/UsageMetricAuthorizationIT.java</exclude>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("history"), under a physical tenant.
+    Mirrors the history profile, but scoped to run under a physical tenant.
+    -->
+    <profile>
+      <id>physical-tenant-history</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>history</groups>
+              <excludedGroups>rdbms</excludedGroups>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>

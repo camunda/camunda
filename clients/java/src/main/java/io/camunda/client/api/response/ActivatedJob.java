@@ -141,6 +141,12 @@ public interface ActivatedJob {
   String getTenantId();
 
   /**
+   * @return the identifier of the physical tenant that the job-activation request was routed to;
+   *     the default physical tenant when the request did not specify one
+   */
+  String getPhysicalTenantId();
+
+  /**
    * @return de-serialized document references if the provided variable name is present among the
    *     available variables and can be parsed as document reference
    * @throws ClientException if the variable is missing or if the variable cannot be parsed * as
@@ -176,4 +182,12 @@ public interface ActivatedJob {
    *     version 8.10, or when the owning process instance has no business ID)
    */
   String getBusinessId();
+
+  /**
+   * The lease token identifying this activation. Pass it along to commands (e.g. complete, fail,
+   * throw-error, update-timeout) to fence them against superseded activations of the same job.
+   *
+   * @return the lease token, or {@code null} if the job was activated without a lease
+   */
+  String getLeaseToken();
 }

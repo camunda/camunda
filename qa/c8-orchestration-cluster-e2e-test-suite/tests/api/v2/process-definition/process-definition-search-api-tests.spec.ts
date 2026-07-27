@@ -239,6 +239,13 @@ test.describe.parallel('Process Definition Search API', () => {
               order: 'DESC',
             },
           ],
+          // The suite shares an accumulating database across parallel tests, so
+          // the total definition count can exceed the default page size (100).
+          // Request all items in one page so totalItems == items.length holds
+          // and the sort assertion covers the full result set.
+          page: {
+            limit: 10000,
+          },
         },
       });
       await assertStatusCode(res, 200);

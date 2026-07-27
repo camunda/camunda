@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -17,14 +18,15 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -41,10 +43,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -74,7 +74,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final JobCommandPreconditionValidator preconditionChecker;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -86,21 +86,23 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final IncidentMetrics incidentMetrics;
+  private final VariableBehavior variableBehavior;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final Writers writers,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final VariableBehavior variableBehavior) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
 
     preconditionChecker =
         new JobCommandPreconditionValidator(
@@ -108,7 +110,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
             state.getBannedInstanceState(),
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
-            authCheckBehavior);
+            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
+            cslCheck);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
@@ -119,6 +122,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     this.eventPublicationBehavior = eventPublicationBehavior;
     this.jobMetrics = jobMetrics;
     this.incidentMetrics = incidentMetrics;
+
+    this.variableBehavior = variableBehavior;
   }
 
   @Override
@@ -126,11 +131,17 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             job -> throwError(record, job),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 
@@ -149,7 +160,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final var errorMessage =
           ERROR_REJECTION_MESSAGE.formatted(jobKind, jobKey, job.getType(), processInstanceKey);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
@@ -175,7 +187,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final var errorMessage =
           "Expected to find active element instance, but was %s".formatted(elementInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
     } else if (!eventScopeInstanceState.canTriggerEvent(
         foundCatchEvent.get().getElementInstance().getKey(),
         foundCatchEvent.get().getCatchEvent().getId())) {
@@ -184,7 +197,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
           "Expected to find event scope that is accepting events, but was %s"
               .formatted(catchEventInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
     } else {
       writeThrowErrorEvent(jobKey, job, command);
       eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
@@ -207,7 +221,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private void writeThrowErrorEvent(
       final long jobKey, final JobRecord job, final TypedRecord<JobRecord> command) {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
     jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
   }
 
@@ -252,14 +266,11 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
+        job,
+        AuthorizationRejectionMapper.noPrincipal());
   }
 }

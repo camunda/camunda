@@ -19,6 +19,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,8 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
   }
 
   @Override
-  public UserEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable UserEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOneByUsername(id).orElse(null);
   }
 

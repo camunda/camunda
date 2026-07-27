@@ -99,6 +99,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
+  private CamundaDataSource dataSource;
+  private boolean clockResetEnabled = true;
+  private boolean dataDeletionEnabled = true;
 
   private CamundaClient client;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -123,6 +126,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   public void beforeTestClass(final TestContext testContext) {
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+    clockResetEnabled = runtimeConfiguration.isClockResetEnabled();
+    dataDeletionEnabled = runtimeConfiguration.isDataDeletionEnabled();
 
     final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
 
@@ -139,7 +144,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
@@ -179,7 +185,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
 
     // initialize assertions
-    final CamundaDataSource dataSource = new CamundaDataSource(client);
+    final Instant testCaseStartTime = readCurrentRuntimeTime();
+    dataSource = new CamundaDataSource(client, testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -210,7 +217,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource = new CamundaDataSource(client);
       final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
       final java.lang.reflect.Method testMethod = testContext.getTestMethod();
       final String runName = testMethod.getName();
@@ -243,8 +249,17 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
-    resetRuntimeClock();
-    deleteRuntimeData();
+    if (clockResetEnabled) {
+      resetRuntimeClock();
+    } else {
+      LOG.info("Runtime clock reset is disabled. Skipping.");
+    }
+
+    if (dataDeletionEnabled) {
+      deleteRuntimeData();
+    } else {
+      LOG.info("Runtime data deletion is disabled. Skipping.");
+    }
   }
 
   @Override
@@ -336,6 +351,18 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
           "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  private Instant readCurrentRuntimeTime() {
+    try {
+      return camundaManagementClient.getCurrentTime();
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to read the current runtime time. Test case isolation by start time will be "
+              + "disabled for this test case.",
+          e);
+      return null;
     }
   }
 

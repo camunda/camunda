@@ -17,21 +17,27 @@ type WrapperProps = {
 
 const getFontStyle = ({$size}: WrapperProps) => {
   return css`
-    ${$size === 'small' &&
-    css`
-      ${styles.bodyCompact01};
-      color: var(--cds-text-secondary);
-    `}
-    ${$size === 'medium' &&
-    css`
-      ${styles.heading01};
-      color: var(--cds-text-primary);
-    `}
-    ${$size === 'large' &&
-    css`
-      ${styles.heading02};
-      color: var(--cds-text-primary);
-    `}
+    ${
+      $size === 'small' &&
+      css`
+        ${styles.bodyCompact01};
+        color: var(--cds-text-secondary);
+      `
+    }
+    ${
+      $size === 'medium' &&
+      css`
+        ${styles.heading01};
+        color: var(--cds-text-primary);
+      `
+    }
+    ${
+      $size === 'large' &&
+      css`
+        ${styles.heading02};
+        color: var(--cds-text-primary);
+      `
+    }
   `;
 };
 
@@ -52,13 +58,15 @@ const IncidentsCount = styled.div<IncidentsCountProps>`
   ${({$hasIncidents}) => {
     return css`
       min-width: var(--cds-spacing-09);
-      ${$hasIncidents
-        ? css`
-            color: var(--cds-text-error);
-          `
-        : css`
-            color: var(--cds-text-secondary);
-          `}
+      ${
+        $hasIncidents
+          ? css`
+              color: var(--cds-text-error);
+            `
+          : css`
+              color: var(--cds-text-secondary);
+            `
+      }
     `;
   }}
 `;
@@ -74,9 +82,11 @@ const ActiveCount = styled.div<ActiveCountProps>`
       width: 139px;
       text-align: right;
 
-      color: ${$hasActiveInstances
-        ? 'var(--cds-tag-color-green)'
-        : 'var(--cds-text-primary)'};
+      color: ${
+        $hasActiveInstances
+          ? 'var(--cds-tag-color-green)'
+          : 'var(--cds-text-primary)'
+      };
     `;
   }}
 `;
@@ -94,15 +104,19 @@ const Label = styled.div<LabelProps>`
       text-overflow: ellipsis;
       ${styles.bodyCompact01}
       color: var(--cds-text-secondary);
-      ${$size === 'medium' &&
-      css`
-        ${styles.headingCompact01}
-        color: var(--cds-text-primary);
-      `}
-      ${$isRed &&
-      css`
-        color: var(--cds-text-error);
-      `}
+      ${
+        $size === 'medium' &&
+        css`
+          ${styles.headingCompact01}
+          color: var(--cds-text-primary);
+        `
+      }
+      ${
+        $isRed &&
+        css`
+          color: var(--cds-text-error);
+        `
+      }
     `;
   }}
 `;
@@ -119,18 +133,24 @@ type ActiveBarProps = {
 
 const getBarStyles = ($size: Size) => {
   return css`
-    ${$size === 'small' &&
-    css`
-      height: var(--cds-spacing-01);
-    `}
-    ${$size === 'medium' &&
-    css`
-      height: var(--cds-spacing-02);
-    `}
-    ${$size === 'large' &&
-    css`
-      height: var(--cds-spacing-03);
-    `}
+    ${
+      $size === 'small' &&
+      css`
+        height: var(--cds-spacing-01);
+      `
+    }
+    ${
+      $size === 'medium' &&
+      css`
+        height: var(--cds-spacing-02);
+      `
+    }
+    ${
+      $size === 'large' &&
+      css`
+        height: var(--cds-spacing-03);
+      `
+    }
   `;
 };
 
@@ -138,9 +158,11 @@ const ActiveInstancesBar = styled.div<ActiveBarProps>`
   ${({$isPassive, $size}) => {
     return css`
       ${getBarStyles($size)};
-      background: ${$isPassive
-        ? 'var(--cds-border-subtle-01)'
-        : 'var(--cds-support-success)'};
+      background: ${
+        $isPassive
+          ? 'var(--cds-border-subtle-01)'
+          : 'var(--cds-support-success)'
+      };
     `;
   }}
 `;

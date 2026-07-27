@@ -32,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -40,7 +41,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -201,6 +204,30 @@ final class ClusterApiUtilsTest {
         .extracting(BrokerState::getId)
         .extracting(String::valueOf)
         .containsExactlyInAnyOrder("0", "1");
+  }
+
+  @Test
+  void shouldMapRecoveringPartitionState() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("0"),
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering())));
+
+    // when
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+
+    // then
+    final var body = (GetTopologyResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getBrokers())
+        .flatExtracting(BrokerState::getPartitions)
+        .extracting(io.camunda.zeebe.management.cluster.PartitionState::getState)
+        .containsExactly(io.camunda.zeebe.management.cluster.PartitionStateCode.RECOVERING);
   }
 
   @ParameterizedTest
@@ -461,11 +488,16 @@ final class ClusterApiUtilsTest {
         new PartitionLeaveOperation(memberId1, 1, 3),
         new PartitionReconfigurePriorityOperation(memberId1, 1, 2),
         new PartitionForceReconfigureOperation(memberId1, 1, memberCollection),
+        new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
+        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+
+        // Exporters
         new PartitionDisableExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionDeleteExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionEnableExporterOperation(memberId1, 1, "test-exporter", emptyExporterId),
-        new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
-        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+        new ExportingStateChangeOperation(memberId1, ExportingState.PAUSED),
+        new PartitionPreRestoreOperation(memberId1, 1),
+        new PartitionRestoreOperation(memberId1, 1, new TreeSet<>(Set.of(1L, 2L))),
 
         // PartitionDistributorConfig
         new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),

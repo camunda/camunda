@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,14 @@ final class ClientStreamPusher {
   private static final Logger PUSH_ERROR_LOGGER =
       new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
 
-  private final ClientStreamMetrics metrics;
+  private final Function<String, ClientStreamMetrics> metricsFactory;
 
   ClientStreamPusher(final ClientStreamMetrics metrics) {
-    this.metrics = metrics;
+    this(physicalTenantId -> metrics);
+  }
+
+  ClientStreamPusher(final Function<String, ClientStreamMetrics> metricsFactory) {
+    this.metricsFactory = metricsFactory;
   }
 
   /**
@@ -75,7 +80,8 @@ final class ClientStreamPusher {
     final LinkedList<ClientStreamImpl<?>> targets = new LinkedList<>(streams);
     Collections.shuffle(targets);
 
-    tryPush(stream.streamId(), targets, payload, future, new ArrayList<>());
+    final var metrics = metricsFactory.apply(stream.physicalTenantId());
+    tryPush(stream.streamId(), targets, payload, future, new ArrayList<>(), metrics);
   }
 
   private void tryPush(
@@ -83,7 +89,8 @@ final class ClientStreamPusher {
       final Queue<ClientStreamImpl<?>> targets,
       final DirectBuffer buffer,
       final ActorFuture<Void> future,
-      final List<Throwable> errors) {
+      final List<Throwable> errors,
+      final ClientStreamMetrics metrics) {
     final var clientStream = targets.poll();
     if (clientStream == null) {
       failOnStreamExhausted(future, errors);
@@ -102,7 +109,7 @@ final class ClientStreamPusher {
               errors.add(pushFailed);
               logFailedPush(pushFailed, clientStream);
               metrics.pushTryFailed(ErrorResponse.mapErrorToCode(pushFailed));
-              tryPush(streamId, targets, buffer, future, errors);
+              tryPush(streamId, targets, buffer, future, errors, metrics);
             });
   }
 

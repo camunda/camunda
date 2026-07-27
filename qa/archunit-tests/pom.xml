@@ -20,6 +20,18 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!--
       Test-jar dependencies so arch rules can scan test classes from other modules:
       - camunda-qa-acceptance-tests-tests.jar: classes annotated with @MultiDbTest
@@ -68,6 +80,12 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -128,6 +146,15 @@
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Used by DeclaredPropertiesCountArchTest to read the int literal passed to
+         UnifiedRecordValue(int) from compiled bytecode, since ArchUnit's own API does not expose
+         constant call arguments. -->
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

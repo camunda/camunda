@@ -19,9 +19,11 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -44,7 +46,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private @Nullable FileBasedSnapshotMetadata metadata;
   private @Nullable ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private @Nullable SfvChecksumImpl checksumCollection;
+  private final IncrementalChecksums incrementalChecksums = new IncrementalChecksums();
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -105,8 +107,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
-    getChecksumCollection()
-        .updateFromBytes(snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    incrementalChecksums.update(snapshotChunk);
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
@@ -265,20 +266,19 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
-      if (metadata == null) {
-        // backward compatibility
-        metadata =
-            new FileBasedSnapshotMetadata(
-                FileBasedSnapshotStoreImpl.VERSION,
-                snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition(),
-                Long.MAX_VALUE,
-                Long.MAX_VALUE,
-                false);
+      var persistedMetadata =
+          Objects.requireNonNull(metadata, "Expected the received snapshot to contain metadata");
+      if (persistedMetadata.totalSizeBytes() == 0) {
+        persistedMetadata = persistedMetadata.withTotalSizeBytes(sumDataFileSizes(files));
       }
+      metadata = persistedMetadata;
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(
-              directory, snapshotId, getChecksumCollection(), metadata);
+              directory,
+              snapshotId,
+              incrementalChecksums.complete(),
+              persistedMetadata,
+              writtenMetadataBytes);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -287,11 +287,14 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     snapshotStore.removePendingSnapshot(this);
   }
 
-  private SfvChecksumImpl getChecksumCollection() {
-    if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
+  private static long sumDataFileSizes(final File[] files) throws IOException {
+    var totalSize = 0L;
+    for (final var file : files) {
+      if (file.isFile() && !file.getName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
+        totalSize += Files.size(file.toPath());
+      }
     }
-    return checksumCollection;
+    return totalSize;
   }
 
   @Override

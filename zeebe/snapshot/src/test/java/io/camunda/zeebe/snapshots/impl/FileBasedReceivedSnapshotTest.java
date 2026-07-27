@@ -18,6 +18,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -166,7 +167,8 @@ public class FileBasedReceivedSnapshotTest {
             persistedSnapshot.getChecksumPath(),
             new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
-            null,
+            persistedSnapshot.getMetadata(),
+            0,
             s -> {},
             null);
 
@@ -347,6 +349,69 @@ public class FileBasedReceivedSnapshotTest {
     }
   }
 
+  @Test
+  public void shouldCalculateSizeWhenReceivedMetadataDoesNotContainSize() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    rewriteMetadataSize(senderSnapshot, 0L);
+    final var metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
+
+    receiverSnapshotStore.close();
+    receiverSnapshotStore = createStore(receiverSnapshotsDir.getParent());
+    assertThat(receiverSnapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
+  }
+
+  @Test
+  public void shouldRejectDuplicatedChunks() {
+    // given
+    final var senderSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(senderSnapshot.getId()).join();
+
+    try (final var reader = senderSnapshot.newChunkReader()) {
+      final var chunk = reader.next();
+      receivedSnapshot.apply(chunk).join();
+
+      // when/then
+      assertThatThrownBy(() -> receivedSnapshot.apply(chunk).join())
+          .hasCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected next chunk at offset");
+    }
+  }
+
+  @Test
+  public void shouldPreserveSizeFromReceivedMetadata() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    final long advertisedSize = 123_456_789L;
+    rewriteMetadataSize(senderSnapshot, advertisedSize);
+    final long metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(advertisedSize + metadataSizeBytes);
+  }
+
+  private void rewriteMetadataSize(final FileBasedSnapshot snapshot, final long totalSizeBytes)
+      throws IOException {
+    final var metadata =
+        ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(totalSizeBytes);
+    Files.write(
+        snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
+        metadata.encode());
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
@@ -358,6 +423,16 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     return receivedSnapshot;
+  }
+
+  private long expectedTotalDataSize() {
+    return SNAPSHOT_FILE_CONTENTS.values().stream()
+        .mapToLong(content -> content.getBytes(StandardCharsets.UTF_8).length)
+        .sum();
+  }
+
+  private long expectedMetadataSizeBytes(final FileBasedSnapshot snapshot) throws IOException {
+    return Files.size(snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   private PersistedSnapshot takePersistedSnapshot(final long index) {
@@ -385,8 +460,12 @@ public class FileBasedReceivedSnapshotTest {
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
-    scheduler.submitActor(store);
+            0,
+            PARTITION_ID,
+            root,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
+    scheduler.submitActor(store).join();
 
     return store;
   }

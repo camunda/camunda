@@ -7,10 +7,13 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
@@ -728,6 +731,24 @@ class PhysicalTenantAuthConfigurationsTest {
     // then — only one "default" entry, no duplication
     assertThat(result).containsOnlyKeys("default");
     assertThat(result.get("default").getOidc().getClientId()).isEqualTo("explicit-default-client");
+  }
+
+  @Test
+  void shouldThrowWhenDiscoveredTenantIdIsMalformed() {
+    // given a tenant id exceeding the 64-char length limit — length is the only invalid form
+    // reachable through discovery (ids surface from the property-name walk already lowercased
+    // with dashes stripped, so only length survives to reach validation)
+    final String tooLongTenantId = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
+    final MockEnvironment environment =
+        env(
+            Map.of(
+                "camunda.physical-tenants." + tooLongTenantId + ".security.authentication.method",
+                "oidc"));
+
+    // when / then
+    assertThatThrownBy(() -> PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment))
+        .isInstanceOf(InvalidPhysicalTenantIdException.class)
+        .hasMessageContaining("Invalid physical tenant id");
   }
 
   @Test

@@ -26,6 +26,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
@@ -60,10 +61,15 @@ import io.camunda.gateway.protocol.model.MessageCorrelationResult;
 import io.camunda.gateway.protocol.model.MessagePublicationResult;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
+import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
+import io.camunda.gateway.protocol.model.ResolvedSecret;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
 import io.camunda.gateway.protocol.model.RoleUpdateResult;
+import io.camunda.gateway.protocol.model.SecretErrorCode;
+import io.camunda.gateway.protocol.model.SecretResolutionError;
+import io.camunda.gateway.protocol.model.SecretResolveResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
 import io.camunda.gateway.protocol.model.TenantCreateResult;
 import io.camunda.gateway.protocol.model.TenantUpdateResult;
@@ -75,6 +81,8 @@ import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.SecretServices;
+import io.camunda.service.SecretServices.SecretResolution;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Topology;
@@ -190,7 +198,8 @@ public final class ResponseMapper {
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJobResult activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJobResult activatedJob =
+          toActivatedJob(jobKey.getValue(), job, activationResponse.physicalTenantId());
 
       // This is the message size of the message from the broker, not the size of the REST message
       final int activatedJobSize = job.getLength();
@@ -210,7 +219,8 @@ public final class ResponseMapper {
     return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
-  private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
+  private static ActivatedJobResult toActivatedJob(
+      final long jobKey, final JobRecord job, final String physicalTenantId) {
     // rootProcessInstanceKey is only set for process instances created after version 8.9
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
     return ActivatedJobResult.Builder.create()
@@ -237,6 +247,8 @@ public final class ResponseMapper {
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
         .priority(job.getPriority())
+        .leaseToken(emptyToNull(job.getLeaseToken()))
+        .physicalTenantId(physicalTenantId)
         .build();
   }
 
@@ -660,6 +672,38 @@ public final class ResponseMapper {
         .build();
   }
 
+  public static SecretResolveResult toSecretResolveResult(final SecretResolution resolution) {
+    final var resolved =
+        resolution.resolved().stream()
+            .map(
+                secret ->
+                    ResolvedSecret.Builder.create()
+                        .reference(secret.reference())
+                        .value(secret.value())
+                        .build())
+            .toList();
+    final var errors =
+        resolution.errors().stream().map(ResponseMapper::toSecretResolutionError).toList();
+    return SecretResolveResult.Builder.create().resolved(resolved).errors(errors).build();
+  }
+
+  private static SecretResolutionError toSecretResolutionError(
+      final SecretServices.SecretResolutionError error) {
+    return SecretResolutionError.Builder.create()
+        .reference(error.reference())
+        .code(toSecretErrorCode(error.code()))
+        .message(error.message())
+        .build();
+  }
+
+  private static SecretErrorCode toSecretErrorCode(final SecretServices.SecretErrorCode code) {
+    return switch (code) {
+      case NOT_FOUND -> SecretErrorCode.NOT_FOUND;
+      case ACCESS_DENIED -> SecretErrorCode.ACCESS_DENIED;
+      case INVALID_REFERENCE -> SecretErrorCode.INVALID_REFERENCE;
+    };
+  }
+
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
     return UserCreateResult.Builder.create()
         .username(userRecord.getUsername())
@@ -843,10 +887,17 @@ public final class ResponseMapper {
             : ClusterVariableScopeEnum.GLOBAL;
     final @Nullable String tenantId =
         clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null;
+    final ClusterVariableKindEnum kind =
+        switch (clusterVariableRecord.getKind()) {
+          case SECRET_REFERENCE -> ClusterVariableKindEnum.SECRET_REFERENCE;
+          case JSON -> ClusterVariableKindEnum.JSON;
+        };
     return ClusterVariableResult.Builder.create()
         .name(clusterVariableRecord.getName())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(clusterVariableRecord.getMetadata())
+        .kind(kind)
         .value(clusterVariableRecord.getValue())
         .build();
   }
@@ -882,6 +933,7 @@ public final class ResponseMapper {
     final var partitions = buildPartitions(broker.partitions());
     return BrokerInfo.Builder.create()
         .nodeId(broker.nodeIdx())
+        .brokerId(broker.brokerIdStr())
         .host(broker.host())
         .port(broker.port())
         .partitions(partitions)
@@ -898,6 +950,7 @@ public final class ResponseMapper {
                     .partitionId(partition.partitionId())
                     .role(EnumUtil.convert(partition.role(), RoleEnum.class))
                     .health(EnumUtil.convert(partition.health(), HealthEnum.class))
+                    .state(EnumUtil.convert(partition.state(), StateEnum.class))
                     .build())
         .toList();
   }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -84,6 +85,11 @@ public final class ClusterVariableClient {
 
   public ClusterVariableClient setGlobalScope() {
     clusterVariableRecord.setGlobalScope();
+    return this;
+  }
+
+  public ClusterVariableClient withKind(final ClusterVariableKind kind) {
+    clusterVariableRecord.setKind(kind);
     return this;
   }
 

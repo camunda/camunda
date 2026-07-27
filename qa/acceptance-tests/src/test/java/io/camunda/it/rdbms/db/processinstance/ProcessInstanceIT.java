@@ -26,6 +26,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
@@ -262,6 +263,77 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
         .containsExactlyInAnyOrder(
             incidentPI1.processInstanceKey(), incidentPI2.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterBySuspendedDate(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var suspendedDate = NOW;
+    final ProcessInstanceDbModel suspendedInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(suspendedDate));
+    final ProcessInstanceDbModel activeInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, suspendedInstance);
+    createAndSaveProcessInstance(rdbmsWriters, activeInstance);
+
+    final var dateFilteredResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspendedDateOperations(
+                                        Operation.gte(suspendedDate.minusMinutes(1)))
+                                    .processInstanceKeys(
+                                        suspendedInstance.processInstanceKey(),
+                                        activeInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(dateFilteredResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(suspendedInstance.processInstanceKey())
+        .doesNotContain(activeInstance.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterBySuspendedDateRange(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var insideRange = NOW;
+    final ProcessInstanceDbModel insideInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange));
+    final ProcessInstanceDbModel beforeInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange.minusDays(2)));
+    final ProcessInstanceDbModel afterInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange.plusDays(2)));
+    createAndSaveProcessInstance(rdbmsWriters, insideInstance);
+    createAndSaveProcessInstance(rdbmsWriters, beforeInstance);
+    createAndSaveProcessInstance(rdbmsWriters, afterInstance);
+
+    final var rangeFilteredResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspendedDateOperations(
+                                        Operation.gte(insideRange.minusDays(1)),
+                                        Operation.lt(insideRange.plusDays(1)))
+                                    .processInstanceKeys(
+                                        insideInstance.processInstanceKey(),
+                                        beforeInstance.processInstanceKey(),
+                                        afterInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(rangeFilteredResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(insideInstance.processInstanceKey())
+        .doesNotContain(beforeInstance.processInstanceKey(), afterInstance.processInstanceKey());
   }
 
   @TestTemplate

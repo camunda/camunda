@@ -356,11 +356,19 @@ class OperateProcessesPage {
   }
 
   async clickCancelBatchOperationButton(): Promise<void> {
+    // The toolbar click can be lost under load and leave the confirmation
+    // dialog unopened; retry until the dialog is present, but do not re-click
+    // the toolbar button once the dialog (and its backdrop) is already up.
     await expect(async () => {
-      await expect(this.cancelBatchOperationButton).toBeVisible({
+      if (!(await this.cancelProcessInstanceDialogButton.isVisible())) {
+        await expect(this.cancelBatchOperationButton).toBeVisible({
+          timeout: 5000,
+        });
+        await this.cancelBatchOperationButton.click({timeout: 5000});
+      }
+      await expect(this.cancelProcessInstanceDialogButton).toBeVisible({
         timeout: 5000,
       });
-      await this.cancelBatchOperationButton.click({timeout: 5000});
     }).toPass({timeout: 30000});
   }
 

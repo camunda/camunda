@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.batchoperation;
 import com.google.common.base.Splitter;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -119,9 +120,10 @@ public class BatchOperationChunkCreatedItemHandler
   }
 
   @Override
-  public void flush(final OperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final OperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

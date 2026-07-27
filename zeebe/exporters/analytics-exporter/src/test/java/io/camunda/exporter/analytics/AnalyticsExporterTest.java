@@ -57,7 +57,7 @@ class AnalyticsExporterTest {
     // when / then
     assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("CAMUNDA_LICENSE_KEY");
+        .hasMessageContaining("camunda.license.key");
   }
 
   @Test
@@ -84,11 +84,11 @@ class AnalyticsExporterTest {
                   .containsEntry(AnalyticsAttributes.Process.VERSION, (long) value.getVersion())
                   .containsEntry(
                       AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
-                  .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, record.getKey())
-                  // Temporarily commented out as root process instance key doesn't exist on 8.8.
-                  //                  .containsEntry(
-                  //                      AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
-                  //                      value.getRootProcessInstanceKey())
+                  .containsEntry(
+                      AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
+                  .containsEntry(
+                      AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
+                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
                   .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);

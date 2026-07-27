@@ -46,16 +46,14 @@ public class BackupServiceImpl implements BackupService {
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
-      final BackupPriorities backupPriorities,
-      final BackupRepositoryProps backupProps,
-      final BackupRepository repository,
+      final BackupWiring backupWiring,
       final SearchEngineConfiguration searchEngineConfiguration,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> templateDescriptors) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
-    this.backupPriorities = backupPriorities;
-    this.repository = repository;
-    this.backupProps = backupProps;
+    backupPriorities = backupWiring.priorities();
+    repository = backupWiring.repository();
+    backupProps = backupWiring.repositoryProps();
     this.searchEngineConfiguration = searchEngineConfiguration;
     this.indexDescriptors = indexDescriptors;
     this.templateDescriptors = templateDescriptors;

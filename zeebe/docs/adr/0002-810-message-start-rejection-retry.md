@@ -55,6 +55,9 @@ sequenceDiagram
         else subscription not yet distributed
             P_B-->>P_K: REJECT_NO_SUBSCRIPTION
             Note over P_K: keep buffered, back off, retry
+        else request expired (messageDeadline <= P_B's clock, TTL > 0) (D7)
+            P_B-->>P_K: REJECT_EXPIRED
+            Note over P_K: back off (keep ask),<br/>ask removed only at P_K's own TTL expiry
         end
     end
 ```
@@ -107,6 +110,39 @@ creates the instance, replying `REJECT_UNIQUENESS` only while the flag is on. De
 from the flag keeps it consistent across flag flips, so enabling the feature later never finds
 Business-ID-carrying instances stranded on the wrong partition. (Same-partition placement is trivially
 flag-independent — the instance is already local — so this matters for the cross-partition arm.)
+
+**D7. `P_B` rejects an expired cross-partition request deterministically, by its own clock, rather
+than tolerating late arrivals within a time window.** When a request's message deadline has passed on
+`P_B` and the message was published with a positive TTL, `P_B` refuses it (`REJECT_EXPIRED`) instead
+of re-evaluating live state. This closes a duplicate window that ask idempotency (D2) alone does not:
+once the holder completes *and* the dedup row for a past-deadline message has been reclaimed, a late
+arrival would find free state and start a second instance for a message whose TTL has already elapsed.
+An earlier mitigation tolerated slightly-late arrivals within a fixed grace window; it is **removed**
+in favor of the deadline itself, because a window is only ever *probably* wide enough, delays every
+start, and adds a tuning knob, whereas the deadline is exact.
+
+The rule keys on *whether the request is expired*, not on whether it is a first delivery or a retry,
+so it holds uniformly under any delivery order or delay — a reordered first arrival that only reaches
+`P_B` past the deadline is refused exactly like a late retry.
+
+Its safety rests on a **single-clock principle**: expiry rejection and dedup reclamation on `P_B` are
+decided against the *same* deadline and the *same* clock, so they cannot disagree — whenever the dedup
+row is gone, the request is already expired. `P_K`/`P_B` clock skew can therefore only move the
+accept/reject boundary (a bounded **liveness** effect — a near-deadline start may expire unstarted
+slightly sooner or later), never reopen a duplicate window (**safety**). A `TTL == 0` fire-and-forget
+message (ADR 0001) is nominally always "past deadline", so it is deliberately **carved out** and still
+activates on first arrival; only positive-TTL messages are gated, which makes the rule exact rather
+than heuristic.
+
+**D8. Expiry is a first-class handshake outcome owned by `P_K`, not a silent local rejection on
+`P_B`.** `P_B` replies with an expiry outcome (`EXPIRED_REJECTED`) that `P_K` treats like the other
+rejections (D1–D3): the pending ask is kept and backs off, and cleanup remains exclusively on `P_K`'s
+message-expiry path. This preserves the single-retry-owner model (D4) and `P_K`'s authority over the
+message lifecycle, so a skew window produces damped, cheaply-refused retries rather than a re-drive
+storm, and a late expiry reply arriving after cleanup is a harmless no-op. Modelling expiry as an
+ordinary command rejection on `P_B` instead was **rejected**: it would break the one-reply-per-
+`REQUEST` shape every other outcome follows, would not feed the back-off, and would leave no exported
+audit record (command rejections are not exported; the reply event is).
 
 ## Alternatives considered
 
@@ -166,6 +202,15 @@ flag-independent — the instance is already local — so this matters for the c
 - Routing to `P_B` is independent of the uniqueness flag (D6), so the placement invariant holds even
   while the feature is switched off, and toggling the flag never strands instances on the wrong
   partition.
+- No cross-partition message-start can produce a duplicate instance for an expired TTL, under any
+  delivery order or delay (D7): once a message is past its deadline, `P_B` refuses it on the same
+  clock that reclaims its dedup row. The former grace-window tuning knob is gone.
+- Near-deadline starts on a skewed cluster may expire unstarted marginally sooner or later than before
+  — a liveness effect on the boundary, never a duplicate — the accepted trade of an exact rule over a
+  probabilistic window (D7).
+- `TTL == 0` fire-and-forget message-starts still activate on first cross-partition arrival (D7).
+- Expiry is a self-limiting, observable outcome: the ask is kept and backs off, `P_K` stays the sole
+  owner of cleanup, and the rejection is an exported event rather than a silent command rejection (D8).
 
 ## Source
 

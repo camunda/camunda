@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -81,10 +81,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     commandProcessors =
         new UserTaskCommandProcessors(
-            state, keyGenerator, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+            state, keyGenerator, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
@@ -228,7 +228,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void handleCommandRejection(
       final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(
@@ -264,7 +264,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             request -> {
               switch (request.valueType()) {
                 case USER_TASK ->
-                    responseWriter.writeRejection(
+                    responseWriter.writeRejectedResponse(
                         command.getKey(),
                         mapDeniedIntentToResponseIntent(intentToWrite),
                         command.getValue(),
@@ -292,7 +292,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                               final var deniedReason =
                                   USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
                                       userTaskInstanceKey, command.getValue().getDeniedReason());
-                              responseWriter.writeRejection(
+                              responseWriter.writeRejectedResponse(
                                   variableDocumentKey,
                                   VariableDocumentIntent.UPDATE,
                                   variableDocumentRecord,

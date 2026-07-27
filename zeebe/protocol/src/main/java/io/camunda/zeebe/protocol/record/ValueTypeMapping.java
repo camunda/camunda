@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -59,6 +61,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -71,6 +75,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -125,6 +130,8 @@ import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -134,6 +141,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -155,7 +163,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -389,6 +396,18 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.AGENT_HISTORY,
         new Mapping<>(AgentHistoryRecordValue.class, AgentHistoryIntent.class));
+    mapping.put(
+        ValueType.SECRET_REFERENCE,
+        new Mapping<>(SecretReferenceRecordValue.class, SecretReferenceIntent.class));
+    mapping.put(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+        new Mapping<>(
+            ProcessInstanceBusinessIdRecordValue.class, ProcessInstanceBusinessIdIntent.class));
+    mapping.put(
+        ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND,
+        new Mapping<>(
+            ProcessInstanceBufferedCommandRecordValue.class,
+            ProcessInstanceBufferedCommandIntent.class));
     return mapping;
   }
 
@@ -404,8 +423,8 @@ public final class ValueTypeMapping {
     private final Class<I> intentClass;
 
     private Mapping(final Class<T> valueClass, final Class<I> intentClass) {
-      this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
-      this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
+      this.valueClass = requireNonNull(valueClass, "must specify a value class");
+      this.intentClass = requireNonNull(intentClass, "must specify an intent");
     }
 
     public Class<? extends T> getValueClass() {

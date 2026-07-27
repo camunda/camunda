@@ -11,9 +11,12 @@ import type {
 	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
+	Form,
 	UserTask,
 	QueryUserTasksRequestBody,
 	QueryUserTasksResponseBody,
+	QueryVariablesByUserTaskRequestBody,
+	QueryVariablesByUserTaskResponseBody,
 	QueryProcessDefinitionsRequestBody,
 	QueryProcessDefinitionsResponseBody,
 	GetProcessDefinitionInstanceStatisticsRequestBody,
@@ -22,6 +25,7 @@ import type {
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
+	GetAuditLogResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -34,9 +38,13 @@ const queryKeys = {
 	license: () => ['license'] as const,
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
 	userTask: (userTaskKey: string) => ['userTask', userTaskKey] as const,
+	userTaskForm: (userTaskKey: string) => ['userTaskForm', userTaskKey] as const,
+	userTaskVariables: (userTaskKey: string, body: QueryVariablesByUserTaskRequestBody, truncateValues?: boolean) =>
+		['userTaskVariables', userTaskKey, body, truncateValues] as const,
 	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
 	userTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) =>
 		['userTaskAuditLogs', userTaskKey, body] as const,
+	auditLog: (auditLogKey: string) => ['auditLog', auditLogKey] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -146,6 +154,41 @@ const queries = {
 			},
 		}),
 
+	getUserTaskForm: (userTaskKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.userTaskForm(userTaskKey),
+			queryFn: async (): Promise<Form> => {
+				const {response, error} = await request(endpoints.getUserTaskForm({userTaskKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	queryVariablesByUserTask: (
+		userTaskKey: string,
+		body: QueryVariablesByUserTaskRequestBody,
+		options?: {truncateValues?: boolean},
+	) =>
+		queryOptions({
+			queryKey: queryKeys.userTaskVariables(userTaskKey, body, options?.truncateValues),
+			queryFn: async (): Promise<QueryVariablesByUserTaskResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariablesByUserTask({
+						userTaskKey,
+						truncateValues: options?.truncateValues,
+						...body,
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+
+				return response.json();
+			},
+		}),
+
 	queryUserTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) => {
 		const MAX_AUDIT_LOGS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
 		const enhancedBody = {
@@ -195,6 +238,18 @@ const queries = {
 			},
 		});
 	},
+
+	getAuditLog: (auditLogKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.auditLog(auditLogKey),
+			queryFn: async (): Promise<GetAuditLogResponseBody> => {
+				const {response, error} = await request(endpoints.getAuditLog({auditLogKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
 
 	getProcessDefinitionXml: (processDefinitionKey: string) =>
 		queryOptions({

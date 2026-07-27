@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -155,6 +156,12 @@ final class TestTopologyManager implements BrokerTopologyManager {
     public @Nullable PartitionHealthStatus getPartitionHealth(
         final BrokerMemberId brokerId, final int partition) {
       return null;
+    }
+
+    @Override
+    public PartitionState.State getPartitionState(
+        final BrokerMemberId brokerId, final int partition) {
+      return PartitionState.State.UNKNOWN;
     }
 
     @Override

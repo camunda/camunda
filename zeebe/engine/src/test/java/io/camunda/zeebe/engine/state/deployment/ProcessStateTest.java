@@ -825,6 +825,23 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldMarkProcessAsDrainingAndKeepItRetrievable() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when
+    processState.updateProcessState(processRecord, PersistedProcessState.DRAINING);
+
+    // then - the process is still retrievable by key and tenant, now in the DRAINING state
+    final var drainingProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(drainingProcess).isNotNull();
+    assertThat(drainingProcess.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
   public void shouldDeleteLatestProcess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();

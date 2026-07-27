@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -18,10 +21,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -47,26 +47,34 @@ final class JobBatchCollector {
 
   private final JobState jobState;
   private final JobVariablesCollector jobVariablesCollector;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final Predicate<Integer> canWriteEventOfLength;
   private final InstantSource clock;
+  private final JobProcessingMetrics jobMetrics;
+  private final JobSecretInjector jobSecretInjector;
 
   /**
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
    *     TypedRecord} containing the {@link JobBatchRecord} will be writable or not. The predicate
    *     takes in the size of the record, and should return true if it can write such a record, and
    *     false otherwise
+   * @param jobSecretInjector checks the secret references of every job against the secret caches;
+   *     jobs with an uncached reference are skipped without consuming a batch slot
    */
   JobBatchCollector(
       final ProcessingState state,
       final Predicate<Integer> canWriteEventOfLength,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final InstantSource clock) {
+      final CslAuthorizationCheck cslCheck,
+      final InstantSource clock,
+      final JobProcessingMetrics jobMetrics,
+      final JobSecretInjector jobSecretInjector) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.clock = clock;
+    this.jobMetrics = jobMetrics;
+    this.jobSecretInjector = jobSecretInjector;
   }
 
   /**
@@ -90,31 +98,46 @@ final class JobBatchCollector {
     final Collection<DirectBuffer> requestedVariables = collectVariableNames(value);
     final var maxActivatedCount = value.getMaxJobsToActivate();
     final var activatedCount = new MutableInteger(0);
+    final var skippedUncachedSecretJobs = new MutableInteger(0);
     final var unwritableJob = new MutableReference<TooLargeJob>();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
-    // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
-    // here and only check if the requester has the correct permissions to access the jobs
-    final var authorizedProcessIds =
-        authCheckBehavior.getAllAuthorizedScopes(
-            AuthorizationRequest.builder()
-                .command(record)
-                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .build());
     final var deadline = clock.millis() + value.getTimeout();
 
+    // compute per-job authorization predicate once before the loop
+    final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
+
+    jobSecretInjector.reset();
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
         (key, jobRecord) -> {
-          if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
-            // Skip Jobs the user is not authorized for
+          if (!isAuthorizedForJob.test(jobRecord)) {
+            // Skip jobs the requester is not authorized for
             return true;
+          }
+
+          if (!value.isWithLease() && !jobRecord.getLeaseToken().isEmpty()) {
+            // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
+            jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
+          final var secretCheckResult = jobSecretInjector.checkSecrets(jobRecord);
+          if (!secretCheckResult.nonCachedSecrets().isEmpty()) {
+            // Skip jobs with an uncached secret reference without consuming a batch slot, so the
+            // jobs behind them can still be activated
+            jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
+            skippedUncachedSecretJobs.increment();
+            return skippedUncachedSecretJobs.value
+                < EngineConfiguration.MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION;
           }
 
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
+          if (value.isWithLease()) {
+            jobRecord.setLeaseToken(generateLeaseToken());
+          }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
 
           // the expected length is based on the current record's length plus the length of the job
@@ -127,7 +150,9 @@ final class JobBatchCollector {
                   + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
           if (activatedCount.value <= maxActivatedCount
               && canWriteEventOfLength.test(expectedEventLength)) {
-            appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
+            final var appendedJob = appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
+            jobSecretInjector.registerForInjection(
+                secretCheckResult, activatedCount.value, appendedJob);
             activatedCount.increment();
 
             // track the count of activated jobs by their JobKind
@@ -154,19 +179,47 @@ final class JobBatchCollector {
     return Either.right(jobCountPerJobKind);
   }
 
-  private boolean isAuthorizedForJob(
-      final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
-    return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
-        || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  private Predicate<JobRecord> buildAuthzPredicate(final TypedRecord<JobBatchRecord> record) {
+    final var resolved =
+        cslCheck.resolveForCheck(record, AuthorizationRejectionMapper.noPrincipal());
+    if (resolved.isLeft()) {
+      return job -> false;
+    }
+    final var maybeAuth = resolved.get();
+    if (maybeAuth.isEmpty()) {
+      return job -> true;
+    }
+    final var auth = maybeAuth.get();
+    return job ->
+        cslCheck
+            .checkAuth(
+                auth,
+                RequiredAuthorization.of(
+                    b ->
+                        b.processDefinition()
+                            .updateProcessInstance()
+                            .resourceId(job.getBpmnProcessId())))
+            .isRight();
   }
 
-  private void appendJobToBatch(
+  private JobRecord appendJobToBatch(
       final ValueArray<JobRecord> jobIterator,
       final ValueArray<LongValue> jobKeyIterator,
       final long key,
       final JobRecord jobRecord) {
     jobKeyIterator.add().setValue(key);
-    jobIterator.add().copyFrom(jobRecord);
+    final JobRecord appendedJob = jobIterator.add();
+    appendedJob.copyFrom(jobRecord);
+    return appendedJob;
+  }
+
+  /**
+   * Generates a lease token for a single activated job. The token is an opaque string that callers
+   * must not parse; it is random with enough entropy that collisions between leased jobs are
+   * negligible.
+   */
+  private static String generateLeaseToken() {
+    return UUID.randomUUID().toString();
   }
 
   private Collection<DirectBuffer> collectVariableNames(final JobBatchRecord batchRecord) {

@@ -1,7 +1,7 @@
 ---
 name: npm ci with retry
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: >
   Runs `npm ci` wrapped in retry logic so a singular transient npm-registry

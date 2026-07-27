@@ -124,25 +124,25 @@ public class AgentHistoryFilterIT {
   }
 
   @TestTemplate
-  public void shouldFilterByIteration(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFilterByLoopIteration(final CamundaRdbmsTestApplication testApplication) {
     final long agentInstanceKey = nextKey();
     createAndSaveRandomAgentHistoryItem(
-        testApplication, b -> b.agentInstanceKey(agentInstanceKey).iteration(1));
+        testApplication, b -> b.agentInstanceKey(agentInstanceKey).loopIteration(1));
     createAndSaveRandomAgentHistoryItem(
-        testApplication, b -> b.agentInstanceKey(agentInstanceKey).iteration(2));
+        testApplication, b -> b.agentInstanceKey(agentInstanceKey).loopIteration(2));
     createAndSaveRandomAgentHistoryItem(
-        testApplication, b -> b.agentInstanceKey(agentInstanceKey).iteration(2));
+        testApplication, b -> b.agentInstanceKey(agentInstanceKey).loopIteration(2));
 
     final var result =
         search(
             testApplication,
             new AgentInstanceHistoryFilter.Builder()
                 .agentInstanceKeys(agentInstanceKey)
-                .iterations(2)
+                .loopIterations(2)
                 .build());
 
     assertThat(result.total()).isEqualTo(2);
-    assertThat(result.items()).allMatch(e -> e.iteration() == 2);
+    assertThat(result.items()).allMatch(e -> e.loopIteration() == 2);
   }
 
   @TestTemplate

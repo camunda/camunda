@@ -8,7 +8,13 @@ name: Frontend SBOM Snyk Nightly
 on:
   schedule:
     - cron: '0 3 * * *' # 03:00 UTC daily
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to scan
+        required: true
+        default: main
+        type: string
 
 defaults:
   run:
@@ -18,7 +24,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/core-features'
+  TEST_OWNER: '@camunda/hub-frontend'
 
 jobs:
   identity-fe-sbom-snyk:
@@ -33,9 +39,11 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -77,9 +85,11 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -122,9 +132,11 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -167,10 +179,12 @@ jobs:
       TEST_TYPE: Tool
       TEST_PRODUCT: Optimize
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
@@ -226,8 +240,10 @@ jobs:
       - optimize-fe-sbom-snyk
     if: always() && contains(needs.*.result, 'failure')
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Slack token from Vault
@@ -260,7 +276,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Post to Slack
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}

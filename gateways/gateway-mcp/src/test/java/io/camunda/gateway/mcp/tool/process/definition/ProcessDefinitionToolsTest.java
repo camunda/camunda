@@ -19,6 +19,7 @@ import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -65,7 +66,8 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           2,
           "v2",
           "tenantId",
-          "formId");
+          "formId",
+          ProcessDefinitionState.ACTIVE);
 
   static final SearchQueryResult<ProcessDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessDefinitionEntity>()

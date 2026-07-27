@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.container;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentInstanceBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
@@ -42,6 +43,7 @@ public final class ProcessProcessor
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
+  private final AgentInstanceBehavior agentInstanceBehavior;
   private final AsyncRequestState asyncRequestState;
 
   public ProcessProcessor(
@@ -56,6 +58,7 @@ public final class ProcessProcessor
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    agentInstanceBehavior = bpmnBehaviors.agentInstanceBehavior();
     this.asyncRequestState = asyncRequestState;
   }
 
@@ -79,6 +82,7 @@ public final class ProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(context);
     return SUCCESS;
   }
 
@@ -114,6 +118,7 @@ public final class ProcessProcessor
   @Override
   public void finalizeTermination(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminationContext) {
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(terminationContext);
     transitionTo(
         element,
         terminationContext,

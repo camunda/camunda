@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -34,8 +35,9 @@ public final class JobEventProcessors {
       final JobProcessingMetrics jobMetrics,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final IncidentMetrics incidentMetrics) {
+      final CslAuthorizationCheck cslCheck,
+      final IncidentMetrics incidentMetrics,
+      final SecretStoreRegistry secretStoreRegistry) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -59,9 +61,10 @@ public final class JobEventProcessors {
                 writers,
                 jobMetrics,
                 eventHandle,
-                authCheckBehavior,
+                cslCheck,
                 bpmnBehaviors.variableBehavior(),
-                config.isIncludeVariablesInJobCompletedEvent()))
+                config.isIncludeVariablesInJobCompletedEvent(),
+                config.isBusinessIdUniquenessEnabled()))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
@@ -72,12 +75,12 @@ public final class JobEventProcessors {
                 jobMetrics,
                 jobBackoffChecker,
                 bpmnBehaviors,
-                authCheckBehavior,
+                cslCheck,
                 incidentMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
-            new JobYieldProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior))
+            new JobYieldProcessor(processingState, bpmnBehaviors, writers, cslCheck))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
@@ -86,9 +89,10 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
-                authCheckBehavior,
+                cslCheck,
                 writers,
-                incidentMetrics))
+                incidentMetrics,
+                bpmnBehaviors.variableBehavior()))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
@@ -123,9 +127,10 @@ public final class JobEventProcessors {
                 processingState,
                 processingState.getKeyGenerator(),
                 jobMetrics,
-                authCheckBehavior,
+                cslCheck,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                secretStoreRegistry))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

@@ -26,17 +26,19 @@ const Grid = styled.div<{$numberOfColumns: 1 | 2}>`
 		display: grid;
 		grid-template-rows: 158px 1fr;
 		grid-gap: var(--cds-spacing-05);
-		${$numberOfColumns === 2
-			? css`
-					grid-template-columns: 1fr 1fr;
-					& > ${Tile}:first-of-type {
-						grid-column-start: 1;
-						grid-column-end: 3;
-					}
-				`
-			: css`
-					grid-template-columns: 1fr;
-				`}
+		${
+			$numberOfColumns === 2
+				? css`
+						grid-template-columns: 1fr 1fr;
+						& > ${Tile}:first-of-type {
+							grid-column-start: 1;
+							grid-column-end: 3;
+						}
+					`
+				: css`
+						grid-template-columns: 1fr;
+					`
+		}
 	`}
 `;
 
@@ -95,7 +97,7 @@ const LinkWrapper = styled(Link)`
 	display: block;
 	text-decoration: none !important;
 	padding: var(--cds-spacing-03) 0;
-`;
+` as typeof Link;
 
 const Li = styled.li`
 	// override the hover color on expandable row's children

@@ -35,6 +35,7 @@ public final class RdbmsTableNames {
           "CANDIDATE_GROUP",
           "CANDIDATE_USER",
           "CLUSTER_VARIABLE",
+          "CLUSTER_VARIABLE_METADATA",
           "CORRELATED_MESSAGE_SUBSCRIPTION",
           "DECISION_DEFINITION",
           "DECISION_INSTANCE_INPUT",

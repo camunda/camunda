@@ -43,11 +43,10 @@ public final class ProcessInstanceCreationHandler
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
                 .setAttribute(VERSION, (long) value.getVersion())
                 .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(INSTANCE_KEY, record.getKey())
-                // TODO: re-enable once 8.8 brokers are no longer supported —
-                //  getRootProcessInstanceKey() does not exist on 8.8
-                // .setAttribute(AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
-                // value.getRootProcessInstanceKey())
+                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
+                .setAttribute(
+                    AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
+                    value.getRootProcessInstanceKey())
                 .setAttribute(ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
 

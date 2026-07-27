@@ -9,14 +9,18 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.core.auth.SecurityContext;
+import java.util.List;
 
 public interface VariableSearchClient {
 
   VariableEntity getVariable(final long key);
 
   SearchQueryResult<VariableEntity> searchVariables(VariableQuery filter);
+
+  List<String> searchVariableNames(VariableNameQuery query);
 
   VariableSearchClient withSecurityContext(SecurityContext securityContext);
 }

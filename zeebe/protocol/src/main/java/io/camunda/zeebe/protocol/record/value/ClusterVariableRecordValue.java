@@ -33,6 +33,7 @@ import org.immutables.value.Value;
  *   <li>{@link #getValue()} – the current value of the cluster variable, as a deserialized object.
  *   <li>{@link #getScope()} – the current scope of the cluster variable.
  *   <li>{@link #getMetadata()} – the metadata attached to this cluster variable.
+ *   <li>{@link #getKind()} – the kind of value stored in this cluster variable.
  * </ul>
  *
  * @see RecordValue;
@@ -75,4 +76,18 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
    * @return the metadata map
    */
   Map<String, Object> getMetadata();
+
+  /**
+   * Returns the kind of this cluster variable.
+   *
+   * <p>Determines how the value is interpreted at job activation. {@code SECRET_REFERENCE} values
+   * contain {@code camunda.secrets.X} references resolved only at activation time. Defaults to
+   * {@code JSON}.
+   *
+   * @return the variable kind (never {@code null})
+   */
+  @Value.Default
+  default ClusterVariableKind getKind() {
+    return ClusterVariableKind.JSON;
+  }
 }

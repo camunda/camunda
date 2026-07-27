@@ -6,24 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {
   createMemoryRouter,
   Navigate,
   RouterProvider,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {BottomPanelTabs} from './index';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const PROCESS_INSTANCE_ID = '123';
 
@@ -34,13 +37,27 @@ const RedirectToVariables: React.FC = () => {
   );
 };
 
+const SelectElement: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate({search: '?elementId=someElement'})}>
+      Select element
+    </button>
+  );
+};
+
 function getWrapper(initialPath?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const router = createMemoryRouter(
       [
         {
           path: Paths.processInstance(undefined, true),
-          element: children,
+          element: (
+            <>
+              <SelectElement />
+              {children}
+            </>
+          ),
           children: [
             {index: true, element: <RedirectToVariables />},
             {
@@ -101,6 +118,10 @@ function getWrapper(initialPath?: string) {
 const SELECTED_PATH = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement`;
 
 describe('<BottomPanelTabs />', () => {
+  beforeEach(() => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
+  });
+
   it('should render always visible tabs', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -135,6 +156,25 @@ describe('<BottomPanelTabs />', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', {name: /^Output Mappings$/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show Details for the process scope when a process-level wait state exists', async () => {
+    const instance = createProcessInstance({
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      hasIncident: false,
+    });
+    mockFetchProcessInstance().withSuccess(instance);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: instance.processDefinitionId, waitingCount: 1}],
+    });
+
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
+
+    expect(await screen.findByRole('link', {name: /^Details$/i})).toBeVisible();
+    // Still an element-only tab set otherwise.
+    expect(
+      screen.queryByRole('link', {name: /^Input Mappings$/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -256,14 +296,14 @@ describe('<BottomPanelTabs />', () => {
 
     const tabs = screen.getAllByRole('link');
     expect(tabs).toHaveLength(8);
-    expect(tabs[0]).toHaveAccessibleName('Incidents');
-    expect(tabs[1]).toHaveAccessibleName('Details');
-    expect(tabs[2]).toHaveAccessibleName('Variables');
-    expect(tabs[3]).toHaveAccessibleName('Input Mappings');
-    expect(tabs[4]).toHaveAccessibleName('Output Mappings');
-    expect(tabs[5]).toHaveAccessibleName('Listeners');
-    expect(tabs[6]).toHaveAccessibleName('Operations Log');
-    expect(tabs[7]).toHaveAccessibleName('Instance History');
+    expect(tabs[0]).toHaveAccessibleName('Instance History');
+    expect(tabs[1]).toHaveAccessibleName('Incidents');
+    expect(tabs[2]).toHaveAccessibleName('Details');
+    expect(tabs[3]).toHaveAccessibleName('Variables');
+    expect(tabs[4]).toHaveAccessibleName('Input Mappings');
+    expect(tabs[5]).toHaveAccessibleName('Output Mappings');
+    expect(tabs[6]).toHaveAccessibleName('Listeners');
+    expect(tabs[7]).toHaveAccessibleName('Operations Log');
   });
 
   it('should navigate to the correct route when clicking always visible tabs', async () => {
@@ -611,7 +651,7 @@ describe('<BottomPanelTabs />', () => {
     expect(await screen.findByText('3')).toBeVisible();
   });
 
-  it('should redirect incidents tab when process instance has no incidents', async () => {
+  it('should redirect incidents tab to variables tab when process instance has no incidents', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -633,7 +673,28 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
-  it('should redirect incidents tab when selected element has no incidents', async () => {
+  it('should redirect incidents tab with a selection to details tab when process instance has no incidents', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=someElement`;
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect incidents tab to details tab when selected element has no incidents', async () => {
     const elementInstanceKey = '456';
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -667,7 +728,7 @@ describe('<BottomPanelTabs />', () => {
     });
 
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceVariables({
+      Paths.processInstanceDetails({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );
@@ -717,7 +778,7 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
-  it('should redirect details tab when no element is selected', async () => {
+  it('should redirect details tab when no element is selected and no process-level wait state', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -732,6 +793,111 @@ describe('<BottomPanelTabs />', () => {
       wrapper: getWrapper(path),
     });
 
+    // The redirect happens once the wait-state query resolves (no process-level
+    // wait state), so wait for the location to settle on Variables.
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceVariables({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
+    );
+  });
+
+  it('should not redirect details tab for the process scope when a process-level wait state exists', async () => {
+    const instance = createProcessInstance({
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      hasIncident: false,
+    });
+    mockFetchProcessInstance().withSuccess(instance);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: instance.processDefinitionId, waitingCount: 1}],
+    });
+
+    const path = Paths.processInstanceDetails({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(path);
+  });
+
+  it('should switch to details tab when an element gets selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should keep the current tab when switching between elements', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceInputMappings({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=otherElement`;
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceInputMappings({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should not switch to the details tab in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
       Paths.processInstanceVariables({
         processInstanceId: PROCESS_INSTANCE_ID,

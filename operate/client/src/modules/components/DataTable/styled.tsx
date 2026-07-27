@@ -24,10 +24,12 @@ type TableHeaderProps = {
 const TableHeader = styled(BaseTableHeader)<TableHeaderProps>`
   ${({$width}) => {
     return css`
-      ${$width !== undefined &&
-      css`
-        width: ${$width};
-      `}
+      ${
+        $width !== undefined &&
+        css`
+          width: ${$width};
+        `
+      }
     `;
   }}
 `;
@@ -39,11 +41,13 @@ type TableCellProps = {
 const TableCell = styled(BaseTableCell)<TableCellProps>`
   ${({$hideCellPadding}) => {
     return css`
-      ${$hideCellPadding &&
-      css`
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-      `}
+      ${
+        $hideCellPadding &&
+        css`
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        `
+      }
     `;
   }}
 `;

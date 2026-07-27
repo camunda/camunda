@@ -66,7 +66,7 @@ public final class AgentHistoryEntity
 
   /** Nullable — protocol value {@code <= 0} is stored as {@code null}. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private Integer iteration;
+  private Integer loopIteration;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private AgentHistoryRole role;
@@ -79,13 +79,13 @@ public final class AgentHistoryEntity
 
   // Metrics fields — flattened from AgentHistoryMetricsValue
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long inputTokens;
+  private Long inputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long outputTokens;
+  private Long outputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long durationMs;
+  private Long durationMs;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<AgentHistoryContentValue> content;
@@ -206,12 +206,12 @@ public final class AgentHistoryEntity
     return this;
   }
 
-  public Integer getIteration() {
-    return iteration;
+  public Integer getLoopIteration() {
+    return loopIteration;
   }
 
-  public AgentHistoryEntity setIteration(final Integer iteration) {
-    this.iteration = iteration;
+  public AgentHistoryEntity setLoopIteration(final Integer loopIteration) {
+    this.loopIteration = loopIteration;
     return this;
   }
 
@@ -242,29 +242,29 @@ public final class AgentHistoryEntity
     return this;
   }
 
-  public long getInputTokens() {
+  public Long getInputTokens() {
     return inputTokens;
   }
 
-  public AgentHistoryEntity setInputTokens(final long inputTokens) {
+  public AgentHistoryEntity setInputTokens(final Long inputTokens) {
     this.inputTokens = inputTokens;
     return this;
   }
 
-  public long getOutputTokens() {
+  public Long getOutputTokens() {
     return outputTokens;
   }
 
-  public AgentHistoryEntity setOutputTokens(final long outputTokens) {
+  public AgentHistoryEntity setOutputTokens(final Long outputTokens) {
     this.outputTokens = outputTokens;
     return this;
   }
 
-  public long getDurationMs() {
+  public Long getDurationMs() {
     return durationMs;
   }
 
-  public AgentHistoryEntity setDurationMs(final long durationMs) {
+  public AgentHistoryEntity setDurationMs(final Long durationMs) {
     this.durationMs = durationMs;
     return this;
   }
@@ -302,7 +302,7 @@ public final class AgentHistoryEntity
         partitionId,
         jobKey,
         jobLease,
-        iteration,
+        loopIteration,
         role,
         commitStatus,
         producedAt,
@@ -334,13 +334,13 @@ public final class AgentHistoryEntity
         && partitionId == that.partitionId
         && jobKey == that.jobKey
         && Objects.equals(jobLease, that.jobLease)
-        && Objects.equals(iteration, that.iteration)
+        && Objects.equals(loopIteration, that.loopIteration)
         && Objects.equals(role, that.role)
         && Objects.equals(commitStatus, that.commitStatus)
         && Objects.equals(producedAt, that.producedAt)
-        && inputTokens == that.inputTokens
-        && outputTokens == that.outputTokens
-        && durationMs == that.durationMs
+        && Objects.equals(inputTokens, that.inputTokens)
+        && Objects.equals(outputTokens, that.outputTokens)
+        && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(content, that.content)
         && Objects.equals(toolCalls, that.toolCalls);
   }
@@ -376,8 +376,8 @@ public final class AgentHistoryEntity
         + ", jobLease='"
         + jobLease
         + '\''
-        + ", iteration="
-        + iteration
+        + ", loopIteration="
+        + loopIteration
         + ", role="
         + role
         + ", commitStatus="

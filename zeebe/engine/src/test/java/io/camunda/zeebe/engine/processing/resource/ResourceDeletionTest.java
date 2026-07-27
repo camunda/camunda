@@ -1563,7 +1563,8 @@ public class ResourceDeletionTest {
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         null, // treePath
         Set.of(), // tags
-        null); // businessId
+        null, // businessId
+        null); // suspendedDate
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {

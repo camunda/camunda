@@ -130,7 +130,7 @@ class AgentHistoryExportHandlerTest {
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
     assertThat(model.jobKey()).isEqualTo(recordValue.getJobKey());
     assertThat(model.jobLease()).isEqualTo(recordValue.getJobLease());
-    assertThat(model.iteration()).isEqualTo(recordValue.getIteration());
+    assertThat(model.loopIteration()).isEqualTo(recordValue.getLoopIteration());
 
     // role
     assertThat(model.role().name()).isEqualTo(recordValue.getRole().name());
@@ -197,37 +197,40 @@ class AgentHistoryExportHandlerTest {
   }
 
   @Test
-  void shouldMapIterationToNullWhenNotPositive() {
+  void shouldMapLoopIterationToNullWhenNotPositive() {
     // given — zero and negative values
-    final var zeroIteration =
+    final var zeroLoopIteration =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildRecordValue())
-            .withIteration(0)
+            .withLoopIteration(0)
             .build();
-    final var negativeIteration =
+    final var negativeLoopIteration =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildRecordValue())
-            .withIteration(-1)
+            .withLoopIteration(-1)
             .build();
 
     final Record<AgentHistoryRecordValue> zeroRecord =
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
-            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(50L).withValue(zeroIteration));
+            r ->
+                r.withIntent(AgentHistoryIntent.CREATED).withKey(50L).withValue(zeroLoopIteration));
     final Record<AgentHistoryRecordValue> negativeRecord =
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
             r ->
-                r.withIntent(AgentHistoryIntent.CREATED).withKey(51L).withValue(negativeIteration));
+                r.withIntent(AgentHistoryIntent.CREATED)
+                    .withKey(51L)
+                    .withValue(negativeLoopIteration));
 
     // when — both records exported
     handler.export(zeroRecord);
     handler.export(negativeRecord);
 
-    // then — both should produce iteration=null
+    // then — both should produce loopIteration=null
     verify(writer, times(2)).create(modelCaptor.capture());
     assertThat(modelCaptor.getAllValues())
-        .extracting(AgentHistoryDbModel::iteration)
+        .extracting(AgentHistoryDbModel::loopIteration)
         .containsOnly((Integer) null);
   }
 
@@ -539,6 +542,35 @@ class AgentHistoryExportHandlerTest {
     assertThat(mappedItem.object()).isEqualTo(arrayValue);
   }
 
+  @Test
+  void shouldMapUnsetMetricsToNull() {
+    // given — -1L is the protocol sentinel meaning "metrics not provided"
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withMetrics(
+                ImmutableAgentHistoryMetricsValue.builder()
+                    .withInputTokens(-1L)
+                    .withOutputTokens(-1L)
+                    .withDurationMs(-1L)
+                    .build())
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(63L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.inputTokens()).isNull();
+    assertThat(model.outputTokens()).isNull();
+    assertThat(model.durationMs()).isNull();
+  }
+
   /**
    * Builds a fully-populated record value that will not throw during export. In particular: - role
    * is non-UNSPECIFIED - metrics is populated - content has a TEXT item (no UNSPECIFIED content
@@ -567,7 +599,7 @@ class AgentHistoryExportHandlerTest {
         .withTenantId("myTenant")
         .withJobKey(600L)
         .withJobLease("myLease")
-        .withIteration(1)
+        .withLoopIteration(1)
         .withRole(AgentHistoryRole.ASSISTANT)
         .withProducedAt(1_700_000_000_000L)
         .withContent(List.of(textContent))

@@ -217,4 +217,88 @@ public final class JobUpdateRetriesTest {
             "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
                 .formatted(processInstanceKey));
   }
+
+  @Test
+  public void shouldUpdateRetriesOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> updatedRecord =
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
+
+    // then
+    Assertions.assertThat(updatedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.RETRIES_UPDATED);
+    assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
+    assertThat(updatedRecord.getValue().getRetries())
+        .describedAs("retries are updated even without a lease token on a leased job")
+        .isEqualTo(NEW_RETRIES);
+  }
+
+  @Test
+  public void shouldUpdateRetriesOnLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(NEW_RETRIES)
+            .withLeaseToken(leaseToken)
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(updatedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.RETRIES_UPDATED);
+    assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
+    assertThat(updatedRecord.getValue().getRetries())
+        .describedAs("retries are updated when the supplied lease token matches")
+        .isEqualTo(NEW_RETRIES);
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesOnLeasedJobWithStaleLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(NEW_RETRIES)
+            .withLeaseToken("stale-lease-token")
+            .expectRejection()
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("mismatch rejection explains the lease no longer matches")
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
 }

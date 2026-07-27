@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "7e28eeef5fabc1842fbf6e6854699a13b9e37517",
-    "generatedAt": "2026-06-29T13:29:14.708Z",
+    "commit": "df8ef20e91182d46387fa8f0b65fc5a460e81a6f",
+    "generatedAt": "2026-07-27T08:53:11.299Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "0eaed7462781f2ed6afc8ecb56bf7533646dee4bd22b4f93b434dc28c81b0e3d"
+    "specSha256": "16897b5c23a1fd1b8e394014caf24c59bf13717dbc7b15de1a8bc1e7a17314d0"
   },
   "responses": [
     {
@@ -442,11 +442,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "iteration",
-                  "type": "number",
-                  "nullable": true
-                },
-                {
                   "name": "jobKey",
                   "type": "string"
                 },
@@ -455,21 +450,30 @@
                   "type": "string"
                 },
                 {
+                  "name": "loopIteration",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "metrics",
                   "type": "0",
+                  "nullable": true,
                   "children": {
                     "required": [
                       {
                         "name": "durationMs",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "inputTokens",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "outputTokens",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -1149,12 +1153,14 @@
                   "enumValues": [
                     "AUDIT_LOG",
                     "AUTHORIZATION",
+                    "BACKUP",
                     "BATCH",
                     "CLUSTER_VARIABLE",
                     "COMPONENT",
                     "DECISION_DEFINITION",
                     "DECISION_REQUIREMENTS_DEFINITION",
                     "DOCUMENT",
+                    "EXPORTER",
                     "EXPRESSION",
                     "GLOBAL_LISTENER",
                     "GROUP",
@@ -1163,6 +1169,7 @@
                     "PROCESS_DEFINITION",
                     "RESOURCE",
                     "ROLE",
+                    "SECRET",
                     "SYSTEM",
                     "TENANT",
                     "USER",
@@ -1250,12 +1257,14 @@
             "enumValues": [
               "AUDIT_LOG",
               "AUTHORIZATION",
+              "BACKUP",
               "BATCH",
               "CLUSTER_VARIABLE",
               "COMPONENT",
               "DECISION_DEFINITION",
               "DECISION_REQUIREMENTS_DEFINITION",
               "DOCUMENT",
+              "EXPORTER",
               "EXPRESSION",
               "GLOBAL_LISTENER",
               "GROUP",
@@ -1264,6 +1273,7 @@
               "PROCESS_DEFINITION",
               "RESOURCE",
               "ROLE",
+              "SECRET",
               "SYSTEM",
               "TENANT",
               "USER",
@@ -1311,6 +1321,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
@@ -1417,6 +1429,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
@@ -1552,6 +1566,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ],
@@ -1630,6 +1646,21 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1661,6 +1692,21 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1691,6 +1737,21 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
           {
             "name": "name",
             "type": "string"
@@ -1730,6 +1791,21 @@
                 {
                   "name": "isTruncated",
                   "type": "boolean"
+                },
+                {
+                  "name": "kind",
+                  "type": "string",
+                  "enumValues": [
+                    "JSON",
+                    "SECRET_REFERENCE"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "0",
+                  "wrapper": true
+                },
+                {
+                  "name": "metadata",
+                  "type": "object"
                 },
                 {
                   "name": "name",
@@ -1794,6 +1870,21 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1825,6 +1916,21 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1855,6 +1961,21 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
+            "name": "metadata",
+            "type": "object"
+          },
           {
             "name": "name",
             "type": "string"
@@ -2653,6 +2774,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -3649,6 +3772,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
@@ -4404,6 +4528,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
@@ -4524,6 +4649,7 @@
               "JOB_NO_RETRIES",
               "MESSAGE_SIZE_EXCEEDED",
               "RESOURCE_NOT_FOUND",
+              "SECRET_RESOLUTION_ERROR",
               "TASK_LISTENER_NO_RETRIES",
               "UNHANDLED_ERROR_EVENT",
               "UNKNOWN",
@@ -4762,6 +4888,11 @@
                   "wrapper": true
                 },
                 {
+                  "name": "leaseToken",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "listenerEventType",
                   "type": "string",
                   "enumValues": [
@@ -4779,6 +4910,10 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "listenerEventType",
                   "wrapper": true
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
                 },
                 {
                   "name": "priority",
@@ -5034,6 +5169,7 @@
                     "MIGRATED",
                     "PRIORITY_UPDATED",
                     "RETRIES_UPDATED",
+                    "TIMEOUT_UPDATED",
                     "TIMED_OUT"
                   ]
                 },
@@ -5110,6 +5246,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -5951,6 +6089,14 @@
                   "type": "string"
                 },
                 {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "DELETED"
+                  ]
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 },
@@ -6169,6 +6315,14 @@
             "type": "string"
           },
           {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "ACTIVE",
+              "DELETED"
+            ]
+          },
+          {
             "name": "tenantId",
             "type": "string"
           },
@@ -6244,6 +6398,56 @@
                 },
                 {
                   "name": "incidents",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-definitions/{processDefinitionKey}/variable-names/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
                   "type": "number"
                 }
               ],
@@ -6395,6 +6599,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6426,6 +6632,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6457,6 +6665,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6488,6 +6698,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6519,6 +6731,41 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
+              "UPDATE_JOB",
+              "UPDATE_VARIABLE"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-instances/resumption",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "ADD_VARIABLE",
+              "CANCEL_PROCESS_INSTANCE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_DECISION_INSTANCE",
+              "DELETE_PROCESS_DEFINITION",
+              "DELETE_PROCESS_INSTANCE",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6603,8 +6850,14 @@
                   "enumValues": [
                     "ACTIVE",
                     "COMPLETED",
+                    "SUSPENDED",
                     "TERMINATED"
                   ]
+                },
+                {
+                  "name": "suspendedDate",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "tags",
@@ -6648,6 +6901,39 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-instances/suspension",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "ADD_VARIABLE",
+              "CANCEL_PROCESS_INSTANCE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_DECISION_INSTANCE",
+              "DELETE_PROCESS_DEFINITION",
+              "DELETE_PROCESS_INSTANCE",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
+              "UPDATE_JOB",
+              "UPDATE_VARIABLE"
+            ]
           }
         ],
         "optional": []
@@ -6724,8 +7010,14 @@
             "enumValues": [
               "ACTIVE",
               "COMPLETED",
+              "SUSPENDED",
               "TERMINATED"
             ]
+          },
+          {
+            "name": "suspendedDate",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "tags",
@@ -6775,6 +7067,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6826,6 +7120,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
@@ -6999,6 +7294,33 @@
       }
     },
     {
+      "path": "/process-instances/{processInstanceKey}/statistics/wait-states",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "waitingCount",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/resources/search",
       "method": "POST",
       "status": "200",
@@ -7142,6 +7464,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ]
@@ -7492,6 +7816,59 @@
                 {
                   "name": "totalItems",
                   "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/secrets/resolve",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "errors",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "code",
+                  "type": "string",
+                  "enumValues": [
+                    "NOT_FOUND",
+                    "ACCESS_DENIED",
+                    "INVALID_REFERENCE"
+                  ]
+                },
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "reference",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "resolved",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "reference",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
                 }
               ],
               "optional": []
@@ -8096,6 +8473,10 @@
             "children": {
               "required": [
                 {
+                  "name": "brokerId",
+                  "type": "string"
+                },
+                {
                   "name": "host",
                   "type": "string"
                 },
@@ -8128,6 +8509,17 @@
                           "leader",
                           "follower",
                           "inactive"
+                        ]
+                      },
+                      {
+                        "name": "state",
+                        "type": "string",
+                        "enumValues": [
+                          "unknown",
+                          "joining",
+                          "active",
+                          "leaving",
+                          "recovering"
                         ]
                       }
                     ],
@@ -8170,6 +8562,70 @@
           {
             "name": "replicationFactor",
             "type": "number"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/mode",
+      "method": "PATCH",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "changeId",
+            "type": "string"
+          },
+          {
+            "name": "plannedChanges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "mode",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "operation",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/restore",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "changeId",
+            "type": "string"
+          },
+          {
+            "name": "plannedChanges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "mode",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "operation",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []

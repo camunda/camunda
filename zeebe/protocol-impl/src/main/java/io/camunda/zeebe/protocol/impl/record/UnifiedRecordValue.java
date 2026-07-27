@@ -63,6 +63,8 @@ import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
@@ -71,6 +73,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -184,6 +187,9 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SIGNAL -> new SignalRecord();
       case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
       case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
+      case ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND ->
+          new ProcessInstanceBufferedCommandRecord();
+      case ValueType.PROCESS_INSTANCE_BUSINESS_ID -> new ProcessInstanceBusinessIdRecord();
       case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
       case ValueType.FORM -> new FormRecord();
       case ValueType.USER_TASK -> new UserTaskRecord();
@@ -225,6 +231,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
       case ValueType.AGENT_HISTORY -> new AgentHistoryRecord();
       case ValueType.AGENT_INSTANCE -> new AgentInstanceRecord();
+      case ValueType.SECRET_REFERENCE -> new SecretReferenceRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

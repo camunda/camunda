@@ -19,6 +19,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
@@ -59,7 +60,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -178,7 +178,7 @@ abstract class IncidentUpdateRepositoryIT {
 
   private void indexIncident(final IncidentEntity incident) throws PersistenceException {
     final var batchRequest = clientAdapter.createBatchRequest();
-    batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
+    batchRequest.add(TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()), incident);
     batchRequest.executeWithRefresh();
   }
 
@@ -201,12 +201,12 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(Long.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .isEmpty();
     }
 
     @Test
-    void shouldReturnIncidentByIds() throws PersistenceException {
+    void shouldReturnIncidentDocuments() throws PersistenceException {
       // given
       final var repository = createRepository();
       final var expected = createIncident(1L);
@@ -218,10 +218,9 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .hasSize(1)
-          .containsEntry(
-              "1", new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
+          .contains(new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
     }
 
     @RegressionTest("https://github.com/camunda/camunda/issues/25968")
@@ -229,12 +228,12 @@ abstract class IncidentUpdateRepositoryIT {
       // given
       final var repository = createRepository();
       final List<String> ids = new ArrayList<>();
-      final Map<String, IncidentDocument> expected = new HashMap<>();
+      final List<IncidentDocument> expected = new ArrayList<>();
       for (int i = 0; i < 20; i++) {
         final var id = String.valueOf(i);
         final var entity = createIncident(i);
         ids.add(id);
-        expected.put(id, new IncidentDocument(id, incidentTemplate.getFullQualifiedName(), entity));
+        expected.add(new IncidentDocument(id, incidentTemplate.getFullQualifiedName(), entity));
       }
 
       // when
@@ -243,9 +242,9 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .hasSize(20)
-          .containsExactlyEntriesOf(expected);
+          .containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private IncidentEntity createIncident(final long key) throws PersistenceException {
@@ -416,7 +415,10 @@ abstract class IncidentUpdateRepositoryIT {
               .peek(modifier)
               .toList();
       final var batchRequest = clientAdapter.createBatchRequest();
-      updates.forEach(e -> batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), e));
+      updates.forEach(
+          e ->
+              batchRequest.add(
+                  TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), e));
       batchRequest.executeWithRefresh();
     }
 
@@ -598,7 +600,8 @@ abstract class IncidentUpdateRepositoryIT {
               .setProcessInstanceKey(key)
               .setPosition(position);
       final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), entry);
+      batchRequest.add(
+          TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), entry);
       if (refresh) {
         batchRequest.executeWithRefresh();
       } else {
@@ -631,15 +634,16 @@ abstract class IncidentUpdateRepositoryIT {
           new PostImporterQueueFromIncidentHandler(
               postImporterQueueTemplate.getFullQualifiedName());
       final var batchRequest = clientAdapter.createBatchRequest();
-
+      final var index = TargetIndex.mainIndex(handler.getIndexName());
       // when - the handler flushes several entries for two partitions across many positions
       // partition 1 (the consumer's partition): positions 1..5, keys 1..5
       for (long position = 1; position <= 5; position++) {
-        handler.flush(newQueueEntry(position, position, PARTITION_ID), batchRequest);
+        handler.flush(index, newQueueEntry(position, position, PARTITION_ID), batchRequest);
       }
       // partition 2: positions 1..3, keys offset so they do not collide with partition 1
       for (long position = 1; position <= 3; position++) {
-        handler.flush(newQueueEntry(100 + position, position, OTHER_PARTITION_ID), batchRequest);
+        handler.flush(
+            index, newQueueEntry(100 + position, position, OTHER_PARTITION_ID), batchRequest);
       }
       batchRequest.executeWithRefresh();
 
@@ -712,7 +716,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
 
       // when
-      bulk.incidentRequests().put("2", new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
+      bulk.incidentRequests().add(new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
       final var result = repository.bulkUpdate(bulk);
 
       // then
@@ -730,30 +734,28 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "1",
           new IncidentEntity()
               .setKey(1)
               .setState(IncidentState.PENDING)
               .setErrorMessage("failure"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "2",
           new IncidentEntity().setKey(2).setState(IncidentState.ACTIVE).setErrorMessage("failure"));
       batchRequest.executeWithRefresh();
 
       // when
       bulk.incidentRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   incidentTemplate.getFullQualifiedName(),
                   Map.of(IncidentTemplate.STATE, IncidentState.ACTIVE),
                   "1"));
       bulk.incidentRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   incidentTemplate.getFullQualifiedName(),
@@ -783,27 +785,25 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "1",
           new ProcessInstanceForListViewEntity().setKey(1).setIncident(false));
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "2",
           new ProcessInstanceForListViewEntity().setKey(2).setIncident(true));
       batchRequest.executeWithRefresh();
 
       // when
       bulk.listViewRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   listViewTemplate.getFullQualifiedName(),
                   Map.of(ListViewTemplate.INCIDENT, true),
                   "1"));
       bulk.listViewRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   listViewTemplate.getFullQualifiedName(),
@@ -834,27 +834,25 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
           "1",
           new FlowNodeInstanceEntity().setKey(1).setIncident(false));
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
           "2",
           new FlowNodeInstanceEntity().setKey(2).setIncident(false));
       batchRequest.executeWithRefresh();
 
       // when
       bulk.flowNodeInstanceRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   flowNodeInstanceTemplate.getFullQualifiedName(),
                   Map.of(FlowNodeInstanceTemplate.INCIDENT, true),
                   "1"));
       bulk.flowNodeInstanceRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   flowNodeInstanceTemplate.getFullQualifiedName(),
@@ -1001,7 +999,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(
-          operationTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()),
           new OperationEntity()
               .setProcessInstanceKey(2L)
               .setType(OperationType.DELETE_PROCESS_INSTANCE)
@@ -1021,7 +1019,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(
-          operationTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()),
           new OperationEntity()
               .setProcessInstanceKey(2L)
               .setType(OperationType.CANCEL_PROCESS_INSTANCE)
@@ -1046,7 +1044,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(
-          operationTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()),
           new OperationEntity()
               .setProcessInstanceKey(1L)
               .setType(OperationType.DELETE_PROCESS_INSTANCE)
@@ -1070,7 +1068,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(
-          operationTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()),
           new OperationEntity()
               .setProcessInstanceKey(1L)
               .setType(OperationType.DELETE_PROCESS_INSTANCE)
@@ -1097,11 +1095,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
           "0");
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
           "0");
       batchRequest.executeWithRefresh();
@@ -1124,11 +1122,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
           "0");
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION).setId("2"),
           "0");
       batchRequest.executeWithRefresh();
@@ -1149,11 +1147,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
           "0");
       batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
           "0");
       batchRequest.executeWithRefresh();
@@ -1187,9 +1185,13 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
+          "1",
+          new FlowNodeInstanceEntity());
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
+          "2",
+          new FlowNodeInstanceEntity());
       batchRequest.executeWithRefresh();
 
       // when
@@ -1210,9 +1212,13 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
+          "1",
+          new FlowNodeInstanceEntity());
       batchRequest.addWithId(
-          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+          TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
+          "2",
+          new FlowNodeInstanceEntity());
       batchRequest.executeWithRefresh();
 
       // when
@@ -1238,15 +1244,15 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "7",
           newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "8",
           newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_3/FNI_4"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "9",
           newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
       batchRequest.executeWithRefresh();
@@ -1269,15 +1275,15 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "7",
           newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "8",
           newIncident(8).setState(IncidentState.PENDING).setTreePath("PI_1/FNI_3"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "9",
           newIncident(9).setState(IncidentState.RESOLVED).setTreePath("PI_1/FNI_4"));
       batchRequest.executeWithRefresh();
@@ -1298,15 +1304,15 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "7",
           newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_7"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "8",
           newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_3/FNI_4"));
       batchRequest.addWithId(
-          incidentTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()),
           "9",
           newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
       batchRequest.executeWithRefresh();
@@ -1336,11 +1342,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "1",
           new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "2",
           new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
       batchRequest.executeWithRefresh();
@@ -1363,11 +1369,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "1",
           new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "2",
           new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
       batchRequest.executeWithRefresh();
@@ -1391,10 +1397,11 @@ abstract class IncidentUpdateRepositoryIT {
       final var flowNode = new FlowNodeInstanceForListViewEntity().setKey(2).setId("2");
       flowNode.getJoinRelation().setParent(1L);
       batchRequest.addWithId(
-          listViewTemplate.getFullQualifiedName(),
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
           "1",
           new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
-      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), flowNode, "1");
+      batchRequest.addWithRouting(
+          TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()), flowNode, "1");
       batchRequest.executeWithRefresh();
 
       // when

@@ -8,7 +8,7 @@
   "template": {
     "settings": {
       "number_of_shards": 3,
-      "number_of_replicas": 0,
+      "number_of_replicas": 1,
       "index.queries.cache.enabled": false
     },
     "aliases": {
@@ -156,6 +156,19 @@
             },
             "leaseToken": {
               "type": "keyword"
+            },
+            "secretReferences": {
+              "properties": {
+                "storeId": {
+                  "type": "keyword"
+                },
+                "secretReference": {
+                  "type": "keyword"
+                },
+                "path": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }

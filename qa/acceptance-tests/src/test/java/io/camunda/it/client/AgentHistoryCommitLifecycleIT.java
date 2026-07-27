@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
@@ -45,12 +46,12 @@ public class AgentHistoryCommitLifecycleIT {
     final long processInstanceKey = deployAndStartProcessInstance();
     final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
     final long agentInstanceKey = createAgentInstance(elementInstanceKey);
-    final long jobKey = activateAgenticJob(processInstanceKey);
+    final var activatedJob = activateAgenticJob(processInstanceKey, false);
     final long historyItemKey1 =
         createHistoryItem(
             agentInstanceKey,
             elementInstanceKey,
-            jobKey,
+            activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
             OffsetDateTime.parse("2025-06-01T10:00:00Z"));
@@ -58,7 +59,7 @@ public class AgentHistoryCommitLifecycleIT {
         createHistoryItem(
             agentInstanceKey,
             elementInstanceKey,
-            jobKey,
+            activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
             OffsetDateTime.parse("2025-06-01T10:01:00Z"));
@@ -69,7 +70,7 @@ public class AgentHistoryCommitLifecycleIT {
         tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.PENDING));
 
     // --- complete the job → engine emits COMMIT → items become COMMITTED ---
-    camundaClient.newCompleteCommand(jobKey).execute();
+    camundaClient.newCompleteCommand(activatedJob).execute();
 
     // --- verify items are COMMITTED after job completion ---
     awaitHistoryStatuses(
@@ -85,12 +86,12 @@ public class AgentHistoryCommitLifecycleIT {
     final long processInstanceKey = deployAndStartProcessInstance();
     final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
     final long agentInstanceKey = createAgentInstance(elementInstanceKey);
-    final long jobKey = activateAgenticJob(processInstanceKey);
+    final var activatedJob = activateAgenticJob(processInstanceKey, false);
     final long historyItemKey1 =
         createHistoryItem(
             agentInstanceKey,
             elementInstanceKey,
-            jobKey,
+            activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
             OffsetDateTime.parse("2025-06-01T10:00:00Z"));
@@ -98,7 +99,7 @@ public class AgentHistoryCommitLifecycleIT {
         createHistoryItem(
             agentInstanceKey,
             elementInstanceKey,
-            jobKey,
+            activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
             OffsetDateTime.parse("2025-06-01T10:01:00Z"));
@@ -118,6 +119,68 @@ public class AgentHistoryCommitLifecycleIT {
         "history items transitioned to DISCARDED",
         tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.DISCARDED),
         tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.DISCARDED));
+  }
+
+  @Test
+  void shouldDiscardSupersededActivationAndCommitWinningActivationOnJobCompletion() {
+    final long processInstanceKey = deployAndStartProcessInstance();
+    final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey);
+
+    // Activation 1 (superseded): activate with lease, create a history item, then fail the job.
+    final var activation1 = activateAgenticJob(processInstanceKey, true);
+    final long supersededItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            activation1,
+            AgentInstanceHistoryRole.USER,
+            "Message from superseded activation",
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "superseded item indexed as PENDING before fail",
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.PENDING));
+
+    camundaClient
+        .newFailCommand(activation1.getKey())
+        .retries(1)
+        .withLeaseToken(activation1.getLeaseToken())
+        .execute();
+
+    // Activation 2 (winning): same job re-activated under a new lease.
+    final var activation2 = activateAgenticJob(processInstanceKey, true);
+    assertThat(activation2.getKey())
+        .as("re-activation must reuse the same job key")
+        .isEqualTo(activation1.getKey());
+    assertThat(activation2.getLeaseToken())
+        .as("re-activation must advance the lease token")
+        .isNotEqualTo(activation1.getLeaseToken());
+
+    final long winningItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            activation2,
+            AgentInstanceHistoryRole.ASSISTANT,
+            "Message from winning activation",
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "both items PENDING before completion",
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.PENDING),
+        tuple(winningItemKey, AgentInstanceHistoryCommitStatus.PENDING));
+
+    // Complete the winning activation — JobCompleteProcessor propagates the stored lease token
+    // into AGENT_HISTORY:COMMIT, so visitByJobLease commits the winning item and discards the
+    // superseded one.
+    camundaClient.newCompleteCommand(activation2).execute();
+
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "winning item COMMITTED, superseded item DISCARDED",
+        tuple(winningItemKey, AgentInstanceHistoryCommitStatus.COMMITTED),
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.DISCARDED));
   }
 
   // --- helpers: each step below is called directly from the test bodies above ---
@@ -171,12 +234,13 @@ public class AgentHistoryCommitLifecycleIT {
     return agentInstanceKey;
   }
 
-  private long activateAgenticJob(final long processInstanceKey) {
+  private ActivatedJob activateAgenticJob(final long processInstanceKey, final boolean withLease) {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
             .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
             .maxJobsToActivate(1)
+            .withLease(withLease)
             .timeout(Duration.ofMinutes(5))
             .send()
             .join()
@@ -184,26 +248,28 @@ public class AgentHistoryCommitLifecycleIT {
     assertThat(activatedJobs)
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
-    return activatedJobs.get(0).getKey();
+    return activatedJobs.getFirst();
   }
 
   private long createHistoryItem(
       final long agentInstanceKey,
       final long elementInstanceKey,
-      final long jobKey,
+      final ActivatedJob activatedJob,
       final AgentInstanceHistoryRole role,
       final String text,
       final OffsetDateTime producedAt) {
-    return camundaClient
-        .newCreateAgentHistoryItemCommand(agentInstanceKey)
-        .elementInstanceKey(elementInstanceKey)
-        .jobKey(jobKey)
-        .role(role)
-        .content(List.of(AgentInstanceHistoryContent.text(text)))
-        .producedAt(producedAt)
-        .send()
-        .join()
-        .getHistoryItemKey();
+    final var finalCommandStep =
+        camundaClient
+            .newCreateAgentHistoryItemCommand(agentInstanceKey)
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(activatedJob.getKey())
+            .role(role)
+            .content(List.of(AgentInstanceHistoryContent.text(text)))
+            .producedAt(producedAt);
+    if (activatedJob.getLeaseToken() != null) {
+      finalCommandStep.jobLease(activatedJob.getLeaseToken());
+    }
+    return finalCommandStep.execute().getHistoryItemKey();
   }
 
   /**

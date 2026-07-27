@@ -51,9 +51,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerClusterPatchRequestHandler();
     registerUpdateRoutingStateHandler();
     registerUpdatePartitionDistributionHandler();
+    registerZoneMigrationHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
     registerModeChangeHandler();
+    registerRestoreHandler();
+    registerForceRemoveZoneHandler();
+    registerAddZoneHandler();
+    registerUpdateZonePrioritiesHandler();
   }
 
   @Override
@@ -218,6 +223,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         this::encodeResponse);
   }
 
+  private void registerZoneMigrationHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.ZONE_MIGRATION.topic(),
+        serializer::decodeClusterZoneMigrationRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.migrateZone(request)),
+        this::encodeResponse);
+  }
+
   private void registerClusterScaleRequestHandler() {
     communicationService.replyTo(
         ClusterConfigurationRequestTopics.SCALE_CLUSTER.topic(),
@@ -231,6 +244,38 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         serializer::decodeModeChangeRequest,
         request -> mapResponse(clusterConfigurationManagementApi.modeChange(request)),
+        this::encodeResponse);
+  }
+
+  private void registerRestoreHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.RESTORE.topic(),
+        serializer::decodeRestoreRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.restore(request)),
+        this::encodeResponse);
+  }
+
+  private void registerForceRemoveZoneHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.FORCE_REMOVE_ZONE.topic(),
+        serializer::decodeForceRemoveZoneRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.forceRemoveZone(request)),
+        this::encodeResponse);
+  }
+
+  private void registerAddZoneHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.ADD_ZONE.topic(),
+        serializer::decodeAddZoneRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.addZone(request)),
+        this::encodeResponse);
+  }
+
+  private void registerUpdateZonePrioritiesHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.UPDATE_ZONE_PRIORITIES.topic(),
+        serializer::decodeUpdateZonePrioritiesRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.updateZonePriorities(request)),
         this::encodeResponse);
   }
 
@@ -259,6 +304,10 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
               new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
       case final ClusterConfigurationRequestFailedException.InvalidRequest invalidRequest ->
           Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
+      case final ClusterConfigurationRequestFailedException.InvalidState invalidState ->
+          Either.left(new ErrorResponse(ErrorCode.INVALID_STATE, invalidState.getMessage()));
+      case final ClusterConfigurationRequestFailedException.NotFound notFound ->
+          Either.left(new ErrorResponse(ErrorCode.NOT_FOUND, notFound.getMessage()));
       case final ConcurrentModificationException concurrentModificationException ->
           Either.left(
               new ErrorResponse(
