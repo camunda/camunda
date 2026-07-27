@@ -490,7 +490,11 @@ final class NewModelManagementApiEndpointsTest {
                     Map.of(1, PartitionState.active(1, partitionConfig)))));
 
     // when — switch to recovery mode
-    handler.modeChange(new ModeChangeRequest(Mode.RECOVERING, false)).join();
+    handler
+        .modeChange(
+            new ModeChangeRequest(
+                CurrentClusterConfiguration.DEFAULT_GROUP, Mode.RECOVERING, false))
+        .join();
 
     // then — the plan is applied and the local member is now in recovery mode
     final var config = manager.getMultiConfiguration().join();
