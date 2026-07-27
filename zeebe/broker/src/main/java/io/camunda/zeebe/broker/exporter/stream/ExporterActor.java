@@ -42,11 +42,15 @@ import org.slf4j.Logger;
  * own health, entirely independent of any other exporter on the same partition. A slow, stuck, or
  * failing exporter therefore cannot block or take down any other exporter.
  *
- * <p>The corresponding {@link ExporterContainer} is constructed, configured and opened by {@link
- * ExporterDirector} before this actor is scheduled; likewise the {@link LogStreamReader} passed in
- * is already created by the director so that a replay request from within {@code exporter.open()}
- * (which runs on the director's thread) can seek it immediately. This actor takes ownership of the
- * reader from construction on and owns the read-export-retry loop.
+ * <p>The corresponding {@link ExporterContainer} is constructed and configured by {@link
+ * ExporterDirector} before this actor is scheduled, but is only opened once this actor has started
+ * and rebound the container to its own {@link io.camunda.zeebe.scheduler.ActorControl} - an
+ * exporter may synchronously schedule a periodic task from within {@code exporter.open()} (e.g. a
+ * flush timer), which must be bound to this actor from the start rather than opened on the
+ * director's thread and rebound afterwards. Likewise the {@link LogStreamReader} passed in is
+ * already created by the director, but only seeked once this actor starts reading, so a replay
+ * request from within {@code exporter.open()} is always invoked from this actor's own thread. This
+ * actor takes ownership of the reader from construction on and owns the read-export-retry loop.
  */
 final class ExporterActor extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
@@ -121,21 +125,55 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
             new RecordExporter(metrics, List.of(container), partitionIdNumber, clock));
 
     // Rebind the container's Controller (scheduleCancellableTask, updateLastExportedRecordPosition,
-    // etc.) from this director's actor/state - used while the container was being configured and
-    // opened on the director's own thread - to this actor's own ActorControl and its own
-    // independent ExportersState/TransactionContext. ActorControl.schedule(...) and friends require
-    // being called from their owning actor's own thread, and RocksDB TransactionContexts are not
-    // thread-safe for concurrent use, so from this point on the exporter must be driven exclusively
-    // through this actor's own resources.
+    // etc.) to this actor's own ActorControl and its own independent ExportersState/
+    // TransactionContext before the exporter is opened. This must happen before open(), not after:
+    // an exporter may synchronously schedule a periodic task from within open() (e.g.
+    // RdbmsExporter's
+    // flush timer), and ActorControl.schedule(...) binds that task to whichever actor owns the
+    // ActorControl at call time - rebinding afterwards would leave that first task permanently
+    // bound to the wrong actor. RocksDB TransactionContexts are also not thread-safe for concurrent
+    // use, so from this point on the exporter is driven exclusively through this actor's own
+    // resources.
     final var ownState = new ExportersState(zeebeDb, zeebeDb.createContext());
     container.initContainer(actor, metrics, ownState, phase);
 
-    try {
-      startExportingFrom(container.getPosition());
-    } catch (final Exception e) {
-      updateHealthStatusWithError(new UnrecoverableException(e));
-      onFailure();
-    }
+    openWithRetry();
+  }
+
+  /**
+   * Opens the exporter, retrying indefinitely (with backoff) until it succeeds or this actor is
+   * closed while opening, e.g. because the exporter was disabled or removed concurrently. Only once
+   * open does this actor start reading and exporting records.
+   */
+  private void openWithRetry() {
+    final var openFuture =
+        new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
+            .runWithRetry(
+                () -> {
+                  try {
+                    container.openExporter();
+                    return true;
+                  } catch (final Exception e) {
+                    LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
+                    LOG.debug("Failed to open exporter '{}' => Stacktrace:", container.getId(), e);
+                    return false;
+                  }
+                },
+                this::isClosed);
+
+    actor.runOnCompletion(
+        openFuture,
+        (ok, error) -> {
+          if (error != null || isClosed()) {
+            return;
+          }
+          try {
+            startExportingFrom(container.getPosition());
+          } catch (final Exception e) {
+            updateHealthStatusWithError(new UnrecoverableException(e));
+            onFailure();
+          }
+        });
   }
 
   private void startExportingFrom(final long position) {
