@@ -37,6 +37,42 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Re-import the netty/jackson/log4j BOMs (and pin plexus-utils) ahead of
+      spring-boot-dependencies below. spring-boot-dependencies manages these same artifacts at
+      its own pins, which carry known vulnerabilities (grpc-netty's netty, jackson-databind,
+      log4j, and the transitive plexus-utils); because this POM's dependencyManagement is nearer
+      than the parent's, those pins would otherwise shadow the fixed versions the parent already
+      carries and leak into the flattened client artifacts. Within a single dependencyManagement
+      the first import wins, so these must precede spring-boot-dependencies. Unlike Spring, these
+      are plain OSS coordinates resolvable from Maven Central, so reusing the parent's version.*
+      properties keeps the client aligned with backend security patching. The camunda-spring-boot-4-starter
+      overrides the jackson pin locally, as Spring Boot 4 tracks a newer jackson line. -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${version.netty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${version.jackson}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>${version.log4j}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>3.6.1</version>
+      </dependency>
       <!-- The version.spring-boot / version.spring property overrides above only take effect
       for BOM imports declared in this POM: the ancestor parent/pom.xml already imports
       spring-boot-dependencies and spring-framework-bom using its own property values (HeroDevs
