@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment, useState} from 'react';
+import {Fragment, useEffect, useRef, useState} from 'react';
 import {SkeletonText} from '@carbon/react';
 import type {
   AgentInstanceHistoryItem,
+  AgentInstanceStatus,
   AgentTool,
   QueryAgentInstanceHistoryResponseBody,
   QuerySortOrder,
@@ -27,6 +28,7 @@ import {
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
 import type {InfiniteData} from '@tanstack/react-query';
+import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 function mapIntoLoopIterationChunks(
   pages: InfiniteData<QueryAgentInstanceHistoryResponseBody>,
@@ -51,18 +53,18 @@ function mapIntoLoopIterationChunks(
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
+  agentInstanceStatus: AgentInstanceStatus;
   availableTools: AgentTool[];
   isVisible: boolean;
-  enablePeriodicRefetch: boolean;
   selectedElementInstanceKey: string | null;
   agentsElementInstanceKeys: string[];
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
+  agentInstanceStatus,
   availableTools,
   isVisible,
-  enablePeriodicRefetch,
   selectedElementInstanceKey,
   agentsElementInstanceKeys,
 }) => {
@@ -75,18 +77,29 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   const {
     data,
     status,
+    refetch,
+    isEnabled,
     isPlaceholderData,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
   } = useAgentInstanceHistory(agentInstanceKey, {
     enabled: isVisible,
-    enablePeriodicRefetch,
+    enablePeriodicRefetch: isActiveAgentInstanceStatus(agentInstanceStatus),
     sortOrder,
     elementInstanceKey:
       canBeScoped && isScoped ? selectedElementInstanceKey : null,
     select: mapIntoLoopIterationChunks,
   });
+
+  const lastAgentStatus = useRef(agentInstanceStatus);
+  useEffect(() => {
+    // Trigger refetch to show up-to-date data faster once agent status changes are known.
+    if (isEnabled && lastAgentStatus.current !== agentInstanceStatus) {
+      refetch();
+    }
+    lastAgentStatus.current = agentInstanceStatus;
+  }, [agentInstanceStatus, isEnabled, refetch]);
 
   if (status === 'pending') {
     return (

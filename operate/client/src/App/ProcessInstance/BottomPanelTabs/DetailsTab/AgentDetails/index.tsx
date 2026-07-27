@@ -42,7 +42,6 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
-import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -186,7 +185,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <LatestAgentMessage
             agentInstanceKey={agentInstance.agentInstanceKey}
-            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+            agentInstanceStatus={agentInstance.status}
           />
         </AccordionItem>
         <AccordionItem
@@ -233,9 +232,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <ConversationHistory
             agentInstanceKey={agentInstance.agentInstanceKey}
+            agentInstanceStatus={agentInstance.status}
             availableTools={agentInstance.tools}
             isVisible={isConversationHistoryOpen}
-            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             selectedElementInstanceKey={selectedElementInstanceKey}
             agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
           />

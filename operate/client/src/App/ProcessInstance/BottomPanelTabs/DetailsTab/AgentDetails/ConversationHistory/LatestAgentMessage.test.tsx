@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -46,7 +47,7 @@ describe('<LatestAgentMessage />', () => {
     render(
       <LatestAgentMessage
         agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
       />,
       {wrapper: createWrapper()},
     );
@@ -64,7 +65,7 @@ describe('<LatestAgentMessage />', () => {
     render(
       <LatestAgentMessage
         agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
       />,
       {wrapper: createWrapper()},
     );
@@ -84,7 +85,7 @@ describe('<LatestAgentMessage />', () => {
     render(
       <LatestAgentMessage
         agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
       />,
       {wrapper: createWrapper()},
     );
@@ -112,7 +113,7 @@ describe('<LatestAgentMessage />', () => {
     render(
       <LatestAgentMessage
         agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
       />,
       {wrapper: createWrapper()},
     );
@@ -126,6 +127,38 @@ describe('<LatestAgentMessage />', () => {
       message.getByRole('heading', {name: 'Assistant'}),
     ).toBeInTheDocument();
     expect(message.getByText('I will help you with that.')).toBeInTheDocument();
+  });
+
+  it('should trigger a refetch when the agent instance status changes', async () => {
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-2'})]),
+    );
+    mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({historyItemKey: 'msg-1'})]),
+    );
+
+    const {rerender} = render(
+      <LatestAgentMessage
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        agentInstanceStatus="IDLE"
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-1')).toBeVisible(),
+    );
+
+    rerender(
+      <LatestAgentMessage
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        agentInstanceStatus="TOOL_CALLING"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-message-msg-2')).toBeVisible(),
+    );
   });
 
   it('should render tool call intents for a message with tool calls', async () => {
@@ -156,7 +189,7 @@ describe('<LatestAgentMessage />', () => {
     render(
       <LatestAgentMessage
         agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
+        agentInstanceStatus="COMPLETED"
       />,
       {wrapper: createWrapper()},
     );
