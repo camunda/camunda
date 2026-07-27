@@ -45,6 +45,20 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- The parent pom.xml decouples jackson-annotations from jackson-bom via an explicit
+      (non-import) managed entry pinned below the bom's version. Such an explicit entry outranks
+      any BOM import regardless of proximity, so the jackson-bom import above raises databind/core
+      to 2.21.x but leaves annotations at the parent's older pin. Under Spring Boot 4 that split is
+      fatal: databind 2.21.x references com.fasterxml.jackson.annotation.JsonSerializeAs, which only
+      exists from annotations 2.21 onward, so ObjectMapper fails to initialize. Re-pin annotations
+      explicitly here (nearest explicit entry wins) to keep the jackson set coherent with the bom
+      above. Since Jackson 2.20 jackson-annotations drops the patch component and tracks its own
+      slower cadence, so this is 2.21 (the version jackson-bom 2.21.5 itself manages), not 2.21.5. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>2.21</version>
+      </dependency>
       <dependency>
         <groupId>tools.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
