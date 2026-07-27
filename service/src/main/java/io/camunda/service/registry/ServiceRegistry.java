@@ -36,6 +36,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -65,6 +66,8 @@ public interface ServiceRegistry {
   AuditLogServices auditLogServices(String physicalTenantId);
 
   AuthorizationServices authorizationServices(String physicalTenantId);
+
+  RuntimeBackupServices backupServices(String physicalTenantId);
 
   BatchOperationServices batchOperationServices(String physicalTenantId);
 

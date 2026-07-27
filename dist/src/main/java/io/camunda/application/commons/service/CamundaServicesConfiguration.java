@@ -10,13 +10,16 @@ package io.camunda.application.commons.service;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
@@ -47,6 +50,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -60,6 +64,9 @@ import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
@@ -260,6 +267,17 @@ public class CamundaServicesConfiguration {
                           brokerClient,
                           securityContextProvider,
                           search,
+                          executor,
+                          converter))
+                  .backupServices(
+                      tenantId,
+                      runtimeBackupServices(
+                          tenantId,
+                          tenantConfig,
+                          brokerClient,
+                          securityContextProvider,
+                          authorizationChecker,
+                          tenantSecurity.getAuthorizations(),
                           executor,
                           converter))
                   .batchOperationServices(
@@ -468,5 +486,40 @@ public class CamundaServicesConfiguration {
             });
 
     return builder.build();
+  }
+
+  /**
+   * Builds the per-tenant {@link RuntimeBackupServices}, mirroring the wiring of the {@code
+   * backupRuntime} actuator ({@code BackupEndpoint}): backup ids must be omitted (they are
+   * generated from the current timestamp plus the configured offset) whenever continuous backups, a
+   * backup schedule, or a checkpoint interval is configured for the physical tenant.
+   */
+  private static RuntimeBackupServices runtimeBackupServices(
+      final String tenantId,
+      final Camunda tenantConfig,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuthorizationChecker authorizationChecker,
+      final AuthorizationsConfiguration authorizationsConfig,
+      final ApiServicesExecutorProvider executor,
+      final BrokerRequestAuthorizationConverter converter) {
+    final var backupCfg = tenantConfig.getData().getPrimaryStorage().getBackup();
+    final var backupIdGenerated =
+        backupCfg.isContinuous()
+            || !(Schedule.parseSchedule(backupCfg.getSchedule()) instanceof Schedule.NoneSchedule)
+            || (backupCfg.getCheckpointInterval() != null
+                && !backupCfg.getCheckpointInterval().isZero());
+    final var backupApi =
+        new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
+    return new RuntimeBackupServices(
+        tenantId,
+        brokerClient,
+        securityContextProvider,
+        backupApi,
+        authorizationChecker,
+        authorizationsConfig,
+        backupIdGenerated,
+        executor,
+        converter);
   }
 }
