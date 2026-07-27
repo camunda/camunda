@@ -203,8 +203,11 @@ public final class RaftLog implements Closeable {
     journal.deleteAfter(index);
     lastAppendedEntry = null;
 
-    // we have to flush here to ensure the truncated log is represented properly
-    flushSync(index);
+    // we have to flush right away, bypassing the configured flush strategy, to ensure the
+    // truncation itself is durable: the journal already lowered its flush watermark, so records
+    // beyond it would otherwise be treated as valid partial writes on restart even though they
+    // were already acknowledged based on an earlier flush
+    forceFlush();
   }
 
   /**
