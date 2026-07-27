@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.security.AuthorizationCheckerFactory;
 import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -24,6 +23,7 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.authz.TenantAccessProvider;
+import io.camunda.security.impl.AuthorizationCheckerFactory;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.LinkedHashMap;

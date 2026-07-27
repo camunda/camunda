@@ -10,6 +10,7 @@ package io.camunda.application.commons.security;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.impl.AuthorizationCheckerFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
