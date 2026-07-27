@@ -21,6 +21,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -82,6 +83,8 @@ public interface ServiceRegistry {
   DocumentServices documentServices(String physicalTenantId);
 
   ElementInstanceServices elementInstanceServices(String physicalTenantId);
+
+  ExportingServices exportingServices(String physicalTenantId);
 
   ExpressionServices expressionServices(String physicalTenantId);
 

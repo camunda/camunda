@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.admin;
 
+import org.jspecify.annotations.NullMarked;
+
+@NullMarked
 public class IncompleteTopologyException extends RuntimeException {
 
   public IncompleteTopologyException(final String message) {

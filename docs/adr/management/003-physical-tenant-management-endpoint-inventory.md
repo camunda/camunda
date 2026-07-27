@@ -122,4 +122,5 @@ If any tenant cannot be reached/triggered, the status code indicates an error, b
 ## Alternatives considered
 
 - No-param actuator = default tenant instead of all tenants, breaks the actuator's established whole-cluster meaning.
+- A single orchestrated "backups-only" endpoint that hides exporting pause/resume behind internal coordination, instead of exposing the per-PT `exporting` pause/resume primitives (D1). Rejected: the backup procedure is inherently multi-step and operator-orchestrated (soft-pause exporting → snapshot secondary-storage indices → runtime backup → resume), and several steps span systems the cluster does not fully control (ES/OS snapshot repositories, Optimize). A single "do the whole backup" endpoint would be a long-running saga needing failure/resume semantics that do not exist; the per-step endpoints are the primitives that keep the procedure scriptable and recoverable.
 
