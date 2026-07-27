@@ -635,7 +635,8 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().getRaft().setEnablePriorityElection(raft.isPriorityElectionEnabled());
 
     // Set flush configuration
-    final var flushConfig = new FlushConfig(raft.isFlushEnabled(), raft.getFlushDelay());
+    final var flushConfig =
+        new FlushConfig(raft.isFlushEnabled(), raft.getFlushDelay(), raft.isFlushCoalesced());
     override.getCluster().getRaft().setFlush(flushConfig);
 
     override.getExperimental().setMaxAppendsPerFollower(raft.getMaxAppendsPerFollower());

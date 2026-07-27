@@ -11,6 +11,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
+import io.atomix.raft.storage.log.CoalescedFlusher;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.cluster.PartitionId;
@@ -134,7 +135,7 @@ public final class RaftPartitionFactory {
       final FlushConfig config, final ExperimentalCfg experimental) {
     // for backwards compatibility; remove this and flatten when this is removed
     if (experimental.isDisableExplicitRaftFlush()) {
-      return createFlusherFactory(new FlushConfig(false, Duration.ZERO));
+      return createFlusherFactory(new FlushConfig(false, Duration.ZERO, false));
     }
 
     return createFlusherFactory(config);
@@ -143,6 +144,18 @@ public final class RaftPartitionFactory {
   private RaftLogFlusher.Factory createFlusherFactory(final FlushConfig config) {
     if (config.enabled()) {
       final Duration delayTime = config.delayTime();
+      if (config.coalesced()) {
+        if (!delayTime.isZero()) {
+          throw new IllegalArgumentException(
+              ("Expected either a coalesced or a delayed Raft flush strategy, but both coalesced "
+                      + "flushing and a flush delay of %s are configured; configure only one of "
+                      + "them.")
+                  .formatted(delayTime));
+        }
+
+        return threadFactory -> new CoalescedFlusher(threadFactory.createContext());
+      }
+
       if (delayTime.isZero()) {
         return RaftLogFlusher.Factory::direct;
       }

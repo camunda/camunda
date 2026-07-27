@@ -63,6 +63,7 @@ cluster.partitioning.scheme
 cluster.partitioning.zone-aware.zones
 cluster.raft.configuration-change-timeout
 cluster.raft.election-timeout
+cluster.raft.flush-coalesced
 cluster.raft.flush-delay
 cluster.raft.flush-enabled
 cluster.raft.heartbeat-interval

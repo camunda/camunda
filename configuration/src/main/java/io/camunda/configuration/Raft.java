@@ -34,6 +34,7 @@ public class Raft {
       "zeebe.broker.cluster.raft.enablePriorityElection";
   private static final String LEGACY_FLUSH_ENABLED = "zeebe.broker.cluster.raft.flush.enabled";
   private static final String LEGACY_FLUSH_DELAY = "zeebe.broker.cluster.raft.flush.delay";
+  private static final String LEGACY_FLUSH_COALESCED = "zeebe.broker.cluster.raft.flush.coalesced";
   private static final String LEGACY_MAX_APPENDS_PER_FOLLOWER =
       "zeebe.broker.experimental.maxAppendsPerFollower";
   private static final String LEGACY_MAX_APPEND_BATCH_SIZE =
@@ -104,6 +105,15 @@ public class Raft {
    * follower append in a synchronous fashion.
    */
   private Duration flushDelay = Duration.ZERO;
+
+  /**
+   * If true, flushes of the Raft log are coalesced: flushes for records which are already durable
+   * are skipped, and concurrent flush requests are covered together by a single flush. Unlike
+   * flush-delay, this does not give up durability - appends are still only acknowledged and commits
+   * still only advance once covered by a flush. This improves performance on disks with high flush
+   * latency, e.g. network-attached storage. Cannot be combined with flush-delay.
+   */
+  private boolean flushCoalesced = false;
 
   /** Sets the maximum of appends which are send per follower. */
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
@@ -272,6 +282,19 @@ public class Raft {
 
   public void setFlushDelay(final Duration flushDelay) {
     this.flushDelay = flushDelay;
+  }
+
+  public boolean isFlushCoalesced() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".flush-coalesced",
+        flushCoalesced,
+        Boolean.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_FLUSH_COALESCED));
+  }
+
+  public void setFlushCoalesced(final boolean flushCoalesced) {
+    this.flushCoalesced = flushCoalesced;
   }
 
   public int getMaxAppendsPerFollower() {
