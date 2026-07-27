@@ -12,6 +12,7 @@ import {encode} from '../../../../../utils/http';
 import {
   startIsolatedEnvironmentWithoutExporter,
   stopIsolatedEnvironment,
+  getIsolatedServiceLogs,
 } from '../../../../../utils/dockerComposeControl';
 import {
   queryLoki,
@@ -51,6 +52,12 @@ test.describe.serial('Analytics Exporter Default-Off', () => {
         });
         expect(res.status()).toBe(200);
       }).toPass({intervals: [2_000, 5_000, 10_000], timeout: 120_000});
+    } catch (error) {
+      console.error(
+        'camunda-analytics-isolated logs:\n',
+        await getIsolatedServiceLogs('camunda-analytics-isolated'),
+      );
+      throw error;
     } finally {
       await context.dispose();
     }
@@ -102,9 +109,10 @@ test.describe.serial('Analytics Exporter Default-Off', () => {
 
     await test.step('Confirm zero analytics records reached Loki', async () => {
       // Give the exporter every opportunity to have pushed something if it
-      // were somehow active — a fixed wait, not a retry-until-found loop,
-      // since we're asserting an absence, not waiting for eventual presence.
-      await new Promise((resolve) => setTimeout(resolve, 15_000));
+      // were somehow active — a fixed wait past its PT30S push-interval, not
+      // a retry-until-found loop, since we're asserting an absence, not
+      // waiting for eventual presence.
+      await new Promise((resolve) => setTimeout(resolve, 40_000));
 
       const loki = await queryLoki(
         request,

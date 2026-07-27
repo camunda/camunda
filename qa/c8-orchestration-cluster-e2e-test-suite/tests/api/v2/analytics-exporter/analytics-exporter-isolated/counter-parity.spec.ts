@@ -14,6 +14,7 @@ import {extendedAssertionOptions} from '../../../../../utils/constants';
 import {
   startIsolatedEnvironmentWithExporter,
   stopIsolatedEnvironment,
+  getIsolatedServiceLogs,
 } from '../../../../../utils/dockerComposeControl';
 import {
   queryLoki,
@@ -55,6 +56,12 @@ test.describe.serial('Analytics Exporter Counter Parity', () => {
         });
         expect(res.status()).toBe(200);
       }).toPass({intervals: [2_000, 5_000, 10_000], timeout: 120_000});
+    } catch (error) {
+      console.error(
+        'camunda-analytics-isolated-exporter logs:\n',
+        await getIsolatedServiceLogs('camunda-analytics-isolated-exporter'),
+      );
+      throw error;
     } finally {
       await context.dispose();
     }
