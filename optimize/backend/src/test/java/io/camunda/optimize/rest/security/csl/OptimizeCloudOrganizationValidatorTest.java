@@ -18,21 +18,21 @@ import org.springframework.security.oauth2.jwt.Jwt;
 class OptimizeCloudOrganizationValidatorTest {
 
   private final OptimizeCloudOrganizationValidator validator =
-      new OptimizeCloudOrganizationValidator(
-          "org-1", OptimizeCloudOrganizationValidator.ALLOWED_ORG_ROLES);
+      new OptimizeCloudOrganizationValidator("org-1");
 
   @Test
-  void shouldAcceptWhenConfiguredOrgHasAllowedRole() {
-    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("analyst"))));
+  void shouldAcceptWhenMemberOfConfiguredOrg() {
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("viewer"))));
 
     assertThat(validator.validate(token).hasErrors()).isFalse();
   }
 
   @Test
-  void shouldRejectWhenConfiguredOrgHasNoAllowedRole() {
-    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of("viewer"))));
+  void shouldAcceptRegardlessOfOrgRole() {
+    // Aligned with OC: membership only, the Auth0 org role no longer gates access.
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of())));
 
-    assertThat(validator.validate(token).hasErrors()).isTrue();
+    assertThat(validator.validate(token).hasErrors()).isFalse();
   }
 
   @Test
@@ -43,19 +43,15 @@ class OptimizeCloudOrganizationValidatorTest {
   }
 
   @Test
-  void shouldRejectWhenOrganizationsClaimAbsent() {
-    // Strict on the login path: a login token without the orgs claim is denied (8.9 baseline).
-    assertThat(validator.validate(jwtWithoutOrgs()).hasErrors()).isTrue();
+  void shouldAcceptWhenOrganizationsClaimAbsent() {
+    // Lenient on absence (OC baseline): tokens without an orgs claim pass, e.g. M2M bearer tokens.
+    assertThat(validator.validate(jwtWithoutOrgs()).hasErrors()).isFalse();
   }
 
   @Test
   void shouldRejectWhenOrganizationsClaimIsNotACollection() {
     final Jwt token =
-        Jwt.withTokenValue("token")
-            .header("alg", "none")
-            .subject("user")
-            .claim(OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM, "org-1")
-            .build();
+        baseJwt().claim(OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM, "org-1").build();
 
     assertThat(validator.validate(token).hasErrors()).isTrue();
   }

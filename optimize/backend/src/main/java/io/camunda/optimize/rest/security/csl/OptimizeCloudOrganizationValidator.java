@@ -8,7 +8,6 @@
 package io.camunda.optimize.rest.security.csl;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -20,64 +19,54 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * CCSaaS webapp login gate as an {@link OAuth2TokenValidator}, applied to the interactive login
- * id_token via the {@code idTokenDecoderFactory} in {@link OptimizeCloudSecurityConfiguration}.
- * Restores the legacy {@code CCSaaSSecurityConfigurerAdapter}'s {@code RoleValidator}: the {@code
- * https://camunda.com/orgs} claim must list the configured organization with at least one allowed
- * role (mirrors the legacy {@code hasAccess} org check plus the role gate).
+ * CCSaaS organization membership gate, mirroring OC's {@code
+ * io.camunda.authentication.config.OrganizationValidator}. Applied to every token that carries the
+ * {@code https://camunda.com/orgs} claim: the claim must list the configured organization.
  *
- * <p><em>Strict</em>, matching the 8.9 baseline: a login token without (or with a malformed)
- * organizations claim is rejected. This validator gates the login path only; it is deliberately not
- * added to the bearer/public-API token validation, where machine-to-machine tokens legitimately
- * carry no organizations claim (that path is cluster-id-gated instead).
+ * <p><em>Lenient on absence</em>, matching OC and the CSL adoption baseline: a token without the
+ * organizations claim (for example a machine-to-machine bearer token) passes this validator, so the
+ * single shared {@link io.camunda.security.spring.oidc.TokenValidatorFactory} can serve both the
+ * interactive login id_token (carries orgs, not cluster id) and bearer tokens (carry cluster id,
+ * not orgs). This is an intentional behaviour change from Optimize 8.9, which denied login on a
+ * missing/malformed orgs claim and additionally required an allowed org role. Fine-grained access
+ * is now decided by CSL's authorization policy, not by the Auth0 org role.
  */
 public final class OptimizeCloudOrganizationValidator implements OAuth2TokenValidator<Jwt> {
 
   /** Auth0 claim carrying the user's organizations, each a map of {@code id} + {@code roles}. */
   static final String ORGANIZATIONS_CLAIM = "https://camunda.com/orgs";
 
-  /** Organization roles that grant Optimize access (mirrors the legacy adapter). */
-  static final List<String> ALLOWED_ORG_ROLES =
-      List.of("admin", "analyst", "owner", "supportagent");
-
   private static final Logger LOG =
       LoggerFactory.getLogger(OptimizeCloudOrganizationValidator.class);
 
   private final String organizationId;
-  private final List<String> allowedRoles;
 
-  public OptimizeCloudOrganizationValidator(
-      final String organizationId, final List<String> allowedRoles) {
+  public OptimizeCloudOrganizationValidator(final String organizationId) {
     this.organizationId = Objects.requireNonNull(organizationId, "organizationId must not be null");
-    this.allowedRoles = List.copyOf(allowedRoles);
   }
 
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt token) {
-    final Object claim = token.getClaims().get(ORGANIZATIONS_CLAIM);
-    if (claim instanceof final Collection<?> organizations && grantsAllowedRole(organizations)) {
+    final Object claimValue = token.getClaims().get(ORGANIZATIONS_CLAIM);
+    if (claimValue == null) {
+      // Not all tokens carry an organizations claim; only validate those that do.
       return OAuth2TokenValidatorResult.success();
     }
-    LOG.debug(
-        "Rejected login token: organizations claim does not grant organization [{}] an allowed"
-            + " role",
-        organizationId);
+
+    if (claimValue instanceof final Collection<?> claimedOrgs) {
+      for (final Object claimedOrg : claimedOrgs) {
+        if (claimedOrg instanceof final Map<?, ?> orgDetails
+            && organizationId.equals(orgDetails.get("id"))) {
+          return OAuth2TokenValidatorResult.success();
+        }
+      }
+    }
+
+    LOG.debug("Rejected token with organizations '{}', expected {}", claimValue, organizationId);
     return OAuth2TokenValidatorResult.failure(
         new OAuth2Error(
             OAuth2ErrorCodes.INVALID_TOKEN,
-            "Token does not grant organization %s a required role %s"
-                .formatted(organizationId, allowedRoles),
+            "Token claims organizations %s, expected %s".formatted(claimValue, organizationId),
             null));
-  }
-
-  private boolean grantsAllowedRole(final Collection<?> organizations) {
-    return organizations.stream()
-        .filter(Map.class::isInstance)
-        .map(org -> (Map<?, ?>) org)
-        .filter(org -> organizationId.equals(org.get("id")))
-        .anyMatch(
-            org ->
-                org.get("roles") instanceof final Collection<?> roles
-                    && roles.stream().anyMatch(allowedRoles::contains));
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -16,6 +17,7 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,35 +40,86 @@ class OptimizeCloudSecurityConfigurationTest {
   private final OptimizeCloudSecurityConfiguration config =
       new OptimizeCloudSecurityConfiguration();
 
-  private void withCloudConfig() {
+  private OAuth2TokenValidator<Jwt> sharedValidator() {
     when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
     when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
+    lenient().when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
+    lenient().when(cloudAuthConfiguration.getClusterId()).thenReturn("cluster-1");
+    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
+
+    final TokenValidatorFactory factory =
+        config.tokenValidatorFactory(oidcProviderConfigurationPort, configurationService);
+    return factory.createTokenValidator(clientRegistration());
   }
 
   @Test
-  void shouldGateBearerTokensOnClusterIdOnly() {
-    withCloudConfig();
+  void shouldAcceptBearerTokenScopedToConfiguredCluster() {
+    final OAuth2TokenValidator<Jwt> validator = sharedValidator();
+
+    assertThat(
+            validator
+                .validate(jwt(Map.of(OptimizeCloudClusterValidator.CLUSTER_CLAIM, "cluster-1")))
+                .hasErrors())
+        .isFalse();
+  }
+
+  @Test
+  void shouldRejectBearerTokenScopedToAnotherCluster() {
+    final OAuth2TokenValidator<Jwt> validator = sharedValidator();
+
+    assertThat(
+            validator
+                .validate(jwt(Map.of(OptimizeCloudClusterValidator.CLUSTER_CLAIM, "other")))
+                .hasErrors())
+        .isTrue();
+  }
+
+  @Test
+  void shouldAcceptLoginTokenForConfiguredOrgWithoutClusterId() {
+    final OAuth2TokenValidator<Jwt> validator = sharedValidator();
+
+    final Jwt idToken =
+        jwt(
+            Map.of(
+                OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM,
+                List.of(Map.of("id", "org-1", "roles", List.of("viewer")))));
+
+    assertThat(validator.validate(idToken).hasErrors()).isFalse();
+  }
+
+  @Test
+  void shouldRejectLoginTokenForAnotherOrg() {
+    final OAuth2TokenValidator<Jwt> validator = sharedValidator();
+
+    final Jwt idToken =
+        jwt(
+            Map.of(
+                OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM,
+                List.of(Map.of("id", "org-2", "roles", List.of("admin")))));
+
+    assertThat(validator.validate(idToken).hasErrors()).isTrue();
+  }
+
+  @Test
+  void shouldAcceptTokenCarryingNeitherClaim() {
+    // Lenient on absence (OC baseline): the shared chain does not reject a claim-less token.
+    final OAuth2TokenValidator<Jwt> validator = sharedValidator();
+
+    assertThat(validator.validate(jwt(Map.of())).hasErrors()).isFalse();
+  }
+
+  @Test
+  void shouldProvideIdTokenDecoderFactoryReusingTheSharedFactory() {
+    when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
+    when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
+    when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
     when(cloudAuthConfiguration.getClusterId()).thenReturn("cluster-1");
     when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
 
     final TokenValidatorFactory factory =
         config.tokenValidatorFactory(oidcProviderConfigurationPort, configurationService);
-    final OAuth2TokenValidator<Jwt> validator = factory.createTokenValidator(clientRegistration());
 
-    assertThat(validator.validate(jwtWithClusterId("cluster-1")).hasErrors()).isFalse();
-    assertThat(validator.validate(jwtWithClusterId("other-cluster")).hasErrors()).isTrue();
-    // Strict: a bearer token without the cluster-id claim is rejected (8.9 baseline).
-    assertThat(validator.validate(jwtWithoutClusterId()).hasErrors()).isTrue();
-  }
-
-  @Test
-  void shouldProvideIdTokenDecoderFactoryForTheLoginGate() {
-    withCloudConfig();
-    when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
-    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
-
-    assertThat(config.idTokenDecoderFactory(oidcProviderConfigurationPort, configurationService))
-        .isInstanceOf(OidcIdTokenDecoderFactory.class);
+    assertThat(config.idTokenDecoderFactory(factory)).isInstanceOf(OidcIdTokenDecoderFactory.class);
   }
 
   private static ClientRegistration clientRegistration() {
@@ -79,20 +132,15 @@ class OptimizeCloudSecurityConfigurationTest {
         .build();
   }
 
-  private static Jwt jwtWithClusterId(final String clusterId) {
-    return baseJwt().claim(OptimizeCloudSecurityConfiguration.CLUSTER_ID_CLAIM, clusterId).build();
-  }
-
-  private static Jwt jwtWithoutClusterId() {
-    return baseJwt().build();
-  }
-
-  private static Jwt.Builder baseJwt() {
+  private static Jwt jwt(final Map<String, Object> claims) {
     final Instant now = Instant.now();
-    return Jwt.withTokenValue("token")
-        .header("alg", "none")
-        .issuedAt(now)
-        .expiresAt(now.plusSeconds(300))
-        .subject("user");
+    final Jwt.Builder builder =
+        Jwt.withTokenValue("token")
+            .header("alg", "none")
+            .issuedAt(now)
+            .expiresAt(now.plusSeconds(300))
+            .subject("user");
+    claims.forEach(builder::claim);
+    return builder.build();
   }
 }
