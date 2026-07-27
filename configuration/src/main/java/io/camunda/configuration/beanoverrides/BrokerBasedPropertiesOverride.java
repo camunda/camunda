@@ -1210,11 +1210,10 @@ public class BrokerBasedPropertiesOverride {
 
   private static void populateFromJobs(
       final BrokerBasedProperties override, final Camunda camunda) {
-    override
-        .getExperimental()
-        .getEngine()
-        .getJobs()
-        .setIncludeVariablesInJobCompletedEvent(
-            camunda.getProcessing().getEngine().getJob().isIncludeVariablesInJobCompletedEvent());
+    final var job = camunda.getProcessing().getEngine().getJob();
+    final var jobsCfg = override.getExperimental().getEngine().getJobs();
+    jobsCfg.setIncludeVariablesInJobCompletedEvent(job.isIncludeVariablesInJobCompletedEvent());
+    jobsCfg.setTimeoutCheckerBatchLimit(job.getTimeoutCheckerBatchLimit());
+    jobsCfg.setTimeoutCheckerPollingInterval(job.getTimeoutCheckerPollingInterval());
   }
 }
