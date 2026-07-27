@@ -10,6 +10,7 @@ package io.camunda.optimize.service.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.auth0.jwt.interfaces.Claim;
@@ -25,12 +26,30 @@ import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSMTokenServiceTest {
@@ -53,8 +72,23 @@ public class CCSMTokenServiceTest {
   @Mock private UserDetails userDetails;
   @Mock private DecodedJWT decodedJWT;
   @Mock private Claim verClaim;
+  @Mock private ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider;
+  @Mock private OAuth2AuthorizedClientRepository authorizedClientRepository;
+  @Mock private OAuth2AuthorizedClient authorizedClient;
+  @Mock private OAuth2AccessToken oauth2AccessToken;
+  @Mock private HttpServletRequest request;
+
+  @Mock private ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider;
+
+  @Mock private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   private CCSMTokenService ccsmTokenService;
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+    RequestContextHolder.resetRequestAttributes();
+  }
 
   @BeforeEach
   void setUp() {
@@ -69,7 +103,13 @@ public class CCSMTokenServiceTest {
     lenient().when(authConfiguration.getCcsmAuthConfiguration()).thenReturn(ccsmAuthConfiguration);
     lenient().when(ccsmAuthConfiguration.isEntraTokenVersionCheckEnabled()).thenReturn(true);
 
-    ccsmTokenService = new CCSMTokenService(authCookieService, configurationService, identity);
+    ccsmTokenService =
+        new CCSMTokenService(
+            authCookieService,
+            configurationService,
+            identity,
+            authorizedClientRepositoryProvider,
+            camundaAuthenticationProviderProvider);
   }
 
   @Test
@@ -271,5 +311,96 @@ public class CCSMTokenServiceTest {
 
     // then — token accepted despite being v1.0
     assertThat(result).isSameAs(accessToken);
+  }
+
+  // --- getCurrentUserAuthToken: token source (CSL OIDC session vs legacy cookie) ---
+
+  @Test
+  void shouldResolveAuthTokenFromAuthorizedClientRepositoryUnderCsl() {
+    // given — CSL OIDC webapp session: authorized-client repository present, OAuth2 authentication
+    setCurrentRequest();
+    final OAuth2AuthenticationToken oauthToken = oauthToken();
+    SecurityContextHolder.getContext().setAuthentication(oauthToken);
+    when(authorizedClientRepositoryProvider.getIfAvailable())
+        .thenReturn(authorizedClientRepository);
+    when(authorizedClientRepository.loadAuthorizedClient(eq("auth0"), eq(oauthToken), eq(request)))
+        .thenReturn(authorizedClient);
+    when(authorizedClient.getAccessToken()).thenReturn(oauth2AccessToken);
+    when(oauth2AccessToken.getTokenValue()).thenReturn("csl-access-token");
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("csl-access-token");
+  }
+
+  @Test
+  void shouldFallBackToAuthCookieWhenNoAuthorizedClientRepository() {
+    // given — legacy CCSM: no authorized-client repository, token lives in the auth cookie
+    setCurrentRequestWithAuthCookie("cookie-token");
+    when(authorizedClientRepositoryProvider.getIfAvailable()).thenReturn(null);
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserAuthToken();
+
+    // then
+    assertThat(result).contains("cookie-token");
+  }
+
+  // --- getCurrentUserIdFromAuthToken: principal source (CSL claim vs legacy sub) ---
+
+  @Test
+  void shouldResolveCurrentUserIdFromCslPrincipalRespectingUsernameClaim() {
+    // given — CSL resolves the principal from the configured username-claim, not sub
+    SecurityContextHolder.getContext().setAuthentication(oauthToken());
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("preferred-username")));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
+
+    // then — id comes from the CSL principal, without decoding the token
+    assertThat(result).contains("preferred-username");
+  }
+
+  @Test
+  void shouldFallBackToSubClaimForCurrentUserIdWhenNotUnderCsl() {
+    // given — legacy CCSM: no CSL principal provider, id derived from the token's sub claim
+    setCurrentRequestWithAuthCookie(ACCESS_TOKEN_VALUE);
+    when(camundaAuthenticationProviderProvider.getIfAvailable()).thenReturn(null);
+    when(authorizedClientRepositoryProvider.getIfAvailable()).thenReturn(null);
+    when(decodedJWT.getSubject()).thenReturn("sub-user-id");
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
+
+    // then
+    assertThat(result).contains("sub-user-id");
+  }
+
+  private void setCurrentRequest() {
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private void setCurrentRequestWithAuthCookie(final String token) {
+    final Cookie cookie =
+        new Cookie(
+            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
+            AuthCookieService.createOptimizeAuthCookieValue(token));
+    when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
+    when(request.getCookies()).thenReturn(new Cookie[] {cookie});
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+  }
+
+  private OAuth2AuthenticationToken oauthToken() {
+    final OAuth2User user =
+        new DefaultOAuth2User(
+            List.of(new SimpleGrantedAuthority("ROLE_USER")),
+            java.util.Map.of("sub", "user"),
+            "sub");
+    return new OAuth2AuthenticationToken(user, user.getAuthorities(), "auth0");
   }
 }
