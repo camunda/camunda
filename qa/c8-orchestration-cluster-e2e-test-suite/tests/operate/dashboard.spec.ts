@@ -19,7 +19,6 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
 import {undefined} from 'valibot';
-import { sleep } from 'utils/sleep';
 
 let instanceIds: string[] = [];
 
@@ -139,26 +138,58 @@ test.describe('Dashboard', () => {
     await expect(operateDashboardPage.incidentInstancesBadge).toHaveText(/\d+/);
   };
 
+  const findInstanceWithVariable = async (
+    expectedVariableRegex: RegExp,
+  ): Promise<boolean> => {
+    const viewInstanceLinks = operateDashboardPage.viewInstanceLink();
+    await expect(viewInstanceLinks.first()).toBeVisible();
+
+    const linkCount = await viewInstanceLinks.count();
+    for (let index = 0; index < linkCount; index++) {
+      await operateDashboardPage.viewInstanceLink().nth(index).click();
+
+      const variableVisible = await operateProcessInstancePage
+        .variableCellByName(expectedVariableRegex)
+        .waitFor({state: 'visible', timeout: 10000})
+        .then(() => true)
+        .catch(() => false);
+      if (variableVisible) {
+        return true;
+      }
+
+      await page.goBack();
+      await expect(
+        operateDashboardPage.viewInstanceLink().first(),
+      ).toBeVisible();
+    }
+
+    return false;
+  };
+
   const openIncidentTypeAndVerifyVariable = async (
     incidentTypeRegex: RegExp,
     expectedVariableRegex: RegExp,
   ) => {
-    await ensureDashboardReady();
+    const openGroupedIncidentView = async () => {
+      await ensureDashboardReady();
+      await operateDashboardPage.clickIncidentByType(incidentTypeRegex);
+      await expect(
+        page.getByRole('heading', {name: /process instances/i}),
+      ).toBeVisible();
+    };
 
-    await operateDashboardPage.clickIncidentByType(incidentTypeRegex);
+    await openGroupedIncidentView();
+
+    // Incidents whose messages truncate to the same text share one dashboard
+    // group, so the filtered view can list more than one instance. Retry while
+    // instances import until the one carrying the expected variable is found.
     await waitForAssertion({
       assertion: async () => {
-        await expect(page.getByRole('heading', {name: /process instances/i})).toBeVisible();
+        expect(await findInstanceWithVariable(expectedVariableRegex)).toBe(true);
       },
-      onFailure: async () => {
-        await sleep(250);
-      },
+      onFailure: openGroupedIncidentView,
+      maxRetries: 5,
     });
-    await operateDashboardPage.clickViewInstanceLink();
-
-    await expect(
-      operateProcessInstancePage.variableCellByName(expectedVariableRegex),
-    ).toBeVisible();
   };
 
   await test.step('Select incident type A and verify details', async () => {
