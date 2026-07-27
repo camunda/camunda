@@ -529,8 +529,7 @@ class ExpressionProcessorTest {
   @Nested
   class EvaluateVariableMappingSourceExpressionTest {
 
-    private final EvaluationContext contextWithX =
-        name -> "x".equals(name) ? asMsgPack("1") : null;
+    private final EvaluationContext contextWithX = name -> "x".equals(name) ? asMsgPack("1") : null;
     private final ExpressionProcessor processor =
         new ExpressionProcessor(EXPRESSION_LANGUAGE, scope -> contextWithX, DEFAULT_TIMEOUT);
 
