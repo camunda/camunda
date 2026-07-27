@@ -8,7 +8,13 @@ name: Frontend SBOM Snyk Nightly
 on:
   schedule:
     - cron: '0 3 * * *' # 03:00 UTC daily
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to scan
+        required: true
+        default: main
+        type: string
 
 defaults:
   run:
@@ -36,6 +42,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -80,6 +88,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -125,6 +135,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -171,6 +183,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
@@ -228,6 +242,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Slack token from Vault
