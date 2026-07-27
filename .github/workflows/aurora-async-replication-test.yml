@@ -17,7 +17,9 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        default: 'main'
+        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
+        # (engine/port parameterization for Aurora MySQL) is merged there.
+        default: 'aurora-mysql-engine-option'
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
@@ -33,7 +35,9 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        default: 'main'
+        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
+        # (engine/port parameterization for Aurora MySQL) is merged there.
+        default: 'aurora-mysql-engine-option'
       db_engine:
         description: 'Aurora engine to provision'
         type: choice
@@ -67,12 +71,10 @@ env:
   LOCAL_DB_PORT: '15432'
   TF_STATE_BUCKET_REGION: eu-west-1
   # engine-derived config: keep all engine differences here so the steps below stay generic.
-  # NOTE: aurora-mysql connectivity additionally requires the aurora-global module (in
-  # camunda-deployment-references) to stop hardcoding port 5432 in its own security groups —
-  # see the `port` variable comment in .github/terraform/aurora-replication-it/main.tf.
+  # engine_version and the database port are intentionally NOT set here — the aurora-global
+  # module (via the aurora-mysql-engine-option branch) derives both from TF_VAR_engine itself
+  # (per-engine version defaults, and a `db_port` output used for the SSM tunnel below).
   TF_VAR_engine: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && 'aurora-mysql' || 'aurora-postgresql' }}
-  TF_VAR_engine_version: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '8.0.mysql_aurora.3.05.2' || '18.3' }}
-  TF_VAR_port: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '3306' || '5432' }}
 
 jobs:
   aurora-it:
@@ -194,8 +196,10 @@ jobs:
           set -euo pipefail
           ENDPOINT="$(terraform output -raw primary_cluster_endpoint)"
           BASTION_ID="$(terraform output -raw bastion_instance_id)"
+          DB_PORT="$(terraform output -raw db_port)"
           echo "${ENDPOINT}"   > /tmp/ssm-endpoint
           echo "${BASTION_ID}" > /tmp/ssm-bastion-id
+          echo "${DB_PORT}"    > /tmp/ssm-db-port
 
           # Supervise the tunnel: `aws ssm start-session` blocks until the session ends,
           # then we restart it. Over a 90+ min run the session can drop from an SSM idle
@@ -223,7 +227,7 @@ jobs:
               aws ssm start-session \
                 --target "$(cat /tmp/ssm-bastion-id)" \
                 --document-name AWS-StartPortForwardingSessionToRemoteHost \
-                --parameters "host=$(cat /tmp/ssm-endpoint),portNumber=${TF_VAR_port},localPortNumber=${LOCAL_DB_PORT}" \
+                --parameters "host=$(cat /tmp/ssm-endpoint),portNumber=$(cat /tmp/ssm-db-port),localPortNumber=${LOCAL_DB_PORT}" \
                 2>&1 | stamp
               echo "SSM session ended — restarting in 2s" | stamp
               sleep 2
