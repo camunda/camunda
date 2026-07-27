@@ -13,13 +13,17 @@
 #   across the failing tests) it prints nothing, so the caller falls back to the job's
 #   static `TEST_OWNER`. This avoids confidently misrouting an incident to the wrong team.
 #
-# Requires: codeowners-cli on PATH, python3, jq and git. Must be run from the repository
-# root, with the test reports (TEST-*.xml) present on disk.
+# Requires: codeowners-cli on PATH, python3, jq and git. The test reports (TEST-*.xml)
+# must be present on disk. The script resolves the repository root itself and scans from
+# there, so it is independent of the caller's working directory.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+
+# Scan from the repository root regardless of the caller's CWD, so reports are not missed.
+cd "${REPO_ROOT}"
 
 # Reuse the FQCN -> source file -> codeowners team resolvers.
 # shellcheck source=/dev/null
