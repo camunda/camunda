@@ -24,9 +24,11 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.junit.Before;
@@ -216,6 +218,57 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
         .as("the buffered message is picked up and started on P_K after the lock is released")
         .isEqualTo(partitionFor(CORRELATION_KEY));
+  }
+
+  @Test
+  public void shouldReleaseCompletedHolderExactlyOnceEvenThoughReconciliationPollAlsoRuns() {
+    // Idempotency pin for push × poll coexistence: with the poll enabled, a lock that the
+    // completion push has already released must not be released a second time when a later
+    // reconciliation poll runs. P_K must emit exactly one RELEASED for the holder and re-drive the
+    // buffered message exactly once; the holder-precise guard on the release handler makes the
+    // redundant poll a no-op.
+    deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
+
+    // given a cross-partition start — holder created (and auto-completing) on P_B, correlation-key
+    // lock on P_K — with a same-key message buffered behind that lock
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long firstHolderKey = awaitHolderActivating(AUTO_PROCESS_ID);
+    awaitMessageConsumedOnPK(AUTO_MESSAGE_NAME);
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, null);
+
+    // and the completion push has already released the lock, so the poll can only ever act on an
+    // already-released lock
+    awaitLockReleasedFor(firstHolderKey);
+
+    // when the reconciliation poll then runs
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then, observed through a sentinel that bounds the record stream just past the poll tick (a
+    // second holder driven to completion; not part of the scenario — see the helper)
+    final var releasesThroughSentinel = awaitReleasesThroughPollSentinel();
+
+    // the first holder's lock is released exactly once — the poll did not release it again
+    final long releasesForFirstHolder =
+        releasesThroughSentinel.stream().filter(r -> holderHasKey(r, firstHolderKey)).count();
+    assertThat(releasesForFirstHolder)
+        .as("a completed holder's lock is released exactly once, even with the poll running")
+        .isEqualTo(1L);
+
+    // and the buffered message is re-driven exactly once: a single pick-up PI started on P_K within
+    // the same sentinel-bounded window (both holders live on P_B, so they are not pick-ups)
+    final long pickUps =
+        RecordingExporter.records()
+            .limit(nthReleased(2))
+            .processInstanceRecords()
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .filter(
+                r ->
+                    Protocol.decodePartitionId(r.getValue().getProcessInstanceKey())
+                        == partitionFor(CORRELATION_KEY))
+            .count();
+    assertThat(pickUps).as("the buffered message is re-driven exactly once").isEqualTo(1L);
   }
 
   @Test
@@ -516,6 +569,53 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     return r ->
         r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.QUERIED
             && seen.incrementAndGet() == n;
+  }
+
+  /**
+   * A merged-stream bound that stops at the {@code n}-th RELEASED event. Each call returns a fresh
+   * stateful predicate, so it must not be shared across streams.
+   */
+  private static Predicate<Record<RecordValue>> nthReleased(final int n) {
+    final var seen = new AtomicInteger();
+    return r ->
+        r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.RELEASED
+            && seen.incrementAndGet() == n;
+  }
+
+  private static boolean holderHasKey(
+      final Record<MessageStartCorrelationKeyLockReleaseRecordValue> record, final long holderKey) {
+    return record.getValue().getHolders().stream()
+        .anyMatch(h -> h.getProcessInstanceKey() == holderKey);
+  }
+
+  /**
+   * Waits for the completion push to release the correlation-key lock held for {@code holderKey}.
+   */
+  private static void awaitLockReleasedFor(final long holderKey) {
+    RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASED)
+        .filter(r -> holderHasKey(r, holderKey))
+        .getFirst();
+  }
+
+  /**
+   * Sentinel that makes the reconciliation poll's (in)action observable without waiting on the
+   * absence of a record. It is not part of the scenario under test: it drives a <em>second</em>
+   * cross-partition holder on the same correlation key to completion (its businessId is free again
+   * now that the first holder completed), whose push emits a second RELEASED. Because P_K applies
+   * release records in order, observing that second RELEASED proves the poll tick queued earlier
+   * has already been fully processed — so the returned window contains every effect the poll could
+   * have had on the first holder.
+   *
+   * @return the first two RELEASED records: the first holder's release, then the sentinel's
+   */
+  private List<Record<MessageStartCorrelationKeyLockReleaseRecordValue>>
+      awaitReleasesThroughPollSentinel() {
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    return RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASED)
+        .limit(2)
+        .asList();
   }
 
   private void deployAndAwaitStartSubscriptions(
