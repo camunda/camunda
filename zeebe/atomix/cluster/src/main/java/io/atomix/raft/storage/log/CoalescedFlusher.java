@@ -10,8 +10,6 @@ package io.atomix.raft.storage.log;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalException;
-import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
@@ -180,7 +178,10 @@ public final class CoalescedFlusher implements RaftLogFlusher {
     try {
       journal.flush();
       return null;
-    } catch (final FlushException | JournalException | UncheckedIOException e) {
+    } catch (final Exception e) {
+      // any failure must be caught here, not just the expected journal exceptions: an escaping
+      // exception would skip completing the pending results, leaving them - and all future
+      // requests - pending forever
       return e;
     }
   }
