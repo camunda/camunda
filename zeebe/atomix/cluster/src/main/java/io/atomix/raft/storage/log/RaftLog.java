@@ -20,7 +20,6 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
-import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
@@ -30,6 +29,8 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +181,8 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
+    // pending flush results for the deleted records must fail, they can never become durable
+    flusher.onLogTruncation(index - 1);
     journal.reset(index);
     lastAppendedEntry = null;
   }
@@ -195,19 +198,46 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
+    // pending flush results for the deleted records must fail, they can never become durable
+    flusher.onLogTruncation(index);
     journal.deleteAfter(index);
     lastAppendedEntry = null;
 
     // we have to flush here to ensure the truncated log is represented properly
-    flush();
+    flushSync(index);
   }
 
   /**
-   * Flushes the underlying journal using the configured flushing strategy. For guarantees, refer to
-   * the configured {@link RaftLogFlusher}.
+   * Requests that the journal is durable at least up to the given index, using the configured
+   * flushing strategy. For guarantees, refer to the configured {@link RaftLogFlusher}.
+   *
+   * @param index the index up to which durability is requested
+   * @return a future which completes once the configured flusher's durability guarantee holds for
+   *     the given index; it may complete on a different thread
    */
-  public void flush() throws FlushException {
-    flusher.flush(journal);
+  public CompletableFuture<Void> flush(final long index) {
+    return flusher.flush(journal, index);
+  }
+
+  /**
+   * Same as {@link #flush(long)}, but blocks until the flush result is completed.
+   *
+   * @param index the index up to which durability is requested
+   * @throws FlushException if the flush failed
+   */
+  public void flushSync(final long index) throws FlushException {
+    try {
+      flush(index).join();
+    } catch (final CompletionException e) {
+      final var cause = e.getCause();
+      if (cause instanceof final FlushException flushException) {
+        throw flushException;
+      }
+      if (cause instanceof final RuntimeException runtimeException) {
+        throw runtimeException;
+      }
+      throw new FlushException("Flush failed for an unexpected reason", cause);
+    }
   }
 
   /**
@@ -218,7 +248,7 @@ public final class RaftLog implements Closeable {
    * guarantees are required.
    */
   public void forceFlush() throws FlushException {
-    Factory.DIRECT.flush(journal);
+    journal.flush();
   }
 
   @Override
