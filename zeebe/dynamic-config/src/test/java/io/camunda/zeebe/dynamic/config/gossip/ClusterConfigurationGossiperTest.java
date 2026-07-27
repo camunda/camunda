@@ -70,13 +70,13 @@ final class ClusterConfigurationGossiperTest {
             ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, false);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, false);
     node3 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics, false);
 
     node1.start();
     node2.start();
@@ -107,20 +107,17 @@ final class ClusterConfigurationGossiperTest {
             Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
     node3 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics, true);
 
     node1.start();
     node2.start();
     node3.start();
-    node1.enableNewModel();
-    node2.enableNewModel();
-    node3.enableNewModel();
 
     final var legacySeed =
         ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
@@ -151,14 +148,13 @@ final class ClusterConfigurationGossiperTest {
             Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, false);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
 
     node1.start();
     node2.start();
-    node2.enableNewModel();
 
     final var node1Topology =
         ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
@@ -186,14 +182,13 @@ final class ClusterConfigurationGossiperTest {
             Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, false);
 
     node1.start();
     node2.start();
-    node1.enableNewModel();
 
     final var node1Configuration =
         CurrentClusterConfiguration.fromLegacy(
@@ -233,7 +228,8 @@ final class ClusterConfigurationGossiperTest {
     private TestGossiper(
         final AtomixCluster atomixCluster,
         final ClusterConfigurationGossiperConfig config,
-        final TopologyMetrics topologyMetrics) {
+        final TopologyMetrics topologyMetrics,
+        final boolean useNewModelHandler) {
       super("Node-" + atomixCluster.getMembershipService().getLocalMember().id());
       gossiper =
           new ClusterConfigurationGossiper(
@@ -242,7 +238,8 @@ final class ClusterConfigurationGossiperTest {
               atomixCluster.getMembershipService(),
               new ProtoBufSerializer(),
               config,
-              this::mergeTopology,
+              useNewModelHandler ? null : this::mergeTopology,
+              useNewModelHandler ? this::mergeCurrentClusterConfiguration : null,
               topologyMetrics);
       this.atomixCluster = atomixCluster;
     }
@@ -266,11 +263,6 @@ final class ClusterConfigurationGossiperTest {
     private ActorFuture<ClusterConfiguration> mergeTopology(final ClusterConfiguration t) {
       clusterConfiguration = clusterConfiguration == null ? t : t.merge(clusterConfiguration);
       return TestActorFuture.completedFuture(clusterConfiguration);
-    }
-
-    /** Switches this broker onto the new-model gossip path (an "upgraded" broker). */
-    void enableNewModel() {
-      gossiper.setCurrentConfigurationUpdateHandler(this::mergeCurrentClusterConfiguration);
     }
 
     void setCurrentClusterConfiguration(

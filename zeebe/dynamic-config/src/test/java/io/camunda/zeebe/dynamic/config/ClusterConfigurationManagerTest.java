@@ -55,7 +55,7 @@ final class ClusterConfigurationManagerTest {
   private final ClusterConfiguration initialTopology =
       ClusterConfiguration.init()
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
-  private final ClusterConfigurationInitializer successInitializer =
+  private final ClusterConfigurationInitializer<ClusterConfiguration> successInitializer =
       () -> CompletableActorFuture.completed(initialTopology);
   private final MemberId localMemberId = MemberId.from("1");
 
@@ -70,13 +70,13 @@ final class ClusterConfigurationManagerTest {
   }
 
   private ActorFuture<ClusterConfigurationManagerImpl> startTopologyManager(
-      final ClusterConfigurationInitializer clusterConfigurationInitializer) {
+      final ClusterConfigurationInitializer<ClusterConfiguration> clusterConfigurationInitializer) {
     return startTopologyManager(
         clusterConfigurationInitializer, new NoopConfigurationChangeAppliers());
   }
 
   private ActorFuture<ClusterConfigurationManagerImpl> startTopologyManager(
-      final ClusterConfigurationInitializer clusterConfigurationInitializer,
+      final ClusterConfigurationInitializer<ClusterConfiguration> clusterConfigurationInitializer,
       final ConfigurationChangeAppliers operationsAppliers) {
     final var clusterTopologyManager = createTopologyManager();
 
@@ -226,7 +226,7 @@ final class ClusterConfigurationManagerTest {
     final ClusterConfiguration topologyWithPendingOperation =
         initialTopology.startConfigurationChange(
             List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
-    final ClusterConfigurationInitializer initializer =
+    final ClusterConfigurationInitializer<ClusterConfiguration> initializer =
         () -> CompletableActorFuture.completed(topologyWithPendingOperation);
 
     // when
