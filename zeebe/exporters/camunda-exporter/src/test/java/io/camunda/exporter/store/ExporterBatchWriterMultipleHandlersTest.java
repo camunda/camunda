@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-/** Integration test with actual exporter handlers */
+/** Tests generic multi-handler flush ordering using synthetic {@link TestExportHandler} fakes. */
 public class ExporterBatchWriterMultipleHandlersTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
