@@ -12,6 +12,7 @@ import {
   LOGIN_CREDENTIALS,
   createTestData,
   createComponentAuthorization,
+  createSecretAuthorization,
   createUserAuthorization,
 } from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
@@ -326,5 +327,106 @@ test.describe('create authorization modal — resource type field', () => {
     await expect(
       identityAuthorizationsPage.resourceTypeComboBox,
     ).toBeDisabled();
+  });
+});
+
+test.describe('secret authorizations', () => {
+  const createdSecretUserIds: string[] = [];
+
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(/admin\/authorizations/);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdSecretUserIds);
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('renders READ and REVEAL as independent checkboxes on the SECRET tab', async ({
+    page,
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceTypeTab('Secret');
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toBeVisible();
+
+    const readCheckbox = page.locator('input#READ');
+    const revealCheckbox = page.locator('input#REVEAL');
+
+    await expect(readCheckbox).not.toBeChecked();
+    await expect(revealCheckbox).not.toBeChecked();
+
+    // Selecting REVEAL must not cascade to READ.
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('reveal')
+      .click();
+
+    await expect(revealCheckbox).toBeChecked();
+    await expect(readCheckbox).not.toBeChecked();
+
+    // Reset REVEAL, then verify the opposite direction: selecting READ must
+    // not cascade to REVEAL.
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('reveal')
+      .click();
+    await expect(revealCheckbox).not.toBeChecked();
+
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('read')
+      .click();
+
+    await expect(readCheckbox).toBeChecked();
+    await expect(revealCheckbox).not.toBeChecked();
+  });
+
+  test('grants SECRET REVEAL-only with a wildcard resource id', async ({
+    page,
+    identityUsersPage,
+    identityAuthorizationsPage,
+  }) => {
+    const testData = createTestData({user: true});
+    const testUser = testData.user!;
+    createdSecretUserIds.push(testUser.username);
+
+    await test.step('Create a new test user', async () => {
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(testUser);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(/admin\/authorizations/);
+    });
+
+    await test.step('Grant SECRET REVEAL-only with wildcard resource id', async () => {
+      const secretAuth = createSecretAuthorization(
+        {name: testUser.username},
+        ['reveal'],
+        'User',
+      );
+      await identityAuthorizationsPage.createAuthorization(secretAuth);
+    });
+
+    await test.step('Assert the grant lists REVEAL and not READ', async () => {
+      await identityAuthorizationsPage.assertAuthorizationExists(
+        testUser.username,
+        'User',
+        ['reveal'],
+        'Secret',
+      );
+
+      const authorizationRow =
+        identityAuthorizationsPage.authorizationRowByOwnerId(testUser.username);
+      await expect(authorizationRow).not.toContainText('READ');
+    });
   });
 });

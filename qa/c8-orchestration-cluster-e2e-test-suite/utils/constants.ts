@@ -138,6 +138,18 @@ export const createComponentAuthorization = (
   accessPermissions: ['access'],
 });
 
+export const createSecretAuthorization = (
+  owner: {name: string},
+  accessPermissions: string[] = ['read'],
+  ownerType: 'Role' | 'User' | 'Group' = 'Role',
+) => ({
+  ownerType,
+  ownerId: owner.name,
+  resourceType: 'Secret',
+  resourceId: '*',
+  accessPermissions,
+});
+
 // Generic function to create specific test data with shared ID
 export const createTestData = (options: {
   user?: boolean;
