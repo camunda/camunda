@@ -186,14 +186,17 @@ const DetailsTab: React.FC = () => {
     ? null
     : selectedElementInstanceKey;
 
-  const {data: agentInstancesResult, isError: isAgentError} =
-    useAgentInstancesForElement({
-      processInstanceKey: processInstance?.processInstanceKey ?? '',
-      elementId: effectiveElementId ?? '',
-      elementInstanceKey: agentElementInstanceKey,
-      enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
-      enablePeriodicRefetch: true,
-    });
+  const {
+    data: agentInstancesResult,
+    isLoading: isAgentInstancesLoading,
+    isError: isAgentError,
+  } = useAgentInstancesForElement({
+    processInstanceKey: processInstance?.processInstanceKey ?? '',
+    elementId: effectiveElementId ?? '',
+    elementInstanceKey: agentElementInstanceKey,
+    enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
+    enablePeriodicRefetch: true,
+  });
   const showAgentInstance =
     (agentInstancesResult && agentInstancesResult.items.length > 0) ||
     isAgentError;
@@ -534,6 +537,7 @@ const DetailsTab: React.FC = () => {
   if (
     resolvedElementInstance === null &&
     !isFetchingElement &&
+    !isAgentInstancesLoading &&
     !showAgentInstance
   ) {
     return (
