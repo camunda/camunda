@@ -5,9 +5,25 @@ camunda:
     secondary-storage:
       type: rdbms
       rdbms:
-        url: jdbc:postgresql:camunda
+        url: jdbc:postgresql://localhost:15432/camunda
         username: camunda
         password: camunda
+        queue-size: 20001
+        flush-interval: PT0.5S
+        queue-memory-limit: 100
+        insert-batching:
+          max-audit-log-insert-batch-size: 500
+          max-flow-node-insert-batch-size: 500
+          max-job-insert-batch-size: 500
+          max-variable-insert-batch-size: 500
+zeebe:
+  broker:
+    flowControl:
+      write:
+        enabled: "true"
+        limit: 10000
+        throttling:
+          enabled: "true"
 logging:
   level:
-    io.camunda.db.rdbms: DEBUG
+    io.camunda.db.rdbms: INFO

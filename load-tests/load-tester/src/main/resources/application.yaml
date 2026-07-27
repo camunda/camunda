@@ -4,7 +4,7 @@
 #   LOAD_TESTER_STARTER_RATE=500
 
 server:
-  port: 9600
+  port: 9601
 
 # Logging configuration
 logging:
@@ -77,7 +77,7 @@ load-tester:
   disabled-queries: ${ZEEBE_DISABLED_QUERIES:}
   starter:
     process-id: ${LOAD_TESTER_STARTER_PROCESS_ID:benchmark}
-    rate: ${LOAD_TESTER_STARTER_RATE:300}
+    rate: ${LOAD_TESTER_STARTER_RATE:50}
     rate-duration: ${LOAD_TESTER_STARTER_RATE_DURATION:1s}
     threads: ${LOAD_TESTER_STARTER_THREADS:2}
     bpmn-xml-path: ${LOAD_TESTER_STARTER_BPMN_XML_PATH:bpmn/one_task.bpmn}
@@ -99,7 +99,7 @@ load-tester:
   # Connection properties (type, name, threads, capacity, polling, streaming, timeout)
   # are configured via camunda.client.worker.defaults.* above.
   worker:
-    completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:300ms}
+    completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:30ms}
     payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/big_payload.json}
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}

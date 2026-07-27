@@ -1,0 +1,80 @@
+# Docker Compose override for simulating a PostgreSQL database in a distant region.
+#
+# Usage:
+#   POSTGRES_RTT_MS=50 docker compose -f docker-compose.yml -f docker-compose-rtt.yaml up postgres postgres-rtt-init
+#
+# Connect applications running in the same Compose project to postgres-rtt:5432.
+# Connect from the host to localhost:${POSTGRES_RTT_PORT:-15432}.
+
+services:
+  postgres:
+    image: postgres:${IMAGE_VERSION:-18-alpine}
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    environment:
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: camunda
+    ports:
+      - "5432:5432"
+
+  postgres-rtt:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    depends_on:
+      - postgres
+    ports:
+      - "${POSTGRES_RTT_PORT:-15432}:5432"
+      - "${TOXIPROXY_API_PORT:-8474}:8474"
+
+  postgres-rtt-init:
+    image: curlimages/curl:8.17.0
+    depends_on:
+      - postgres-rtt
+    environment:
+      POSTGRES_RTT_MS: ${POSTGRES_RTT_MS:-0}
+      POSTGRES_RTT_JITTER_MS: ${POSTGRES_RTT_JITTER_MS:-0}
+      POSTGRES_RTT_PORT: ${POSTGRES_RTT_PORT:-15432}
+      TOXIPROXY_API_URL: http://postgres-rtt:8474
+    command:
+      - sh
+      - -ec
+      - |
+        one_way_latency_ms=$((POSTGRES_RTT_MS / 2))
+
+        echo "Waiting for Toxiproxy at $${TOXIPROXY_API_URL}..."
+        until curl --fail --silent --show-error "$${TOXIPROXY_API_URL}/version" > /dev/null; do
+          sleep 1
+        done
+
+        echo "Configuring PostgreSQL proxy with approximately $${POSTGRES_RTT_MS}ms RTT ($${one_way_latency_ms}ms each way, $${POSTGRES_RTT_JITTER_MS}ms jitter)..."
+        curl --fail --silent --show-error \
+          --request DELETE \
+          "$${TOXIPROXY_API_URL}/proxies/postgres" \
+          > /dev/null \
+          2> /dev/null \
+          || true
+
+        curl --fail --silent --show-error \
+          --request POST \
+          --header 'Content-Type: application/json' \
+          --data '{"name":"postgres","listen":"0.0.0.0:5432","upstream":"postgres:5432"}' \
+          "$${TOXIPROXY_API_URL}/proxies" \
+          > /dev/null
+
+        curl --fail --silent --show-error \
+          --request POST \
+          --header 'Content-Type: application/json' \
+          --data "{\"name\":\"postgres_latency_upstream\",\"type\":\"latency\",\"stream\":\"upstream\",\"toxicity\":1.0,\"attributes\":{\"latency\":$${one_way_latency_ms},\"jitter\":$${POSTGRES_RTT_JITTER_MS}}}" \
+          "$${TOXIPROXY_API_URL}/proxies/postgres/toxics" \
+          > /dev/null
+
+        curl --fail --silent --show-error \
+          --request POST \
+          --header 'Content-Type: application/json' \
+          --data "{\"name\":\"postgres_latency_downstream\",\"type\":\"latency\",\"stream\":\"downstream\",\"toxicity\":1.0,\"attributes\":{\"latency\":$${one_way_latency_ms},\"jitter\":$${POSTGRES_RTT_JITTER_MS}}}" \
+          "$${TOXIPROXY_API_URL}/proxies/postgres/toxics" \
+          > /dev/null
+
+        echo "PostgreSQL RTT proxy is ready. Use postgres-rtt:5432 from Compose services or localhost:$${POSTGRES_RTT_PORT:-15432} from the host."
+
