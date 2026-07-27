@@ -221,21 +221,23 @@ jobs:
       # stack via utils/dockerComposeControl.ts, so they run separately from
       # api-tests above. Main-only, permanently — not backporting, the
       # exporter's config differs too much on stable/8.7/8.8/8.9.
+      # TEMPORARY for PR #58409 CI-evidence validation — revert to
+      # `if: inputs.branch == 'main'` (both steps below) before merge.
       - name: Run analytics-exporter isolated tests
-        if: inputs.branch == 'main'
+        if: inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation'
         shell: bash
         run: npm run test -- --project=analytics-exporter-isolated
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Clean up analytics-exporter isolated environment
-        if: always() && inputs.branch == 'main'
+        if: always() && (inputs.branch == 'main' || inputs.branch == '58408-analytics-exporter-p7-n1-automation')
         shell: bash
         env:
           # Combining with docker-compose.yml means Compose validates the
           # whole merged service graph, including the shared camunda
           # service's ${DATABASE} reference — override the job-wide
           # "Elasticsearch" (capitalized) here, matching
-          # dockerComposeControl.ts's lowercasing, so this doesn't fail
+          # dockerComposeControl.ts's hardcoded value, so this doesn't fail
           # config validation and get silently skipped by `|| true`.
           DATABASE: elasticsearch
         run: |
