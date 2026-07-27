@@ -43,7 +43,13 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   @Override
   public CamundaClient getCamundaClient(final String username) {
-    return cachedClients.get(username);
+    final var client = cachedClients.get(username);
+    if (client == null) {
+      throw new IllegalStateException(
+          "No Camunda client cached for username '%s' in %s. Ensure a @UserDefinition with this username exists and that the test is configured for basic auth."
+              .formatted(username, getClass().getSimpleName()));
+    }
+    return client;
   }
 
   @Override

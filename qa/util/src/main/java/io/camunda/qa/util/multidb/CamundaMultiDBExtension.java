@@ -654,11 +654,14 @@ public class CamundaMultiDBExtension
   }
 
   private void awaitTestUserClientsAuthenticated(final TestEntityCollection testEntities) {
+    // @UserDefinition users are only ever created and cached against a
+    // BasicAuthCamundaClientTestFactory (see createClientsForTestEntities); under any other
+    // factory type none of them were created, so there is nothing to await here.
+    if (!(authenticatedClientFactory instanceof BasicAuthCamundaClientTestFactory)) {
+      return;
+    }
     for (final TestUser user : testEntities.users()) {
       final CamundaClient client = authenticatedClientFactory.getCamundaClient(user.username());
-      if (client == null) {
-        continue;
-      }
       Awaitility.await("until user '%s' can authenticate".formatted(user.username()))
           .timeout(Duration.ofSeconds(60))
           .untilAsserted(
