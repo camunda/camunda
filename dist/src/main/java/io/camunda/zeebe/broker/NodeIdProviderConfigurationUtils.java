@@ -70,7 +70,16 @@ public class NodeIdProviderConfigurationUtils {
               throw new IllegalStateException(
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
             }
-            final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
+            final var taskId =
+                config
+                    .getTaskId()
+                    .or(NodeIdProviderConfigurationUtils::getCurrentECSTaskId)
+                    .orElseGet(
+                        () -> {
+                          LOG.info(
+                              "Generating taskId as none was configured and it could not be fetched from ECS metadata API");
+                          return UUID.randomUUID().toString();
+                        });
             log.debug("Node configured with taskId {}", taskId);
             yield new RepositoryNodeIdProvider(
                 nodeIdRepository.get(),
@@ -101,6 +110,39 @@ public class NodeIdProviderConfigurationUtils {
     }
     nodeIdProvider.initialize(brokerCount).join();
     return nodeIdProvider;
+  }
+
+  /**
+   * Derives the current node's task id from the ECS task metadata endpoint (v4), if the process is
+   * running as an ECS task. See <a
+   * href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html">...</a>.
+   */
+  static Optional<String> getCurrentECSTaskId() {
+    final var metadataUri = System.getenv("ECS_CONTAINER_METADATA_URI_V4");
+    if (metadataUri == null || metadataUri.isBlank()) {
+      LOG.info("Expected env var ECS_CONTAINER_METADATA_URI_V4 to be defined, but it wasn't");
+      return Optional.empty();
+    }
+    return getCurrentECSTaskId(metadataUri);
+  }
+
+  static Optional<String> getCurrentECSTaskId(final String metadataUri) {
+    try {
+      final var connection = URI.create(metadataUri + "/task").toURL().openConnection();
+      connection.setConnectTimeout(2_000);
+      connection.setReadTimeout(2_000);
+      try (final var in = connection.getInputStream()) {
+        return new ObjectMapper()
+            .readTree(in)
+            .path("TaskARN")
+            .asOptional()
+            .map(JsonNode::asText)
+            .map(taskArn -> taskArn.substring(taskArn.lastIndexOf('/') + 1));
+      }
+    } catch (final IOException | RuntimeException e) {
+      LOG.warn("Failed to get current ECS task ID", e);
+      return Optional.empty();
+    }
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {
