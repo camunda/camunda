@@ -182,6 +182,8 @@ public class SchemaManager implements CloseableSilently {
       }
       // Store the current version as schema version after successful initialization
       schemaMetadataStore.storeSchemaVersion(currentVersion);
+    } else {
+      ensureIndexAliases();
     }
     updateSchemaSettings();
     createLifecyclePolicies();
@@ -319,6 +321,47 @@ public class SchemaManager implements CloseableSilently {
     // We need to wait for the completion, to make sure all indices has been created successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+    ensureIndexAliases();
+  }
+
+  /**
+   * Attaches the expected alias to any existing concrete index that is missing it (e.g.
+   * auto-created by a write before schema init).
+   */
+  @VisibleForTesting
+  void ensureIndexAliases() {
+    if (allIndexDescriptors.isEmpty()) {
+      return;
+    }
+
+    final var existingIndexNames = existingIndexNames(allIndexDescriptors);
+    if (existingIndexNames.isEmpty()) {
+      return;
+    }
+
+    final var existingDescriptors =
+        allIndexDescriptors.stream()
+            .filter(descriptor -> existingIndexNames.contains(descriptor.getFullQualifiedName()))
+            .toList();
+    if (existingDescriptors.isEmpty()) {
+      return;
+    }
+
+    final List<String> existingNames =
+        existingDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(existingNames);
+
+    for (final IndexDescriptor descriptor : existingDescriptors) {
+      final Set<String> aliases =
+          aliasByIndex.getOrDefault(descriptor.getFullQualifiedName(), Set.of());
+      if (!aliases.contains(descriptor.getAlias())) {
+        LOG.info(
+            "Index '{}' is missing expected alias '{}'; attaching it",
+            descriptor.getFullQualifiedName(),
+            descriptor.getAlias());
+        searchEngineClient.putIndexAlias(descriptor);
+      }
+    }
   }
 
   private List<IndexDescriptor> getMissingIndices(
