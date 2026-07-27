@@ -203,6 +203,44 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
+  void shouldGateSecretAuthorizationCheckOnPerPhysicalTenantAuthorizationsEnabled() {
+    // given: same per-tenant enable split -- SecretServices is the third gated site and reads its
+    // enable flag from each tenant's own security config, like DocumentServices/ExportingServices.
+    final var tenants = new LinkedHashMap<String, Camunda>();
+    tenants.put(TENANT_A, tenantWithAuthorizations(true));
+    tenants.put(TENANT_B, tenantWithAuthorizations(false));
+    final var checkerA = mock(AuthorizationChecker.class);
+    final var checkerB = mock(AuthorizationChecker.class);
+    // tenant A grants no SECRET:REVEAL scope -- the enabled check denies the reference via A's
+    // own checker.
+    when(checkerA.retrieveAuthorizedAuthorizationScopes(any(), any())).thenReturn(List.of());
+    final var registry =
+        buildRegistry(
+            tenants,
+            new AuthorizationCheckerProvider(
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+
+    // when / then: tenant A enforces the SECRET:REVEAL check via its own checker -> denied.
+    final var resolvedForA =
+        registry
+            .secretServices(TENANT_A)
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+    assertThat(resolvedForA.errors())
+        .extracting(SecretResolutionError::code)
+        .containsExactly(SecretErrorCode.ACCESS_DENIED);
+    verify(checkerA).retrieveAuthorizedAuthorizationScopes(any(), any());
+
+    // when / then: tenant B has authorizations disabled -- the check is skipped and its checker is
+    // never consulted.
+    registry
+        .secretServices(TENANT_B)
+        .resolve(List.of("camunda.secrets.token"), authentication)
+        .join();
+    verifyNoInteractions(checkerB);
+  }
+
+  @Test
   void shouldWireExactlyOneEntryWhenOnlyTheDefaultPhysicalTenantExists() {
     // given: a single-PT/default-only deployment
     final var defaultChecker = mock(AuthorizationChecker.class);
