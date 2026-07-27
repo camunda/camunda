@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -48,7 +50,8 @@ public record CurrentClusterConfiguration(
     long version,
     GlobalConfiguration globalConfiguration,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    PhasedChangeState phasedChangeState) {
+    PhasedChangeState phasedChangeState)
+    implements InitializableClusterConfiguration {
 
   public static final long INITIAL_VERSION = 0;
   public static final String DEFAULT_GROUP = "default";
@@ -65,8 +68,14 @@ public record CurrentClusterConfiguration(
         INITIAL_VERSION, GlobalConfiguration.uninitialized(), Map.of(), PhasedChangeState.empty());
   }
 
+  @Override
   public boolean isUninitialized() {
     return globalConfiguration.isUninitialized();
+  }
+
+  @Override
+  public Set<MemberId> getMembers() {
+    return globalConfiguration.members().keySet();
   }
 
   /**

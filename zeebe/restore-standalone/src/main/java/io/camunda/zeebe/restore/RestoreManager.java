@@ -272,7 +272,7 @@ public class RestoreManager implements CloseableSilently {
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
-    final var initializer = new StaticInitializer(staticConfiguration);
+    final var initializer = new StaticInitializer<>(staticConfiguration::generateTopology);
     // it's ok to block, it's not really async
     final var base = initializer.initialize().get();
     final var changePlan =

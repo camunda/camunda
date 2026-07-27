@@ -31,7 +31,8 @@ import org.slf4j.Logger;
  * dynamic config with state ENABLED. If existing exporters are removed, they are marked as
  * CONFIG_NOT_FOUND. Note that the exporters are not removed from the dynamic config.
  */
-public class ExporterStateInitializer implements ClusterConfigurationModifier {
+public class ExporterStateInitializer
+    implements ClusterConfigurationModifier<ClusterConfiguration> {
 
   private static final Logger LOGGER = getLogger(ExporterStateInitializer.class);
   private final Set<String> configuredExporters;

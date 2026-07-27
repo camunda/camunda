@@ -24,7 +24,8 @@ import org.slf4j.LoggerFactory;
  * to static configuration.
  */
 @NullMarked
-public class PartitionDistributorInitializer extends ClusterConfigurationModifier.CoordinatorOnly {
+public class PartitionDistributorInitializer
+    extends ClusterConfigurationModifier.CoordinatorOnly<ClusterConfiguration> {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionDistributorInitializer.class);
 
