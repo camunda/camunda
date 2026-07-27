@@ -355,6 +355,61 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  validate-base-image:
+    if: inputs.runDockerfileChecks
+    name: "Tool / Dockerfile / Validate Base Image"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 5
+    env:
+      TEST_TYPE: Tool
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Check for Fork
+        uses: ./.github/actions/is-fork
+        id: is-fork
+      - if: steps.is-fork.outputs.is-fork != 'true'
+        uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      # Same class of check as camunda.Dockerfile gets in the docker-checks job
+      # (.github/workflows/ci.yml) via a full build; here it's a metadata-only resolve since
+      # this job never builds the image. Minimus "-dev" tags are floating and old digests get
+      # GC'd fast, so a digest pinned by Renovate can go stale before it's ever built - which for
+      # optimize.Dockerfile only happens post-merge (deploy-optimize-docker-snapshot runs only on
+      # push to main/stable, never on pull_request). Catch that here instead of on main.
+      - name: Validate base image digest is resolvable
+        if: steps.is-fork.outputs.is-fork != 'true'
+        run: |
+          set -euo pipefail
+          base_image=$(grep -m1 '^ARG BASE_IMAGE=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          base_digest=$(grep -m1 '^ARG BASE_DIGEST=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          echo "Resolving ${base_image}@${base_digest}"
+          docker manifest inspect "${base_image}@${base_digest}" > /dev/null
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "validate-base-image/${{ matrix.dockerfile }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
