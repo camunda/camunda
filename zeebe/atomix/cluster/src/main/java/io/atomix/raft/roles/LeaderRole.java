@@ -137,7 +137,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     return super.stop()
         .thenRun(appender::close)
-        .thenRun(() -> raft.getRebalanceMetrics().setPartitionPaused(false))
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
   }
