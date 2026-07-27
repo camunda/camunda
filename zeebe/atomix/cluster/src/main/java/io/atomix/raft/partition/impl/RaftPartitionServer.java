@@ -23,6 +23,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -298,6 +299,15 @@ public class RaftPartitionServer implements HealthMonitorable {
     return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout, pausedSinceMs));
   }
 
+  /**
+   * Registers the broker-supplied control the leader uses to freeze/unfreeze the partition during a
+   * coordinated leadership transfer.
+   */
+  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
+    server.getContext().setLeadershipTransferPauseControl(control);
+  }
+
+  /** Resumes this partition after a coordinated leadership transfer, if it is still the leader. */
   public CompletableFuture<Void> resumeFromTransfer() {
     return runOnLeaderRole(
         leader -> {

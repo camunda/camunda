@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
@@ -63,6 +65,20 @@ public final class ZeebePartition extends Actor
 
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
+
+  /** Bridges the actor-scheduled pause barrier to the {@link CompletableFuture}-based Raft hook. */
+  private final LeadershipTransferPauseControl pauseControl =
+      new LeadershipTransferPauseControl() {
+        @Override
+        public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+          return toCompletableFuture(ZeebePartition.this.pauseForTransfer(resumeTimeout));
+        }
+
+        @Override
+        public CompletableFuture<Void> resumeFromTransfer() {
+          return toCompletableFuture(ZeebePartition.this.resumeFromTransfer());
+        }
+      };
 
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
@@ -145,6 +161,7 @@ public final class ZeebePartition extends Actor
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
     context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
+    context.getRaftPartition().getServer().setLeadershipTransferPauseControl(pauseControl);
   }
 
   @Override
@@ -195,6 +212,19 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  private static <T> CompletableFuture<T> toCompletableFuture(final ActorFuture<T> actorFuture) {
+    final var future = new CompletableFuture<T>();
+    actorFuture.onComplete(
+        (result, error) -> {
+          if (error != null) {
+            future.completeExceptionally(error);
+          } else {
+            future.complete(result);
+          }
+        });
+    return future;
   }
 
   @Override
