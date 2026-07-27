@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ inputs.branch || github.ref }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ inputs.branch || github.ref }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -136,7 +136,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ inputs.branch || github.ref }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Snyk token from Vault
@@ -184,7 +184,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ inputs.branch || github.ref }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
@@ -243,7 +243,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
         with:
-          ref: ${{ inputs.branch || github.ref }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch) || github.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import Slack token from Vault
