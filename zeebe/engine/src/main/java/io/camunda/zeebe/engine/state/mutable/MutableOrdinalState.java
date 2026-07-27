@@ -9,4 +9,9 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.OrdinalState;
 
-public interface MutableOrdinalState extends OrdinalState, MutableOrdinalActiveState {}
+public interface MutableOrdinalState extends OrdinalState, MutableOrdinalActiveState {
+
+  void createOrdinalState(int ordinalKey, int partitionId);
+
+  void activate(int ordinalKey, int partitionId);
+}

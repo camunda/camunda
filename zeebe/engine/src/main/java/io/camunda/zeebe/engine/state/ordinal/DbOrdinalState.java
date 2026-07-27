@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.state.ordinal;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
+import io.camunda.zeebe.engine.state.ordinal.PersistedOrdinal.OrdinalStatus;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.Optional;
 
 public class DbOrdinalState implements MutableOrdinalState {
 
@@ -24,13 +27,33 @@ public class DbOrdinalState implements MutableOrdinalState {
   private final ColumnFamily<DbString, DbInt> activeOrdinalColumnFamily;
 
   private final DbString activeOrdinalKey = new DbString();
-  private final DbInt ordinalKey = new DbInt();
+  private final DbInt activeOrdinalValue = new DbInt();
+
+  /** Stores ordinal states by ordinal key & partitionId */
+  private final ColumnFamily<DbCompositeKey<DbInt, DbInt>, PersistedOrdinal>
+      ordinalStatesColumnFamily;
+
+  private final DbCompositeKey<DbInt, DbInt> ordinalAndPartitionKey =
+      new DbCompositeKey<>(new DbInt(), new DbInt());
+  private final PersistedOrdinal persistedOrdinal = new PersistedOrdinal();
 
   public DbOrdinalState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    // active ordinal key index
     activeOrdinalColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ORDINAL_STATE, transactionContext, activeOrdinalKey, ordinalKey);
+            ZbColumnFamilies.ORDINAL_ACTIVE_STATE,
+            transactionContext,
+            activeOrdinalKey,
+            activeOrdinalValue);
+
+    // ordinal states by ordinal key & partitionId
+    ordinalStatesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ORDINAL_STATE,
+            transactionContext,
+            ordinalAndPartitionKey,
+            persistedOrdinal);
   }
 
   @Override
@@ -55,7 +78,41 @@ public class DbOrdinalState implements MutableOrdinalState {
   @Override
   public void activate(final int ordinalKey) {
     activeOrdinalKey.wrapString(ACTIVE_ORDINAL_KEY_KEY);
-    this.ordinalKey.wrapInt(ordinalKey);
-    activeOrdinalColumnFamily.upsert(activeOrdinalKey, this.ordinalKey);
+    activeOrdinalValue.wrapInt(ordinalKey);
+    activeOrdinalColumnFamily.upsert(activeOrdinalKey, activeOrdinalValue);
+  }
+
+  @Override
+  public Optional<PersistedOrdinal> getOrdinalStateById(
+      final int ordinalKey, final int partitionId) {
+    return Optional.ofNullable(
+        ordinalStatesColumnFamily.get(
+            getOrdinalAndPartitionKey(ordinalKey, partitionId), PersistedOrdinal::new));
+  }
+
+  @Override
+  public void createOrdinalState(final int ordinalKey, final int partitionId) {
+    final PersistedOrdinal pendingOrdinal =
+        new PersistedOrdinal().setOrdinalKey(ordinalKey).setStatus(OrdinalStatus.PENDING);
+
+    final var ordinalAndPartitionKey = getOrdinalAndPartitionKey(ordinalKey, partitionId);
+
+    if (!ordinalStatesColumnFamily.exists(ordinalAndPartitionKey)) {
+      ordinalStatesColumnFamily.insert(ordinalAndPartitionKey, pendingOrdinal);
+    }
+  }
+
+  @Override
+  public void activate(final int ordinalKey, final int partitionId) {}
+
+  private DbCompositeKey<DbInt, DbInt> getOrdinalAndPartitionKey(
+      final int ordinalKey, final int partitionId) {
+    final DbInt ordinalKeyKey = new DbInt();
+    ordinalKeyKey.wrapInt(ordinalKey);
+
+    final DbInt partitionIdKey = new DbInt();
+    ordinalKeyKey.wrapInt(ordinalKey);
+
+    return new DbCompositeKey<>(ordinalKeyKey, partitionIdKey);
   }
 }

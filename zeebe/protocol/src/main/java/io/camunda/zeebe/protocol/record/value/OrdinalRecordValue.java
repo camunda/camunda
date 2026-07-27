@@ -24,4 +24,6 @@ import org.immutables.value.Value;
 public interface OrdinalRecordValue extends RecordValue {
 
   int getOrdinalKey();
+
+  int getPartitionId();
 }

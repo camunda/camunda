@@ -7,4 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface OrdinalState {}
+import io.camunda.zeebe.engine.state.ordinal.PersistedOrdinal;
+import java.util.Optional;
+
+public interface OrdinalState {
+
+  Optional<PersistedOrdinal> getOrdinalStateById(int ordinalKey, int partitionId);
+}

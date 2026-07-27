@@ -37,18 +37,27 @@ public final class OrdinalActivateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<OrdinalRecord> command) {
+    final var record = command.getValue();
     final long eventKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(eventKey, OrdinalIntent.ACTIVATED, command.getValue());
+
+    // write local ACTIVATED event with this partition's ID
+    record.setPartitionId(command.getPartitionId());
+    stateWriter.appendFollowUpEvent(eventKey, OrdinalIntent.ACTIVATED, record);
+
+    // distribute without partitionId — each receiving partition stamps its own
+    record.setPartitionId(0);
     commandDistributionBehavior
-        .withKey(eventKey) // TODO: @yohanfernando >> the key should be the ordinal tbh
+        .withKey(eventKey)
         .inQueue(DistributionQueue.ORDINAL.getQueueId())
         .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<OrdinalRecord> command) {
-    // TODO: @yohanfernando >> handle activated
-    stateWriter.appendFollowUpEvent(command.getKey(), OrdinalIntent.ACTIVATED, command.getValue());
+    final var record = command.getValue();
+
+    record.setPartitionId(command.getPartitionId());
+    stateWriter.appendFollowUpEvent(command.getKey(), OrdinalIntent.ACTIVATED, record);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

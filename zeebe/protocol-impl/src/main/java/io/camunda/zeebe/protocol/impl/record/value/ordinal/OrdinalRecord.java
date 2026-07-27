@@ -14,10 +14,11 @@ import io.camunda.zeebe.protocol.record.value.OrdinalRecordValue;
 public final class OrdinalRecord extends UnifiedRecordValue implements OrdinalRecordValue {
   // TODO: @yohanfernando >> need to spec this up proper
   private final IntegerProperty ordinalKeyProperty = new IntegerProperty("ordinalKey", 0);
+  private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId", 0);
 
   public OrdinalRecord() {
-    super(1);
-    declareProperty(ordinalKeyProperty);
+    super(2);
+    declareProperty(ordinalKeyProperty).declareProperty(partitionIdProperty);
   }
 
   @Override
@@ -27,6 +28,16 @@ public final class OrdinalRecord extends UnifiedRecordValue implements OrdinalRe
 
   public OrdinalRecord setOrdinalKey(final int ordinalKey) {
     ordinalKeyProperty.setValue(ordinalKey);
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionIdProperty.getValue();
+  }
+
+  public OrdinalRecord setPartitionId(final int partitionId) {
+    partitionIdProperty.setValue(partitionId);
     return this;
   }
 }

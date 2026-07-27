@@ -8,22 +8,32 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableOrdinalActiveState;
+import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
 import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 
 public final class OrdinalActivatedApplier
     implements TypedEventApplier<OrdinalIntent, OrdinalRecord> {
 
-  private final MutableOrdinalActiveState ordinalState;
+  private final MutableOrdinalState ordinalState;
 
-  public OrdinalActivatedApplier(final MutableOrdinalActiveState ordinalState) {
+  public OrdinalActivatedApplier(final MutableOrdinalState ordinalState) {
     this.ordinalState = ordinalState;
+    System.out.println("OrdinalActivatedApplier = " + hashCode());
   }
 
   @Override
   public void applyState(final long key, final OrdinalRecord value) {
     // TODO: @yohanfernando >> implement proper activate command
+    System.out.println(
+        "OrdinalActivatedApplier = "
+            + hashCode()
+            + " >> value.getOrdinalKey = "
+            + value.getOrdinalKey()
+            + " >> value.getPartitionId = "
+            + value.getPartitionId());
+
     ordinalState.activate(value.getOrdinalKey());
+    ordinalState.createOrdinalState(value.getOrdinalKey(), value.getPartitionId());
   }
 }
