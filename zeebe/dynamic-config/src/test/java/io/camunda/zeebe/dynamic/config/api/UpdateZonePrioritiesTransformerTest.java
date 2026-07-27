@@ -104,7 +104,7 @@ final class UpdateZonePrioritiesTransformerTest {
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
-        .hasMessageContaining("one priority request contains duplicate zones: [zone-a, zone-a]");
+        .hasMessageContaining("Zone priority request contains duplicate zones: [zone-a, zone-a]");
   }
 
   @Test
