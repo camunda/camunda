@@ -76,10 +76,10 @@ jobs:
           up_env=(DATABASE=elasticsearch)
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
             echo "Using single services for Camunda 8.7"
-            services="operate tasklist"
+            services=(operate tasklist)
           else
             echo "Using standalone camunda container"
-            services="camunda"
+            services=(camunda)
             if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
               echo "Starting with Tasklist V1 mode enabled"
               up_env+=(CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
@@ -92,7 +92,7 @@ jobs:
           delay=15
           pulled=false
           for attempt in $(seq 1 "$attempts"); do
-            if env "${up_env[@]}" docker compose pull --include-deps $services; then
+            if env "${up_env[@]}" docker compose pull --include-deps "${services[@]}"; then
               pulled=true
               break
             fi
@@ -109,7 +109,7 @@ jobs:
             exit 1
           fi
 
-          env "${up_env[@]}" docker compose up -d $services
+          env "${up_env[@]}" docker compose up -d "${services[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Start Optimize
