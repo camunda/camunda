@@ -28,7 +28,8 @@
     TENANT_ID,
     VERSION_TAG,
     VERSION,
-    FORM_ID
+    FORM_ID,
+    STATE
     FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
@@ -103,9 +104,20 @@
         AND FORM_ID IS NULL
       </if>
     </if>
+    <if test="filter.state != null">
+      <choose>
+        <when test="filter.state.name() == 'ACTIVE'">
+          AND (STATE = #{filter.state} OR STATE IS NULL)
+        </when>
+        <otherwise>
+          AND STATE = #{filter.state}
+        </otherwise>
+      </choose>
+    </if>
   </sql>
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">
+  <resultMap id="searchResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionEntity">
     <constructor>
       <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="NAME" javaType="java.lang.String"/>
@@ -116,6 +128,9 @@
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="FORM_ID" javaType="java.lang.String"/>
+      <arg
+        column="STATE"
+        javaType="io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState"/>
     </constructor>
   </resultMap>
 
@@ -298,8 +313,16 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel">
     INSERT INTO ${prefix}PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
-                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
+                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID, STATE)
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
-            #{tenantId}, #{versionTag}, #{version}, #{formId})
+            #{tenantId}, #{versionTag}, #{version}, #{formId}, #{state})
   </insert>
+
+  <update id="markDeleted" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DELETED"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
 </mapper>

@@ -24,4 +24,6 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
       ProcessDefinitionStatisticsFilter filter);
+
+  void markDeleted(Long processDefinitionKey);
 }
