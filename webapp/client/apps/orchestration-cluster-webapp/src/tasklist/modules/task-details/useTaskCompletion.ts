@@ -67,7 +67,10 @@ function useTaskCompletion({
 	const isCompletionAllowed = useSelector(actorRef, (snapshot) => snapshot.can({type: 'task.complete'}));
 	const isHidden = useSelector(actorRef, (snapshot) => snapshot.context.taskState === 'COMPLETED');
 	const isBusy = status === 'active';
-	const complete = useCallback(() => actorRef.send({type: 'task.complete'}), [actorRef]);
+	const complete = useCallback(
+		(variables: Record<string, unknown> = {}) => actorRef.send({type: 'task.complete', variables}),
+		[actorRef],
+	);
 
 	return {
 		status,

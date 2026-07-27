@@ -11,8 +11,6 @@ import type {KnipConfig} from 'knip';
 const config: KnipConfig = {
 	entry: ['src/vitest-modules/vitest.setup.ts'],
 	ignore: [
-		'src/global.d.ts',
-		'src/operate/shared/Diagram/bpmn-js.d.ts',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
@@ -20,22 +18,11 @@ const config: KnipConfig = {
 		'shared-test-modules/api-mocks/incident-statistics.ts',
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
-		'src/operate/shared/TextAreaField/**',
-		'src/operate/shared/AutoSubmit/**',
-		'src/operate/shared/OptionalFiltersMenu/**',
-		'src/operate/shared/DateRangeField/**',
-		'src/operate/shared/EmptyMessage/**',
-		'src/operate/shared/ErrorMessage/**',
-		'src/operate/shared/StateIcon/**',
-		'src/operate/shared/PanelHeader/**',
-		'src/operate/shared/DiagramShell/**',
 		'src/operate/shared/FiltersPanel/**',
 		'src/operate/shared/DeleteDefinition/**',
 		'src/operate/shared/StructuredList/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
-		// TODO(#56029): remove when the Process Instance shell is migrated
-		'src/operate/shared/CopyButton/**',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {
