@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,6 +40,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
@@ -264,6 +266,83 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).toCompletableFuture().join();
     // then
     assertThat(result.succeeded()).isFalse();
+  }
+
+  @Test
+  public void shouldAckOnlyAfterFlushCompleted() {
+    // given - a flush which does not complete immediately
+    final var flushFuture = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushFuture);
+    runThreadContextInline();
+
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(1)
+            .build();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // then - the request is only acknowledged, and the commit index only advanced, once the
+    // flush covering the appended entries completed
+    assertThat(responseFuture).isNotCompleted();
+    verify(ctx, never()).setCommitIndex(anyLong());
+
+    flushFuture.complete(null);
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isTrue();
+    verify(ctx).setCommitIndex(1);
+  }
+
+  @Test
+  public void shouldFailAppendWhenAsyncFlushFails() {
+    // given - a flush which fails asynchronously
+    final var flushFuture = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushFuture);
+    runThreadContextInline();
+
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(1)
+            .build();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+    flushFuture.completeExceptionally(
+        new CheckedJournalException.FlushException(new IOException("failed to sync")));
+
+    // then - the append is rejected so that the leader retries, and the commit index is untouched
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isFalse();
+    verify(ctx, never()).setCommitIndex(anyLong());
+  }
+
+  private void runThreadContextInline() {
+    final var threadContext = mock(ThreadContext.class);
+    doAnswer(
+            invocation -> {
+              invocation.getArgument(0, Runnable.class).run();
+              return null;
+            })
+        .when(threadContext)
+        .execute(any(Runnable.class));
+    when(ctx.getThreadContext()).thenReturn(threadContext);
   }
 
   @Test
