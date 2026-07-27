@@ -70,6 +70,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -152,6 +157,27 @@
               <sources>
                 <source>${project.build.directory}/generated-sources/sbe</source>
               </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- SBE generates package-info.java in the same package as the source classes. Remove it
+           before compilation to avoid having two package-info.java files for the package. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>delete-generated-sbe-package-info</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <target>
+                <delete file="${project.build.directory}/generated-sources/sbe/io/camunda/zeebe/protocol/record/package-info.java"/>
+              </target>
             </configuration>
           </execution>
         </executions>

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
 import org.immutables.value.Value;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a record value for a FEEL expression resolution in the engine.
@@ -57,7 +58,7 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordV
    *
    * @return the result value as a String (can be {@code null})
    */
-  Object getResultValue();
+  @Nullable Object getResultValue();
 
   /**
    * Returns a list of warnings generated during the expression evaluation.

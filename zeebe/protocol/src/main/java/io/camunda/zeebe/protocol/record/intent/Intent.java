@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
@@ -153,7 +155,8 @@ public interface Intent {
       return Intent.UNKNOWN;
     }
     final Class<? extends Intent> intentClass = fromValueType(valueType);
-    return PROTOCOL_VALUE_TO_INTENT_MAP.get(intentClass).getOrDefault(intent, UNKNOWN);
+    return requireNonNull(PROTOCOL_VALUE_TO_INTENT_MAP.get(intentClass))
+        .getOrDefault(intent, UNKNOWN);
   }
 
   @SuppressWarnings("unchecked")
