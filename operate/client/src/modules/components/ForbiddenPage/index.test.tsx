@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {render, screen} from 'modules/testing-library';
 import {ForbiddenPage} from './index';
 import {QueryClientProvider} from '@tanstack/react-query';

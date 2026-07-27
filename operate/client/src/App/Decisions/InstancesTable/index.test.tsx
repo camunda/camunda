@@ -16,7 +16,7 @@ import {
 import {InstancesTable} from './index';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
-import {Routes, Route, MemoryRouter} from 'react-router-dom';
+import {Routes, Route, MemoryRouter} from 'react-router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';

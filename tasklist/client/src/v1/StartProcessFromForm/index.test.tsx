@@ -14,7 +14,7 @@ import {
   waitForElementToBeRemoved,
 } from 'common/testing/testing-library';
 import {Component} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as formMocks from 'v1/mocks/form';

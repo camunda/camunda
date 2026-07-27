@@ -13,7 +13,7 @@ import {useWillAllFlowNodesBeCanceled} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {
   mockProcessWithInputOutputMappingsXML,

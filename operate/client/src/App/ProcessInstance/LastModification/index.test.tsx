@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {LastModification} from './index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {

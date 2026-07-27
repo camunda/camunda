@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {getSortParams} from 'modules/utils/filter';
 import {Header, TableHeader} from '@carbon/react';
 

@@ -10,7 +10,7 @@ import {VariablePanel} from '../index';
 import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {
   modificationsStore,

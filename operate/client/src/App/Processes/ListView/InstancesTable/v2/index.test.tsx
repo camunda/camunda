@@ -8,7 +8,7 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {InstancesTable} from '.';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {act, render, screen} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Layout} from '.';

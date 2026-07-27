@@ -8,7 +8,7 @@
 
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { g10, bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";

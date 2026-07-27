@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {Header} from '../index';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {createUser} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';

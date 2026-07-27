@@ -11,7 +11,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useEffect, useRef, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';

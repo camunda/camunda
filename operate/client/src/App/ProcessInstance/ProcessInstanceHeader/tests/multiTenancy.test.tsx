@@ -15,7 +15,7 @@ import {ProcessInstanceHeader} from '../index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {operationsStore} from 'modules/stores/operations';
 import {mockInstanceDeprecated, mockInstance} from './index.setup';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';

@@ -11,7 +11,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 type Props = {
   children?: React.ReactNode;

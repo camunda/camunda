@@ -12,7 +12,7 @@ import {
   updateDecisionsFiltersSearchString,
 } from 'modules/utils/filter';
 import {Form} from 'react-final-form';
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router';
 import {
   Container,
   Form as StyledForm,

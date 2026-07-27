@@ -12,7 +12,7 @@ import {
   screen,
   waitFor,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';

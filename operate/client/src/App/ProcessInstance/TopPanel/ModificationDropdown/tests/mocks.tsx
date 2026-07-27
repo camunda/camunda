@@ -12,7 +12,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
 import {createRef, useEffect} from 'react';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {ModificationDropdown} from '..';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';

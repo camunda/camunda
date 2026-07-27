@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router';
 import {createIncident} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';

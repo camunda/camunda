@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {AuthenticationCheck} from './AuthenticationCheck';
 
 const LOGIN_CONTENT = 'Login content';

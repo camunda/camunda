@@ -13,7 +13,7 @@ import {
   waitFor,
   fireEvent,
 } from 'modules/testing-library';
-import {Link, MemoryRouter, type To} from 'react-router-dom';
+import {Link, MemoryRouter, type To} from 'react-router';
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';

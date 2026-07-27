@@ -19,7 +19,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
-import type {Location} from 'react-router-dom';
+import type {Location} from 'react-router';
 
 type Process = ProcessDto & {key: string};
 type State = {

@@ -13,7 +13,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {DecisionInstance} from './';

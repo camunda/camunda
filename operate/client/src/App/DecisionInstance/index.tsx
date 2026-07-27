@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {useParams} from 'react-router-dom';
+import {useParams} from 'react-router';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdDataStore} from 'modules/stores/drdData';

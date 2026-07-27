@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {act, render, waitFor} from 'common/testing/testing-library';
 import {authenticationStore} from 'common/auth/authentication';
 import {SessionWatcher} from './SessionWatcher';

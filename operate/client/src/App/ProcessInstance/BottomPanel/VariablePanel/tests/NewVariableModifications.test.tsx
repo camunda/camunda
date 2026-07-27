@@ -12,7 +12,7 @@ import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';

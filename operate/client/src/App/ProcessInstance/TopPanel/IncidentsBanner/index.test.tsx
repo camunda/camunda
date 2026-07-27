@@ -7,7 +7,7 @@
  */
 
 import {IncidentsBanner} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockIncidents} from 'modules/mocks/incidents';

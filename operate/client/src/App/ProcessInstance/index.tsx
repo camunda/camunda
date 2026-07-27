@@ -49,7 +49,7 @@ import {
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {Locations} from 'modules/Routes';
 
 const startPolling = (processInstance?: ProcessInstanceType) => {

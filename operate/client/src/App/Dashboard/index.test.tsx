@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {render, screen} from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useNavigate, useLocation} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router';
 import {pages} from 'common/routing';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';

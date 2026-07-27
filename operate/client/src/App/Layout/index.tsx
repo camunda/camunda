@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Outlet} from 'react-router-dom';
+import {Outlet} from 'react-router';
 import {AppHeader} from './AppHeader';
 import {PageContent} from './styled';
 import {observer} from 'mobx-react';

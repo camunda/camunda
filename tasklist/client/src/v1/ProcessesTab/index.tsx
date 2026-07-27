@@ -23,7 +23,7 @@ import {
   useNavigate,
   useMatch,
   useSearchParams,
-} from 'react-router-dom';
+} from 'react-router';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';

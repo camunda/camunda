@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Toolbar} from '.';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';

@@ -9,7 +9,7 @@
 import React, {useEffect} from 'react';
 import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';

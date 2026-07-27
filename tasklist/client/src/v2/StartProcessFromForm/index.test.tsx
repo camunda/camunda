@@ -8,7 +8,7 @@
 
 import {render, screen} from 'common/testing/testing-library';
 import {Component} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 

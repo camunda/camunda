@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'common/testing/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {AuthenticationCheck} from './index';
 import {authenticationStore} from 'common/auth/authentication';
 
