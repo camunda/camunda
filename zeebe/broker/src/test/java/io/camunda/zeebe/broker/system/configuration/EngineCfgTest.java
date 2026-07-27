@@ -73,6 +73,10 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.isArchiverlessEnabled())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS);
+    assertThat(configuration.getFixedStorageOrdinalKey())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY);
   }
 
   @Test
@@ -114,6 +118,8 @@ final class EngineCfgTest {
     assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
+    assertThat(configuration.isArchiverlessEnabled()).isTrue();
+    assertThat(configuration.getFixedStorageOrdinalKey()).isEqualTo(1001);
   }
 
   void assertListenerCfg(

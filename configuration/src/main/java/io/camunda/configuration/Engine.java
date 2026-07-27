@@ -40,6 +40,9 @@ public class Engine {
   /** Configuration properties for the engine's BPMN/DMN validators. */
   @NestedConfigurationProperty private EngineValidators validators = new EngineValidators();
 
+  @NestedConfigurationProperty
+  private EngineStorageOrdinals storageOrdinals = new EngineStorageOrdinals();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -113,5 +116,13 @@ public class Engine {
 
   public void setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+  }
+
+  public EngineStorageOrdinals getStorageOrdinals() {
+    return storageOrdinals;
+  }
+
+  public void setStorageOrdinals(final EngineStorageOrdinals storageOrdinals) {
+    this.storageOrdinals = storageOrdinals;
   }
 }

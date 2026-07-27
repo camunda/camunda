@@ -12,6 +12,7 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.Filesystem;
@@ -61,6 +62,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStore
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io .camunda.zeebe.broker.system.configuration.engine.StorageOrdinalsCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -261,6 +263,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromMessages(override, camunda);
     populateFromUsageMetrics(override, camunda);
     populateFromValidators(override, camunda);
+    populateFromStorageOrdinals(override, camunda);
 
     override
         .getExperimental()
@@ -1254,5 +1257,17 @@ public class BrokerBasedPropertiesOverride {
     jobsCfg.setIncludeVariablesInJobCompletedEvent(job.isIncludeVariablesInJobCompletedEvent());
     jobsCfg.setTimeoutCheckerBatchLimit(job.getTimeoutCheckerBatchLimit());
     jobsCfg.setTimeoutCheckerPollingInterval(job.getTimeoutCheckerPollingInterval());
+  }
+
+  private static void populateFromStorageOrdinals(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final EngineStorageOrdinals camundaStorageOrdinals =
+        camunda.getProcessing().getEngine().getStorageOrdinals();
+    final StorageOrdinalsCfg overrideStorageOrdinals =
+        override.getExperimental().getEngine().getStorageOrdinals();
+
+    overrideStorageOrdinals.setEnableArchiverless(camundaStorageOrdinals.isEnableArchiverless());
+    overrideStorageOrdinals.setFixedStorageOrdinalKey(
+        camundaStorageOrdinals.getFixedStorageOrdinalKey());
   }
 }
