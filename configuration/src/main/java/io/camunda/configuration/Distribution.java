@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
@@ -21,6 +22,8 @@ public class Distribution {
       Set.of("zeebe.broker.experimental.engine.distribution.maxBackoffDuration");
   private static final Set<String> LEGACY_REDISTRIBUTION_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.distribution.redistributionInterval");
+  private static final Set<String> LEGACY_PAUSE_COMMAND_DISTRIBUTION_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.distribution.pauseCommandDistribution");
 
   /**
    * Allows configuring the maximum backoff duration for command redistribution retries. The retry
@@ -33,6 +36,9 @@ public class Distribution {
    * when retrying command distributions that have not been acknowledged.
    */
   private Duration redistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
+
+  /** Allows pausing command redistribution entirely, for debugging or operational purposes. */
+  private boolean pauseCommandDistribution = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 
   public Duration getMaxBackoffDuration() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -58,5 +64,18 @@ public class Distribution {
 
   public void setRedistributionInterval(final Duration redistributionInterval) {
     this.redistributionInterval = redistributionInterval;
+  }
+
+  public boolean isPauseCommandDistribution() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".pause-command-distribution",
+        pauseCommandDistribution,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_PAUSE_COMMAND_DISTRIBUTION_PROPERTIES);
+  }
+
+  public void setPauseCommandDistribution(final boolean pauseCommandDistribution) {
+    this.pauseCommandDistribution = pauseCommandDistribution;
   }
 }

@@ -267,6 +267,7 @@ public class BrokerBasedPropertiesOverride {
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+    distributionCfg.setPauseCommandDistribution(distribution.isPauseCommandDistribution());
   }
 
   private static void populateFromCaches(

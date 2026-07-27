@@ -281,6 +281,7 @@ processing.engine.caches.group-name-cache-capacity
 processing.engine.caches.process-cache-capacity
 processing.engine.caches.resource-cache-capacity
 processing.engine.distribution.max-backoff-duration
+processing.engine.distribution.pause-command-distribution
 processing.engine.distribution.redistribution-interval
 processing.engine.job.include-variables-in-job-completed-event
 processing.flow-control.request.aimd.backoff-ratio
