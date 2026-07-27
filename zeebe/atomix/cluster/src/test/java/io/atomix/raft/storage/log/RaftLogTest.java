@@ -315,6 +315,22 @@ class RaftLogTest {
     }
 
     @Test
+    void shouldFlushDirectlyOnDeleteAfterRegardlessOfFlusher() throws CheckedJournalException {
+      // given - a flusher which never flushes on its own
+      final var journal = mock(Journal.class);
+      final var flusher = spy(new NoopFlusher());
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.deleteAfter(2);
+
+      // then - the truncation is flushed directly, bypassing the flush strategy
+      verify(flusher, times(1)).onLogTruncation(2);
+      verify(journal, times(1)).deleteAfter(2);
+      verify(journal, times(1)).flush();
+    }
+
+    @Test
     void shouldFlushDirectly() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
