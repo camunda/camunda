@@ -763,11 +763,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private IndexedRaftLogEntry appendEntry(final RaftLogEntry entry) {
-    if (pausedForTransfer) {
-      // Safety backstop only - nothing should be attempting to append while we're in a paused state
-      throw new IllegalStateException(
-          "Cannot append to the log while the partition is paused for a leadership transfer");
-    }
     try {
       return appendWithRetry(entry);
     } catch (final Exception e) {
@@ -778,6 +773,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private IndexedRaftLogEntry appendWithRetry(final RaftLogEntry entry) {
+    if (pausedForTransfer) {
+      // Safety backstop only - nothing should be attempting to append while we're in a paused state
+      throw new IllegalStateException(
+          "Cannot append to the log while the partition is paused for a leadership transfer");
+    }
+
     int retries = 0;
 
     RuntimeException lastError = null;

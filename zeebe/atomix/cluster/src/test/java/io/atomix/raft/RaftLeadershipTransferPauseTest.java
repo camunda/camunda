@@ -234,10 +234,18 @@ public class RaftLeadershipTransferPauseTest {
   }
 
   @Test
-  public void shouldRejectApplicationAppendWhilePaused() throws Exception {
+  public void shouldStepDownWhenApplicationAppendIsAttemptedWhilePaused() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
+    final var leftLeadership = new CountDownLatch(1);
+    leader.addRoleChangeListener(
+        (role, term) -> {
+          if (role != Role.LEADER) {
+            leftLeadership.countDown();
+          }
+        });
+
     final long frozenIndex =
         onRaftThread(
             leader,
@@ -252,22 +260,14 @@ public class RaftLeadershipTransferPauseTest {
     assertThatThrownBy(rejected::awaitCommit)
         .hasRootCauseInstanceOf(IllegalStateException.class)
         .hasMessageContaining("paused for a leadership transfer");
+
     assertThat(onRaftThread(leader, () -> leader.getContext().getLog().getLastIndex()))
-        .as("no entry is appended past the frozen target while paused")
+        .as("the rejected entry is not appended")
         .isEqualTo(frozenIndex);
 
-    // when resumed, writes are admitted again
-    onRaftThread(
-        leader,
-        () -> {
-          ((LeaderRole) leader.getContext().getRaftRole()).resumeFromTransfer();
-          return null;
-        });
-
-    // then
-    assertThat(raftRule.appendEntry())
-        .as("appends succeed again once the transfer pause is lifted")
-        .isGreaterThan(frozenIndex);
+    assertThat(leftLeadership.await(15, TimeUnit.SECONDS))
+        .as("the leader steps down after an append is attempted while paused")
+        .isTrue();
   }
 
   @Test
