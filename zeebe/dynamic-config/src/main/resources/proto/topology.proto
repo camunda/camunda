@@ -5,7 +5,13 @@ import "google/protobuf/timestamp.proto";
 
 option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
-message GossipState { ClusterTopology clusterTopology = 1; }
+// During a rolling upgrade both fields are populated (dual-write): field 1
+// carries the legacy single-group view (read by old brokers), field 2 carries
+// the full multi-partition-group configuration (read by upgraded brokers).
+message GossipState {
+  ClusterTopology clusterTopology = 1;
+  CurrentClusterConfiguration currentClusterConfiguration = 2;
+}
 
 // ---- New multi-partition-group configuration model (8.10) ----
 
