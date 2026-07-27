@@ -91,8 +91,23 @@ describe('<DateRangeField /> tracking', () => {
 
 		await screen.getByLabelText('From date').fill('2022-01-01');
 		await screen.getByLabelText('To date').fill('2022-12-01');
-		await screen.getByTestId('fromTime').fill('12:30:00');
-		await screen.getByTestId('toTime').fill('17:15:00');
+		// Typing a date asynchronously resets the time fields to their defaults via the
+		// calendar's onChange; under CI/parallel-test CPU pressure that reset can race a
+		// same-tick time fill, so retry the fill until it sticks (see DateRangeField.test.tsx).
+		await expect.element(screen.getByLabelText('From date')).toHaveValue('2022-01-01');
+		await expect.element(screen.getByLabelText('To date')).toHaveValue('2022-12-01');
+		await expect
+			.poll(async () => {
+				await screen.getByTestId('fromTime').fill('12:30:00');
+				return (screen.getByTestId('fromTime').element() as HTMLInputElement).value;
+			})
+			.toBe('12:30:00');
+		await expect
+			.poll(async () => {
+				await screen.getByTestId('toTime').fill('17:15:00');
+				return (screen.getByTestId('toTime').element() as HTMLInputElement).value;
+			})
+			.toBe('17:15:00');
 		await applyDateRange(screen);
 
 		expect(trackSpy).toHaveBeenNthCalledWith(2, {
