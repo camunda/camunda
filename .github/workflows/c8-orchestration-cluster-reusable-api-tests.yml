@@ -223,9 +223,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p container-logs
-          docker compose logs --no-color --timestamps camunda \
+          # Use `docker logs` (not `docker compose logs`) so log capture does
+          # not depend on the DATABASE compose variable being set in this step.
+          docker logs --timestamps camunda \
             > container-logs/camunda.log 2>&1 || true
-          docker compose logs --no-color --timestamps elasticsearch \
+          docker logs --timestamps elasticsearch \
             > container-logs/elasticsearch.log 2>&1 || true
           docker ps -a > container-logs/docker-ps.txt 2>&1 || true
           {
@@ -233,9 +235,12 @@ jobs:
             curl -s 'http://localhost:9200/_cluster/health?pretty' || true
             echo "### _cat/indices"
             curl -s 'http://localhost:9200/_cat/indices?v&s=index' || true
-            echo "### doc counts for definition/instance indices"
-            curl -s 'http://localhost:9200/*process-definition*,*process-instance*/_count?pretty' || true
           } > container-logs/elasticsearch-state.txt 2>&1 || true
+          # Exporter / backpressure metrics reveal whether the CamundaExporter
+          # fell behind (growing lag) or the broker rejected under load.
+          curl -s 'http://localhost:9600/actuator/prometheus' 2>/dev/null \
+            | grep -iE 'export|backpressure|flush|zeebe_stream_processor' \
+            > container-logs/camunda-exporter-metrics.txt 2>&1 || true
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Publish test results to TestRail
