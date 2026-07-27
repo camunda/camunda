@@ -37,9 +37,12 @@ public class Engine {
   /** Configuration properties for the engine's usage metrics export. */
   @NestedConfigurationProperty private EngineUsageMetrics usageMetrics = new EngineUsageMetrics();
 
+  /** Configuration properties for the engine's BPMN/DMN validators. */
+  @NestedConfigurationProperty private EngineValidators validators = new EngineValidators();
+
   /**
-   * Configures the maximum depth of nested call activities allowed before an incident is raised,
-   * to guard against unbounded process recursion.
+   * Configures the maximum depth of nested call activities allowed before an incident is raised, to
+   * guard against unbounded process recursion.
    */
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
 
@@ -89,6 +92,14 @@ public class Engine {
 
   public void setUsageMetrics(final EngineUsageMetrics usageMetrics) {
     this.usageMetrics = usageMetrics;
+  }
+
+  public EngineValidators getValidators() {
+    return validators;
+  }
+
+  public void setValidators(final EngineValidators validators) {
+    this.validators = validators;
   }
 
   public int getMaxProcessDepth() {
