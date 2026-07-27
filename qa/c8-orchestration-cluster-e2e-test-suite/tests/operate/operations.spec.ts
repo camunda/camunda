@@ -23,6 +23,7 @@ type ProcessInstance = {
 
 let initialData: {
   singleOperationInstance: ProcessInstance;
+  demoOperationsInstance: ProcessInstance;
   batchOperationInstances: ProcessInstance[];
 };
 
@@ -33,11 +34,16 @@ test.beforeAll(async ({request}) => {
   ]);
 
   const singleInstance = await createSingleInstance('operationsProcessA', 1);
+  const demoInstance = await createSingleInstance('operationsProcessA', 1);
   const batchInstances = await createInstances('operationsProcessB', 1, 10);
 
   initialData = {
     singleOperationInstance: {
       processInstanceKey: singleInstance.processInstanceKey,
+      bpmnProcessId: 'operationsProcessA',
+    },
+    demoOperationsInstance: {
+      processInstanceKey: demoInstance.processInstanceKey,
       bpmnProcessId: 'operationsProcessA',
     },
     batchOperationInstances: batchInstances.map((instance) => ({
@@ -48,7 +54,7 @@ test.beforeAll(async ({request}) => {
   await sleep(2500);
   await createDemoOperations(
     request,
-    initialData.singleOperationInstance.processInstanceKey,
+    initialData.demoOperationsInstance.processInstanceKey,
     51,
   );
   await sleep(500);
@@ -124,7 +130,7 @@ test.describe('Operations', () => {
         operateProcessesPage.getRetryInstanceButton(
           instance.processInstanceKey,
         ),
-      ).toBeVisible({timeout: 120000});
+      ).toBeEnabled({timeout: 120000});
       await operateProcessesPage.clickRetryInstanceButton(
         instance.processInstanceKey,
       );
