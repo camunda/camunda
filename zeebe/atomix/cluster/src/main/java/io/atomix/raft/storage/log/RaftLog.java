@@ -119,6 +119,14 @@ public final class RaftLog implements Closeable {
     return journal.getLastIndex();
   }
 
+  /**
+   * Returns the index of the last record which is known to be flushed to persistent storage. See
+   * {@link Journal#getLastFlushedIndex()}.
+   */
+  public long getLastFlushedIndex() {
+    return journal.getLastFlushedIndex();
+  }
+
   public IndexedRaftLogEntry getLastEntry() {
     if (lastAppendedEntry == null) {
       readLastEntry();
