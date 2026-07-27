@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
  *       started (group commit).
  * </ul>
  *
- * <p>Results of requests which require flushing complete in request order. A request for an already
- * durable index completes immediately, possibly ahead of pending earlier requests; this only
- * reorders responses of re-transmitted appends, which the protocol must tolerate anyway, as
- * responses can be arbitrarily delayed or their requests re-sent after a timeout.
+ * <p>Completing an already durable request ahead of pending earlier requests (see {@link
+ * #flush(Journal, long)}) only reorders responses of re-transmitted appends, which the protocol
+ * must tolerate anyway, as responses can be arbitrarily delayed or their requests re-sent after a
+ * timeout.
  *
  * <p>When a flush fails, all pending results are failed and no retry is attempted here: retries are
  * driven by the Raft protocol itself, i.e. followers respond with an error so that the leader
@@ -67,13 +67,12 @@ public final class CoalescedFlusher implements RaftLogFlusher {
   @Override
   public synchronized CompletableFuture<Void> flush(final Journal journal, final long index) {
     if (closed) {
-      return CompletableFuture.failedFuture(
-          new FlushException("Flusher is closed, cannot guarantee durability", null));
+      return CompletableFuture.failedFuture(closedError(null));
     }
 
     // fast path: the requested index is already durable, no flush is needed
     if (index <= journal.getLastFlushedIndex()) {
-      return CompletableFuture.completedFuture(null);
+      return COMPLETED;
     }
 
     final var waiter = new Waiter(index, new CompletableFuture<>());
@@ -119,7 +118,7 @@ public final class CoalescedFlusher implements RaftLogFlusher {
     }
 
     closed = true;
-    drainPending(new FlushException("Flusher is closed, cannot guarantee durability", null));
+    drainPending(closedError(null));
     return true;
   }
 
@@ -138,8 +137,12 @@ public final class CoalescedFlusher implements RaftLogFlusher {
       // pending forever
       flushing = false;
       LOGGER.debug("Failing pending flush results as the flusher is closing", e);
-      drainPending(new FlushException("Flusher is closed, cannot guarantee durability", e));
+      drainPending(closedError(e));
     }
+  }
+
+  private static FlushException closedError(final Throwable cause) {
+    return new FlushException("Flusher is closed, cannot guarantee durability", cause);
   }
 
   private void flushNext(final Journal journal) {
@@ -171,8 +174,15 @@ public final class CoalescedFlusher implements RaftLogFlusher {
   }
 
   private Exception tryFlush(final Journal journal) {
+    // a closed or empty journal silently skips flushing, so it can never advance the flushed index
+    // and cover the pending requests; fail them instead of rescheduling flushes forever. Pending
+    // requests on an empty journal are rare but possible, e.g. an empty append acknowledging
+    // records which were requested to be flushed before the log was reset.
     if (!journal.isOpen()) {
       return new FlushException("Journal is closed, cannot guarantee durability", null);
+    }
+    if (journal.isEmpty()) {
+      return new FlushException("Journal is empty, cannot flush up to the requested index", null);
     }
 
     try {

@@ -64,7 +64,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -941,32 +940,27 @@ public class PassiveRole extends InactiveRole {
     if (flushResult.isDone()) {
       // fast path for flush strategies which complete synchronously, e.g. the default direct
       // strategy; this keeps handling the request a single, synchronous step
-      completeAppendOnceFlushed(
-          unwrapError(flushResult), request, appendedIndex, commitIndex, future);
+      completeAppendOnceFlushed(flushResult, request, appendedIndex, commitIndex, future);
       return;
     }
 
-    flushResult.whenComplete(
+    flushResult.whenCompleteAsync(
         (ignored, error) ->
-            raft.getThreadContext()
-                .execute(
-                    () ->
-                        completeAppendOnceFlushed(
-                            error, request, appendedIndex, commitIndex, future)));
+            completeAppendOnceFlushed(flushResult, request, appendedIndex, commitIndex, future),
+        raft.getThreadContext());
   }
 
   private void completeAppendOnceFlushed(
-      final Throwable flushError,
+      final CompletableFuture<Void> flushResult,
       final InternalAppendRequest request,
       final long lastLogIndex,
       final long commitIndex,
       final CompletableFuture<AppendResponse> future) {
+    final var flushError = unwrapError(flushResult);
     if (flushError != null) {
-      final var error =
-          flushError instanceof CompletionException ? flushError.getCause() : flushError;
       log.warn(
           "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
-          error);
+          flushError);
       // Flush failed, return error to the leader so we can retry.
       failAppend(request.prevLogIndex(), future);
       return;
@@ -988,10 +982,12 @@ public class PassiveRole extends InactiveRole {
       return raft.getLog().flush(lastLogIndex);
     }
 
-    if (lastLogIndex <= raft.getLog().getLastFlushedIndex()) {
-      // nothing was appended, and everything acknowledged by this response is already durable;
-      // this is the common case for empty appends, e.g. heartbeats, as with a synchronous flush
-      // strategy every appended record is flushed before the next request is handled
+    if (lastLogIndex <= 0 || lastLogIndex <= raft.getLog().getLastFlushedIndex()) {
+      // nothing was appended, and the response acknowledges nothing that could be lost: either it
+      // acknowledges no records at all (e.g. a heartbeat at the start of an empty log), or
+      // everything it acknowledges is already durable. The latter is the common case for empty
+      // appends, as with a synchronous flush strategy every appended record is flushed before the
+      // next request is handled.
       return CompletableFuture.completedFuture(null);
     }
 

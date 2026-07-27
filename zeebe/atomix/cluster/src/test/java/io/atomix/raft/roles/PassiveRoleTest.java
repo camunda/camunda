@@ -100,15 +100,7 @@ public class PassiveRoleTest {
   public void shouldFailAppendWithIncorrectChecksum() {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 12345, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(2)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(1)
-            .build();
+    final VersionedAppendRequest request = appendRequest(2, 0, 0, 1, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenThrow(new JournalException.InvalidChecksum("expected"));
@@ -128,15 +120,7 @@ public class PassiveRoleTest {
         List.of(
             new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
             new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(2)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 2, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
@@ -158,15 +142,7 @@ public class PassiveRoleTest {
         List.of(
             new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
             new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(2)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 2, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
@@ -185,15 +161,7 @@ public class PassiveRoleTest {
   public void shouldNotFlushIfNoEntryIsAppended() throws CheckedJournalException {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(2)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 2, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
@@ -215,15 +183,7 @@ public class PassiveRoleTest {
             new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
             new ReplicatableJournalRecord(1, 2, 1, new byte[1]),
             new ReplicatableJournalRecord(1, 3, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(3)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 3, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
@@ -276,15 +236,7 @@ public class PassiveRoleTest {
     runThreadContextInline();
 
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(1)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 1, entries);
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class));
 
@@ -310,15 +262,7 @@ public class PassiveRoleTest {
     runThreadContextInline();
 
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(1)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 1, entries);
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class));
 
@@ -340,22 +284,11 @@ public class PassiveRoleTest {
     final var flushFuture = new CompletableFuture<Void>();
     when(log.flush(anyLong())).thenReturn(flushFuture);
     when(log.getLastFlushedIndex()).thenReturn(1L);
-    final var lastEntry = mock(IndexedRaftLogEntry.class);
-    when(lastEntry.index()).thenReturn(2L);
-    when(lastEntry.term()).thenReturn(1L);
-    when(log.getLastEntry()).thenReturn(lastEntry);
+    givenLastEntry(2, 1);
     runThreadContextInline();
 
     // an empty append, e.g. a heartbeat, acknowledging everything up to index 2
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(1)
-            .withPrevLogIndex(2)
-            .withEntries(List.of())
-            .withCommitIndex(2)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 1, 2, 2, List.of());
 
     // when
     final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
@@ -371,23 +304,29 @@ public class PassiveRoleTest {
   }
 
   @Test
+  public void shouldAckEmptyAppendAtLogStartWithoutFlushing() {
+    // given - an empty log where nothing was ever flushed, e.g. a freshly bootstrapped follower
+    when(log.getLastFlushedIndex()).thenReturn(-1L);
+
+    // an empty append at the very start of the log, acknowledging no records at all
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 0, List.of());
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // then - acknowledged immediately, nothing needs to be durable
+    verify(log, never()).flush(anyLong());
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isTrue();
+  }
+
+  @Test
   public void shouldAckEmptyAppendImmediatelyWhenRecordsAreDurable() {
     // given - everything appended is already flushed
     when(log.getLastFlushedIndex()).thenReturn(2L);
-    final var lastEntry = mock(IndexedRaftLogEntry.class);
-    when(lastEntry.index()).thenReturn(2L);
-    when(lastEntry.term()).thenReturn(1L);
-    when(log.getLastEntry()).thenReturn(lastEntry);
+    givenLastEntry(2, 1);
 
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(1)
-            .withPrevLogIndex(2)
-            .withEntries(List.of())
-            .withCommitIndex(2)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 1, 2, 2, List.of());
 
     // when
     final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
@@ -398,18 +337,6 @@ public class PassiveRoleTest {
     assertThat(responseFuture.join().succeeded()).isTrue();
   }
 
-  private void runThreadContextInline() {
-    final var threadContext = mock(ThreadContext.class);
-    doAnswer(
-            invocation -> {
-              invocation.getArgument(0, Runnable.class).run();
-              return null;
-            })
-        .when(threadContext)
-        .execute(any(Runnable.class));
-    when(ctx.getThreadContext()).thenReturn(threadContext);
-  }
-
   @Test
   public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
@@ -417,15 +344,7 @@ public class PassiveRoleTest {
     setPendingSnapshot(receivedSnapshot);
 
     // an empty append request (heartbeat)
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(List.of())
-            .withCommitIndex(0)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 0, List.of());
 
     // when
     role.handleAppend(ProtocolVersionHandler.transform(request)).join();
@@ -443,15 +362,7 @@ public class PassiveRoleTest {
 
     // an append request with entries
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
-    final VersionedAppendRequest request =
-        VersionedAppendRequest.builder()
-            .withTerm(1)
-            .withLeader(MemberId.anonymous())
-            .withPrevLogTerm(0)
-            .withPrevLogIndex(0)
-            .withEntries(entries)
-            .withCommitIndex(1)
-            .build();
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 1, entries);
 
     when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class));
@@ -523,6 +434,41 @@ public class PassiveRoleTest {
     // understates the leader's log and cannot be used to detect data loss. The local log end never
     // trips the check, which is the point: an ex-leader demoted to PASSIVE tripped it spuriously.
     verify(ctx).setFirstCommitIndex(2, 120);
+  }
+
+  private static VersionedAppendRequest appendRequest(
+      final long term,
+      final long prevLogTerm,
+      final long prevLogIndex,
+      final long commitIndex,
+      final List<ReplicatableJournalRecord> entries) {
+    return VersionedAppendRequest.builder()
+        .withTerm(term)
+        .withLeader(MemberId.anonymous())
+        .withPrevLogTerm(prevLogTerm)
+        .withPrevLogIndex(prevLogIndex)
+        .withEntries(entries)
+        .withCommitIndex(commitIndex)
+        .build();
+  }
+
+  private void givenLastEntry(final long index, final long term) {
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(index);
+    when(lastEntry.term()).thenReturn(term);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+  }
+
+  private void runThreadContextInline() {
+    final var threadContext = mock(ThreadContext.class);
+    doAnswer(
+            invocation -> {
+              invocation.getArgument(0, Runnable.class).run();
+              return null;
+            })
+        .when(threadContext)
+        .execute(any(Runnable.class));
+    when(ctx.getThreadContext()).thenReturn(threadContext);
   }
 
   private void setPendingSnapshot(final ReceivedSnapshot snapshot) throws Exception {

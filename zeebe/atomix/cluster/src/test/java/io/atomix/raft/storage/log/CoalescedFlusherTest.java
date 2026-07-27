@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.CloseHelper;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 final class CoalescedFlusherTest {
@@ -46,7 +47,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCompleteImmediatelyWhenIndexAlreadyDurable() throws CheckedJournalException {
     // given
-    setupJournal();
     lastIndex.set(5);
     lastFlushedIndex.set(5);
 
@@ -62,7 +62,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldNotCompleteBeforeFlushCovered() {
     // given
-    setupJournal();
     lastIndex.set(6);
 
     // when
@@ -77,7 +76,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCoalescePendingFlushes() throws CheckedJournalException {
     // given - three requests queue up while no flush has run yet
-    setupJournal();
     lastIndex.set(8);
     final var first = flusher.flush(journal, 6);
     final var second = flusher.flush(journal, 7);
@@ -96,7 +94,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCompleteInRequestOrder() {
     // given
-    setupJournal();
     lastIndex.set(8);
     final List<Integer> completionOrder = new ArrayList<>();
     flusher.flush(journal, 6).whenComplete((ok, error) -> completionOrder.add(6));
@@ -113,7 +110,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCompleteCoveredRequestImmediatelyDespitePendingRequests() {
     // given - index 5 is already durable, and an earlier request for index 6 is still pending
-    setupJournal();
     lastIndex.set(6);
     lastFlushedIndex.set(5);
     final var pending = flusher.flush(journal, 6);
@@ -132,7 +128,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCompleteCoveredRequestEvenWhenNextFlushFails() throws CheckedJournalException {
     // given - a pending request whose flush will fail, and an already durable index
-    setupJournal();
     lastIndex.set(6);
     lastFlushedIndex.set(5);
     doThrow(new FlushException(new IOException("failed to sync"))).when(journal).flush();
@@ -150,7 +145,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFlushAgainForRecordsAppendedDuringFlush() throws CheckedJournalException {
     // given - a flush for index 6 is in progress while a request for index 8 arrives
-    setupJournal();
     lastIndex.set(6);
     final var first = flusher.flush(journal, 6);
 
@@ -169,7 +163,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldCoverLateRequestsWithFollowUpFlush() throws CheckedJournalException {
     // given - two requests, but the first flush only covers the first one
-    setupJournal();
     doAnswer(
             invocation -> {
               lastFlushedIndex.set(6);
@@ -200,7 +193,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFailAllPendingWhenFlushFails() throws CheckedJournalException {
     // given
-    setupJournal();
     lastIndex.set(7);
     final var failure = new FlushException(new IOException("failed to sync"));
     doThrow(failure).when(journal).flush();
@@ -218,7 +210,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFailPendingWhenFlushThrowsUnexpectedException() throws CheckedJournalException {
     // given - a failure outside the expected journal exceptions, e.g. from the metastore
-    setupJournal();
     lastIndex.set(6);
     doThrow(new IllegalStateException("unexpected"))
         .doAnswer(
@@ -243,7 +234,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldRecoverAfterFailedFlush() throws CheckedJournalException {
     // given - a first flush which fails
-    setupJournal();
     lastIndex.set(6);
     final var failure = new FlushException(new IOException("failed to sync"));
     doThrow(failure)
@@ -269,7 +259,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFailPendingOnLogTruncation() {
     // given - pending requests both above and below the truncation index
-    setupJournal();
     lastIndex.set(8);
     final var below = flusher.flush(journal, 6);
     final var above = flusher.flush(journal, 8);
@@ -285,7 +274,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFailPendingOnClose() {
     // given
-    setupJournal();
     lastIndex.set(6);
     final var pending = flusher.flush(journal, 6);
 
@@ -299,7 +287,6 @@ final class CoalescedFlusherTest {
   @Test
   void shouldFailFlushAfterClose() {
     // given
-    setupJournal();
     flusher.close();
 
     // when
@@ -310,9 +297,23 @@ final class CoalescedFlusherTest {
   }
 
   @Test
+  void shouldFailPendingWhenJournalIsEmpty() {
+    // given - a request which an empty journal can never cover, e.g. requested just before the
+    // log was reset
+    when(journal.isEmpty()).thenReturn(true);
+    final var result = flusher.flush(journal, 6);
+
+    // when
+    scheduler.runUntilIdle();
+
+    // then - the result fails instead of endlessly rescheduling flushes which the journal skips
+    assertThat(result).isCompletedExceptionally();
+    assertThat(scheduler.isIdle()).isTrue();
+  }
+
+  @Test
   void shouldFailPendingWhenJournalIsClosed() {
     // given
-    setupJournal();
     lastIndex.set(6);
     when(journal.isOpen()).thenReturn(false);
 
@@ -329,19 +330,16 @@ final class CoalescedFlusherTest {
    * everything appended so far, i.e. it advances the flushed index to the last index at the time of
    * the call.
    */
-  private void setupJournal() {
+  @BeforeEach
+  void setupJournal() throws CheckedJournalException {
     when(journal.isOpen()).thenReturn(true);
     when(journal.getLastFlushedIndex()).thenAnswer(invocation -> lastFlushedIndex.get());
-    try {
-      doAnswer(
-              invocation -> {
-                lastFlushedIndex.set(lastIndex.get());
-                return null;
-              })
-          .when(journal)
-          .flush();
-    } catch (final CheckedJournalException e) {
-      throw new RuntimeException(e);
-    }
+    doAnswer(
+            invocation -> {
+              lastFlushedIndex.set(lastIndex.get());
+              return null;
+            })
+        .when(journal)
+        .flush();
   }
 }
