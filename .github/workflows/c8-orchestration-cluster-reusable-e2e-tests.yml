@@ -46,43 +46,70 @@ jobs:
             echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
 
+      - name: Import Docker Hub secrets
+        id: dockerhub-secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY | dockerhub-token;
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          username: ${{ steps.dockerhub-secrets.outputs.dockerhub-username }}
+          password: ${{ steps.dockerhub-secrets.outputs.dockerhub-token }}
+
       - name: Start Camunda
         run: |
-          # Retry to absorb transient Docker Hub registry timeouts during the
-          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
-          # deadline exceeded"). docker compose up -d is idempotent, so a retry
-          # simply resumes the pull and starts the container.
-          start_camunda() {
-            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-              echo "Using single services for Camunda 8.7"
-              DATABASE=elasticsearch docker compose up -d operate tasklist
+          # Authenticated pulls (see "Log in to Docker Hub" above) plus a
+          # retry-with-backoff pre-pull absorb transient Docker Hub registry
+          # outages observed in the nightly (e.g. "Get
+          # https://registry-1.docker.io/v2/: context deadline exceeded").
+          # Pulling is separated from `up -d` so a network blip only retries the
+          # pull; both commands are idempotent.
+          up_env=(DATABASE=elasticsearch)
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            echo "Using single services for Camunda 8.7"
+            services="operate tasklist"
+          else
+            echo "Using standalone camunda container"
+            services="camunda"
+            if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
+              echo "Starting with Tasklist V1 mode enabled"
+              up_env+=(CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
             else
-              echo "Using standalone camunda container"
-              if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
-                echo "Starting with Tasklist V1 mode enabled"
-                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
-              else
-                echo "Starting with default Tasklist V2 mode"
-                DATABASE=elasticsearch docker compose up -d camunda
-              fi
+              echo "Starting with default Tasklist V2 mode"
             fi
-          }
+          fi
 
-          attempts=3
+          attempts=5
+          delay=15
+          pulled=false
           for attempt in $(seq 1 "$attempts"); do
-            if start_camunda; then
-              echo "Camunda started on attempt ${attempt}."
-              exit 0
+            if env "${up_env[@]}" docker compose pull --include-deps $services; then
+              pulled=true
+              break
             fi
-            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            echo "Attempt ${attempt}/${attempts} to pull Camunda images failed."
             if [[ "$attempt" -lt "$attempts" ]]; then
-              echo "Retrying in 15s..."
-              sleep 15
+              echo "Retrying in ${delay}s..."
+              sleep "$delay"
+              delay=$(( delay * 2 ))
             fi
           done
 
-          echo "Failed to start Camunda after ${attempts} attempts."
-          exit 1
+          if [[ "$pulled" != "true" ]]; then
+            echo "Failed to pull Camunda images after ${attempts} attempts."
+            exit 1
+          fi
+
+          env "${up_env[@]}" docker compose up -d $services
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Start Optimize
