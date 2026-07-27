@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {tryParseJSON} from './tryParseJSON';
+
 type Variable = {
 	name: string;
 	value: string | null;
@@ -13,7 +15,7 @@ type Variable = {
 
 function formatVariablesToFormData(variables: Variable[]) {
 	return variables.reduce<Record<string, unknown>>((accumulator, {name, value}) => {
-		accumulator[name] = value === null ? '' : JSON.parse(value);
+		accumulator[name] = value === null ? '' : tryParseJSON(value);
 		return accumulator;
 	}, {});
 }
