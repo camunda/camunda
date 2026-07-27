@@ -149,6 +149,25 @@ schemas:
       partitionDistribution:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
 
+  UpdatePartitionDistributionRequest:
+    description: >
+      Request body for `PUT /cluster/partition-distribution`. Exactly one of `config` and
+      `zonePriorities` must be set.
+    type: object
+    properties:
+      config:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      zonePriorities:
+        type: array
+        minItems: 1
+        items:
+          type: string
+        description: >
+          Leader switchover: desired zone order for Raft leader-election priority, highest first.
+          Must list exactly the currently configured zones. The existing priority values are kept
+          and re-assigned in this order. Mutually exclusive with `config`.
+        example: ["zone-a", "zone-b"]
+
   PartitionDistributionConfig:
     description: The partition distributor configuration agreed on by the cluster.
     type: object

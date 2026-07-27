@@ -28,6 +28,7 @@ import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.List;
@@ -358,8 +359,25 @@ public interface ClusterActuator {
 
   @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
-  PlannedOperationsResponse patchPartitionDistribution(
-      @RequestBody final PartitionDistributionConfig config, @Param boolean dryRun);
+  PlannedOperationsResponse updatePartitionDistribution(
+      @RequestBody final UpdatePartitionDistributionRequest request, @Param boolean dryRun);
+
+  /** Applies a full partition distribution config via {@code PUT /partition-distribution}. */
+  default PlannedOperationsResponse patchPartitionDistribution(
+      final PartitionDistributionConfig config, final boolean dryRun) {
+    return updatePartitionDistribution(
+        new UpdatePartitionDistributionRequest().config(config), dryRun);
+  }
+
+  /**
+   * Performs a leader switchover via {@code PUT /partition-distribution}: re-orders the existing
+   * per-zone priorities by {@code zonePriorities} (highest first).
+   */
+  default PlannedOperationsResponse updateZonePriorities(
+      final List<String> zonePriorities, final boolean dryRun) {
+    return updatePartitionDistribution(
+        new UpdatePartitionDistributionRequest().zonePriorities(zonePriorities), dryRun);
+  }
 
   @RequestLine("PUT /zones?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})

@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Requests;
@@ -1153,6 +1154,15 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeUpdateZonePrioritiesRequest(final UpdateZonePrioritiesRequest request) {
+    return Requests.UpdateZonePrioritiesRequest.newBuilder()
+        .addAllZoneOrder(request.zoneOrder())
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -1507,6 +1517,16 @@ public class ProtoBufSerializer
         proto.getPriority(),
         proto.getBrokersList().stream().map(MemberId::from).collect(Collectors.toSet()),
         proto.getDryRun());
+  }
+
+  @Override
+  public UpdateZonePrioritiesRequest decodeUpdateZonePrioritiesRequest(final byte[] encodedState) {
+    try {
+      final var request = Requests.UpdateZonePrioritiesRequest.parseFrom(encodedState);
+      return new UpdateZonePrioritiesRequest(request.getZoneOrderList(), request.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
   }
 
   @Override

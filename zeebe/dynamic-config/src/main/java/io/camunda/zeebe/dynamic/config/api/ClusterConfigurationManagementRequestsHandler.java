@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
@@ -223,6 +224,14 @@ public final class ClusterConfigurationManagementRequestsHandler
             addZoneRequest.numberOfReplicas(),
             addZoneRequest.priority(),
             addZoneRequest.brokers()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> updateZonePriorities(
+      final UpdateZonePrioritiesRequest updateZonePrioritiesRequest) {
+    return handleRequest(
+        updateZonePrioritiesRequest.dryRun(),
+        new UpdateZonePrioritiesTransformer(updateZonePrioritiesRequest.zoneOrder()));
   }
 
   @Override
