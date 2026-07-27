@@ -139,7 +139,6 @@ data.secondary-storage.elasticsearch.urls
 data.secondary-storage.elasticsearch.username
 data.secondary-storage.elasticsearch.variable-size-threshold
 data.secondary-storage.opensearch.aws-enabled
-data.secondary-storage.opensearch.aws-region
 data.secondary-storage.opensearch.backup.database-name
 data.secondary-storage.opensearch.batch-operation-cache.cache-name
 data.secondary-storage.opensearch.batch-operation-cache.database-name
@@ -325,11 +324,6 @@ processing.max-commands-in-batch
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
-provider-auth.aws.access-key
-provider-auth.aws.role-arn
-provider-auth.aws.secret-key
-provider-auth.aws.session-token
-provider-auth.aws.web-identity-token-file
 secrets.stores.aws
 secrets.stores.file
 security.authentication

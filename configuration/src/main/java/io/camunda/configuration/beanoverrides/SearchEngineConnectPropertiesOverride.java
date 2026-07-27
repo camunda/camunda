@@ -7,7 +7,6 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.Aws;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.InterceptorPlugin;
@@ -20,7 +19,6 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import io.camunda.search.connect.configuration.AwsConfiguration;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -97,10 +95,7 @@ public class SearchEngineConnectPropertiesOverride {
             database = secondaryStorage.getOpensearch();
             populateFromDocumentBasedSecondaryStorageDatabase(
                 (DocumentBasedSecondaryStorageDatabase) database, override);
-            final Opensearch opensearch = (Opensearch) database;
-            override.setAwsEnabled(opensearch.isAwsEnabled());
-            populateAws(camunda.getProviderAuth().getAws(), override.aws());
-            override.aws().setRegion(opensearch.getAwsRegion());
+            override.setAwsEnabled(((Opensearch) database).isAwsEnabled());
             break;
           }
         case rdbms:
@@ -122,14 +117,6 @@ public class SearchEngineConnectPropertiesOverride {
 
       override.setUsername(database.getUsername());
       override.setPassword(database.getPassword());
-    }
-
-    static void populateAws(final Aws aws, final AwsConfiguration target) {
-      target.setAccessKey(aws.getAccessKey());
-      target.setSecretKey(aws.getSecretKey());
-      target.setSessionToken(aws.getSessionToken());
-      target.setRoleArn(aws.getRoleArn());
-      target.setWebIdentityTokenFile(aws.getWebIdentityTokenFile());
     }
 
     private void populateFromDocumentBasedSecondaryStorageDatabase(
