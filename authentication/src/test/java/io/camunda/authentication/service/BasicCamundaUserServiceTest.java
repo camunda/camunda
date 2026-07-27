@@ -26,6 +26,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ public class BasicCamundaUserServiceTest {
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
+  @Mock private ResourceAccessProvider tenantAResourceAccessProvider;
   @Mock private UserServices userServices;
   @Mock private UserServices tenantAUserServices;
   @Mock private CamundaAuthentication authentication;
@@ -51,6 +53,9 @@ public class BasicCamundaUserServiceTest {
     MockitoAnnotations.openMocks(this).close();
 
     when(resourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(COMPONENT_ACCESS_AUTHORIZATION));
+    when(tenantAResourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(COMPONENT_ACCESS_AUTHORIZATION));
 
@@ -69,9 +74,17 @@ public class BasicCamundaUserServiceTest {
                 b.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, userServices)
                     .userServices(TENANT_A, tenantAUserServices));
 
+    final var scopedResourceAccessProvider =
+        new PhysicalTenantResourceAccessProvider(
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                resourceAccessProvider,
+                TENANT_A,
+                tenantAResourceAccessProvider));
+
     basicCamundaUserService =
         new BasicCamundaUserService(
-            authenticationProvider, resourceAccessProvider, serviceRegistry);
+            authenticationProvider, scopedResourceAccessProvider, serviceRegistry);
 
     RequestContextHolder.setRequestAttributes(
         new ServletRequestAttributes(new MockHttpServletRequest()));
@@ -232,5 +245,34 @@ public class BasicCamundaUserServiceTest {
 
     // then — resolved via the tenant-A user services, not the default
     assertThat(currentUser.displayName()).isEqualTo("Tenant A User");
+  }
+
+  @Test
+  void shouldRouteAuthorizedComponentsToRequestPhysicalTenant() {
+    // given a request scoped to a non-default physical tenant, whose authorization storage grants
+    // a different component than the default (root) storage
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    final var tenantAUser = mock(UserEntity.class);
+    when(tenantAUser.name()).thenReturn("Tenant A User");
+    when(tenantAUser.email()).thenReturn("foo@bar.com");
+    when(tenantAUserServices.getUser(eq("foo@bar.com"), any())).thenReturn(tenantAUser);
+    when(resourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(
+            ResourceAccess.allowed(
+                withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate")));
+    when(tenantAResourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(
+            ResourceAccess.allowed(
+                withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "tasklist")));
+
+    // when
+    final var currentUser = basicCamundaUserService.getCurrentUser();
+
+    // then — resolved against tenant-A authorization storage, not the default
+    assertThat(currentUser.authorizedComponents()).containsExactly("tasklist");
   }
 }

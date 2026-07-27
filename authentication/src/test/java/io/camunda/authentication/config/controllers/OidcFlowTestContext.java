@@ -9,6 +9,8 @@ package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -52,6 +54,13 @@ public class OidcFlowTestContext {
   @Bean
   public ResourceAccessProvider createResourceAccessProvider() {
     return new DisabledResourceAccessProvider();
+  }
+
+  @Bean
+  public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
+      final ResourceAccessProvider resourceAccessProvider) {
+    return new PhysicalTenantResourceAccessProvider(
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, resourceAccessProvider));
   }
 
   /**
