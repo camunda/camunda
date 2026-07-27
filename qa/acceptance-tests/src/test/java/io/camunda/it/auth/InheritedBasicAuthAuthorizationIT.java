@@ -130,7 +130,7 @@ public class InheritedBasicAuthAuthorizationIT {
   @MethodSource("provideAuthorizedUsers")
   void shouldBeAuthorizedToDeploy(final TestUser user) {
     // given
-    final CamundaClient client = createClient(user);
+    final CamundaClient client = getClient(user);
 
     // then
     Assertions.assertThatNoException()
@@ -149,7 +149,7 @@ public class InheritedBasicAuthAuthorizationIT {
   @MethodSource("provideUnauthorizedUsers")
   void shouldBeUnauthorizedToDeploy(final TestUser user) {
     // given
-    final CamundaClient client = createClient(user);
+    final CamundaClient client = getClient(user);
 
     // then
     Assertions.assertThatThrownBy(
@@ -169,7 +169,7 @@ public class InheritedBasicAuthAuthorizationIT {
   @MethodSource("provideAuthorizedUsers")
   void shouldBeAuthorizedToRead(final TestUser user) {
     // given
-    final CamundaClient client = createClient(user);
+    final CamundaClient client = getClient(user);
 
     // then
     Assertions.assertThatNoException()
@@ -186,7 +186,7 @@ public class InheritedBasicAuthAuthorizationIT {
   @MethodSource("provideUnauthorizedUsers")
   void shouldBeUnauthorizedToRead(final TestUser user) {
     // given
-    final CamundaClient client = createClient(user);
+    final CamundaClient client = getClient(user);
 
     // then
     Assertions.assertThatThrownBy(
@@ -200,7 +200,16 @@ public class InheritedBasicAuthAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
-  private static CamundaClient createClient(final TestUser user) {
+  /**
+   * Returns the pre-built, physical-tenant-scoped client the {@code MultiDbTest} extension already
+   * created and cached for the given user during test setup. Do not close the returned client: it
+   * is shared across all test methods in this class and is closed once by the extension during
+   * {@code afterAll}; closing it here would break any later test reusing the same user. Building a
+   * client directly (e.g. via {@code BROKER.newClientBuilder()}) instead of going through this
+   * lookup would bypass physical-tenant scoping and can make requests fall back to the "default"
+   * physical tenant, which races with this test's own tenant-scoped setup.
+   */
+  private static CamundaClient getClient(final TestUser user) {
     return clientFactory.getCamundaClient(user.username());
   }
 
