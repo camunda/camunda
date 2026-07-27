@@ -19,7 +19,8 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 
-public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class VariableHandler
+    implements StorageOrdinalKeyExportHandler<VariableEntity, VariableRecordValue> {
 
   private final int variableSizeThreshold;
   private final String indexName;
