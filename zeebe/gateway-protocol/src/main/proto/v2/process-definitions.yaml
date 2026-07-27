@@ -377,6 +377,20 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        state:
+          description: |
+            Filter by the process definition's state.
+            When not set, process definitions in any state are returned.
+            Set to `ACTIVE` to exclude deleted definitions (recommended for most use cases).
+            Set to `DELETED` to return only definitions that have been deleted but are still
+            retained in secondary storage.
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+      x-properties-added-in-version:
+        - propertyName: state
+          addedInVersion: "8.9.14"
 
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -402,6 +416,7 @@ components:
         - processDefinitionId
         - tenantId
         - hasStartForm
+        - state
       properties:
         name:
           description: Name of this process definition.
@@ -433,6 +448,15 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        state:
+          description: The state of this process definition.
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+      x-properties-added-in-version:
+        - propertyName: state
+          addedInVersion: "8.9.14"
 
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
