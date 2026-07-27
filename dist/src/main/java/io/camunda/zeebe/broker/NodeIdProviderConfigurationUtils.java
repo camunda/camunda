@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.Partitioning.Scheme;
@@ -73,7 +71,7 @@ public class NodeIdProviderConfigurationUtils {
             final var taskId =
                 config
                     .getTaskId()
-                    .or(NodeIdProviderConfigurationUtils::getCurrentECSTaskId)
+                    .or(ECSTaskIdResolver::resolve)
                     .orElseGet(
                         () -> {
                           LOG.info(
@@ -110,39 +108,6 @@ public class NodeIdProviderConfigurationUtils {
     }
     nodeIdProvider.initialize(brokerCount).join();
     return nodeIdProvider;
-  }
-
-  /**
-   * Derives the current node's task id from the ECS task metadata endpoint (v4), if the process is
-   * running as an ECS task. See <a
-   * href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html">...</a>.
-   */
-  static Optional<String> getCurrentECSTaskId() {
-    final var metadataUri = System.getenv("ECS_CONTAINER_METADATA_URI_V4");
-    if (metadataUri == null || metadataUri.isBlank()) {
-      LOG.info("Expected env var ECS_CONTAINER_METADATA_URI_V4 to be defined, but it wasn't");
-      return Optional.empty();
-    }
-    return getCurrentECSTaskId(metadataUri);
-  }
-
-  static Optional<String> getCurrentECSTaskId(final String metadataUri) {
-    try {
-      final var connection = URI.create(metadataUri + "/task").toURL().openConnection();
-      connection.setConnectTimeout(2_000);
-      connection.setReadTimeout(2_000);
-      try (final var in = connection.getInputStream()) {
-        return new ObjectMapper()
-            .readTree(in)
-            .path("TaskARN")
-            .asOptional()
-            .map(JsonNode::asText)
-            .map(taskArn -> taskArn.substring(taskArn.lastIndexOf('/') + 1));
-      }
-    } catch (final IOException | RuntimeException e) {
-      LOG.warn("Failed to get current ECS task ID", e);
-      return Optional.empty();
-    }
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {

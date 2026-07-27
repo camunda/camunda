@@ -17,7 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-final class NodeIdProviderConfigurationUtilsTest {
+final class ECSTaskIdResolverTest {
 
   private HttpServer server;
 
@@ -49,14 +49,14 @@ final class NodeIdProviderConfigurationUtilsTest {
     final var metadataUri = "http://localhost:" + server.getAddress().getPort();
 
     // when
-    final var taskId = NodeIdProviderConfigurationUtils.getCurrentECSTaskId(metadataUri);
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri);
 
     // then
     assertThat(taskId).contains("abcdef1234567890");
   }
 
   @Test
-  void shouldReturnEmptyWhenMetadataEndpointReturnsError() {
+  void shouldGiveUpWhenMetadataEndpointKeepsReturningServerError() {
     // given
     server.createContext(
         "/task",
@@ -67,14 +67,35 @@ final class NodeIdProviderConfigurationUtilsTest {
     final var metadataUri = "http://localhost:" + server.getAddress().getPort();
 
     // when
-    final var taskId = NodeIdProviderConfigurationUtils.getCurrentECSTaskId(metadataUri);
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri, 200, 10);
 
     // then
     assertThat(taskId).isEmpty();
   }
 
   @Test
-  void shouldReturnEmptyWhenMetadataEndpointReturnsUnexpectedBody() {
+  void shouldStopImmediatelyWhenMetadataEndpointReturnsNotFound() {
+    // given
+    final var attempts = new java.util.concurrent.atomic.AtomicInteger();
+    server.createContext(
+        "/task",
+        exchange -> {
+          attempts.incrementAndGet();
+          exchange.sendResponseHeaders(404, -1);
+          exchange.close();
+        });
+    final var metadataUri = "http://localhost:" + server.getAddress().getPort();
+
+    // when
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri, 5_000, 10);
+
+    // then
+    assertThat(taskId).isEmpty();
+    assertThat(attempts.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldGiveUpWhenMetadataEndpointKeepsReturningIncompleteBody() {
     // given
     server.createContext(
         "/task",
@@ -87,10 +108,40 @@ final class NodeIdProviderConfigurationUtilsTest {
     final var metadataUri = "http://localhost:" + server.getAddress().getPort();
 
     // when
-    final var taskId = NodeIdProviderConfigurationUtils.getCurrentECSTaskId(metadataUri);
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri, 200, 10);
 
     // then
     assertThat(taskId).isEmpty();
+  }
+
+  @Test
+  void shouldRetryUntilMetadataEndpointReturnsTaskId() {
+    // given
+    final var attempts = new java.util.concurrent.atomic.AtomicInteger();
+    server.createContext(
+        "/task",
+        exchange -> {
+          if (attempts.incrementAndGet() < 3) {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+            return;
+          }
+          final var body =
+              """
+              {"TaskARN": "arn:aws:ecs:eu-central-1:123456789012:task/my-cluster/abcdef1234567890"}"""
+                  .getBytes(StandardCharsets.UTF_8);
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
+        });
+    final var metadataUri = "http://localhost:" + server.getAddress().getPort();
+
+    // when
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri, 5_000, 10);
+
+    // then
+    assertThat(taskId).contains("abcdef1234567890");
+    assertThat(attempts.get()).isEqualTo(3);
   }
 
   @Test
@@ -100,7 +151,7 @@ final class NodeIdProviderConfigurationUtilsTest {
     final var metadataUri = "http://localhost:" + server.getAddress().getPort();
 
     // when
-    final var taskId = NodeIdProviderConfigurationUtils.getCurrentECSTaskId(metadataUri);
+    final var taskId = ECSTaskIdResolver.resolve(metadataUri, 200, 10);
 
     // then
     assertThat(taskId).isEmpty();
