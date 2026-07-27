@@ -37,7 +37,7 @@ public class Distribution {
    */
   private Duration redistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
 
-  /** Allows pausing command redistribution entirely, for debugging or operational purposes. */
+  /** Allows pausing command distribution entirely, for debugging or operational purposes. */
   private boolean pauseCommandDistribution = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 
   public Duration getMaxBackoffDuration() {
