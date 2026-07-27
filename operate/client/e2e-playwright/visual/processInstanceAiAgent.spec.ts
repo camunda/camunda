@@ -103,6 +103,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     await processInstancePage.aiAgentDetails.usageSectionTrigger.click();
     await processInstancePage.aiAgentDetails.systemPromptSection.click();
@@ -113,10 +116,6 @@ test.describe('AI agent details', () => {
       processInstancePage.aiAgentDetails.statusSection.getByLabel(
         'Assistant message',
       ),
-    ).toBeVisible();
-
-    await expect(
-      processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
@@ -133,6 +132,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
 
@@ -140,9 +142,6 @@ test.describe('AI agent details', () => {
       processInstancePage.aiAgentDetails.conversationHistorySection.getByLabel(
         'User message',
       ),
-    ).toBeVisible();
-    await expect(
-      processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
@@ -162,6 +161,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     const messageExpandButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
@@ -194,6 +196,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     const resultExpandButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
@@ -232,6 +237,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     const viewDocumentsButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
@@ -265,6 +273,9 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}&elementInstanceKey=${AI_AGENT_ELEMENT_INSTANCE_KEY}`,
     });
+    await expect(
+      processInstancePage.aiAgentDetails.statusOverlay,
+    ).toBeVisible();
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
 
@@ -273,10 +284,6 @@ test.describe('AI agent details', () => {
         'Assistant message',
       ),
     ).toBeVisible();
-    await expect(
-      processInstancePage.aiAgentDetails.statusOverlay,
-    ).toBeVisible();
-
     await expect(page).toHaveScreenshot();
   });
 
@@ -291,7 +298,6 @@ test.describe('AI agent details', () => {
       bottomPanel: 'details',
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
-
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
