@@ -78,7 +78,6 @@ import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -584,7 +583,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         // leader counts itself in quorum, so in order to commit the leader must persist
         try {
           raftLog.flushSync(commitIndex);
-        } catch (final FlushException e) {
+        } catch (final Exception e) {
+          // any flush failure, not just the expected journal exceptions, means the entries cannot
+          // be treated as durable and the leader must not commit; step down instead of crashing
+          // the raft thread
           if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(
                 "Failed to flush commit at index %s, resetting journal to %s and stepping down"
