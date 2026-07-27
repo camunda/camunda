@@ -48,6 +48,7 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
@@ -74,6 +75,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** Leader state. */
@@ -98,6 +100,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private Scheduled catchUpPollTimer;
   private Scheduled catchUpDeadlineTimer;
   private CompletableFuture<Optional<LeadershipTransferResult>> catchUpFuture;
+  // Promotion (TimeoutNow send + count-bounded retry). Sends are strictly bounded by
+  // maxTransferAttempts; success requires observing the *selected* target actually becoming leader,
+  // so a leader-election listener resolves the result once leadership moves.
+  private Scheduled timeoutNowRetryTimer;
+  private Scheduled promotionDeadline;
+  private CompletableFuture<LeadershipTransferResult> timeoutNowFuture;
+  private MemberId timeoutNowTarget;
+  private int timeoutNowAttempts;
+  private boolean steppedDownDuringTransfer;
+  private Consumer<RaftMember> transferLeaderListener;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -437,6 +449,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
+    if (timeoutNowFuture != null) {
+      log.debug(
+          "Stepping down during TimeoutNow transfer to {}; awaiting the new leader",
+          timeoutNowTarget);
+      steppedDownDuringTransfer = true;
+      if (timeoutNowRetryTimer != null) {
+        timeoutNowRetryTimer.cancel();
+        timeoutNowRetryTimer = null;
+      }
+    }
     if (catchUpFuture != null) {
       log.debug("Lost leadership while catching up the desired leader; reporting LEADER_CHANGED");
       completeCatchUp(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
@@ -686,6 +708,179 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     catchUpFuture = null;
   }
 
+  /**
+   * Promotes {@code target} by sending it TimeoutNow, resending every {@code heartbeatInterval}
+   * until leadership actually moves or {@code maxTransferAttempts} sends are spent. The number of
+   * TimeoutNow messages is strictly count-bounded by {@code maxTransferAttempts}. Completes with
+   * {@link LeadershipTransferResult#TRANSFERRED} only once the <em>selected</em> {@code target} is
+   * observed to have become leader; if a different node wins instead, or leadership otherwise moves
+   * away, {@link LeadershipTransferResult#LEADER_CHANGED}; and {@link
+   * LeadershipTransferResult#TRANSFER_FAILED} if leadership does not move while this node stays
+   * leader for the whole attempt budget. Must run on the Raft thread.
+   */
+  public CompletableFuture<LeadershipTransferResult> promoteDesiredLeader(final MemberId target) {
+    raft.checkThread();
+    if (timeoutNowFuture != null) {
+      return CompletableFuture.completedFuture(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    }
+    if (!raft.getCluster().isMember(target)) {
+      return CompletableFuture.completedFuture(LeadershipTransferResult.OFFLINE);
+    }
+
+    timeoutNowTarget = target;
+    timeoutNowAttempts = 0;
+    steppedDownDuringTransfer = false;
+    timeoutNowFuture = new CompletableFuture<>();
+    // Success requires the selected target to actually win. Observe leadership changes so a genuine
+    // transfer to the target is told apart from another node campaigning and winning instead.
+    transferLeaderListener = this::onLeaderObservedDuringTransfer;
+    raft.addLeaderElectionListener(transferLeaderListener);
+
+    // Backstop covering the whole attempt: the send budget plus enough time to observe the new
+    // leader after stepping down. Guarantees the caller is never left waiting.
+    final Duration deadline =
+        raft.getHeartbeatInterval()
+            .multipliedBy(raft.getRebalanceMaxTransferAttempts())
+            .plus(raft.getElectionTimeout().multipliedBy(2));
+    log.info(
+        "Starting TimeoutNow leadership transfer to {} (up to {} attempts, resending every {})",
+        target,
+        raft.getRebalanceMaxTransferAttempts(),
+        raft.getHeartbeatInterval());
+    promotionDeadline = raft.getThreadContext().schedule(deadline, this::onPromotionDeadline);
+
+    attemptTimeoutNow();
+    return timeoutNowFuture;
+  }
+
+  /**
+   * Sends the next TimeoutNow while this node is still the leader and the attempt budget is not
+   * spent, rescheduling itself from the previous attempt so the number of sends is strictly
+   * count-bounded. Once leadership actually moves the election listener owns the result.
+   *
+   * <p>Membership is rechecked on every attempt, not only before the first send: the target can be
+   * removed from the partition after catch-up completes but before it is promoted, and each retry
+   * is the next point on the Raft thread where that removal is visible.
+   */
+  private void attemptTimeoutNow() {
+    raft.checkThread();
+    if (timeoutNowFuture == null || !isRunning()) {
+      // Resolved already, or we stepped down: the listener / promotion deadline owns completion.
+      return;
+    }
+    if (!raft.getCluster().isMember(timeoutNowTarget)) {
+      log.info(
+          "Selected leader {} is no longer a member of the partition; abandoning the transfer",
+          timeoutNowTarget);
+      completeTransfer(LeadershipTransferResult.OFFLINE);
+      return;
+    }
+    if (timeoutNowAttempts >= raft.getRebalanceMaxTransferAttempts()) {
+      log.info(
+          "TimeoutNow transfer to {} did not move leadership within {} attempts while still "
+              + "leader; giving up",
+          timeoutNowTarget,
+          timeoutNowAttempts);
+      completeTransfer(LeadershipTransferResult.TRANSFER_FAILED);
+      return;
+    }
+    sendTimeoutNow();
+    timeoutNowRetryTimer =
+        raft.getThreadContext().schedule(raft.getHeartbeatInterval(), this::attemptTimeoutNow);
+  }
+
+  private void sendTimeoutNow() {
+    raft.checkThread();
+    timeoutNowAttempts++;
+    final var request =
+        TimeoutNowRequest.builder()
+            .withTerm(raft.getTerm())
+            .withLeader(raft.getCluster().getLocalMember().memberId())
+            .build();
+    log.debug("Sending TimeoutNow to {} (attempt {})", timeoutNowTarget, timeoutNowAttempts);
+    // The RPC ack is only for tracing: the authoritative success signal is the term advancing
+    // (i.e. losing leadership), so a lost or failed ack simply falls through to the next attempt.
+    raft.getProtocol()
+        .timeoutNow(timeoutNowTarget, request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                log.trace(
+                    "TimeoutNow to {} failed, will retry if budget remains",
+                    timeoutNowTarget,
+                    error);
+              } else {
+                log.trace("TimeoutNow to {} acknowledged: {}", timeoutNowTarget, response);
+              }
+            },
+            raft.getThreadContext());
+  }
+
+  /** Resolves the transfer result once leadership is observed to move to another node. */
+  private void onLeaderObservedDuringTransfer(final RaftMember newLeader) {
+    raft.checkThread();
+    if (timeoutNowFuture == null) {
+      return;
+    }
+    final var localMember = raft.getCluster().getLocalMember().memberId();
+    if (newLeader.memberId().equals(localMember)) {
+      // We are the leader. If we have not stepped down yet, keep waiting; if we were re-elected
+      // after stepping down, the transfer did not take, so leadership effectively changed.
+      if (steppedDownDuringTransfer) {
+        completeTransfer(LeadershipTransferResult.LEADER_CHANGED);
+      }
+      return;
+    }
+    completeTransfer(
+        newLeader.memberId().equals(timeoutNowTarget)
+            ? LeadershipTransferResult.TRANSFERRED
+            : LeadershipTransferResult.LEADER_CHANGED);
+  }
+
+  private void onPromotionDeadline() {
+    raft.checkThread();
+    if (timeoutNowFuture == null) {
+      return;
+    }
+    // We stepped down (else attemptTimeoutNow would already have given up) but never observed a new
+    // leader within the window: leadership left this node, but the target's win is unconfirmed.
+    log.info(
+        "No new leader observed after stepping down for the transfer to {}; reporting a leadership "
+            + "change",
+        timeoutNowTarget);
+    completeTransfer(
+        steppedDownDuringTransfer
+            ? LeadershipTransferResult.LEADER_CHANGED
+            : LeadershipTransferResult.TRANSFER_FAILED);
+  }
+
+  private void completeTransfer(final LeadershipTransferResult result) {
+    final var future = timeoutNowFuture;
+    cancelTimeoutNow();
+    if (future != null) {
+      future.complete(result);
+    }
+  }
+
+  private void cancelTimeoutNow() {
+    if (timeoutNowRetryTimer != null) {
+      timeoutNowRetryTimer.cancel();
+      timeoutNowRetryTimer = null;
+    }
+    if (promotionDeadline != null) {
+      promotionDeadline.cancel();
+      promotionDeadline = null;
+    }
+    if (transferLeaderListener != null) {
+      raft.removeLeaderElectionListener(transferLeaderListener);
+      transferLeaderListener = null;
+    }
+    timeoutNowFuture = null;
+    timeoutNowTarget = null;
+    timeoutNowAttempts = 0;
+    steppedDownDuringTransfer = false;
+  }
+
   private void runCoordinatedTransfer(final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
     final long startMs = System.currentTimeMillis();
@@ -711,13 +906,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                         if (catchUpResult.isPresent()) {
                           finishCoordinatedTransfer(
                               coordinator, desiredLeader, catchUpResult.get(), startMs);
-                          return;
+                        } else {
+                          promoteDesiredLeader(desiredLeader)
+                              .whenComplete(
+                                  (promoteResult, e2) ->
+                                      finishCoordinatedTransfer(
+                                          coordinator, desiredLeader, promoteResult, startMs));
                         }
-                        // The desired leader is caught up. We don't yet implement the actual
-                        // transfer, so just resume.
-                        log.info(
-                            "Desired leader {} caught up to index {}", desiredLeader, targetIndex);
-                        resumeForCoordinatedTransfer();
                       });
             },
             raft.getThreadContext());
