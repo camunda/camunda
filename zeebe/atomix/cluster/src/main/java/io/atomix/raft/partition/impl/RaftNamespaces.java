@@ -17,6 +17,7 @@
 package io.atomix.raft.partition.impl;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.cluster.RaftMember;
@@ -31,6 +32,10 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
+import io.atomix.raft.protocol.LeadershipTransferResultRequest;
+import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
@@ -102,6 +107,11 @@ public final class RaftNamespaces {
           .register(ForceConfigureResponse.class)
           .register(TimeoutNowRequest.class)
           .register(TimeoutNowResponse.class)
+          .register(LeadershipTransferInitiateRequest.class)
+          .register(LeadershipTransferInitiateResponse.class)
+          .register(LeadershipTransferResultRequest.class)
+          .register(LeadershipTransferResultResponse.class)
+          .register(LeadershipTransferResult.class)
           .name("RaftProtocol")
           .build();
 
