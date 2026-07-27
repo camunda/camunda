@@ -214,6 +214,30 @@ jobs:
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
+      # Capture the Camunda container and Elasticsearch state after the tests
+      # run, regardless of outcome. The nightly failures show v2 search/get
+      # returning empty/404 for freshly-written data; these logs plus the ES
+      # index doc counts show whether the CamundaExporter actually wrote to ES.
+      - name: Capture Camunda and Elasticsearch logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p container-logs
+          docker compose logs --no-color --timestamps camunda \
+            > container-logs/camunda.log 2>&1 || true
+          docker compose logs --no-color --timestamps elasticsearch \
+            > container-logs/elasticsearch.log 2>&1 || true
+          docker ps -a > container-logs/docker-ps.txt 2>&1 || true
+          {
+            echo "### _cluster/health"
+            curl -s 'http://localhost:9200/_cluster/health?pretty' || true
+            echo "### _cat/indices"
+            curl -s 'http://localhost:9200/_cat/indices?v&s=index' || true
+            echo "### doc counts for definition/instance indices"
+            curl -s 'http://localhost:9200/*process-definition*,*process-instance*/_count?pretty' || true
+          } > container-logs/elasticsearch-state.txt 2>&1 || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Publish test results to TestRail
         if: always()
         shell: bash
@@ -262,6 +286,15 @@ jobs:
           name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
           if-no-files-found: ignore
+          retention-days: 5
+
+      - name: Upload container logs to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
+          if-no-files-found: warn
           retention-days: 5
 
       - name: Observe build status
