@@ -82,6 +82,7 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -675,34 +676,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Ensures everything written to the log until this point, is flushed to disk. If default raft
-   * flush is enabled, then this will not flush because the logs are flushed when necessary to
-   * achieve expected consistency guarantees.
+   * Ensures everything written to the log until this point is flushed to disk, regardless of the
+   * configured flush strategy. This is mainly used to guarantee that the log is durable before a
+   * snapshot is persisted and the log is compacted: for flush strategies which acknowledge before
+   * durability, this bounds the data loss on a crash to records written after the snapshot.
    *
-   * @return a future to be completed once the log is flushed to disk
+   * @return a future to be completed once the log is actually flushed to disk
    */
   public CompletableFuture<Void> flushLog() {
-    // If flush operations are synchronous on the Raft thread, then the log is guaranteed to be
-    // flushed by before committing. Hence, there is no need to flush them again here. This is an
-    // optimization to ensure we are not unnecessarily blocking raft thread to do an i/o.
-    if (raftLog.flushesDirectly()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var flushed = new CompletableFuture<Void>();
-    threadContext.execute(
-        () ->
-            raftLog
-                .flush(raftLog.getLastIndex())
-                .whenComplete(
-                    (ignored, error) -> {
-                      if (error != null) {
-                        flushed.completeExceptionally(error);
-                      } else {
-                        flushed.complete(null);
-                      }
-                    }));
-    return flushed;
+    return CompletableFuture.runAsync(
+        CheckedRunnable.toUnchecked(raftLog::forceFlush), threadContext);
   }
 
   /**

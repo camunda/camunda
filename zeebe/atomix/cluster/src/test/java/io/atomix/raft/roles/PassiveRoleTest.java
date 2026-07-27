@@ -72,7 +72,6 @@ public class PassiveRoleTest {
     ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
-    when(log.flushesDirectly()).thenReturn(true);
     when(log.flush(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
     when(ctx.getLog()).thenReturn(log);
 

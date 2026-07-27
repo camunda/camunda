@@ -66,15 +66,6 @@ public interface RaftLogFlusher extends CloseableSilently {
    */
   void onLogTruncation(long newLastIndex);
 
-  /**
-   * If this returns true, then any calls to {@link #flush(Journal, long)} are synchronous and
-   * immediate, and any guarantees offered by the implementation will hold after a call to {@link
-   * #flush(Journal, long)}.
-   */
-  default boolean isDirect() {
-    return false;
-  }
-
   @Override
   default void close() {}
 
@@ -117,11 +108,6 @@ public interface RaftLogFlusher extends CloseableSilently {
     @Override
     public void onLogTruncation(final long newLastIndex) {
       // nothing to do - flushes are synchronous, so there are never pending flush results
-    }
-
-    @Override
-    public boolean isDirect() {
-      return true;
     }
   }
 
