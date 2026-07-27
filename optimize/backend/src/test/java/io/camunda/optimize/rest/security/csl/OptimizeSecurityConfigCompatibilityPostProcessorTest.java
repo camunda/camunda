@@ -122,7 +122,9 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
     assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("cloud-secret");
     assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("https://weblogin.example.com/");
-    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
+    // Auth0 mode bridges no audience: the id_token only carries the client id, so SaaS relies on
+    // the org/cluster claim validators rather than a resource-audience gate.
+    assertThat(env.getProperty(OIDC + "audiences")).isNull();
     assertThat(env.getProperty(OIDC + "organization-id")).isEqualTo("org-42");
     assertThat(env.getProperty(OIDC + "redirect-uri"))
         .isEqualTo("{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=cluster-7");
@@ -194,18 +196,19 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldBridgeOnlyClientAudienceInAuth0ModeIgnoringPublicApiAudience() {
+  void shouldNotBridgeAnyAudienceInAuth0Mode() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
-    // The public-API audience is a CCSM-only key; legacy cloud never validated it, so it must not
-    // leak into the audience set in Auth0 mode.
     legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
 
-    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
+    // Camunda's Auth0 id_token only carries the client id as its audience, so a resource-audience
+    // gate would reject every login. SaaS trust comes from the org/cluster claim validators
+    // instead, so the bridge leaves audiences unset in Auth0 mode.
+    assertThat(env.getProperty(OIDC + "audiences")).isNull();
   }
 
   @Test
