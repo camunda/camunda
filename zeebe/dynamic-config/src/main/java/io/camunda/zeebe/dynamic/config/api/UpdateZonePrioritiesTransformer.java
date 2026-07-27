@@ -13,13 +13,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Re-orders the Raft leader-election priorities of a fully zone-aware cluster. The existing set of
@@ -32,10 +31,10 @@ import java.util.stream.IntStream;
  */
 public final class UpdateZonePrioritiesTransformer implements ConfigurationChangeRequest {
 
-  private final List<String> zoneOrder;
+  private final List<String> sortedZoneNames;
 
-  public UpdateZonePrioritiesTransformer(final List<String> zoneOrder) {
-    this.zoneOrder = List.copyOf(zoneOrder);
+  public UpdateZonePrioritiesTransformer(final List<String> sortedZoneNames) {
+    this.sortedZoneNames = List.copyOf(sortedZoneNames);
   }
 
   @Override
@@ -60,10 +59,10 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
     final var currentZones = zoneAwareConfig.zones();
     final var currentNames = currentZones.stream().map(ZoneSpec::name).collect(Collectors.toSet());
 
-    final var requestedSet = new HashSet<>(zoneOrder);
-    if (requestedSet.size() != zoneOrder.size()) {
+    final var requestedSet = new HashSet<>(sortedZoneNames);
+    if (CollectionUtil.containsDuplicates(sortedZoneNames)) {
       return Either.left(
-          new InvalidRequest("Zone priority request contains duplicate zones: " + zoneOrder));
+          new InvalidRequest("Zone priority request contains duplicate zones: " + sortedZoneNames));
     }
     if (!requestedSet.equals(currentNames)) {
       return Either.left(
@@ -71,7 +70,7 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
               "Zone priority request must list exactly the configured zones "
                   + currentNames
                   + ", but got "
-                  + zoneOrder
+                  + sortedZoneNames
                   + "."));
     }
 
@@ -80,12 +79,14 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
     final var descendingPriorities =
         currentZones.stream().map(ZoneSpec::priority).sorted(Comparator.reverseOrder()).toList();
 
-    final Map<String, ZoneSpec> byName =
-        currentZones.stream().collect(Collectors.toMap(ZoneSpec::name, z -> z));
+    final var sortedZones =
+        sortedZoneNames.stream()
+            .flatMap(name -> currentZones.stream().filter(z -> z.name().equals(name)))
+            .toList();
 
     final var reprioritized =
-        IntStream.range(0, zoneOrder.size())
-            .mapToObj(i -> byName.get(zoneOrder.get(i)).withPriority(descendingPriorities.get(i)))
+        CollectionUtil.zipAsStream(descendingPriorities, sortedZones)
+            .map(t -> t.getRight().withPriority(t.getLeft()))
             .toList();
 
     final var newConfig = new ZoneAwareConfig(reprioritized);
