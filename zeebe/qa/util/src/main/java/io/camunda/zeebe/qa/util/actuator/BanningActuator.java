@@ -44,4 +44,13 @@ public interface BanningActuator {
   @RequestLine("POST /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void ban(@Param final long id);
+
+  /**
+   * Bans the given process instance key on the given physical tenant's partition group.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /{id}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void ban(@Param final long id, @Param final String physicalTenant);
 }

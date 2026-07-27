@@ -76,6 +76,9 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                           .map(brokerStartupContext::getJobStreamService)
                           .filter(Objects::nonNull)
                           .toList());
+          brokerStartupContext
+              .getSpringBrokerBridge()
+              .registerJobStreamServiceByTenantLookup(brokerStartupContext::getJobStreamService);
           startupFuture.complete(brokerStartupContext);
         });
   }
