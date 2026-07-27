@@ -111,10 +111,6 @@ public final class RaftLog implements Closeable {
     commitIndex = index;
   }
 
-  public boolean flushesDirectly() {
-    return flusher.isDirect();
-  }
-
   public long getFirstIndex() {
     return journal.getFirstIndex();
   }
