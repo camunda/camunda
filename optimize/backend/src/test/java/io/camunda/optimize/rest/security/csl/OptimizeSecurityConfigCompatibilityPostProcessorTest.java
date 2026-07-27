@@ -194,16 +194,18 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldMergeAuth0LoginAndPublicApiAudiences() {
+  void shouldBridgeOnlyClientAudienceInAuth0ModeIgnoringPublicApiAudience() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
+    // The public-API audience is a CCSM-only key; legacy cloud never validated it, so it must not
+    // leak into the audience set in Auth0 mode.
     legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
 
-    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,optimize-public-api");
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
   }
 
   @Test

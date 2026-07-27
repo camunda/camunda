@@ -216,20 +216,25 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         OIDC_PREFIX + "jwk-set-uri");
   }
 
-  // CSL has one Set-valued audiences property. Optimize feeds it from a login audience (CCSM
-  // identity, or the Auth0 client audience in cloud - mutually exclusive) and the public-API
-  // audience, which can both be set. Both must survive, so collect every present source into one
-  // comma-joined value that Spring binds to the Set; the old per-key putIfAbsent kept only the
-  // first.
+  // CSL has one Set-valued audiences property, so we collect every legacy audience source that
+  // applies to the active mode into one comma-joined value that Spring binds to the Set; the old
+  // per-key putIfAbsent kept only the first and silently dropped the rest.
+  //
+  // CCSM validated two distinct audiences on two paths: the identity audience on the login/session
+  // token and the public-API audience on the bearer path. Both must survive here.
+  //
+  // CCSaaS/Auth0 only ever validated the client audience (on the public-API path; the login
+  // id_token was not audience-checked). The public-API audience is a CCSM-only key, so we do not
+  // feed it in Auth0 mode - doing so would accept an audience legacy cloud never honoured.
   private void bridgeAudiences(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     final Set<String> audiences = new LinkedHashSet<>();
-    final String loginAudienceKey =
-        isAuth0Configured(env)
-            ? "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE"
-            : "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE";
-    addAudience(env, audiences, loginAudienceKey);
-    addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
+    if (isAuth0Configured(env)) {
+      addAudience(env, audiences, "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE");
+    } else {
+      addAudience(env, audiences, "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE");
+      addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
+    }
     if (!audiences.isEmpty()) {
       derived.putIfAbsent(OIDC_PREFIX + "audiences", String.join(",", audiences));
     }
