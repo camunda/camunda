@@ -74,24 +74,8 @@ paths:
         mode returns the cluster to normal processing. Returns the planned cluster change so its
         progress can be monitored via the topology.
       parameters:
-        - name: mode
-          in: query
-          required: true
-          description: The target cluster mode.
-          schema:
-            type: string
-            enum:
-              - PROCESSING
-              - RECOVERING
-        - name: dryRun
-          in: query
-          required: false
-          description: >-
-            If true, the requested change is only validated and the resulting plan is returned,
-            without applying it to the cluster.
-          schema:
-            type: boolean
-            default: false
+        - $ref: '#/components/parameters/ModeParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         "200":
           description: The mode change request was accepted; returns the planned cluster changes.
@@ -149,7 +133,33 @@ paths:
 ## Schema definitions
 
 components:
+  parameters:
+    ModeParameter:
+      name: mode
+      in: query
+      required: true
+      description: The target cluster mode.
+      schema:
+        $ref: '#/components/schemas/Mode'
+    DryRunParameter:
+      name: dryRun
+      in: query
+      required: false
+      description: >-
+        If true, the requested change is only validated and the resulting plan is returned,
+        without applying it to the cluster.
+      schema:
+        type: boolean
+        default: false
+
   schemas:
+    Mode:
+      description: The operating mode of a cluster's partitions.
+      type: string
+      enum:
+        - PROCESSING
+        - RECOVERING
+
     TopologyResponse:
       description: The response of a topology request.
       type: object

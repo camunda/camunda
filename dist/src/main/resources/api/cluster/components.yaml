@@ -569,6 +569,14 @@ schemas:
       - LEAVING
       - RECOVERING
 
+  Mode:
+    title: Mode
+    description: The operating mode of a cluster's partitions
+    type: string
+    enum:
+      - PROCESSING
+      - RECOVERING
+
   TopologyVersion:
     title: TopologyVersion
     description: The version of the topology
