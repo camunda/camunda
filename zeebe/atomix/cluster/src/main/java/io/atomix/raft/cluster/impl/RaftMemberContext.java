@@ -197,6 +197,11 @@ public final class RaftMemberContext {
     appendSucceeded(true);
   }
 
+  /** Whether an append has been successfully replicated to this member during this term. */
+  public boolean hasAckedAppend() {
+    return appendSucceeded;
+  }
+
   /**
    * Sets whether the last append to the member succeeded.
    *

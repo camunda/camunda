@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
@@ -67,6 +68,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -89,6 +91,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private long transferPauseStartMs;
   private long transferPauseTargetIndex;
   private Scheduled transferPauseWatchdog;
+  private boolean transferInProgress;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -516,6 +519,73 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .observePauseDuration(
               Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
+    transferInProgress = false;
+  }
+
+  /**
+   * Evaluates whether we should accept a leadership transfer for {@code desiredLeader} on behalf of
+   * {@code coordinator}. Returns the skip reason if any check fails, or empty if the transfer may
+   * proceed.
+   *
+   * @param desiredLeader the desired leader
+   * @param coordinator the node that requested the transfer
+   * @param coordinatorConfigVersion the configuration version the coordinator based its request on
+   */
+  public Optional<LeadershipTransferResult> precheckTransfer(
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long coordinatorConfigVersion) {
+    raft.checkThread();
+    final var localMember = raft.getCluster().getLocalMember().memberId();
+
+    if (desiredLeader.equals(localMember)) {
+      return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
+    }
+    if (transferInProgress) {
+      return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    }
+    if (!isCurrentCoordinator(coordinator, coordinatorConfigVersion)) {
+      return Optional.of(LeadershipTransferResult.INVALID_COORDINATOR);
+    }
+    // A configuration entry would move the frozen log head the desired leader has to catch up to,
+    // so a transfer cannot start while one is in flight. We also check this again once paused.
+    if (configuring() || jointConsensus()) {
+      return Optional.of(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
+    }
+    final var desiredContext = raft.getCluster().getMemberContext(desiredLeader);
+    if (desiredContext == null
+        || !raft.getCluster().isMember(desiredLeader)
+        || !desiredContext.hasAckedAppend()
+        || desiredContext.getFailureCount() > 0) {
+      return Optional.of(LeadershipTransferResult.OFFLINE);
+    }
+    // Point-in-time lag sample: the threshold should be tuned so a passing desired leader reliably
+    // catches up within replicationTimeout once the pause begins.
+    if (desiredContext.getReplicationLagBytes() > raft.getRebalanceReplicationLagThreshold()) {
+      return Optional.of(LeadershipTransferResult.LAG_TOO_HIGH);
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * The coordinator is the lowest-id member of the leader's committed configuration. A request from
+   * any other member, or one carrying a configuration version older than the leader's, is rejected
+   * so a stale or non-coordinator node cannot request a transfer.
+   */
+  private boolean isCurrentCoordinator(
+      final MemberId coordinator, final long coordinatorConfigVersion) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration == null) {
+      return false;
+    }
+    if (coordinatorConfigVersion < configuration.index()) {
+      return false;
+    }
+    return configuration.newMembers().stream()
+        .map(RaftMember::memberId)
+        .min(MemberId.ID_COMPARATOR)
+        .map(coordinator::equals)
+        .orElse(false);
   }
 
   /** Ensures the local server is not the leader. */
