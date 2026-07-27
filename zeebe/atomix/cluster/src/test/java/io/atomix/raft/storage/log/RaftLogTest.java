@@ -17,6 +17,7 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -297,6 +298,23 @@ class RaftLogTest {
       final var log = new RaftLog(journal, flusher);
 
       // when - then
+      assertThatThrownBy(() -> log.flushSync(3L)).isSameAs(failure);
+    }
+
+    @Test
+    void shouldFailFlushResultOnUnexpectedException() throws CheckedJournalException {
+      // given - a failure outside the expected journal exceptions, e.g. from the metastore
+      final var journal = mock(Journal.class);
+      final var log = new RaftLog(journal, new DirectFlusher());
+      final var failure = new IllegalStateException("unexpected");
+      doThrow(failure).when(journal).flush();
+
+      // when
+      final var result = log.flush(3L);
+
+      // then - the failure is reported through the result instead of thrown, so that callers
+      // reject the append or step down instead of crashing the raft thread
+      assertThat(result).isCompletedExceptionally();
       assertThatThrownBy(() -> log.flushSync(3L)).isSameAs(failure);
     }
 
