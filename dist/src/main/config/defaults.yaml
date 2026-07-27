@@ -1312,6 +1312,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # invalid BPMN or DMN resource.
         results-output-max-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
 
+      storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals
+        # Controls whether the archiverless mode is enabled.
+        enable-archiverless: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
+        # Override default storage ordinal key with fixed value, mainly used during initial testing
+        fixed-storage-ordinal-key: -1 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINALKEY
+
     flow-control: # Type: io.camunda.configuration.FlowControl
       request: # Type: io.camunda.configuration.Limit
         aimd: # Type: io.camunda.configuration.Aimd
