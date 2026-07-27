@@ -133,7 +133,7 @@ public final class ZeebeRocksDbFactory<
             .setAvoidFlushDuringRecovery(true)
             // limit the size of the manifest (logs all operations), otherwise it will grow
             // unbounded
-            .setMaxManifestFileSize(256 * 1024 * 1024L)
+            .setMaxManifestFileSize(32 * 1024 * 1024L)
             // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
