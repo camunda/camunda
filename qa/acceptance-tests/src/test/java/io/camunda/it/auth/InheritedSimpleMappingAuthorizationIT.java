@@ -7,12 +7,10 @@
  */
 package io.camunda.it.auth;
 
-import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -21,6 +19,7 @@ import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
+import io.camunda.qa.util.multidb.CamundaClientTestFactory;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -28,13 +27,11 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -51,8 +48,8 @@ public class InheritedSimpleMappingAuthorizationIT {
           .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
           .withSecurityConfig(c -> c.getAuthentication().getOidc().setUsernameClaim("no_username"));
 
-  // Injected by the MultiDbTest extension
-  private static KeycloakContainer keycloak;
+  // Injected by the MultiDbTest extension; physical-tenant-aware, unlike BROKER.newClientBuilder()
+  private static CamundaClientTestFactory clientFactory;
 
   @ClientDefinition
   private static final TestClient CLIENT_THROUGH_AUTHORIZED_GROUP = createTestClient();
@@ -133,96 +130,80 @@ public class InheritedSimpleMappingAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideAuthorizedClients")
-  void shouldBeAuthorizedToDeploy(final TestClient testClient, @TempDir final Path tempDir) {
+  void shouldBeAuthorizedToDeploy(final TestClient testClient) {
     // given
-    try (final CamundaClient client = createClient(testClient.clientId(), tempDir)) {
+    final CamundaClient client = createClient(testClient.clientId());
 
-      // then
-      Assertions.assertThatNoException()
-          .isThrownBy(
-              () ->
-                  client
-                      .newDeployResourceCommand()
-                      .addProcessModel(
-                          Bpmn.createExecutableProcess().startEvent().endEvent().done(),
-                          "process.bpmn")
-                      .send()
-                      .join());
-    }
+    // then
+    Assertions.assertThatNoException()
+        .isThrownBy(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess().startEvent().endEvent().done(),
+                        "process.bpmn")
+                    .send()
+                    .join());
   }
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedClients")
-  void shouldBeUnauthorizedToDeploy(final TestClient testClient, @TempDir final Path tempDir) {
+  void shouldBeUnauthorizedToDeploy(final TestClient testClient) {
     // given
-    try (final CamundaClient client = createClient(testClient.clientId(), tempDir)) {
+    final CamundaClient client = createClient(testClient.clientId());
 
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  client
-                      .newDeployResourceCommand()
-                      .addProcessModel(
-                          Bpmn.createExecutableProcess().startEvent().endEvent().done(),
-                          "process.bpmn")
-                      .send()
-                      .join())
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("403: 'Forbidden'");
-    }
+    // then
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess().startEvent().endEvent().done(),
+                        "process.bpmn")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @ParameterizedTest
   @MethodSource("provideAuthorizedClients")
-  void shouldBeAuthorizedToRead(final TestClient testClient, @TempDir final Path tempDir) {
+  void shouldBeAuthorizedToRead(final TestClient testClient) {
     // given
-    try (final CamundaClient client = createClient(testClient.clientId(), tempDir)) {
+    final CamundaClient client = createClient(testClient.clientId());
 
-      // then
-      Assertions.assertThatNoException()
-          .isThrownBy(
-              () ->
-                  client
-                      .newGroupGetRequest(
-                          UNAUTHORIZED_GROUP.id()) /* Attempt to read a random group we've */
-                      .send()
-                      .join());
-    }
+    // then
+    Assertions.assertThatNoException()
+        .isThrownBy(
+            () ->
+                client
+                    .newGroupGetRequest(
+                        UNAUTHORIZED_GROUP.id()) /* Attempt to read a random group we've */
+                    .send()
+                    .join());
   }
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedClients")
-  void shouldBeUnauthorizedToRead(final TestClient testClient, @TempDir final Path tempDir) {
+  void shouldBeUnauthorizedToRead(final TestClient testClient) {
     // given
-    try (final CamundaClient client = createClient(testClient.clientId(), tempDir)) {
+    final CamundaClient client = createClient(testClient.clientId());
 
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  client
-                      .newGroupGetRequest(
-                          UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've
-                      .send()
-                      .join())
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("403: 'Forbidden'");
-    }
+    // then
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newGroupGetRequest(
+                        UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
-  private CamundaClient createClient(final String id, final Path tempDir) {
-    return BROKER
-        .newClientBuilder()
-        .preferRestOverGrpc(true)
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(id)
-                .clientSecret(id)
-                .audience("zeebe")
-                .authorizationServerUrl(
-                    keycloak.getAuthServerUrl() + "/realms/camunda/protocol/openid-connect/token")
-                .credentialsCachePath(tempDir.resolve("default").toString())
-                .build())
-        .build();
+  private CamundaClient createClient(final String id) {
+    return clientFactory.getCamundaClient(id);
   }
 
   private static Stream<Named<TestClient>> provideAuthorizedClients() {

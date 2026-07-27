@@ -983,6 +983,7 @@ public class CamundaMultiDBExtension
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
     injectStaticDatabaseTypeField(testClass, context);
+    injectStaticClientTestFactoryField(testClass);
   }
 
   private KeycloakContainer setupKeycloak() {
@@ -1215,6 +1216,32 @@ public class CamundaMultiDBExtension
             field.set(null, keycloakContainer);
           } else {
             fail("Keycloak container field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
+  /**
+   * Injects the physical-tenant-aware client factory so tests that need a {@link CamundaClient} for
+   * a runtime-determined identity (e.g. a {@code TestClient} coming from a parameterized
+   * {@code @MethodSource}, rather than a compile-time constant usable with {@link Authenticated})
+   * can look it up via {@link CamundaClientTestFactory#getCamundaClient(String)} instead of
+   * building their own client. A client built directly from the test application (e.g. via {@code
+   * BROKER.newClientBuilder()}) bypasses physical-tenant scoping and ends up talking to the
+   * "default" physical tenant instead of the one the test was set up under.
+   */
+  private void injectStaticClientTestFactoryField(final Class<?> testClass) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == CamundaClientTestFactory.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, authenticatedClientFactory);
+          } else {
+            fail("CamundaClientTestFactory field couldn't be injected. Make sure it is static.");
           }
         }
       } catch (final Exception ex) {

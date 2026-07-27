@@ -11,7 +11,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
@@ -20,6 +19,7 @@ import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaClientTestFactory;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -40,6 +40,9 @@ public class InheritedBasicAuthAuthorizationIT {
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  // Injected by the MultiDbTest extension; physical-tenant-aware, unlike BROKER.newClientBuilder()
+  private static CamundaClientTestFactory clientFactory;
 
   @UserDefinition
   private static final TestUser USER_THROUGH_AUTHORIZED_GROUP =
@@ -127,90 +130,78 @@ public class InheritedBasicAuthAuthorizationIT {
   @MethodSource("provideAuthorizedUsers")
   void shouldBeAuthorizedToDeploy(final TestUser user) {
     // given
-    try (final CamundaClient client = createClient(user)) {
+    final CamundaClient client = createClient(user);
 
-      // then
-      Assertions.assertThatNoException()
-          .isThrownBy(
-              () ->
-                  client
-                      .newDeployResourceCommand()
-                      .addProcessModel(
-                          Bpmn.createExecutableProcess().startEvent().endEvent().done(),
-                          "process.bpmn")
-                      .send()
-                      .join());
-    }
+    // then
+    Assertions.assertThatNoException()
+        .isThrownBy(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess().startEvent().endEvent().done(),
+                        "process.bpmn")
+                    .send()
+                    .join());
   }
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedUsers")
   void shouldBeUnauthorizedToDeploy(final TestUser user) {
     // given
-    try (final CamundaClient client = createClient(user)) {
+    final CamundaClient client = createClient(user);
 
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  client
-                      .newDeployResourceCommand()
-                      .addProcessModel(
-                          Bpmn.createExecutableProcess().startEvent().endEvent().done(),
-                          "process.bpmn")
-                      .send()
-                      .join())
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("403: 'Forbidden'");
-    }
+    // then
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess().startEvent().endEvent().done(),
+                        "process.bpmn")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @ParameterizedTest
   @MethodSource("provideAuthorizedUsers")
   void shouldBeAuthorizedToRead(final TestUser user) {
     // given
-    try (final CamundaClient client = createClient(user)) {
+    final CamundaClient client = createClient(user);
 
-      // then
-      Assertions.assertThatNoException()
-          .isThrownBy(
-              () ->
-                  client
-                      .newGroupGetRequest(
-                          UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
-                      .send()
-                      .join());
-    }
+    // then
+    Assertions.assertThatNoException()
+        .isThrownBy(
+            () ->
+                client
+                    .newGroupGetRequest(
+                        UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                    .send()
+                    .join());
   }
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedUsers")
   void shouldBeUnauthorizedToRead(final TestUser user) {
     // given
-    try (final CamundaClient client = createClient(user)) {
+    final CamundaClient client = createClient(user);
 
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  client
-                      .newGroupGetRequest(
-                          UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
-                      .send()
-                      .join())
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("403: 'Forbidden'");
-    }
+    // then
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newGroupGetRequest(
+                        UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   private static CamundaClient createClient(final TestUser user) {
-    return BROKER
-        .newClientBuilder()
-        .preferRestOverGrpc(true)
-        .credentialsProvider(
-            new BasicAuthCredentialsProviderBuilder()
-                .username(user.username())
-                .password(user.password())
-                .build())
-        .build();
+    return clientFactory.getCamundaClient(user.username());
   }
 
   private static Stream<Named<TestUser>> provideAuthorizedUsers() {
