@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
@@ -101,15 +102,39 @@ final class ClusterEndpointTest {
       final var endpoint = new ClusterEndpoint(sender);
       final var changeResponse =
           new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, false)))
+      when(sender.modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.RECOVERING, false)))
           .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
 
       // when
-      final var response = endpoint.updateMode(Mode.RECOVERING, false);
+      final var response =
+          endpoint.updateMode(Mode.RECOVERING, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
-      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, false));
+      verify(sender)
+          .modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.RECOVERING, false));
+    }
+
+    @Test
+    void shouldRequestModeChangeForGivenPhysicalTenant() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var changeResponse =
+          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
+      when(sender.modeChange(new ModeChangeRequest("tenant-a", Mode.RECOVERING, false)))
+          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
+
+      // when
+      final var response = endpoint.updateMode(Mode.RECOVERING, "tenant-a", false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender).modeChange(new ModeChangeRequest("tenant-a", Mode.RECOVERING, false));
     }
 
     @Test
@@ -119,15 +144,21 @@ final class ClusterEndpointTest {
       final var endpoint = new ClusterEndpoint(sender);
       final var changeResponse =
           new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.PROCESSING, false)))
+      when(sender.modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.PROCESSING, false)))
           .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
 
       // when
-      final var response = endpoint.updateMode(Mode.PROCESSING, false);
+      final var response =
+          endpoint.updateMode(Mode.PROCESSING, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
-      verify(sender).modeChange(new ModeChangeRequest(Mode.PROCESSING, false));
+      verify(sender)
+          .modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.PROCESSING, false));
     }
 
     @Test
@@ -137,14 +168,19 @@ final class ClusterEndpointTest {
       final var endpoint = new ClusterEndpoint(sender);
       final var changeResponse =
           new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, true)))
+      when(sender.modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.RECOVERING, true)))
           .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
 
       // when
-      endpoint.updateMode(Mode.RECOVERING, true);
+      endpoint.updateMode(Mode.RECOVERING, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, true);
 
       // then
-      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, true));
+      verify(sender)
+          .modeChange(
+              new ModeChangeRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Mode.RECOVERING, true));
     }
   }
 
