@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration;
 import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
+import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
@@ -182,6 +183,23 @@ public class ResourceAccessControllerConfigurationTest {
                     .containsOnlyKeys("tenanta", "tenantb");
                 assertThat(controllers.controllersByPhysicalTenant().values())
                     .allSatisfy(c -> assertThat(c).isInstanceOf(ResourceAccessController.class));
+              });
+    }
+
+    @Test
+    void shouldContainScopedResourceAccessProviderForEachPhysicalTenant() {
+      twoTenantRunner("elasticsearch")
+          .run(
+              context -> {
+                assertThat(context).hasSingleBean(PhysicalTenantResourceAccessProvider.class);
+                final var provider = context.getBean(PhysicalTenantResourceAccessProvider.class);
+                assertThat(provider.providersByPhysicalTenant())
+                    .containsOnlyKeys("tenanta", "tenantb");
+                // each tenant resolves to its own provider, absent tenants fall back to the default
+                assertThat(provider.withPhysicalTenant("tenanta"))
+                    .isSameAs(provider.providersByPhysicalTenant().get("tenanta"));
+                assertThat(provider.withPhysicalTenant("absent"))
+                    .isSameAs(provider.defaultProvider());
               });
     }
   }

@@ -13,6 +13,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.port.out.AuthorizedComponentsPort;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +23,10 @@ import org.springframework.stereotype.Service;
  * resource-access framework that holds that data still lives in OC; this adapter bridges the gap
  * until {@code ResourceAccessProvider} itself migrates.
  *
- * <p>Resolves {@code COMPONENT_ACCESS_AUTHORIZATION} via the host's {@link ResourceAccessProvider}
- * and renames the {@code identity} resource id to {@code admin} — a long-standing OC-side alias
- * preserved here so the {@code /v2/authentication/me} response shape does not change.
+ * <p>Resolves {@code COMPONENT_ACCESS_AUTHORIZATION} via the {@link ResourceAccessProvider} scoped
+ * to the request's physical tenant and renames the {@code identity} resource id to {@code admin} —
+ * a long-standing OC-side alias preserved here so the {@code /v2/authentication/me} response shape
+ * does not change.
  *
  * <p>{@code @ConditionalOnSecondaryStorageEnabled} matches the gate on the resource-access stack
  * itself: without secondary storage there is no authorization data to query.
@@ -33,17 +35,19 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageEnabled
 public final class AuthorizedComponentsAdapter implements AuthorizedComponentsPort {
 
-  private final ResourceAccessProvider resourceAccessProvider;
+  private final PhysicalTenantResourceAccessProvider resourceAccessProvider;
 
-  public AuthorizedComponentsAdapter(final ResourceAccessProvider resourceAccessProvider) {
+  public AuthorizedComponentsAdapter(
+      final PhysicalTenantResourceAccessProvider resourceAccessProvider) {
     this.resourceAccessProvider = resourceAccessProvider;
   }
 
   @Override
   public List<String> resolve(final CamundaAuthentication authentication) {
     final var componentAccess =
-        resourceAccessProvider.resolveResourceAccess(
-            authentication, COMPONENT_ACCESS_AUTHORIZATION);
+        resourceAccessProvider
+            .withPhysicalTenant(PhysicalTenantContext.currentOrNull())
+            .resolveResourceAccess(authentication, COMPONENT_ACCESS_AUTHORIZATION);
     if (!componentAccess.allowed()) {
       return List.of();
     }
