@@ -89,4 +89,23 @@ final class PhysicalTenantPartitionsActuatorIT {
                             .streamProcessorPhase())
                     .isEqualTo("PROCESSING"));
   }
+
+  @Test
+  void shouldReturnNodeScopedStatusForEveryPhysicalTenantWithoutParameter() {
+    // when - querying without a physicalTenant parameter on a node with more than one physical
+    // tenant, per ADR 003 D3 this is Node-scoped: every known physical tenant's status is
+    // returned, keyed by physical tenant ID (partition IDs alias across physical tenant groups, so
+    // a flat map could not represent all of them)
+    await("both physical tenants are reported without a physicalTenant parameter")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var statusByTenant = actuator.queryByTenant();
+              assertThat(statusByTenant)
+                  .containsOnlyKeys(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, TENANT_A);
+              assertThat(statusByTenant.get(PhysicalTenantsITHelper.DEFAULT_TENANT_ID))
+                  .containsKey(PARTITION_ID);
+              assertThat(statusByTenant.get(TENANT_A)).containsKey(PARTITION_ID);
+            });
+  }
 }

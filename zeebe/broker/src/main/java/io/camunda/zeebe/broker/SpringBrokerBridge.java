@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,6 +33,7 @@ public class SpringBrokerBridge {
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
   private Function<String, BrokerAdminService> adminServiceByTenantLookup;
+  private Supplier<Set<String>> adminServiceTenantIdsSupplier;
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
@@ -69,6 +71,21 @@ public class SpringBrokerBridge {
   public Optional<BrokerAdminService> getAdminService(final String physicalTenantId) {
     return Optional.ofNullable(adminServiceByTenantLookup)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /**
+   * Registers a supplier of every physical tenant ID that has a {@link BrokerAdminService}
+   * registered, so that node-level operations without an explicit {@code physicalTenant} can be
+   * applied across the whole node (all physical tenants) rather than defaulting to a single one.
+   */
+  public void registerBrokerAdminServiceTenantIdsSupplier(
+      final Supplier<Set<String>> adminServiceTenantIdsSupplier) {
+    this.adminServiceTenantIdsSupplier = adminServiceTenantIdsSupplier;
+  }
+
+  /** Returns every physical tenant ID that has a {@link BrokerAdminService} registered. */
+  public Set<String> getBrokerAdminServiceTenantIds() {
+    return Optional.ofNullable(adminServiceTenantIdsSupplier).map(Supplier::get).orElse(Set.of());
   }
 
   public void registerJobStreamClientSupplier(

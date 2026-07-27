@@ -88,6 +88,15 @@ public interface PartitionsActuator {
   @Headers("Accept: application/json")
   Map<Integer, PartitionStatus> query();
 
+  /**
+   * Same as {@link #query()}, but decodes the response as the Node-scoped (all physical tenants)
+   * shape returned when there is more than one known physical tenant on the node: a map keyed by
+   * physical tenant ID, whose values are the usual per-partition status map.
+   */
+  @RequestLine("GET")
+  @Headers("Accept: application/json")
+  Map<String, Map<Integer, PartitionStatus>> queryByTenant();
+
   @RequestLine("GET ?physicalTenant={physicalTenant}")
   @Headers("Accept: application/json")
   Map<Integer, PartitionStatus> query(@feign.Param final String physicalTenant);

@@ -66,6 +66,9 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
                     .getSpringBrokerBridge()
                     .registerBrokerAdminServiceByTenantLookup(
                         brokerStartupContext::getBrokerAdminService);
+                brokerStartupContext
+                    .getSpringBrokerBridge()
+                    .registerBrokerAdminServiceTenantIdsSupplier(() -> tenantIds);
 
                 startupFuture.complete(brokerStartupContext);
               },
