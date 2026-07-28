@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record GroupDbModel(
@@ -22,7 +23,7 @@ public record GroupDbModel(
 
   public GroupDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
-    members = members != null ? members : new ArrayList<>();
+    members = Objects.requireNonNullElse(members, new ArrayList<>());
   }
 
   // Matches groupResultMap's <constructor>, which omits members -- populated separately via the

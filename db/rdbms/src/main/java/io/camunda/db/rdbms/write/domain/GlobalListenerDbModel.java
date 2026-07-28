@@ -13,6 +13,7 @@ import io.camunda.util.GlobalListenerUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public record GlobalListenerDbModel(
     String id,
@@ -27,7 +28,7 @@ public record GlobalListenerDbModel(
 
   public GlobalListenerDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
-    eventTypes = eventTypes != null ? eventTypes : new ArrayList<>();
+    eventTypes = Objects.requireNonNullElse(eventTypes, new ArrayList<>());
   }
 
   // Matches searchResultMap's <constructor>, which omits eventTypes -- populated separately via

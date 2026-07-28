@@ -14,6 +14,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record BatchOperationDbModel(
@@ -34,7 +35,7 @@ public record BatchOperationDbModel(
 
   public BatchOperationDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
-    errors = errors != null ? errors : new ArrayList<>();
+    errors = Objects.requireNonNullElse(errors, new ArrayList<>());
   }
 
   // Matches BatchOperationResultMap's <constructor>, which omits errors -- populated separately

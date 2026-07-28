@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.util.ObjectBuilder;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -26,7 +27,7 @@ public record AuthorizationDbModel(
 
   public AuthorizationDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
-    permissionTypes = permissionTypes != null ? permissionTypes : new HashSet<>();
+    permissionTypes = Objects.requireNonNullElse(permissionTypes, new HashSet<>());
   }
 
   // Matches authorizationResultMap's <constructor>, which omits permissionTypes -- populated
