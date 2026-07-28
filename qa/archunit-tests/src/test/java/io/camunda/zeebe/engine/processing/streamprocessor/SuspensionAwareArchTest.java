@@ -26,20 +26,18 @@ import org.springframework.core.GenericTypeResolver;
 
 /**
  * Every {@link TypedRecordProcessor} whose command value type implements {@link
- * ProcessInstanceRelated} is gated by the primary suspension gate in {@code Engine.process} (see
- * #57521). Such a processor must either:
+ * ProcessInstanceRelated} is gated by the primary suspension gate in {@code Engine.process}. Such a
+ * processor must either:
  *
  * <ul>
- *   <li>explicitly declare its suspension behavior by implementing {@link SuspensionAware} and
- *       overriding {@code suspensionBehavior(...)} (PROCESS/REJECT/BUFFER — including
- *       intent-dependent overrides), or
- *   <li>be listed in {@link #BUFFER_WHITELIST} when it intentionally relies on the gate's
- *       origin-based default (external commands rejected, internal commands buffered) instead of
- *       overriding the method.
+ *   <li>implement {@link SuspensionAware}, which forces it to return an explicit
+ *       PROCESS/REJECT/BUFFER decision (the interface has no default), or
+ *   <li>be listed in {@link #WHITELIST} when it processes commands unrelated to process instance
+ *       state changes and therefore needs no suspension classification.
  * </ul>
  *
- * <p>This ensures every process-instance related command processor makes a conscious, documented
- * suspension classification decision instead of silently falling back to the default.
+ * <p>This ensures every process-instance related command processor either makes a conscious,
+ * documented suspension decision or is explicitly exempted.
  */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.processing",
@@ -47,40 +45,26 @@ import org.springframework.core.GenericTypeResolver;
 public class SuspensionAwareArchTest {
 
   @ArchTest
-  public static final ArchRule PROCESS_INSTANCE_RELATED_PROCESSORS_DECLARE_SUSPENSION_BEHAVIOR =
+  public static final ArchRule PROCESS_INSTANCE_RELATED_PROCESSORS_IMPLEMENT_SUSPENSION_AWARE =
       classes()
           .that(processProcessInstanceRelatedCommands())
-          .should(declareSuspensionBehaviorOrBeWhitelisted());
+          .should(implementSuspensionAwareOrBeWhitelisted());
 
   /**
-   * Processors that intentionally rely on the gate's origin-based default (see {@link
-   * SuspensionCheck}) without overriding {@code suspensionBehavior}. Every entry's rationale is
-   * documented on the issue (#57521); non-obvious ones are annotated inline below.
+   * Fully-qualified names of processors that do not need to implement {@link SuspensionAware}
+   * because they process commands unrelated to process instance state changes.
    */
-  private static final Set<String> BUFFER_WHITELIST =
+  private static final Set<String> WHITELIST =
       Set.of(
-          "ProcessMessageSubscriptionCreateProcessor",
-          "ProcessMessageSubscriptionCorrelateProcessor",
-          "ProcessMessageSubscriptionDeleteProcessor",
-          "MessageSubscriptionCreateProcessor",
-          "MessageSubscriptionCorrelateProcessor",
-          "MessageSubscriptionDeleteProcessor",
-          "MessageSubscriptionMigrateProcessor",
-          "MessageSubscriptionRejectProcessor",
-          "ConditionalSubscriptionTriggerProcessor",
-          "ProcessInstanceBatchActivateProcessor",
-          "ProcessInstanceBusinessIdAssignProcessor",
-          "TimerCancelProcessor",
-          "JobRecurAfterBackoffProcessor",
-          "ProcessInstanceCreationCreateProcessor",
-          "ProcessInstanceCreationCreateWithAwaitingResultProcessor",
-          // TODO: agentic-feature owner to confirm the Agent* classification
-          "AgentInstanceCreateProcessor",
-          "AgentInstanceUpdateProcessor",
-          "AgentInstanceCompleteProcessor",
-          "AgentHistoryCreateProcessor",
-          "AgentHistoryCommitProcessor",
-          "AgentHistoryDiscardProcessor");
+          "io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor",
+          "io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor",
+          "io.camunda.zeebe.engine.processing.message.MessageSubscriptionCreateProcessor",
+          "io.camunda.zeebe.engine.processing.message.MessageSubscriptionCorrelateProcessor",
+          "io.camunda.zeebe.engine.processing.message.MessageSubscriptionDeleteProcessor",
+          "io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor",
+          "io.camunda.zeebe.engine.processing.message.MessageSubscriptionRejectProcessor",
+          "io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor",
+          "io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor");
 
   private static DescribedPredicate<JavaClass> processProcessInstanceRelatedCommands() {
     return new DescribedPredicate<>(
@@ -118,27 +102,24 @@ public class SuspensionAwareArchTest {
     return GenericTypeResolver.resolveTypeArgument(clazz, TypedRecordProcessor.class);
   }
 
-  private static ArchCondition<JavaClass> declareSuspensionBehaviorOrBeWhitelisted() {
-    return new ArchCondition<>(
-        "override suspensionBehavior(...) or be listed in the BUFFER_WHITELIST") {
+  private static ArchCondition<JavaClass> implementSuspensionAwareOrBeWhitelisted() {
+    return new ArchCondition<>("implement SuspensionAware or be listed in the WHITELIST") {
       @Override
       public void check(final JavaClass item, final ConditionEvents events) {
-        final boolean overridesSuspensionBehavior =
-            Predicates.implement(SuspensionAware.class).test(item)
-                && item.getMethods().stream()
-                    .anyMatch(method -> method.getName().equals("suspensionBehavior"));
-        final boolean isWhitelisted = BUFFER_WHITELIST.contains(item.getSimpleName());
-        if (!overridesSuspensionBehavior && !isWhitelisted) {
+        final boolean implementsSuspensionAware =
+            Predicates.implement(SuspensionAware.class).test(item);
+        final boolean isWhitelisted = WHITELIST.contains(item.getFullName());
+        if (!implementsSuspensionAware && !isWhitelisted) {
           events.add(
               violated(
                   item,
                   String.format(
-                      "Class '%s' processes a ProcessInstanceRelated command but does not"
-                          + " implement SuspensionAware and is not listed in the"
-                          + " BUFFER_WHITELIST of SuspensionAwareArchTest. Either override"
-                          + " suspensionBehavior(...) or add it to the whitelist if it should"
-                          + " keep the default BUFFER behavior.",
-                      item.getSimpleName())));
+                      "Class '%s' processes a ProcessInstanceRelated command but does not implement"
+                          + " SuspensionAware, and is not listed in the WHITELIST of"
+                          + " SuspensionAwareArchTest. Either implement SuspensionAware (returning an"
+                          + " explicit PROCESS/REJECT/BUFFER decision) or add it to the whitelist if"
+                          + " it processes commands unrelated to process instance state changes.",
+                      item.getFullName())));
         }
       }
     };
