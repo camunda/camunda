@@ -1,0 +1,142 @@
+# type: CI Helper - Reusable
+# owner: @camunda/engineering-operations
+#
+# Reusable workflow that builds and pushes the Camunda (orchestration cluster) and,
+# optionally, the Optimize Docker image to the internal Harbor registry.
+# Called by camunda-load-test.yml and pr-docker-build.yml so image building lives in
+# one place.
+---
+name: Build Camunda image
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag or commit SHA) to build'
+        required: true
+        type: string
+      image-tag:
+        description: 'Tag to publish the image(s) under'
+        required: true
+        type: string
+      image-repository:
+        description: 'Registry prefix, e.g. registry.camunda.cloud/team-zeebe. Images are pushed to <prefix>/camunda and <prefix>/optimize.'
+        required: false
+        default: registry.camunda.cloud/team-zeebe
+        type: string
+      enable-optimize:
+        description: 'Also build and push the Optimize image'
+        required: false
+        default: true
+        type: boolean
+      build-frontend:
+        description: 'Build frontend assets as part of the image build'
+        required: false
+        default: false
+        type: boolean
+      report-build-status:
+        description: 'Report build status via the observe-build-status action'
+        required: false
+        default: false
+        type: boolean
+      runs-on:
+        description: 'Runner label for the build job'
+        required: false
+        default: ubuntu-latest
+        type: string
+      platforms:
+        description: 'Target Docker platforms'
+        required: false
+        default: linux/amd64
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  build-camunda-image:
+    name: Build Camunda
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        id: build-tasklist-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        id: build-optimize-fe
+        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: '${{ inputs.image-repository }}/camunda'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ inputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ inputs.platforms }}
+          dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ inputs.image-repository }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ inputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          platforms: ${{ inputs.platforms }}
+          dockerfile: 'optimize.Dockerfile'
+      - name: Observe build status
+        if: ${{ always() && inputs.report-build-status }}
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
