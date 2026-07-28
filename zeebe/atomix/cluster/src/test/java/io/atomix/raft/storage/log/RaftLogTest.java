@@ -319,6 +319,37 @@ class RaftLogTest {
     }
 
     @Test
+    void shouldSkipDirectFlushWhenIndexIsAlreadyDurable() throws CheckedJournalException {
+      // given - a journal whose flush watermark already covers the requested index, e.g. because an
+      // earlier flush covered the whole appended tail
+      final var journal = mock(Journal.class);
+      final var log = new RaftLog(journal, new DirectFlusher());
+      when(journal.getLastFlushedIndex()).thenReturn(5L);
+
+      // when
+      final var result = log.flush(3L);
+
+      // then - no fsync is issued, but the durability guarantee still holds
+      verify(journal, times(0)).flush();
+      assertThat(result).isCompleted();
+    }
+
+    @Test
+    void shouldDirectFlushWhenIndexIsNotYetDurable() throws CheckedJournalException {
+      // given
+      final var journal = mock(Journal.class);
+      final var log = new RaftLog(journal, new DirectFlusher());
+      when(journal.getLastFlushedIndex()).thenReturn(2L);
+
+      // when
+      final var result = log.flush(3L);
+
+      // then
+      verify(journal, times(1)).flush();
+      assertThat(result).isCompleted();
+    }
+
+    @Test
     void shouldForceFlush() throws CheckedJournalException {
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);

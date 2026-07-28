@@ -100,6 +100,14 @@ public interface RaftLogFlusher extends CloseableSilently {
 
     @Override
     public CompletableFuture<Void> flush(final Journal journal, final long index) {
+      // the requested index is already durable, so there is nothing to flush; this preserves the
+      // durability guarantee exactly - the journal only advances its flush watermark after a
+      // successful fsync - while eliding the redundant flushes the leader would otherwise issue on
+      // every commit advance, since one flush covers the whole appended tail
+      if (index <= journal.getLastFlushedIndex()) {
+        return COMPLETED;
+      }
+
       try {
         journal.flush();
         return COMPLETED;
