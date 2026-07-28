@@ -24,13 +24,14 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.AuditLogServices;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class UpdateMetadataMapperTest {
 
   @Test
-  void shouldMapLatestSuccessfulAuditLog() {
+  void shouldResolveLatestSuccessfulAuditLog() {
     final var services = mock(AuditLogServices.class);
     final var authentication = mock(CamundaAuthentication.class);
     final var auditLog =
@@ -45,19 +46,12 @@ class UpdateMetadataMapperTest {
             .category(USER_TASKS)
             .build();
     when(services.search(any(), same(authentication))).thenReturn(SearchQueryResult.of(auditLog));
-    final var item = new Item("123");
 
-    UpdateMetadataMapper.addUpdateMetadata(
-        item,
-        Item::key,
-        USER_TASK,
-        services,
-        authentication,
-        Item::setUpdatedBy,
-        Item::setUpdatedAt);
+    final var metadata =
+        UpdateMetadataMapper.resolve("123", key -> key, USER_TASK, services, authentication);
 
-    assertThat(item.updatedBy).isEqualTo("demo");
-    assertThat(item.updatedAt).isEqualTo("2026-07-22T10:15:30.000Z");
+    assertThat(metadata.updatedBy()).isEqualTo("demo");
+    assertThat(metadata.updatedAt()).isEqualTo("2026-07-22T10:15:30.000Z");
     final var queryCaptor = ArgumentCaptor.forClass(AuditLogQuery.class);
     verify(services).search(queryCaptor.capture(), same(authentication));
     final var query = queryCaptor.getValue();
@@ -75,43 +69,34 @@ class UpdateMetadataMapperTest {
   }
 
   @Test
-  void shouldLeaveMetadataNullWhenAuditLookupFails() {
+  void shouldReturnEmptyMetadataWhenAuditLookupFails() {
     final var services = mock(AuditLogServices.class);
     when(services.search(any(), any())).thenThrow(new RuntimeException("unavailable"));
-    final var item = new Item("123");
 
-    UpdateMetadataMapper.addUpdateMetadata(
-        item,
-        Item::key,
-        USER_TASK,
-        services,
-        mock(CamundaAuthentication.class),
-        Item::setUpdatedBy,
-        Item::setUpdatedAt);
+    final var metadata =
+        UpdateMetadataMapper.resolve(
+            "123", key -> key, USER_TASK, services, mock(CamundaAuthentication.class));
 
-    assertThat(item.updatedBy).isNull();
-    assertThat(item.updatedAt).isNull();
+    assertThat(metadata.updatedBy()).isNull();
+    assertThat(metadata.updatedAt()).isNull();
   }
 
   @Test
   void shouldFallBackToCreationTimestampWhenNoAuditLogEntryExists() {
     final var services = mock(AuditLogServices.class);
     when(services.search(any(), any())).thenReturn(SearchQueryResult.empty());
-    final var item = new Item("123");
-    item.creationDate = "2026-01-01T00:00:00.000Z";
 
-    UpdateMetadataMapper.addUpdateMetadata(
-        item,
-        Item::key,
-        USER_TASK,
-        services,
-        mock(CamundaAuthentication.class),
-        Item::setUpdatedBy,
-        Item::setUpdatedAt,
-        Item::creationDate);
+    final var metadata =
+        UpdateMetadataMapper.resolve(
+            "123",
+            key -> key,
+            USER_TASK,
+            services,
+            mock(CamundaAuthentication.class),
+            key -> "2026-01-01T00:00:00.000Z");
 
-    assertThat(item.updatedBy).isNull();
-    assertThat(item.updatedAt).isEqualTo("2026-01-01T00:00:00.000Z");
+    assertThat(metadata.updatedBy()).isNull();
+    assertThat(metadata.updatedAt()).isEqualTo("2026-01-01T00:00:00.000Z");
   }
 
   @Test
@@ -129,47 +114,44 @@ class UpdateMetadataMapperTest {
             .category(USER_TASKS)
             .build();
     when(services.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
-    final var item = new Item("123");
-    item.creationDate = "2026-01-01T00:00:00.000Z";
 
-    UpdateMetadataMapper.addUpdateMetadata(
-        item,
-        Item::key,
-        USER_TASK,
-        services,
-        mock(CamundaAuthentication.class),
-        Item::setUpdatedBy,
-        Item::setUpdatedAt,
-        Item::creationDate);
+    final var metadata =
+        UpdateMetadataMapper.resolve(
+            "123",
+            key -> key,
+            USER_TASK,
+            services,
+            mock(CamundaAuthentication.class),
+            key -> "2026-01-01T00:00:00.000Z");
 
-    assertThat(item.updatedBy).isEqualTo("demo");
-    assertThat(item.updatedAt).isEqualTo("2026-07-22T10:15:30.000Z");
+    assertThat(metadata.updatedBy()).isEqualTo("demo");
+    assertThat(metadata.updatedAt()).isEqualTo("2026-07-22T10:15:30.000Z");
   }
 
-  private static final class Item {
-    private final String key;
-    private String updatedBy;
-    private String updatedAt;
-    private String creationDate;
+  @Test
+  void shouldResolveAllForMultipleItems() {
+    final var services = mock(AuditLogServices.class);
+    final var authentication = mock(CamundaAuthentication.class);
+    final var auditLogFor1 =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("1")
+            .entityType(USER_TASK)
+            .operationType(UPDATE)
+            .timestamp(OffsetDateTime.parse("2026-07-22T10:15:30Z"))
+            .actorId("demo")
+            .result(SUCCESS)
+            .category(USER_TASKS)
+            .build();
+    when(services.search(any(), same(authentication)))
+        .thenReturn(SearchQueryResult.of(auditLogFor1))
+        .thenReturn(SearchQueryResult.empty());
 
-    private Item(final String key) {
-      this.key = key;
-    }
+    final var metadataByKey =
+        UpdateMetadataMapper.resolveAll(
+            List.of("1", "2"), key -> key, USER_TASK, services, authentication);
 
-    private String key() {
-      return key;
-    }
-
-    private void setUpdatedBy(final String updatedBy) {
-      this.updatedBy = updatedBy;
-    }
-
-    private void setUpdatedAt(final String updatedAt) {
-      this.updatedAt = updatedAt;
-    }
-
-    private String creationDate() {
-      return creationDate;
-    }
+    assertThat(metadataByKey.get("1").updatedBy()).isEqualTo("demo");
+    assertThat(metadataByKey).doesNotContainKey("2");
   }
 }

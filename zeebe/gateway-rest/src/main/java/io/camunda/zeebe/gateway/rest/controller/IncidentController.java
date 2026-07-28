@@ -11,6 +11,7 @@ import static io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.INCID
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -32,8 +33,10 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
+import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper.ResolvedMetadata;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -92,21 +95,23 @@ public class IncidentController {
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var response =
-          SearchQueryResponseMapper.toIncident(
-              serviceRegistry
-                  .incidentServices(physicalTenantId)
-                  .getByKey(incidentKey, authentication));
+      final var entity =
+          serviceRegistry.incidentServices(physicalTenantId).getByKey(incidentKey, authentication);
+      final IncidentResult response;
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        UpdateMetadataMapper.addUpdateMetadata(
-            response,
-            IncidentResult::getIncidentKey,
-            INCIDENT,
-            serviceRegistry.auditLogServices(physicalTenantId),
-            authentication,
-            IncidentResult::setUpdatedBy,
-            IncidentResult::setUpdatedAt,
-            IncidentResult::getCreationTime);
+        final var metadata =
+            UpdateMetadataMapper.resolve(
+                entity,
+                t -> String.valueOf(t.incidentKey()),
+                INCIDENT,
+                serviceRegistry.auditLogServices(physicalTenantId),
+                authentication,
+                t -> ResponseMapper.formatDate(t.creationTime()));
+        response =
+            SearchQueryResponseMapper.toIncident(
+                entity, metadata.updatedBy(), metadata.updatedAt());
+      } else {
+        response = SearchQueryResponseMapper.toIncident(entity);
       }
       return ResponseEntity.ok().body(response);
     } catch (final Exception e) {
@@ -145,17 +150,25 @@ public class IncidentController {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = incidentServices.search(query, authentication);
-      final var response = SearchQueryResponseMapper.toIncidentSearchQueryResponse(result);
+      final IncidentSearchQueryResult response;
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        UpdateMetadataMapper.addUpdateMetadata(
-            response.getItems(),
-            IncidentResult::getIncidentKey,
-            INCIDENT,
-            serviceRegistry.auditLogServices(physicalTenantId),
-            authentication,
-            IncidentResult::setUpdatedBy,
-            IncidentResult::setUpdatedAt,
-            IncidentResult::getCreationTime);
+        final Function<io.camunda.search.entities.IncidentEntity, String> keyFn =
+            t -> String.valueOf(t.incidentKey());
+        final var metadata =
+            UpdateMetadataMapper.resolveAll(
+                result.items(),
+                keyFn,
+                INCIDENT,
+                serviceRegistry.auditLogServices(physicalTenantId),
+                authentication,
+                t -> ResponseMapper.formatDate(t.creationTime()));
+        response =
+            SearchQueryResponseMapper.toIncidentSearchQueryResponse(
+                result,
+                t -> metadata.getOrDefault(keyFn.apply(t), ResolvedMetadata.EMPTY).updatedBy(),
+                t -> metadata.getOrDefault(keyFn.apply(t), ResolvedMetadata.EMPTY).updatedAt());
+      } else {
+        response = SearchQueryResponseMapper.toIncidentSearchQueryResponse(result);
       }
       return ResponseEntity.ok(response);
     } catch (final ValidationException e) {

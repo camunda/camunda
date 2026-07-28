@@ -234,6 +234,8 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
+        - updatedBy
+        - updatedAt
       properties:
         name:
           description: Name of this variable.
