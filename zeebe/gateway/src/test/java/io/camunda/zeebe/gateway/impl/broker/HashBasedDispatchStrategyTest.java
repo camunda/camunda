@@ -85,6 +85,59 @@ final class HashBasedDispatchStrategyTest {
   }
 
   @Test
+  void shouldDispatchViaTopologyForNonDefaultTenantWithNoOwnPartitionGroupConfig() {
+    // given -- a non-default tenant that has no entry in the cluster configuration's partition
+    // groups (e.g. the tenant only exists in the legacy single-group model)
+    final var businessId = "order-12345";
+    final var dispatchStrategy = new HashBasedDispatchStrategy(businessId, "business id");
+    final var partitionCount = 3;
+    final var tenantB = "tenant-b";
+
+    final var topologyManager =
+        new TestTopologyManager(
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
+
+    // then - falls back to the tenant's own topology partition count instead of throwing
+    assertThat(dispatchStrategy.determinePartition(topologyManager, tenantB))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), partitionCount));
+  }
+
+  @Test
+  void shouldDispatchViaOwnRoutingStateForNonDefaultTenant() {
+    // given -- the default tenant and "tenant-b" each have their own, different routing state
+    final var businessId = "order-12345";
+    final var dispatchStrategy = new HashBasedDispatchStrategy(businessId, "business id");
+    final var partitionCount = 3;
+    final var tenantB = "tenant-b";
+
+    final var defaultRoutingState = new RoutingState(1, new AllPartitions(3), new HashMod(2));
+    final var tenantBRoutingState = new RoutingState(1, new AllPartitions(3), new HashMod(4));
+
+    final var clusterConfiguration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                PartitionGroupConfiguration.empty(1).setRoutingState(defaultRoutingState),
+                tenantB,
+                PartitionGroupConfiguration.empty(1).setRoutingState(tenantBRoutingState)),
+            PhasedChangeState.empty());
+
+    final var topologyManager =
+        new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
+
+    // then - each tenant is dispatched according to its own routing state
+    assertThat(dispatchStrategy.determinePartition(topologyManager, tenantB))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), 4));
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), 2));
+  }
+
+  @Test
   void shouldAlwaysRouteToSamePartitionForSameKey() {
     // given
     final var businessId = "consistent-key";

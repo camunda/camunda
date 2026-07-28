@@ -20,9 +20,12 @@ import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -736,6 +739,93 @@ final class BrokerTopologyManagerTest {
     // then — broker is gone from both groups
     assertThat(topologyManager.getTopology().getBrokers()).doesNotContain(brokerId);
     assertThat(topologyManager.getTopology("tenant1").getBrokers()).doesNotContain(brokerId);
+  }
+
+  @Test
+  void shouldApplyConfigurationReceivedBeforeAnyBrokerJoined() {
+    // given -- the cluster configuration is gossiped in before any local membership event for the
+    // default group is observed
+    final var clusterTopologyWithTwoBrokers =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // when -- a broker for the default group joins afterward
+    final var broker = createBroker(BrokerMemberId.from(1));
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // then -- the previously-received configuration was not dropped
+    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(2);
+    assertThat(topologyManager.getTopology().getPartitions()).isEqualTo(List.of(1, 2));
+  }
+
+  @Test
+  void shouldApplyDefaultGroupConfigurationToAllTenantsWhileNewConfigDisabled() {
+    // given -- a broker joins a non-default tenant group
+    final var brokerId = BrokerMemberId.from(0);
+    final var tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
+    notifyEvent(createMemberAddedEvent(tenant1Info));
+
+    // when -- the cluster configuration (single, legacy group) is updated with partition
+    // assignments
+    final var clusterTopologyWithTwoBrokers =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // then -- tenant1's configured cluster state mirrors the default group's: with
+    // USE_NEW_CONFIG disabled, updateConfiguredClusterState always resolves the default group's
+    // configuration regardless of which tenant is being updated. This does not yet exercise
+    // per-tenant configuration resolution, which is unreachable while the flag is off.
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology("tenant1").getClusterSize()).isEqualTo(2));
+    assertThat(topologyManager.getTopology("tenant1").getPartitionsCount()).isEqualTo(2);
+    assertThat(topologyManager.getTopology("tenant1").getPartitions()).isEqualTo(List.of(1, 2));
+  }
+
+  @Test
+  void shouldPreserveLiveStateWhenGroupHasNoPartitionGroupConfiguration() {
+    // given -- a broker has already joined the "tenant1" group, so live state (brokers, leaders)
+    // is established for it
+    final var brokerId = BrokerMemberId.from(0);
+    final var tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
+    tenant1Info.setLeaderForPartition(1, 1L);
+    notifyEvent(createMemberAddedEvent(tenant1Info));
+
+    assertThat(topologyManager.getTopology("tenant1").getLeaderForPartition(1)).isEqualTo(brokerId);
+
+    // when -- a cluster configuration update arrives whose partition groups do not contain
+    // "tenant1" at all (e.g. the group is not part of the new model config)
+    final var configurationWithoutTenant1 =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            PhasedChangeState.empty());
+    topologyManager.onClusterConfigurationUpdated(configurationWithoutTenant1);
+    actorSchedulerRule.workUntilDone();
+
+    // then -- the live state for tenant1 (leader, brokers) is preserved, not reset
+    assertThat(topologyManager.getTopology("tenant1").getLeaderForPartition(1)).isEqualTo(brokerId);
   }
 
   @Test

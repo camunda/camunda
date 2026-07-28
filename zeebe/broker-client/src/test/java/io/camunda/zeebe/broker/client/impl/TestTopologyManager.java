@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,6 +55,15 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     topology.addPartitionIfAbsent(id);
+    return this;
+  }
+
+  TestTopologyManager addInactiveNode(
+      final String partitionGroup, final int partitionId, final BrokerMemberId nodeId) {
+    final var topology =
+        topologies.computeIfAbsent(partitionGroup, group -> new TestBrokerClusterState());
+    topology.addBrokerIfAbsent(nodeId);
+    topology.addInactiveNode(partitionId, nodeId);
     return this;
   }
 
@@ -94,6 +104,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
     private final List<BrokerMemberId> brokers = new ArrayList<>();
     private final Map<Integer, BrokerMemberId> partitionLeaders = new HashMap<>();
     private final List<Integer> partitions = new ArrayList<>();
+    private final Map<Integer, Set<BrokerMemberId>> inactiveNodesPerPartition = new HashMap<>();
 
     @Override
     public boolean isInitialized() {
@@ -127,7 +138,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     @Override
     public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
-      return Set.of();
+      return inactiveNodesPerPartition.getOrDefault(partition, Set.of());
     }
 
     @Override
@@ -147,7 +158,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     @Override
     public String getBrokerAddress(final BrokerMemberId brokerId) {
-      return "";
+      return "address-" + brokerId.id();
     }
 
     @Override
@@ -187,6 +198,10 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     public void addPartitionIfAbsent(final int id) {
       partitions.add(id);
+    }
+
+    public void addInactiveNode(final int partitionId, final BrokerMemberId nodeId) {
+      inactiveNodesPerPartition.computeIfAbsent(partitionId, id -> new HashSet<>()).add(nodeId);
     }
   }
 }

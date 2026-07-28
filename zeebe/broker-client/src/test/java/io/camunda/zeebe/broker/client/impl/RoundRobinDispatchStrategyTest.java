@@ -271,6 +271,55 @@ final class RoundRobinDispatchStrategyTest {
   }
 
   @Test
+  void shouldApplyOwnRoutingStatePerNonDefaultGroup() {
+    // given - default and tenant-b each have their own routing state, restricting active
+    // partitions differently
+    final var dispatchStrategy = new RoundRobinDispatchStrategy();
+    final var topologyManager = new TestTopologyManager();
+    topologyManager
+        .addPartition(1, ZERO)
+        .addPartition(2, ONE)
+        .addPartition(3, TWO)
+        .addPartition("tenant-b", 1, ZERO)
+        .addPartition("tenant-b", 2, ONE)
+        .addPartition("tenant-b", 3, TWO)
+        .withClusterConfiguration(
+            new CurrentClusterConfiguration(
+                CurrentClusterConfiguration.INITIAL_VERSION,
+                GlobalConfiguration.init(),
+                Map.of(
+                    PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                    PartitionGroupConfiguration.empty(1)
+                        .setRoutingState(
+                            new RoutingState(
+                                1,
+                                new ActivePartitions(1, Set.of(3), Set.of()),
+                                new MessageCorrelation.HashMod(3))),
+                    "tenant-b",
+                    PartitionGroupConfiguration.empty(1)
+                        .setRoutingState(
+                            new RoutingState(
+                                1,
+                                new ActivePartitions(1, Set.of(2), Set.of()),
+                                new MessageCorrelation.HashMod(3)))),
+                PhasedChangeState.empty()));
+
+    // when - then - the default group cycles over partitions 1 and 3 only
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(3);
+
+    // and tenant-b cycles over partitions 1 and 2 only, per its own routing state
+    assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(1);
+    assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(2);
+  }
+
+  @Test
   void shouldReturnNullValueForUnknownGroup() {
     // given - only the default group is known
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
