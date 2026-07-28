@@ -10,6 +10,8 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.impl.RaftContext;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.EdgeCasesMode;
@@ -122,6 +125,124 @@ public class RandomizedRaftJoinTest {
     assertThat(joinFuture).describedAs("Join of member 1 should be completed").isCompleted();
     assertThat(raftContexts.hasLeaderAtTheLatestTerm()).describedAs("There is a leader").isTrue();
     raftContexts.assertAllMembersAreReady();
+  }
+
+  @Property
+  void joinThenPromoteCompletes(
+      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+    setUpRaftNodes(new Random(seed));
+
+    var joinFuture =
+        raftContexts.join(member1, RaftMember.Type.PROMOTABLE, Set.of(member0, member1));
+    CompletableFuture<Void> promoteFuture = null;
+
+    // given - when there are failures such as message loss
+    final var memberIter = raftMembers.iterator();
+    for (final RaftOperation operation : raftOperations) {
+      final MemberId member = memberIter.next();
+      if ("Restart member".equals(operation.toString())
+          && member.equals(member1)
+          && joinFuture.isDone()
+          && !joinFuture.isCompletedExceptionally()) {
+        // Known pre-existing residual, outside this task's scope: a PROMOTABLE join can complete
+        // before the joiner received any log entry or configuration, because the joiner is in no
+        // quorum. If the joiner then restarts, it falls back to the all-ACTIVE initial
+        // configuration at index 0 and reports configuration index 0 in its append responses,
+        // which the leader ignores as "no information" (LeaderAppender#updateConfigurationIndex)
+        // while its own bookkeeping still holds the joiner's pre-restart configuration index - so
+        // the joiner is never re-configured, considers itself ACTIVE, and its local promote()
+        // no-ops forever. Skip restarts of the joined member instead of fighting this here.
+        continue;
+      }
+      LOG.info("{} on {}", operation, member);
+      operation.run(raftContexts, member);
+      if (joinFuture.isCompletedExceptionally()) {
+        // retry join
+        LOG.info("Join failed. Retrying...");
+        joinFuture =
+            raftContexts.join(member1, RaftMember.Type.PROMOTABLE, Set.of(member0, member1));
+      } else if (joinFuture.isDone() && shouldRetryPromote(promoteFuture)) {
+        LOG.info("Promoting member 1...");
+        promoteFuture = raftContexts.promote(member1);
+      }
+    }
+
+    raftContexts.runUntilDone();
+    raftContexts.processAllMessage();
+    raftContexts.tickHeartbeatTimeout();
+
+    // when - no more message loss or restarts
+
+    LOG.info("Stopping failures, waiting for join and promotion to complete");
+
+    int maxStepsToReplicateEntries = 10100;
+    while (!(joinFuture.isDone()
+            && !joinFuture.isCompletedExceptionally()
+            && promoteFuture != null
+            && promoteFuture.isDone()
+            && !promoteFuture.isCompletedExceptionally()
+            && member1IsActiveInLeadersConfiguration()
+            && raftContexts.allMembersAreReady()
+            && raftContexts.hasLeaderAtTheLatestTerm())
+        && maxStepsToReplicateEntries-- > 0) {
+
+      if (joinFuture.isCompletedExceptionally()) {
+        // retry join
+        LOG.info("Join failed. Retrying...");
+        joinFuture =
+            raftContexts.join(member1, RaftMember.Type.PROMOTABLE, Set.of(member0, member1));
+      } else if (joinFuture.isDone() && shouldRetryPromote(promoteFuture)) {
+        LOG.info("Promoting member 1...");
+        promoteFuture = raftContexts.promote(member1);
+      }
+
+      raftContexts.runUntilDone();
+      raftContexts.processAllMessage();
+      raftContexts.tickHeartbeatTimeout();
+    }
+
+    // then
+    assertThat(joinFuture).describedAs("Join of member 1 should be completed").isCompleted();
+    assertThat(promoteFuture)
+        .describedAs("Promotion of member 1 should be completed")
+        .isCompleted();
+    assertThat(raftContexts.hasLeaderAtTheLatestTerm()).describedAs("There is a leader").isTrue();
+    assertThat(member1IsActiveInLeadersConfiguration())
+        .describedAs("Member 1 is ACTIVE in the leader's configuration")
+        .isTrue();
+    raftContexts.assertAllMembersAreReady();
+  }
+
+  /**
+   * The promotion fails fast on CONFIGURATION_ERROR - not caught up yet, another change in
+   * progress, or a stale configuration view - so it is simply re-issued until it completes. A
+   * promotion can also complete trivially without effect: after a restart with an empty log, the
+   * member falls back to the initial all-ACTIVE configuration and already considers itself ACTIVE
+   * until the leader's next configure request corrects it. Such a completed promotion is retried as
+   * long as the leader's configuration does not have member 1 as ACTIVE.
+   */
+  private boolean shouldRetryPromote(final CompletableFuture<Void> promoteFuture) {
+    return promoteFuture == null
+        || promoteFuture.isCompletedExceptionally()
+        || (promoteFuture.isDone() && !member1IsActiveInLeadersConfiguration());
+  }
+
+  private boolean member1IsActiveInLeadersConfiguration() {
+    return raftContexts.getRaftServers().values().stream()
+        .filter(RaftContext::isLeader)
+        .findAny()
+        .map(leader -> leader.getCluster().getConfiguration())
+        .map(
+            configuration ->
+                configuration.newMembers().stream()
+                    .anyMatch(
+                        member ->
+                            member.memberId().equals(member1)
+                                && member.getType() == RaftMember.Type.ACTIVE))
+        .orElse(false);
   }
 
   private void setUpRaftNodes(final Random random) throws Exception {
