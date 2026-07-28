@@ -185,6 +185,16 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   }
 
   @Test
+  public void createProcessInstanceWithResultRequestRequiresTenantId() {
+    // given
+    final var request = CreateProcessInstanceWithResultRequest.newBuilder().build();
+
+    // when/then
+    assertThatRejectsRequestMissingTenantId(
+        () -> client.createProcessInstanceWithResult(request), "CreateProcessInstanceWithResult");
+  }
+
+  @Test
   public void createProcessInstanceWithResultResponseHasTenantId() {
     // when
     final CreateProcessInstanceWithResultResponse response =
