@@ -363,28 +363,38 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
-      const endDate = await operateProcessesPage.endDateCell.innerText();
-      const day =
-        endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
-
+      // The shared cluster can hold more completed instances than the list's
+      // page size, so comparing the (page-capped) visible row count before and
+      // after filtering is unreliable — both sides saturate at the cap. Instead
+      // apply a zero-width End Date Range that matches no instance to prove the
+      // End Date filter narrows the list, then reset to confirm it restores,
+      // mirroring the Start Date Range step below.
       await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
       await operateFiltersPanelPage.pickDateTimeRange({
         fromDay: '1',
-        toDay: `${day}`,
+        toDay: '1',
+        fromTime: '00:00:00',
+        toTime: '00:00:00',
       });
       await operateFiltersPanelPage.clickApply();
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
-      currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
       await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateProcessesPage.noMatchingInstancesMessage,
+      ).toBeHidden();
       await expect
         .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(currentRowCount);
+        .toBeGreaterThan(1);
     });
 
     await test.step('Filter by Error Message and assert results', async () => {

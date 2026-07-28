@@ -104,9 +104,13 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify only the matching decision instance is shown', async () => {
       await waitForAssertion({
         assertion: async () => {
+          // The DMN evaluates several decisions per process instance, so one
+          // business ID maps to multiple decision-instance rows. Target the
+          // first matching row to avoid a strict-mode violation.
           const rowA = operateDecisionsPage.decisionInstancesList
             .getByRole('row')
-            .filter({hasText: BUSINESS_ID_A});
+            .filter({hasText: BUSINESS_ID_A})
+            .first();
           await expect(rowA).toBeVisible();
           await expect(rowA.getByTestId('cell-businessId')).toHaveText(
             BUSINESS_ID_A,
@@ -136,15 +140,19 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify both decision instances sharing the prefix are shown', async () => {
       await waitForAssertion({
         assertion: async () => {
+          // Each process instance produces multiple decision-instance rows
+          // sharing the same business ID, so match the first row per ID.
           await expect(
             operateDecisionsPage.decisionInstancesList
               .getByRole('row')
-              .filter({hasText: BUSINESS_ID_A}),
+              .filter({hasText: BUSINESS_ID_A})
+              .first(),
           ).toBeVisible();
           await expect(
             operateDecisionsPage.decisionInstancesList
               .getByRole('row')
-              .filter({hasText: BUSINESS_ID_B}),
+              .filter({hasText: BUSINESS_ID_B})
+              .first(),
           ).toBeVisible();
         },
         onFailure: async () => {
@@ -180,9 +188,12 @@ test.describe('Decision Instances - Business ID', () => {
     operateDecisionsPage,
     operateDecisionInstancePage,
   }) => {
+    // The DMN evaluates several decisions per process instance, so one business
+    // ID maps to multiple decision-instance rows; open the first matching one.
     const rowA = operateDecisionsPage.decisionInstancesList
       .getByRole('row')
-      .filter({hasText: BUSINESS_ID_A});
+      .filter({hasText: BUSINESS_ID_A})
+      .first();
 
     await test.step('Filter to the target decision instance by Business ID', async () => {
       await applyBusinessIdFilter(operateDecisionsPage, BUSINESS_ID_A);

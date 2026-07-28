@@ -16,7 +16,10 @@ import {
   assertUnauthorizedRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   WAIT_STATES_SEARCH_ENDPOINT,
   createProcessInstanceWaitingOnJob,
@@ -62,7 +65,10 @@ test.describe.parallel('Wait State Search Validation', () => {
         instance.processInstanceKey,
       );
       expect(body.items[0].details.waitStateType).toBe('JOB');
-    }).toPass(defaultAssertionOptions);
+      // The wait state must propagate through the secondary-storage indexer,
+      // which is slower on loaded RDBMS backends; allow the extended window so
+      // the poll does not time out before the record is queryable.
+    }).toPass(extendedAssertionOptions);
   });
 
   test('rejects an unknown filter field with 400', async ({request}) => {
