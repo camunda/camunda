@@ -27,6 +27,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,8 +36,11 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 
 @ExtendWith(MockitoExtension.class)
 class PingHubConfigurationTest {
@@ -50,7 +54,7 @@ class PingHubConfigurationTest {
       mock(ClusterConfiguration.class);
   private static final M2MCredentials VALID_CREDENTIALS =
       new M2MCredentials(
-          URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret");
+          URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret", null);
 
   private final HubPingConfiguration pingConfiguration =
       new HubPingConfiguration(
@@ -76,6 +80,36 @@ class PingHubConfigurationTest {
     when(BROKER_TOPOLOGY_MANAGER.getClusterConfiguration())
         .thenReturn(BROKER_CLUSTER_CONFIGURATION);
     when(BROKER_CLUSTER_CONFIGURATION.clusterId()).thenReturn(Optional.of("clusterId"));
+  }
+
+  @Test
+  void shouldBindM2MCredentialsWithTokenRequestTargetParameters() {
+    // given
+    final MockEnvironment environment =
+        new MockEnvironment()
+            .withProperty("camunda.hub.ping.credentials.token-endpoint", "https://idp/token")
+            .withProperty("camunda.hub.ping.credentials.client-id", "client")
+            .withProperty("camunda.hub.ping.credentials.client-secret", "secret")
+            .withProperty(
+                "camunda.hub.ping.credentials.token-request-parameters.audience", "https://hub/api")
+            .withProperty(
+                "camunda.hub.ping.credentials.token-request-parameters.scope",
+                "api://hub/.default");
+
+    // when
+    final M2MCredentials credentials =
+        Binder.get(environment)
+            .bind("camunda.hub.ping.credentials", Bindable.of(M2MCredentials.class))
+            .orElseThrow(() -> new AssertionError("M2M credentials were not bound"));
+
+    // then
+    assertThat(credentials)
+        .isEqualTo(
+            new M2MCredentials(
+                URI.create("https://idp/token"),
+                "client",
+                "secret",
+                Map.of("audience", "https://hub/api", "scope", "api://hub/.default")));
   }
 
   @Test
@@ -377,7 +411,7 @@ class PingHubConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(null, "clientId", "secret"));
+            new M2MCredentials(null, "clientId", "secret", null));
 
     final PingHubRunner runner =
         new PingHubRunner(
@@ -402,7 +436,7 @@ class PingHubConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("not-a-valid-uri"), "clientId", "secret"));
+            new M2MCredentials(URI.create("not-a-valid-uri"), "clientId", "secret", null));
 
     final PingHubRunner runner =
         new PingHubRunner(
@@ -428,7 +462,7 @@ class PingHubConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("http://auth-server.com/token"), "", "secret"));
+            new M2MCredentials(URI.create("http://auth-server.com/token"), "", "secret", null));
 
     final PingHubRunner runner =
         new PingHubRunner(
@@ -453,7 +487,7 @@ class PingHubConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("http://auth-server.com/token"), "clientId", ""));
+            new M2MCredentials(URI.create("http://auth-server.com/token"), "clientId", "", null));
 
     final PingHubRunner runner =
         new PingHubRunner(

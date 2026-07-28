@@ -13,6 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -106,7 +108,8 @@ public class PingHubRunnerIT {
         .thenReturn(new String[] {"gateway", "broker", "identity"});
 
     final M2MCredentials credentials =
-        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
     final HubPingConfiguration config =
         new HubPingConfiguration(
             true,
@@ -153,7 +156,8 @@ public class PingHubRunnerIT {
     when(environment.getActiveProfiles()).thenReturn(new String[] {"broker"});
 
     final M2MCredentials credentials =
-        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
     final HubPingConfiguration config =
         new HubPingConfiguration(
             true,
@@ -179,6 +183,67 @@ public class PingHubRunnerIT {
         .isEqualTo("Bearer test-m2m-token");
   }
 
+  @Test
+  void shouldSendConfiguredTokenRequestTargetParameters() throws Exception {
+    // given
+    final String baseUrl = "http://localhost:" + wireMockServer.port();
+    final M2MCredentials credentials =
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"),
+            "test-client-id",
+            "test-client-secret",
+            Map.of(
+                "audience", "https://hub.example/api",
+                "scope", "api://hub/.default",
+                "resource indicator", "hub resource"));
+    final M2MTokenProvider tokenProvider = new M2MTokenProvider(credentials);
+
+    // when
+    tokenProvider.getToken();
+
+    // then
+    final String requestBody = tokenServeEvents().getFirst().getRequest().getBodyAsString();
+    assertThat(requestBody)
+        .contains("audience=https%3A%2F%2Fhub.example%2Fapi")
+        .contains("scope=api%3A%2F%2Fhub%2F.default")
+        .contains("resource+indicator=hub+resource");
+  }
+
+  @Test
+  void shouldOmitUnconfiguredTokenRequestTargetParameters() throws Exception {
+    // given
+    final String baseUrl = "http://localhost:" + wireMockServer.port();
+    final M2MCredentials credentials =
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
+    final M2MTokenProvider tokenProvider = new M2MTokenProvider(credentials);
+
+    // when
+    tokenProvider.getToken();
+
+    // then
+    final String requestBody = tokenServeEvents().getFirst().getRequest().getBodyAsString();
+    assertThat(requestBody).doesNotContain("audience=").doesNotContain("scope=");
+  }
+
+  @Test
+  void shouldRejectReservedTokenRequestParameters() {
+    // given
+    final String baseUrl = "http://localhost:" + wireMockServer.port();
+    final M2MCredentials credentials =
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"),
+            "test-client-id",
+            "test-client-secret",
+            Map.of("client_secret", "override"));
+
+    // when - then
+    assertThatThrownBy(() -> new M2MTokenProvider(credentials))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("client_secret")
+        .hasMessageContaining("cannot be overridden");
+  }
+
   private long pingEventsCount() {
     return wireMockServer.getAllServeEvents().stream()
         .filter(e -> e.getRequest().getUrl().equals("/ping"))
@@ -188,6 +253,12 @@ public class PingHubRunnerIT {
   private List<ServeEvent> pingServeEvents() {
     return wireMockServer.getAllServeEvents().stream()
         .filter(e -> e.getRequest().getUrl().equals("/ping"))
+        .toList();
+  }
+
+  private List<ServeEvent> tokenServeEvents() {
+    return wireMockServer.getAllServeEvents().stream()
+        .filter(e -> e.getRequest().getUrl().equals("/token"))
         .toList();
   }
 }

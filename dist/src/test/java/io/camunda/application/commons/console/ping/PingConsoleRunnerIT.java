@@ -107,7 +107,8 @@ public class PingConsoleRunnerIT {
         .thenReturn(new String[] {"gateway", "broker", "identity"});
 
     final M2MCredentials credentials =
-        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
             true,
@@ -153,7 +154,8 @@ public class PingConsoleRunnerIT {
     when(environment.getActiveProfiles()).thenReturn(new String[] {"broker"});
 
     final M2MCredentials credentials =
-        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
+        new M2MCredentials(
+            URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret", null);
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
             true,

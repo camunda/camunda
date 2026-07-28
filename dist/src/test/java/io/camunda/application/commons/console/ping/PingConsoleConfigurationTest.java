@@ -52,7 +52,7 @@ class PingConsoleConfigurationTest {
       mock(ClusterConfiguration.class);
   private static final M2MCredentials VALID_CREDENTIALS =
       new M2MCredentials(
-          URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret");
+          URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret", null);
 
   private final ConsolePingConfiguration pingConfiguration =
       new ConsolePingConfiguration(
@@ -412,7 +412,7 @@ class PingConsoleConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(null, "clientId", "secret"));
+            new M2MCredentials(null, "clientId", "secret", null));
 
     final PingConsoleRunner runner =
         new PingConsoleRunner(
@@ -440,7 +440,7 @@ class PingConsoleConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("not-a-valid-uri"), "clientId", "secret"));
+            new M2MCredentials(URI.create("not-a-valid-uri"), "clientId", "secret", null));
 
     final PingConsoleRunner runner =
         new PingConsoleRunner(
@@ -469,7 +469,7 @@ class PingConsoleConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("http://auth-server.com/token"), "", "secret"));
+            new M2MCredentials(URI.create("http://auth-server.com/token"), "", "secret", null));
 
     final PingConsoleRunner runner =
         new PingConsoleRunner(
@@ -497,7 +497,7 @@ class PingConsoleConfigurationTest {
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null,
-            new M2MCredentials(URI.create("http://auth-server.com/token"), "clientId", ""));
+            new M2MCredentials(URI.create("http://auth-server.com/token"), "clientId", "", null));
 
     final PingConsoleRunner runner =
         new PingConsoleRunner(
