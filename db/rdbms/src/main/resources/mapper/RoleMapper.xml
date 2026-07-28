@@ -138,10 +138,12 @@ FROM (
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
-    <id column="ROLE_ID" property="roleId"/>
-    <result column="ROLE_KEY" property="roleKey"/>
-    <result column="NAME" property="name"/>
-    <result column="DESCRIPTION" property="description"/>
+    <constructor>
+      <arg name="roleKey" column="ROLE_KEY" javaType="java.lang.Long"/>
+      <idArg name="roleId" column="ROLE_ID" javaType="java.lang.String"/>
+      <arg name="name" column="NAME" javaType="java.lang.String"/>
+      <arg name="description" column="DESCRIPTION" javaType="java.lang.String"/>
+    </constructor>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
       javaType="java.util.List">
       <constructor>

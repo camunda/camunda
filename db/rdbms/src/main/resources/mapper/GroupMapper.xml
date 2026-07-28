@@ -150,10 +150,12 @@ SELECT
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    <id column="GROUP_ID" property="groupId"/>
-    <result column="GROUP_KEY" property="groupKey" />
-    <result column="NAME" property="name"/>
-    <result column="DESCRIPTION" property="description"/>
+    <constructor>
+      <arg name="groupKey" column="GROUP_KEY" javaType="java.lang.Long"/>
+      <idArg name="groupId" column="GROUP_ID" javaType="java.lang.String"/>
+      <arg name="name" column="NAME" javaType="java.lang.String"/>
+      <arg name="description" column="DESCRIPTION" javaType="java.lang.String"/>
+    </constructor>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
       javaType="java.util.List">
       <constructor>

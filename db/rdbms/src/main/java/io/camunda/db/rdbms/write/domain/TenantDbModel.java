@@ -8,31 +8,10 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
 import java.util.function.Function;
 
-public class TenantDbModel implements DbModel<TenantDbModel> {
-
-  private Long tenantKey;
-  private String tenantId;
-  private String name;
-  private String description;
-  private List<TenantMemberDbModel> members;
-
-  public TenantDbModel() {}
-
-  private TenantDbModel(
-      final String tenantId,
-      final Long tenantKey,
-      final String name,
-      final String description,
-      final List<TenantMemberDbModel> members) {
-    this.tenantKey = tenantKey;
-    this.tenantId = tenantId;
-    this.name = name;
-    this.description = description;
-    this.members = members;
-  }
+public record TenantDbModel(String tenantId, Long tenantKey, String name, String description)
+    implements DbModel<TenantDbModel> {
 
   @Override
   public TenantDbModel copy(
@@ -47,58 +26,15 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
         .build();
   }
 
-  public Long tenantKey() {
-    return tenantKey;
-  }
-
-  public void tenantKey(final Long tenantKey) {
-    this.tenantKey = tenantKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public void name(final String name) {
-    this.name = name;
-  }
-
-  public String description() {
-    return description;
-  }
-
-  public void description(final String description) {
-    this.description = description;
-  }
-
-  public List<TenantMemberDbModel> members() {
-    return members;
-  }
-
-  public void members(final List<TenantMemberDbModel> members) {
-    this.members = members;
-  }
-
   public static class Builder implements ObjectBuilder<TenantDbModel> {
 
     private Long tenantKey;
     private String tenantId;
     private String name;
     private String description;
-    private List<TenantMemberDbModel> members;
 
-    // Public constructor to initialize the builder
     public Builder() {}
 
-    // Builder methods for each field
     public Builder tenantKey(final Long tenantKey) {
       this.tenantKey = tenantKey;
       return this;
@@ -119,14 +55,9 @@ public class TenantDbModel implements DbModel<TenantDbModel> {
       return this;
     }
 
-    public Builder members(final List<TenantMemberDbModel> members) {
-      this.members = members;
-      return this;
-    }
-
     @Override
     public TenantDbModel build() {
-      return new TenantDbModel(tenantId, tenantKey, name, description, members);
+      return new TenantDbModel(tenantId, tenantKey, name, description);
     }
   }
 }
