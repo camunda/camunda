@@ -16,10 +16,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -241,6 +243,41 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
+  void shouldWireDistinctSecretStoreRegistryPerPhysicalTenantIntoSecretServices() {
+    // given: each physical tenant has its own store registry, keyed by tenant ID
+    final var registryA = new SecretStoreRegistry(Map.of());
+    final var registryB = new SecretStoreRegistry(Map.of());
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of(TENANT_A, registryA, TENANT_B, registryB)));
+
+    // then: each tenant's SecretServices holds exactly its own tenant's registry, so the
+    // store-backed resolve/list (#58497) can never read another tenant's stores
+    assertThat(registry.secretServices(TENANT_A).getSecretStoreRegistry()).isSameAs(registryA);
+    assertThat(registry.secretServices(TENANT_B).getSecretStoreRegistry()).isSameAs(registryB);
+  }
+
+  @Test
+  void shouldFallBackToEmptySecretStoreRegistryWhenTenantAbsentFromRegistries() {
+    // given: the registries hold no entry for any tenant (a tenant with no configured stores
+    // still gets a noop-store registry from SecretStoreConfiguration, so absence only happens
+    // when the secrets bean saw a different tenant set than this wiring)
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of()));
+
+    // then: SecretServices still receives a (store-less) registry instead of null, mirroring the
+    // fallback of SecretStoreRegistries#forPhysicalTenant
+    final var fallback = registry.secretServices(TENANT_A).getSecretStoreRegistry();
+    assertThat(fallback).isNotNull();
+    assertThat(fallback.getStores()).isEmpty();
+  }
+
+  @Test
   void shouldWireExactlyOneEntryWhenOnlyTheDefaultPhysicalTenantExists() {
     // given: a single-PT/default-only deployment
     final var defaultChecker = mock(AuthorizationChecker.class);
@@ -320,6 +357,14 @@ class CamundaServicesConfigurationTest {
   private ServiceRegistry buildRegistry(
       final Map<String, Camunda> tenants,
       final AuthorizationCheckerProvider authorizationCheckerProvider) {
+    return buildRegistry(
+        tenants, authorizationCheckerProvider, new SecretStoreRegistries(Map.of()));
+  }
+
+  private ServiceRegistry buildRegistry(
+      final Map<String, Camunda> tenants,
+      final AuthorizationCheckerProvider authorizationCheckerProvider,
+      final SecretStoreRegistries secretStoreRegistries) {
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(tenants);
 
@@ -336,7 +381,8 @@ class CamundaServicesConfigurationTest {
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),
-        new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()));
+        new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
+        secretStoreRegistries);
   }
 
   /** A physical tenant config with {@code security.authorizations.enabled} set as given. */
