@@ -10,7 +10,13 @@ package io.camunda.db.rdbms.write.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
+import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 class AgentInstanceDbModelTest {
@@ -31,9 +37,10 @@ class AgentInstanceDbModelTest {
   @Test
   void shouldLazilyDeserializeToolsWhenOnlyJsonIsSet() {
     // given — simulate a model hydrated from the DB: only the JSON form is populated
-    final var model = new AgentInstanceDbModel();
-    model.tools(
-        "[{\"name\":\"search\",\"description\":\"search the web\",\"elementId\":\"el-1\"}]");
+    final var model =
+        new AgentInstanceDbModel.Builder(
+                "[{\"name\":\"search\",\"description\":\"search the web\",\"elementId\":\"el-1\"}]")
+            .build();
 
     // when
     final List<AgentInstanceToolDbValue> deserialized = model.toolValues();
@@ -44,47 +51,56 @@ class AgentInstanceDbModelTest {
   }
 
   @Test
-  void shouldCacheDeserializedToolsOnTheModel() {
+  void shouldDeriveToolValuesFreshOnEveryCall() {
     // given
-    final var model = new AgentInstanceDbModel();
-    model.tools("[{\"name\":\"search\",\"description\":null,\"elementId\":null}]");
+    final var model =
+        new AgentInstanceDbModel.Builder()
+            .toolValues(List.of(new AgentInstanceToolDbValue("search", null, null)))
+            .build();
 
     // when — call twice
     final var first = model.toolValues();
     final var second = model.toolValues();
 
-    // then — same instance is returned, so deserialization happened only once
-    assertThat(second).isSameAs(first);
+    // then — equal content, but freshly deserialized each time (no cache)
+    assertThat(first).isEqualTo(second).isNotSameAs(second);
   }
 
   @Test
   void shouldReturnNullWhenBothFormsAreAbsent() {
-    final var model = new AgentInstanceDbModel();
+    final var model = new AgentInstanceDbModel.Builder().build();
     assertThat(model.toolValues()).isNull();
   }
 
   @Test
   void shouldReturnNullWhenJsonIsEmpty() {
-    final var model = new AgentInstanceDbModel();
-    model.tools("");
+    // Oracle treats empty CLOB as NULL; MyBatis maps it back to "" on read.
+    final var model = new AgentInstanceDbModel.Builder("").build();
     assertThat(model.toolValues()).isNull();
   }
 
   @Test
-  void shouldInvalidateCachedToolValuesWhenJsonIsReplaced() {
-    // given — model with both forms populated (cache primed)
-    final var model =
-        new AgentInstanceDbModel.Builder()
-            .toolValues(List.of(new AgentInstanceToolDbValue("first", null, null)))
-            .build();
-    assertThat(model.toolValues())
-        .containsExactly(new AgentInstanceToolDbValue("first", null, null));
+  void shouldPreserveRawToolsJsonByteForByteThroughQueueMerge() {
+    // given — a DB-hydrated instance whose stored JSON is non-canonically formatted (spaced out,
+    // key order Jackson would never itself produce for this record)
+    final var nonCanonicalJson =
+        "[ { \"description\": \"search the web\", \"name\": \"search\", \"elementId\": \"el-1\" } ]";
+    final var original =
+        new AgentInstanceDbModel.Builder(nonCanonicalJson).agentInstanceKey(1L).build();
+    final var queueItem =
+        new QueueItem(
+            ContextType.AGENT_INSTANCE, WriteStatementType.INSERT, 1L, "statement", original);
+    final Function<AgentInstanceDbModel.Builder, AgentInstanceDbModel.Builder> mergeFunction =
+        b -> b.status(AgentInstanceStatus.IDLE);
+    final var merger =
+        new UpsertMerger<>(
+            ContextType.AGENT_INSTANCE, 1L, AgentInstanceDbModel.class, mergeFunction);
 
-    // when — the JSON form is replaced (simulates the model being re-hydrated from the DB)
-    model.tools("[{\"name\":\"second\",\"description\":null,\"elementId\":null}]");
+    // when — coalesce a change to an unrelated field, never touching toolValues()
+    final var merged = (AgentInstanceDbModel) merger.merge(queueItem).parameter();
 
-    // then — the cached list is invalidated and the next read re-derives from the new JSON
-    assertThat(model.toolValues())
-        .containsExactly(new AgentInstanceToolDbValue("second", null, null));
+    // then — the raw JSON is carried through completely unparsed, not reserialized
+    assertThat(merged.tools()).isEqualTo(nonCanonicalJson);
+    assertThat(merged.status()).isEqualTo(AgentInstanceStatus.IDLE);
   }
 }

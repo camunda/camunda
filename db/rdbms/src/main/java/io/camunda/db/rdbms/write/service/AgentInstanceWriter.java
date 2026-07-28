@@ -33,18 +33,19 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
   }
 
   public void create(final AgentInstanceDbModel agentInstance) {
-    agentInstance.truncateDefinitionFields(
-        vendorDatabaseProperties.userCharColumnSize(),
-        vendorDatabaseProperties.charColumnMaxBytes());
+    final var truncated =
+        agentInstance.truncateDefinitionFields(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.AGENT_INSTANCE,
             WriteStatementType.INSERT,
-            agentInstance.agentInstanceKey(),
+            truncated.agentInstanceKey(),
             "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
-            agentInstance));
+            truncated));
 
-    insertElementInstanceKeys(agentInstance);
+    insertElementInstanceKeys(truncated);
   }
 
   public void update(final AgentInstanceDbModel agentInstance) {

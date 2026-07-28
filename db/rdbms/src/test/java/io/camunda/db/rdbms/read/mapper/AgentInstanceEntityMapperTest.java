@@ -120,9 +120,9 @@ class AgentInstanceEntityMapperTest {
   }
 
   private AgentInstanceDbModel buildModel(
-      final java.util.function.Consumer<AgentInstanceDbModel> config) {
-    final var model = new AgentInstanceDbModel();
-    config.accept(model);
-    return model;
+      final java.util.function.Consumer<AgentInstanceDbModel.Builder> config) {
+    final var builder = new AgentInstanceDbModel.Builder();
+    config.accept(builder);
+    return builder.build();
   }
 }
