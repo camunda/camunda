@@ -8,7 +8,8 @@
 
 import type {GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
-import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
+import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 /**
  * Combines a process instances statistics filter with a process instances selection filter.
@@ -17,7 +18,13 @@ import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstance
  */
 function useBatchModificationStatisticsFilter(): GetProcessDefinitionStatisticsRequestBody {
   const base = useProcessInstanceStatisticsFilters();
-  const processInstanceKey = getSelectedProcessInstancesFilter();
+  const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
+    processInstancesSelectionStore;
+
+  const processInstanceKey = buildProcessInstanceKeyCriterion(
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+  );
 
   return {
     filter: {
