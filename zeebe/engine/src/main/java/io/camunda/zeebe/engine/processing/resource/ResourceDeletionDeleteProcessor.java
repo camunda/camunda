@@ -572,11 +572,11 @@ public class ResourceDeletionDeleteProcessor
 
   private AuthorizedTenants getAuthorizedTenants(
       final TypedRecord<ResourceDeletionRecord> command) {
+    final var userTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
-      return cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
+      return userTenants;
     }
-    final var userTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     if (!userTenants.isAuthorizedForTenantId(tenantId)) {
       throw new NoSuchResourceException(command.getValue().getResourceKey());
     }
