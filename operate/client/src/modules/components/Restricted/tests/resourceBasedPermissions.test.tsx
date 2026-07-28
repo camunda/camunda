@@ -10,7 +10,7 @@ import {Restricted} from '../index';
 import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {createUser, groupedProcessesMock} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';

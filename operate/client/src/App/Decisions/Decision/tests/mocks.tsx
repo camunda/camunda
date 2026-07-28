@@ -7,7 +7,7 @@
  */
 
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Paths} from 'modules/Routes';

@@ -9,7 +9,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {
   getProcessInstanceFilters,

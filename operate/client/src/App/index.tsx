@@ -12,7 +12,7 @@ import {
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
-} from 'react-router-dom';
+} from 'react-router';
 import {ErrorBoundary} from 'react-error-boundary';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Notifications} from 'modules/notifications';

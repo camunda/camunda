@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import {
   InlineNotification,
   Link,

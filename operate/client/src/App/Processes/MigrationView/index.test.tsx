@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';

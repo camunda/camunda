@@ -19,7 +19,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {fetchProcessInstances, getProcessInstance} from '../../mocks';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {useEffect} from 'react';

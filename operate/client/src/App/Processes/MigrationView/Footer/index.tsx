@@ -12,7 +12,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal';

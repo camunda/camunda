@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {type Screen, waitFor} from '@testing-library/react';
 import {Paths} from 'modules/Routes';
 import {type ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';

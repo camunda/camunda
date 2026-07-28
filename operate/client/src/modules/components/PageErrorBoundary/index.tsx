@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {isRouteErrorResponse, useRouteError} from 'react-router-dom';
+import {isRouteErrorResponse, useRouteError} from 'react-router';
 import {CodeSnippet} from '@carbon/react';
 import {ErrorWrapper} from './ErrorWrapper';
 

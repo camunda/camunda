@@ -13,7 +13,7 @@ import {Button} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {useParams} from 'react-router-dom';
+import {useParams} from 'react-router';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';

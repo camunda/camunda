@@ -8,7 +8,7 @@
 
 import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';

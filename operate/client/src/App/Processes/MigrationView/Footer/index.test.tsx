@@ -10,7 +10,7 @@ import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Footer} from './index';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';

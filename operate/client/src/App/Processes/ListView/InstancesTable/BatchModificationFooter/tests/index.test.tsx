@@ -13,7 +13,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '..';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 vi.mock('modules/hooks/useCallbackPrompt', () => {
   return {

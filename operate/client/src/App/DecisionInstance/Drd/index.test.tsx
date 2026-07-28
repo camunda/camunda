@@ -14,7 +14,7 @@ import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdDataStore} from 'modules/stores/drdData';
 import {Drd} from '.';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';

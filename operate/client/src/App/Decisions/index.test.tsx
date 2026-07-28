@@ -12,7 +12,7 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Decisions} from './';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';

@@ -9,7 +9,7 @@
 import {parse, isValid} from 'date-fns';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getSearchString} from 'modules/utils/getSearchString';
-import type {Location} from 'react-router-dom';
+import type {Location} from 'react-router';
 import {
   generateDecisionKey,
   groupedDecisionsStore,

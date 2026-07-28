@@ -10,7 +10,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {act, useEffect} from 'react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 import {MigrationDetails} from '.';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';

@@ -8,7 +8,7 @@
 
 import {HttpResponse, http} from 'msw';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Routes, Route} from 'react-router-dom';
+import {MemoryRouter, Routes, Route} from 'react-router';
 import {
   render,
   screen,

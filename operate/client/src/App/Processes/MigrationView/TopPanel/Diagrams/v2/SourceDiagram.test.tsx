@@ -17,7 +17,7 @@ import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 vi.mock('modules/hooks/useFilters');
 vi.mock('modules/hooks/useProcessInstancesFilters');

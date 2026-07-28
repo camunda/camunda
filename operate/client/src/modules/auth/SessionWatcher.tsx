@@ -8,7 +8,7 @@
 
 import {useEffect, useRef} from 'react';
 import {observer} from 'mobx-react-lite';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {authenticationStore} from 'modules/stores/authentication';
 import {notificationsStore} from 'modules/stores/notifications';

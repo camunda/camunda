@@ -9,7 +9,7 @@
 import {useEffect, useRef} from 'react';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {drdStore} from 'modules/stores/drd';

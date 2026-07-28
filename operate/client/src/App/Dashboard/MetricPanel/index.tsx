@@ -13,7 +13,7 @@ import {statisticsStore} from 'modules/stores/statistics';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {SkeletonText} from '@carbon/react';
 

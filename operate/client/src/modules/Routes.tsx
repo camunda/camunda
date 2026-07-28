@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {To} from 'react-router-dom';
+import type {To} from 'react-router';
 import type {DecisionInstanceFilters} from 'modules/utils/filter';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 

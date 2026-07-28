@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api";
 import NotFound from "src/pages/not-found";

@@ -13,7 +13,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {MetadataPopover} from '.';
 import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance/v2';
 import {render} from 'modules/testing-library';

@@ -11,7 +11,7 @@ import {render, screen, waitFor, within} from 'common/testing/testing-library';
 import {createMockProcess} from 'v1/api/useProcesses.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();

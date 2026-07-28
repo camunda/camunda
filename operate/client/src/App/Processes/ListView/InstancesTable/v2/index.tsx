@@ -30,7 +30,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {getProcessName} from 'modules/utils/instance';
 import {Toolbar} from '../Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {InstanceOperations} from './InstanceOperations';
 import {BatchModificationFooter} from '../BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';

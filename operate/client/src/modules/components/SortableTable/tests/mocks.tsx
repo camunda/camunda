@@ -7,7 +7,7 @@
  */
 
 import {SortableTable} from '../';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 const mockTableData = [
   {

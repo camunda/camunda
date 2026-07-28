@@ -17,7 +17,7 @@ import {
   styles,
   textSecondary,
 } from "@carbon/elements";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { DocumentationLink } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 

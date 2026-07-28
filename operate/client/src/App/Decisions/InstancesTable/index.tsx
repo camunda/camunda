@@ -13,7 +13,7 @@ import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {formatDate} from 'modules/utils/date';
 import {useEffect} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';

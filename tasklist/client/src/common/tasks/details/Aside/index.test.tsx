@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'common/testing/testing-library';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as userMocks from 'common/mocks/current-user';

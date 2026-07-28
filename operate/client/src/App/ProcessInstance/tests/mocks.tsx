@@ -16,7 +16,7 @@ import {
   createUser,
   createVariable,
 } from 'modules/testUtils';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {

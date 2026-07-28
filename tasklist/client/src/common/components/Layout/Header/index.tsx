@@ -10,7 +10,7 @@ import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
-import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
+import {Link as RouterLink, matchPath, useLocation} from 'react-router';
 import {
   Dropdown,
   Layer,

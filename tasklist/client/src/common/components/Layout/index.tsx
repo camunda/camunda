@@ -8,7 +8,7 @@
 
 /* istanbul ignore file */
 
-import {Outlet} from 'react-router-dom';
+import {Outlet} from 'react-router';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'common/auth/AuthenticationCheck';
 import {AuthorizationCheck} from 'common/auth/AuthorizationCheck';

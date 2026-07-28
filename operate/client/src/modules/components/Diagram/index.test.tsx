@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {createPortal} from 'react-dom';
 import {Diagram} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';

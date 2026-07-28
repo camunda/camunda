@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 
 describe('<RedirectDeprecatedRoutes />', () => {

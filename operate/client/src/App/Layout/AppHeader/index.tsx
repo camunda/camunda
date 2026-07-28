@@ -8,7 +8,7 @@
 
 import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react-lite';
-import {Link} from 'react-router-dom';
+import {Link} from 'react-router';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Locations, Paths} from 'modules/Routes';

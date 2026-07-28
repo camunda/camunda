@@ -8,7 +8,7 @@
 
 import {pages} from 'common/routing';
 import type {Task} from 'v1/api/types';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {tracking} from 'common/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request, type RequestError} from 'common/api/request';

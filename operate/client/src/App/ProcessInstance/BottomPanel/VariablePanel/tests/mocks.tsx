@@ -7,7 +7,7 @@
  */
 
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';

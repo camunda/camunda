@@ -18,7 +18,7 @@ import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
 import sharedStyles from 'common/tasks/details/panelHeader.module.scss';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {getStateLocally} from 'common/local-storage';
 
 type Props = {

@@ -16,7 +16,7 @@ import {FlexContainer, ErrorMessageCell} from '../styled';
 import {type Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';

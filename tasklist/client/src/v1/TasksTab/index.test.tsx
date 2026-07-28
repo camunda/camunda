@@ -12,7 +12,7 @@ import {
   fireEvent,
   waitFor,
 } from 'common/testing/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {generateTask} from 'v1/mocks/tasks';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';

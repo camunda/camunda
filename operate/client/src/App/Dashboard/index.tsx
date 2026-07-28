@@ -13,7 +13,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {InstancesByProcess} from './InstancesByProcess';
 import {IncidentsByError} from './IncidentsByError';
 

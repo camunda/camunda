@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { PasswordInput, TextInput } from "@carbon/react";
 import { UserAdmin } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";

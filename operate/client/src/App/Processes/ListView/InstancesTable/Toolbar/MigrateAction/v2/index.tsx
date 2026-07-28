@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
