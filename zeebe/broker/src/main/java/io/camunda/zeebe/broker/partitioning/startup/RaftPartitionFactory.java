@@ -112,6 +112,10 @@ public final class RaftPartitionFactory {
         brokerCfg.getExperimental().getRaft().getMinStepDownFailureCount());
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
+    partitionConfig.setRebalanceReplicationLagThreshold(
+        brokerCfg.getCluster().getRaft().getRebalanceReplicationLagThreshold().toBytes());
+    partitionConfig.setRebalanceReplicationTimeout(
+        brokerCfg.getCluster().getRaft().getRebalanceReplicationTimeout());
 
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());

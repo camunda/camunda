@@ -33,6 +33,8 @@ public class RaftPartitionConfig {
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
   // Keep in sync with the default in ExperimentalRaftCfg, which usually overrides this.
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  private static final long DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD = 8L * 1024 * 1024;
+  private static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -44,6 +46,8 @@ public class RaftPartitionConfig {
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
+  private long rebalanceReplicationLagThreshold = DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD;
+  private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
@@ -195,6 +199,32 @@ public class RaftPartitionConfig {
 
   public void setPreferSnapshotReplicationThreshold(final int preferSnapshotReplicationThreshold) {
     this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
+  }
+
+  /**
+   * The maximum replication lag, in bytes, that the desired leader may have for the current leader
+   * to attempt a coordinated leadership transfer. Above it the partition is skipped with {@code
+   * LAG_TOO_HIGH}. Maps to {@code camunda.cluster.raft.rebalance.replicationLagThreshold}.
+   */
+  public long getRebalanceReplicationLagThreshold() {
+    return rebalanceReplicationLagThreshold;
+  }
+
+  public void setRebalanceReplicationLagThreshold(final long rebalanceReplicationLagThreshold) {
+    this.rebalanceReplicationLagThreshold = rebalanceReplicationLagThreshold;
+  }
+
+  /**
+   * How long the current leader waits (paused, declining writes) for the desired leader to finish
+   * replicating during a coordinated leadership transfer before cancelling with {@code
+   * REPLICATION_TIMED_OUT}. Maps to {@code camunda.cluster.raft.rebalance.replicationTimeout}.
+   */
+  public Duration getRebalanceReplicationTimeout() {
+    return rebalanceReplicationTimeout;
+  }
+
+  public void setRebalanceReplicationTimeout(final Duration rebalanceReplicationTimeout) {
+    this.rebalanceReplicationTimeout = rebalanceReplicationTimeout;
   }
 
   public RaftStorageConfig getStorageConfig() {
