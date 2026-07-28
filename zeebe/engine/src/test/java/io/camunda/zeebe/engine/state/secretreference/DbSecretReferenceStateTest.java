@@ -259,6 +259,39 @@ public final class DbSecretReferenceStateTest {
   }
 
   @Test
+  void shouldVisitAllPendingSecretReferences() {
+    // given
+    state.addPendingSecretReference("store-a", "ref-1");
+    state.addPendingSecretReference("store-a", "ref-2");
+    state.addPendingSecretReference("store-b", "ref-3");
+
+    // when
+    final var collected = new ArrayList<String>();
+    state.visitPendingSecretReferences(
+        (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
+
+    // then
+    assertThat(collected)
+        .containsExactlyInAnyOrder("store-a:ref-1", "store-a:ref-2", "store-b:ref-3");
+  }
+
+  @Test
+  void shouldNotVisitRemovedPendingSecretReferences() {
+    // given
+    state.addPendingSecretReference("store-a", "ref-1");
+    state.addPendingSecretReference("store-a", "ref-2");
+    state.removePendingSecretReference("store-a", "ref-1");
+
+    // when
+    final var collected = new ArrayList<String>();
+    state.visitPendingSecretReferences(
+        (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
+
+    // then
+    assertThat(collected).containsExactly("store-a:ref-2");
+  }
+
+  @Test
   public void shouldPreserveRemainingEntryWhenOneWaitingJobIsRemoved() {
     // given — two jobs waiting on the same secret; remove one, the other must remain
     final String storeId = "storeA";
