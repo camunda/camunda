@@ -80,13 +80,6 @@
 /.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/camundaex
 
 ################################
-## @camunda/connectors-agentic-ai
-################################
-
-# MCP gateway
-/gateways/gateway-mcp/      @camunda/connectors-agentic-ai
-
-################################
 ## @camunda/identity
 ################################
 
