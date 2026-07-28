@@ -147,7 +147,8 @@ public final class ControllableRaftContexts {
   public void shutdown() throws IOException {
     snapshotStores.forEach((m, store) -> store.close());
     snapshotStores.clear();
-    raftServers.forEach((m, c) -> c.close());
+    raftServers.forEach((m, c) -> c.getThreadContext().execute(c::close));
+    raftServers.keySet().forEach(this::runUntilDone);
     raftServers.clear();
     serverProtocols.clear();
     deterministicExecutors.forEach((m, e) -> e.close());
