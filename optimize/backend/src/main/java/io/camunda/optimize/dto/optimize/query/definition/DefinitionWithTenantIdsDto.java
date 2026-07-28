@@ -17,6 +17,7 @@ import java.util.Set;
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
 
   private List<String> tenantIds;
+  private boolean agenticProcess;
 
   public DefinitionWithTenantIdsDto(
       final String key,
@@ -59,6 +60,14 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
+  public boolean isAgenticProcess() {
+    return agenticProcess;
+  }
+
+  public void setAgenticProcess(final boolean agenticProcess) {
+    this.agenticProcess = agenticProcess;
+  }
+
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DefinitionWithTenantIdsDto;
@@ -73,16 +82,20 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
       return false;
     }
     final DefinitionWithTenantIdsDto that = (DefinitionWithTenantIdsDto) o;
-    return Objects.equals(tenantIds, that.tenantIds);
+    return agenticProcess == that.agenticProcess && Objects.equals(tenantIds, that.tenantIds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), tenantIds);
+    return Objects.hash(super.hashCode(), tenantIds, agenticProcess);
   }
 
   @Override
   public String toString() {
-    return "DefinitionWithTenantIdsDto(tenantIds=" + getTenantIds() + ")";
+    return "DefinitionWithTenantIdsDto(tenantIds="
+        + getTenantIds()
+        + ", agenticProcess="
+        + agenticProcess
+        + ")";
   }
 }

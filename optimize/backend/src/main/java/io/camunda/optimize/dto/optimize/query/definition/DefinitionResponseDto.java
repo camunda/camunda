@@ -18,6 +18,7 @@ import java.util.Set;
 public class DefinitionResponseDto extends SimpleDefinitionDto {
 
   private List<TenantDto> tenants;
+  private boolean agenticProcess;
 
   public DefinitionResponseDto(
       final String key,
@@ -76,12 +77,15 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
   public static DefinitionResponseDto from(
       final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
       final List<TenantDto> authorizedTenants) {
-    return new DefinitionResponseDto(
-        definitionWithTenantIdsDto.getKey(),
-        definitionWithTenantIdsDto.getName(),
-        definitionWithTenantIdsDto.getType(),
-        authorizedTenants,
-        definitionWithTenantIdsDto.getEngines());
+    final DefinitionResponseDto dto =
+        new DefinitionResponseDto(
+            definitionWithTenantIdsDto.getKey(),
+            definitionWithTenantIdsDto.getName(),
+            definitionWithTenantIdsDto.getType(),
+            authorizedTenants,
+            definitionWithTenantIdsDto.getEngines());
+    dto.setAgenticProcess(definitionWithTenantIdsDto.isAgenticProcess());
+    return dto;
   }
 
   public List<TenantDto> getTenants() {
@@ -94,6 +98,14 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
     }
 
     this.tenants = tenants;
+  }
+
+  public boolean isAgenticProcess() {
+    return agenticProcess;
+  }
+
+  public void setAgenticProcess(final boolean agenticProcess) {
+    this.agenticProcess = agenticProcess;
   }
 
   @Override
@@ -110,16 +122,22 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
       return false;
     }
     final DefinitionResponseDto that = (DefinitionResponseDto) o;
-    return Objects.equals(tenants, that.tenants);
+    return agenticProcess == that.agenticProcess && Objects.equals(tenants, that.tenants);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), tenants);
+    return Objects.hash(super.hashCode(), tenants, agenticProcess);
   }
 
   @Override
   public String toString() {
-    return "DefinitionResponseDto(super=" + super.toString() + ", tenants=" + getTenants() + ")";
+    return "DefinitionResponseDto(super="
+        + super.toString()
+        + ", tenants="
+        + getTenants()
+        + ", agenticProcess="
+        + agenticProcess
+        + ")";
   }
 }
