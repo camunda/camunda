@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
@@ -152,6 +153,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private LeadershipTransferPauseControl leadershipTransferPauseControl;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -1037,6 +1039,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setEntryValidator(final EntryValidator validator) {
     entryValidator = validator;
+  }
+
+  /**
+   * The broker-supplied control the leader uses to freeze/unfreeze the partition during a
+   * coordinated leadership transfer, or {@code null} when none is registered.
+   */
+  public LeadershipTransferPauseControl getLeadershipTransferPauseControl() {
+    return leadershipTransferPauseControl;
+  }
+
+  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
+    leadershipTransferPauseControl = control;
   }
 
   /**
