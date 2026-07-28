@@ -14,12 +14,7 @@ import {sleep} from './sleep';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
-    | 'BASIC'
-    | 'OAUTH'
-    | 'BEARER'
-    | 'COOKIE'
-    | 'NONE'
-    | undefined,
+    'BASIC' | 'OAUTH' | 'BEARER' | 'COOKIE' | 'NONE' | undefined,
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
