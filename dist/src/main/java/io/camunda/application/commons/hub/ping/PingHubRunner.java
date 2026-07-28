@@ -157,6 +157,11 @@ public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener 
         || pingConfiguration.credentials().clientSecret().isBlank()) {
       return Either.left("M2M client secret must not be null or empty.");
     }
+    final var tokenRequestParametersError =
+        pingConfiguration.credentials().tokenRequestParametersValidationError();
+    if (tokenRequestParametersError.isPresent()) {
+      return Either.left(tokenRequestParametersError.get());
+    }
     if (licensePayload.isLeft()) {
       return Either.left(
           "Failed to parse license payload for Hub ping task: "

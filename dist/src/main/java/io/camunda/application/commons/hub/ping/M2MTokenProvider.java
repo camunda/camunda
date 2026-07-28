@@ -17,6 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,6 @@ public class M2MTokenProvider {
   private static final int TOKEN_EXPIRY_BUFFER_SECONDS = 30;
   private static final int MAX_RESPONSE_LOG_LENGTH = 500;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   private final HttpClient httpClient;
   private final M2MCredentials credentials;
   private volatile String cachedToken;
@@ -51,18 +51,21 @@ public class M2MTokenProvider {
 
   private void refreshToken() throws IOException, InterruptedException {
     LOGGER.debug("Fetching M2M token from {}", credentials.tokenEndpoint());
-    final String requestBody =
-        "grant_type=client_credentials"
-            + "&client_id="
-            + URLEncoder.encode(credentials.clientId(), StandardCharsets.UTF_8)
-            + "&client_secret="
-            + URLEncoder.encode(credentials.clientSecret(), StandardCharsets.UTF_8);
+    final StringBuilder requestBody =
+        new StringBuilder("grant_type=client_credentials")
+            .append("&client_id=")
+            .append(encode(credentials.clientId()))
+            .append("&client_secret=")
+            .append(encode(credentials.clientSecret()));
+    credentials.tokenRequestParameters().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .forEach(entry -> appendParameter(requestBody, entry.getKey(), entry.getValue()));
 
     final HttpRequest request =
         HttpRequest.newBuilder()
             .uri(credentials.tokenEndpoint())
             .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
             .build();
 
     final HttpResponse<String> response =
@@ -91,5 +94,16 @@ public class M2MTokenProvider {
     return s.length() <= MAX_RESPONSE_LOG_LENGTH
         ? s
         : s.substring(0, MAX_RESPONSE_LOG_LENGTH) + "... [truncated]";
+  }
+
+  private static void appendParameter(
+      final StringBuilder requestBody, final String name, final String value) {
+    if (value != null && !value.isBlank()) {
+      requestBody.append('&').append(encode(name)).append('=').append(encode(value));
+    }
+  }
+
+  private static String encode(final String value) {
+    return URLEncoder.encode(value, StandardCharsets.UTF_8);
   }
 }
