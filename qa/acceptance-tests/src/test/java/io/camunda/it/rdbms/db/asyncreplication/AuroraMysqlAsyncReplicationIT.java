@@ -7,20 +7,21 @@
  */
 package io.camunda.it.rdbms.db.asyncreplication;
 
-import io.camunda.it.rdbms.db.util.AuroraPostgresReplicationCluster;
+import io.camunda.it.rdbms.db.util.AuroraMysqlReplicationCluster;
 import java.time.Duration;
 import org.junit.jupiter.api.Tag;
 
 /**
- * Runs the {@link AsyncReplicationIT} suite against a pre-provisioned AWS Aurora <b>PostgreSQL</b>
- * Global Database instead of local containers (see {@link AuroraPostgresReplicationCluster}).
+ * Runs the {@link AsyncReplicationIT} suite against a pre-provisioned AWS Aurora <b>MySQL</b>
+ * Global Database instead of local containers (see {@link AuroraMysqlReplicationCluster}).
  */
-@Tag("rdbms-aurora")
-public class AuroraAsyncReplicationIT extends AsyncReplicationIT<AuroraPostgresReplicationCluster> {
+@Tag("rdbms-aurora-mysql")
+public class AuroraMysqlAsyncReplicationIT
+    extends AsyncReplicationIT<AuroraMysqlReplicationCluster> {
 
   @Override
-  protected AuroraPostgresReplicationCluster createCluster() {
-    return new AuroraPostgresReplicationCluster();
+  protected AuroraMysqlReplicationCluster createCluster() {
+    return new AuroraMysqlReplicationCluster();
   }
 
   @Override

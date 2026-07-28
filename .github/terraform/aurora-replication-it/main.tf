@@ -68,6 +68,18 @@ variable "instance_class" {
   default = "db.r6g.large"
 }
 
+variable "engine" {
+  type    = string
+  default = "aurora-postgresql"
+}
+
+# Left null so the module picks its own per-engine default (postgresql_engine_version /
+# mysql_engine_version). Set explicitly here only to pin a specific version.
+variable "engine_version" {
+  type    = string
+  default = null
+}
+
 # Scaled 1 -> 0 -> 1 by the test to remove/restore the replica instance while
 # keeping the secondary cluster (and storage replication) in place.
 variable "secondary_num_instances" {
@@ -115,6 +127,8 @@ module "aurora" {
   }
 
   global_cluster_identifier = "${var.name_prefix}-global"
+  engine                    = var.engine
+  engine_version            = var.engine_version
   master_username           = var.master_username
   master_password           = var.master_password
   instance_class            = var.instance_class
@@ -202,7 +216,7 @@ resource "aws_security_group" "bastion" {
     Purpose = "aurora-async-replication-it"
   }
 
-  # outbound only: 443 for the SSM agent, 5432 towards Aurora
+  # outbound only: 443 for the SSM agent, module.aurora.db_port towards Aurora
   egress {
     from_port   = 443
     to_port     = 443
@@ -212,11 +226,11 @@ resource "aws_security_group" "bastion" {
   }
 
   egress {
-    from_port   = 5432
-    to_port     = 5432
+    from_port   = module.aurora.db_port
+    to_port     = module.aurora.db_port
     protocol    = "TCP"
     cidr_blocks = [data.aws_vpc.primary.cidr_block]
-    description = "PostgreSQL to Aurora"
+    description = "Aurora database port"
   }
 }
 
@@ -251,4 +265,8 @@ output "primary_cluster_endpoint" {
 
 output "bastion_instance_id" {
   value = aws_instance.bastion.id
+}
+
+output "db_port" {
+  value = module.aurora.db_port
 }

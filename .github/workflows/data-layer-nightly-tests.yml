@@ -152,11 +152,27 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   aurora-async-replication:
-    name: "Aurora Async Replication IT"
+    name: "Aurora Async Replication IT (PostgreSQL)"
     concurrency:
-      group: aurora-async-replication-test
+      group: aurora-async-replication-test-postgresql
       cancel-in-progress: false
     uses: ./.github/workflows/aurora-async-replication-test.yml
+    with:
+      db_engine: postgresql
+    secrets: inherit
+    permissions: { }
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+
+  aurora-async-replication-mysql:
+    name: "Aurora Async Replication IT (MySQL)"
+    concurrency:
+      group: aurora-async-replication-test-mysql
+      cancel-in-progress: false
+    uses: ./.github/workflows/aurora-async-replication-test.yml
+    with:
+      db_engine: mysql
     secrets: inherit
     permissions: { }
     if: |

@@ -62,11 +62,18 @@
   </select>
 
   <!--
-    Detects whether the connected MySQL instance is AWS Aurora MySQL. Aurora MySQL exposes the
-    aurora_version() function; plain MySQL does not. Safe to run on any MySQL-compatible database; never throws.
+    Detects whether the connected MySQL instance is AWS Aurora MySQL. aurora_version() is a native
+    engine function on Aurora MySQL, not a user routine, so it never appears in
+    information_schema.ROUTINES (unlike PostgreSQL, where aurora_version() is a real catalog
+    function). information_schema.replica_host_status is documented by AWS to exist on every
+    Aurora MySQL cluster regardless of version or Global Database status, so check for that table
+    instead. Safe to run on any MySQL-compatible database; never throws.
   -->
   <select id="isAurora" resultType="boolean" databaseId="mysql">
-    SELECT EXISTS(SELECT 1 FROM information_schema.ROUTINES WHERE ROUTINE_NAME = 'aurora_version')
+    SELECT EXISTS(SELECT 1
+                  FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = 'information_schema'
+                    AND TABLE_NAME = 'REPLICA_HOST_STATUS')
   </select>
 
   <!--

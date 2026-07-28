@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>{@value #ENV_JDBC_URL} – JDBC URL of the primary cluster endpoint (any maintenance
- *       database, e.g. {@code jdbc:postgresql://<endpoint>:5432/postgres})
- *   <li>{@value #ENV_USERNAME} – database user with {@code CREATEDB} privilege
+ *       database)
+ *   <li>{@value #ENV_USERNAME} – database user with privileges to create/drop databases
  *   <li>{@value #ENV_PASSWORD} – password of that user
  *   <li>{@value #ENV_STOP_REPLICA_CMD} – shell command that removes the replica (e.g. a {@code
  *       terraform apply} scaling the secondary instance count to 0)
@@ -47,9 +47,15 @@ import org.slf4j.LoggerFactory;
  * isolated; {@link #stop()} drops it again, leaving the cluster in a clean state. Replica removal
  * and recovery are delegated to the infrastructure-provided commands, since a managed Aurora Global
  * Database cannot be manipulated directly from a test; after {@link #startReplica()} the cluster
- * waits until the replica reports a position via {@code aurora_global_db_instance_status()}.
+ * waits until the replica reports a position via the engine-specific Aurora Global Database status
+ * query (see {@link #replicaStatusQuery()}).
+ *
+ * <p>Subclasses only need to supply the engine-specific SQL: Aurora PostgreSQL exposes replica
+ * status via the {@code aurora_global_db_instance_status()} table function, while Aurora MySQL
+ * exposes the same information as the {@code information_schema.aurora_global_db_instance_status}
+ * table.
  */
-public final class AuroraReplicationCluster implements ReplicationClusterContainer {
+public abstract class AbstractAuroraReplicationCluster implements ReplicationClusterContainer {
 
   public static final String ENV_JDBC_URL = "TEST_AURORA_JDBC_URL";
   public static final String ENV_USERNAME = "TEST_AURORA_USERNAME";
@@ -59,7 +65,7 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
 
   private static final Duration REPLICA_COMMAND_TIMEOUT = Duration.ofMinutes(30);
 
-  private static final Logger LOG = LoggerFactory.getLogger(AuroraReplicationCluster.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAuroraReplicationCluster.class);
 
   private final String adminJdbcUrl = requireEnv(ENV_JDBC_URL);
   private final String username = requireEnv(ENV_USERNAME);
@@ -70,6 +76,23 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
   private final ExecutorService processExecutor =
       Executors.newSingleThreadExecutor(r -> new Thread(r, "aurora-cluster"));
 
+  /** Returns the engine-specific statement used to drop the scratch database in {@link #stop()}. */
+  protected abstract String dropDatabaseStatement(String databaseName);
+
+  /**
+   * Returns the engine-specific query selecting {@code server_id}, {@code session_id} and {@code
+   * durable_lsn} from the Aurora Global Database instance status, used to detect that a replica has
+   * gone offline.
+   */
+  protected abstract String replicaUnreachableQuery();
+
+  /**
+   * Returns the engine-specific query selecting {@code server_id}, {@code session_id}, {@code
+   * aws_region}, {@code durable_lsn} and {@code visibility_lag_in_msec} from the Aurora Global
+   * Database instance status, used to detect that a replica has caught up.
+   */
+  protected abstract String replicaStatusQuery();
+
   @Override
   public void start() {
     LOG.info("Creating scratch database '{}' on Aurora cluster", databaseName);
@@ -79,7 +102,7 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
   @Override
   public void stop() {
     LOG.info("Dropping scratch database '{}' on Aurora cluster", databaseName);
-    executeAdminStatement("DROP DATABASE IF EXISTS " + databaseName + " WITH (FORCE)");
+    executeAdminStatement(dropDatabaseStatement(databaseName));
   }
 
   @Override
@@ -135,12 +158,7 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
               try (final Connection connection =
                       DriverManager.getConnection(adminJdbcUrl, username, password);
                   final Statement statement = connection.createStatement();
-                  final ResultSet rs =
-                      statement.executeQuery(
-                          """
-                          SELECT server_id, session_id, durable_lsn
-                          FROM aurora_global_db_instance_status()
-                          """)) {
+                  final ResultSet rs = statement.executeQuery(replicaUnreachableQuery())) {
                 int replicaCount = 0;
                 while (rs.next()) {
                   final String sessionId = rs.getString("session_id");
@@ -211,12 +229,7 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
               try (final Connection connection =
                       DriverManager.getConnection(adminJdbcUrl, username, password);
                   final Statement statement = connection.createStatement();
-                  final ResultSet rs =
-                      statement.executeQuery(
-                          """
-                          SELECT server_id, session_id, aws_region, durable_lsn, visibility_lag_in_msec
-                          FROM aurora_global_db_instance_status()
-                          """)) {
+                  final ResultSet rs = statement.executeQuery(replicaStatusQuery())) {
                 int replicaCount = 0;
                 boolean replicaInSync = false;
                 while (rs.next()) {
