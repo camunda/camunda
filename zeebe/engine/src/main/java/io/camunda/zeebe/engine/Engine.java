@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBufferedCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -57,13 +57,15 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String DEBUG_MESSAGE_PI_KEY_NOT_FOUND =
       "Expected to reject command for banned process instance, but could not extract process instance key from record '{}'. Skipping rejection response.";
+  private static final String ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION =
+      "Expected to handle a known suspension decision, but got '%s'. Please report this as a bug.";
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private MutableProcessingState processingState;
-  private ProcessInstanceBufferedCommandProcessor bufferedCommandProcessor;
+  private ProcessInstanceBufferingBehavior bufferingBehavior;
   private SuspensionCheck suspensionCheck;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
@@ -134,8 +136,8 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
-    bufferedCommandProcessor =
-        new ProcessInstanceBufferedCommandProcessor(processingState.getKeyGenerator(), writers);
+    bufferingBehavior =
+        new ProcessInstanceBufferingBehavior(processingState.getKeyGenerator(), writers);
     suspensionCheck = new SuspensionCheck(processingState);
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
@@ -162,7 +164,6 @@ public class Engine implements RecordProcessor {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
 
@@ -190,17 +191,18 @@ public class Engine implements RecordProcessor {
           case REJECT ->
               rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
           case BUFFER ->
-              // route to the dedicated buffering processor instead of the command's usual
-              // processor; see ProcessInstanceBufferedCommandProcessor for the behavior
-              bufferedCommandProcessor.bufferCommand(typedCommand, suspension.processInstanceKey());
-          default -> {
-            // PROCESS: run the command's usual processor
+              bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
+          case PROCESS -> {
             if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
               processingResultBuilder.withProcessInASeparateBatch();
             }
 
             currentProcessor.processRecord(record, processingResultBuilder);
           }
+          default ->
+              throw new IllegalStateException(
+                  String.format(
+                      ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION, suspension.decision()));
         }
       } else {
         // Reject commands for banned process instances
@@ -280,16 +282,17 @@ public class Engine implements RecordProcessor {
       return;
     }
 
-    final String rejectionReason = String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey);
-    writers.rejection().appendRejection(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
-    writers
-        .response()
-        .writeRejectedResponseOnCommand(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
+    rejectInstanceCommand(typedCommand, String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey));
   }
 
   private void rejectSuspendedInstanceCommand(
       final TypedRecord<?> typedCommand, final long processInstanceKey) {
-    final String rejectionReason = String.format(ERROR_MESSAGE_SUSPENDED_PI, processInstanceKey);
+    rejectInstanceCommand(
+        typedCommand, String.format(ERROR_MESSAGE_SUSPENDED_PI, processInstanceKey));
+  }
+
+  private void rejectInstanceCommand(
+      final TypedRecord<?> typedCommand, final String rejectionReason) {
     writers.rejection().appendRejection(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
     writers
         .response()

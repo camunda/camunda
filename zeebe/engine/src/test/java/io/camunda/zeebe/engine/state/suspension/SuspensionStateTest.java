@@ -145,9 +145,9 @@ public final class SuspensionStateTest {
   public void shouldBufferAndVisitSingleCommand() {
     // given
     final long processInstanceKey = 1L;
-    final long elementInstanceKey = 2L;
+    final long commandRecordKey = 2L;
     final long bufferedCommandKey = 10L;
-    final var command = bufferedCommandRecord(processInstanceKey, elementInstanceKey);
+    final var command = bufferedCommandRecord(processInstanceKey, commandRecordKey);
 
     // when
     suspensionState.bufferCommand(bufferedCommandKey, command);
@@ -166,7 +166,7 @@ public final class SuspensionStateTest {
     assertThat(visitedValues).hasSize(1);
     final var visited = visitedValues.get(0);
     assertThat(visited.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(visited.getElementInstanceKey()).isEqualTo(elementInstanceKey);
+    assertThat(visited.getCommandKey()).isEqualTo(commandRecordKey);
     assertThat(visited.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE);
     assertThat(visited.getIntent()).isEqualTo(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     assertThat(visited.getCommandValue()).isInstanceOf(ProcessInstanceRecord.class);
@@ -269,12 +269,12 @@ public final class SuspensionStateTest {
   }
 
   private ProcessInstanceBufferedCommandRecord bufferedCommandRecord(
-      final long processInstanceKey, final long elementInstanceKey) {
+      final long processInstanceKey, final long commandKey) {
     return new ProcessInstanceBufferedCommandRecord()
         .setProcessInstanceKey(processInstanceKey)
         .setProcessDefinitionKey(1)
         .setTenantId("tenant")
-        .setElementInstanceKey(elementInstanceKey)
+        .setCommandKey(commandKey)
         .setValueType(ValueType.PROCESS_INSTANCE)
         .setIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .setCommandValue(
