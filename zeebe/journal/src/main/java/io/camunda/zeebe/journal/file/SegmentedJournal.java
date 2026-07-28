@@ -80,6 +80,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(asqn, recordDataWriter);
     }
@@ -87,6 +88,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void append(final JournalRecord record) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       writer.append(record);
     }
@@ -94,6 +96,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalRecord append(final long checksum, final byte[] serializedRecord) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(checksum, serializedRecord);
     }
