@@ -50,7 +50,7 @@ ARG JATTACH_CHECKSUM_ARM64
 
 # hadolint ignore=DL4006,DL3018
 RUN --mount=type=cache,target=/root/.jattach,rw \
-    apk add -q --no-cache curl 2>/dev/null && \
+    apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
       CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
@@ -58,7 +58,9 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" -o jattach.tgz && \
+    curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
+      "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
+      -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
     tar -xzf "jattach.tgz" && \
     chmod +x jattach && \
