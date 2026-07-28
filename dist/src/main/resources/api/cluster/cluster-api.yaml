@@ -286,34 +286,6 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
-  /mode:
-    patch:
-      summary: Change cluster mode
-      description: Transitions the physical tenant's partitions between processing and recovery
-        mode. This is a non-blocking operation - the request is acknowledged once the change
-        has been accepted, before the transition itself has completed. Entering recovery mode
-        deactivates all partitions of the target physical tenant so that only a restricted set
-        of read-only operations remains available; exiting recovery mode returns it to normal
-        processing.
-      parameters:
-        - $ref: '#/components/parameters/ModeParameter'
-        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
-        - $ref: '#/components/parameters/DryRunParameter'
-      responses:
-        '202':
-          $ref: '#/components/responses/ModeChangeResponse'
-        '400':
-          $ref: 'components.yaml#/responses/InvalidRequest'
-        '409':
-          $ref: 'components.yaml#/responses/ConcurrentChangeError'
-        '500':
-          $ref: 'components.yaml#/responses/InternalError'
-        '502':
-          $ref: 'components.yaml#/responses/GatewayError'
-        '504':
-          $ref: 'components.yaml#/responses/TimeoutError'
-
-
   /zones:
     put:
       summary:
@@ -392,25 +364,6 @@ components:
       schema:
         type: integer
         format: int32
-    ModeParameter:
-      name: mode
-      description: The target cluster mode.
-      in: query
-      style: form
-      required: true
-      schema:
-        $ref: 'components.yaml#/schemas/Mode'
-    PhysicalTenantIdParameter:
-      name: physicalTenantId
-      description: The physical tenant to target. Defaults to the default physical tenant if not
-        specified.
-      in: query
-      style: form
-      required: false
-      schema:
-        type: string
-        default: default
-
   responses:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.
@@ -453,10 +406,3 @@ components:
         application/json:
           schema:
             $ref: "components.yaml#/schemas/GetTopologyResponse"
-
-    ModeChangeResponse:
-      description: Request to change cluster mode is accepted.
-      content:
-        application/json:
-          schema:
-            $ref: "components.yaml#/schemas/PlannedOperationsResponse"

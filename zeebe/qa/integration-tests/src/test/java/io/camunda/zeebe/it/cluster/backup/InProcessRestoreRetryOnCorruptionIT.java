@@ -89,13 +89,13 @@ final class InProcessRestoreRetryOnCorruptionIT {
 
       // when - the broker is put into RECOVERING mode and a restore is triggered
       final var clusterActuator = ClusterActuator.of(broker);
-      final var toRecovering = clusterActuator.updateMode("RECOVERING", false);
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
       Awaitility.await("broker transitions to RECOVERING")
           .timeout(Duration.ofSeconds(60))
           .untilAsserted(
               () ->
                   ClusterActuatorAssert.assertThat(clusterActuator)
-                      .hasCompletedChanges(toRecovering.getChangeId())
+                      .hasCompletedChanges(toRecovering)
                       .doesNotHavePendingChanges());
       final var changeId = InProcessRestoreTestUtil.triggerRestore(client, BACKUP_ID);
 

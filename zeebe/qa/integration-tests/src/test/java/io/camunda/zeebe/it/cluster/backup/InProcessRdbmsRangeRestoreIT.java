@@ -72,9 +72,11 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
 
   private ClusterActuator enterRecovering() {
     final var clusterActuator = ClusterActuator.of(broker);
-    final var toRecovering = clusterActuator.updateMode("RECOVERING", false);
-    awaitChangeCompletes(
-        clusterActuator, toRecovering.getChangeId(), "broker transitions to RECOVERING");
+    final long toRecovering;
+    try (final var client = broker.newClientBuilder().build()) {
+      toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+    }
+    awaitChangeCompletes(clusterActuator, toRecovering, "broker transitions to RECOVERING");
     return clusterActuator;
   }
 

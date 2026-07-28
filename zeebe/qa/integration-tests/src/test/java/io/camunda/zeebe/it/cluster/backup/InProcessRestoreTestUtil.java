@@ -33,9 +33,11 @@ import org.awaitility.Awaitility;
 /**
  * Shared helpers for the in-process restore tests ({@link InProcessRestoreAcceptance}, {@link
  * InProcessRestoreRetryOnCorruptionIT} and {@link InProcessRdbmsRangeRestoreIT}), which all trigger
- * a restore over the cluster's REST endpoint while a broker is in {@code RECOVERING} mode.
+ * a restore over the cluster's REST endpoint while a broker is in {@code RECOVERING} mode. Also
+ * exposes {@link #changeMode} for triggering a cluster mode change over {@code v2/mode}, reused by
+ * {@code ModeChangeAcceptanceIT} outside this package.
  */
-final class InProcessRestoreTestUtil {
+public final class InProcessRestoreTestUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
@@ -84,6 +86,32 @@ final class InProcessRestoreTestUtil {
       return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to parse restore REST response", e);
+    }
+  }
+
+  /**
+   * Triggers a cluster mode change to the given mode over {@code v2/mode}, asserting the request is
+   * accepted (200), and returns the id of the cluster configuration change it started.
+   */
+  public static long changeMode(
+      final CamundaClient client, final String mode, final boolean dryRun) {
+    try {
+      final var uri =
+          URI.create(
+              "%sv2/mode?mode=%s&dryRun=%s"
+                  .formatted(client.getConfiguration().getRestAddress(), mode, dryRun));
+      final var request =
+          HttpRequest.newBuilder(uri).method("PATCH", HttpRequest.BodyPublishers.noBody()).build();
+      final var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+      assertThat(response.statusCode())
+          .describedAs("mode change REST response: %s".formatted(response.body()))
+          .isEqualTo(200);
+      return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to trigger mode change via REST endpoint", e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while triggering mode change via REST endpoint", e);
     }
   }
 

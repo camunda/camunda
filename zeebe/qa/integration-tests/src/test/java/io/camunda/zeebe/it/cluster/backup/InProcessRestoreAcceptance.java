@@ -61,9 +61,9 @@ public interface InProcessRestoreAcceptance {
       final var backupActuator = BackupActuator.of(cluster.availableGateway());
       takeBackup(backupActuator, BACKUP_ID);
 
-      // when -- the cluster is put into RECOVERING mode
+      // when -- the cluster is put into RECOVERING mode over the cluster's REST endpoint
       final var clusterActuator = ClusterActuator.of(cluster.availableGateway());
-      final var toRecovering = clusterActuator.updateMode("RECOVERING", false);
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
       Awaitility.await("cluster transitions to RECOVERING")
           .timeout(Duration.ofSeconds(60))
           .untilAsserted(

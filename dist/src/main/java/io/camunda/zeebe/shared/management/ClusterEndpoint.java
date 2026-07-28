@@ -9,7 +9,6 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
@@ -21,14 +20,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -75,7 +72,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
-      Set.of("dryRun", "force", "replicationFactor", "mode", "physicalTenantId");
+      Set.of("dryRun", "force", "replicationFactor");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
 
@@ -553,26 +550,6 @@ public class ClusterEndpoint {
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
-  }
-
-  /**
-   * This endpoint is to be used internally and as a testing tool. The complete mode transition
-   * endpoint will be accessible through the Management REST API.
-   *
-   * @param mode The requested {@link Mode} to transition the member to
-   * @param physicalTenantId The physical tenant to target; defaults to {@link
-   *     PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} if not provided
-   * @param dryRun Whether to perform a dry run of the mode change
-   * @return The operations to transition the member to the requested mode
-   */
-  @PatchMapping(path = "/mode")
-  public ResponseEntity<?> updateMode(
-      @RequestParam final Mode mode,
-      @RequestParam(defaultValue = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-          final String physicalTenantId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
-    final var request = new ModeChangeRequest(physicalTenantId, mode, dryRun);
-    return ClusterApiUtils.mapOperationResponse(requestSender.modeChange(request).join());
   }
 
   /**
