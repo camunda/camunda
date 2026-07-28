@@ -216,6 +216,119 @@ public final class BoundaryEventTest {
   }
 
   @Test
+  public void shouldResolveOutputMappingSourceToNullWithoutIncidentOnPayloadlessBoundaryEvent() {
+    // given: a bare timer boundary event carries no event-trigger payload at all, so an output
+    // mapping referencing a name that would only exist as event-trigger data must resolve the
+    // same way a missing source normally does - null with a warning, not an incident
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent("timer")
+            .cancelActivity(false)
+            .timerWithDuration("PT1S")
+            .zeebeOutputExpression("payload", "result")
+            .endEvent("endTimer")
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    RecordingExporter.timerRecords()
+        .withHandlerNodeId("timer")
+        .withIntent(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("result")
+            .getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("null");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .describedAs("a missing event-trigger source must not raise an incident")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldSkipOutputMappingWhenTaskIsTerminatedByInterruptingBoundaryEvent() {
+    // given: the service task has an output mapping, but its job never completes before the
+    // interrupting boundary event terminates it
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task", b -> b.zeebeJobType("type").zeebeOutputExpression("score", "result"))
+            .boundaryEvent("timer")
+            .cancelActivity(true)
+            .timerWithDuration("PT0.1S")
+            .endEvent("endTimer")
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType("type")
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when: the job is left outstanding and the interrupting boundary event fires
+    RecordingExporter.timerRecords()
+        .withHandlerNodeId("timer")
+        .withIntent(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then: the task is terminated, never completed, and its output mapping never ran
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("task")
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processInstanceRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withElementId("task")
+                        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                        .exists()))
+        .describedAs("a terminated task must never reach COMPLETED")
+        .isFalse();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("result")
+                        .exists()))
+        .describedAs("the output mapping must never have run, so 'result' was never created")
+        .isFalse();
+  }
+
+  @Test
   public void shouldTerminateSubProcessBeforeTriggeringBoundaryEvent() {
     // given
     final BpmnModelInstance process =

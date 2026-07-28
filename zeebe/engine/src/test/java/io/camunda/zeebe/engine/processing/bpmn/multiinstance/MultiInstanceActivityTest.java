@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.Assume.assumeTrue;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -1391,6 +1392,205 @@ public final class MultiInstanceActivityTest {
             tuple(processInstanceKey, "1"),
             tuple(processInstanceKey, "2"),
             tuple(processInstanceKey, "3"));
+  }
+
+  @Test
+  public void shouldOverwriteRootVariableWhenInstancesCompleteWithoutOutputMapping() {
+    // given: a bare multi-instance with NO outputElement/outputCollection configured (unlike
+    // process(miBuilder), which pre-seeds a local nil "result" per iteration and would shadow
+    // this entirely) - so each job's raw "result" payload has nothing local to update and
+    // independently walks all the way up to the root via the default merge-to-root rule
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(jobType)
+                        .multiInstance(
+                            m -> {
+                              m.zeebeInputCollectionExpression(INPUT_COLLECTION_EXPRESSION)
+                                  .zeebeInputElement(INPUT_ELEMENT_VARIABLE);
+                              miBuilder.accept(m);
+                            }))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then: only the LAST completer's value survives at the root scope - the others were
+    // silently overwritten there, not merged into a collection of their own
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(processInstanceKey)
+                .withName(OUTPUT_ELEMENT_EXPRESSION)
+                .limit(OUTPUT_COLLECTION.size()))
+        .extracting(Record::getIntent, r -> r.getValue().getValue())
+        .containsExactly(
+            tuple(VariableIntent.CREATED, JsonUtil.toJson(OUTPUT_COLLECTION.get(0))),
+            tuple(VariableIntent.UPDATED, JsonUtil.toJson(OUTPUT_COLLECTION.get(1))),
+            tuple(VariableIntent.UPDATED, JsonUtil.toJson(OUTPUT_COLLECTION.get(2))));
+  }
+
+  @Test
+  public void shouldPropagatePartiallyNullOutputCollectionWhenParallelInstancesAreCancelled() {
+    assumeTrue(
+        "cancelling remaining active instances only applies to parallel multi-instance",
+        "parallel".equals(loopCharacteristics));
+
+    // given: completing the FIRST instance satisfies the completion condition, so the other two
+    // are cancelled before ever writing their own outputElement value
+    final Map<String, Object> variables =
+        Map.of(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION, "x", true);
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(miBuilder.andThen(m -> m.completionCondition(COMPLETION_CONDITION_EXPRESSION))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+    completeJobs(processInstanceKey, 1);
+
+    // then: the cancelled iterations leave null slots - the partially-null collection still
+    // propagates to the parent scope
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withScopeKey(processInstanceKey)
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .getFirst()
+                .getValue())
+        .hasValue("[11,null,null]");
+  }
+
+  @Test
+  public void shouldExportLoopCounterViaOutputMappingThenLiftIntoOutputCollection() {
+    // given: an output mapping on the MI task reads the engine-managed loopCounter into its own
+    // inner scope; outputElement/outputCollection then lifts it into the body's array -
+    // two distinct hops
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(jobType)
+                        .zeebeOutputExpression("loopCounter", "iteration")
+                        .multiInstance(
+                            m -> {
+                              m.zeebeInputCollectionExpression(INPUT_COLLECTION_EXPRESSION)
+                                  .zeebeInputElement(INPUT_ELEMENT_VARIABLE)
+                                  .zeebeOutputElementExpression("iteration")
+                                  .zeebeOutputCollection("iterations");
+                              miBuilder.accept(m);
+                            }))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then: "iteration" never reaches the root directly - the output mapping stays local to the
+    // inner instance
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withScopeKey(processInstanceKey)
+                        .withName("iteration")
+                        .exists()))
+        .isFalse();
+
+    // and: outputElement/outputCollection still lifts each inner "iteration" into the body scope
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withScopeKey(processInstanceKey)
+                .withName("iterations")
+                .getFirst()
+                .getValue())
+        .hasValue("[1,2,3]");
+  }
+
+  @Test
+  public void shouldShadowOuterLoopCounterWithInnerOneInNestedMultiInstance() {
+    // given: an outer MI sub-process (2 iterations) containing an inner MI task (2 iterations);
+    // the inner task's own output mapping reads "loopCounter" and must see the INNER value,
+    // resetting every outer iteration rather than continuing to count up
+    final var processId = "processId";
+    final var jobType = "nestedMiJobType";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "outer",
+                outer ->
+                    outer
+                        .multiInstance(
+                            m ->
+                                m.sequential()
+                                    .zeebeInputCollectionExpression("=[1,2]")
+                                    .zeebeInputElement("outerItem"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask(
+                            "inner",
+                            t ->
+                                t.zeebeJobType(jobType)
+                                    .zeebeOutputExpression("loopCounter", "seenLoopCounter")
+                                    .multiInstance(
+                                        m ->
+                                            m.sequential()
+                                                .zeebeInputCollectionExpression("=[1,2]")
+                                                .zeebeInputElement("innerItem")
+                                                .zeebeOutputElementExpression("seenLoopCounter")
+                                                .zeebeOutputCollection("innerSeen")))
+                        .endEvent())
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when: 2 outer iterations x 2 inner iterations = 4 jobs, completed in order
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    for (int i = 0; i < 4; i++) {
+      ENGINE
+          .jobs()
+          .withType(jobType)
+          .withMaxJobsToActivate(1)
+          .activate()
+          .getValue()
+          .getJobKeys()
+          .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+    }
+
+    // then: each outer iteration's inner MI sees loopCounter reset to 1, 2 - not 1, 2, 3, 4.
+    // outputCollection is pre-sized with null slots, so the first inner completion
+    // fills index 0 ("[1,null]") before the second fills index 1 ("[1,2]")
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("innerSeen")
+                .limit(4))
+        .extracting(r -> r.getValue().getValue())
+        .containsExactly("[1,null]", "[1,2]", "[1,null]", "[1,2]");
   }
 
   @Test
