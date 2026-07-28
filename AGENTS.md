@@ -115,10 +115,9 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 - Header: name the effect (the bug prevented or behavior enabled), not the mechanism. Prefer
   `fix: prevent duplicate job activation under concurrent polling` over `fix: add mutex around job activation`.
 - Do not use commit scopes — commitlint enforces `scope-empty`. Use `fix: ...` not `fix(ci): ...`
-- Body: inverted-pyramid — begin with the details that readers care about most, then what only few care
-  about (the problem and its root cause first, then what changed and why — and why this approach over
-  the alternatives). Cut what the diff already shows; never compress the why — it's the one thing the
-  diff can't say. Include background if needed. If long, use headings for structure.
+- Body: inverted-pyramid — the problem and its root cause first, then the approach and why it over
+  the alternatives. Summarize the approach; don't restate the diff. Never compress the why — it's the
+  one thing the diff can't say. Include background if needed. If long, use headings for structure.
 - Hard-wrap the body at ~72 columns as `git log` does not soft-wrap.
 
 ### Referencing code in issues, PRs, and comments
