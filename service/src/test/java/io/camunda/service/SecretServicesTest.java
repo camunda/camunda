@@ -18,6 +18,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -28,6 +30,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,12 +51,18 @@ public class SecretServicesTest {
   }
 
   private SecretServices newSecretServices(final String physicalTenantId) {
+    return newSecretServices(physicalTenantId, new SecretStoreRegistry(Map.of()));
+  }
+
+  private SecretServices newSecretServices(
+      final String physicalTenantId, final SecretStoreRegistry secretStoreRegistry) {
     return new SecretServices(
         physicalTenantId,
         mock(BrokerClient.class),
         mock(SecurityContextProvider.class),
         authorizationChecker,
         authorizationsConfig,
+        secretStoreRegistry,
         mock(ApiServicesExecutorProvider.class),
         null);
   }
@@ -92,6 +101,18 @@ public class SecretServicesTest {
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
             any(), eq(SECRET_READ_AUTHORIZATION)))
         .thenReturn(List.of());
+  }
+
+  @Test
+  void shouldExposeTheSecretStoreRegistryItWasConstructedWith() {
+    // given the per-physical-tenant registry handed in by the dist wiring (#58784)
+    final var registry = new SecretStoreRegistry(Map.of("main", new NoopSecretStore()));
+
+    // when
+    final var services = newSecretServices(PHYSICAL_TENANT_ID, registry);
+
+    // then the same registry is exposed for the store-backed resolve/list (#58497)
+    assertThat(services.getSecretStoreRegistry()).isSameAs(registry);
   }
 
   @Test

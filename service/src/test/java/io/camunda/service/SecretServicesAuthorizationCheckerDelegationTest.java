@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -25,6 +26,7 @@ import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -102,6 +104,7 @@ class SecretServicesAuthorizationCheckerDelegationTest {
         mock(SecurityContextProvider.class),
         authorizationChecker,
         authorizationsConfig,
+        new SecretStoreRegistry(Map.of()),
         mock(ApiServicesExecutorProvider.class),
         null);
   }

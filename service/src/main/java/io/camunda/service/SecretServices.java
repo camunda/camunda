@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.SECRET_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.SECRET_REVEAL_AUTHORIZATION;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationScope;
@@ -41,11 +42,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>Phase 1 scope (#56567, #56568):</b> the per-reference authorization, deduplication,
  * reference validation and per-reference outcome routing are real. The secret backend itself is
- * <b>mocked</b> ({@link #mockResolve}, {@link #mockListReferences}); neither endpoint yet uses the
- * {@code SecretStore} wiring. That wiring needs the physical-tenant {@code SecretStoreRegistry} to
- * be reachable from this module, but the registry currently lives in {@code dist}, which this
- * module cannot depend on without a cycle — resolving that dependency direction is tracked
- * alongside #56561 / #57199.
+ * <b>mocked</b> ({@link #mockResolve}, {@link #mockListReferences}). The physical tenant's {@link
+ * SecretStoreRegistry} is wired in (#58784) but not read yet; replacing the mocks with real store
+ * reads is tracked in #58497.
  */
 @NullMarked
 public class SecretServices extends PhysicalTenantScopedApiServices<SecretServices> {
@@ -76,12 +75,13 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   // Phase 1 only: the references the mocked backend pretends to know, shared by mockResolve and
   // mockListReferences so a caller who lists then resolves sees consistent references. Any other
   // authorized, valid reference resolves to NOT_FOUND and is absent from the listing. Removed once
-  // a real SecretStore is wired (#56561/#57199).
+  // the wired secret stores replace the mocks (#58497).
   private static final Set<String> MOCK_RESOLVABLE_REFERENCES =
       Set.of("camunda.secrets.token", "camunda.secrets.a", "camunda.secrets.b");
 
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
+  private final SecretStoreRegistry secretStoreRegistry;
 
   public SecretServices(
       final String physicalTenantId,
@@ -89,6 +89,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
       final SecurityContextProvider securityContextProvider,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
+      final SecretStoreRegistry secretStoreRegistry,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
@@ -99,6 +100,15 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
         brokerRequestAuthorizationConverter);
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
+    this.secretStoreRegistry = secretStoreRegistry;
+  }
+
+  /**
+   * Returns the secret stores and caches of this service's physical tenant. Not consulted by the
+   * mocked backend yet; the store-backed resolve/list lands with #58497.
+   */
+  public SecretStoreRegistry getSecretStoreRegistry() {
+    return secretStoreRegistry;
   }
 
   /**
@@ -108,8 +118,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    *
    * <p>Synchronous today (no broker round-trip while the backend is mocked), but returns a future
    * like every other action method on this base class so the signature does not have to break once
-   * the real, likely I/O-bound {@code SecretStore} lookup replaces {@link #mockResolve}
-   * (#56561/#57199).
+   * the real, likely I/O-bound {@code SecretStore} lookup replaces {@link #mockResolve} (#58497).
    */
   public CompletableFuture<SecretResolution> resolve(
       final List<String> references, final CamundaAuthentication authentication) {
@@ -248,8 +257,8 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * live endpoint; every other authorized, valid reference yields {@code NOT_FOUND}, exercising the
    * real not-found path rather than fabricating a value for an arbitrary reference. The value is
    * scoped by physical tenant so the mock cannot mask a cross-tenant leak once the real {@code
-   * SecretStore} (which is itself registered per physical tenant) replaces it. TODO(#56561/#57199):
-   * replace with {@code SecretStore.resolve(...)} once store is configured.
+   * SecretStore} (which is itself registered per physical tenant) replaces it. TODO(#58497):
+   * replace with a lookup through {@link #secretStoreRegistry}.
    */
   private Optional<String> mockResolve(final String reference) {
     if (!MOCK_RESOLVABLE_REFERENCES.contains(reference)) {
@@ -263,8 +272,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * Mocked reference enumeration for Phase 1, sharing {@link #MOCK_RESOLVABLE_REFERENCES} with
    * {@link #mockResolve} so a caller who lists then resolves sees consistent references. Sorted for
    * a deterministic response, since the backing {@link Set} has no defined iteration order.
-   * TODO(#56561/#57199): replace with {@code SecretStore.list(...)} once store wiring is reachable
-   * from this module (see the class Javadoc for why it is not yet).
+   * TODO(#58497): replace with an enumeration through {@link #secretStoreRegistry}.
    */
   private List<String> mockListReferences() {
     return MOCK_RESOLVABLE_REFERENCES.stream().sorted().toList();
@@ -309,8 +317,8 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
 
   /**
    * The typed reason a reference could not be resolved. Mirrors the {@code secret-store} SPI's
-   * {@code SecretErrorCode}; kept independent so the service module does not depend on the store
-   * SPI while the backend is mocked.
+   * {@code SecretErrorCode}; kept independent so the API-facing error contract does not couple to
+   * the SPI's enum and can evolve with the endpoint instead.
    */
   public enum SecretErrorCode {
     NOT_FOUND,
