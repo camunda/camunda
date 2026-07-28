@@ -215,6 +215,33 @@ public class ClusterAdminOidcAuthenticationIT {
     assertThat(response.body()).contains("\"status\":401");
   }
 
+  @Test
+  void shouldAllowClusterStatusWithoutAnyToken() throws Exception {
+    // when — the one public endpoint in the cluster-admin namespace
+    final HttpResponse<String> response = get(statusUri(), null);
+
+    // then — reachable unauthenticated, reporting an aggregated status and nothing else, so an
+    // unauthenticated caller cannot enumerate the cluster's physical tenants
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(JSON.readTree(response.body()).properties())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getKey()).isEqualTo("status");
+              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
+            });
+  }
+
+  @Test
+  void shouldAllowClusterStatusWithATokenThisChainWouldReject() throws Exception {
+    // when — a malformed bearer token, which /cluster/v2/topology answers with 401. Clients
+    // migrating here from /v2/status send their own token, so it must be ignored, not decoded.
+    final HttpResponse<String> response = get(statusUri(), "Bearer not-a-valid-jwt");
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+  }
+
   private static void configureRealm() {
     final RealmRepresentation realm = new RealmRepresentation();
     realm.setRealm(REALM);
