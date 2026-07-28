@@ -45,6 +45,10 @@ jobs:
 
       - name: List maintained branches
         id: maintained-branches
+        # Only needed for the default (discovered) matrix. Skipped when explicit
+        # branches are dispatched, so the manual path never depends on git
+        # ls-remote (which can fail in forks or repos without stable branches).
+        if: ${{ inputs.server_branch == '' && inputs.test_branch == '' }}
         # Forward compatibility tests start from 8.8 (feature-availability floor).
         uses: ./.github/actions/list-maintained-branches
         with:

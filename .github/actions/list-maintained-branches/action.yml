@@ -34,6 +34,16 @@ runs:
       env:
         MIN_VERSION: ${{ inputs.min-version }}
       run: |
+        if ! command -v jq >/dev/null 2>&1; then
+          echo "::error::list-maintained-branches requires 'jq', which was not found on PATH."
+          exit 1
+        fi
+
+        if [[ ! "$MIN_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::Invalid min-version '${MIN_VERSION}'; expected MAJOR.MINOR (e.g. 8.8)."
+          exit 1
+        fi
+
         min_major="${MIN_VERSION%%.*}"
         min_minor="${MIN_VERSION#*.}"
 

@@ -39,7 +39,7 @@ jobs:
         uses: ./.github/actions/list-maintained-branches
         with:
           min-version: '8.7'
-      - name: Set stable/8.* branches as JSON array of strings
+      - name: Compute maintained branch matrix as JSON array of objects
         id: set-matrix
         env:
           STABLE_BRANCHES_JSON: ${{ steps.maintained-branches.outputs.stable-branches }}
