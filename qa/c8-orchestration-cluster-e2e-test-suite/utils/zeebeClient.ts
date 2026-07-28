@@ -64,7 +64,7 @@ const deployWithSubstitutions = async (
   for (const [placeholder, replacement] of Object.entries(substitutions)) {
     if (!content.includes(placeholder)) {
       throw new Error(
-        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
       );
     }
     content = content.split(placeholder).join(replacement);

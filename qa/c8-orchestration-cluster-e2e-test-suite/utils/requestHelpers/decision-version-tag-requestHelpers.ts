@@ -8,12 +8,18 @@
 
 import {randomUUID} from 'node:crypto';
 import {expect, type APIRequestContext} from '@playwright/test';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {
   createSingleInstance,
   deploy,
   deployWithSubstitutions,
 } from '../zeebeClient';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {
+  assertRequiredFields,
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+} from '../http';
 import {defaultAssertionOptions} from '../constants';
 
 const DMN_TEMPLATE = './resources/decideUpgradeEligibility.dmn';
@@ -141,7 +147,7 @@ export async function deployEligibilityProcess(
 
 export async function startEligibilityInstance(
   ids: EligibilityIds,
-  variables: Record<string, unknown>,
+  variables: JSONDoc,
 ): Promise<string> {
   const instance = await createSingleInstance(ids.processId, 1, variables);
   return instance.processInstanceKey;
@@ -153,6 +159,13 @@ export type EvaluatedDecisionInstance = {
   decisionDefinitionVersion: number;
   decisionDefinitionName: string;
 };
+
+const DECISION_INSTANCE_FIELDS = [
+  'decisionEvaluationInstanceKey',
+  'decisionDefinitionKey',
+  'decisionDefinitionVersion',
+  'decisionDefinitionName',
+];
 
 /**
  * Waits until the single decision instance of the process instance is indexed
@@ -172,6 +185,8 @@ export async function getEvaluatedDecisionInstance(
     const body = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body.items[0].state).toBe('EVALUATED');
+    // Fail loudly on API shape drift rather than returning silent undefineds.
+    assertRequiredFields(body.items[0], DECISION_INSTANCE_FIELDS);
     Object.assign(found, body.items[0]);
   }).toPass(defaultAssertionOptions);
   return found as EvaluatedDecisionInstance;
@@ -219,6 +234,8 @@ export type IncidentSummary = {
   errorMessage: string;
 };
 
+const INCIDENT_FIELDS = ['incidentKey', 'errorType', 'errorMessage'];
+
 export async function waitForVersionTagIncident(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -232,6 +249,7 @@ export async function waitForVersionTagIncident(
     await assertStatusCode(res, 200);
     const body = await res.json();
     expect(body.items).toHaveLength(1);
+    assertRequiredFields(body.items[0], INCIDENT_FIELDS);
     Object.assign(found, body.items[0]);
   }).toPass(defaultAssertionOptions);
   return found as IncidentSummary;
