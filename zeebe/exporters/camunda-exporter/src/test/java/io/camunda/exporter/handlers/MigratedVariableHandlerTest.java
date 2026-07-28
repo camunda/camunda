@@ -8,11 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -69,8 +74,11 @@ public class MigratedVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
@@ -81,12 +89,11 @@ public class MigratedVariableHandlerTest {
             ValueType.VARIABLE,
             r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
 
-    // when
-    final var idList = underTest.generateIds(variableRecord);
-
-    // then
-    assertThat(idList)
-        .containsExactly(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, variableRecord))
+        .containsExactly(
+            new IdAndIndex(
+                variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName(), index));
   }
 
   @Test

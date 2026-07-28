@@ -12,7 +12,9 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.IN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -45,14 +47,18 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<IncidentRecordValue> incidentRecord = factory.generateRecord(ValueType.INCIDENT);
-    // when
-    final var idList = underTest.generateIds(incidentRecord);
-    // then
-    assertThat(idList)
-        .containsExactly(String.valueOf(incidentRecord.getValue().getElementInstanceKey()));
+
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, incidentRecord))
+        .containsExactly(
+            new IdAndIndex(
+                String.valueOf(incidentRecord.getValue().getElementInstanceKey()), index));
   }
 
   @Test
