@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class MessageSubscriptionWriterTest {
 
@@ -103,9 +104,13 @@ class MessageSubscriptionWriterTest {
     // when
     writer.create(model);
 
-    // then
-    assertThat(model.toolName()).hasSize(5);
-    assertThat(model.inboundConnectorType()).hasSize(5);
+    // then — the queued model (a new instance) carries the truncated values; the original is
+    // untouched since MessageSubscriptionDbModel is immutable
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queuedModel = (MessageSubscriptionDbModel) captor.getValue().parameter();
+    assertThat(queuedModel.toolName()).hasSize(5);
+    assertThat(queuedModel.inboundConnectorType()).hasSize(5);
   }
 
   @Test
@@ -122,8 +127,12 @@ class MessageSubscriptionWriterTest {
     // when
     writer.update(model);
 
-    // then
-    assertThat(model.toolName()).hasSize(5);
-    assertThat(model.inboundConnectorType()).hasSize(5);
+    // then — the queued model (a new instance) carries the truncated values; the original is
+    // untouched since MessageSubscriptionDbModel is immutable
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queuedModel = (MessageSubscriptionDbModel) captor.getValue().parameter();
+    assertThat(queuedModel.toolName()).hasSize(5);
+    assertThat(queuedModel.inboundConnectorType()).hasSize(5);
   }
 }
