@@ -470,11 +470,11 @@ jobs:
     permissions:
       contents: read
     with:
-      base_group_name: deploy-load-test-images
+      base_group_name: build-load-test-images
 
-  deploy-load-test-images:
-    name: Deploy load test images
-    timeout-minutes: 5
+  build-load-test-images:
+    name: Build load test images
+    timeout-minutes: 20
     needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-load-test ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))

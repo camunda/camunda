@@ -403,7 +403,7 @@ jobs:
     name: Build Starter and Worker
     if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     needs: calculate-image-tag
     permissions:
       contents: 'read'
