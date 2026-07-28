@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.job.TestStreamObserver;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
+import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceWithResultStub;
 import io.camunda.zeebe.gateway.api.signal.BroadcastSignalStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -31,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -62,6 +65,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   public void setup() {
     new DeployResourceStub().registerWith(brokerClient);
     new CreateProcessInstanceStub().registerWith(brokerClient);
+    new CreateProcessInstanceWithResultStub().registerWith(brokerClient);
     new TenantAwareEvaluateDecisionStub().registerWith(brokerClient);
     new BroadcastSignalStub().registerWith(brokerClient);
     activateJobsStub.registerWith(brokerClient);
@@ -231,6 +235,34 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     final CreateProcessInstanceResponse response =
         client.createProcessInstance(
             CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b").build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo("tenant-b");
+  }
+
+  @Test
+  public void createProcessInstanceWithResultRequestShouldContainAuthorizedTenants() {
+    // when
+    final CreateProcessInstanceWithResultResponse response =
+        client.createProcessInstanceWithResult(
+            CreateProcessInstanceWithResultRequest.newBuilder()
+                .setRequest(CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b"))
+                .build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThatTenantIdsSet("tenant-b");
+  }
+
+  @Test
+  public void createProcessInstanceWithResultResponseHasTenantId() {
+    // when
+    final CreateProcessInstanceWithResultResponse response =
+        client.createProcessInstanceWithResult(
+            CreateProcessInstanceWithResultRequest.newBuilder()
+                .setRequest(CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b"))
+                .build());
     assertThat(response).isNotNull();
 
     // then
