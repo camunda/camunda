@@ -966,9 +966,7 @@ components:
         loopIteration:
           description: |
             The loopIteration this item belongs to. A loopIteration is one pass through the agent
-            feedback loop: one LLM call, its tool dispatches, and their results. Null if not provided
-            by the connector.
-          nullable: true
+            feedback loop: one LLM call, its tool dispatches, and their results.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
         role:
