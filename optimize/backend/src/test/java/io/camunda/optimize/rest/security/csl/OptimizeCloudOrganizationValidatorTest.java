@@ -57,6 +57,51 @@ class OptimizeCloudOrganizationValidatorTest {
     assertThat(validator.validate(token).hasErrors()).isTrue();
   }
 
+  @Test
+  void shouldRejectWhenConfiguredOrgCarriesNoRolesEntry() {
+    // Membership alone does not grant access: Optimize requires an allowed role.
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1")));
+
+    assertThat(validator.validate(token).hasErrors()).isTrue();
+  }
+
+  @Test
+  void shouldRejectWhenConfiguredOrgRolesIsNotACollection() {
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", "admin")));
+
+    assertThat(validator.validate(token).hasErrors()).isTrue();
+  }
+
+  @Test
+  void shouldRejectWhenConfiguredOrgRolesIsEmpty() {
+    final Jwt token = jwtWithOrgs(List.of(Map.of("id", "org-1", "roles", List.of())));
+
+    assertThat(validator.validate(token).hasErrors()).isTrue();
+  }
+
+  @Test
+  void shouldAcceptWhenOnlyOneOfSeveralOrgsIsTheConfiguredOne() {
+    final Jwt token =
+        jwtWithOrgs(
+            List.of(
+                Map.of("id", "org-2", "roles", List.of("viewer")),
+                Map.of("id", "org-1", "roles", List.of("owner"))));
+
+    assertThat(validator.validate(token).hasErrors()).isFalse();
+  }
+
+  @Test
+  void shouldRejectWhenAnotherOrgGrantsAnAllowedRoleButTheConfiguredOneDoesNot() {
+    // Roles must not leak across organizations: only the configured org's entry counts.
+    final Jwt token =
+        jwtWithOrgs(
+            List.of(
+                Map.of("id", "org-1", "roles", List.of("viewer")),
+                Map.of("id", "org-2", "roles", List.of("admin"))));
+
+    assertThat(validator.validate(token).hasErrors()).isTrue();
+  }
+
   private static Jwt jwtWithOrgs(final List<Map<String, Object>> orgs) {
     return baseJwt().claim(OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM, orgs).build();
   }
