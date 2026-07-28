@@ -29,7 +29,7 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.FORBIDDEN)
   @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
+  public ResponseEntity<Error> handleAccessDeniedException(final AccessDeniedException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -45,9 +45,13 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ClientException.class)
-  public ResponseEntity<Error> handleInvalidRequest(ClientException exception) {
-    logger.error(getSummary(exception));
+  public ResponseEntity<Error> handleInvalidRequest(final ClientException exception) {
+    logger.info(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
+    return createClientErrorResponse(exception);
+  }
+
+  private ResponseEntity<Error> createClientErrorResponse(final ClientException exception) {
     final Error error =
         new Error()
             .setType(ClientException.TYPE)
@@ -61,14 +65,18 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Error> handleException(Exception exception) {
+  public ResponseEntity<Error> handleException(final Exception exception) {
     // Show client only detail message, log all messages
-    return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception));
+    final ClientException clientException =
+        new ClientException(getOnlyDetailMessage(exception), exception);
+    logger.error(getSummary(clientException), clientException);
+    logger.debug(exception.getMessage());
+    return createClientErrorResponse(clientException);
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ValidationException.class)
-  public ResponseEntity<Error> handleInvalidRequest(ValidationException exception) {
+  public ResponseEntity<Error> handleInvalidRequest(final ValidationException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
@@ -84,8 +92,8 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<Error> handleNotFound(ResourceNotFoundException exception) {
-    logger.error(getSummary(exception));
+  public ResponseEntity<Error> handleNotFound(final ResourceNotFoundException exception) {
+    logger.info(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
         new Error()
@@ -100,7 +108,7 @@ public abstract class ErrorController {
 
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(ServerException.class)
-  public ResponseEntity<Error> handleServerException(ServerException exception) {
+  public ResponseEntity<Error> handleServerException(final ServerException exception) {
     logger.error(exception.getMessage(), exception);
     final Error error =
         new Error()
