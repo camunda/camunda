@@ -8,13 +8,12 @@
 
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 
 const getSelectedProcessInstancesFilter = () => {
-  return processInstancesSelectionStore.checkedIds.length > 0
-    ? {
-        $in: processInstancesSelectionStore.checkedIds,
-      }
-    : undefined;
+  const {selectedIds, excludedIds} = processInstancesSelectionStore;
+
+  return buildInstanceKeyCriterion(selectedIds, excludedIds);
 };
 
 const getMigrationProcessInstancesFilter = () => {
