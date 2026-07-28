@@ -664,21 +664,34 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldConvertNonPositiveLoopIterationToNull() {
-    // given — loopIteration == 0 (non-positive sentinel → null)
-    final var recordValue =
+  void shouldNormalizeNonPositiveLoopIterationToOne() {
+    // given — zero and negative values. LoopIterationId requires a positive integer (minimum 1),
+    // and the connector always provides one in practice, but 0/negative can still reach the
+    // handler as the protocol's own "unset" sentinel for the underlying IntegerProperty. Storing
+    // such a sentinel as-is would violate the API's non-null, minimum-1 contract, so the handler
+    // normalizes it to the smallest valid value instead.
+    final var zeroRecordValue =
         ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 0)).build();
-    final Record<AgentHistoryRecordValue> record =
+    final var negativeRecordValue =
+        ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, -1)).build();
+    final Record<AgentHistoryRecordValue> zeroRecord =
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
-            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
-    final var entity = new AgentHistoryEntity().setId("1");
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(zeroRecordValue));
+    final Record<AgentHistoryRecordValue> negativeRecord =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(negativeRecordValue));
+    final var zeroEntity = new AgentHistoryEntity().setId("1");
+    final var negativeEntity = new AgentHistoryEntity().setId("2");
 
     // when
-    underTest.updateEntity(record, entity);
+    underTest.updateEntity(zeroRecord, zeroEntity);
+    underTest.updateEntity(negativeRecord, negativeEntity);
 
-    // then
-    assertThat(entity.getLoopIteration()).isNull();
+    // then — both are normalized to 1
+    assertThat(zeroEntity.getLoopIteration()).isEqualTo(1);
+    assertThat(negativeEntity.getLoopIteration()).isEqualTo(1);
   }
 
   @Test

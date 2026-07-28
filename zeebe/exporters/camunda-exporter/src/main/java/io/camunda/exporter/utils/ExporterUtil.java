@@ -52,10 +52,6 @@ public final class ExporterUtil {
     return value <= 0 ? null : value;
   }
 
-  public static Integer positiveOrNull(final int value) {
-    return value <= 0 ? null : value;
-  }
-
   public static Long nullIfNegative(final long value) {
     return value < 0 ? null : value;
   }
