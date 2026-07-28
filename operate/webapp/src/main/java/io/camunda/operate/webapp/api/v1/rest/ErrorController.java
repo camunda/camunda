@@ -63,8 +63,23 @@ public abstract class ErrorController {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ClientException.class)
   public ResponseEntity<Error> handleInvalidRequest(final ClientException exception) {
-    logger.error(getSummary(exception), exception);
+    logger.info(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
+    return createClientErrorResponse(exception);
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Error> handleException(final Exception exception) {
+    // Show client only detail message, log all messages
+    final ClientException clientException =
+        new ClientException(getOnlyDetailMessage(exception), exception);
+    logger.error(getSummary(clientException), clientException);
+    logger.debug(exception.getMessage());
+    return createClientErrorResponse(clientException);
+  }
+
+  private ResponseEntity<Error> createClientErrorResponse(final ClientException exception) {
     final Error error =
         new Error()
             .setType(ClientException.TYPE)
@@ -74,13 +89,6 @@ public abstract class ErrorController {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
-  }
-
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<Error> handleException(final Exception exception) {
-    // Show client only detail message, log all messages
-    return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception));
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -102,7 +110,7 @@ public abstract class ErrorController {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<Error> handleNotFound(final ResourceNotFoundException exception) {
-    logger.error(getSummary(exception));
+    logger.info(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
     final Error error =
         new Error()
