@@ -78,6 +78,7 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -135,7 +136,7 @@ public class CamundaServicesConfiguration {
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
-      final SecondaryStorageReadiness secondaryStorageReadiness,
+      final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
       final ApiServicesExecutorProvider executor,
       final SecretStoreRegistries secretStoreRegistries) {
 
@@ -499,8 +500,15 @@ public class CamundaServicesConfiguration {
                   .variableServices(tenantId, variable);
             });
 
+    // The readiness bean must be resolved lazily, not injected directly: on Elasticsearch and
+    // OpenSearch it depends on the search schema initializer, which depends on
+    // BrokerModuleConfiguration, which depends back on this ServiceRegistry — injecting it eagerly
+    // closes that cycle and the context fails to start. Resolving inside the predicate is safe
+    // because it is only ever called while serving a request, long after startup.
     builder.clusterStatusServices(
-        new ClusterStatusServices(topologyServicesByTenant, secondaryStorageReadiness::isReady));
+        new ClusterStatusServices(
+            topologyServicesByTenant,
+            physicalTenantId -> secondaryStorageReadiness.getObject().isReady(physicalTenantId)));
 
     return builder.build();
   }
