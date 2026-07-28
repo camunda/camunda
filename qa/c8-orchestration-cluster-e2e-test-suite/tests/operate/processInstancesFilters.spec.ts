@@ -18,16 +18,22 @@ type ProcessInstance = {processInstanceKey: number};
 
 // The rendered rows are capped at the 50-row page size, so comparing
 // processInstancesTable.count() across a filter change gives a false result
-// once a result set exceeds one page. The panel header reports the TOTAL match
-// count (e.g. "123 results"); read that instead when asserting a filter grew or
-// shrank the result set.
+// once a result set exceeds one page. The panel heading reports the TOTAL match
+// count (e.g. "Process Instances - 1497 results"); parse that instead when
+// asserting a filter grew or shrank the result set.
 async function readTotalResultsCount(
   page: import('@playwright/test').Page,
 ): Promise<number> {
-  const label = page.getByText(/^\d[\d,]*\s+results?$/).first();
-  await expect(label).toBeVisible({timeout: 30000});
-  const text = await label.innerText();
-  return Number(text.replace(/[^\d]/g, ''));
+  const heading = page
+    .getByRole('heading', {name: /\d[\d,]*\s+results?/})
+    .first();
+  await expect(heading).toBeVisible({timeout: 30000});
+  const text = await heading.innerText();
+  const match = text.match(/([\d,]+)\s+results?/);
+  if (match === null) {
+    throw new Error(`Unable to parse results count from heading: "${text}"`);
+  }
+  return Number(match[1].replace(/,/g, ''));
 }
 
 let callActivityProcessInstance: ProcessInstance;
