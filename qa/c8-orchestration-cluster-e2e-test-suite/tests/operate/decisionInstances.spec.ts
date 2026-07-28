@@ -12,6 +12,15 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {deploy} from 'utils/zeebeClient';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {
+  createEligibilityIds,
+  deployEligibilityForm,
+  deployEligibilityProcess,
+  deployTaggedDecision,
+  getEvaluatedDecisionInstance,
+  startEligibilityInstance,
+  VIP_INPUT,
+} from '@requestHelpers';
 
 interface DecisionInfo {
   key: string;
@@ -123,6 +132,72 @@ test.describe('Decision Instances', () => {
       ).toBeVisible();
       await expect(
         operateDecisionsPage.decisionViewer.getByText('Version 2'),
+      ).toBeVisible();
+    });
+  });
+
+  /**
+   * Operate must show the decision version that a FEEL version tag expression
+   * resolved to at runtime (product-hub#3501). The two deployed versions differ
+   * only in the output of rule 1, so the version shown in the header is the
+   * version whose rules produced the result.
+   */
+  test('Decision version resolved by a FEEL version tag expression is shown in Operate', async ({
+    page,
+    request,
+    operateDecisionInstancePage,
+  }) => {
+    const ids = createEligibilityIds('operateUi');
+    let processInstanceKey: string;
+    let expectedVersion: number;
+    let decisionEvaluationInstanceKey: string;
+
+    await test.step('Deploy two tagged decision versions and a process binding by FEEL expression', async () => {
+      await deployEligibilityForm();
+      await deployTaggedDecision(ids, 'v1', true);
+      const v2 = await deployTaggedDecision(ids, 'v2', false);
+      expectedVersion = v2.version;
+      await deployEligibilityProcess(ids, '= decisionVersion');
+    });
+
+    await test.step('Start an instance that requests version tag v2', async () => {
+      processInstanceKey = await startEligibilityInstance(ids, {
+        ...VIP_INPUT,
+        decisionVersion: 'v2',
+      });
+      const decisionInstance = await getEvaluatedDecisionInstance(
+        request,
+        processInstanceKey,
+      );
+      decisionEvaluationInstanceKey =
+        decisionInstance.decisionEvaluationInstanceKey;
+    });
+
+    await test.step('Open the decision instance in Operate', async () => {
+      await navigateToAppHome(page, 'operate');
+      await operateDecisionInstancePage.gotoDecisionInstancePage({
+        id: decisionEvaluationInstanceKey,
+      });
+      await expect(operateDecisionInstancePage.instanceHeader).toBeVisible();
+    });
+
+    await test.step('Header shows the version the expression resolved to', async () => {
+      await expect(
+        operateDecisionInstancePage.instanceHeader.getByRole('link', {
+          name: `View decision "Decide Upgrade Eligibility version ${expectedVersion}" instances`,
+        }),
+      ).toBeVisible();
+      await expect(
+        operateDecisionInstancePage.instanceHeader.getByRole('link', {
+          name: `View process instance ${processInstanceKey}`,
+        }),
+      ).toBeVisible();
+    });
+
+    await test.step('Evaluated decision table is rendered', async () => {
+      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+      await expect(
+        operateDecisionInstancePage.decisionPanel.getByText('User Status'),
       ).toBeVisible();
     });
   });
