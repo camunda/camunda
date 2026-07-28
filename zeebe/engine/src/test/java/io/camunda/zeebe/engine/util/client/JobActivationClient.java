@@ -19,7 +19,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.function.BiFunction;
 
 public final class JobActivationClient {
@@ -174,8 +173,8 @@ public final class JobActivationClient {
                 r.intent(JobBatchIntent.ACTIVATE)
                     .event(jobBatchRecord)
                     .authorizations(authorizations)
-                    .requestId(new Random().nextLong())
-                    .requestStreamId(new Random().nextInt()));
+                    .requestId(1L)
+                    .requestStreamId(1));
 
     return expectation.apply(partitionId, position);
   }
