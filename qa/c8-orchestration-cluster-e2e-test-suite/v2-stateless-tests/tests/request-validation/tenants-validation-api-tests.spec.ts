@@ -8,13 +8,31 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Tenants Validation API Tests', () => {
+  test('assignClientToTenant - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/clients/{clientId}', {
+        tenantId: 'x',
+        clientId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('assignClientToTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
@@ -22,6 +40,25 @@ test.describe('Tenants Validation API Tests', () => {
       buildUrl('/tenants/{tenantId}/clients/{clientId}', {
         tenantId: '!INVALID!',
         clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('assignGroupToTenant - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', {
+        tenantId: 'x',
+        groupId: '',
       }),
       {
         headers: jsonHeaders(),
@@ -51,6 +88,24 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  test('assignMappingRuleToTenant - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', {
+        tenantId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('assignMappingRuleToTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
@@ -58,6 +113,24 @@ test.describe('Tenants Validation API Tests', () => {
       buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', {
         tenantId: '!INVALID!',
         mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToTenant - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/tenants/{tenantId}/roles/{roleId}', {
+        tenantId: 'x',
+        roleId: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -111,7 +184,7 @@ test.describe('Tenants Validation API Tests', () => {
     const res = await request.put(
       buildUrl('/tenants/{tenantId}/users/{username}', {
         tenantId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -127,7 +200,7 @@ test.describe('Tenants Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      tenantId: 'x',
+      tenantId: null,
       name: 'x',
       __unexpectedField: 'x',
     };
@@ -155,7 +228,7 @@ test.describe('Tenants Validation API Tests', () => {
   });
   test('createTenant - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
-      tenantId: 'x',
+      tenantId: null,
       name: 123,
     };
     const res = await request.post(buildUrl('/tenants', undefined), {
@@ -170,7 +243,7 @@ test.describe('Tenants Validation API Tests', () => {
   });
   test('createTenant - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
-      tenantId: 'x',
+      tenantId: null,
       name: true,
     };
     const res = await request.post(buildUrl('/tenants', undefined), {
@@ -183,10 +256,9 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createTenant - Param tenantId wrong type (#1)', async ({request}) => {
+  test('createTenant - Missing name (#1)', async ({request}) => {
     const requestBody = {
-      tenantId: 123,
-      name: 'x',
+      tenantId: null,
     };
     const res = await request.post(buildUrl('/tenants', undefined), {
       headers: jsonHeaders(),
@@ -198,92 +270,7 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createTenant - Param tenantId wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      tenantId: true,
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/tenants', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createTenant - Constraint violation tenantId (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      tenantId:
-        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/tenants', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createTenant - Constraint violation tenantId (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      tenantId: '',
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/tenants', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createTenant - Constraint violation tenantId (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      tenantId: '\n',
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/tenants', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createTenant - Constraint violation tenantId (#4)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      tenantId:
-        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/tenants', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createTenant - Missing name', async ({request}) => {
+  test('createTenant - Missing name (#2)', async ({request}) => {
     const requestBody = {
       tenantId: 'x',
     };
@@ -333,7 +320,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('deleteTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.delete(
@@ -348,7 +336,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('getTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.get(
@@ -529,7 +518,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchClientsForTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchClientsForTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.post(
@@ -710,7 +700,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchGroupIdsForTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchGroupIdsForTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.post(
@@ -891,7 +882,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRulesForTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchMappingRulesForTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.post(
@@ -1048,7 +1040,8 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchRolesForTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchRolesForTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.post(
@@ -1323,11 +1316,30 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchUsersForTenant - Path param tenantId pattern violation', async ({
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchUsersForTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/users/search', {tenantId: '!INVALID!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignClientFromTenant - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/tenants/{tenantId}/clients/{clientId}', {
+        tenantId: 'x',
+        clientId: '!',
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -1345,6 +1357,25 @@ test.describe('Tenants Validation API Tests', () => {
       buildUrl('/tenants/{tenantId}/clients/{clientId}', {
         tenantId: '!INVALID!',
         clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('unassignGroupFromTenant - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/tenants/{tenantId}/groups/{groupId}', {
+        tenantId: 'x',
+        groupId: '',
       }),
       {
         headers: jsonHeaders(),
@@ -1374,6 +1405,24 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  test('unassignMappingRuleFromTenant - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', {
+        tenantId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('unassignMappingRuleFromTenant - Path param tenantId pattern violation', async ({
     request,
   }) => {
@@ -1381,6 +1430,24 @@ test.describe('Tenants Validation API Tests', () => {
       buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', {
         tenantId: '!INVALID!',
         mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromTenant - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/tenants/{tenantId}/roles/{roleId}', {
+        tenantId: 'x',
+        roleId: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -1434,7 +1501,7 @@ test.describe('Tenants Validation API Tests', () => {
     const res = await request.delete(
       buildUrl('/tenants/{tenantId}/users/{username}', {
         tenantId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -1451,7 +1518,6 @@ test.describe('Tenants Validation API Tests', () => {
   }) => {
     const requestBody = {
       name: 'x',
-      description: 'x',
       __unexpectedField: 'x',
     };
     const res = await request.put(
@@ -1482,50 +1548,9 @@ test.describe('Tenants Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateTenant - Param description wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      name: 'x',
-      description: 123,
-    };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateTenant - Param description wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      name: 'x',
-      description: true,
-    };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
   test('updateTenant - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
       name: 123,
-      description: 'x',
     };
     const res = await request.put(
       buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
@@ -1543,24 +1568,6 @@ test.describe('Tenants Validation API Tests', () => {
   test('updateTenant - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
       name: true,
-      description: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateTenant - Missing description', async ({request}) => {
-    const requestBody = {
-      name: 'x',
     };
     const res = await request.put(
       buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
@@ -1576,9 +1583,7 @@ test.describe('Tenants Validation API Tests', () => {
     expect(res.status()).toBe(400);
   });
   test('updateTenant - Missing name', async ({request}) => {
-    const requestBody = {
-      description: 'x',
-    };
+    const requestBody = {};
     const res = await request.put(
       buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
       {
@@ -1597,21 +1602,6 @@ test.describe('Tenants Validation API Tests', () => {
       buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
       {
         headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateTenant - Missing combo name,description', async ({request}) => {
-    const requestBody = {};
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}', {tenantId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.

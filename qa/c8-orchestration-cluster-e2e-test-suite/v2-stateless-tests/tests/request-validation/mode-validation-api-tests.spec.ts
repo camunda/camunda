@@ -14,17 +14,12 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Signals Validation API Tests', () => {
-  test('broadcastSignal - Additional prop __unexpectedField', async ({
+test.describe('Mode Validation API Tests', () => {
+  test('changeClusterMode - Query param mode enum violation', async ({
     request,
   }) => {
-    const requestBody = {
-      signalName: 'x',
-      __unexpectedField: 'x',
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
+    const res = await request.patch(buildUrl('/mode', undefined), {
       headers: jsonHeaders(),
-      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -32,11 +27,9 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Body wrong top-level type', async ({request}) => {
-    const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
+  test('changeClusterMode__paramEnum__query__mode', async ({request}) => {
+    const res = await request.patch(buildUrl('/mode', {mode: 'PROCESSING_X'}), {
       headers: jsonHeaders(),
-      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -44,54 +37,38 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Param signalName wrong type (#1)', async ({
+  test('changeClusterMode - Missing param query.mode', async ({request}) => {
+    const res = await request.patch(buildUrl('/mode', {dryRun: 'true'}), {
+      headers: jsonHeaders(),
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('changeClusterMode - Param query.dryRun wrong type', async ({
     request,
   }) => {
-    const requestBody = {
-      signalName: 123,
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.patch(
+      buildUrl('/mode', {mode: 'x', dryRun: 'notBoolean'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Param signalName wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      signalName: true,
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Missing signalName', async ({request}) => {
-    const requestBody = {};
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-    });
+  test('changeClusterMode - Param query.mode wrong type', async ({request}) => {
+    const res = await request.patch(
+      buildUrl('/mode', {mode: '__INVALID_STRING__', dryRun: 'true'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}

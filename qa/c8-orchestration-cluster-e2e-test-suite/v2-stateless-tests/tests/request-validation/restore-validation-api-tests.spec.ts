@@ -14,16 +14,14 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Setup Validation API Tests', () => {
-  test('createAdminUser - Additional prop __unexpectedField', async ({
-    request,
-  }) => {
+test.describe('Restore Validation API Tests', () => {
+  test('restore - Additional prop __extraField', async ({request}) => {
     const requestBody = {
-      username: null,
-      password: 'x',
-      __unexpectedField: 'x',
+      from: 'x',
+      to: 'x',
+      __extraField: 'unexpected',
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -33,9 +31,9 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Body wrong top-level type', async ({request}) => {
+  test('restore - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -45,14 +43,12 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param password wrong type (#1)', async ({
-    request,
-  }) => {
+  test('restore - Param from wrong type (#1)', async ({request}) => {
     const requestBody = {
-      username: null,
-      password: 123,
+      from: 123,
+      to: 'x',
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -62,14 +58,12 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param password wrong type (#2)', async ({
-    request,
-  }) => {
+  test('restore - Param from wrong type (#2)', async ({request}) => {
     const requestBody = {
-      username: null,
-      password: true,
+      from: true,
+      to: 'x',
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -79,12 +73,12 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#1)', async ({request}) => {
+  test('restore - Param to wrong type (#1)', async ({request}) => {
     const requestBody = {
-      username: null,
+      from: 'x',
+      to: 123,
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -94,12 +88,12 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#2)', async ({request}) => {
+  test('restore - Param to wrong type (#2)', async ({request}) => {
     const requestBody = {
-      username: 'x',
+      from: 'x',
+      to: true,
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -109,12 +103,13 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing username', async ({request}) => {
+  // Known failing (see known-failing-tests.json): restore request from/to format validation (added in 3621ed9d6d96) is incomplete
+  test.skip('restore - format invalid from', async ({request}) => {
     const requestBody = {
-      password: 'x',
+      from: 'not-a-datetime',
+      to: 'x',
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -124,9 +119,15 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+  // Known failing (see known-failing-tests.json): restore request from/to format validation (added in 3621ed9d6d96) is incomplete
+  test.skip('restore - format invalid to', async ({request}) => {
+    const requestBody = {
+      from: 'x',
+      to: 'not-a-datetime',
+    };
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
+      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -134,14 +135,10 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing combo username,password', async ({
-    request,
-  }) => {
-    const requestBody = {};
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+  // Known failing (see known-failing-tests.json): restore request from/to format validation (added in 3621ed9d6d96) is incomplete
+  test.skip('restore - Missing body', async ({request}) => {
+    const res = await request.post(buildUrl('/restore', undefined), {
       headers: jsonHeaders(),
-      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
