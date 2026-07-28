@@ -20,10 +20,13 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -182,24 +185,151 @@ public final class SuspensionGateTest {
   }
 
   @Test
-  public void shouldRejectCommandWhileResuming() {
-    // given
-    final String jobType = Strings.newRandomValidBpmnId();
+  public void shouldRejectMessageCorrelateWhileSuspended() {
+    // given - an instance waiting on an intermediate message catch event, then suspended
     final String processId = Strings.newRandomValidBpmnId();
-    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
-    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<MessageCorrelationRecordValue> rejection =
+        ENGINE
+            .messageCorrelation()
+            .withName(messageName)
+            .withCorrelationKey(correlationKey)
+            .expectRejection()
+            .correlate();
+
+    // then - the correlate command is rejected, referencing the suspended instance
+    Assertions.assertThat(rejection)
+        .hasIntent(MessageCorrelationIntent.CORRELATE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectMessageCorrelateWhileResuming() {
+    // given - an instance waiting on a message catch event, with the RESUMING marker seeded
+    // directly (draining is implemented in a follow-up issue, #57792)
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
     ((MutableProcessingState) ENGINE.getProcessingState())
         .getSuspensionState()
         .setSuspensionState(processInstanceKey, State.RESUMING);
 
-    // when - a REJECT-category command must still be rejected: the instance isn't fully resumed
-    // until draining clears the marker
-    final Record<JobRecordValue> rejection =
-        ENGINE.job().withKey(job.getKey()).expectRejection().complete();
+    // when
+    final Record<MessageCorrelationRecordValue> rejection =
+        ENGINE
+            .messageCorrelation()
+            .withName(messageName)
+            .withCorrelationKey(correlationKey)
+            .expectRejection()
+            .correlate();
 
-    // then
+    // then - the correlate command is rejected just like while SUSPENDED
     Assertions.assertThat(rejection)
-        .hasIntent(JobIntent.COMPLETE)
+        .hasIntent(MessageCorrelationIntent.CORRELATE)
         .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldCorrelateMessageWhileNotSuspended() {
+    // given - an instance waiting on an intermediate message catch event, not suspended
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .messageCorrelation()
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .correlate();
+
+    // then - correlation proceeds normally
+    final Record<MessageCorrelationRecordValue> correlated =
+        RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATED)
+            .withCorrelationKey(correlationKey)
+            .getFirst();
+    Assertions.assertThat(correlated.getValue()).hasCorrelationKey(correlationKey);
+  }
+
+  @Test
+  public void shouldRejectMessageCorrelateWhenOneOfMultipleTargetsSuspended() {
+    // given - two instances of different processes waiting on the same message, one suspended
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long suspendedInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(
+            Strings.newRandomValidBpmnId(), messageName, correlationKey);
+    final long activeInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(
+            Strings.newRandomValidBpmnId(), messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(suspendedInstanceKey)
+        .await();
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(activeInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(suspendedInstanceKey).suspend();
+
+    // when
+    final Record<MessageCorrelationRecordValue> rejection =
+        ENGINE
+            .messageCorrelation()
+            .withName(messageName)
+            .withCorrelationKey(correlationKey)
+            .expectRejection()
+            .correlate();
+
+    // then - the entire correlate is rejected (all-or-nothing) referencing the suspended instance;
+    // because the gate rejects before any state write, the active instance is left untouched and
+    // the
+    // message is preserved for a post-resume retry
+    Assertions.assertThat(rejection)
+        .hasIntent(MessageCorrelationIntent.CORRELATE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + suspendedInstanceKey + "'");
+  }
+
+  private long deployAndStartProcessWithMessageCatchEvent(
+      final String processId, final String messageName, final String correlationKey) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "msg",
+                    e ->
+                        e.message(
+                            m ->
+                                m.name(messageName)
+                                    .zeebeCorrelationKey("=\"%s\"".formatted(correlationKey))))
+                .endEvent()
+                .done())
+        .deploy();
+    return ENGINE.processInstance().ofBpmnProcessId(processId).create();
   }
 }

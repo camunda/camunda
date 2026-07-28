@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_SUSPENDED_PI;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -17,6 +18,8 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -42,10 +46,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MessageCorrelationCorrelateProcessor
-    implements TypedRecordProcessor<MessageCorrelationRecord> {
+    implements TypedRecordProcessor<MessageCorrelationRecord>,
+        SuspensionAware<MessageCorrelationRecord> {
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
@@ -62,6 +69,7 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SuspensionState suspensionState;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -78,12 +86,14 @@ public final class MessageCorrelationCorrelateProcessor
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final SuspensionState suspensionState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.cslCheck = cslCheck;
+    this.suspensionState = suspensionState;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -148,6 +158,18 @@ public final class MessageCorrelationCorrelateProcessor
       final var rejection = authorizationRejectionOptional.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    // Reject before any state write if the command targets a suspended process instance. The
+    // suspension gate can't evaluate this up front (the target instance is only known once
+    // subscriptions are collected), so it is gated here instead (see #57522).
+    final var suspendedInstanceKey = findSuspendedTarget(tempCorrelatingSubscriptions);
+    if (suspendedInstanceKey.isPresent()) {
+      final var message =
+          String.format(ERROR_MESSAGE_SUSPENDED_PI, suspendedInstanceKey.getAsLong());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, message);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, message);
       return;
     }
 
@@ -222,6 +244,37 @@ public final class MessageCorrelationCorrelateProcessor
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
   }
 
+  /**
+   * Returns the key of the first message-event subscription target that carries a suspension
+   * marker, or empty if none are suspended.
+   *
+   * <p>A single correlate can fan out to multiple subscriptions. If any target is suspended we
+   * reject the whole command (all-or-nothing) rather than correlating to the remaining targets:
+   * partial correlation would consume the message and permanently deny it to the suspended
+   * instance, which cannot receive it while suspended and is not re-delivered on resume. Rejecting
+   * instead preserves the message so the client can retry once the instance resumes.
+   */
+  private OptionalLong findSuspendedTarget(final Subscriptions subscriptions) {
+    final var suspendedKey = new AtomicLong(-1L);
+    subscriptions.visitSubscriptions(
+        subscription -> {
+          // Start-event subscriptions create new instances, so there is nothing to suspend.
+          if (subscription.isStartEventSubscription()) {
+            return true;
+          }
+          // Reject while the target carries any suspension marker (SUSPENDED or RESUMING), matching
+          // the primary gate's REJECT semantics for external commands.
+          if (suspensionState.isSuspended(subscription.processInstanceKey())) {
+            suspendedKey.set(subscription.processInstanceKey());
+            return false;
+          }
+          return true;
+        },
+        true);
+    final long key = suspendedKey.get();
+    return key > 0 ? OptionalLong.of(key) : OptionalLong.empty();
+  }
+
   private MessageData createMessageData(
       final long messageKey, final MessageCorrelationRecord messageCorrelationRecord) {
     return new MessageData(
@@ -278,5 +331,13 @@ public final class MessageCorrelationCorrelateProcessor
     }
 
     return Optional.empty();
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<MessageCorrelationRecord> record) {
+    // The target instance is only known once correlation matches a subscription, so the primary
+    // gate can't evaluate this command up front. Suspension is instead enforced inside
+    // processRecord once the target is resolved (see #57522); PROCESS lets it reach that logic.
+    return SuspensionBehavior.PROCESS;
   }
 }
