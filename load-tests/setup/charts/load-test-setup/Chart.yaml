@@ -19,3 +19,8 @@ dependencies:
     version: "7.2.1"
     repository: oci://ghcr.io/prometheus-community/charts
     condition: prometheus-elasticsearch-exporter.enabled
+
+  - name: opensearch
+    version: "2.31.0"
+    repository: https://opensearch-project.github.io/helm-charts/
+    condition: opensearch.enabled

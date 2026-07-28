@@ -5,5 +5,8 @@ dependencies:
 - name: prometheus-elasticsearch-exporter
   repository: oci://ghcr.io/prometheus-community/charts
   version: 7.2.1
-digest: sha256:cc97a2bf209d444fd6f7a577c083246732e1cb4e0960b965fc0c227f84b6cd88
-generated: "2026-07-28T15:19:57.371192268+02:00"
+- name: opensearch
+  repository: https://opensearch-project.github.io/helm-charts/
+  version: 2.31.0
+digest: sha256:6b1c4e40dde47bcd1cd98efec61d07c05a7bffede0df632fc3051ac50eebcafb
+generated: "2026-07-28T15:50:42.997477909+02:00"
