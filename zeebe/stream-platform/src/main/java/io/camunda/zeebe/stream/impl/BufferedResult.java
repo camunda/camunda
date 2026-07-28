@@ -16,6 +16,7 @@ import io.camunda.zeebe.stream.impl.BufferedProcessingResultBuilder.ProcessingRe
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation of {@link ProcessingResult} and {@link TaskResult} that buffers the processing and
@@ -25,12 +26,12 @@ final class BufferedResult implements ProcessingResult, TaskResult {
 
   private final List<PostCommitTask> postCommitTasks;
   private final ImmutableRecordBatch immutableRecordBatch;
-  private final ProcessingResponseImpl processingResponse;
+  private final @Nullable ProcessingResponseImpl processingResponse;
   private final boolean processInASeparateBatch;
 
   BufferedResult(
       final ImmutableRecordBatch immutableRecordBatch,
-      final ProcessingResponseImpl processingResponse,
+      final @Nullable ProcessingResponseImpl processingResponse,
       final List<PostCommitTask> postCommitTasks,
       final boolean processInASeparateBatch) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);

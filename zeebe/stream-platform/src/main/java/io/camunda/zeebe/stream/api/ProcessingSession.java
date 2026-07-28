@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 public interface ProcessingSession {
 
@@ -40,14 +41,14 @@ public interface ProcessingSession {
     }
   }
 
-  default void appendAuthInfoToFollowUps(final AuthInfo authInfo) {
+  default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
       // no explicit copy needed: RecordMetadata.authorization() already copies via copyFrom()
       appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
     }
   }
 
-  default void appendAgentInfoToFollowUps(final Agent agentInfo) {
+  default void appendAgentInfoToFollowUps(final @Nullable Agent agentInfo) {
     if (agentInfo != null) {
       // make a copy to rule out any side effects
       final var agent = AgentInfo.of(agentInfo);
@@ -56,7 +57,7 @@ public interface ProcessingSession {
   }
 
   default void appendRequestSourceToFollowUps(
-      final ChannelType channelType, final String toolName) {
+      final @Nullable ChannelType channelType, final @Nullable String toolName) {
     if (channelType != null) {
       appendMetadataToFollowUps(metadata -> metadata.requestChannelType(channelType));
     }

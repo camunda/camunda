@@ -14,8 +14,12 @@ import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExtendedProcessingScheduleServiceImpl.class);
   private final AsyncScheduleServiceContext context;
 
   public ExtendedProcessingScheduleServiceImpl(
@@ -145,19 +149,20 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
      */
     @Override
     public void cancel() {
-      final var actor = context.geAsyncActor(taskGroup);
-      if (actor == null) {
-        return;
+      try {
+        final var actor = context.geAsyncActor(taskGroup);
+        actor.run(
+            () ->
+                actor.runOnCompletion(
+                    futureScheduledTask,
+                    (scheduledTask, throwable) -> {
+                      if (scheduledTask != null) {
+                        scheduledTask.cancel();
+                      }
+                    }));
+      } catch (final IllegalStateException e) {
+        LOG.warn("Failed to get async actor for taskGroup {}, skipping cancel.", taskGroup);
       }
-      actor.run(
-          () ->
-              actor.runOnCompletion(
-                  futureScheduledTask,
-                  (scheduledTask, throwable) -> {
-                    if (scheduledTask != null) {
-                      scheduledTask.cancel();
-                    }
-                  }));
     }
   }
 }

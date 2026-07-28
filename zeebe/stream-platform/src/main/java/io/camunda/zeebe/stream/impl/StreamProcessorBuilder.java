@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -23,16 +25,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class StreamProcessorBuilder {
 
   private final StreamProcessorContext streamProcessorContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private ActorSchedulingService actorSchedulingService;
-  private ZeebeDb zeebeDb;
+  private @Nullable ActorSchedulingService actorSchedulingService;
+  private @Nullable ZeebeDb zeebeDb;
 
-  private List<RecordProcessor> recordProcessors;
+  private @Nullable List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
 
   public StreamProcessorBuilder() {
@@ -92,7 +94,7 @@ public final class StreamProcessorBuilder {
   }
 
   public ActorSchedulingService getActorSchedulingService() {
-    return actorSchedulingService;
+    return requireNonNull(actorSchedulingService);
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
@@ -105,12 +107,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public ZeebeDb getZeebeDb() {
-    return zeebeDb;
+  public ZeebeDb<?> getZeebeDb() {
+    return requireNonNull(zeebeDb);
   }
 
   public List<RecordProcessor> getRecordProcessors() {
-    return recordProcessors;
+    return requireNonNull(recordProcessors);
   }
 
   public StreamProcessorBuilder scheduledCommandCache(
@@ -130,11 +132,12 @@ public final class StreamProcessorBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
-    Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
-    Objects.requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(actorSchedulingService, "No task scheduler provided.");
+    requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
+    requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(recordProcessors, "Record processors cannot be empty.");
     if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
-      Objects.requireNonNull(
+      requireNonNull(
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }

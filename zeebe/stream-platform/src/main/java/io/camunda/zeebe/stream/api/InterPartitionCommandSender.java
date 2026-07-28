@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Supports sending arbitrary commands to another partition. Sending may be unreliable and fail
@@ -41,7 +42,7 @@ public interface InterPartitionCommandSender {
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
   }
@@ -60,7 +61,7 @@ public interface InterPartitionCommandSender {
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo);
+      final @Nullable AuthInfo authInfo);
 }
