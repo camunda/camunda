@@ -6,12 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {
   type GetProcessDefinitionStatisticsRequestBody,
   type QueryProcessInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
+import type {VariableCondition} from 'modules/stores/variableFilter';
+import {buildVariableEntry} from 'modules/hooks/processInstancesSearch';
 
 type ProcessInstancesSearchFilter = NonNullable<
   QueryProcessInstancesRequestBody['filter']
@@ -35,18 +38,31 @@ const getValidStatisticsFilters = (
   return statisticsFilter;
 };
 
-const useProcessInstanceStatisticsFilters =
-  (): GetProcessDefinitionStatisticsRequestBody => {
-    const [searchParams] = useSearchParams();
+const useProcessInstanceStatisticsFilters = (
+  conditions?: VariableCondition[],
+): GetProcessDefinitionStatisticsRequestBody => {
+  const [searchParams] = useSearchParams();
+
+  return useMemo(() => {
     const fullFilter = parseProcessInstancesSearchFilter(searchParams);
 
     if (!fullFilter) {
       return {filter: undefined};
     }
 
+    if (conditions && conditions.length > 0) {
+      const entries = conditions
+        .map(buildVariableEntry)
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+      if (entries.length > 0) {
+        fullFilter.variables = entries;
+      }
+    }
+
     return {
       filter: getValidStatisticsFilters(fullFilter),
     };
-  };
+  }, [searchParams, conditions]);
+};
 
 export {useProcessInstanceStatisticsFilters, getValidStatisticsFilters};
