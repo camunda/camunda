@@ -31,6 +31,18 @@ const Container = styled.div`
 
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
+  gap: var(--cds-spacing-03);
+
+  h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cds--stack-horizontal {
+    flex-shrink: 0;
+  }
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
