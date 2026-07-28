@@ -18,7 +18,6 @@ package io.camunda.client.spring.annotation.processor;
 import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
@@ -40,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
@@ -62,16 +60,6 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     this.deploymentValuesExtractor = deploymentValuesExtractor;
     this.resourcePatternResolver = resourcePatternResolver;
     this.camundaClientProperties = camundaClientProperties;
-  }
-
-  public DeploymentAnnotationProcessor(
-      final ApplicationEventPublisher publisher,
-      final CamundaClientProperties camundaClientProperties) {
-    this(
-        publisher,
-        AnnotationUtil::getDeploymentValues,
-        new PathMatchingResourcePatternResolver(),
-        camundaClientProperties);
   }
 
   @Override
