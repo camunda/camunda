@@ -14,6 +14,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -21,9 +23,12 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -285,6 +290,65 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
         .isZero();
   }
 
+  @Test
+  public void shouldCorrelateBufferedStreamWithoutPolling() {
+    // A throughput pin for the issue's core latency claim: a backlog of same-correlation-key,
+    // cross-partition starts drains end-to-end driven only by the completion push — no
+    // reconciliation timer is involved at all. The poll is disabled and the clock is never
+    // advanced, so if any hop depended on polling to make progress the stream would stall and this
+    // test would time out. The stronger form of "~N x holder-lifetime": zero timers.
+    deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
+
+    final int streamLength = 5;
+
+    // when a stream of same-correlation-key, cross-partition (businessId) starts is published, each
+    // hop only after the previous hop's lock is established on P_K (its terminal EXPIRED). That
+    // handshake fence is what keeps the stream deterministic without any collision: a follow-up
+    // published while the previous holder is still alive buffers behind the live lock, and one
+    // published after it has already completed starts cleanly on the freed businessId — it can
+    // never race a second concurrent holder onto the same businessId (which would be rejected on
+    // P_B and only retried by a timer the frozen clock never fires). Every hop is a cross-partition
+    // holder on P_B, so every lock release can come only from a completion push.
+    for (int hop = 1; hop <= streamLength; hop++) {
+      publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+      awaitMessagesConsumedOnPK(AUTO_MESSAGE_NAME, hop);
+    }
+
+    // then every holder completes on P_B, purely push-driven, with the clock frozen and the poll
+    // disabled
+    final var completions =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .limit(streamLength)
+            .asList();
+    assertThat(completions)
+        .as(
+            "all %d buffered cross-partition starts complete without any clock advancement",
+            streamLength)
+        .hasSize(streamLength);
+    assertThat(completions)
+        .allSatisfy(
+            r ->
+                assertThat(Protocol.decodePartitionId(r.getValue().getProcessInstanceKey()))
+                    .as("every hop is a cross-partition holder on P_B")
+                    .isEqualTo(partitionFor(BUSINESS_ID)));
+
+    // and not a single reconciliation QUERY was ever sent up to the last completion — the whole
+    // stream drained on the push fast path
+    final long queries =
+        RecordingExporter.records()
+            .limit(nthProcessCompleted(AUTO_PROCESS_ID, streamLength))
+            .filter(
+                r ->
+                    r.getValueType() == ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE
+                        && r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.QUERY)
+            .count();
+    assertThat(queries)
+        .as("a push-driven stream needs no reconciliation poll to make progress")
+        .isZero();
+  }
+
   private void deployAndAwaitStartSubscriptions(
       final BpmnModelInstance process, final String messageName) {
     engine.deployment().withXmlResource(process).deploy();
@@ -345,10 +409,42 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
    * correlation-key lock on {@code P_K}.
    */
   private static void awaitMessageConsumedOnPK(final String messageName) {
+    awaitMessagesConsumedOnPK(messageName, 1);
+  }
+
+  /**
+   * Waits until {@code count} messages of the given name and correlation key have been consumed on
+   * {@code P_K} by the handshake (their terminal {@code EXPIRED}). Each such {@code EXPIRED} is
+   * written together with the correlation-key lock in the {@code STARTED}-reply processing, so the
+   * {@code n}-th {@code EXPIRED} fences the {@code n}-th hop's lock as established — the handshake
+   * fence that serialises the stream deterministically.
+   */
+  private static void awaitMessagesConsumedOnPK(final String messageName, final int count) {
     RecordingExporter.messageRecords(MessageIntent.EXPIRED)
         .withName(messageName)
         .withCorrelationKey(CORRELATION_KEY)
-        .getFirst();
+        .limit(count)
+        .asList();
+  }
+
+  /**
+   * A merged-stream bound that stops at the {@code n}-th PROCESS-level {@code ELEMENT_COMPLETED}
+   * for the given process. Each call returns a fresh stateful predicate, so it must not be shared
+   * across streams.
+   */
+  private static Predicate<Record<RecordValue>> nthProcessCompleted(
+      final String bpmnProcessId, final int n) {
+    final var seen = new AtomicInteger();
+    return r -> {
+      if (r.getValueType() != ValueType.PROCESS_INSTANCE
+          || r.getIntent() != ProcessInstanceIntent.ELEMENT_COMPLETED) {
+        return false;
+      }
+      final var value = (ProcessInstanceRecordValue) r.getValue();
+      return value.getBpmnElementType() == BpmnElementType.PROCESS
+          && bpmnProcessId.equals(value.getBpmnProcessId())
+          && seen.incrementAndGet() == n;
+    };
   }
 
   private static int partitionFor(final String key) {
