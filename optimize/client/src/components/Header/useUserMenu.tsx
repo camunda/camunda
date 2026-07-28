@@ -73,7 +73,9 @@ export default function useUserMenu(optimizeVersion: string, timezone: string) {
       key: 'logout',
       label: t('navigation.logout').toString(),
       kind: 'ghost',
-      onClick: () => history.replace('/logout'),
+      onClick: () => {
+        history.replace('/logout');
+      },
       renderIcon: ArrowRight,
     });
   }
