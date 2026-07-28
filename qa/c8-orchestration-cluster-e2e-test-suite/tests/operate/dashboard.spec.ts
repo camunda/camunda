@@ -19,7 +19,6 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
 import {findInstanceWithVariable} from '../../utils/operateDashboardHelper';
-import {undefined} from 'valibot';
 
 let instanceIds: string[] = [];
 
