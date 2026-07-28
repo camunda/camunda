@@ -7,14 +7,19 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
@@ -45,6 +50,8 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 public class OptimizeCamundaSecurityConfig {
 
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeCamundaSecurityConfig.class);
+
   @Bean
   public SecurityPathPort securityPathPort() {
     return new OptimizeSecurityPathAdapter();
@@ -56,6 +63,31 @@ public class OptimizeCamundaSecurityConfig {
   @Bean
   public MembershipPort membershipPort() {
     return new OptimizeMembershipAdapter();
+  }
+
+  /**
+   * Keeps external sharing working under CSL. The legacy adapters each register their own
+   * request-adjustment filter, and both back off in CSL mode, so without this bean the {@code
+   * /external/api/**} rewrite and the static share resources stop resolving.
+   *
+   * <p>{@link CCSMRequestAdjustmentFilter} serves both editions here despite its name: all it does
+   * is strip the servlet context path, rewrite {@code /external/api/**} to {@code /api/external/**}
+   * and serve the static share resources. The CCSaaS-only cluster-id stripping its SaaS counterpart
+   * adds is not needed, because in CSL mode the cluster id is the servlet context path (see <a
+   * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>).
+   *
+   * <p>Registered at highest precedence so the rewrite lands before the Spring Security filter
+   * chain, which matches on the (wrapped) request URI.
+   */
+  @Bean
+  public FilterRegistrationBean<CCSMRequestAdjustmentFilter> externalSharingRequestAdjuster() {
+    LOG.debug("Registering filter 'externalSharingRequestAdjuster' (CSL)...");
+    final FilterRegistrationBean<CCSMRequestAdjustmentFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(new CCSMRequestAdjustmentFilter());
+    registration.addUrlPatterns("/*");
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    return registration;
   }
 
   /** Overrides CSL's default OIDC entry point; see {@link OptimizeOidcAuthenticationEntryPoint}. */
