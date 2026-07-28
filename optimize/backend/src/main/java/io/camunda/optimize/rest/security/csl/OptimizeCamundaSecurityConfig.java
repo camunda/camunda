@@ -73,7 +73,8 @@ public class OptimizeCamundaSecurityConfig {
    * <p>{@link CCSMRequestAdjustmentFilter} serves both editions here despite its name: all it does
    * is strip the servlet context path, rewrite {@code /external/api/**} to {@code /api/external/**}
    * and serve the static share resources. The CCSaaS-only cluster-id stripping its SaaS counterpart
-   * adds is not needed, because in CSL mode the cluster id is the servlet context path (ADR-0038).
+   * adds is not needed, because in CSL mode the cluster id is the servlet context path (see <a
+   * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>).
    *
    * <p>Registered at highest precedence so the rewrite lands before the Spring Security filter
    * chain, which matches on the (wrapped) request URI.

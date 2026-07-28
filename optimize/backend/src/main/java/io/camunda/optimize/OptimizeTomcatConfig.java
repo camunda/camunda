@@ -85,7 +85,8 @@ public class OptimizeTomcatConfig {
    * {@link #ALLOWED_URL_EXTENSION}. CSL serves login initiation from {@code
    * /oauth2/authorization/{registrationId}} and logout from {@code /logout}; neither exists in the
    * legacy stack, so both would otherwise be rewritten to the SPA home instead of reaching the
-   * security chain (ADR-0038).
+   * security chain. See <a
+   * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
    *
    * <p>The CSL OIDC callback needs no entry of its own: it is {@code /api/authentication/callback}
    * on CCSM and {@code /sso-callback} on CCSaaS, both already covered above.

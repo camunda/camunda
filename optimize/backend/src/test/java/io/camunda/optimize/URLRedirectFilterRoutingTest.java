@@ -27,7 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * Verifies which request URIs the SPA-routing filter rewrites to {@code /#} for each {@code
  * optimize.security.csl.enabled} state. In CSL mode the auth endpoints must reach the security
- * chain unrewritten, otherwise OIDC login initiation bounces to the SPA home (ADR-0038).
+ * chain unrewritten, otherwise OIDC login initiation bounces to the SPA home. See <a
+ * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  */
 @ExtendWith(MockitoExtension.class)
 class URLRedirectFilterRoutingTest {
