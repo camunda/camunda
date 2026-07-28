@@ -41,7 +41,7 @@
     <!-- Camunda License v1.0 header -->
     <license.header.file>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header.file>
 
-    <plugin.version.flatten>1.7.3</plugin.version.flatten>
+    <plugin.version.flatten>1.8.0</plugin.version.flatten>
     <!-- Default: do not swap the reactor POM for the flattened one. Overridden to true only under
          the central-sonatype-publish profile, so pom-packaging modules publish a self-contained
          (coordinates + metadata + resolved dependency versions) POM to Maven Central without
