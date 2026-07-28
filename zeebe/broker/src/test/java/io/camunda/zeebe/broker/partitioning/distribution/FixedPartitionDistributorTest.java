@@ -161,16 +161,16 @@ final class FixedPartitionDistributorTest {
     final var expectedDistribution =
         Set.of(
             new PartitionMetadata(
-                partition("tenantA", 1), Set.of(node(0)), Map.of(node(0), 1), 1, node(0)),
+                partition("tenanta", 1), Set.of(node(0)), Map.of(node(0), 1), 1, node(0)),
             new PartitionMetadata(
-                partition("tenantB", 1), Set.of(node(1)), Map.of(node(1), 1), 1, node(1)));
+                partition("tenantb", 1), Set.of(node(1)), Map.of(node(1), 1), 1, node(1)));
     final var distributor =
         new FixedPartitionDistributorBuilder()
-            .assignMember(partition("tenantA", 1), 0, 1)
-            .assignMember(partition("tenantB", 1), 1, 1)
+            .assignMember(partition("tenanta", 1), 0, 1)
+            .assignMember(partition("tenantb", 1), 1, 1)
             .build();
     final var clusterMembers = Set.of(node(0), node(1));
-    final var sortedPartitionIds = List.of(partition("tenantA", 1), partition("tenantB", 1));
+    final var sortedPartitionIds = List.of(partition("tenanta", 1), partition("tenantb", 1));
 
     // when
     final var distribution =
