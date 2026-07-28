@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
@@ -1369,16 +1371,13 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldRemovePendingDeletionIdempotently() {
+  public void shouldRejectRemovingPendingDeletionThatDoesNotExist() {
     // given
     processState.addPendingDeletion(1L, 2);
 
-    // when - removing a partition that was never recorded, and one twice
-    processState.removePendingDeletion(1L, 99);
-    processState.removePendingDeletion(1L, 2);
-    processState.removePendingDeletion(1L, 2);
-
+    // when - removing a partition that was never recorded
     // then
-    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+    assertThatThrownBy(() -> processState.removePendingDeletion(1L, 99))
+        .isInstanceOf(ZeebeDbInconsistentException.class);
   }
 }

@@ -11,11 +11,13 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -31,6 +33,7 @@ public final class ProcessDeleteCompleteProcessor
 
   private final int currentPartitionId;
   private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final ProcessState processState;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -41,6 +44,7 @@ public final class ProcessDeleteCompleteProcessor
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.currentPartitionId = currentPartitionId;
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
@@ -61,7 +65,7 @@ public final class ProcessDeleteCompleteProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<ProcessRecord> command) {
     recordPartitionDrained(command);
-    // always acknowledge, even when the report was a no-op, so the sender stops retrying
+    // always acknowledge, even when the report was rejected, so the sender stops retrying
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -70,18 +74,21 @@ public final class ProcessDeleteCompleteProcessor
     final long processDefinitionKey = process.getProcessDefinitionKey();
     final int reportingPartitionId = Protocol.decodePartitionId(command.getKey());
 
-    // whether this report is the one clearing an outstanding pending deletion; on redelivery the
-    // partition is already cleared, so no FULLY_DELETED must follow
-    final boolean wasPending =
-        processState.hasPendingDeletion(processDefinitionKey, reportingPartitionId);
+    if (!processState.hasPendingDeletion(processDefinitionKey, reportingPartitionId)) {
+      // already cleared (redelivery) or never expected
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.NOT_FOUND,
+          "Expected to complete draining for process definition '%d' reported by partition '%d', but no outstanding drain report exists"
+              .formatted(processDefinitionKey, reportingPartitionId));
+      return;
+    }
 
-    // always emit DELETE_COMPLETED — a command must produce a follow-up, and the applier clears the
-    // partition idempotently (deleteIfExists), so a redelivery is a safe no-op
     // keyed with the report's key so the applier can decode the reporting partition to clear it
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.DELETE_COMPLETED, process);
 
     // emit FULLY_DELETED exactly once: only when this report cleared the last outstanding partition
-    if (wasPending && !processState.hasPendingDeletion(processDefinitionKey)) {
+    if (!processState.hasPendingDeletion(processDefinitionKey)) {
       finishProcessDelete(command, process);
     }
   }

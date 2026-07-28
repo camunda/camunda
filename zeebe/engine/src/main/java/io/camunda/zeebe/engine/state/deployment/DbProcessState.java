@@ -704,7 +704,7 @@ public final class DbProcessState implements MutableProcessState {
   public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     pendingDeletionPartitionId.wrapInt(partitionId);
-    pendingProcessDeletionsPerPartitionColumnFamily.deleteIfExists(pendingDeletionKey);
+    pendingProcessDeletionsPerPartitionColumnFamily.deleteExisting(pendingDeletionKey);
   }
 
   @Override
