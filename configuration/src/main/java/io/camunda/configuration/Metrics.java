@@ -29,6 +29,9 @@ public class Metrics {
   /** Configure job metrics export settings */
   @NestedConfigurationProperty private JobMetricsConfig jobMetrics = new JobMetricsConfig();
 
+  /** Configure usage metrics export settings */
+  @NestedConfigurationProperty private UsageMetricsConfig usageMetrics = new UsageMetricsConfig();
+
   public boolean isActor() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".actor",
@@ -61,5 +64,13 @@ public class Metrics {
 
   public void setJobMetrics(final JobMetricsConfig jobMetrics) {
     this.jobMetrics = jobMetrics;
+  }
+
+  public UsageMetricsConfig getUsageMetrics() {
+    return usageMetrics;
+  }
+
+  public void setUsageMetrics(final UsageMetricsConfig usageMetrics) {
+    this.usageMetrics = usageMetrics;
   }
 }
