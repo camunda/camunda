@@ -332,6 +332,7 @@ test.describe('create authorization modal — resource type field', () => {
 
 test.describe('secret authorizations', () => {
   const createdSecretUserIds: string[] = [];
+  const createdSecretRoleIds: string[] = [];
 
   test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
     await identityAuthorizationsPage.navigateToAuthorizations();
@@ -344,6 +345,7 @@ test.describe('secret authorizations', () => {
 
   test.afterAll(async ({request}) => {
     await cleanupUsers(request, createdSecretUserIds);
+    await cleanupRoles(request, createdSecretRoleIds);
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -352,7 +354,6 @@ test.describe('secret authorizations', () => {
   });
 
   test('renders READ and REVEAL as independent checkboxes on the SECRET tab', async ({
-    page,
     identityAuthorizationsPage,
   }) => {
     await identityAuthorizationsPage.selectResourceTypeTab('Secret');
@@ -361,8 +362,10 @@ test.describe('secret authorizations', () => {
       identityAuthorizationsPage.createAuthorizationModal,
     ).toBeVisible();
 
-    const readCheckbox = page.locator('input#READ');
-    const revealCheckbox = page.locator('input#REVEAL');
+    const readCheckbox =
+      identityAuthorizationsPage.accessPermissionCheckbox('read');
+    const revealCheckbox =
+      identityAuthorizationsPage.accessPermissionCheckbox('reveal');
 
     await expect(readCheckbox).not.toBeChecked();
     await expect(revealCheckbox).not.toBeChecked();
@@ -427,6 +430,51 @@ test.describe('secret authorizations', () => {
       const authorizationRow =
         identityAuthorizationsPage.authorizationRowByOwnerId(testUser.username);
       await expect(authorizationRow).not.toContainText('READ');
+    });
+  });
+
+  test('grants SECRET READ and REVEAL to a role for a single secret reference', async ({
+    page,
+    identityHeader,
+    identityRolesPage,
+    identityAuthorizationsPage,
+  }) => {
+    const testData = createTestData({authRole: true});
+    const testRole = testData.authRole!;
+    const secretReference = `secret-${testData.id}`;
+    createdSecretRoleIds.push(testRole.id);
+
+    await test.step('Create a new test role', async () => {
+      await identityHeader.navigateToRoles();
+      await expect(page).toHaveURL(relativizePath(Paths.roles()));
+      await identityRolesPage.createRole(testRole);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(/admin\/authorizations/);
+    });
+
+    await test.step('Grant SECRET READ and REVEAL for a concrete resource id', async () => {
+      await identityAuthorizationsPage.createAuthorization(
+        createSecretAuthorization(
+          testRole,
+          ['read', 'reveal'],
+          'Role',
+          secretReference,
+        ),
+      );
+    });
+
+    await test.step('Assert the grant lists both permissions for that reference', async () => {
+      await identityAuthorizationsPage.assertAuthorizationExists(
+        testRole.id,
+        'Role',
+        ['read', 'reveal'],
+        'Secret',
+      );
+
+      await expect(
+        identityAuthorizationsPage.authorizationRowByOwnerId(testRole.id),
+      ).toContainText(secretReference);
     });
   });
 });

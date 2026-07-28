@@ -140,13 +140,14 @@ export const createComponentAuthorization = (
 
 export const createSecretAuthorization = (
   owner: {name: string},
-  accessPermissions: string[] = ['read'],
+  accessPermissions: ('read' | 'reveal')[] = ['read'],
   ownerType: 'Role' | 'User' | 'Group' = 'Role',
+  resourceId = '*',
 ) => ({
   ownerType,
   ownerId: owner.name,
   resourceType: 'Secret',
-  resourceId: '*',
+  resourceId,
   accessPermissions,
 });
 
