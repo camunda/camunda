@@ -218,12 +218,12 @@ public class SwimMembershipProtocol
 
   /** Checks the local member metadata for changes. */
   private void checkMetadata() {
-    final var currentProperties = new Properties();
-    currentProperties.putAll(localMember.properties());
-    if (currentProperties.equals(localProperties)) {
+    final var liveProperties = localMember.properties();
+    if (liveProperties.equals(localProperties)) {
       return;
     }
 
+    final var currentProperties = (Properties) liveProperties.clone();
     localProperties = currentProperties;
     LOGGER.debug("{} - Detected local properties change {}", localMember.id(), currentProperties);
     localMember.setIncarnationNumber(localMember.getIncarnationNumber() + 1);
