@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_SUSPENDED_PI;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -17,6 +18,8 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -43,10 +47,14 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableLong;
 
 public final class MessageCorrelationCorrelateProcessor
-    implements TypedRecordProcessor<MessageCorrelationRecord> {
+    implements TypedRecordProcessor<MessageCorrelationRecord>,
+        SuspensionAware<MessageCorrelationRecord> {
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
@@ -63,6 +71,7 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SuspensionState suspensionState;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -79,12 +88,14 @@ public final class MessageCorrelationCorrelateProcessor
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final SuspensionState suspensionState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.cslCheck = cslCheck;
+    this.suspensionState = suspensionState;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -161,6 +172,32 @@ public final class MessageCorrelationCorrelateProcessor
       return;
     }
 
+    // Suspension enforcement: a suspended process instance must not receive the message, but active
+    // targets still must. Determine whether at least one eligible (start-event or non-suspended)
+    // target exists. If every collected target is suspended, reject before any state write so the
+    // message is preserved for a retry once the instance resumes; the gate cannot evaluate this up
+    // front because the target instances are only known once subscriptions are collected.
+    final var suspendedTargetKey = new MutableLong(-1L);
+    final var hasEligibleTarget = new MutableBoolean(false);
+    tempCorrelatingSubscriptions.visitSubscriptions(
+        subscription -> {
+          if (subscription.isStartEventSubscription()
+              || !suspensionState.isSuspended(subscription.processInstanceKey())) {
+            hasEligibleTarget.set(true);
+          } else {
+            suspendedTargetKey.set(subscription.processInstanceKey());
+          }
+          return true;
+        },
+        true);
+
+    if (!hasEligibleTarget.get() && suspendedTargetKey.get() > 0) {
+      final var message = String.format(ERROR_MESSAGE_SUSPENDED_PI, suspendedTargetKey.get());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, message);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, message);
+      return;
+    }
+
     // Now that authorization passed, write the message and correlations to state
     final var messageRecord =
         new MessageRecord()
@@ -176,7 +213,8 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Now actually correlate with state writes
     final var blockedProcessIds = new HashSet<String>();
-    correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.correlateToMessageEvents(
+        messageData, correlatingSubscriptions, suspensionState::isSuspended);
     final var delegatedCrossPartition =
         correlateBehavior.correlateToMessageStartEvents(
             messageData, correlatingSubscriptions, blockedProcessIds);
@@ -288,5 +326,13 @@ public final class MessageCorrelationCorrelateProcessor
     }
 
     return Optional.empty();
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<MessageCorrelationRecord> record) {
+    // The target instance is only known once correlation matches a subscription, so the primary
+    // gate can't evaluate this command up front. Suspension is instead enforced inside
+    // processRecord once the target is resolved (see #57522); PROCESS lets it reach that logic.
+    return SuspensionBehavior.PROCESS;
   }
 }

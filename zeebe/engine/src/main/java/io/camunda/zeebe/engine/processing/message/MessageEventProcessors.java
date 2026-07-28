@@ -165,7 +165,8 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 routingInfo,
-                partitionId))
+                partitionId,
+                processingState.getSuspensionState()))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,
