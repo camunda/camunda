@@ -13,16 +13,54 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
+  prepare-matrix:
+    name: Prepare branch matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      branches: ${{ steps.branches.outputs.branches }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Discover maintained frontend branches
+        id: branches
+        run: |
+          STABLE_BRANCHES=$(git ls-remote --heads origin 'refs/heads/stable/*' \
+            | sed -nE 's|.*refs/heads/(stable/[0-9]+\.[0-9]+)$|\1|p' \
+            | awk -F/ '{ split($2, version, "."); if (version[1] > 8 || (version[1] == 8 && version[2] >= 8)) print }' \
+            | sort -t/ -k2 -V)
+
+          if [[ -z "$STABLE_BRANCHES" ]]; then
+            echo "::error::No eligible stable branches found; expected at least one remote branch matching stable/X.Y with version 8.8 or newer."
+            exit 1
+          fi
+
+          BRANCHES=$(printf 'main\n%s\n' "$STABLE_BRANCHES" \
+            | jq -Rsc 'split("\n") | map(select(length > 0))')
+
+          echo "Discovered branches: $BRANCHES"
+          echo "branches=$BRANCHES" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   scan:
     name: "Scan (${{ matrix.branch }})"
+    needs: prepare-matrix
     strategy:
       fail-fast: false
       matrix:
-        branch:
-          - main
-          - stable/8.9
-          - stable/8.8
+        branch: ${{ fromJSON(needs.prepare-matrix.outputs.branches) }}
     uses: ./.github/workflows/frontend-sbom-snyk-nightly.yml
     secrets: inherit
     with:
