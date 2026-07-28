@@ -16,6 +16,7 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {notificationsStore} from 'modules/stores/notifications';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {BatchModificationNotification} from './BatchModificationNotification';
@@ -100,7 +101,9 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {data: businessObjects} = useBusinessObjects();
 
-  const baseFilters = useProcessInstanceStatisticsFilters();
+  const baseFilters = useProcessInstanceStatisticsFilters(
+    variableFilterStore.variable,
+  );
   const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
 
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
