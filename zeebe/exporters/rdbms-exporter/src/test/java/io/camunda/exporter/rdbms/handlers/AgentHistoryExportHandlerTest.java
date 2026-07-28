@@ -197,8 +197,12 @@ class AgentHistoryExportHandlerTest {
   }
 
   @Test
-  void shouldMapLoopIterationToNullWhenNotPositive() {
-    // given — zero and negative values
+  void shouldNormalizeNonPositiveLoopIterationToOne() {
+    // given — zero and negative values. LoopIterationId requires a positive integer (minimum 1),
+    // and the connector always provides one in practice, but 0/negative can still reach the
+    // exporter as the protocol's own "unset" sentinel for the underlying IntegerProperty. Storing
+    // such a sentinel as-is would violate the API's non-null, minimum-1 contract, so the exporter
+    // normalizes it to the smallest valid value instead.
     final var zeroLoopIteration =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildRecordValue())
@@ -227,11 +231,11 @@ class AgentHistoryExportHandlerTest {
     handler.export(zeroRecord);
     handler.export(negativeRecord);
 
-    // then — both should produce loopIteration=null
+    // then — both are normalized to 1
     verify(writer, times(2)).create(modelCaptor.capture());
     assertThat(modelCaptor.getAllValues())
         .extracting(AgentHistoryDbModel::loopIteration)
-        .containsOnly((Integer) null);
+        .containsExactly(1, 1);
   }
 
   @Test
