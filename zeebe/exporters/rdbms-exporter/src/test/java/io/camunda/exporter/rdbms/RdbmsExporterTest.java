@@ -572,7 +572,7 @@ class RdbmsExporterTest {
     // flushed. The flush task and background task manager are allocated only after the failing
     // step, so there is nothing to release for those here.
     verify(replicationController).close();
-    verify(rdbmsWriters).flush(true);
+    verify(rdbmsWriters).close();
     // reset() runs twice, and that is expected: once at the start of open() (so re-registering
     // listeners/hooks on a reopen never duplicates them) and once again inside close() as part of
     // teardown. reset() is idempotent, so running it on both the open and close paths is harmless;
@@ -897,6 +897,23 @@ class RdbmsExporterTest {
         .when(rdbmsWriters)
         .flush(true);
     doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
+
+    // mirror the real RdbmsWriters.close(): final flush followed by an execution-queue reset
+    try {
+      doAnswer(
+              (invocation) -> {
+                try {
+                  executionQueue.flush();
+                } finally {
+                  executionQueue.reset();
+                }
+                return null;
+              })
+          .when(rdbmsWriters)
+          .close();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
 
     final var builder =
         new RdbmsExporter.Builder()
