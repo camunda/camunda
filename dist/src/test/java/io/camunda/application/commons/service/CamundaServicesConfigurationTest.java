@@ -22,6 +22,8 @@ import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
@@ -108,7 +111,9 @@ class CamundaServicesConfigurationTest {
         buildRegistry(
             twoTenants(),
             new AuthorizationCheckerProvider(
-                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)),
+            new SecretStoreRegistries(
+                Map.of(TENANT_A, registryHolding("token"), TENANT_B, registryHolding("token"))));
 
     // when / then: tenant A's checker grants REVEAL -- the reference resolves, using only tenant
     // A's checker.
@@ -354,6 +359,34 @@ class CamundaServicesConfigurationTest {
     tenants.put(TENANT_A, tenantWithAuthorizations(true));
     tenants.put(TENANT_B, tenantWithAuthorizations(true));
     return tenants;
+  }
+
+  /** A store registry whose single store holds the given secret names, each with a dummy value. */
+  private static SecretStoreRegistry registryHolding(final String... names) {
+    final var held = Set.of(names);
+    final var store =
+        new SecretStore() {
+          @Override
+          public Map<String, SecretResolutionResult> resolve(final Set<String> requested) {
+            return requested.stream()
+                .collect(
+                    Collectors.toMap(
+                        name -> name,
+                        name ->
+                            held.contains(name)
+                                ? new SecretResolutionResult.Resolved("value-of-" + name)
+                                : new SecretResolutionResult.Failed(
+                                    io.camunda.secretstore.SecretErrorCode.NOT_FOUND,
+                                    "unknown",
+                                    null)));
+          }
+
+          @Override
+          public List<String> list() {
+            return List.copyOf(held);
+          }
+        };
+    return new SecretStoreRegistry(Map.of("main", store));
   }
 
   private ServiceRegistry buildRegistry(
