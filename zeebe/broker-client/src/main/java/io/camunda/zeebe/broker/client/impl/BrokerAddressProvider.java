@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
@@ -77,7 +77,7 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
           if (leader != null) {
             return leader;
           }
-          return findRecoveringNode(topologyManager, state, partitionId);
+          return findRecoveringNode(topologyManager, state, partitionId, partitionGroup);
         });
   }
 
@@ -100,13 +100,19 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
   private static @Nullable BrokerMemberId findRecoveringNode(
       final BrokerTopologyManager topologyManager,
       final BrokerClusterState topology,
-      final int partitionId) {
+      final int partitionId,
+      final String partitionGroup) {
     final var clusterConfiguration = topologyManager.getClusterConfiguration();
     return topology.getInactiveNodesForPartition(partitionId).stream()
         .filter(
             node -> {
-              final var member = clusterConfiguration.getMember(node.memberId());
-              return member != null && member.state() == State.RECOVERING;
+              final var partitionGroupConfiguration =
+                  clusterConfiguration.partitionGroups().get(partitionGroup);
+              if (partitionGroupConfiguration == null) {
+                return false;
+              }
+              final var member = partitionGroupConfiguration.getMember(node.memberId());
+              return member != null && member.mode() == Mode.RECOVERING;
             })
         .findFirst()
         .orElse(null);

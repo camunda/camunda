@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
@@ -26,7 +27,8 @@ import org.jspecify.annotations.Nullable;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final Map<String, TestBrokerClusterState> topologies = new HashMap<>();
-  private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
+  private CurrentClusterConfiguration clusterConfiguration =
+      CurrentClusterConfiguration.uninitialized();
 
   TestTopologyManager() {
     this(new TestBrokerClusterState());
@@ -55,7 +57,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
     return this;
   }
 
-  TestTopologyManager withClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
+  TestTopologyManager withClusterConfiguration(
+      final CurrentClusterConfiguration clusterConfiguration) {
     this.clusterConfiguration = clusterConfiguration;
     return this;
   }
@@ -66,7 +69,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterConfiguration getClusterConfiguration() {
+  public CurrentClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -69,6 +70,11 @@ public interface ClusterConfigurationCoordinatorSupplier {
         return newMembers.isEmpty() ? Optional.empty() : Optional.of(lowestMemberId(newMembers));
       }
     };
+  }
+
+  static ClusterConfigurationCoordinatorSupplier from(
+      final Supplier<CurrentClusterConfiguration> clusterTopologySupplier) {
+    return ofMembers(() -> clusterTopologySupplier.get().globalConfiguration().members().keySet());
   }
 
   static ClusterConfigurationCoordinatorSupplier of(

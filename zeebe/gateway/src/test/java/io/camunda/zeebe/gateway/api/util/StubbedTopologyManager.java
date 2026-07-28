@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.UUID;
 import org.jspecify.annotations.NonNull;
@@ -21,14 +22,14 @@ import org.jspecify.annotations.NonNull;
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   private final TestBrokerClusterState clusterState;
-  private final ClusterConfiguration clusterConfiguration;
+  private final CurrentClusterConfiguration clusterConfiguration;
 
   public StubbedTopologyManager() {
     this(8);
   }
 
   public StubbedTopologyManager(final int partitionsCount) {
-    clusterConfiguration = ClusterConfiguration.uninitialized();
+    clusterConfiguration = CurrentClusterConfiguration.uninitialized();
     clusterState = new TestBrokerClusterState(partitionsCount);
     clusterState.addBroker(BrokerMemberId.from(0), "localhost:26501");
     clusterState.setClusterId(UUID.randomUUID().toString());
@@ -46,7 +47,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterConfiguration getClusterConfiguration() {
+  public CurrentClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 

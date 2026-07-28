@@ -33,7 +33,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.ResponseMapper;
@@ -1173,7 +1173,7 @@ public final class LongPollingActivateJobsTest {
     when(topologyManager.getTopology()).thenReturn(clusterState);
     when(topologyManager.getTopology(anyString())).thenReturn(clusterState);
     when(topologyManager.getClusterConfiguration())
-        .thenReturn(ClusterConfiguration.uninitialized());
+        .thenReturn(CurrentClusterConfiguration.uninitialized());
 
     final var firstCallDone = new AtomicBoolean(false);
     final var broker = mock(BrokerClient.class);

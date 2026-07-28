@@ -12,12 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -66,13 +69,8 @@ final class RoundRobinDispatchStrategyTest {
         .addPartition(2, ONE)
         .addPartition(3, TWO)
         .withClusterConfiguration(
-            ClusterConfiguration.builder()
-                .version(1)
-                .routingState(
-                    Optional.of(
-                        new RoutingState(
-                            1, new AllPartitions(2), new MessageCorrelation.HashMod(2))))
-                .build());
+            getConfigurationWithRoutingState(
+                new RoutingState(1, new AllPartitions(2), new MessageCorrelation.HashMod(2))));
 
     // when - then
     assertThat(
@@ -93,6 +91,16 @@ final class RoundRobinDispatchStrategyTest {
         .isEqualTo(2);
   }
 
+  private static CurrentClusterConfiguration getConfigurationWithRoutingState(
+      final RoutingState value) {
+    final var partitionGroup = PartitionGroupConfiguration.empty(1).setRoutingState(value);
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionGroup),
+        PhasedChangeState.empty());
+  }
+
   @Test
   void shouldIterateOverNonContiguousActivePartitions() {
     // given
@@ -103,15 +111,11 @@ final class RoundRobinDispatchStrategyTest {
         .addPartition(2, ONE)
         .addPartition(3, TWO)
         .withClusterConfiguration(
-            ClusterConfiguration.builder()
-                .version(1)
-                .routingState(
-                    Optional.of(
-                        new RoutingState(
-                            1,
-                            new ActivePartitions(1, Set.of(3), Set.of()),
-                            new MessageCorrelation.HashMod(3))))
-                .build());
+            getConfigurationWithRoutingState(
+                new RoutingState(
+                    1,
+                    new ActivePartitions(1, Set.of(3), Set.of()),
+                    new MessageCorrelation.HashMod(3))));
 
     // when - then
     assertThat(
@@ -140,15 +144,11 @@ final class RoundRobinDispatchStrategyTest {
 
     // when -- starting with routing state version 1, with active partitions 1 and 3
     topologyManager.withClusterConfiguration(
-        ClusterConfiguration.builder()
-            .version(1)
-            .routingState(
-                Optional.of(
-                    new RoutingState(
-                        1,
-                        new ActivePartitions(1, Set.of(3), Set.of()),
-                        new MessageCorrelation.HashMod(1))))
-            .build());
+        getConfigurationWithRoutingState(
+            new RoutingState(
+                1,
+                new ActivePartitions(1, Set.of(3), Set.of()),
+                new MessageCorrelation.HashMod(1))));
 
     // then
     assertThat(
@@ -162,12 +162,8 @@ final class RoundRobinDispatchStrategyTest {
 
     // when -- updating to routing state version 2, with active partitions 1, 2 and 3
     topologyManager.withClusterConfiguration(
-        ClusterConfiguration.builder()
-            .version(1)
-            .routingState(
-                Optional.of(
-                    new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1))))
-            .build());
+        getConfigurationWithRoutingState(
+            new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1))));
 
     // then
     assertThat(
@@ -252,15 +248,11 @@ final class RoundRobinDispatchStrategyTest {
         .addPartition("tenant-b", 2, ONE)
         .addPartition("tenant-b", 3, TWO)
         .withClusterConfiguration(
-            ClusterConfiguration.builder()
-                .version(1)
-                .routingState(
-                    Optional.of(
-                        new RoutingState(
-                            1,
-                            new ActivePartitions(1, Set.of(3), Set.of()),
-                            new MessageCorrelation.HashMod(3))))
-                .build());
+            getConfigurationWithRoutingState(
+                new RoutingState(
+                    1,
+                    new ActivePartitions(1, Set.of(3), Set.of()),
+                    new MessageCorrelation.HashMod(3))));
 
     // when - then - the default group cycles over the active partitions only
     assertThat(

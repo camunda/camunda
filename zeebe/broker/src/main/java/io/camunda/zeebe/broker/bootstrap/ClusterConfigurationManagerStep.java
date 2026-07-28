@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterChangeExecutorImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
@@ -57,10 +57,7 @@ public class ClusterConfigurationManagerStep
             clusterConfiguration -> {
               brokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
               final var brokerInfo = brokerStartupContext.getBrokerInfo();
-              brokerInfo
-                  .setClusterSize(clusterConfiguration.clusterSize())
-                  .setPartitionsCount(clusterConfiguration.partitionCount())
-                  .setReplicationFactor(clusterConfiguration.minReplicationFactor());
+              brokerInfo.setClusterSize(clusterConfiguration.clusterSize());
               return brokerStartupContext;
             });
   }
@@ -99,7 +96,7 @@ public class ClusterConfigurationManagerStep
    * @param retriesLeft the number of retries left to attempt
    * @return an ActorFuture that completes with the ClusterConfiguration
    */
-  private ActorFuture<ClusterConfiguration> getClusterConfiguration(
+  private ActorFuture<CurrentClusterConfiguration> getClusterConfiguration(
       final BrokerStartupContext brokerStartupContext, final int retriesLeft) {
     if (retriesLeft <= 0) {
       return CompletableActorFuture.completedExceptionally(
@@ -110,7 +107,7 @@ public class ClusterConfigurationManagerStep
     final var configuration =
         brokerStartupContext.getBrokerClient().getTopologyManager().getClusterConfiguration();
     if (configuration.isUninitialized()) {
-      final ActorFuture<ClusterConfiguration> future =
+      final ActorFuture<CurrentClusterConfiguration> future =
           brokerStartupContext.getConcurrencyControl().createFuture();
       brokerStartupContext
           .getConcurrencyControl()
