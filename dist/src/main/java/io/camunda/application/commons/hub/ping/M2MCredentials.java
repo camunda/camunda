@@ -8,7 +8,10 @@
 package io.camunda.application.commons.hub.ping;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public record M2MCredentials(
@@ -21,8 +24,23 @@ public record M2MCredentials(
 
   public M2MCredentials {
     tokenRequestParameters =
-        tokenRequestParameters == null ? Map.of() : Map.copyOf(tokenRequestParameters);
-    tokenRequestParameters.keySet().forEach(M2MCredentials::validateTokenRequestParameterName);
+        tokenRequestParameters == null
+            ? Map.of()
+            : Collections.unmodifiableMap(new LinkedHashMap<>(tokenRequestParameters));
+  }
+
+  public Optional<String> tokenRequestParametersValidationError() {
+    for (final String name : tokenRequestParameters.keySet()) {
+      if (name == null || name.isBlank()) {
+        return Optional.of("Token request parameter names must not be blank.");
+      }
+      if (RESERVED_PARAMETERS.contains(name)) {
+        return Optional.of(
+            "Token request parameter '%s' is managed by Camunda and cannot be overridden."
+                .formatted(name));
+      }
+    }
+    return Optional.empty();
   }
 
   @Override
@@ -34,16 +52,5 @@ public record M2MCredentials(
         + ", clientSecret=***, tokenRequestParameterNames="
         + tokenRequestParameters.keySet()
         + "]";
-  }
-
-  private static void validateTokenRequestParameterName(final String name) {
-    if (name.isBlank()) {
-      throw new IllegalArgumentException("Token request parameter names must not be blank.");
-    }
-    if (RESERVED_PARAMETERS.contains(name)) {
-      throw new IllegalArgumentException(
-          "Token request parameter '%s' is managed by Camunda and cannot be overridden."
-              .formatted(name));
-    }
   }
 }

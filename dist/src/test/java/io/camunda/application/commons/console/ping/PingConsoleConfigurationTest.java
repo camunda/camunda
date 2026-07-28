@@ -29,6 +29,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -512,6 +513,39 @@ class PingConsoleConfigurationTest {
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft()).isEqualTo("M2M client secret must not be null or empty.");
+  }
+
+  @Test
+  void reservedTokenRequestParametersMustBeRejectedGracefully() {
+    // given
+    final ConsolePingConfiguration consolePingConfiguration =
+        new ConsolePingConfiguration(
+            true,
+            URI.create("http://localhost:8080"),
+            "clusterName",
+            Duration.ofMillis(5000),
+            new RetryConfiguration(),
+            null,
+            new M2MCredentials(
+                URI.create("http://auth-server.com/token"),
+                "clientId",
+                "secret",
+                Map.of("client_secret", "override")));
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft())
+        .isEqualTo(
+            "Token request parameter 'client_secret' is managed by Camunda and cannot be overridden.");
   }
 
   @Test

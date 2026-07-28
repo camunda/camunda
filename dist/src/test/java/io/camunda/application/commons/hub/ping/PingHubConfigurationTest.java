@@ -502,6 +502,36 @@ class PingHubConfigurationTest {
   }
 
   @Test
+  void reservedTokenRequestParametersMustBeRejectedGracefully() {
+    // given
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
+            true,
+            URI.create("http://localhost:8080"),
+            "clusterName",
+            Duration.ofMillis(5000),
+            new RetryConfiguration(),
+            null,
+            new M2MCredentials(
+                URI.create("http://auth-server.com/token"),
+                "clientId",
+                "secret",
+                Map.of("client_secret", "override")));
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft())
+        .isEqualTo(
+            "Token request parameter 'client_secret' is managed by Camunda and cannot be overridden.");
+  }
+
+  @Test
   void shouldSucceedToStartHubPingForValidConfig() {
     // given
     final HubPingConfiguration config =

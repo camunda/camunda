@@ -13,7 +13,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -224,24 +223,6 @@ public class PingHubRunnerIT {
     // then
     final String requestBody = tokenServeEvents().getFirst().getRequest().getBodyAsString();
     assertThat(requestBody).doesNotContain("audience=").doesNotContain("scope=");
-  }
-
-  @Test
-  void shouldRejectReservedTokenRequestParameters() {
-    // given
-    final String baseUrl = "http://localhost:" + wireMockServer.port();
-
-    // when - then
-    assertThatThrownBy(
-            () ->
-                new M2MCredentials(
-                    URI.create(baseUrl + "/token"),
-                    "test-client-id",
-                    "test-client-secret",
-                    Map.of("client_secret", "override")))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("client_secret")
-        .hasMessageContaining("cannot be overridden");
   }
 
   private long pingEventsCount() {
