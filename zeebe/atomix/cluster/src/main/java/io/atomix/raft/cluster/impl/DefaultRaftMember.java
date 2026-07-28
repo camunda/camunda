@@ -22,9 +22,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.hash.Hashing;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftException;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Instant;
@@ -146,6 +148,18 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
 
   /** Recursively reconfigures the cluster. */
   private void configure(final RaftMember.Type type, final CompletableFuture<Void> future) {
+    final var currentConfiguration = cluster.getConfiguration();
+    if (currentConfiguration == null) {
+      // The local member does not know a configuration yet, for example a PROMOTABLE member whose
+      // join completed before the leader disseminated the configuration to it. The request is
+      // built from the local configuration view, so fail fast - like a stale-view
+      // CONFIGURATION_ERROR - and let the caller retry once a configuration is known.
+      future.completeExceptionally(
+          new RaftException.ConfigurationException(
+              null, "Cannot change type of member %s to %s: no known configuration", id, type));
+      return;
+    }
+
     // Set a timer to retry the attempt to leave the cluster.
     configureTimeout =
         cluster
@@ -156,14 +170,13 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
     // Attempt to leave the cluster by submitting a LeaveRequest directly to the server state.
     // Non-leader states should forward the request to the leader if there is one. Leader states
     // will log, replicate, and commit the reconfiguration.
-    final var currentConfiguration = cluster.getConfiguration();
     cluster
         .getContext()
         .getRaftRole()
         .onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
-                .withTerm(currentConfiguration.term())
+                .withTerm(configurationTerm(currentConfiguration))
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(new DefaultRaftMember(id, type, updated))
@@ -201,6 +214,33 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                 future.completeExceptionally(error);
               }
             });
+  }
+
+  /**
+   * Returns the term identifying the given configuration towards the leader.
+   *
+   * <p>The locally stored configuration term is not reliable for this: followers store the
+   * leadership term under which the configuration was disseminated ({@code ConfigureRequest}
+   * carries the leader's then-current term), while the leader's own configuration - which {@code
+   * LeaderRole#onReconfigure} validates reconfigure requests against - keeps the term at which the
+   * configuration entry was appended. Whenever an election happened between appending and
+   * disseminating a configuration, the two terms differ and a request built from the stored term
+   * would be rejected as stale forever. Prefer the actual term of the local log's configuration
+   * entry, falling back to the stored term when the entry is not in the log (e.g. for the initial
+   * configuration, which has no entry, or when this member has not received the entry yet - the
+   * possibly-rejected request is safe to retry).
+   */
+  private long configurationTerm(final Configuration configuration) {
+    try (final var reader = cluster.getContext().getLog().openUncommittedReader()) {
+      reader.seek(configuration.index());
+      if (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.index() == configuration.index() && entry.entry() instanceof ConfigurationEntry) {
+          return entry.term();
+        }
+      }
+    }
+    return configuration.term();
   }
 
   @Override
