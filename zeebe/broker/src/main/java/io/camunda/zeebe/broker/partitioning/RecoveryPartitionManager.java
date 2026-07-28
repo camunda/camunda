@@ -163,9 +163,8 @@ public final class RecoveryPartitionManager
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-            clusterConfigurationService.registerPartitionChangeExecutors(this, this, this);
-          }
+          clusterConfigurationService.registerPartitionChangeExecutors(
+              partitionGroup, this, this, this);
           startInternal(result);
         });
     return result;
@@ -177,9 +176,7 @@ public final class RecoveryPartitionManager
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-            clusterConfigurationService.removePartitionChangeExecutor();
-          }
+          clusterConfigurationService.removePartitionChangeExecutor(partitionGroup);
           clusterConfigurationService.removeRequestValidator(partitionGroup, RestoreRequest.class);
           stopInternal(result);
         });

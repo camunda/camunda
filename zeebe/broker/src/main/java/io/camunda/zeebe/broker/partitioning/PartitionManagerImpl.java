@@ -303,10 +303,7 @@ public final class PartitionManagerImpl
     final var memberPartitions = localPartitions();
 
     healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
-
-    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      clusterConfigurationService.registerPartitionChangeExecutors(this, this);
-    }
+    clusterConfigurationService.registerPartitionChangeExecutors(partitionGroup, this, this);
 
     final var result = concurrencyControl.<Void>createFuture();
     final var started =
@@ -337,9 +334,7 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> stop() {
-    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      clusterConfigurationService.removePartitionChangeExecutor();
-    }
+    clusterConfigurationService.removePartitionChangeExecutor(partitionGroup);
 
     final var result = concurrencyControl.<Void>createFuture();
     final var stop =

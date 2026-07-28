@@ -91,10 +91,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
    * PartitionManager#start()}.
    */
   public void register() {
-    if (!isDefaultGroup()) {
-      return;
-    }
-    clusterConfigurationService().registerModeChangeExecutor(this);
+    clusterConfigurationService().registerModeChangeExecutor(partitionGroup, this);
   }
 
   @Override
@@ -169,9 +166,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          if (isDefaultGroup()) {
-            clusterConfigurationService().removeModeChangeExecutor();
-          }
+          clusterConfigurationService().removeModeChangeExecutor(partitionGroup);
           result.complete(null);
         });
     return result;

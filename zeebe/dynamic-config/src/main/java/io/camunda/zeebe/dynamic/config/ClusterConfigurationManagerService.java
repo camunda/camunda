@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
@@ -51,7 +52,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -92,7 +95,7 @@ public final class ClusterConfigurationManagerService
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
   private final boolean useNewConfig;
-  private ModeChangeExecutor modeChangeExecutor;
+  private final Map<String, ModeChangeExecutor> modeChangeExecutorPerTenant = new HashMap<>();
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -355,68 +358,42 @@ public final class ClusterConfigurationManagerService
   }
 
   public void registerPartitionChangeExecutors(
+      final String groupId,
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+
     registerPartitionChangeExecutors(
+        groupId,
         partitionChangeExecutor,
         partitionScalingChangeExecutor,
         new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
   }
 
   public void registerPartitionChangeExecutors(
+      final String groupId,
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       final RestoreChangeExecutor restoreChangeExecutor) {
     managerActor.run(
         () -> {
+          final ModeChangeExecutor modeChangeExecutor = modeChangeExecutorPerTenant.get(groupId);
           Objects.requireNonNull(
               modeChangeExecutor,
               "ModeChangeExecutor not set before registering topology appliers.");
-          clusterConfigurationManager.registerTopologyChangeAppliers(
-              new ConfigurationChangeAppliersImpl(
-                  partitionChangeExecutor,
-                  new NoopClusterMembershipChangeExecutor(),
-                  partitionScalingChangeExecutor,
-                  clusterChangeExecutor,
-                  modeChangeExecutor,
-                  restoreChangeExecutor));
-        });
-  }
 
-  public void removePartitionChangeExecutor() {
-    clusterConfigurationManager.removeTopologyChangeAppliers();
-  }
-
-  public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
-    managerActor.run(() -> this.modeChangeExecutor = modeChangeExecutor);
-  }
-
-  public void removeModeChangeExecutor() {
-    managerActor.run(() -> modeChangeExecutor = null);
-  }
-
-  /**
-   * Registers the appliers for a single partition group (physical tenant) on the new
-   * multi-partition-group model, keyed by {@code groupId}. Unlike {@link
-   * #registerPartitionChangeExecutors}/{@link #registerModeChangeExecutor} (one shared registration
-   * for the single legacy group), this is called once per physical tenant — each tenant's own
-   * executors are scoped to that tenant only.
-   *
-   * <p>Not yet called by any broker code: broker integration (registering every physical tenant's
-   * {@code PartitionManagerImpl}/{@code PartitionModeHandler} here instead of only the default
-   * tenant's) is a follow-up.
-   */
-  public void registerPartitionGroupChangeExecutors(
-      final String groupId,
-      final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      final ModeChangeExecutor modeChangeExecutor,
-      final RestoreChangeExecutor restoreChangeExecutor) {
-    if (!useNewConfig) {
-      return; // noop on legacy mode
-    }
-    managerActor.run(
-        () ->
+          if (!useNewConfig && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(groupId)) {
+            return; // noop
+          }
+          if (!useNewConfig) {
+            clusterConfigurationManager.registerTopologyChangeAppliers(
+                new ConfigurationChangeAppliersImpl(
+                    partitionChangeExecutor,
+                    new NoopClusterMembershipChangeExecutor(),
+                    partitionScalingChangeExecutor,
+                    clusterChangeExecutor,
+                    modeChangeExecutor,
+                    restoreChangeExecutor));
+          } else {
             clusterConfigurationManager.registerPartitionGroupChangeAppliers(
                 groupId,
                 new PartitionGroupConfigurationChangeAppliersImpl(
@@ -424,14 +401,29 @@ public final class ClusterConfigurationManagerService
                     partitionScalingChangeExecutor,
                     clusterChangeExecutor,
                     modeChangeExecutor,
-                    restoreChangeExecutor)));
+                    restoreChangeExecutor));
+          }
+        });
   }
 
-  public void removePartitionGroupChangeExecutors(final String groupId) {
-    if (!useNewConfig) {
-      return; // noop on legacy mode
+  public void removePartitionChangeExecutor(final String groupId) {
+    if (!useNewConfig && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(groupId)) {
+      return; // noop
     }
-    managerActor.run(() -> clusterConfigurationManager.removePartitionGroupChangeAppliers(groupId));
+    if (!useNewConfig) {
+      clusterConfigurationManager.removeTopologyChangeAppliers();
+    } else {
+      clusterConfigurationManager.removePartitionGroupChangeAppliers(groupId);
+    }
+  }
+
+  public void registerModeChangeExecutor(
+      final String groupId, final ModeChangeExecutor modeChangeExecutor) {
+    managerActor.run(() -> modeChangeExecutorPerTenant.put(groupId, modeChangeExecutor));
+  }
+
+  public void removeModeChangeExecutor(final String groupId) {
+    managerActor.run(() -> modeChangeExecutorPerTenant.remove(groupId));
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {

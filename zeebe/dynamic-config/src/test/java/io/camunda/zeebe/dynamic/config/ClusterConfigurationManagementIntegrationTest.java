@@ -16,6 +16,7 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
@@ -383,9 +384,12 @@ class ClusterConfigurationManagementIntegrationTest {
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
-              service.registerModeChangeExecutor(new NoopModeChangeExecutor());
+              service.registerModeChangeExecutor(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, new NoopModeChangeExecutor());
               service.registerPartitionChangeExecutors(
-                  new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  new NoopPartitionChangeExecutor(),
+                  new NoopPartitionScalingChangeExecutor());
             }
           },
           Runnable::run);

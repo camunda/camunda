@@ -50,12 +50,16 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
 
   @Override
   public void registerPartitionChangeExecutors(
+      final String physicalTenantId,
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       final RestoreChangeExecutor restoreChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerPartitionChangeExecutors(
-          partitionChangeExecutor, partitionScalingChangeExecutor, restoreChangeExecutor);
+          physicalTenantId,
+          partitionChangeExecutor,
+          partitionScalingChangeExecutor,
+          restoreChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register change executor before the topology manager is started");
@@ -63,16 +67,18 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void removePartitionChangeExecutor() {
+  public void removePartitionChangeExecutor(final String physicalTenantId) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.removePartitionChangeExecutor();
+      clusterConfigurationManagerService.removePartitionChangeExecutor(physicalTenantId);
     }
   }
 
   @Override
-  public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
+  public void registerModeChangeExecutor(
+      final String physicalTenantId, final ModeChangeExecutor modeChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.registerModeChangeExecutor(modeChangeExecutor);
+      clusterConfigurationManagerService.registerModeChangeExecutor(
+          physicalTenantId, modeChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register mode change executor before the topology manager is started");
@@ -80,9 +86,9 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void removeModeChangeExecutor() {
+  public void removeModeChangeExecutor(final String physicalTenantId) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.removeModeChangeExecutor();
+      clusterConfigurationManagerService.removeModeChangeExecutor(physicalTenantId);
     }
   }
 
