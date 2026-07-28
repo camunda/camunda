@@ -135,7 +135,7 @@ public final class SuspensionGateTest {
             .getFirst();
     final var bufferedValue = (ProcessInstanceBufferedCommandRecordValue) buffered.getValue();
     assertThat(bufferedValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(bufferedValue.getElementInstanceKey()).isEqualTo(timerCreated.getKey());
+    assertThat(bufferedValue.getCommandKey()).isEqualTo(timerCreated.getKey());
     assertThat(bufferedValue.getIntent()).isEqualTo(TimerIntent.CANCEL);
 
     // and no forward progress was made: the timer still exists, i.e. it was never actually

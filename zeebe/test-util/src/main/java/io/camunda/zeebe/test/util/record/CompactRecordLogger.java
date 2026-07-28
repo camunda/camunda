@@ -2018,8 +2018,8 @@ public class CompactRecordLogger {
 
     return new StringBuilder()
         .append(shortenKey(value.getProcessInstanceKey()))
-        .append(" elementInstanceKey: ")
-        .append(shortenKey(value.getElementInstanceKey()))
+        .append(" commandKey: ")
+        .append(shortenKey(value.getCommandKey()))
         .append(" ")
         .append(value.getValueType())
         .append(" ")

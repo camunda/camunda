@@ -31,9 +31,11 @@ public interface ProcessInstanceBufferedCommandRecordValue
     extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
-   * @return the key of the element instance targeted by the buffered command
+   * @return the record key of the buffered command at buffer time (i.e. {@code command.getKey()});
+   *     what it identifies depends on the command — for example the job, timer, incident or
+   *     user-task key it targets
    */
-  long getElementInstanceKey();
+  long getCommandKey();
 
   /**
    * @return the value type of the buffered command

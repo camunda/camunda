@@ -47,7 +47,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
@@ -330,9 +329,6 @@ public final class MessageCorrelationCorrelateProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<MessageCorrelationRecord> record) {
-    // The target instance is only known once correlation matches a subscription, so the primary
-    // gate can't evaluate this command up front. Suspension is instead enforced inside
-    // processRecord once the target is resolved (see #57522); PROCESS lets it reach that logic.
     return SuspensionBehavior.PROCESS;
   }
 }
