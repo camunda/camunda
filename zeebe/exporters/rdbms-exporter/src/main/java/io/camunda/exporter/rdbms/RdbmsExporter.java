@@ -104,6 +104,18 @@ public final class RdbmsExporter {
   }
 
   public void open(final Controller controller) {
+    try {
+      doOpen(controller);
+    } catch (final RuntimeException e) {
+      // open() may fail after allocating resources (replication controller, scheduled flush task,
+      // background task manager). Release them via close() before propagating so a retried open
+      // starts from a clean state instead of leaking the partial allocation.
+      close();
+      throw e;
+    }
+  }
+
+  private void doOpen(final Controller controller) {
     this.controller = controller;
     rdbmsWriters.getExecutionQueue().reset();
     log(
