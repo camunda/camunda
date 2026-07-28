@@ -138,13 +138,6 @@ mwnw*                       @camunda/engineering-operations
 /.github/workflows/camunda-client-compatibility-test* @camunda/clients-sdks-ai-first-tooling
 
 ################################
-## @camunda/connectors-agentic-ai
-################################
-
-# MCP gateway
-/gateways/gateway-mcp/      @camunda/connectors-agentic-ai
-
-################################
 ## @camunda/identity
 ################################
 
