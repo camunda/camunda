@@ -18,8 +18,7 @@ import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
-import {undefined} from 'valibot';
-import { sleep } from 'utils/sleep';
+import {findInstanceWithVariable} from '../../utils/operateDashboardHelper';
 
 let instanceIds: string[] = [];
 
@@ -143,22 +142,30 @@ test.describe('Dashboard', () => {
     incidentTypeRegex: RegExp,
     expectedVariableRegex: RegExp,
   ) => {
-    await ensureDashboardReady();
+    const openGroupedIncidentView = async () => {
+      await ensureDashboardReady();
+      await operateDashboardPage.clickIncidentByType(incidentTypeRegex);
+      await expect(
+        page.getByRole('heading', {name: /process instances/i}),
+      ).toBeVisible();
+    };
 
-    await operateDashboardPage.clickIncidentByType(incidentTypeRegex);
+    await openGroupedIncidentView();
+
     await waitForAssertion({
       assertion: async () => {
-        await expect(page.getByRole('heading', {name: /process instances/i})).toBeVisible();
+        expect(
+          await findInstanceWithVariable(
+            page,
+            operateDashboardPage,
+            operateProcessInstancePage,
+            expectedVariableRegex,
+          ),
+        ).toBe(true);
       },
-      onFailure: async () => {
-        await sleep(250);
-      },
+      onFailure: openGroupedIncidentView,
+      maxRetries: 5,
     });
-    await operateDashboardPage.clickViewInstanceLink();
-
-    await expect(
-      operateProcessInstancePage.variableCellByName(expectedVariableRegex),
-    ).toBeVisible();
   };
 
   await test.step('Select incident type A and verify details', async () => {
