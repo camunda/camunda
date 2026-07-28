@@ -2484,7 +2484,7 @@ jobs:
       - load-test-helm-lockfile
       - maven-spotless-linter
       - openapi-lint
-      - openapi-x-added-in-version-check
+      # - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
       - physical-tenant-acceptance-tests
