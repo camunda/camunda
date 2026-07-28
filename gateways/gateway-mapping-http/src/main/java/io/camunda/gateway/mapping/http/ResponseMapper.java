@@ -705,6 +705,7 @@ public final class ResponseMapper {
       case NOT_FOUND -> SecretErrorCode.NOT_FOUND;
       case ACCESS_DENIED -> SecretErrorCode.ACCESS_DENIED;
       case INVALID_REFERENCE -> SecretErrorCode.INVALID_REFERENCE;
+      case UNREADABLE -> SecretErrorCode.UNREADABLE;
     };
   }
 

@@ -328,6 +328,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   public enum SecretErrorCode {
     NOT_FOUND,
     ACCESS_DENIED,
-    INVALID_REFERENCE
+    INVALID_REFERENCE,
+    UNREADABLE
   }
 }
