@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
@@ -46,14 +47,17 @@ public class DecisionDefinitionController {
   private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public DecisionDefinitionController(
       final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
   @CamundaPostMapping(path = "/evaluation")
@@ -88,14 +92,16 @@ public class DecisionDefinitionController {
               serviceRegistry
                   .decisionDefinitionServices(physicalTenantId)
                   .getByKey(decisionDefinitionKey, authentication));
-      UpdateMetadataMapper.addUpdateMetadata(
-          response,
-          DecisionDefinitionResult::getDecisionDefinitionKey,
-          DECISION,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          DecisionDefinitionResult::setUpdatedBy,
-          DecisionDefinitionResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            DecisionDefinitionResult::getDecisionDefinitionKey,
+            DECISION,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            DecisionDefinitionResult::setUpdatedBy,
+            DecisionDefinitionResult::setUpdatedAt);
+      }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -131,14 +137,16 @@ public class DecisionDefinitionController {
       final var result = decisionDefinitionServices.search(query, authentication);
       final var response =
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result);
-      UpdateMetadataMapper.addUpdateMetadata(
-          response.getItems(),
-          DecisionDefinitionResult::getDecisionDefinitionKey,
-          DECISION,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          DecisionDefinitionResult::setUpdatedBy,
-          DecisionDefinitionResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            DecisionDefinitionResult::getDecisionDefinitionKey,
+            DECISION,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            DecisionDefinitionResult::setUpdatedBy,
+            DecisionDefinitionResult::setUpdatedAt);
+      }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);

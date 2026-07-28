@@ -38,7 +38,35 @@ public final class UpdateMetadataMapper {
         auditLogServices,
         authentication,
         updatedBySetter,
-        updatedAtSetter);
+        updatedAtSetter,
+        null);
+  }
+
+  /**
+   * Same as {@link #addUpdateMetadata(Object, Function, AuditLogEntityType, AuditLogServices,
+   * CamundaAuthentication, BiConsumer, BiConsumer)}, but falls back to {@code
+   * creationTimestampFallback} for {@code updatedAt} when the entity has no audit log entry at all
+   * (e.g. it was never explicitly updated after creation, and its creation is not itself an audited
+   * action).
+   */
+  public static <T> void addUpdateMetadata(
+      final T item,
+      final Function<T, String> entityKeyExtractor,
+      final AuditLogEntityType entityType,
+      final AuditLogServices auditLogServices,
+      final CamundaAuthentication authentication,
+      final BiConsumer<T, String> updatedBySetter,
+      final BiConsumer<T, String> updatedAtSetter,
+      final Function<T, String> creationTimestampFallback) {
+    addUpdateMetadata(
+        List.of(item),
+        entityKeyExtractor,
+        entityType,
+        auditLogServices,
+        authentication,
+        updatedBySetter,
+        updatedAtSetter,
+        creationTimestampFallback);
   }
 
   public static <T> void addUpdateMetadata(
@@ -49,6 +77,26 @@ public final class UpdateMetadataMapper {
       final CamundaAuthentication authentication,
       final BiConsumer<T, String> updatedBySetter,
       final BiConsumer<T, String> updatedAtSetter) {
+    addUpdateMetadata(
+        items,
+        entityKeyExtractor,
+        entityType,
+        auditLogServices,
+        authentication,
+        updatedBySetter,
+        updatedAtSetter,
+        null);
+  }
+
+  public static <T> void addUpdateMetadata(
+      final Collection<T> items,
+      final Function<T, String> entityKeyExtractor,
+      final AuditLogEntityType entityType,
+      final AuditLogServices auditLogServices,
+      final CamundaAuthentication authentication,
+      final BiConsumer<T, String> updatedBySetter,
+      final BiConsumer<T, String> updatedAtSetter,
+      final Function<T, String> creationTimestampFallback) {
     for (final T item : items) {
       try {
         final var entityKey = entityKeyExtractor.apply(item);
@@ -62,15 +110,20 @@ public final class UpdateMetadataMapper {
                                     .results(SUCCESS.name()))
                         .sort(s -> s.timestamp().desc())
                         .page(p -> p.size(1)));
-        auditLogServices.search(query, authentication).items().stream()
-            .findFirst()
-            .ifPresent(
-                auditLog -> {
-                  if (auditLog.actorId() != null) {
-                    updatedBySetter.accept(item, auditLog.actorId());
-                  }
-                  updatedAtSetter.accept(item, formatDate(auditLog.timestamp()));
-                });
+        final var latestAuditLog =
+            auditLogServices.search(query, authentication).items().stream().findFirst();
+        if (latestAuditLog.isPresent()) {
+          final var auditLog = latestAuditLog.get();
+          if (auditLog.actorId() != null) {
+            updatedBySetter.accept(item, auditLog.actorId());
+          }
+          updatedAtSetter.accept(item, formatDate(auditLog.timestamp()));
+        } else if (creationTimestampFallback != null) {
+          // No audit log entry exists (e.g. creation itself is not an audited action for this
+          // entity type). Initialize updatedAt to the entity's own creation time instead of
+          // leaving it null, mirroring how Job#lastUpdateTime is set at creation.
+          updatedAtSetter.accept(item, creationTimestampFallback.apply(item));
+        }
       } catch (final RuntimeException ignored) {
         // Update metadata is supplemental and must not fail the entity response.
       }

@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -26,16 +27,22 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -213,12 +220,19 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   @MockitoBean IncidentServices incidentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean AuditLogServices auditLogServices;
+  @Autowired GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupIncidentServices() {
     when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @AfterEach
+  void resetUpdateMetadataFlag() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(false);
   }
 
   @Test
@@ -380,6 +394,58 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE, JsonCompareMode.STRICT);
 
     verify(incidentServices).getByKey(eq(23L), any());
+    verify(serviceRegistry, org.mockito.Mockito.never()).auditLogServices(any());
+  }
+
+  @Test
+  void shouldPopulateUpdateMetadataWhenFlagEnabled() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(incidentServices.getByKey(any(Long.class), any())).thenReturn(GET_QUERY_RESULT);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("5")
+            .entityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.INCIDENT)
+            .operationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.RESOLVE)
+            .timestamp(OffsetDateTime.parse("2026-01-05T10:00:00Z"))
+            .actorId("demo")
+            .result(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .category(io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.ADMIN)
+            .build();
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+
+    webClient
+        .get()
+        .uri(INCIDENT_URL + "23")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo("demo")
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2026-01-05T10:00:00.000Z");
+  }
+
+  @Test
+  void shouldFallBackToCreationTimeWhenFlagEnabledAndNoAuditLogEntry() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(incidentServices.getByKey(any(Long.class), any())).thenReturn(GET_QUERY_RESULT);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+
+    webClient
+        .get()
+        .uri(INCIDENT_URL + "23")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo(null)
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2024-05-23T23:05:00.000Z");
   }
 
   @Test
@@ -811,5 +877,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 """
                 .formatted(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL),
             JsonCompareMode.LENIENT);
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

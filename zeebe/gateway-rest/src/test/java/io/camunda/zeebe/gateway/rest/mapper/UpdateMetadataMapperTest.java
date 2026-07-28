@@ -93,10 +93,64 @@ class UpdateMetadataMapperTest {
     assertThat(item.updatedAt).isNull();
   }
 
+  @Test
+  void shouldFallBackToCreationTimestampWhenNoAuditLogEntryExists() {
+    final var services = mock(AuditLogServices.class);
+    when(services.search(any(), any())).thenReturn(SearchQueryResult.empty());
+    final var item = new Item("123");
+    item.creationDate = "2026-01-01T00:00:00.000Z";
+
+    UpdateMetadataMapper.addUpdateMetadata(
+        item,
+        Item::key,
+        USER_TASK,
+        services,
+        mock(CamundaAuthentication.class),
+        Item::setUpdatedBy,
+        Item::setUpdatedAt,
+        Item::creationDate);
+
+    assertThat(item.updatedBy).isNull();
+    assertThat(item.updatedAt).isEqualTo("2026-01-01T00:00:00.000Z");
+  }
+
+  @Test
+  void shouldPreferAuditLogEntryOverFallbackWhenBothAvailable() {
+    final var services = mock(AuditLogServices.class);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("123")
+            .entityType(USER_TASK)
+            .operationType(UPDATE)
+            .timestamp(OffsetDateTime.parse("2026-07-22T10:15:30Z"))
+            .actorId("demo")
+            .result(SUCCESS)
+            .category(USER_TASKS)
+            .build();
+    when(services.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+    final var item = new Item("123");
+    item.creationDate = "2026-01-01T00:00:00.000Z";
+
+    UpdateMetadataMapper.addUpdateMetadata(
+        item,
+        Item::key,
+        USER_TASK,
+        services,
+        mock(CamundaAuthentication.class),
+        Item::setUpdatedBy,
+        Item::setUpdatedAt,
+        Item::creationDate);
+
+    assertThat(item.updatedBy).isEqualTo("demo");
+    assertThat(item.updatedAt).isEqualTo("2026-07-22T10:15:30.000Z");
+  }
+
   private static final class Item {
     private final String key;
     private String updatedBy;
     private String updatedAt;
+    private String creationDate;
 
     private Item(final String key) {
       this.key = key;
@@ -112,6 +166,10 @@ class UpdateMetadataMapperTest {
 
     private void setUpdatedAt(final String updatedAt) {
       this.updatedAt = updatedAt;
+    }
+
+    private String creationDate() {
+      return creationDate;
     }
   }
 }

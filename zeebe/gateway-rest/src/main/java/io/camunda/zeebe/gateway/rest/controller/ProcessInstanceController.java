@@ -51,6 +51,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
@@ -70,14 +71,17 @@ public class ProcessInstanceController {
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ProcessInstanceMapper processInstanceMapper;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public ProcessInstanceController(
       final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
     processInstanceMapper = new ProcessInstanceMapper();
   }
 
@@ -200,14 +204,16 @@ public class ProcessInstanceController {
               serviceRegistry
                   .processInstanceServices(physicalTenantId)
                   .getByKey(processInstanceKey, authentication));
-      UpdateMetadataMapper.addUpdateMetadata(
-          response,
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
-          PROCESS_INSTANCE,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
+            PROCESS_INSTANCE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt);
+      }
       // Success case: Return the left side with the ProcessInstanceItem wrapped in ResponseEntity
       return ResponseEntity.ok().body(response);
     } catch (final Exception e) {
@@ -407,14 +413,16 @@ public class ProcessInstanceController {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = processInstanceServices.search(query, authentication);
       final var response = SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result);
-      UpdateMetadataMapper.addUpdateMetadata(
-          response.getItems(),
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
-          PROCESS_INSTANCE,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
-          io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
+            PROCESS_INSTANCE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt);
+      }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);

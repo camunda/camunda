@@ -301,8 +301,6 @@ components:
         - name
         - tenantId
         - version
-        - updatedBy
-        - updatedAt
       properties:
         decisionDefinitionId:
           allOf:

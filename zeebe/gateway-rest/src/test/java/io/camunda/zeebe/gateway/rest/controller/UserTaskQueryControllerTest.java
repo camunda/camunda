@@ -29,10 +29,12 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -42,12 +44,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -436,6 +442,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean AuditLogServices auditLogServices;
+  @Autowired GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupServices() throws IOException {
@@ -479,6 +487,11 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 new CamundaSearchException(
                     String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
                     CamundaSearchException.Reason.NOT_FOUND)));
+  }
+
+  @AfterEach
+  void resetUpdateMetadataFlag() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(false);
   }
 
   @Test
@@ -963,6 +976,59 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(eq(VALID_USER_TASK_KEY), any());
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
+  public void shouldPopulateUpdateMetadataWhenFlagEnabled() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("0")
+            .entityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.USER_TASK)
+            .operationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.ASSIGN)
+            .timestamp(OffsetDateTime.parse("2026-01-05T10:00:00Z"))
+            .actorId("demo")
+            .result(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .category(
+                io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+            .build();
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}", VALID_USER_TASK_KEY)
+        .accept(APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo("demo")
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2026-01-05T10:00:00.000Z");
+  }
+
+  @Test
+  public void shouldFallBackToCreationDateWhenFlagEnabledAndNoAuditLogEntry() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}", VALID_USER_TASK_KEY)
+        .accept(APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo(null)
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2020-11-11T00:00:00.000Z");
   }
 
   @Test
@@ -1298,5 +1364,13 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             eq(VALID_USER_TASK_KEY),
             eq(auditLogSearchQuery().filter(f -> f.actorIds("1")).build()),
             any());
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

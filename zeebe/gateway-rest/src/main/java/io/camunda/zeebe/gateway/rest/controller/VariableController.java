@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
 import org.springframework.http.ResponseEntity;
@@ -37,12 +38,15 @@ public class VariableController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public VariableController(
       final ServiceRegistry serviceRegistry,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -65,14 +69,16 @@ public class VariableController {
       final var result = variableServices.search(query, authentication);
       final var response =
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues);
-      UpdateMetadataMapper.addUpdateMetadata(
-          response.getItems(),
-          VariableSearchResult::getVariableKey,
-          VARIABLE,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          VariableSearchResult::setUpdatedBy,
-          VariableSearchResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            VariableSearchResult::getVariableKey,
+            VARIABLE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            VariableSearchResult::setUpdatedBy,
+            VariableSearchResult::setUpdatedAt);
+      }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -90,14 +96,16 @@ public class VariableController {
               serviceRegistry
                   .variableServices(physicalTenantId)
                   .getByKey(variableKey, authentication));
-      UpdateMetadataMapper.addUpdateMetadata(
-          response,
-          VariableResult::getVariableKey,
-          VARIABLE,
-          serviceRegistry.auditLogServices(physicalTenantId),
-          authentication,
-          VariableResult::setUpdatedBy,
-          VariableResult::setUpdatedAt);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            VariableResult::getVariableKey,
+            VARIABLE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            VariableResult::setUpdatedBy,
+            VariableResult::setUpdatedAt);
+      }
       // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok().body(response);
     } catch (final Exception e) {

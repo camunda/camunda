@@ -26,11 +26,16 @@ public class GatewayRestConfiguration {
       MAX_CLUSTER_VARIABLE_METADATA_ENTRIES * MAX_CLUSTER_VARIABLE_METADATA_ENTRY_LENGTH;
 
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
+  private final UpdateMetadataConfiguration updateMetadata = new UpdateMetadataConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxClusterVariableMetadataSize = DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE;
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
+  }
+
+  public UpdateMetadataConfiguration getUpdateMetadata() {
+    return updateMetadata;
   }
 
   /**
@@ -127,6 +132,23 @@ public class GatewayRestConfiguration {
     public void setMaxUniqueKeys(final int maxUniqueKeys) {
       this.maxUniqueKeys = maxUniqueKeys;
     }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+  }
+
+  /** Configuration for exposing {@code updatedBy}/{@code updatedAt} in REST responses. */
+  public static class UpdateMetadataConfiguration {
+
+    private static final boolean DEFAULT_ENABLED = false;
+
+    /** Whether {@code updatedBy}/{@code updatedAt} are populated in REST responses. */
+    private boolean enabled = DEFAULT_ENABLED;
 
     public boolean isEnabled() {
       return enabled;

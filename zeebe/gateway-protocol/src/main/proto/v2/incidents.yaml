@@ -493,8 +493,6 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
-        - updatedBy
-        - updatedAt
       properties:
         processDefinitionId:
           allOf:

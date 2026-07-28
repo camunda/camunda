@@ -714,8 +714,6 @@ components:
         - followUpDate
         - processDefinitionVersion
         - formKey
-        - updatedBy
-        - updatedAt
       properties:
         name:
           nullable: true

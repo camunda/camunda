@@ -1746,8 +1746,6 @@ components:
         - rootProcessInstanceKey
         - tags
         - businessId
-        - updatedBy
-        - updatedAt
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
