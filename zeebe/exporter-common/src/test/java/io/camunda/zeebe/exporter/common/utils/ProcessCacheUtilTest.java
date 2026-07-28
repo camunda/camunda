@@ -66,6 +66,45 @@ public class ProcessCacheUtilTest {
   }
 
   @Test
+  void shouldExtractOnlyDirectlyActivatableAdHocActivityIds() {
+    // given — an ad-hoc subprocess with an internal flow: listUsers -> sortTask.
+    // Only listUsers is directly activatable; sortTask has an incoming sequence flow and is
+    // reached by flow, not by the ActivateAdHocSubProcessActivities command (see the engine's
+    // AdHocSubProcessTransformer, which filters activatable activities to getIncoming().isEmpty()).
+    final String processId = "adHocProcess";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                "adHocSubProcess",
+                ahsp ->
+                    ahsp.serviceTask("listUsers", t -> t.zeebeJobType("listUsersJob"))
+                        .serviceTask("sortTask", t -> t.zeebeJobType("sortJob")))
+            .endEvent()
+            .done();
+
+    // when
+    final var adHocActivityIds =
+        ProcessCacheUtil.createCachedProcessEntity(
+                null,
+                0,
+                null,
+                Bpmn.convertToString(model),
+                processId,
+                new ExtensionPropertyConfiguration())
+            .adHocActivityIds();
+
+    // then
+    assertThat(adHocActivityIds)
+        .describedAs("only the directly-activatable (no-incoming-edge) ad-hoc activity is included")
+        .containsExactly("listUsers");
+    assertThat(adHocActivityIds)
+        .describedAs(
+            "a downstream sequence-flow target is not directly activatable and is excluded")
+        .doesNotContain("sortTask");
+  }
+
+  @Test
   void shouldOnlyRetainKnownToolPropertiesInProcessCache() {
     // given — a service task with both tool-related and unrelated zeebe:properties
     final String processId = "mixedPropsProcess";
