@@ -619,6 +619,14 @@ public class BrokerBasedPropertiesOverride {
         .getRaft()
         .setPreferSnapshotReplicationThreshold(raft.getPreferSnapshotReplicationThreshold());
     override
+        .getCluster()
+        .getRaft()
+        .setRebalanceReplicationLagThreshold(raft.getRebalance().getReplicationLagThreshold());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceReplicationTimeout(raft.getRebalance().getReplicationTimeout());
+    override
         .getExperimental()
         .getRaft()
         .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());
