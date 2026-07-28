@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import com.google.common.collect.Lists;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -37,11 +38,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Each tick it walks the cross-partition lock entries in local {@link MessageState}, groups them
  * by the target partition (derived from each holder instance key's partition bits, since every
- * Zeebe key encodes its generating partition), and dispatches one batched {@code QUERY} per target
- * partition, carrying up to {@code batchLimit} holders each. {@code P_B} replies {@code RELEASE}
- * for any holder that is gone; the RELEASE command processor on {@code P_K} then releases the
- * correlation-key lock and picks up the next buffered message for that key. Any holders beyond the
- * batch limit are reconciled on a later tick, as reaped locks drop out of local state.
+ * Zeebe key encodes its generating partition), and dispatches a {@code QUERY} per target partition.
+ * All of a partition's holders are reconciled on every tick; they are split into chunks of at most
+ * {@code batchLimit} holders per {@code QUERY} so each {@code QUERY}/{@code QUERIED} record stays
+ * well under the broker's max message size, no matter how many holders currently target that
+ * partition. {@code P_B} replies {@code RELEASE} for any holder that is gone; the RELEASE command
+ * processor on {@code P_K} then releases the correlation-key lock and picks up the next buffered
+ * message for that key.
  *
  * <p>The poll set is fully reconstructable from local lock state, so the scheduler keeps no
  * transient bookkeeping and no cross-partition coordination state is persisted: every tick
@@ -80,6 +83,17 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
 
   @Override
   public void run() {
+    final int limit = batchLimit.getAsInt();
+    if (limit <= 0) {
+      // Defensive: a non-positive batch limit is a misconfiguration. Warn so it is diagnosable and
+      // skip the tick rather than emitting empty queries and pointless inter-partition traffic.
+      LOG.warn(
+          "Skipping cross-partition message-start lock reconciliation: batch limit is {} but must "
+              + "be positive; check the message-start lock-release poll batch-limit configuration.",
+          limit);
+      return;
+    }
+
     // Group every cross-partition lock entry by the partition its holder lives on. Buffers handed
     // to the visitor are only valid during the callback, so copy into immutable values here.
     final Map<Integer, List<Lock>> locksByPartition = new HashMap<>();
@@ -101,28 +115,26 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
                       tenantId));
         });
 
-    locksByPartition.forEach(this::pollPartition);
+    locksByPartition.forEach(
+        (targetPartition, locks) -> pollPartition(targetPartition, locks, limit));
   }
 
-  private void pollPartition(final int targetPartition, final List<Lock> locks) {
-    final int limit = batchLimit.getAsInt();
-    if (limit <= 0) {
-      // Defensive: a non-positive batch limit is a misconfiguration. Skip rather than emit an
-      // empty query so we don't produce pointless inter-partition traffic and QUERIED events every
-      // tick. (locks is never empty here — a partition list is only created when a lock is added.)
-      return;
-    }
+  private void pollPartition(final int targetPartition, final List<Lock> locks, final int limit) {
+    // Reconcile every holder each tick, split into chunks of at most batchLimit so a single
+    // QUERY/QUERIED record stays well under the broker's max message size no matter how many
+    // cross-partition holders currently target this partition. Chunking (rather than a hard cap on
+    // the first batchLimit entries) guarantees a holder sorted past the limit is still queried on
+    // the same tick and cannot starve while the leading holders stay long-lived.
+    Lists.partition(locks, limit).forEach(chunk -> sendQuery(targetPartition, chunk));
+  }
 
-    // Cap each query at the batch limit; the remainder is reconciled on a later tick as reaped
-    // locks drop out of local state.
-    final var batch = locks.size() <= limit ? locks : locks.subList(0, limit);
-
+  private void sendQuery(final int targetPartition, final List<Lock> chunk) {
     final var query =
         new MessageStartCorrelationKeyLockReleaseRecord()
             // requestKey only needs to carry P_K in its partition bits so P_B can route the reply
             // back; it is never used as an event key.
             .setRequestKey(Protocol.encodePartitionId(partitionId, 0L));
-    for (final var lock : batch) {
+    for (final var lock : chunk) {
       query
           .addHolder()
           .setProcessInstanceKey(lock.holderProcessInstanceKey())
@@ -134,7 +146,7 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
     LOG.trace(
         "Reconciling partition {} for {} cross-partition message-start holder(s)",
         targetPartition,
-        batch.size());
+        chunk.size());
     commandSender.sendDirectCorrelationKeyLockReleaseQuery(targetPartition, query);
   }
 

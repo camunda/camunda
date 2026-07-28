@@ -34,9 +34,10 @@ import org.mockito.ArgumentCaptor;
 
 /**
  * Verifies the {@code P_K}-side release-reconciliation scheduler in isolation: it walks the
- * cross-partition lock entries, groups them by the partition each holder lives on, batches one
- * query per partition up to the batch limit, and skips entries whose holder is local. The scheduler
- * holds no transient bookkeeping — every tick reconciles purely from the current lock state.
+ * cross-partition lock entries, groups them by the partition each holder lives on, chunks each
+ * partition's holders into one query per batch-limit slice, and skips entries whose holder is
+ * local. The scheduler holds no transient bookkeeping — every tick reconciles purely from the
+ * current lock state.
  */
 public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
 
@@ -148,21 +149,17 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   }
 
   @Test
-  void shouldCapEachQueryAtBatchLimitAndReconcileRemainderOnNextTick() {
+  void shouldChunkHoldersExceedingBatchLimitIntoMultipleQueriesInSameTick() {
     // given two holders on the same partition but a batch limit of one
     batchLimit = 1;
     addLock("wf", "ck-a", holderKeyOnPartition(2, 1));
     addLock("wf", "ck-b", holderKeyOnPartition(2, 2));
 
-    // when the first tick runs, only the first holder is batched
+    // when a single tick runs
     scheduler.run();
 
-    // and after its lock is reaped (its holder completed and the lock was released), the next tick
-    // reconciles the remainder
-    removeLock("ck-a");
-    scheduler.run();
-
-    // then each tick dispatched a single-holder query and both holders were eventually reconciled
+    // then both holders are reconciled in that same tick, split into one single-holder query each,
+    // so a holder sorted past the batch limit never has to wait for a leading lock to be reaped
     final var queryCaptor =
         ArgumentCaptor.forClass(MessageStartCorrelationKeyLockReleaseRecord.class);
     verify(mockCommandSender, org.mockito.Mockito.times(2))
@@ -229,10 +226,6 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   private void addLock(
       final String bpmnProcessId, final String correlationKey, final long holderKey) {
     locks.add(new Lock(bpmnProcessId, correlationKey, holderKey, "<default>"));
-  }
-
-  private void removeLock(final String correlationKey) {
-    locks.removeIf(lock -> lock.correlationKey.equals(correlationKey));
   }
 
   private static long holderKeyOnPartition(final int partition, final long sequence) {
