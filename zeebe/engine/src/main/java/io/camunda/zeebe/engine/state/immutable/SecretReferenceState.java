@@ -16,6 +16,9 @@ public interface SecretReferenceState {
   /** Returns true if the secret is pending resolution. */
   boolean isPending(String storeId, String secretReference);
 
+  /** Returns true if the job is still waiting for the given (storeId, secretReference) pair. */
+  boolean isWaiting(String storeId, String secretReference, long jobKey);
+
   /**
    * Visits all job keys waiting for the given (storeId, secretReference) pair. The visitor receives
    * each jobKey and returns {@code true} to continue iteration or {@code false} to stop early.

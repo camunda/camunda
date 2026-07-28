@@ -92,6 +92,14 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
   }
 
   @Override
+  public boolean isWaiting(final String storeId, final String secretReference, final long jobKey) {
+    this.storeId.wrapString(storeId);
+    this.secretReference.wrapString(secretReference);
+    this.jobKey.wrapLong(jobKey);
+    return waitingJobsBySecretRefColumnFamily.exists(secretRefAndJobKey);
+  }
+
+  @Override
   public void visitJobsBySecretReference(
       final String storeId, final String secretReference, final LongPredicate visitor) {
     this.storeId.wrapString(storeId);
