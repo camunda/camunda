@@ -392,6 +392,49 @@ public final class CrossPartitionMessageStartLockReleaseTest {
   }
 
   @Test
+  public void shouldDeleteHolderOriginDuringReconciliationWhenHolderBanned() {
+    // A holder that vanishes without completing — here, banned on P_B — never runs the completion
+    // push, so the push path never drops its holder-origin entry. The reconciliation poll, which
+    // releases the lock for such a gone holder, must also clean up the leftover origin entry, so a
+    // stuck cross-partition start does not leak one entry forever.
+    deployAndAwaitStartSubscriptions(SERVICE_PROCESS, SERVICE_MESSAGE_NAME);
+    publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(SERVICE_PROCESS_ID);
+    awaitHolderJobCreated(holderKey);
+    awaitMessageConsumedOnPK(SERVICE_MESSAGE_NAME);
+
+    // guard: the origin entry exists on P_B before the holder goes away, so the assertion below
+    // observes a deletion rather than an entry that was never written
+    final var pBMessageState =
+        engine.getProcessingState(partitionFor(BUSINESS_ID)).getMessageState();
+    assertThat(pBMessageState.getCrossPartitionStartHolderOrigin(holderKey))
+        .as("the holder-origin entry is written on P_B at holder creation")
+        .isNotNull();
+
+    // and the holder is banned on P_B — gone, but with no completion transition to push
+    engine.banInstanceInNewTransaction(partitionFor(BUSINESS_ID), holderKey);
+
+    // when the reconciliation poll fires
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then P_B appends a PUSHED for the gone holder (its applier drops the origin entry), on the
+    // holder's own partition
+    final var pushed =
+        RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+                MessageStartCorrelationKeyLockReleaseIntent.PUSHED)
+            .filter(r -> r.getKey() == holderKey)
+            .getFirst();
+    assertThat(Protocol.decodePartitionId(pushed.getKey()))
+        .as("the origin cleanup is applied on P_B, the holder's partition")
+        .isEqualTo(partitionFor(BUSINESS_ID));
+
+    // and the leaked origin entry is gone
+    assertThat(pBMessageState.getCrossPartitionStartHolderOrigin(holderKey))
+        .as("reconciliation deletes the leftover holder-origin entry on P_B")
+        .isNull();
+  }
+
+  @Test
   public void shouldReleaseCompletedHolderLockEvenWhenBusinessIdWasReusedByAnotherInstance() {
     // Pins holder-instance precision: the release polls the *specific holder instance*, not
     // businessId availability, so the lock is released once the holder completes even if a
