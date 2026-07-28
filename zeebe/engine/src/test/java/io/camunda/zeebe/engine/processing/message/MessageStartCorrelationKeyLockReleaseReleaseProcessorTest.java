@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -19,10 +20,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -48,6 +51,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
   private MessageState messageState;
   private BpmnBufferedMessageStartEventBehavior bufferedBehavior;
   private StateWriter stateWriter;
+  private TypedRejectionWriter rejectionWriter;
   private MessageStartCorrelationKeyLockReleaseReleaseProcessor processor;
 
   @BeforeEach
@@ -55,8 +59,10 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
     messageState = mock(MessageState.class);
     bufferedBehavior = mock(BpmnBufferedMessageStartEventBehavior.class);
     stateWriter = mock(StateWriter.class);
+    rejectionWriter = mock(TypedRejectionWriter.class);
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
+    when(writers.rejection()).thenReturn(rejectionWriter);
     processor =
         new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
             messageState, bufferedBehavior, writers);
@@ -91,30 +97,40 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
             eq(BufferUtil.wrapString(PROCESS_ID)),
             eq(BufferUtil.wrapString(CORRELATION_KEY)),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // and the reply is not rejected
+    verify(rejectionWriter, never()).appendRejection(any(), any(), anyString());
   }
 
   @Test
-  void shouldIgnoreReleaseWhenLockHeldByDifferentHolder() {
+  void shouldRejectRedundantReleaseWhenLockHeldByDifferentHolder() {
     // given the lock has since been re-acquired by a different instance for the same key
     when(messageState.getCrossPartitionStartLockHolder(any(), any())).thenReturn(HOLDER_KEY + 1);
 
     // when a stale/redelivered RELEASE for the old holder arrives
-    processor.processRecord(releaseRecord(HOLDER_KEY));
+    final var record = releaseRecord(HOLDER_KEY);
+    processor.processRecord(record);
 
-    // then the successor's lock is left untouched and nothing is picked up
+    // then the reply is rejected as redundant, the successor's lock is left untouched and nothing
+    // is picked up
+    verify(rejectionWriter)
+        .appendRejection(eq(record), eq(RejectionType.INVALID_STATE), anyString());
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
     verifyNoInteractions(bufferedBehavior);
   }
 
   @Test
-  void shouldIgnoreReleaseWhenLockAlreadyGone() {
+  void shouldRejectRedundantReleaseWhenLockAlreadyGone() {
     // given the lock has already been released (absent entry → -1)
     when(messageState.getCrossPartitionStartLockHolder(any(), any())).thenReturn(-1L);
 
     // when a redelivered RELEASE arrives
-    processor.processRecord(releaseRecord(HOLDER_KEY));
+    final var record = releaseRecord(HOLDER_KEY);
+    processor.processRecord(record);
 
-    // then it is a no-op
+    // then the reply is rejected as redundant and no state change or pick-up happens
+    verify(rejectionWriter)
+        .appendRejection(eq(record), eq(RejectionType.INVALID_STATE), anyString());
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
     verifyNoInteractions(bufferedBehavior);
   }
