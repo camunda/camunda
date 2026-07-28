@@ -288,6 +288,8 @@ processing.engine.job.timeout-checker-polling-interval
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
+processing.engine.storage-ordinals.enable-archiverless
+processing.engine.storage-ordinals.fixed-storage-ordinal-key
 processing.engine.usage-metrics.export-interval
 processing.engine.validators.results-output-max-size
 processing.flow-control.request.aimd.backoff-ratio

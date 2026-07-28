@@ -159,6 +159,11 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return resourceIdProp.getValue();
   }
 
+  @JsonIgnore
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
+  }
+
   @Override
   @JsonIgnore
   public int getLength() {
@@ -184,6 +189,12 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   @Override
   public String getResourceProp() {
     return bufferAsString(resourceProp.getValue());
+  }
+
+  @Override
+  @JsonIgnore
+  public byte[] getResourceBytes() {
+    return BufferUtil.bufferAsArray(resourceProp.getValue());
   }
 
   public ResourceRecord setResource(final DirectBuffer resource) {

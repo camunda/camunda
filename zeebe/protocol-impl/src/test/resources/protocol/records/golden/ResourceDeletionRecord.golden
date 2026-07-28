@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.resource;
 
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -27,6 +28,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue DELETE_HISTORY_KEY = new StringValue("deleteHistory");
   private static final StringValue BATCH_OPERATION_KEY = new StringValue("batchOperationKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BATCH_OPERATION_TYPE = new StringValue("batchOperationType");
   private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
   private static final StringValue RESOURCE_ID = new StringValue("resourceId");
@@ -35,6 +37,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
   private final BooleanProperty deleteHistoryProp = new BooleanProperty(DELETE_HISTORY_KEY, false);
   private final LongProperty batchOperationKeyProp = new LongProperty(BATCH_OPERATION_KEY, -1);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(
           BATCH_OPERATION_TYPE,
@@ -45,11 +48,12 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID, "");
 
   public ResourceDeletionRecord() {
-    super(7);
+    super(8);
     declareProperty(resourceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deleteHistoryProp)
         .declareProperty(batchOperationKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(resourceIdProp);
@@ -127,6 +131,16 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
 
   public ResourceDeletionRecord setBatchOperationKey(final long batchOperationKey) {
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public ResourceDeletionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }

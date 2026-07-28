@@ -166,6 +166,11 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return ""; // not used in Optimize
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   public void setTags(final Set<String> tags) {
     this.tags = tags;
   }

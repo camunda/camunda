@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -25,13 +26,16 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
   private final StringProperty elementIdProperty = new StringProperty("elementId", "");
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty("storageOrdinalKey", 0);
 
   public RuntimeInstructionRecord() {
-    super(4);
+    super(5);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(elementIdProperty);
+        .declareProperty(elementIdProperty)
+        .declareProperty(storageOrdinalKeyProperty);
   }
 
   @Override
@@ -77,5 +81,15 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProperty.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public RuntimeInstructionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+    return this;
   }
 }

@@ -186,7 +186,6 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return businessIdProp.getValue();
   }
 
-
   public MessageRecord setBusinessId(final String businessId) {
     businessIdProp.setValue(businessId);
     return this;

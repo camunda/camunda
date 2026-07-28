@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-public interface ProcessInstanceRelated {
+public interface ProcessInstanceRelated extends StorageOrdinalKeyRelated {
 
   /**
    * @return the key of the corresponding process instance

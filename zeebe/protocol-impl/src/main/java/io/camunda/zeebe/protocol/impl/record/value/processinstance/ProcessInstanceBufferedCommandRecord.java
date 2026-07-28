@@ -35,6 +35,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
@@ -49,19 +50,22 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
   private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
 
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
   public ProcessInstanceBufferedCommandRecord() {
-    super(7);
+    super(8);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(elementInstanceKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(storageOrdinalKeyProperty);
   }
 
   @Override
@@ -174,6 +178,16 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
 
     commandValue.write(valueBuffer, 0);
     commandValueProperty.getValue().read(commandValueReader.wrap(valueBuffer, 0, encodedLength));
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceBufferedCommandRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
     return this;
   }
 }
