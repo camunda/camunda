@@ -107,10 +107,17 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setId(String.valueOf(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
-    entity.setFlowNodeName(
+    entity.setType(
+        FlowNodeType.fromZeebeBpmnElementType(
+            recordValue.getBpmnElementType() == null
+                ? null
+                : recordValue.getBpmnElementType().name()));
+    final var resolvedFlowNodeName =
         ProcessCacheUtil.getFlowNodeName(
-                processCache, processDefinitionKey, recordValue.getElementId())
-            .orElse(null));
+            processCache, processDefinitionKey, recordValue.getElementId());
+    if (shouldWriteName(entity, resolvedFlowNodeName.isPresent())) {
+      entity.setFlowNodeName(resolvedFlowNodeName.orElse(null));
+    }
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setProcessDefinitionKey(processDefinitionKey);
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -140,11 +147,6 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       }
     }
 
-    entity.setType(
-        FlowNodeType.fromZeebeBpmnElementType(
-            recordValue.getBpmnElementType() == null
-                ? null
-                : recordValue.getBpmnElementType().name()));
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
@@ -166,17 +168,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
-    // The ad-hoc subprocess inner instance has no name of its own: its synthetic id is absent from
-    // the BPMN, so the name resolves to null here. Its name is instead written by
-    // FlowNodeInstanceNameFromAdHocActivityHandler, derived from the activated entry element.
-    //
-    // We therefore skip writing a null name for the inner instance, so this handler's later
-    // lifecycle records (e.g. COMPLETED, TERMINATED) don't clobber that resolved name.
-    //
-    // Normal elements always write their name, including a null that must clear a name
-    // (e.g. migration to an unnamed target).
-    if (entity.getType() != FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
-        || entity.getFlowNodeName() != null) {
+    if (shouldWriteName(entity, entity.getFlowNodeName() != null)) {
       updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
     }
     updateFields.put(
@@ -197,6 +189,16 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  /**
+   * The ad-hoc subprocess inner instance's synthetic id is absent from the BPMN, so this handler
+   * never resolves a name for it; FlowNodeInstanceNameFromAdHocActivityHandler writes that name
+   * instead, derived from the activated entry element.
+   */
+  private static boolean shouldWriteName(
+      final FlowNodeInstanceEntity entity, final boolean hasName) {
+    return entity.getType() != FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE || hasName;
   }
 
   /**
