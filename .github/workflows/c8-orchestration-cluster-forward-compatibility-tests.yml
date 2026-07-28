@@ -43,8 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: List maintained branches
+        id: maintained-branches
+        # Forward compatibility tests start from 8.8 (feature-availability floor).
+        uses: ./.github/actions/list-maintained-branches
+        with:
+          min-version: '8.8'
+
       - name: Generate matrix
         id: matrix
+        env:
+          STABLE_BRANCHES_JSON: ${{ steps.maintained-branches.outputs.stable-branches }}
         run: |
           # Resolve the public Docker image for a branch.
           # - stable/X.Y → camunda/camunda:X.Y-SNAPSHOT
@@ -77,14 +86,9 @@ jobs:
               '{"include": [{"server_branch": $server, "test_branch": $test, "server_image": $image}]}')
           else
             echo "Discovering stable branches from remote..."
-            # List remote stable/X.Y branches, extract version, sort ascending by version
-            # Only include branches >= 8.8 (forward compatibility tests start from 8.8)
-            STABLE_BRANCHES=$(git ls-remote --heads origin 'refs/heads/stable/*' \
-              | sed -n 's|.*refs/heads/\(stable/[0-9]\+\.[0-9]\+\)$|\1|p' \
-              | sort -t/ -k2 -V \
-              | awk -F/ '{ split($2, v, "."); if (v[1] > 8 || (v[1] == 8 && v[2] >= 8)) print }')
-
-            mapfile -t BRANCHES <<< "$STABLE_BRANCHES"
+            # stable/X.Y branches >= 8.8, sorted ascending by version, from the
+            # list-maintained-branches action (STABLE_BRANCHES_JSON).
+            mapfile -t BRANCHES < <(jq -r '.[]' <<< "$STABLE_BRANCHES_JSON")
             echo "Discovered stable branches (ascending): ${BRANCHES[*]}"
 
             if [[ ${#BRANCHES[@]} -lt 2 ]]; then

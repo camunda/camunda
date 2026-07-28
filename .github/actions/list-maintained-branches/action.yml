@@ -1,0 +1,60 @@
+name: List maintained branches
+
+# owner: @camunda/engineering-operations
+
+description: |
+  Discovers the maintained branches (`main` plus every `stable/X.Y` at or above
+  `min-version`) from the git remote and exposes them as a JSON array ready for
+  `strategy.matrix` via `fromJSON()`.
+
+  Because it reads refs with `git ls-remote`, the list stays correct as new
+  `stable/*` branches are cut and older ones reach EOL — no hardcoded lists.
+
+  The repository must already be checked out before this action is called.
+
+inputs:
+  min-version:
+    description: Minimum stable version to include, as `MAJOR.MINOR` (e.g. `8.8`).
+    required: true
+
+outputs:
+  branches:
+    description: 'JSON array including main, e.g. ["main","stable/8.8","stable/8.9"].'
+    value: ${{ steps.list.outputs.branches }}
+  stable-branches:
+    description: 'JSON array of only the stable/X.Y branches, e.g. ["stable/8.8","stable/8.9"].'
+    value: ${{ steps.list.outputs.stable-branches }}
+
+runs:
+  using: composite
+  steps:
+    - name: List maintained branches
+      id: list
+      shell: bash
+      env:
+        MIN_VERSION: ${{ inputs.min-version }}
+      run: |
+        min_major="${MIN_VERSION%%.*}"
+        min_minor="${MIN_VERSION#*.}"
+
+        branches=$(
+          git ls-remote --heads origin 'refs/heads/stable/*' \
+            | sed -nE 's|.*refs/heads/(stable/[0-9]+\.[0-9]+)$|\1|p' \
+            | awk -F/ -v maj="$min_major" -v min="$min_minor" \
+                '{ split($2, v, "."); if (v[1] > maj || (v[1] == maj && v[2] >= min)) print }' \
+            | sort -t/ -k2 -V
+        )
+
+        if [[ -z "$branches" ]]; then
+          echo "::error::No stable branch matched stable/X.Y >= ${MIN_VERSION}."
+          exit 1
+        fi
+
+        to_json() { printf '%s\n' "$1" | jq -Rsc 'split("\n") | map(select(length > 0))'; }
+        stable_json=$(to_json "$branches")
+        all_json=$(to_json "$(printf 'main\n%s\n' "$branches")")
+        echo "Discovered branches: ${all_json}"
+        {
+          echo "branches=${all_json}"
+          echo "stable-branches=${stable_json}"
+        } >> "$GITHUB_OUTPUT"
