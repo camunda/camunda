@@ -280,6 +280,7 @@ optimize.Dockerfile         @camunda/core-features
 
 # Gateways
 /gateways/gateway-mapping-http/ @camunda/core-features
+/gateways/gateway-mcp/      @camunda/core-features
 /gateways/gateway-model/    @camunda/core-features
 
 # Acceptance tests
