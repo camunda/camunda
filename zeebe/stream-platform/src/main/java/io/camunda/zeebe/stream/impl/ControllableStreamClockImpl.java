@@ -20,7 +20,9 @@ import java.util.Objects;
 public final class ControllableStreamClockImpl implements StreamClock.ControllableStreamClock {
 
   private final InstantSource source;
-  private volatile Modification modification;
+
+  // Same as reset(), but added to make nullaway happy
+  private volatile Modification modification = Modification.none();
 
   public ControllableStreamClockImpl(final InstantSource source) {
     this.source = requireNonNull(source);

@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import java.util.EnumMap;
+import org.jspecify.annotations.Nullable;
 
 class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
@@ -37,7 +38,8 @@ class AsyncScheduleServiceContext {
     asyncActors = createAsyncActors();
   }
 
-  public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncTaskGroup taskGroup) {
+  public @Nullable AsyncProcessingScheduleServiceActor geAsyncActor(
+      final AsyncTaskGroup taskGroup) {
     return asyncActors.get(taskGroup);
   }
 

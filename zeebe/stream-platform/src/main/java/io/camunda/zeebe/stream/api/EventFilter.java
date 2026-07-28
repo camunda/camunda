@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+
 /** Implement to control which events should be handled by a {@link StreamProcessor}. */
 @FunctionalInterface
 public interface EventFilter {

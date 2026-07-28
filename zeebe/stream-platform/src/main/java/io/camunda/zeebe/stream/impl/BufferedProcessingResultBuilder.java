@@ -28,6 +28,7 @@ import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -39,7 +40,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
   private final RecordBatch mutableRecordBatch;
-  private ProcessingResponseImpl processingResponse;
+  private @Nullable ProcessingResponseImpl processingResponse;
   private boolean processInASeparateBatch = false;
 
   private final List<Consumer<RecordMetadata>> metadataDecorators = new ArrayList<>();

@@ -29,38 +29,39 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
   public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
-  private ActorControl actor;
-  private LogStream logStream;
-  private PartitionId partitionId;
-  private LogStreamReader logStreamReader;
-  private RecordValues recordValues;
-  private TransactionContext transactionContext;
+  private @Nullable ActorControl actor;
+  private @Nullable LogStream logStream;
+  private @Nullable PartitionId partitionId;
+  private @Nullable LogStreamReader logStreamReader;
+  private @Nullable RecordValues recordValues;
+  private @Nullable TransactionContext transactionContext;
 
-  private BooleanSupplier abortCondition;
+  private @Nullable BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
 
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private ProcessingScheduleService processingScheduleService;
-  private MutableLastProcessedPositionState lastProcessedPositionState;
+  private @Nullable ProcessingScheduleService processingScheduleService;
+  private @Nullable MutableLastProcessedPositionState lastProcessedPositionState;
 
-  private LogStreamWriter logStreamWriter;
-  private CommandResponseWriter commandResponseWriter;
-  private InterPartitionCommandSender partitionCommandSender;
+  private @Nullable LogStreamWriter logStreamWriter;
+  private @Nullable CommandResponseWriter commandResponseWriter;
+  private @Nullable InterPartitionCommandSender partitionCommandSender;
 
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
-  private KeyGeneratorControls keyGeneratorControls;
+  private @Nullable KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private EventFilter processingFilter = e -> true;
-  private ControllableStreamClock clock;
-  private MeterRegistry meterRegistry;
+  private @Nullable ControllableStreamClock clock;
+  private @Nullable MeterRegistry meterRegistry;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
 
   public StreamProcessorContext actor(final ActorControl actor) {
@@ -75,12 +76,17 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   @Override
   public ProcessingScheduleService getScheduleService() {
-    return processingScheduleService;
+    return requireNonNull(processingScheduleService);
   }
 
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return requireNonNull(clock);
   }
 
   /**
@@ -99,22 +105,17 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  @Override
-  public ControllableStreamClock getClock() {
-    return clock;
-  }
-
   public StreamProcessorContext clock(final ControllableStreamClock clock) {
     this.clock = requireNonNull(clock);
     return this;
   }
 
   public LogStream getLogStream() {
-    return logStream;
+    return requireNonNull(logStream);
   }
 
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
+    return requireNonNull(lastProcessedPositionState);
   }
 
   StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
@@ -171,27 +172,27 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public KeyGeneratorControls getKeyGeneratorControls() {
-    return keyGeneratorControls;
+    return requireNonNull(keyGeneratorControls);
   }
 
   public ActorControl getActor() {
-    return actor;
+    return requireNonNull(actor);
   }
 
   public LogStreamReader getLogStreamReader() {
-    return logStreamReader;
+    return requireNonNull(logStreamReader);
   }
 
   public RecordValues getRecordValues() {
-    return recordValues;
+    return requireNonNull(recordValues);
   }
 
   public TransactionContext getTransactionContext() {
-    return transactionContext;
+    return requireNonNull(transactionContext);
   }
 
   public BooleanSupplier getAbortCondition() {
-    return abortCondition;
+    return requireNonNull(abortCondition);
   }
 
   public StreamProcessorListener getStreamProcessorListener() {
@@ -207,14 +208,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public LogStreamWriter getLogStreamWriter() {
-    return logStreamWriter;
+    return requireNonNull(logStreamWriter);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriter;
+    return requireNonNull(commandResponseWriter);
   }
 
-  public InterPartitionCommandSender getPartitionCommandSender() {
+  public @Nullable InterPartitionCommandSender getPartitionCommandSender() {
     return partitionCommandSender;
   }
 
@@ -263,7 +264,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+    return requireNonNull(meterRegistry);
   }
 
   public Duration getScheduledTaskCheckInterval() {

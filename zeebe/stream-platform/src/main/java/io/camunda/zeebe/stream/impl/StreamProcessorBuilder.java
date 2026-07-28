@@ -25,14 +25,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
+
 public final class StreamProcessorBuilder {
 
   private final StreamProcessorContext streamProcessorContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private ActorSchedulingService actorSchedulingService;
-  private ZeebeDb zeebeDb;
+  private @Nullable ActorSchedulingService actorSchedulingService;
+  private @Nullable ZeebeDb zeebeDb;
 
-  private List<RecordProcessor> recordProcessors;
+  private @Nullable List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
 
   public StreamProcessorBuilder() {
@@ -91,7 +93,7 @@ public final class StreamProcessorBuilder {
     return streamProcessorContext;
   }
 
-  public ActorSchedulingService getActorSchedulingService() {
+  public @Nullable ActorSchedulingService getActorSchedulingService() {
     return actorSchedulingService;
   }
 
@@ -105,11 +107,11 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public ZeebeDb getZeebeDb() {
+  public @Nullable ZeebeDb getZeebeDb() {
     return zeebeDb;
   }
 
-  public List<RecordProcessor> getRecordProcessors() {
+  public @Nullable List<RecordProcessor> getRecordProcessors() {
     return recordProcessors;
   }
 

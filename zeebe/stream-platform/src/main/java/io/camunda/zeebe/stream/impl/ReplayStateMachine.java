@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -34,12 +36,14 @@ import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ReplayMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /** Represents the state machine to replay events and rebuild the state. */
-public final class ReplayStateMachine implements LogRecordAwaiter {
+public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSilently {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
@@ -78,8 +82,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
-  private ActorFuture<LastProcessingPositions> recoveryFuture;
-  private ZeebeDbTransaction zeebeDbTransaction;
+  private @Nullable ActorFuture<LastProcessingPositions> recoveryFuture;
+  private @Nullable ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
 
@@ -196,29 +200,30 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
           String.format(
               "Failed to replay records. [snapshot-position: %d, last-read-record-position: %d, last-replayed-event-position: %d]",
               snapshotPosition, lastReadRecordPosition, lastReplayedEventPosition);
-      recoveryFuture.completeExceptionally(new RuntimeException(message, e));
+      requireNonNull(recoveryFuture).completeExceptionally(new RuntimeException(message, e));
     }
   }
 
   private boolean tryToReplayBatch(final Batch batch) throws Exception {
     final boolean onRetry = zeebeDbTransaction != null;
     if (onRetry) {
-      zeebeDbTransaction.rollback();
+      requireNonNull(zeebeDbTransaction).rollback();
       // reading the whole batch from the beginning again
       batch.head();
     }
 
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          batch.forEachRemaining(this::replayEvent);
+    requireNonNull(zeebeDbTransaction)
+        .run(
+            () -> {
+              batch.forEachRemaining(this::replayEvent);
 
-          if (batchSourceEventPosition > snapshotPosition) {
-            lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
-          }
-        });
+              if (batchSourceEventPosition > snapshotPosition) {
+                lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
+              }
+            });
 
-    zeebeDbTransaction.commit();
+    requireNonNull(zeebeDbTransaction).commit();
     zeebeDbTransaction = null;
 
     return true;
@@ -230,7 +235,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
             || currentEvent.getSourceEventPosition()
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
-      final var currentTypedEvent = readRecordValue(currentEvent);
+      final var currentTypedEvent = requireNonNull(readRecordValue(currentEvent));
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
       currentStateDescription.set(
           "replaying event",
@@ -291,7 +296,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         new LastProcessingPositions(lastProcessedPosition, lastWrittenPosition);
 
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
-    recoveryFuture.complete(lastProcessingPositions);
+    requireNonNull(recoveryFuture).complete(lastProcessingPositions);
   }
 
   /**
@@ -337,7 +342,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
     final UnifiedRecordValue value =
-        recordValues.readRecordValue(currentEvent, metadata.getValueType());
+        requireNonNull(recordValues.readRecordValue(currentEvent, metadata.getValueType()));
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;
   }
@@ -354,6 +359,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     return currentStateDescription.toString();
   }
 
+  @Override
   public void close() {
     logStream.removeRecordAvailableListener(this);
   }
