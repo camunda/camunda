@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class FormHandler implements ExportHandler<FormEntity, Form> {
+public class FormHandler implements MainIndexExporterHandler<FormEntity, Form> {
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;

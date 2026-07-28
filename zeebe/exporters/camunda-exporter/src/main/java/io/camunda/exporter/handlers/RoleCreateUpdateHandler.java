@@ -18,7 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleCreateUpdateHandler
+    implements MainIndexExporterHandler<RoleEntity, RoleRecordValue> {
   private final String indexName;
 
   public RoleCreateUpdateHandler(final String indexName) {

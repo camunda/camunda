@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.List;
 import java.util.Map;
 
-public class ProcessDrainingHandler implements ExportHandler<ProcessEntity, Process> {
+public class ProcessDrainingHandler implements MainIndexExporterHandler<ProcessEntity, Process> {
 
   private final String indexName;
 
