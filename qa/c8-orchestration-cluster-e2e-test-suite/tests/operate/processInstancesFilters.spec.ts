@@ -407,9 +407,13 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Filter by Error Message and assert results', async () => {
       const totalBefore = await readTotalResultsCount(page);
+      // Match the real incident raised by processWithAnError (its message
+      // subscription uses correlationKey "=nonExistingClientId", which cannot
+      // be resolved). Filtering by an error message that no instance has would
+      // yield an empty result set rather than exercising the filter.
       await operateFiltersPanelPage.displayOptionalFilter('Error Message');
       await operateFiltersPanelPage.fillErrorMessageFilter(
-        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
+        "Failed to extract the correlation key for 'nonExistingClientId'",
       );
       // The debounced text filter can fail to commit its search on first apply
       // under load, leaving the count unchanged; the filter is persisted to the
