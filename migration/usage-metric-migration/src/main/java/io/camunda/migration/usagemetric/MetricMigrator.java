@@ -19,6 +19,7 @@ import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.commons.utils.ExceptionFilter;
 import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
+import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.TaskStatus;
 import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.util.MetricRegistry;
@@ -31,6 +32,7 @@ import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,22 +86,15 @@ public abstract class MetricMigrator implements Migrator {
         } else {
           final var status = client.getTask(taskId);
           log.info("{} migration step exists status {}", getShortName(), status);
-          if (status.found()) {
-            if (status.completed()) {
-              log.info(
-                  "{} migration job {} already completed, nothing to do", getShortName(), taskId);
-              persistStatus(status.taskId(), true);
-              return null;
-            } else {
-              log.info("{} migration job already running {}", getShortName(), status);
-            }
-          } else {
+          if (status.isCompleted()) {
             log.info(
-                "{} migration job {}, is not present, restarting migration",
-                getShortName(),
-                taskId);
-            taskId = reindex();
-            persistStatus(taskId, false);
+                "{} migration job {} already completed, nothing to do", getShortName(), taskId);
+            persistStatus(status.taskId(), true);
+            return null;
+          } else if (status.needsRestart()) {
+            taskId = restartReindex(taskId, status);
+          } else {
+            log.info("{} migration job already running {}", getShortName(), status);
           }
         }
       }
@@ -159,26 +154,49 @@ public abstract class MetricMigrator implements Migrator {
   }
 
   private void monitorReindexTask(final String taskId) throws Exception {
-    final var retryDecorator = busyRetryDecorator();
+    final var currentTaskId = new AtomicReference<>(taskId);
+    final var retryDecorator =
+        busyRetryDecorator().withRetryOnException(p -> !(p instanceof MigrationTimeoutException));
     metricRegistry.measureReindexTask(
         getMeterReindexTaskTimerName(),
         () ->
             retryDecorator.decorate(
-                "Wait for reindex to be completed", () -> pollReindexTask(taskId), done -> !done));
+                "Wait for reindex to be completed",
+                () -> pollReindexTask(currentTaskId),
+                done -> !done));
   }
 
-  private boolean pollReindexTask(final String taskId) {
+  private boolean pollReindexTask(final AtomicReference<String> taskId) {
     try {
-      final var status = client.getTask(taskId);
-      if (status.completed()) {
-        log.info("Reindex task {} completed successfully", taskId);
+      final var status = client.getTask(taskId.get());
+      if (status.isCompleted()) {
+        log.info("Reindex task {} completed successfully", taskId.get());
         persistStatus(status.taskId(), true);
         return true;
+      }
+      if (status.needsRestart()) {
+        taskId.set(restartReindex(taskId.get(), status));
       }
     } catch (final Exception e) {
       log.error("Failed to acquire status of reindexing task", e);
     }
+    if (Instant.now().isAfter(timeout)) {
+      throw new MigrationTimeoutException(
+          "Reindex did not complete within the timeout of %s".formatted(configuration.getTimeout()),
+          false);
+    }
     return false;
+  }
+
+  private String restartReindex(final String previousTaskId, final TaskStatus status) {
+    log.info(
+        "{} migration job {} is {}, restarting reindex",
+        getShortName(),
+        previousTaskId,
+        status.state());
+    final var newTaskId = reindex();
+    persistStatus(newTaskId, false);
+    return newTaskId;
   }
 
   private RetryDecorator busyRetryDecorator() {

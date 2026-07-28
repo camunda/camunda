@@ -11,6 +11,14 @@ import static io.camunda.migration.usagemetric.client.UsageMetricMigrationClient
 import static io.camunda.search.clients.query.SearchQueryBuilders.ids;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.common.hash.Hashing;
@@ -23,7 +31,10 @@ import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
+import io.camunda.migration.usagemetric.MetricMigrator;
 import io.camunda.migration.usagemetric.TasklistMetricMigrator;
+import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient;
+import io.camunda.migration.usagemetric.client.UsageMetricMigrationClient.TaskStatus;
 import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.search.clients.query.SearchQuery;
@@ -45,14 +56,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.invocation.InvocationOnMock;
 
 public class TasklistMetricMigratorIT extends MigrationTest {
+  private static final String FAILING_SCRIPT = "ctx._source.injectedFailure.value = 1";
   private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
   private final List<String> assignees = new ArrayList<>();
   private final Map<String, Long> documentCountPerAssignee = new HashMap<>();
@@ -99,6 +115,43 @@ public class TasklistMetricMigratorIT extends MigrationTest {
     // then
     assertDataMigrated();
 
+    assertProcessorStep(retrieveProcessorStep(), true);
+  }
+
+  @ParameterizedTest(name = "{1} task on {0}")
+  @CsvSource({"true, LOST", "true, FAILED", "false, LOST", "false, FAILED"})
+  void shouldRestartReindexWhenTaskCannotComplete(
+      final boolean isElasticsearch, final ReindexFault fault) throws Exception {
+    // given - metrics that are ready to be migrated and an importer that has finished
+    this.isElasticsearch = isElasticsearch;
+    prepareMetricsReadyForMigration();
+
+    // and - a first reindex task that can never report completion
+    final var migrator =
+        supplyMigrator(
+            isElasticsearch ? ES_CONFIGURATION : OS_CONFIGURATION, properties, meterRegistry);
+    final var client = injectFirstTaskFault(migrator, fault);
+
+    // when - the migration runs
+    final var migration =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                migrator.call();
+              } catch (final Exception e) {
+                throw new CompletionException(e);
+              }
+            });
+
+    // then - it restarts the reindex instead of polling the unusable task forever
+    assertThat(migration)
+        .as("migration polled a %s reindex task instead of restarting it (#57988)", fault)
+        .succeedsWithin(Duration.ofSeconds(60));
+
+    // and - the reindex was submitted a second time and all the data was migrated
+    verify(client, times(2)).reindex(any(), any(), any(), any(), any());
+    refreshIndices();
+    assertDataMigrated();
     assertProcessorStep(retrieveProcessorStep(), true);
   }
 
@@ -469,5 +522,58 @@ public class TasklistMetricMigratorIT extends MigrationTest {
 
   private SearchQuery tasklistMigratorStepQuery() {
     return ids(TASKLIST_MIGRATOR_STEP_ID);
+  }
+
+  private void prepareMetricsReadyForMigration() throws Exception {
+    properties.getRetry().setMinRetryDelay(Duration.ofMillis(200));
+    properties.getRetry().setMaxRetryDelay(Duration.ofMillis(200));
+    properties.getRetry().setRetryDelayMultiplier(1);
+
+    generateAssignees(20);
+    generateMetricDocuments(2000);
+    writeImportPositionToIndex(
+        indexFqnForClass(TasklistImportPositionIndex.class), importPosition(true, 1));
+    awaitRecordsArePresent(MetricEntity.class, indexFqnForClass(TasklistMetricIndex.class), 2000);
+  }
+
+  enum ReindexFault {
+    LOST,
+    FAILED
+  }
+
+  private static UsageMetricMigrationClient injectFirstTaskFault(
+      final Migrator migrator, final ReindexFault fault) throws Exception {
+    final var field = MetricMigrator.class.getDeclaredField("client");
+    field.setAccessible(true);
+    final var real = (UsageMetricMigrationClient) field.get(migrator);
+    final var client = mock(UsageMetricMigrationClient.class, delegatesTo(real));
+
+    if (fault == ReindexFault.LOST) {
+      doReturn(TaskStatus.notFound())
+          .doAnswer(invocation -> real.getTask(invocation.getArgument(0)))
+          .when(client)
+          .getTask(anyString());
+    }
+    if (fault == ReindexFault.FAILED) {
+      doAnswer(invocation -> reindexWithScript(real, invocation, FAILING_SCRIPT))
+          .doAnswer(invocation -> reindexWithScript(real, invocation, invocation.getArgument(3)))
+          .when(client)
+          .reindex(any(), any(), any(), any(), any());
+    }
+
+    field.set(migrator, client);
+    return client;
+  }
+
+  private static String reindexWithScript(
+      final UsageMetricMigrationClient real,
+      final InvocationOnMock invocation,
+      final String script) {
+    return real.reindex(
+        invocation.getArgument(0),
+        invocation.getArgument(1),
+        invocation.getArgument(2),
+        script,
+        invocation.getArgument(4));
   }
 }
