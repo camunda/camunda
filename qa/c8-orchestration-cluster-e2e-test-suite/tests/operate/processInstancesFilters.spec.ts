@@ -16,6 +16,20 @@ import {sleep} from '../../utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
+// The rendered rows are capped at the 50-row page size, so comparing
+// processInstancesTable.count() across a filter change gives a false result
+// once a result set exceeds one page. The panel header reports the TOTAL match
+// count (e.g. "123 results"); read that instead when asserting a filter grew or
+// shrank the result set.
+async function readTotalResultsCount(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  const label = page.getByText(/^\d[\d,]*\s+results?$/).first();
+  await expect(label).toBeVisible({timeout: 30000});
+  const text = await label.innerText();
+  return Number(text.replace(/[^\d]/g, ''));
+}
+
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
@@ -363,8 +377,7 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      let totalBefore = await readTotalResultsCount(page);
       const endDate = await operateProcessesPage.endDateCell.innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
@@ -376,27 +389,25 @@ test.describe('Process Instances Filters', () => {
       });
       await operateFiltersPanelPage.clickApply();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeLessThan(totalBefore);
 
-      currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      totalBefore = await readTotalResultsCount(page);
       await operateFiltersPanelPage.clickResetFilters();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeGreaterThan(totalBefore);
     });
 
     await test.step('Filter by Error Message and assert results', async () => {
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      const totalBefore = await readTotalResultsCount(page);
       await operateFiltersPanelPage.displayOptionalFilter('Error Message');
       await operateFiltersPanelPage.fillErrorMessageFilter(
         "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
       );
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeLessThan(totalBefore);
     });
 
     await test.step('Filter by Start Date Range and assert results', async () => {
@@ -678,7 +689,7 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      await operateProcessesPage.selectAllProcessInstances();
 
       await operateProcessesPage.clickCancelBatchOperationButton();
 
