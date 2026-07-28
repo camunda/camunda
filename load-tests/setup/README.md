@@ -265,16 +265,15 @@ docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry
 docker push registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Update the `camunda-platform-values-defaults.yaml` file in your namespace folder and set the newly created image tag.
+Update the `camunda-platform-values-defaults.yaml` file in your namespace folder and point `orchestration.image` at the newly pushed image. `global.image` only supplies a fallback `registry`/`pullPolicy`/`pullSecrets` for components that don't set their own image — `orchestration.image` already pins its own `registry`/`repository`/`tag` (to `docker.io`/`camunda/camunda` by default), so `global.image.tag` alone has no effect here and must not be relied on.
 
 The changes should look similar to this:
 
 ```yaml
-global:
-  image:
-    tag: SNAPSHOT-2024-01-15-abcd1234
 orchestration:
   image:
+    registry: registry.camunda.cloud
+    repository: team-zeebe/camunda
     tag: SNAPSHOT-2024-01-15-abcd1234
 ```
 

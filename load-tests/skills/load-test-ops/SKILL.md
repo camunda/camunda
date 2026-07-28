@@ -286,7 +286,7 @@ cd load-tests/setup
 # Upgrade platform Helm chart — pin the image tag explicitly
 cd <namespace>
 make max additional_platform_configuration="\
-  --set-string global.image.tag=<image-tag> \
+  --set-string orchestration.image.tag=<image-tag> \
   --set orchestration.resources.limits.memory=4Gi" \
   additional_load_test_configuration="--set starter.rate=200"
 ```
