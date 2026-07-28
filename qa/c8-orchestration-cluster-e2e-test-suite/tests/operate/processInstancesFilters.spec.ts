@@ -407,13 +407,25 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Filter by Error Message and assert results', async () => {
       const totalBefore = await readTotalResultsCount(page);
+      const errorMessage =
+        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
       await operateFiltersPanelPage.displayOptionalFilter('Error Message');
-      await operateFiltersPanelPage.fillErrorMessageFilter(
-        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
-      );
-      await expect
-        .poll(() => readTotalResultsCount(page), {timeout: 30000})
-        .toBeLessThan(totalBefore);
+      await operateFiltersPanelPage.fillErrorMessageFilter(errorMessage);
+      // The typed value can fail to commit to a search query (the request goes
+      // out without the errorMessage filter, so the count never drops); on
+      // failure, re-apply the filter from a clean reload and re-check.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() => readTotalResultsCount(page), {timeout: 15000})
+            .toBeLessThan(totalBefore);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter('Error Message');
+          await operateFiltersPanelPage.fillErrorMessageFilter(errorMessage);
+        },
+      });
     });
 
     await test.step('Filter by Start Date Range and assert results', async () => {
