@@ -14,6 +14,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -132,6 +133,8 @@ public interface ServiceRegistry {
   VariableServices variableServices(String physicalTenantId);
 
   // -- cluster-wide --
+
+  ClusterStatusServices clusterStatusServices();
 
   ManagementServices managementServices();
 }

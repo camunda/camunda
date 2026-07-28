@@ -11,6 +11,7 @@ import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabl
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -29,6 +30,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -74,6 +76,8 @@ import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -109,8 +113,9 @@ public class CamundaServicesConfiguration {
    * SearchClientsProxy#withPhysicalTenant(String)}) so read queries are automatically scoped to
    * that tenant's secondary storage.
    *
-   * <p>Cluster-wide services ({@code TopologyServices}, {@code ManagementServices}) are shared
-   * singletons injected from their own configuration classes.
+   * <p>Cluster-wide services are shared singletons: {@code ManagementServices} is injected from its
+   * own configuration class, {@code ClusterStatusServices} is assembled here because it folds over
+   * every tenant's {@code TopologyServices}.
    *
    * <p>The authorization converter is derived per-tenant from that tenant's security config; the
    * executor is still shared from the global config (no isolation yet). The process cache uses a
@@ -130,6 +135,7 @@ public class CamundaServicesConfiguration {
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
+      final SecondaryStorageReadiness secondaryStorageReadiness,
       final ApiServicesExecutorProvider executor,
       final SecretStoreRegistries secretStoreRegistries) {
 
@@ -140,6 +146,10 @@ public class CamundaServicesConfiguration {
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
+
+    // Collected here as well as registered per tenant, so the cluster-wide ClusterStatusServices
+    // can fold over every tenant's topology below.
+    final Map<String, TopologyServices> topologyServicesByTenant = new HashMap<>();
 
     physicalTenantResolver
         .getAll()
@@ -187,6 +197,10 @@ public class CamundaServicesConfiguration {
               final var decisionRequirements =
                   new DecisionRequirementsServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
+              final var topology =
+                  new TopologyServices(
+                      tenantId, brokerClient, securityContextProvider, executor, converter);
+              topologyServicesByTenant.put(tenantId, topology);
 
               // -- mid-tier services (depend on leaf services) --
               final var elementInstance =
@@ -461,10 +475,7 @@ public class CamundaServicesConfiguration {
                           search,
                           executor,
                           converter))
-                  .topologyServices(
-                      tenantId,
-                      new TopologyServices(
-                          tenantId, brokerClient, securityContextProvider, executor, converter))
+                  .topologyServices(tenantId, topology)
                   .usageMetricsServices(
                       tenantId,
                       new UsageMetricsServices(
@@ -487,6 +498,9 @@ public class CamundaServicesConfiguration {
                   .userTaskServices(tenantId, userTask)
                   .variableServices(tenantId, variable);
             });
+
+    builder.clusterStatusServices(
+        new ClusterStatusServices(topologyServicesByTenant, secondaryStorageReadiness::isReady));
 
     return builder.build();
   }
