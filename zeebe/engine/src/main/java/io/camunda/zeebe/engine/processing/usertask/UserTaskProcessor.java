@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -46,7 +48,8 @@ import java.util.Optional;
 import java.util.Set;
 
 @ExcludeAuthorizationCheck
-public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public class UserTaskProcessor
+    implements TypedRecordProcessor<UserTaskRecord>, SuspensionAware<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =
       "Completion of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
@@ -395,5 +398,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<UserTaskRecord> record) {
+    return SuspensionBehavior.REJECT;
   }
 }

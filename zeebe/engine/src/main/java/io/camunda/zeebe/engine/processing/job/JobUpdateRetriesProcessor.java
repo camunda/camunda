@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -18,7 +20,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobUpdateRetriesProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final TypedRejectionWriter rejectionWriter;
@@ -58,5 +61,10 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
               responseWriter.writeRejectedResponseOnCommand(
                   command, rejection.type(), rejection.reason());
             });
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    return SuspensionBehavior.REJECT;
   }
 }

@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -25,7 +27,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
-public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobTimeOutProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
@@ -76,5 +79,13 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
   private boolean hasTimedOut(final JobRecord job) {
     return job.getDeadline() < clock.millis();
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    // an internal time-out re-activates the job, so reject while suspended. Like a timer, the
+    // time-out is not suppressed here and may re-trigger until firing is suppressed and re-armed on
+    // resume.
+    return SuspensionBehavior.REJECT;
   }
 }

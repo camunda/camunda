@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -34,7 +36,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * is only available while Business ID uniqueness is disabled.
  */
 public class ProcessInstanceBusinessIdAssignProcessor
-    implements TypedRecordProcessor<ProcessInstanceBusinessIdRecord> {
+    implements TypedRecordProcessor<ProcessInstanceBusinessIdRecord>,
+        SuspensionAware<ProcessInstanceBusinessIdRecord> {
 
   private static final String ERROR_NOT_FOUND =
       "Expected to assign a business id to process instance with key '%d', but no such process instance was found";
@@ -157,5 +160,11 @@ public class ProcessInstanceBusinessIdAssignProcessor
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
+    return SuspensionBehavior.PROCESS;
   }
 }
