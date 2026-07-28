@@ -8,15 +8,18 @@
 package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING;
-import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExtendedProcessingScheduleServiceImpl.class);
   private final AsyncScheduleServiceContext context;
 
   public ExtendedProcessingScheduleServiceImpl(
@@ -42,7 +45,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   @Override
   public void runAtFixedRateAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
-    final var actor = requireNonNull(context.geAsyncActor(taskGroup));
+    final var actor = context.geAsyncActor(taskGroup);
     final var actorService = actor.getScheduleService();
     actor.run(
         () -> {
@@ -54,7 +57,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   @Override
   public ScheduledTask runDelayedAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
-    final var actor = requireNonNull(context.geAsyncActor(taskGroup));
+    final var actor = context.geAsyncActor(taskGroup);
     final var actorService = actor.getScheduleService();
 
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
@@ -70,7 +73,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   @Override
   public ScheduledTask runAtAsync(
       final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
-    final var actor = requireNonNull(context.geAsyncActor(taskGroup));
+    final var actor = context.geAsyncActor(taskGroup);
     final var actorService = actor.getScheduleService();
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -84,7 +87,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
-    final var actor = requireNonNull(context.geAsyncActor(ASYNC_PROCESSING));
+    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
     final var actorService = actor.getScheduleService();
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -108,7 +111,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
-    final var actor = requireNonNull(context.geAsyncActor(ASYNC_PROCESSING));
+    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
     final var actorService = actor.getScheduleService();
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -146,19 +149,20 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
      */
     @Override
     public void cancel() {
-      final var actor = context.geAsyncActor(taskGroup);
-      if (actor == null) {
-        return;
+      try {
+        final var actor = context.geAsyncActor(taskGroup);
+        actor.run(
+            () ->
+                actor.runOnCompletion(
+                    futureScheduledTask,
+                    (scheduledTask, throwable) -> {
+                      if (scheduledTask != null) {
+                        scheduledTask.cancel();
+                      }
+                    }));
+      } catch (final IllegalStateException e) {
+        LOG.warn("Failed to get async actor for taskGroup {}, skipping cancel.", taskGroup);
       }
-      actor.run(
-          () ->
-              actor.runOnCompletion(
-                  futureScheduledTask,
-                  (scheduledTask, throwable) -> {
-                    if (scheduledTask != null) {
-                      scheduledTask.cancel();
-                    }
-                  }));
     }
   }
 }

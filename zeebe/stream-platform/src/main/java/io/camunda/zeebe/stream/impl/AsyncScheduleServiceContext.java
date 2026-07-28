@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import java.util.EnumMap;
-import org.jspecify.annotations.Nullable;
 
 class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
@@ -38,9 +37,19 @@ class AsyncScheduleServiceContext {
     asyncActors = createAsyncActors();
   }
 
-  public @Nullable AsyncProcessingScheduleServiceActor geAsyncActor(
-      final AsyncTaskGroup taskGroup) {
-    return asyncActors.get(taskGroup);
+  /**
+   * @param taskGroup
+   * @return the actor
+   * @throws IllegalStateException if the async actor is not registerd for that {@param taskGroup}
+   */
+  public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncTaskGroup taskGroup) {
+    final var actor = asyncActors.get(taskGroup);
+    if (actor == null) {
+      throw new IllegalStateException(
+          "Cannot find an AsyncActor for task group %s".formatted(taskGroup));
+    } else {
+      return actor;
+    }
   }
 
   public ActorFuture<Void> submitActors(final ConcurrencyControl concurrencyControl) {
