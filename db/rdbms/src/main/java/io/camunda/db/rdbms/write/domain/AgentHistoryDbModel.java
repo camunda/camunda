@@ -24,36 +24,32 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
+public record AgentHistoryDbModel(
+    long agentHistoryKey,
+    long agentInstanceKey,
+    long elementInstanceKey,
+    long processInstanceKey,
+    long rootProcessInstanceKey,
+    String processDefinitionId,
+    long processDefinitionKey,
+    String tenantId,
+    int partitionId,
+    long jobKey,
+    String jobLease,
+    int loopIteration,
+    AgentInstanceHistoryRole role,
+    AgentInstanceHistoryCommitStatus commitStatus,
+    OffsetDateTime producedAt,
+    Long inputTokens,
+    Long outputTokens,
+    Long durationMs,
+    String content,
+    String toolCalls)
+    implements Copyable<AgentHistoryDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentHistoryDbModel.class);
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new JavaTimeModule());
-
-  private long agentHistoryKey;
-  private long agentInstanceKey;
-  private long elementInstanceKey;
-  private long processInstanceKey;
-  private long rootProcessInstanceKey;
-  private String processDefinitionId;
-  private long processDefinitionKey;
-  private String tenantId;
-  private int partitionId;
-  private long jobKey;
-  private String jobLease;
-  private int loopIteration;
-  private AgentInstanceHistoryRole role;
-  private AgentInstanceHistoryCommitStatus commitStatus;
-  private OffsetDateTime producedAt;
-  private Long inputTokens;
-  private Long outputTokens;
-  private Long durationMs;
-  private String content;
-  private List<ContentItem> contentItems;
-  private String toolCalls;
-  private List<ToolCall> toolCallValues;
-
-  public AgentHistoryDbModel() {}
 
   @Override
   public AgentHistoryDbModel copy(
@@ -62,224 +58,57 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     return copyFunction.apply(toBuilder()).build();
   }
 
-  public ObjectBuilder<AgentHistoryDbModel> toBuilder() {
-    return new Builder()
-        .agentHistoryKey(agentHistoryKey)
-        .agentInstanceKey(agentInstanceKey)
-        .elementInstanceKey(elementInstanceKey)
-        .processInstanceKey(processInstanceKey)
-        .rootProcessInstanceKey(rootProcessInstanceKey)
-        .processDefinitionId(processDefinitionId)
-        .processDefinitionKey(processDefinitionKey)
-        .tenantId(tenantId)
-        .partitionId(partitionId)
-        .jobKey(jobKey)
-        .jobLease(jobLease)
-        .loopIteration(loopIteration)
-        .role(role)
-        .commitStatus(commitStatus)
-        .producedAt(producedAt)
-        .inputTokens(inputTokens)
-        .outputTokens(outputTokens)
-        .durationMs(durationMs)
-        // route through the getter so DB-hydrated models (only `content` JSON populated)
-        // are lazily deserialized and the structured form is preserved on the copy
-        .contentItems(contentItems())
-        // route through the getter so DB-hydrated models (only `toolCalls` JSON populated)
-        // are lazily deserialized and the structured form is preserved on the copy
-        .toolCallValues(toolCallValues());
-  }
-
-  public long agentHistoryKey() {
-    return agentHistoryKey;
-  }
-
-  public void agentHistoryKey(final long agentHistoryKey) {
-    this.agentHistoryKey = agentHistoryKey;
-  }
-
-  public long agentInstanceKey() {
-    return agentInstanceKey;
-  }
-
-  public void agentInstanceKey(final long agentInstanceKey) {
-    this.agentInstanceKey = agentInstanceKey;
-  }
-
-  public long elementInstanceKey() {
-    return elementInstanceKey;
-  }
-
-  public void elementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void processInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void processDefinitionKey(final long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public int partitionId() {
-    return partitionId;
-  }
-
-  public void partitionId(final int partitionId) {
-    this.partitionId = partitionId;
-  }
-
-  public long jobKey() {
-    return jobKey;
-  }
-
-  public void jobKey(final long jobKey) {
-    this.jobKey = jobKey;
-  }
-
-  public String jobLease() {
-    return jobLease;
-  }
-
-  public void jobLease(final String jobLease) {
-    this.jobLease = jobLease;
-  }
-
-  public void truncateJobLease(final int sizeLimit, final Integer byteLimit) {
-    if (TruncateUtil.shouldTruncate(jobLease, sizeLimit, byteLimit)) {
-      jobLease = TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit);
+  public AgentHistoryDbModel truncateJobLease(final int sizeLimit, final Integer byteLimit) {
+    if (!TruncateUtil.shouldTruncate(jobLease, sizeLimit, byteLimit)) {
+      return this;
     }
-  }
 
-  public int loopIteration() {
-    return loopIteration;
-  }
-
-  public void loopIteration(final int loopIteration) {
-    this.loopIteration = loopIteration;
-  }
-
-  public AgentInstanceHistoryRole role() {
-    return role;
-  }
-
-  public void role(final AgentInstanceHistoryRole role) {
-    this.role = role;
-  }
-
-  public AgentInstanceHistoryCommitStatus commitStatus() {
-    return commitStatus;
-  }
-
-  public void commitStatus(final AgentInstanceHistoryCommitStatus commitStatus) {
-    this.commitStatus = commitStatus;
-  }
-
-  public OffsetDateTime producedAt() {
-    return producedAt;
-  }
-
-  public void producedAt(final OffsetDateTime producedAt) {
-    this.producedAt = producedAt;
-  }
-
-  public Long inputTokens() {
-    return inputTokens;
-  }
-
-  public void inputTokens(final Long inputTokens) {
-    this.inputTokens = inputTokens;
-  }
-
-  public Long outputTokens() {
-    return outputTokens;
-  }
-
-  public void outputTokens(final Long outputTokens) {
-    this.outputTokens = outputTokens;
-  }
-
-  public Long durationMs() {
-    return durationMs;
-  }
-
-  public void durationMs(final Long durationMs) {
-    this.durationMs = durationMs;
-  }
-
-  public String content() {
-    return content;
+    return new AgentHistoryDbModel(
+        agentHistoryKey,
+        agentInstanceKey,
+        elementInstanceKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionKey,
+        tenantId,
+        partitionId,
+        jobKey,
+        TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit),
+        loopIteration,
+        role,
+        commitStatus,
+        producedAt,
+        inputTokens,
+        outputTokens,
+        durationMs,
+        content,
+        toolCalls);
   }
 
   /**
-   * Setter used by MyBatis when hydrating this model from the DB. Stores the raw JSON and
-   * invalidates the cached structured form so the next {@link #contentItems()} call re-derives from
-   * the new JSON (otherwise readers see stale data).
-   */
-  public void content(final String content) {
-    this.content = content;
-    contentItems = null;
-  }
-
-  /**
-   * Returns the structured content list. If only the JSON form (set via {@link #content(String)},
-   * e.g. when the model is hydrated from the DB) is present, the JSON is deserialized lazily and
-   * cached on the model.
+   * Returns the structured content list, deserializing the JSON form on every call. Returns null,
+   * not an empty list, when no JSON is stored.
    */
   public List<ContentItem> contentItems() {
-    if (contentItems == null && content != null && !content.isEmpty()) {
-      contentItems = deserializeContentItems(content);
+    if (content == null || content.isEmpty()) {
+      return null;
     }
-    return contentItems;
+    return deserializeContentItems(content);
   }
 
   /**
-   * Sets the structured content list and derives the JSON form from it. The JSON is what MyBatis
-   * writes to the {@code AGENT_HISTORY.CONTENT} CLOB column.
+   * Returns the structured tool-call list, deserializing the JSON form on every call. Returns null,
+   * not an empty list, when no JSON is stored.
    */
-  public void contentItems(final List<ContentItem> contentItems) {
-    this.contentItems = contentItems;
-    content = serializeContentItems(contentItems);
+  public List<ToolCall> toolCallValues() {
+    if (toolCalls == null || toolCalls.isEmpty()) {
+      return null;
+    }
+    return deserializeToolCallValues(toolCalls);
   }
 
   private static List<ContentItem> deserializeContentItems(final String json) {
-    if (json == null || json.isEmpty()) {
-      return Collections.emptyList();
-    }
-
     try {
       return MAPPER.readValue(json, new TypeReference<>() {});
     } catch (final JsonProcessingException e) {
@@ -301,46 +130,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     }
   }
 
-  public String toolCalls() {
-    return toolCalls;
-  }
-
-  /**
-   * Setter used by MyBatis when hydrating this model from the DB. Stores the raw JSON and
-   * invalidates the cached structured form so the next {@link #toolCallValues()} call re-derives
-   * from the new JSON (otherwise readers see stale data).
-   */
-  public void toolCalls(final String toolCalls) {
-    this.toolCalls = toolCalls;
-    toolCallValues = null;
-  }
-
-  /**
-   * Returns the structured tool-call list. If only the JSON form (set via {@link
-   * #toolCalls(String)}, e.g. when the model is hydrated from the DB) is present, the JSON is
-   * deserialized lazily and cached on the model.
-   */
-  public List<ToolCall> toolCallValues() {
-    if (toolCallValues == null && toolCalls != null && !toolCalls.isEmpty()) {
-      toolCallValues = deserializeToolCallValues(toolCalls);
-    }
-    return toolCallValues;
-  }
-
-  /**
-   * Sets the structured tool-call list and derives the JSON form from it. The JSON is what MyBatis
-   * writes to the {@code AGENT_HISTORY.TOOL_CALLS} CLOB column.
-   */
-  public void toolCallValues(final List<ToolCall> toolCallValues) {
-    this.toolCallValues = toolCallValues;
-    toolCalls = serializeToolCallValues(toolCallValues);
-  }
-
   private static List<ToolCall> deserializeToolCallValues(final String json) {
-    if (json == null || json.isEmpty()) {
-      return Collections.emptyList();
-    }
-
     try {
       return MAPPER.readValue(json, new TypeReference<>() {});
     } catch (final JsonProcessingException e) {
@@ -360,6 +150,28 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       LOG.error("Failed to serialize agent history tool calls", e);
       return null;
     }
+  }
+
+  public Builder toBuilder() {
+    return new Builder(content, toolCalls)
+        .agentHistoryKey(agentHistoryKey)
+        .agentInstanceKey(agentInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
+        .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
+        .processDefinitionId(processDefinitionId)
+        .processDefinitionKey(processDefinitionKey)
+        .tenantId(tenantId)
+        .partitionId(partitionId)
+        .jobKey(jobKey)
+        .jobLease(jobLease)
+        .loopIteration(loopIteration)
+        .role(role)
+        .commitStatus(commitStatus)
+        .producedAt(producedAt)
+        .inputTokens(inputTokens)
+        .outputTokens(outputTokens)
+        .durationMs(durationMs);
   }
 
   public static class Builder implements ObjectBuilder<AgentHistoryDbModel> {
@@ -382,8 +194,18 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     private Long inputTokens;
     private Long outputTokens;
     private Long durationMs;
-    private List<ContentItem> contentItems;
-    private List<ToolCall> toolCallValues;
+    private String content;
+    private String toolCalls;
+
+    public Builder() {}
+
+    // Seeds the raw serialized column values for toBuilder()/copy(), so a copy that never
+    // touches contentItems()/toolCallValues() carries the original JSON through unparsed instead
+    // of round-tripping it through Jackson.
+    Builder(final String content, final String toolCalls) {
+      this.content = content;
+      this.toolCalls = toolCalls;
+    }
 
     public Builder agentHistoryKey(final long agentHistoryKey) {
       this.agentHistoryKey = agentHistoryKey;
@@ -476,39 +298,38 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     }
 
     public Builder contentItems(final List<ContentItem> contentItems) {
-      this.contentItems = contentItems;
+      content = serializeContentItems(contentItems);
       return this;
     }
 
     public Builder toolCallValues(final List<ToolCall> toolCallValues) {
-      this.toolCallValues = toolCallValues;
+      toolCalls = serializeToolCallValues(toolCallValues);
       return this;
     }
 
     @Override
     public AgentHistoryDbModel build() {
-      final var result = new AgentHistoryDbModel();
-      result.agentHistoryKey(agentHistoryKey);
-      result.agentInstanceKey(agentInstanceKey);
-      result.elementInstanceKey(elementInstanceKey);
-      result.processInstanceKey(processInstanceKey);
-      result.rootProcessInstanceKey(rootProcessInstanceKey);
-      result.processDefinitionId(processDefinitionId);
-      result.processDefinitionKey(processDefinitionKey);
-      result.tenantId(tenantId);
-      result.partitionId(partitionId);
-      result.jobKey(jobKey);
-      result.jobLease(jobLease);
-      result.loopIteration(loopIteration);
-      result.role(role);
-      result.commitStatus(commitStatus);
-      result.producedAt(producedAt);
-      result.inputTokens(inputTokens);
-      result.outputTokens(outputTokens);
-      result.durationMs(durationMs);
-      result.contentItems(contentItems);
-      result.toolCallValues(toolCallValues);
-      return result;
+      return new AgentHistoryDbModel(
+          agentHistoryKey,
+          agentInstanceKey,
+          elementInstanceKey,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          processDefinitionId,
+          processDefinitionKey,
+          tenantId,
+          partitionId,
+          jobKey,
+          jobLease,
+          loopIteration,
+          role,
+          commitStatus,
+          producedAt,
+          inputTokens,
+          outputTokens,
+          durationMs,
+          content,
+          toolCalls);
     }
   }
 }
