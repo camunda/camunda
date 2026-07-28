@@ -7,7 +7,6 @@
  */
 
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 const getSelectedProcessInstancesFilter = () => {
@@ -20,23 +19,4 @@ const getSelectedProcessInstancesFilter = () => {
   );
 };
 
-const getMigrationProcessInstancesFilter = () => {
-  const {batchOperationQuery} = processInstanceMigrationStore.state;
-
-  if (!batchOperationQuery) {
-    return undefined;
-  }
-
-  // For INCLUDE mode: use ids array
-  if ('ids' in batchOperationQuery && batchOperationQuery.ids?.length) {
-    return {
-      $in: batchOperationQuery.ids,
-    };
-  }
-
-  // For EXCLUDE mode or ALL mode: don't filter by specific IDs
-  // The query will use other filters (process, version, state, etc.)
-  return undefined;
-};
-
-export {getSelectedProcessInstancesFilter, getMigrationProcessInstancesFilter};
+export {getSelectedProcessInstancesFilter};
