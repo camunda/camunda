@@ -26,11 +26,10 @@ import org.springframework.stereotype.Component;
  * Runs the CCSaaS user-id migration on login under CSL. See <a
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  *
- * <p>The legacy {@code CCSaaSSecurityConfigurerAdapter} did this inside its own OAuth2 login
- * success handler. Under CSL the success handler belongs to the library, so Optimize reacts to
- * Spring Security's {@link InteractiveAuthenticationSuccessEvent} instead. {@code
- * OAuth2LoginAuthenticationFilter} publishes it after populating the {@code SecurityContext}, so
- * the authenticated principal is already resolvable here. No CSL change is needed.
+ * <p>The OIDC login success handler belongs to CSL, so the hook is an event listener rather than a
+ * handler of Optimize's own. {@code OAuth2LoginAuthenticationFilter} publishes {@link
+ * InteractiveAuthenticationSuccessEvent} after populating the {@code SecurityContext}, so the
+ * authenticated principal is already resolvable here.
  *
  * <p>A user who adds a new SSO login method gets a new SaaS identity, and Auth0 then carries the
  * previous one in the {@code https://camunda.com/originalUserId} claim. When it differs from the id
