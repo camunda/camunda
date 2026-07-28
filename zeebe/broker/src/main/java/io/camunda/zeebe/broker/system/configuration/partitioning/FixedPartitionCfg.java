@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,7 @@ public final class FixedPartitionCfg {
 
   private int partitionId = DEFAULT_PARTITION_ID;
   private List<NodeCfg> nodes = new ArrayList<>();
+  private String physicalTenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   public int getPartitionId() {
     return partitionId;
@@ -32,6 +34,14 @@ public final class FixedPartitionCfg {
 
   public void setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+  }
+
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public void setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
   }
 
   public List<NodeCfg> getNodes() {
@@ -44,7 +54,14 @@ public final class FixedPartitionCfg {
 
   @Override
   public String toString() {
-    return "FixedPartitionCfg{" + "partitionId=" + partitionId + ", nodes=" + nodes + '}';
+    return "FixedPartitionCfg{"
+        + "partitionId="
+        + partitionId
+        + ", physicalTenantId="
+        + physicalTenantId
+        + ", nodes="
+        + nodes
+        + '}';
   }
 
   /**

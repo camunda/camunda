@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.restore.validation.PostRestoreValidator;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -204,7 +206,10 @@ public class RestoreNodeIdProviderConfiguration {
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var clusterTopology =
         new PartitionDistribution(
-            StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, localMember)
+            StaticConfigurationGenerator.getStaticConfiguration(
+                    brokerCfg,
+                    Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
+                    localMember)
                 .generatePartitionDistribution());
 
     final var partitionsToRestore =

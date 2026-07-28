@@ -68,7 +68,7 @@ public final class ClusterConfigurationManagerService
    * exercised via the {@code useNewConfig} constructor parameter (see {@link #USE_NEW_CONFIG}).
    * When {@code false}, the legacy code path runs completely unchanged.
    */
-  static final boolean USE_NEW_CONFIG = false;
+  public static final boolean USE_NEW_CONFIG = false;
 
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
