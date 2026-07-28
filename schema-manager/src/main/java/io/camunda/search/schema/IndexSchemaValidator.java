@@ -13,6 +13,7 @@ import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,10 +73,9 @@ public class IndexSchemaValidator {
           filterIndexMappings(mappings, indexDescriptor);
       // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
+        final DifferingIndices differingIndices =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(
-            indexDescriptor, indexMappingsGroup.keySet(), difference, newFields);
+        validateDifferenceAndCollectNewFields(indexDescriptor, differingIndices, newFields);
       }
     }
     return newFields;
@@ -83,20 +83,20 @@ public class IndexSchemaValidator {
 
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
-      final Set<String> indexNames,
-      final IndexMappingDifference difference,
+      final DifferingIndices differingIndices,
       final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
-    if (difference != null && !difference.equal()) {
+    if (differingIndices != null) {
+      final IndexMappingDifference difference = differingIndices.difference();
       LOGGER.debug(
           "Index fields differ from expected. Index names: {}. Difference: {}.",
-          indexNames,
+          differingIndices.indexNames(),
           difference);
 
       if (!difference.entriesDiffering().isEmpty()) {
         final String errorMsg =
             String.format(
-                "Index name: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
-                indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
+                "Index names: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
+                differingIndices.indexNames(), difference.entriesDiffering());
         LOGGER.error(errorMsg);
         throw new IndexSchemaValidationException(errorMsg);
       }
@@ -104,7 +104,7 @@ public class IndexSchemaValidator {
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
             "Index names '{}': Field deletion is requested, will be ignored. Fields: {}",
-            indexNames,
+            differingIndices.indexNames(),
             difference.entriesOnlyOnRight());
 
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
@@ -118,34 +118,47 @@ public class IndexSchemaValidator {
     }
   }
 
-  private IndexMappingDifference getIndexMappingDifference(
+  private DifferingIndices getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, objectMapper);
 
-    final var differences =
-        indexMappingsGroup.values().stream()
-            .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
-            .filter(difference -> !difference.equal())
-            .map(this::filterOutDynamicProperties)
-            .distinct()
-            .toList();
+    // sorted by index name so grouping and the reported index names are stable regardless of
+    // the source map's (HashMap) iteration order
+    final Map<IndexMappingDifference, List<String>> differencesByIndexName =
+        indexMappingsGroup.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(),
+                        filterOutDynamicProperties(
+                            IndexMappingDifference.of(indexMappingMustBe, entry.getValue()))))
+            // filtered after dynamic properties are stripped: `equal` is fixed at construction
+            // and won't reflect a diff that only turned out to be dynamic-property noise
+            .filter(entry -> hasRealDifference(entry.getValue()))
+            .collect(
+                Collectors.groupingBy(
+                    Map.Entry::getValue,
+                    LinkedHashMap::new,
+                    Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
 
-    if (differences.isEmpty()) {
+    if (differencesByIndexName.isEmpty()) {
       return null;
     }
 
-    if (differences.size() > 1) {
+    if (differencesByIndexName.size() > 1) {
       LOGGER.debug(
           "Ambiguous schema update. Index names: {}. Difference: {}.",
           indexMappingsGroup.keySet(),
-          differences);
+          differencesByIndexName);
       throw new IndexSchemaValidationException(
           String.format(
-              "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
-              indexDescriptor.getIndexName(), differences));
+              "Ambiguous schema update. Multiple indices for mapping '%s' have different fields. Differences by index: %s",
+              indexDescriptor.getIndexName(), differencesByIndexName));
     }
 
-    return differences.getFirst();
+    final var onlyEntry = differencesByIndexName.entrySet().iterator().next();
+    return new DifferingIndices(onlyEntry.getKey(), onlyEntry.getValue());
   }
 
   /** Filters out differences that are only related to dynamic properties. */
@@ -155,6 +168,17 @@ public class IndexSchemaValidator {
         .filterEntriesInCommon(indexMappingProperty -> !isDynamicProperty(indexMappingProperty))
         .filterEntriesDiffering(
             propertyDifference -> !isDynamicProperty(propertyDifference.leftValue()));
+  }
+
+  /**
+   * {@link IndexMappingDifference#equal()} is fixed at construction time and isn't recomputed by
+   * {@link #filterOutDynamicProperties}, so it can no longer be trusted after filtering. Checks the
+   * actual remaining entries instead.
+   */
+  private boolean hasRealDifference(final IndexMappingDifference difference) {
+    return !difference.entriesDiffering().isEmpty()
+        || !difference.entriesOnlyOnLeft().isEmpty()
+        || !difference.entriesOnlyOnRight().isEmpty();
   }
 
   /**
@@ -177,4 +201,6 @@ public class IndexSchemaValidator {
     return indexMappingProperty.typeDefinition() instanceof final Map typeDefMap
         && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
   }
+
+  private record DifferingIndices(IndexMappingDifference difference, List<String> indexNames) {}
 }
