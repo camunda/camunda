@@ -30,6 +30,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -164,6 +166,23 @@ public class InactiveRole extends AbstractRole {
             TimeoutNowResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    logRequest(request);
+    // Only the leader can drive a transfer. Reject and point the coordinator at the leader we know
+    // (if any) so it can retarget the request.
+    final var leader = raft.getLeader();
+    final var result =
+        logResponse(
+            LeadershipTransferInitiateResponse.builder()
+                .withStatus(Status.OK)
+                .withAccepted(false)
+                .withLeader(leader != null ? leader.memberId() : null)
                 .build());
     return CompletableFuture.completedFuture(result);
   }

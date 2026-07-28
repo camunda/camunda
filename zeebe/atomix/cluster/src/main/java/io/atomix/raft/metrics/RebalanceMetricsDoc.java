@@ -72,5 +72,44 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
     }
+  },
+
+  /** Duration of a per-partition coordinated leadership transfer attempt, tagged by result. */
+  PARTITION_TRANSFER_DURATION {
+    @Override
+    public String getBaseUnit() {
+      return "ms";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.partition.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Duration of a per-partition coordinated leadership transfer attempt, by result";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        RebalanceKeyNames.RESULT, PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT
+      };
+    }
+  };
+
+  public enum RebalanceKeyNames implements KeyName {
+    RESULT;
+
+    @Override
+    public String asString() {
+      return "result";
+    }
   }
 }

@@ -22,10 +22,136 @@ import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
+import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.roles.LeaderRole;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class RaftCoordinatedLeadershipTransferTest {
+
+  @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
+
+  @Test
+  public void shouldAcceptInitiateForCaughtUpFollower() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+
+    // when
+    final var ack =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader), initiate(targetId, coordinator(leader), configVersion(leader)))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(ack.leader()).isEqualTo(memberId(leader));
+  }
+
+  @Test
+  public void shouldRejectInitiateOnFollowerWithRedirect() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var follower = raftRule.getFollower().orElseThrow();
+    final var coordinatorId = coordinator(leader);
+
+    // when
+    final var ack =
+        follower
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(follower),
+                initiate(memberId(leader), coordinatorId, configVersion(leader)))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(ack.accepted()).isFalse();
+    assertThat(ack.leader()).isEqualTo(memberId(leader));
+  }
+
+  @Test
+  public void shouldAckImmediateSkipWhenDesiredLeaderIsAlreadyLeader() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var coordinatorId = coordinator(leader);
+
+    // when
+    final var ack =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader), initiate(memberId(leader), coordinatorId, configVersion(leader)))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(ack.accepted()).isFalse();
+    assertThat(ack.result()).isEqualTo(LeadershipTransferResult.ALREADY_LEADER);
+  }
+
+  @Test
+  public void shouldReportConfigurationChangeWhenTheFreezeIsRefused() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+    final var coordinatorId = coordinator(leader);
+    final CompletableFuture<LeadershipTransferResultRequest> reported = new CompletableFuture<>();
+    protocolOf(coordinatorId)
+        .registerLeadershipTransferResultHandler(
+            request -> {
+              reported.complete(request);
+              return CompletableFuture.completedFuture(
+                  LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
+            });
+
+    leader
+        .getContext()
+        .setLeadershipTransferPauseControl(
+            new LeadershipTransferPauseControl() {
+              @Override
+              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+                return CompletableFuture.failedFuture(
+                    new CompletionException(
+                        new LeaderRole.ConfigurationChangeInProgressException(
+                            "Cannot pause for leadership transfer: configuration change in"
+                                + " progress")));
+              }
+
+              @Override
+              public CompletableFuture<Void> resumeFromTransfer() {
+                return CompletableFuture.completedFuture(null);
+              }
+            });
+
+    // when
+    final var ack =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader), initiate(targetId, coordinatorId, configVersion(leader)))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(reported.get(10, TimeUnit.SECONDS).result())
+        .isEqualTo(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
+  }
 
   @Test
   public void shouldRoundTripTransferMessagesThroughRaftNamespace() {
@@ -54,6 +180,14 @@ public class RaftCoordinatedLeadershipTransferTest {
     assertThat(roundTrip(resultRequest)).isEqualTo(resultRequest);
   }
 
+  private TestRaftServerProtocol protocolOf(final MemberId memberId) {
+    return raftRule.getServers().stream()
+        .filter(server -> memberId(server).equals(memberId))
+        .map(server -> (TestRaftServerProtocol) server.getContext().getProtocol())
+        .findFirst()
+        .orElseThrow();
+  }
+
   private static <T> T roundTrip(final T message) {
     return RaftNamespaces.RAFT_PROTOCOL.deserialize(
         RaftNamespaces.RAFT_PROTOCOL.serialize(message));
@@ -66,5 +200,20 @@ public class RaftCoordinatedLeadershipTransferTest {
         .withCoordinator(coordinator)
         .withCoordinatorConfigVersion(configVersion)
         .build();
+  }
+
+  private static MemberId memberId(final RaftServer server) {
+    return server.getContext().getCluster().getLocalMember().memberId();
+  }
+
+  private static long configVersion(final RaftServer leader) {
+    return leader.getContext().getCluster().getConfiguration().index();
+  }
+
+  private static MemberId coordinator(final RaftServer leader) {
+    return leader.getContext().getCluster().getConfiguration().newMembers().stream()
+        .map(io.atomix.raft.cluster.RaftMember::memberId)
+        .min(Comparator.comparing(MemberId::id))
+        .orElseThrow();
   }
 }
