@@ -40,7 +40,8 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_FAIL,
-        new SecretReferenceResolutionFailProcessor());
+        new SecretReferenceResolutionFailProcessor(
+            writers, keyGenerator, processingState.getSecretReferenceState()));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_REACTIVATE_JOBS,
