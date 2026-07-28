@@ -63,8 +63,14 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
   }
 
   @Override
-  public CamundaClient getCamundaClient(final String mappingRuleId) {
-    return cachedClients.get(mappingRuleId);
+  public CamundaClient getCamundaClient(final String id) {
+    final var client = cachedClients.get(id);
+    if (client == null) {
+      throw new IllegalStateException(
+          "No Camunda client cached for id '%s' in %s. Ensure a @ClientDefinition or @MappingRuleDefinition with this id exists and that the test is configured for OIDC."
+              .formatted(id, getClass().getSimpleName()));
+    }
+    return client;
   }
 
   @Override
