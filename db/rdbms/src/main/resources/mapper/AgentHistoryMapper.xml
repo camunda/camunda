@@ -98,7 +98,7 @@
     <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
     <result property="jobKey" column="JOB_KEY" javaType="long"/>
     <result property="jobLease" column="JOB_LEASE" javaType="java.lang.String"/>
-    <result property="loopIteration" column="LOOP_ITERATION" javaType="java.lang.Integer"/>
+    <result property="loopIteration" column="LOOP_ITERATION" javaType="int"/>
     <result property="role" column="ROLE"
       javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"/>
     <result property="commitStatus" column="COMMIT_STATUS"

@@ -41,7 +41,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
   private int partitionId;
   private long jobKey;
   private String jobLease;
-  private Integer loopIteration;
+  private int loopIteration;
   private AgentInstanceHistoryRole role;
   private AgentInstanceHistoryCommitStatus commitStatus;
   private OffsetDateTime producedAt;
@@ -184,11 +184,11 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     }
   }
 
-  public Integer loopIteration() {
+  public int loopIteration() {
     return loopIteration;
   }
 
-  public void loopIteration(final Integer loopIteration) {
+  public void loopIteration(final int loopIteration) {
     this.loopIteration = loopIteration;
   }
 
@@ -375,7 +375,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     private int partitionId;
     private long jobKey;
     private String jobLease;
-    private Integer loopIteration;
+    private int loopIteration;
     private AgentInstanceHistoryRole role;
     private AgentInstanceHistoryCommitStatus commitStatus;
     private OffsetDateTime producedAt;
@@ -440,7 +440,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       return this;
     }
 
-    public Builder loopIteration(final Integer loopIteration) {
+    public Builder loopIteration(final int loopIteration) {
       this.loopIteration = loopIteration;
       return this;
     }
