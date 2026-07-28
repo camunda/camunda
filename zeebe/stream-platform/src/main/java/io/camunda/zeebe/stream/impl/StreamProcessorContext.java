@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.db.TransactionContext;
@@ -26,7 +28,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
@@ -104,7 +105,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public StreamProcessorContext clock(final ControllableStreamClock clock) {
-    this.clock = Objects.requireNonNull(clock);
+    this.clock = requireNonNull(clock);
     return this;
   }
 

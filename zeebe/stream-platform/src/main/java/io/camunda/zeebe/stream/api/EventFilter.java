@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
-import java.util.Objects;
-
 /** Implement to control which events should be handled by a {@link StreamProcessor}. */
 @FunctionalInterface
 public interface EventFilter {
@@ -23,7 +23,7 @@ public interface EventFilter {
   boolean applies(LoggedEvent event);
 
   default EventFilter and(final EventFilter other) {
-    Objects.requireNonNull(other);
+    requireNonNull(other);
     return (e) -> applies(e) && other.applies(e);
   }
 }

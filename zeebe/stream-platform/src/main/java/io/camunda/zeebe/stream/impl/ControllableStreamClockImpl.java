@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification.None;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification.Offset;
@@ -21,7 +23,7 @@ public final class ControllableStreamClockImpl implements StreamClock.Controllab
   private volatile Modification modification;
 
   public ControllableStreamClockImpl(final InstantSource source) {
-    this.source = Objects.requireNonNull(source);
+    this.source = requireNonNull(source);
     reset();
   }
 

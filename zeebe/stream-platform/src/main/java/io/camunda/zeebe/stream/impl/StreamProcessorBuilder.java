@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -23,8 +25,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-
 public final class StreamProcessorBuilder {
 
   private final StreamProcessorContext streamProcessorContext;
@@ -130,11 +130,11 @@ public final class StreamProcessorBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
-    Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
-    Objects.requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(actorSchedulingService, "No task scheduler provided.");
+    requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
+    requireNonNull(zeebeDb, "No database provided.");
     if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
-      Objects.requireNonNull(
+      requireNonNull(
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }
