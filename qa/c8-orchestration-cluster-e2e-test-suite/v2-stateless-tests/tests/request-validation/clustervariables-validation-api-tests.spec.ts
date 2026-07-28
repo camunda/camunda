@@ -14,241 +14,275 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Mappingrules Validation API Tests', () => {
-  test('createMappingRule - Additional prop __unexpectedField', async ({
+test.describe('Clustervariables Validation API Tests', () => {
+  test('createGlobalClusterVariable - Additional prop __extraField', async ({
     request,
   }) => {
     const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 'x',
-      mappingRuleId: null,
-      __unexpectedField: 'x',
+      name: null,
+      value: {},
+      __extraField: 'unexpected',
     };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createMappingRule - Body wrong top-level type', async ({request}) => {
+  test('createGlobalClusterVariable - Body wrong top-level type', async ({
+    request,
+  }) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createMappingRule - Param claimName wrong type (#1)', async ({
+  test('createGlobalClusterVariable - Missing value (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      claimName: 123,
-      claimValue: 'x',
-      name: 'x',
-      mappingRuleId: null,
+      name: null,
     };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createMappingRule - Param claimName wrong type (#2)', async ({
+  test('createGlobalClusterVariable - Missing name', async ({request}) => {
+    const requestBody = {
+      value: {},
+    };
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalClusterVariable - Missing value (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      claimName: true,
-      claimValue: 'x',
       name: 'x',
-      mappingRuleId: null,
     };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createMappingRule - Param claimValue wrong type (#1)', async ({
+  test('createGlobalClusterVariable - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalClusterVariable - Missing combo name,value', async ({
     request,
   }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 123,
-      name: 'x',
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Param claimValue wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: true,
-      name: 'x',
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Param name wrong type (#1)', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 123,
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Param name wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: true,
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Missing claimName', async ({request}) => {
-    const requestBody = {
-      claimValue: 'x',
-      name: 'x',
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Missing claimValue', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      name: 'x',
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Missing mappingRuleId (#1)', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Missing name', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      mappingRuleId: null,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Missing mappingRuleId (#2)', async ({request}) => {
     const requestBody = {};
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/cluster-variables/global', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createMappingRule - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-    });
+  test('createTenantClusterVariable - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      name: null,
+      value: {},
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
-  test.skip('deleteMappingRule - Path param mappingRuleId pattern violation', async ({
+  test('createTenantClusterVariable - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Missing value (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      name: null,
+    };
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Missing name', async ({request}) => {
+    const requestBody = {
+      value: {},
+    };
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Missing value (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      name: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Missing combo name,value', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {tenantId: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createTenantClusterVariable - Path param tenantId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/cluster-variables/tenants/{tenantId}', {
+        tenantId: '!INVALID!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteGlobalClusterVariable - Path param name pattern violation', async ({
     request,
   }) => {
     const res = await request.delete(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      buildUrl('/cluster-variables/global/{name}', {name: '!'}),
       {
         headers: jsonHeaders(),
       },
@@ -259,12 +293,47 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
-  test.skip('getMappingRule - Path param mappingRuleId pattern violation', async ({
+  test('deleteTenantClusterVariable - Path param name pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteTenantClusterVariable - Path param tenantId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: '!INVALID!',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getGlobalClusterVariable - Path param name pattern violation', async ({
     request,
   }) => {
     const res = await request.get(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      buildUrl('/cluster-variables/global/{name}', {name: '!'}),
       {
         headers: jsonHeaders(),
       },
@@ -275,14 +344,50 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Additional prop __unexpectedField', async ({
+  test('getTenantClusterVariable - Path param name pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getTenantClusterVariable - Path param tenantId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: '!INVALID!',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchClusterVariables - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -294,10 +399,12 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Body wrong top-level type', async ({request}) => {
+  test('searchClusterVariables - Body wrong top-level type', async ({
+    request,
+  }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -309,7 +416,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Enum violation sort.0.field (#1)', async ({
+  test('searchClusterVariables - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -317,13 +424,13 @@ test.describe('Mappingrules Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'mappingRuleId_INVALID',
+            value: 'name_INVALID',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -335,7 +442,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Enum violation sort.0.field (#2)', async ({
+  test('searchClusterVariables - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -343,13 +450,13 @@ test.describe('Mappingrules Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'MAPPINGRULEID',
+            value: 'NAME',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -361,33 +468,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Enum violation sort.0.field (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'mappingruleid',
-          },
-        },
-      },
-    };
-    const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchMappingRule - Enum violation sort.0.order (#1)', async ({
+  test('searchClusterVariables - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -401,7 +482,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -413,7 +494,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMappingRule - Enum violation sort.0.order (#2)', async ({
+  test('searchClusterVariables - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -427,7 +508,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/mapping-rules/search', undefined),
+      buildUrl('/cluster-variables/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -439,17 +520,30 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateMappingRule - Additional prop __extraField', async ({
+  test('searchClusterVariables - Param query.truncateValues wrong type', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/cluster-variables/search', {truncateValues: 'notBoolean'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalClusterVariable - Additional prop __extraField', async ({
     request,
   }) => {
     const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 'x',
+      value: {},
       __extraField: 'unexpected',
     };
     const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
+      buildUrl('/cluster-variables/global/{name}', {name: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -461,10 +555,12 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateMappingRule - Body wrong top-level type', async ({request}) => {
+  test('updateGlobalClusterVariable - Body wrong top-level type', async ({
+    request,
+  }) => {
     const requestBody: string[] = [];
     const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
+      buildUrl('/cluster-variables/global/{name}', {name: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -476,16 +572,10 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateMappingRule - Param claimName wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 123,
-      claimValue: 'x',
-      name: 'x',
-    };
+  test('updateGlobalClusterVariable - Missing value', async ({request}) => {
+    const requestBody = {};
     const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
+      buildUrl('/cluster-variables/global/{name}', {name: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -497,19 +587,11 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateMappingRule - Param claimName wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: true,
-      claimValue: 'x',
-      name: 'x',
-    };
+  test('updateGlobalClusterVariable - Missing body', async ({request}) => {
     const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
+      buildUrl('/cluster-variables/global/{name}', {name: 'x'}),
       {
         headers: jsonHeaders(),
-        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -518,145 +600,124 @@ test.describe('Mappingrules Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateMappingRule - Param claimValue wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 123,
-      name: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Param claimValue wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: true,
-      name: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Param name wrong type (#1)', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 123,
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Param name wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: true,
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Missing claimName', async ({request}) => {
-    const requestBody = {
-      claimValue: 'x',
-      name: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Missing claimValue', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      name: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Missing name', async ({request}) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateMappingRule - Path param mappingRuleId pattern violation', async ({
+  test('updateGlobalClusterVariable - Path param name pattern violation', async ({
     request,
   }) => {
     const res = await request.put(
-      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      buildUrl('/cluster-variables/global/{name}', {name: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      value: {},
+      __extraField: 'unexpected',
+    };
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Missing value', async ({request}) => {
+    const requestBody = {};
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Missing body', async ({request}) => {
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Path param name pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: 'x',
+        name: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateTenantClusterVariable - Path param tenantId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId: '!INVALID!',
+        name: 'x',
+      }),
       {
         headers: jsonHeaders(),
       },

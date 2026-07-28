@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -139,6 +139,149 @@ test.describe('Resources Validation API Tests', () => {
         data: requestBody,
       },
     );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Body wrong top-level type', async ({request}) => {
+    const requestBody: string[] = [];
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Enum violation sort.0.field (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'resourceKey_INVALID',
+          },
+        },
+      },
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Enum violation sort.0.field (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'RESOURCEKEY',
+          },
+        },
+      },
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Enum violation sort.0.field (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'resourcekey',
+          },
+        },
+      },
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Enum violation sort.0.order (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      sort: {
+        '0': {
+          order: {
+            __invalidEnum: true,
+            value: 'ASC_INVALID',
+          },
+        },
+      },
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchResources - Enum violation sort.0.order (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      sort: {
+        '0': {
+          order: {
+            __invalidEnum: true,
+            value: 'asc',
+          },
+        },
+      },
+    };
+    const res = await request.post(buildUrl('/resources/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}

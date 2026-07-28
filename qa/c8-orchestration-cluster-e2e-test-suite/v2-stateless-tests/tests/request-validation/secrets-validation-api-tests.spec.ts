@@ -14,16 +14,13 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Setup Validation API Tests', () => {
-  test('createAdminUser - Additional prop __unexpectedField', async ({
-    request,
-  }) => {
+test.describe('Secrets Validation API Tests', () => {
+  test('resolveSecrets - Additional prop __extraField', async ({request}) => {
     const requestBody = {
-      username: null,
-      password: 'x',
-      __unexpectedField: 'x',
+      references: ['x'],
+      __extraField: 'unexpected',
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -33,9 +30,9 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Body wrong top-level type', async ({request}) => {
+  test('resolveSecrets - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -45,14 +42,13 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param password wrong type (#1)', async ({
+  test('resolveSecrets - Param references.0 wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      username: null,
-      password: 123,
+      references: [123],
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -62,14 +58,13 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param password wrong type (#2)', async ({
+  test('resolveSecrets - Param references.0 wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      username: null,
-      password: true,
+      references: [true],
     };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -79,69 +74,96 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#1)', async ({request}) => {
-    const requestBody = {
-      username: null,
-    };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing password (#2)', async ({request}) => {
-    const requestBody = {
-      username: 'x',
-    };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing username', async ({request}) => {
-    const requestBody = {
-      password: 'x',
-    };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAdminUser - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/setup/user', undefined), {
-      headers: jsonHeaders(),
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
-  test.skip('createAdminUser - Missing combo username,password', async ({
+  test('resolveSecrets - Constraint violation references (#1)', async ({
     request,
   }) => {
+    const requestBody = {
+      references: [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      ],
+    };
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveSecrets - Constraint violation references (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      references: [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1,
+      ],
+    };
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): over-long individual reference is deliberately reported as a per-reference 200 error (SecretErrorCode.INVALID_REFERENCE, see SecretServices.MAX_REFERENCE_LENGTH), not a 400 - the generator assumes every constraint violation is a 400, which doesn't hold for this alpha (Phase 1, #56567) endpoint's per-item-error design
+  test.skip('resolveSecrets - Constraint violation references.0 (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      references: [
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ],
+    };
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): over-long individual reference is deliberately reported as a per-reference 200 error (SecretErrorCode.INVALID_REFERENCE, see SecretServices.MAX_REFERENCE_LENGTH), not a 400 - the generator assumes every constraint violation is a 400, which doesn't hold for this alpha (Phase 1, #56567) endpoint's per-item-error design
+  test.skip('resolveSecrets - Constraint violation references.0 (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      references: [
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ],
+    };
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveSecrets - Missing references', async ({request}) => {
     const requestBody = {};
-    const res = await request.post(buildUrl('/setup/user', undefined), {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveSecrets - Missing body', async ({request}) => {
+    const res = await request.post(buildUrl('/secrets/resolve', undefined), {
+      headers: jsonHeaders(),
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {

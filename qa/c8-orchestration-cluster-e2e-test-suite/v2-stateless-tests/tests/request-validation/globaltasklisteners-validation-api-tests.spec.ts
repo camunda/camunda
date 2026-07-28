@@ -14,18 +14,18 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Decisioninstances Validation API Tests', () => {
-  test('deleteDecisionInstance - Additional prop __unexpectedField', async ({
+test.describe('Globaltasklisteners Validation API Tests', () => {
+  test('createGlobalTaskListener - Additional prop __extraField', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 1,
-      __unexpectedField: 'x',
+      id: 'x',
+      type: 'x',
+      eventTypes: ['all'],
+      __extraField: 'unexpected',
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: 'x',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -37,14 +37,12 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstance - Body wrong top-level type', async ({
+  test('createGlobalTaskListener - Body wrong top-level type', async ({
     request,
   }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: 'x',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -56,16 +54,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstance - Param operationReference wrong type (#1)', async ({
+  test('createGlobalTaskListener - Param eventTypes.0 wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 'not-a-number',
+      id: 'x',
+      type: 'x',
+      eventTypes: [123],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: 'x',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -77,16 +75,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstance - Param operationReference wrong type (#2)', async ({
+  test('createGlobalTaskListener - Param eventTypes.0 wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: true,
+      id: 'x',
+      type: 'x',
+      eventTypes: [true],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: 'x',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -98,16 +96,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstance - Constraint violation operationReference (#1)', async ({
+  test('createGlobalTaskListener - Param id wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 0.99999,
+      id: 123,
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: '1',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -119,17 +117,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
-  test.skip('deleteDecisionInstance - Constraint violation operationReference (#2)', async ({
+  test('createGlobalTaskListener - Param id wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 0,
+      id: true,
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: '1',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -141,17 +138,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
-  test.skip('deleteDecisionInstance - Constraint violation operationReference (#3)', async ({
+  test('createGlobalTaskListener - Param type wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: -99,
+      id: 'x',
+      type: 123,
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: '1',
-      }),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -163,36 +159,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstance - Path param decisionEvaluationKey pattern violation', async ({
-    request,
-  }) => {
-    const res = await request.post(
-      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
-        decisionEvaluationKey: 'a',
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('deleteDecisionInstancesBatchOperation - Additional prop __unexpectedField', async ({
+  test('createGlobalTaskListener - Param type wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 1,
-      __unexpectedField: 'x',
+      id: 'x',
+      type: true,
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -204,35 +180,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Body wrong top-level type', async ({
-    request,
-  }) => {
-    const requestBody: string[] = [];
-    const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('deleteDecisionInstancesBatchOperation - Param filter.decisionDefinitionType wrong type (#1)', async ({
+  test('createGlobalTaskListener - Constraint violation id (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 123,
-      },
-      operationReference: 1,
+      id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -244,18 +201,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Param filter.decisionDefinitionType wrong type (#2)', async ({
+  test('createGlobalTaskListener - Constraint violation id (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: true,
-      },
-      operationReference: 1,
+      id: '',
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -267,18 +222,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Param filter.decisionDefinitionVersion wrong type (#1)', async ({
+  test('createGlobalTaskListener - Constraint violation id (#3)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 'not-a-number',
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 1,
+      id: '\n',
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -290,18 +243,16 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Param filter.decisionDefinitionVersion wrong type (#2)', async ({
+  test('createGlobalTaskListener - Constraint violation id (#4)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: true,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 1,
+      id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -313,18 +264,13 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
-    request,
-  }) => {
+  test('createGlobalTaskListener - Missing id (#1)', async ({request}) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 'not-a-number',
+      type: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -336,18 +282,13 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
-    request,
-  }) => {
+  test('createGlobalTaskListener - Missing type (#1)', async ({request}) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: true,
+      id: 'x',
+      eventTypes: ['all'],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -359,111 +300,21 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+  test('createGlobalTaskListener - Enum violation eventTypes.0 (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 0.99999,
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
-  test.skip('deleteDecisionInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: 0,
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
-  test.skip('deleteDecisionInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: 'DECISION_TABLE',
-      },
-      operationReference: -99,
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('deleteDecisionInstancesBatchOperation - Missing filter (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: 1,
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('deleteDecisionInstancesBatchOperation - Enum violation filter.decisionDefinitionType (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: {
+      id: 'x',
+      type: 'x',
+      eventTypes: [
+        {
           __invalidEnum: true,
-          value: 'DECISION_TABLE_INVALID',
+          value: 'all_INVALID',
         },
-      },
-      operationReference: 1,
+      ],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -475,21 +326,21 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Enum violation filter.decisionDefinitionType (#2)', async ({
+  test('createGlobalTaskListener - Enum violation eventTypes.0 (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        decisionDefinitionVersion: 1,
-        decisionDefinitionType: {
+      id: 'x',
+      type: 'x',
+      eventTypes: [
+        {
           __invalidEnum: true,
-          value: 'decision_table',
+          value: 'ALL',
         },
-      },
-      operationReference: 1,
+      ],
     };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -501,12 +352,117 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Missing filter (#2)', async ({
+  test('createGlobalTaskListener - Missing eventTypes', async ({request}) => {
+    const requestBody = {
+      id: 'x',
+      type: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing id (#2)', async ({request}) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing type (#2)', async ({request}) => {
+    const requestBody = {
+      id: 'x',
+      eventTypes: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing combo id,eventTypes', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing combo id,type', async ({
+    request,
+  }) => {
+    const requestBody = {
+      eventTypes: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGlobalTaskListener - Missing combo id,type,eventTypes', async ({
     request,
   }) => {
     const requestBody = {};
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -518,11 +474,30 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteDecisionInstancesBatchOperation - Missing body', async ({
+  test('createGlobalTaskListener - Missing combo type,eventTypes', async ({
     request,
   }) => {
+    const requestBody = {
+      id: 'x',
+    };
     const res = await request.post(
-      buildUrl('/decision-instances/deletion', undefined),
+      buildUrl('/global-task-listeners', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteGlobalTaskListener - Path param id pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/global-task-listeners/{id}', {id: '!'}),
       {
         headers: jsonHeaders(),
       },
@@ -533,13 +508,11 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getDecisionInstance - Path param decisionEvaluationInstanceKey pattern violation', async ({
+  test('getGlobalTaskListener - Path param id pattern violation', async ({
     request,
   }) => {
     const res = await request.get(
-      buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
-        decisionEvaluationInstanceKey: '!INVALID!',
-      }),
+      buildUrl('/global-task-listeners/{id}', {id: '!'}),
       {
         headers: jsonHeaders(),
       },
@@ -550,14 +523,14 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Additional prop __unexpectedField', async ({
+  test('searchGlobalTaskListeners - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -569,12 +542,12 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Body wrong top-level type', async ({
+  test('searchGlobalTaskListeners - Body wrong top-level type', async ({
     request,
   }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -586,55 +559,7 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Enum violation filter.decisionDefinitionType (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      filter: {
-        decisionDefinitionType: {
-          __invalidEnum: true,
-          value: 'DECISION_TABLE_INVALID',
-        },
-      },
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchDecisionInstances - Enum violation filter.decisionDefinitionType (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      filter: {
-        decisionDefinitionType: {
-          __invalidEnum: true,
-          value: 'decision_table',
-        },
-      },
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchDecisionInstances - Enum violation sort.0.field (#1)', async ({
+  test('searchGlobalTaskListeners - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -642,13 +567,13 @@ test.describe('Decisioninstances Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'businessId_INVALID',
+            value: 'id_INVALID',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -660,7 +585,7 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Enum violation sort.0.field (#2)', async ({
+  test('searchGlobalTaskListeners - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -668,13 +593,13 @@ test.describe('Decisioninstances Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'BUSINESSID',
+            value: 'ID',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -686,33 +611,7 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Enum violation sort.0.field (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'businessid',
-          },
-        },
-      },
-    };
-    const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchDecisionInstances - Enum violation sort.0.order (#1)', async ({
+  test('searchGlobalTaskListeners - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -726,7 +625,7 @@ test.describe('Decisioninstances Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -738,7 +637,7 @@ test.describe('Decisioninstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchDecisionInstances - Enum violation sort.0.order (#2)', async ({
+  test('searchGlobalTaskListeners - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -752,10 +651,274 @@ test.describe('Decisioninstances Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/decision-instances/search', undefined),
+      buildUrl('/global-task-listeners/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: ['all'],
+      __extraField: 'unexpected',
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Param eventTypes.0 wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: [123],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Param eventTypes.0 wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: [true],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Param type wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 123,
+      eventTypes: ['all'],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Param type wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: true,
+      eventTypes: ['all'],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Missing type (#1)', async ({request}) => {
+    const requestBody = {
+      eventTypes: ['all'],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Enum violation eventTypes.0 (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: [
+        {
+          __invalidEnum: true,
+          value: 'all_INVALID',
+        },
+      ],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Enum violation eventTypes.0 (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      type: 'x',
+      eventTypes: [
+        {
+          __invalidEnum: true,
+          value: 'ALL',
+        },
+      ],
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Missing eventTypes', async ({request}) => {
+    const requestBody = {
+      type: 'x',
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Missing type (#2)', async ({request}) => {
+    const requestBody = {
+      eventTypes: 'x',
+    };
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Missing body', async ({request}) => {
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Missing combo type,eventTypes', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: 'x'}),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateGlobalTaskListener - Path param id pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/global-task-listeners/{id}', {id: '!'}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.

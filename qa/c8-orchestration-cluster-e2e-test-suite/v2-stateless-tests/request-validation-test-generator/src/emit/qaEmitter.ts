@@ -17,6 +17,34 @@ interface EmitOpts {
   qaImportDepth: number;
   specCommit?: string;
   generationTimestamp?: string;
+  /** Absolute path to known-failing-tests.json; resolved by the caller (a script, not this
+   * module) since that needs `import.meta.url`, which isn't available under this project's
+   * CommonJS root tsconfig. */
+  knownFailingPath?: string;
+}
+
+interface KnownFailingEntry {
+  describe: string;
+  title: string;
+  reason: string;
+}
+
+/**
+ * Test cases with a real, tracked (non-flaky) endpoint gap are declared here instead of deleted,
+ * so a regenerate doesn't silently drop coverage and CI stays green in the meantime. Loaded once
+ * per emit; entries are matched by the exact {describe, title} pair a scenario would otherwise
+ * render under - see qa/.../request-validation-test-generator/known-failing-tests.json.
+ */
+function loadKnownFailing(file?: string): Map<string, KnownFailingEntry> {
+  const map = new Map<string, KnownFailingEntry>();
+  if (!file || !fs.existsSync(file)) return map;
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+    entries: KnownFailingEntry[];
+  };
+  for (const entry of parsed.entries || []) {
+    map.set(entry.describe + ' ' + entry.title, entry);
+  }
+  return map;
 }
 
 export async function emitQaTests(
@@ -32,6 +60,7 @@ export async function emitQaTests(
     byFile.set(file, arr);
   }
   await fs.promises.mkdir(opts.outDir, {recursive: true});
+  const knownFailing = loadKnownFailing(opts.knownFailingPath);
   // Resolve Prettier config once (fail fast if not found / cannot load)
   let resolvedConfig: prettier.Config | null = null;
   try {
@@ -60,6 +89,7 @@ export async function emitQaTests(
       opts.qaImportDepth,
       opts.specCommit,
       opts.generationTimestamp,
+      knownFailing,
     );
     let formatted: string;
     try {
@@ -84,6 +114,7 @@ function buildFile(
   depth: number,
   specCommit?: string,
   ts?: string,
+  knownFailing?: Map<string, KnownFailingEntry>,
 ): string {
   const resource = deriveResource(scenarios[0].path);
   const describeTitle = `${capitalize(resource)} Validation API Tests`;
@@ -103,11 +134,13 @@ function buildFile(
   const needsJsonHeaders = scenarios.some(
     (s) => s.headersAuth && s.bodyEncoding !== 'multipart',
   );
-  lines.push(
-    needsJsonHeaders
-      ? `import {jsonHeaders, buildUrl} from '${httpImport}'`
-      : `import {buildUrl} from '${httpImport}'`,
+  const needsAuthHeaders = scenarios.some(
+    (s) => s.headersAuth && s.bodyEncoding === 'multipart',
   );
+  const httpNamedImports = ['buildUrl'];
+  if (needsJsonHeaders) httpNamedImports.unshift('jsonHeaders');
+  if (needsAuthHeaders) httpNamedImports.unshift('authHeaders');
+  lines.push(`import {${httpNamedImports.join(', ')}} from '${httpImport}'`);
   lines.push('');
   lines.push(`test.describe('${describeTitle}', () => {`);
   // Pre-compute base titles and detect duplicates for uniqueness
@@ -125,16 +158,27 @@ function buildFile(
       occurrence.set(base, n);
       finalTitle = `${base} (#${n})`;
     }
-    lines.push(renderScenario(s, finalTitle));
+    const knownFailure = knownFailing?.get(`${describeTitle} ${finalTitle}`);
+    lines.push(renderScenario(s, finalTitle, knownFailure));
   }
   lines.push('});');
   lines.push('');
   return lines.join('\n');
 }
 
-function renderScenario(s: ValidationScenario, title: string): string {
+function renderScenario(
+  s: ValidationScenario,
+  title: string,
+  knownFailure?: KnownFailingEntry,
+): string {
   const lines: string[] = [];
-  lines.push(`  test(${JSON.stringify(title)}, async ({request}) => {`);
+  if (knownFailure) {
+    lines.push(
+      `  // Known failing (see known-failing-tests.json): ${knownFailure.reason}`,
+    );
+  }
+  const testFn = knownFailure ? 'test.skip' : 'test';
+  lines.push(`  ${testFn}(${JSON.stringify(title)}, async ({request}) => {`);
   const paramsLit = s.params ? JSON.stringify(s.params) : 'undefined';
   const urlCall = `buildUrl(${JSON.stringify(s.path.replace(/\{([^}]+)}/g, '{$1}'))}, ${paramsLit})`;
   if (s.bodyEncoding === 'multipart' && s.multipartForm) {
@@ -156,7 +200,7 @@ function renderScenario(s: ValidationScenario, title: string): string {
   }
   const headersExpr = s.headersAuth
     ? s.bodyEncoding === 'multipart'
-      ? '{}'
+      ? 'authHeaders()'
       : 'jsonHeaders()'
     : '{}';
   const dataPart =

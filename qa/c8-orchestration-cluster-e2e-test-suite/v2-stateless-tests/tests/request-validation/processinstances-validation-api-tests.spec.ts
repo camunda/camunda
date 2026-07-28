@@ -8,13 +8,222 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Processinstances Validation API Tests', () => {
+  test('assignProcessInstanceBusinessId - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId: 'x',
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Param businessId wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId: 123,
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Param businessId wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId: true,
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Constraint violation businessId (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId:
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: '1'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Constraint violation businessId (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId: '',
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: '1'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Constraint violation businessId (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      businessId:
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    };
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: '1'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Missing businessId', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignProcessInstanceBusinessId - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/business-id-assignment',
+        {processInstanceKey: 'a'},
+      ),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('cancelProcessInstance - Additional prop __unexpectedField', async ({
     request,
   }) => {
@@ -185,6 +394,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['x'],
       },
+      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
@@ -224,6 +434,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [123],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -245,6 +456,51 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [true],
       },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('cancelProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('cancelProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: true,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -266,6 +522,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -287,6 +544,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -310,6 +568,7 @@ test.describe('Processinstances Validation API Tests', () => {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -331,6 +590,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [''],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -352,6 +612,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['\n'],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -375,6 +636,7 @@ test.describe('Processinstances Validation API Tests', () => {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -389,7 +651,94 @@ test.describe('Processinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('cancelProcessInstancesBatchOperation - Missing filter', async ({
+  test('cancelProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('cancelProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('cancelProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('cancelProcessInstancesBatchOperation - Missing filter (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/cancellation', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('cancelProcessInstancesBatchOperation - Missing filter (#2)', async ({
     request,
   }) => {
     const requestBody = {};
@@ -433,6 +782,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         },
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -454,6 +804,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/cancellation', undefined),
@@ -494,8 +845,8 @@ test.describe('Processinstances Validation API Tests', () => {
   });
   test('createProcessInstance - oneOf ambiguous', async ({request}) => {
     const requestBody = {
-      processDefinitionId: 'x',
       processDefinitionKey: 'x',
+      processDefinitionId: 'x',
     };
     const res = await request.post(buildUrl('/process-instances', undefined), {
       headers: jsonHeaders(),
@@ -509,8 +860,8 @@ test.describe('Processinstances Validation API Tests', () => {
   });
   test('createProcessInstance - oneOf cross bleed', async ({request}) => {
     const requestBody = {
-      processDefinitionId: 'x',
       processDefinitionKey: 'x',
+      processDefinitionId: 'x',
     };
     const res = await request.post(buildUrl('/process-instances', undefined), {
       headers: jsonHeaders(),
@@ -536,13 +887,610 @@ test.describe('Processinstances Validation API Tests', () => {
   });
   test('createProcessInstance - oneOf violation', async ({request}) => {
     const requestBody = {
-      processDefinitionId: 'x',
       processDefinitionKey: 'x',
+      processDefinitionId: 'x',
     };
     const res = await request.post(buildUrl('/process-instances', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('deleteProcessInstance - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('deleteProcessInstance - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstance - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [123],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [true],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [''],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['\n'],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#4)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('deleteProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('deleteProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Missing filter (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Missing filter (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - Missing body', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - uniqueItems violation filter.$or.0.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+        $or: {
+          '0': {
+            tags: [1, 1, 1],
+          },
+        },
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('deleteProcessInstancesBatchOperation - uniqueItems violation filter.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/deletion', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -606,6 +1554,24 @@ test.describe('Processinstances Validation API Tests', () => {
     const res = await request.get(
       buildUrl(
         '/process-instances/{processInstanceKey}/statistics/element-instances',
+        {processInstanceKey: 'a'},
+      ),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getProcessInstanceWaitStateStatistics - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl(
+        '/process-instances/{processInstanceKey}/statistics/wait-states',
         {processInstanceKey: 'a'},
       ),
       {
@@ -964,6 +1930,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
@@ -1012,6 +1979,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1042,6 +2010,69 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/migration', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('migrateProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      migrationPlan: {
+        targetProcessDefinitionKey: null,
+        mappingInstructions: [
+          {
+            sourceElementId: null,
+            targetElementId: null,
+          },
+        ],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/migration', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('migrateProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      migrationPlan: {
+        targetProcessDefinitionKey: null,
+        mappingInstructions: [
+          {
+            sourceElementId: null,
+            targetElementId: null,
+          },
+        ],
+      },
+      operationReference: true,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1072,6 +2103,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1102,6 +2134,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1134,6 +2167,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1164,6 +2198,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1194,6 +2229,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1226,6 +2262,100 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/migration', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('migrateProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      migrationPlan: {
+        targetProcessDefinitionKey: null,
+        mappingInstructions: [
+          {
+            sourceElementId: null,
+            targetElementId: null,
+          },
+        ],
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/migration', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('migrateProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      migrationPlan: {
+        targetProcessDefinitionKey: null,
+        mappingInstructions: [
+          {
+            sourceElementId: null,
+            targetElementId: null,
+          },
+        ],
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/migration', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('migrateProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      migrationPlan: {
+        targetProcessDefinitionKey: null,
+        mappingInstructions: [
+          {
+            sourceElementId: null,
+            targetElementId: null,
+          },
+        ],
+      },
+      operationReference: -99,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1253,6 +2383,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1274,6 +2405,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['x'],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1298,6 +2430,7 @@ test.describe('Processinstances Validation API Tests', () => {
       migrationPlan: {
         targetProcessDefinitionKey: null,
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1327,6 +2460,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1345,7 +2479,7 @@ test.describe('Processinstances Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      migrationPlan: {},
+      migrationPlan: 'x',
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1432,6 +2566,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1462,6 +2597,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/migration', undefined),
@@ -1667,6 +2803,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
@@ -1712,6 +2849,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1739,6 +2877,63 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/modification', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('modifyProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      moveInstructions: [
+        {
+          sourceElementId: null,
+          targetElementId: null,
+        },
+      ],
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/modification', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('modifyProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      moveInstructions: [
+        {
+          sourceElementId: null,
+          targetElementId: null,
+        },
+      ],
+      operationReference: true,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1766,6 +2961,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1793,6 +2989,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1822,6 +3019,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1849,6 +3047,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1876,6 +3075,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1905,6 +3105,91 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/modification', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('modifyProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      moveInstructions: [
+        {
+          sourceElementId: null,
+          targetElementId: null,
+        },
+      ],
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/modification', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('modifyProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      moveInstructions: [
+        {
+          sourceElementId: null,
+          targetElementId: null,
+        },
+      ],
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/modification', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('modifyProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      moveInstructions: [
+        {
+          sourceElementId: null,
+          targetElementId: null,
+        },
+      ],
+      operationReference: -99,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1929,6 +3214,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -1950,6 +3236,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['x'],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -2052,6 +3339,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -2079,6 +3367,7 @@ test.describe('Processinstances Validation API Tests', () => {
           targetElementId: null,
         },
       ],
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/modification', undefined),
@@ -2100,6 +3389,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['x'],
       },
+      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
@@ -2139,6 +3429,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [123],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2160,6 +3451,51 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [true],
       },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveIncidentsBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveIncidentsBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: true,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2181,6 +3517,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2202,6 +3539,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2225,6 +3563,7 @@ test.describe('Processinstances Validation API Tests', () => {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2246,6 +3585,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [''],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2267,6 +3607,7 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: ['\n'],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2290,6 +3631,7 @@ test.describe('Processinstances Validation API Tests', () => {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2304,8 +3646,15 @@ test.describe('Processinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('resolveIncidentsBatchOperation - Missing filter', async ({request}) => {
-    const requestBody = {};
+  test('resolveIncidentsBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0.99999,
+    };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
       {
@@ -2319,11 +3668,80 @@ test.describe('Processinstances Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('resolveIncidentsBatchOperation - Missing body', async ({request}) => {
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('resolveIncidentsBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0,
+    };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('resolveIncidentsBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveIncidentsBatchOperation - Missing filter (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveIncidentsBatchOperation - Missing filter (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -2344,6 +3762,7 @@ test.describe('Processinstances Validation API Tests', () => {
           },
         },
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
@@ -2365,9 +3784,622 @@ test.describe('Processinstances Validation API Tests', () => {
       filter: {
         tags: [1, 1, 1],
       },
+      operationReference: 1,
     };
     const res = await request.post(
       buildUrl('/process-instances/incident-resolution', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resolveProcessInstanceIncidents - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/incident-resolution', {
+        processInstanceKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstance - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/resumption', {
+        processInstanceKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [123],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [true],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [''],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['\n'],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#4)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('resumeProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('resumeProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Missing filter (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Missing filter (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - Missing body', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - uniqueItems violation filter.$or.0.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+        $or: {
+          '0': {
+            tags: [1, 1, 1],
+          },
+        },
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('resumeProcessInstancesBatchOperation - uniqueItems violation filter.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/resumption', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -2777,6 +4809,601 @@ test.describe('Processinstances Validation API Tests', () => {
     };
     const res = await request.post(
       buildUrl('/process-instances/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: '1',
+      }),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstance - Path param processInstanceKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/suspension', {
+        processInstanceKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [123],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Param filter.tags.0 wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [true],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: true,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [''],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['\n'],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation filter.tags.0 (#4)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('suspendProcessInstancesBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('suspendProcessInstancesBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Missing filter (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Missing filter (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - Missing body', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - uniqueItems violation filter.$or.0.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: ['x'],
+        $or: {
+          '0': {
+            tags: [1, 1, 1],
+          },
+        },
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('suspendProcessInstancesBatchOperation - uniqueItems violation filter.tags', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        tags: [1, 1, 1],
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(
+      buildUrl('/process-instances/suspension', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,

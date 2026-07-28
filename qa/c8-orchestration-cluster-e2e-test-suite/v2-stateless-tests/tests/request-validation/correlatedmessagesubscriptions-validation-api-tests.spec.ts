@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -59,7 +59,7 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'correlationKey_INVALID',
+            value: 'businessId_INVALID',
           },
         },
       },
@@ -85,7 +85,7 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'CORRELATIONKEY',
+            value: 'BUSINESSID',
           },
         },
       },
@@ -111,7 +111,7 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'correlationkey',
+            value: 'businessid',
           },
         },
       },

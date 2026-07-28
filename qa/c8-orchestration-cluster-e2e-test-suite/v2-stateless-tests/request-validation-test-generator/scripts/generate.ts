@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import fs from 'fs';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import {loadSpec} from '../src/spec/loader.js';
 import {generateMissingRequired} from '../src/analysis/missingRequired.js';
 import {generateMultipartMissingRequired} from '../src/analysis/multipartMissingRequired.js';
@@ -82,7 +83,7 @@ function parseArgs(): CliOptions {
     : undefined;
   const outDir = get('--out-dir') || 'generated';
   const importDepth = get('--qa-import-depth');
-  const qaImportDepth = importDepth ? parseInt(importDepth, 10) : 4;
+  const qaImportDepth = importDepth ? parseInt(importDepth, 10) : 3;
   const maxMissing = get('--max-missing');
   const maxTypeMismatch = get('--max-type-mismatch');
   const onlyOpsRaw = get('--only-operations');
@@ -106,14 +107,18 @@ function parseArgs(): CliOptions {
 
 async function main() {
   const opts = parseArgs();
-  const specPath = path.resolve(process.cwd(), 'cache', 'rest-api.yaml');
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+  const specPath = path.resolve(
+    scriptDir,
+    '../../../../../zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml',
+  );
   if (!fs.existsSync(specPath)) {
-    console.error('[generate] Spec not found. Run: npm run fetch-spec');
+    console.error('[generate] Spec not found at', specPath, '- run: npm run fetch-spec');
     process.exit(1);
   }
   const model = await loadSpec(specPath);
   let specCommit: string | undefined;
-  const commitPath = path.join(path.dirname(specPath), 'spec-commit.txt');
+  const commitPath = path.resolve(process.cwd(), 'cache', 'spec-commit.txt');
   if (fs.existsSync(commitPath)) {
     try {
       specCommit = (await fs.promises.readFile(commitPath, 'utf8')).trim();
@@ -508,6 +513,7 @@ async function main() {
     qaImportDepth: opts.qaImportDepth,
     specCommit,
     generationTimestamp,
+    knownFailingPath: path.resolve(scriptDir, '..', 'known-failing-tests.json'),
   });
   console.log('[generate] Summary:', {
     totalScenarios: deduped.length,

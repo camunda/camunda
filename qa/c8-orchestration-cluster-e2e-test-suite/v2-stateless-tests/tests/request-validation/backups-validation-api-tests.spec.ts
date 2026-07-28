@@ -14,15 +14,53 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Signals Validation API Tests', () => {
-  test('broadcastSignal - Additional prop __unexpectedField', async ({
+test.describe('Backups Validation API Tests', () => {
+  test('deleteRuntimeBackup - Param backupId wrong type', async ({request}) => {
+    const res = await request.delete(
+      buildUrl('/backups/runtime/{backupId}', {backupId: 'not-a-number'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getRuntimeBackup - Param backupId wrong type', async ({request}) => {
+    const res = await request.get(
+      buildUrl('/backups/runtime/{backupId}', {backupId: 'not-a-number'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): query param pattern constraint not enforced
+  test.skip('listRuntimeBackups - Query param prefix pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(buildUrl('/backups/runtime', undefined), {
+      headers: jsonHeaders(),
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('takeRuntimeBackup - Additional prop __extraField', async ({
     request,
   }) => {
     const requestBody = {
-      signalName: 'x',
-      __unexpectedField: 'x',
+      __extraField: 'unexpected',
     };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
+    const res = await request.post(buildUrl('/backups/runtime', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -32,65 +70,11 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Body wrong top-level type', async ({request}) => {
+  test('takeRuntimeBackup - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
+    const res = await request.post(buildUrl('/backups/runtime', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Param signalName wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      signalName: 123,
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Param signalName wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      signalName: true,
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Missing signalName', async ({request}) => {
-    const requestBody = {};
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {

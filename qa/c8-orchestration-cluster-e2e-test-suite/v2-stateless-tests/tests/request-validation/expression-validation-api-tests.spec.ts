@@ -14,14 +14,19 @@
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('System Validation API Tests', () => {
-  test('getUsageMetrics - Query param tenantId pattern violation', async ({
+test.describe('Expression Validation API Tests', () => {
+  test('evaluateExpression - Additional prop __extraField', async ({
     request,
   }) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', undefined),
+    const requestBody = {
+      expression: 'x',
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -30,15 +35,13 @@ test.describe('System Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getUsageMetrics - Missing param query.endTime', async ({request}) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        startTime: 'x',
-        tenantId: 'x',
-        withTenants: 'true',
-      }),
+  test('evaluateExpression - Body wrong top-level type', async ({request}) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -47,35 +50,17 @@ test.describe('System Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getUsageMetrics - Missing param query.startTime', async ({request}) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        endTime: 'x',
-        tenantId: 'x',
-        withTenants: 'true',
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('getUsageMetrics - Param query.endTime wrong type', async ({
+  test('evaluateExpression - Param expression wrong type (#1)', async ({
     request,
   }) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        startTime: 'x',
-        endTime: '__INVALID_STRING__',
-        tenantId: 'x',
-        withTenants: 'true',
-      }),
+    const requestBody = {
+      expression: 123,
+    };
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -84,18 +69,17 @@ test.describe('System Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getUsageMetrics - Param query.startTime wrong type', async ({
+  test('evaluateExpression - Param expression wrong type (#2)', async ({
     request,
   }) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        startTime: '__INVALID_STRING__',
-        endTime: 'x',
-        tenantId: 'x',
-        withTenants: 'true',
-      }),
+    const requestBody = {
+      expression: true,
+    };
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -104,18 +88,13 @@ test.describe('System Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getUsageMetrics - Param query.tenantId wrong type', async ({
-    request,
-  }) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        startTime: 'x',
-        endTime: 'x',
-        tenantId: '__INVALID_STRING__',
-        withTenants: 'true',
-      }),
+  test('evaluateExpression - Missing expression', async ({request}) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
+        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -124,16 +103,9 @@ test.describe('System Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('getUsageMetrics - Param query.withTenants wrong type', async ({
-    request,
-  }) => {
-    const res = await request.get(
-      buildUrl('/system/usage-metrics', {
-        startTime: 'x',
-        endTime: 'x',
-        tenantId: 'x',
-        withTenants: 'notBoolean',
-      }),
+  test('evaluateExpression - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/expression/evaluation', undefined),
       {
         headers: jsonHeaders(),
       },
