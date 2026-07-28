@@ -13,6 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessCheck
 import static io.camunda.it.rdbms.db.fixtures.JobFixtures.createAndSaveJob;
 import static io.camunda.it.rdbms.db.fixtures.JobFixtures.createAndSaveRandomJobs;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.JobDbReader;
@@ -31,6 +32,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -98,6 +100,37 @@ public class JobIT {
 
     assertThat(instance).isNotNull();
     assertThat(instance.errorMessage().length()).isLessThan(errorMessage.length());
+  }
+
+  @TestTemplate
+  public void shouldCoalescePendingCreateAndUpdateBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    // given — a create() queued but not yet flushed
+    final var created =
+        JobFixtures.createRandomized(b -> b.customHeaders(Map.of("k1", "v1")).worker("worker-1"));
+    rdbmsWriters.getJobWriter().create(created);
+
+    // when — a second write to the same row is queued before the first is flushed, so it must
+    // coalesce into the still-pending INSERT via UpsertMerger/Copyable.copy() instead of issuing
+    // a separate UPDATE
+    final var updated =
+        created.copy(
+            b -> ((JobDbModel.Builder) b).customHeaders(Map.of("k2", "v2")).worker("worker-2"));
+    rdbmsWriters.getJobWriter().update(updated);
+    rdbmsWriters.flush();
+
+    // then — only the merged, final state was ever persisted; businessId is deliberately never
+    // touched by update() and must survive from the original create() untouched
+    final var instance = jobReader.findOne(created.jobKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.worker()).isEqualTo("worker-2");
+    assertThat(instance.customHeaders()).containsExactly(entry("k2", "v2"));
+    assertThat(instance.businessId()).isEqualTo(created.businessId());
   }
 
   @TestTemplate

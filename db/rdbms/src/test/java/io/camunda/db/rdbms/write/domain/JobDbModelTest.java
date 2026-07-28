@@ -11,7 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.db.rdbms.write.domain.JobDbModel.Builder;
+import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 class JobDbModelTest {
@@ -77,5 +82,24 @@ class JobDbModelTest {
             .build();
 
     assertThatCode(() -> jobDbModel.truncateErrorMessage(10, 5)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPreserveRawCustomHeadersJsonByteForByteThroughQueueMerge() {
+    // given — a DB-hydrated instance whose stored JSON is non-canonically formatted (spaced out,
+    // key order Jackson would never itself produce for this record)
+    final var nonCanonicalJson = "{ \"b\": \"2\", \"a\": \"1\" }";
+    final var original = new Builder(nonCanonicalJson).jobKey(1L).build();
+    final var queueItem =
+        new QueueItem(ContextType.JOB, WriteStatementType.INSERT, 1L, "statement", original);
+    final Function<Builder, Builder> mergeFunction = b -> b.worker("new-worker");
+    final var merger = new UpsertMerger<>(ContextType.JOB, 1L, JobDbModel.class, mergeFunction);
+
+    // when — coalesce a change to an unrelated field, never touching customHeaders()
+    final var merged = (JobDbModel) merger.merge(queueItem).parameter();
+
+    // then — the raw JSON is carried through completely unparsed, not reserialized
+    assertThat(merged.serializedCustomHeaders()).isEqualTo(nonCanonicalJson);
+    assertThat(merged.worker()).isEqualTo("new-worker");
   }
 }

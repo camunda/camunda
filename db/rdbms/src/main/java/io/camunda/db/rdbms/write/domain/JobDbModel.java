@@ -20,99 +20,37 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JobDbModel implements Copyable<JobDbModel> {
+public record JobDbModel(
+    Long jobKey,
+    String type,
+    String worker,
+    JobState state,
+    JobKind kind,
+    ListenerEventType listenerEventType,
+    Integer retries,
+    Integer priority,
+    Boolean isDenied,
+    String deniedReason,
+    Boolean hasFailedWithRetriesLeft,
+    String errorCode,
+    String errorMessage,
+    String serializedCustomHeaders,
+    OffsetDateTime deadline,
+    OffsetDateTime endTime,
+    String processDefinitionId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    Long rootProcessInstanceKey,
+    String businessId,
+    String elementId,
+    Long elementInstanceKey,
+    String tenantId,
+    int partitionId,
+    OffsetDateTime creationTime,
+    OffsetDateTime lastUpdateTime)
+    implements Copyable<JobDbModel> {
+
   private static final Logger LOG = LoggerFactory.getLogger(JobDbModel.class);
-
-  private Long jobKey;
-  private String type;
-  private String worker;
-  private JobState state;
-  private JobKind kind;
-  private ListenerEventType listenerEventType;
-  private Integer retries;
-  private Integer priority;
-  private Boolean isDenied;
-  private String deniedReason;
-  private Boolean hasFailedWithRetriesLeft = false;
-  private String errorCode;
-  private String errorMessage;
-  private String serializedCustomHeaders;
-  private Map<String, String> customHeaders;
-  private OffsetDateTime deadline;
-  private OffsetDateTime endTime;
-  private String processDefinitionId;
-  private Long processDefinitionKey;
-  private Long processInstanceKey;
-  private Long rootProcessInstanceKey;
-  private String businessId;
-  private String elementId;
-  private Long elementInstanceKey;
-  private String tenantId;
-  private int partitionId;
-  private OffsetDateTime creationTime;
-  private OffsetDateTime lastUpdateTime;
-
-  public JobDbModel(final Long jobKey) {
-    this.jobKey = jobKey;
-  }
-
-  public JobDbModel(
-      final Long jobKey,
-      final String type,
-      final String worker,
-      final JobState state,
-      final JobKind kind,
-      final ListenerEventType listenerEventType,
-      final Integer retries,
-      final Integer priority,
-      final Boolean isDenied,
-      final String deniedReason,
-      final boolean hasFailedWithRetriesLeft,
-      final String errorCode,
-      final String errorMessage,
-      final Map<String, String> customHeaders,
-      final OffsetDateTime deadline,
-      final OffsetDateTime endTime,
-      final String processDefinitionId,
-      final Long processDefinitionKey,
-      final Long processInstanceKey,
-      final Long rootProcessInstanceKey,
-      final String businessId,
-      final String elementId,
-      final Long elementInstanceKey,
-      final String tenantId,
-      final int partitionId,
-      final OffsetDateTime creationTime,
-      final OffsetDateTime lastUpdateTime) {
-    this.jobKey = jobKey;
-    this.type = type;
-    this.worker = worker;
-    this.state = state;
-    this.kind = kind;
-    this.listenerEventType = listenerEventType;
-    this.retries = retries;
-    this.priority = priority;
-    this.isDenied = isDenied;
-    this.deniedReason = deniedReason;
-    this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
-    this.errorCode = errorCode;
-    this.errorMessage = errorMessage;
-    serializedCustomHeaders = MapSerializer.serialize(customHeaders);
-    this.customHeaders = customHeaders;
-    this.deadline = deadline;
-    this.endTime = endTime;
-    this.processDefinitionId = processDefinitionId;
-    this.processDefinitionKey = processDefinitionKey;
-    this.processInstanceKey = processInstanceKey;
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    this.businessId = businessId;
-    this.elementId = elementId;
-    this.elementInstanceKey = elementInstanceKey;
-    this.tenantId = tenantId;
-    this.partitionId = partitionId;
-    this.creationTime = creationTime;
-    this.lastUpdateTime = lastUpdateTime;
-  }
 
   @Override
   public JobDbModel copy(
@@ -140,7 +78,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         hasFailedWithRetriesLeft,
         errorCode,
         truncatedValue,
-        customHeaders,
+        serializedCustomHeaders,
         deadline,
         endTime,
         processDefinitionId,
@@ -169,229 +107,12 @@ public class JobDbModel implements Copyable<JobDbModel> {
     return truncatedValue;
   }
 
-  public Long jobKey() {
-    return jobKey;
-  }
-
-  public void jobKey(final Long jobKey) {
-    this.jobKey = jobKey;
-  }
-
-  public String type() {
-    return type;
-  }
-
-  public void type(final String type) {
-    this.type = type;
-  }
-
-  public String worker() {
-    return worker;
-  }
-
-  public void worker(final String worker) {
-    this.worker = worker;
-  }
-
-  public JobState state() {
-    return state;
-  }
-
-  public void state(final JobState state) {
-    this.state = state;
-  }
-
-  public JobKind kind() {
-    return kind;
-  }
-
-  public void kind(final JobKind kind) {
-    this.kind = kind;
-  }
-
-  public ListenerEventType listenerEventType() {
-    return listenerEventType;
-  }
-
-  public void listenerEventType(final ListenerEventType listenerEventType) {
-    this.listenerEventType = listenerEventType;
-  }
-
-  public Integer retries() {
-    return retries;
-  }
-
-  public void retries(final Integer retries) {
-    this.retries = retries;
-  }
-
-  public Integer priority() {
-    return priority;
-  }
-
-  public void priority(final Integer priority) {
-    this.priority = priority;
-  }
-
-  public Boolean isDenied() {
-    return isDenied;
-  }
-
-  public void isDenied(final Boolean isDenied) {
-    this.isDenied = isDenied;
-  }
-
-  public String deniedReason() {
-    return deniedReason;
-  }
-
-  public void deniedReason(final String deniedReason) {
-    this.deniedReason = deniedReason;
-  }
-
-  public Boolean hasFailedWithRetriesLeft() {
-    return hasFailedWithRetriesLeft;
-  }
-
-  public void hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
-    this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
-  }
-
-  public String errorCode() {
-    return errorCode;
-  }
-
-  public void errorCode(final String errorCode) {
-    this.errorCode = errorCode;
-  }
-
-  public String errorMessage() {
-    return errorMessage;
-  }
-
-  public void errorMessage(final String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-  public String serializedCustomHeaders() {
-    return serializedCustomHeaders;
-  }
-
-  public void setSerializedCustomHeaders(final String serializedCustomHeaders) {
-    this.serializedCustomHeaders = serializedCustomHeaders;
-    customHeaders = MapSerializer.deserialize(serializedCustomHeaders);
-  }
-
   public Map<String, String> customHeaders() {
-    return customHeaders;
+    return MapSerializer.deserialize(serializedCustomHeaders);
   }
 
-  public OffsetDateTime deadline() {
-    return deadline;
-  }
-
-  public void deadline(final OffsetDateTime deadline) {
-    this.deadline = deadline;
-  }
-
-  public OffsetDateTime endTime() {
-    return endTime;
-  }
-
-  public void endTime(final OffsetDateTime endTime) {
-    this.endTime = endTime;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public Long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void processDefinitionKey(final Long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public Long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void processInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public Long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public String businessId() {
-    return businessId;
-  }
-
-  public void businessId(final String businessId) {
-    this.businessId = businessId;
-  }
-
-  public String elementId() {
-    return elementId;
-  }
-
-  public void elementId(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  public Long elementInstanceKey() {
-    return elementInstanceKey;
-  }
-
-  public void elementInstanceKey(final Long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public int partitionId() {
-    return partitionId;
-  }
-
-  public void partitionId(final int partitionId) {
-    this.partitionId = partitionId;
-  }
-
-  public OffsetDateTime creationTime() {
-    return creationTime;
-  }
-
-  public void creationTime(final OffsetDateTime creationTime) {
-    this.creationTime = creationTime;
-  }
-
-  public OffsetDateTime lastUpdateTime() {
-    return lastUpdateTime;
-  }
-
-  public void lastUpdateTime(final OffsetDateTime lastUpdateTime) {
-    this.lastUpdateTime = lastUpdateTime;
-  }
-
-  public ObjectBuilder<JobDbModel> toBuilder() {
-    return new Builder()
+  public Builder toBuilder() {
+    return new Builder(serializedCustomHeaders)
         .jobKey(jobKey)
         .type(type)
         .worker(worker)
@@ -405,7 +126,6 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
         .errorCode(errorCode)
         .errorMessage(errorMessage)
-        .customHeaders(customHeaders)
         .deadline(deadline)
         .endTime(endTime)
         .processDefinitionId(processDefinitionId)
@@ -436,7 +156,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private Boolean hasFailedWithRetriesLeft = false;
     private String errorCode;
     private String errorMessage;
-    private Map<String, String> customHeaders;
+    private String serializedCustomHeaders;
     private OffsetDateTime deadline;
     private OffsetDateTime endTime;
     private String processDefinitionId;
@@ -450,6 +170,15 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private int partitionId;
     private OffsetDateTime creationTime;
     private OffsetDateTime lastUpdateTime;
+
+    public Builder() {}
+
+    // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
+    // customHeaders() carries the original string through unparsed instead of round-tripping it
+    // through Jackson.
+    Builder(final String serializedCustomHeaders) {
+      this.serializedCustomHeaders = serializedCustomHeaders;
+    }
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -522,7 +251,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     }
 
     public Builder customHeaders(final Map<String, String> customHeaders) {
-      this.customHeaders = customHeaders;
+      serializedCustomHeaders = MapSerializer.serialize(customHeaders);
       return this;
     }
 
@@ -607,7 +336,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
           hasFailedWithRetriesLeft,
           errorCode,
           errorMessage,
-          customHeaders,
+          serializedCustomHeaders,
           deadline,
           endTime,
           processDefinitionId,

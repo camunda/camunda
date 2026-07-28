@@ -232,34 +232,34 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.JobDbModel">
     <constructor>
-    <idArg column="JOB_KEY" javaType="java.lang.Long" />
+      <idArg column="JOB_KEY" javaType="java.lang.Long" name="jobKey" />
+      <arg column="TYPE" javaType="java.lang.String" name="type" />
+      <arg column="WORKER" javaType="java.lang.String" name="worker" />
+      <arg column="STATE" javaType="io.camunda.search.entities.JobEntity$JobState" name="state" />
+      <arg column="KIND" javaType="io.camunda.search.entities.JobEntity$JobKind" name="kind" />
+      <arg column="LISTENER_EVENT_TYPE" javaType="io.camunda.search.entities.JobEntity$ListenerEventType" name="listenerEventType" />
+      <arg column="RETRIES" javaType="java.lang.Integer" name="retries" />
+      <arg column="PRIORITY" javaType="java.lang.Integer" name="priority" />
+      <arg column="IS_DENIED" javaType="java.lang.Boolean" name="isDenied" />
+      <arg column="DENIED_REASON" javaType="java.lang.String" name="deniedReason" />
+      <arg column="HAS_FAILED_WITH_RETRIES_LEFT" javaType="java.lang.Boolean" name="hasFailedWithRetriesLeft" />
+      <arg column="ERROR_CODE" javaType="java.lang.String" name="errorCode" />
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String" name="errorMessage" />
+      <arg column="CUSTOM_HEADERS" javaType="java.lang.String" name="serializedCustomHeaders" />
+      <arg column="DEADLINE" javaType="java.time.OffsetDateTime" name="deadline" />
+      <arg column="END_TIME" javaType="java.time.OffsetDateTime" name="endTime" />
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId" />
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey" />
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey" />
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey" />
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId" />
+      <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId" />
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long" name="elementInstanceKey" />
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId" />
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId" />
+      <arg column="CREATION_TIME" javaType="java.time.OffsetDateTime" name="creationTime" />
+      <arg column="LAST_UPDATE_TIME" javaType="java.time.OffsetDateTime" name="lastUpdateTime" />
     </constructor>
-    <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
-    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
-    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
-    <result column="BUSINESS_ID" property="businessId" javaType="java.lang.String" />
-    <result column="ELEMENT_INSTANCE_KEY" property="elementInstanceKey" javaType="java.lang.Long" />
-    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
-    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
-    <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
-    <result column="TYPE" property="type" javaType="java.lang.String" />
-    <result column="WORKER" property="worker" javaType="java.lang.String" />
-    <result column="STATE" property="state" javaType="io.camunda.search.entities.JobEntity$JobState" />
-    <result column="RETRIES" property="retries" javaType="java.lang.Integer" />
-    <result column="PRIORITY" property="priority" javaType="java.lang.Integer" />
-    <result column="ERROR_MESSAGE" property="errorMessage" javaType="java.lang.String" />
-    <result column="ERROR_CODE" property="errorCode" javaType="java.lang.String" />
-    <result column="END_TIME" property="endTime" javaType="java.time.OffsetDateTime" />
-    <result column="CUSTOM_HEADERS" property="serializedCustomHeaders" javaType="java.lang.String" />
-    <result column="KIND" property="kind" javaType="io.camunda.search.entities.JobEntity$JobKind" />
-    <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
-    <result column="IS_DENIED" property="isDenied" javaType="java.lang.Boolean" />
-    <result column="DENIED_REASON" property="deniedReason" javaType="java.lang.String" />
-    <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.search.entities.JobEntity$ListenerEventType" />
-    <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
-    <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
-    <result column="CREATION_TIME" property="creationTime" javaType="java.time.OffsetDateTime" />
-    <result column="LAST_UPDATE_TIME" property="lastUpdateTime" javaType="java.time.OffsetDateTime" />
   </resultMap>
 
 
