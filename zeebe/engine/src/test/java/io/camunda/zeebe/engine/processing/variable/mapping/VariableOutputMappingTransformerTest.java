@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -88,6 +90,16 @@ public final class VariableOutputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':{'d':2}, 'e':3}")),
         "{'a':{'b':{'c':1, 'd':2}, 'e':3}}"
       },
+      // sibling preservation at BOTH nesting levels at once
+      {
+        List.of(mapping("x", "a.b.new")),
+        Map.of("x", asMsgPack("9"), "a", asMsgPack("{'b':{'keep':1}, 'top':2}")),
+        "{'a':{'b':{'keep':1, 'new':9}, 'top':2}}"
+      },
+      // a null merge base takes the "replace", not "merge", branch
+      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
+      // `context merge` on a non-context value silently nulls the variable instead of failing
+      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
       // override nested property
       {
         List.of(mapping("x", "a.b")),
@@ -116,6 +128,12 @@ public final class VariableOutputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':{'b':2}}"
       },
+      // same overlap, opposite declaration order: now "a.b" is dropped instead
+      {
+        List.of(mapping("y", "a.b"), mapping("x", "a")),
+        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+        "{'a':1}"
+      },
       // source FEEL expression
       {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
       {List.of(mapping("\"foo\"", "a")), Map.of(), "{'a':'foo'}"},
@@ -130,6 +148,19 @@ public final class VariableOutputMappingTransformerTest {
         List.of(mapping("append(x, y)", "a")),
         Map.of("x", asMsgPack("[1,2]"), "y", asMsgPack("3")),
         "{'a':[1,2,3]}"
+      },
+      // a later entry's back-reference resolves the POST-merge value of an earlier entry sharing
+      // its root key
+      {
+        List.of(mapping("1", "a.b"), mapping("a", "d")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'a':{'p':0, 'b':1}, 'd':{'p':0, 'b':1}}"
+      },
+      // same back-reference, opposite declaration order: now it sees the PRE-merge value instead
+      {
+        List.of(mapping("a", "d"), mapping("1", "a.b")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'a':{'p':0, 'b':1}, 'd':{'p':0}}"
       },
     };
   }
@@ -189,6 +220,30 @@ public final class VariableOutputMappingTransformerTest {
     assertThat(result.isFailure()).isTrue();
 
     Assertions.assertThat(result.getFailureMessage()).isEqualTo(failureMessage);
+  }
+
+  @Test
+  @Disabled(
+      "Output-mapping target-regrouping still breaks declaration order - #58801 fixed "
+          + "this for input mappings only. Tracked under #56387 (mapping ordering).")
+  void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
+    // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
+    // see c's just-assigned value
+    final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
+    final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1, 'd':1}, 'c':1}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
