@@ -187,7 +187,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         channel.write(buffer);
       }
 
-      if (snapshotChunk.getTotalFileSize() == channel.position()) {
+      if (snapshotChunk.getTotalFileSize()
+          == snapshotChunk.getFileBlockPosition() + snapshotChunk.getContentLength()) {
         channel.force(true);
       }
     } catch (final IOException e) {
