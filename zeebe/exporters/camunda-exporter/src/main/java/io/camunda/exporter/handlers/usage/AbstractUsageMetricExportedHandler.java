@@ -11,7 +11,7 @@ import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.E
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.TU;
 
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.usage.AbstractUsageMetricExportedHandler.Batch;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 abstract class AbstractUsageMetricExportedHandler<
         T extends ExporterEntity<T>, B extends Batch<B, T>>
-    implements ExportHandler<B, UsageMetricRecordValue> {
+    implements MainIndexExporterHandler<B, UsageMetricRecordValue> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String indexName;

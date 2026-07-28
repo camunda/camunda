@@ -20,7 +20,7 @@ import io.camunda.zeebe.util.modelreader.ProcessModelReader.EmbeddedForm;
 import java.util.List;
 import java.util.Optional;
 
-public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Process> {
+public class EmbeddedFormHandler implements MainIndexExporterHandler<EmbeddedFormBatch, Process> {
 
   private static final String FORM_ID_PATTERN = "%s_%s";
   private final String indexName;

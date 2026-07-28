@@ -19,7 +19,8 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
-public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity, GroupRecordValue> {
+public class GroupEntityAddedHandler
+    implements MainIndexExporterHandler<GroupMemberEntity, GroupRecordValue> {
 
   private final String indexName;
 

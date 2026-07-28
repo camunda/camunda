@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import java.util.List;
 
 public class AuthorizationDeletedHandler
-    implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+    implements MainIndexExporterHandler<AuthorizationEntity, AuthorizationRecordValue> {
   private final String indexName;
 
   public AuthorizationDeletedHandler(final String indexName) {

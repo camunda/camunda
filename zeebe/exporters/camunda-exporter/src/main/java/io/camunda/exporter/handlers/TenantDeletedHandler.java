@@ -20,7 +20,8 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+public class TenantDeletedHandler
+    implements MainIndexExporterHandler<TenantEntity, TenantRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS = Set.of(TenantIntent.DELETED);
   private final String indexName;
 

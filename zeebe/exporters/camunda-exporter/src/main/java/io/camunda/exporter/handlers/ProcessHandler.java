@@ -24,7 +24,7 @@ import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
+public class ProcessHandler implements MainIndexExporterHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;

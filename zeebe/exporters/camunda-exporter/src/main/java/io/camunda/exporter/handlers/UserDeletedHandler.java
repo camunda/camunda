@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class UserDeletedHandler implements ExportHandler<UserEntity, UserRecordValue> {
+public class UserDeletedHandler implements MainIndexExporterHandler<UserEntity, UserRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS = Set.of(UserIntent.DELETED);
   private final String indexName;
 

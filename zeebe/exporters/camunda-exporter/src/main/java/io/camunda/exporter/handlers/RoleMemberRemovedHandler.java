@@ -19,7 +19,8 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity, RoleRecordValue> {
+public class RoleMemberRemovedHandler
+    implements MainIndexExporterHandler<RoleMemberEntity, RoleRecordValue> {
   private final String indexName;
 
   public RoleMemberRemovedHandler(final String indexName) {
