@@ -230,15 +230,15 @@ public class PingHubRunnerIT {
   void shouldRejectReservedTokenRequestParameters() {
     // given
     final String baseUrl = "http://localhost:" + wireMockServer.port();
-    final M2MCredentials credentials =
-        new M2MCredentials(
-            URI.create(baseUrl + "/token"),
-            "test-client-id",
-            "test-client-secret",
-            Map.of("client_secret", "override"));
 
     // when - then
-    assertThatThrownBy(() -> new M2MTokenProvider(credentials))
+    assertThatThrownBy(
+            () ->
+                new M2MCredentials(
+                    URI.create(baseUrl + "/token"),
+                    "test-client-id",
+                    "test-client-secret",
+                    Map.of("client_secret", "override")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("client_secret")
         .hasMessageContaining("cannot be overridden");

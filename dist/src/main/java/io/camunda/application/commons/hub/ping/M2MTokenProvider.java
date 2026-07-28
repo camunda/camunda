@@ -18,7 +18,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +27,6 @@ public class M2MTokenProvider {
   private static final int TOKEN_EXPIRY_BUFFER_SECONDS = 30;
   private static final int MAX_RESPONSE_LOG_LENGTH = 500;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final Set<String> RESERVED_PARAMETERS =
-      Set.of("grant_type", "client_id", "client_secret");
-
   private final HttpClient httpClient;
   private final M2MCredentials credentials;
   private volatile String cachedToken;
@@ -44,7 +40,6 @@ public class M2MTokenProvider {
   public M2MTokenProvider(final M2MCredentials credentials, final HttpClient httpClient) {
     this.credentials = credentials;
     this.httpClient = httpClient;
-    validateTokenRequestParameters(credentials.tokenRequestParameters());
   }
 
   public synchronized String getToken() throws IOException, InterruptedException {
@@ -62,11 +57,9 @@ public class M2MTokenProvider {
             .append(encode(credentials.clientId()))
             .append("&client_secret=")
             .append(encode(credentials.clientSecret()));
-    if (credentials.tokenRequestParameters() != null) {
-      credentials.tokenRequestParameters().entrySet().stream()
-          .sorted(Map.Entry.comparingByKey())
-          .forEach(entry -> appendParameter(requestBody, entry.getKey(), entry.getValue()));
-    }
+    credentials.tokenRequestParameters().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .forEach(entry -> appendParameter(requestBody, entry.getKey(), entry.getValue()));
 
     final HttpRequest request =
         HttpRequest.newBuilder()
@@ -108,26 +101,6 @@ public class M2MTokenProvider {
     if (value != null && !value.isBlank()) {
       requestBody.append('&').append(encode(name)).append('=').append(encode(value));
     }
-  }
-
-  private static void validateTokenRequestParameters(final Map<String, String> parameters) {
-    if (parameters == null) {
-      return;
-    }
-    parameters
-        .keySet()
-        .forEach(
-            name -> {
-              if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException(
-                    "Token request parameter names must not be blank.");
-              }
-              if (RESERVED_PARAMETERS.contains(name)) {
-                throw new IllegalArgumentException(
-                    "Token request parameter '%s' is managed by Camunda and cannot be overridden."
-                        .formatted(name));
-              }
-            });
   }
 
   private static String encode(final String value) {
