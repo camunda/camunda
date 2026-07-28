@@ -51,6 +51,8 @@ public enum LeadershipTransferResult {
    * to cannot be frozen.
    */
   CONFIGURATION_CHANGE_IN_PROGRESS,
+  /** The leader could not freeze the partition for the transfer. */
+  PAUSE_FAILED,
   /** The desired leader did not finish replicating within {@code replicationTimeout}. */
   REPLICATION_TIMED_OUT,
   /** TimeoutNow did not move leadership within {@code maxTransferAttempts}. */

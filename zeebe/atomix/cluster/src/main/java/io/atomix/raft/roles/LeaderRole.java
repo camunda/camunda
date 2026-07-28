@@ -78,6 +78,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private static final int MAX_APPEND_ATTEMPTS = 5;
   private final LeaderAppender appender;
+  private final LeadershipTransferRunner leadershipTransferRunner;
   private Scheduled appendTimer;
   private long configuring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
@@ -95,6 +96,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
+    leadershipTransferRunner = new LeadershipTransferRunner(context, this);
   }
 
   @Override
@@ -430,6 +432,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
+    leadershipTransferRunner.onLeaderStopped();
     // Paused mode always exits on a role transition (stop() runs when leadership is lost).
     clearTransferPause();
   }
@@ -502,6 +505,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return;
     }
     log.warn("Partition still paused after the resume deadline; stepping down to follower");
+    leadershipTransferRunner.onPauseDeadlineExpired();
     clearTransferPause();
     raft.transition(RaftServer.Role.FOLLOWER);
   }
@@ -518,6 +522,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .observePauseDuration(
               Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
+    leadershipTransferRunner.onPauseCleared();
   }
 
   /**
