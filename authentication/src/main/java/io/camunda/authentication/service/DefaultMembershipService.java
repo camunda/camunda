@@ -19,6 +19,7 @@ import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -79,11 +80,17 @@ public class DefaultMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    // OIDC groups-claim path: in-memory extraction. distinct() matches NoDBMembershipService and
-    // the previous Set-based semantics.
     if (isGroupsClaimConfigured) {
-      final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
-      return extracted != null ? extracted.stream().distinct().toList() : List.of();
+      // OIDC groups-claim path: groups come from the token directly, with no DB lookup. distinct()
+      // removes duplicates, keeping parity with NoDBMembershipService and the original Set-based
+      // result.
+      return OidcClaimExtractor.extractOrFallback(
+              () -> oidcGroupsExtractor.extract(query.tokenClaims()),
+              List.<String>of(),
+              "membership.groupIds.default")
+          .stream()
+          .distinct()
+          .toList();
     }
     final var owners = buildOwners(query);
     final var ids =
