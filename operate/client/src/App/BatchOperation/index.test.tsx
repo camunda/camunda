@@ -14,7 +14,7 @@ import {
   waitForElementToBeRemoved,
   waitFor,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {Paths} from 'modules/Routes';
 import type {BatchOperation as BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';

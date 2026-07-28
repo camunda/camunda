@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {Header} from '../index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
 import {Paths} from 'modules/Routes';

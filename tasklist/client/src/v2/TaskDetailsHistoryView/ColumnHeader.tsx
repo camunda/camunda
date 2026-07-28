@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {TableHeader} from '@carbon/react';
 import {getSortParams, toggleSorting, INITIAL_SORT_ORDER} from './sortUtils';
 import {z} from 'zod';

@@ -14,7 +14,7 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {BatchOperations} from './';
 import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.9';

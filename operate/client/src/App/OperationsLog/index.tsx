@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router';
 import {PAGE_TITLE} from 'modules/constants';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';

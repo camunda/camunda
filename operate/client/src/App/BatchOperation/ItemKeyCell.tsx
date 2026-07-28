@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link} from 'react-router-dom';
+import {Link} from 'react-router';
 
 type Props = {
   itemKey: string;

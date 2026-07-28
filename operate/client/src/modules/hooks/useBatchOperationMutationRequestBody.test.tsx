@@ -7,7 +7,7 @@
  */
 
 import {renderHook} from '@testing-library/react';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {useBatchOperationMutationRequestBody} from './useBatchOperationMutationRequestBody';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';

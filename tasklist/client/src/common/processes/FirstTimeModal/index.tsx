@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {Modal} from 'common/components/Modal';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';

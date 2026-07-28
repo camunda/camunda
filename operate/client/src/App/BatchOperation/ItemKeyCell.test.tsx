@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {ItemKeyCell} from './ItemKeyCell';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (

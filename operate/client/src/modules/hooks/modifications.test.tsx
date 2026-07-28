@@ -19,7 +19,7 @@ import {
 import {modificationsStore} from 'modules/stores/modifications';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {
   mockProcessWithInputOutputMappingsXML,

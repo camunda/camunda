@@ -14,7 +14,7 @@ import {
   useNavigate,
   useRevalidator,
   useRouteError,
-} from 'react-router-dom';
+} from 'react-router';
 import {pages, useTaskDetailsParams} from 'common/routing';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import {

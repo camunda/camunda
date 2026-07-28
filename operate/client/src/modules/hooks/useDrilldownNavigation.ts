@@ -7,7 +7,7 @@
  */
 
 import {useState, useTransition} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';

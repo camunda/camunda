@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation, matchPath, useNavigate} from 'react-router-dom';
+import {useLocation, matchPath, useNavigate} from 'react-router';
 import {
   migrateUrlParams,
   PROCESS_INSTANCE_PARAM_MIGRATION,

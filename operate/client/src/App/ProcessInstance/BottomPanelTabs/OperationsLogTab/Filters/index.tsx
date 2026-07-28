@@ -13,7 +13,7 @@ import {
   type ProcessInstanceOperationsLogFilters,
 } from '../operationsLogFilters';
 import {updateFiltersSearchString} from 'modules/utils/filter';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {Stack} from '@carbon/react';
 import {FilterMultiselect} from 'modules/components/FilterMultiSelect';

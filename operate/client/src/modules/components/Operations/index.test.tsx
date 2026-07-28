@@ -11,7 +11,7 @@ import {Operations} from './index';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 const getWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {

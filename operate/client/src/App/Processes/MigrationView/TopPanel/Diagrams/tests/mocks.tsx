@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 
 type Props = {
   children?: React.ReactNode;

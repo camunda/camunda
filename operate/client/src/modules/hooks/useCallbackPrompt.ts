@@ -7,7 +7,7 @@
  */
 
 import {useCallback} from 'react';
-import {useBlocker, type Location} from 'react-router-dom';
+import {useBlocker, type Location} from 'react-router';
 
 /**
  * This effect interrupts the browser navigation whenever changes are detected in the URL.

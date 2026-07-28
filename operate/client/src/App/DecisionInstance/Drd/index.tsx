@@ -8,7 +8,7 @@
 
 import {useEffect, useRef} from 'react';
 import {observer} from 'mobx-react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {PanelHeader, Container, Stack} from './styled';

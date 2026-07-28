@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useParams} from 'react-router-dom';
+import {useParams} from 'react-router';
 import {getClientConfig} from 'common/config/getClientConfig';
 
 /* istanbul ignore file */

@@ -8,7 +8,7 @@
 
 import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   Button,
   ContainedList,

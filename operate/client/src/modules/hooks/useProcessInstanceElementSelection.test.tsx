@@ -9,7 +9,7 @@
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';

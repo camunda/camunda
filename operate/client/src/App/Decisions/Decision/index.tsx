@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';

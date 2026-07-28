@@ -25,7 +25,7 @@ import type {
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {useLocation, useSearchParams} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {InstanceOperations} from './InstanceOperations';

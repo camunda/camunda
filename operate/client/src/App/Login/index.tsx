@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {PAGE_TITLE} from 'modules/constants';

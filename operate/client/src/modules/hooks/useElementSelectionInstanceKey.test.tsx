@@ -13,7 +13,7 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {searchResult} from 'modules/testUtils';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 

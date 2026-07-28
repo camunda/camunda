@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {useCallback} from 'react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';

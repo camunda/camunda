@@ -16,7 +16,7 @@ import {
 } from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,

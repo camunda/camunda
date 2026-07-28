@@ -9,7 +9,7 @@
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {render, screen} from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {OperationsActions} from './OperationActions';
 import {mockCancelBatchOperation} from 'modules/mocks/api/v2/batchOperations/cancelBatchOperation';
 import {mockSuspendBatchOperation} from 'modules/mocks/api/v2/batchOperations/suspendBatchOperation';

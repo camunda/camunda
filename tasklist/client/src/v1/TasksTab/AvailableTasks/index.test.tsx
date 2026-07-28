@@ -13,7 +13,7 @@ import {
   within,
 } from 'common/testing/testing-library';
 import {AvailableTasks} from './index';
-import {Link, MemoryRouter} from 'react-router-dom';
+import {Link, MemoryRouter} from 'react-router';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as tasksMocks from 'v1/mocks/tasks';

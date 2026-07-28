@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useMemo, useState} from 'react';
-import {useLocation, useSearchParams} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
 import {formatDate} from 'modules/utils/date';
 import {parseSortParamsV2} from 'modules/utils/filter';

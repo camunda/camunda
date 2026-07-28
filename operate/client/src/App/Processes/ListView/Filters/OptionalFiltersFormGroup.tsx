@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router';
 import {type FieldValidator} from 'final-form';
 import {Close} from '@carbon/react/icons';
 import intersection from 'lodash/intersection';

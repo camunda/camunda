@@ -21,7 +21,7 @@ import {
 import {Paths} from 'modules/Routes';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';

@@ -14,7 +14,7 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {InstancesTable} from './index';
-import {Routes, Route, MemoryRouter} from 'react-router-dom';
+import {Routes, Route, MemoryRouter} from 'react-router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';

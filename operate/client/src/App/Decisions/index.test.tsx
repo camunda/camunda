@@ -7,7 +7,7 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Decisions} from './';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {notificationsStore} from 'modules/stores/notifications';

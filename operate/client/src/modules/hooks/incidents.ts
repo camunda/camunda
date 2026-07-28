@@ -13,7 +13,7 @@ import {
   type Incident,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {parseSortParamsV2} from 'modules/utils/filter';
 import {useMemo} from 'react';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';

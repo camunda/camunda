@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { spacing01, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";

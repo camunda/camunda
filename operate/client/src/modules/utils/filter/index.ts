@@ -8,7 +8,7 @@
 
 import {parse, isValid} from 'date-fns';
 import {getSearchString} from 'modules/utils/getSearchString';
-import type {Location} from 'react-router-dom';
+import type {Location} from 'react-router';
 import {getProcessInstanceFilters} from './getProcessInstanceFilters';
 import {
   PROCESS_INSTANCE_FILTER_FIELDS,

@@ -14,7 +14,7 @@ import {
   type NavigateFunction,
   useBeforeUnload,
   useNavigate,
-} from 'react-router-dom';
+} from 'react-router';
 import {tracking} from 'common/tracking';
 import {pages} from 'common/routing';
 import type {TaskFilters as V1TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';

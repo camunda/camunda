@@ -10,7 +10,7 @@ import {Filters} from './index';
 import {render, screen} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 
 function getWrapper(initialPath = '/processes/123') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {

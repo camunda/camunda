@@ -13,7 +13,7 @@ import {InstancesList} from '../Layout/InstancesList';
 import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 

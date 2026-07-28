@@ -17,7 +17,7 @@ import {
 } from 'common/testing/testing-library';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse, type PathParams} from 'msw';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {Component} from './index';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import * as formMocks from 'v2/mocks/form';

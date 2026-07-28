@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router-dom';
+import {Navigate, Outlet, useLocation} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';

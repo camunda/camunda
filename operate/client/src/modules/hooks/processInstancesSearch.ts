@@ -11,7 +11,7 @@ import {
   parseProcessInstancesSearchSort,
 } from 'modules/utils/filter/v2/processInstancesSearch';
 import {useMemo} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import type {Variable} from 'modules/stores/variableFilter';
 

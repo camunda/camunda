@@ -8,7 +8,7 @@
 
 import {Component} from './index';
 import {Component as LayoutComponent} from 'v2/TaskDetailsLayout';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {
   render,
   screen,

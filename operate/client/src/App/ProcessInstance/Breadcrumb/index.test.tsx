@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Breadcrumb} from './index';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
 import {

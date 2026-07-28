@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router';
 import {observer} from 'mobx-react';
 import {Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';

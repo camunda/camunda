@@ -20,7 +20,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router';
 import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 
 vi.mock('modules/stores/notifications', () => ({

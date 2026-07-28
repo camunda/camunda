@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link as BaseLink} from 'react-router-dom';
+import {Link as BaseLink} from 'react-router';
 
 type Props = {
   children: React.ReactNode;

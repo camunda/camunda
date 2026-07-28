@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router';
 import {TableBatchAction, Stack} from '@carbon/react';
 import {Move} from '@carbon/react/icons';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';

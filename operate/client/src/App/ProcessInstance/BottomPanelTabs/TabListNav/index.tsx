@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, type Path} from 'react-router-dom';
+import {useLocation, useNavigate, type Path} from 'react-router';
 import {Tag} from '@carbon/react';
 import {cn} from './cn';
 import {Nav, Button} from './styled';

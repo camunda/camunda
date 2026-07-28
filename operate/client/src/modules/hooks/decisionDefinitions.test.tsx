@@ -10,7 +10,7 @@ import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {searchResult} from 'modules/testUtils';
 import {createDecisionDefinition} from 'modules/mocks/mockDecisionDefinitions';
