@@ -30,7 +30,7 @@ import org.springframework.web.method.HandlerMethod;
 @SuppressWarnings({"unchecked", "rawtypes"})
 class SecondaryStorageInterceptorTest {
 
-  private static final String PHYSICAL_TENANT_ID = "tenant-a";
+  private static final String PHYSICAL_TENANT_ID = "tenanta";
 
   private HttpServletRequest request;
   private HttpServletResponse response;

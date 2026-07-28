@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 class SecondaryStorageReadinessMetricsTest {
 
   private static final String METRIC_NAME = "camunda.physical.tenant.secondary.storage.ready";
-  private static final String TENANT_A = "tenant-a";
-  private static final String TENANT_B = "tenant-b";
+  private static final String TENANT_A = "tenanta";
+  private static final String TENANT_B = "tenantb";
 
   private SimpleMeterRegistry meterRegistry;
   private Set<String> readyTenants;
