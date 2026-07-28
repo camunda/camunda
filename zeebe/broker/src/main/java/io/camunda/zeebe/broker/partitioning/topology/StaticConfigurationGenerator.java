@@ -85,13 +85,14 @@ public final class StaticConfigurationGenerator {
 
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
       final PartitioningCfg config) {
-    final var distributionBuilder =
-        new FixedPartitionDistributorBuilder(PartitionManagerImpl.DEFAULT_GROUP_NAME);
+    final var distributionBuilder = new FixedPartitionDistributorBuilder();
 
     for (final var partition : config.getFixed()) {
       for (final var node : partition.getNodes()) {
         distributionBuilder.assignMember(
-            partition.getPartitionId(), node.getNodeId(), node.getPriority());
+            new PartitionId(partition.getPhysicalTenantId(), partition.getPartitionId()),
+            node.getNodeId(),
+            node.getPriority());
       }
     }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +25,8 @@ public class FixedPartition {
    * #DEFAULT_PARTITION_ID} (1).
    */
   private int partitionId = DEFAULT_PARTITION_ID;
+
+  private String physicalTenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   /**
    * The list of nodes assigned to this fixed partition configuration. Initialized as an empty list.
@@ -45,6 +48,14 @@ public class FixedPartition {
     this.partitionId = partitionId;
   }
 
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public void setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+  }
+
   public List<Node> getNodes() {
     return nodes;
   }
@@ -56,6 +67,7 @@ public class FixedPartition {
   public FixedPartitionCfg toFixedPartitionCfg() {
     final var fixedPartitionCfg = new FixedPartitionCfg();
     fixedPartitionCfg.setPartitionId(partitionId);
+    fixedPartitionCfg.setPhysicalTenantId(physicalTenantId);
     fixedPartitionCfg.setNodes(nodes.stream().map(Node::toNodeCfg).toList());
     return fixedPartitionCfg;
   }
