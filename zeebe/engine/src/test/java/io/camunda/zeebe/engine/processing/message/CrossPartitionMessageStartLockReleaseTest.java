@@ -38,21 +38,21 @@ import org.junit.Test;
 /**
  * Multi-partition behavioural pin for the pull-based correlation-key lock release. A message-start
  * instance created via the cross-partition handshake runs on {@code P_B = hash(businessId)} while
- * the correlation-key lock it holds lives on {@code P_K = hash(correlationKey)}; {@code P_K} cannot
- * observe that holder completing, so it polls {@code P_B} and releases the lock when the holder is
- * gone. These tests exercise that whole loop — scheduler on {@code P_K} → query handler on {@code
- * P_B} → release reply on {@code P_K} → buffered-message pick-up — through the real inter-partition
- * transport.
+ * the correlation-key lock it holds lives on {@code P_K = hash(correlationKey)}. On holder
+ * completion or termination {@code P_B} pushes a release straight to {@code P_K} (the fast path);
+ * {@code P_K} also reconciles periodically as a slow-path backstop for lost pushes. These tests
+ * exercise that whole loop — scheduler on {@code P_K} → query handler on {@code P_B} → release
+ * reply on {@code P_K} → buffered-message pick-up — through the real inter-partition transport.
  *
  * <p>Component-level behaviour that does not need the full transport is pinned with the code it
- * belongs to and is intentionally <em>not</em> re-tested here: the scheduler's back-off doubling /
- * cap and per-partition batching live in {@code
+ * belongs to and is intentionally <em>not</em> re-tested here: the scheduler's per-partition
+ * batching and stateless per-tick reconciliation live in {@code
  * CrossPartitionMessageStartLockReleaseSchedulerTest}; the {@code P_B} query outcomes (active /
  * gone / banned) live in {@code MessageStartCorrelationKeyLockReleaseQueryProcessorTest}; and the
  * {@code P_K} release handler's holder-precise idempotency guard lives in {@code
  * MessageStartCorrelationKeyLockReleaseReleaseProcessorTest}. Restart / leadership recovery is a
- * property of the transient back-off bookkeeping being rebuilt from local lock state (covered by
- * the scheduler unit test's reconcile case) and needs no dedicated multi-partition pin.
+ * property of the poll set being reconstructed from local lock state each tick (covered by the
+ * scheduler unit test's reconcile case) and needs no dedicated multi-partition pin.
  *
  * <p>The constants are chosen so {@code hash(correlationKey) != hash(businessId)}; an
  * {@code @Before} precondition fails loudly if a future hash change degenerates the scenario into a
@@ -70,9 +70,6 @@ public final class CrossPartitionMessageStartLockReleaseTest {
 
   private static final long LONG_TTL = Duration.ofMinutes(5).toMillis();
   private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
-  // Advanced well past a single lock's back-off so a second poll round is guaranteed to fire while
-  // the holder is still active (used as a "lock survived a full round" fence).
-  private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
   // Auto-completing message-start process: the holder completes on P_B on its own (the engine's job
   // client writes to the primary partition and could not complete a job living on P_B).
@@ -324,10 +321,10 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     // and a second same-correlation-key publish buffered behind the lock
     publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, null);
 
-    // when the release poll fires, then fires again past the back-off
+    // when the reconciliation poll fires, then fires again on the next tick
     engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
     awaitQueryRounds(1);
-    engine.increaseTime(MAX_BACKOFF);
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
 
     // then a SECOND query round is observed — which can only happen if the lock still exists, i.e.
     // round 1 did not release the still-active holder. This re-query is the fence that proves the

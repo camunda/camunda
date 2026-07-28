@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageState.CrossPartitionStartL
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -34,23 +33,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Verifies the {@code P_K}-side release-poll scheduler in isolation: it walks the cross-partition
- * lock entries, groups them by the partition each holder lives on, batches one query per partition,
- * backs off per entry, and skips entries whose holder is local.
+ * Verifies the {@code P_K}-side release-reconciliation scheduler in isolation: it walks the
+ * cross-partition lock entries, groups them by the partition each holder lives on, batches one
+ * query per partition up to the batch limit, and skips entries whose holder is local. The scheduler
+ * holds no transient bookkeeping — every tick reconciles purely from the current lock state.
  */
 public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
 
-  private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
-  private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
+  private static final Duration POLL_INTERVAL = Duration.ofSeconds(30);
   private static final int LOCAL_PARTITION = 1;
-  private static final long NOW = 100_000L;
 
   private SubscriptionCommandSender mockCommandSender;
   private MessageState mockMessageState;
   private ProcessingScheduleService mockScheduleService;
   private ReadonlyStreamProcessorContext mockContext;
-  private StreamClock mockClock;
-  private final long[] now = {NOW};
   private int batchLimit;
   private final List<Lock> locks = new ArrayList<>();
 
@@ -62,12 +58,9 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
     mockMessageState = mock(MessageState.class);
     mockScheduleService = mock(ProcessingScheduleService.class);
     mockContext = mock(ReadonlyStreamProcessorContext.class);
-    mockClock = mock(StreamClock.class);
     batchLimit = 64;
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
-    when(mockContext.getClock()).thenReturn(mockClock);
-    when(mockClock.millis()).thenAnswer(invocation -> now[0]);
 
     // replay the configured locks to the visitor on every visit call
     doAnswer(
@@ -91,7 +84,6 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
             mockCommandSender,
             mockMessageState,
             () -> POLL_INTERVAL,
-            () -> MAX_BACKOFF,
             () -> batchLimit);
     scheduler.onRecovered(mockContext);
   }
@@ -156,17 +148,21 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   }
 
   @Test
-  void shouldRespectBatchLimitAndPollRemainderOnNextTick() {
+  void shouldCapEachQueryAtBatchLimitAndReconcileRemainderOnNextTick() {
     // given two holders on the same partition but a batch limit of one
     batchLimit = 1;
     addLock("wf", "ck-a", holderKeyOnPartition(2, 1));
     addLock("wf", "ck-b", holderKeyOnPartition(2, 2));
 
-    // when the scheduler runs twice within the same tick
-    scheduler.run();
+    // when the first tick runs, only the first holder is batched
     scheduler.run();
 
-    // then each run dispatches a single-holder query and both holders are eventually polled
+    // and after its lock is reaped (its holder completed and the lock was released), the next tick
+    // reconciles the remainder
+    removeLock("ck-a");
+    scheduler.run();
+
+    // then each tick dispatched a single-holder query and both holders were eventually reconciled
     final var queryCaptor =
         ArgumentCaptor.forClass(MessageStartCorrelationKeyLockReleaseRecord.class);
     verify(mockCommandSender, org.mockito.Mockito.times(2))
@@ -177,7 +173,7 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
             .peek(q -> assertThat(q.getHolders()).hasSize(1))
             .map(q -> q.getHolders().getFirst().getCorrelationKey())
             .toList();
-    assertThat(polledCorrelationKeys).containsExactlyInAnyOrder("ck-a", "ck-b");
+    assertThat(polledCorrelationKeys).containsExactly("ck-a", "ck-b");
   }
 
   @Test
@@ -194,61 +190,8 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   }
 
   @Test
-  void shouldBackOffEntryAfterPolling() {
-    // given a single lock
-    addLock("wf", "ck", holderKeyOnPartition(2, 1));
-
-    // when polled, then re-run within the back-off window
-    scheduler.run();
-    scheduler.run();
-
-    // then no second query is sent while the entry is still backing off
-    verify(mockCommandSender, org.mockito.Mockito.times(1))
-        .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
-
-    // when the back-off interval elapses
-    now[0] += POLL_INTERVAL.toMillis();
-    scheduler.run();
-
-    // then the entry is polled again
-    verify(mockCommandSender, org.mockito.Mockito.times(2))
-        .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
-  }
-
-  @Test
-  void shouldDoubleBackOffIntervalExponentiallyUpToMaxBackoff() {
-    // given a single lock whose holder stays alive across many polls
-    addLock("wf", "ck", holderKeyOnPartition(2, 1));
-
-    // the first poll happens immediately on the tick the lock is first observed
-    scheduler.run();
-    verify(mockCommandSender, org.mockito.Mockito.times(1))
-        .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
-
-    // the wait before each subsequent poll doubles (1s, 2s, 4s, 8s, 16s) and then caps at the
-    // max back-off (30s, not 32s) and stays there
-    final long[] expectedGapsMillis = {1_000, 2_000, 4_000, 8_000, 16_000, 30_000, 30_000};
-
-    int expectedPolls = 1;
-    for (final long gap : expectedGapsMillis) {
-      // just before the gap elapses the entry is not yet eligible
-      now[0] += gap - 1;
-      scheduler.run();
-      verify(mockCommandSender, org.mockito.Mockito.times(expectedPolls))
-          .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
-
-      // exactly at the gap boundary it is polled again
-      now[0] += 1;
-      scheduler.run();
-      expectedPolls++;
-      verify(mockCommandSender, org.mockito.Mockito.times(expectedPolls))
-          .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
-    }
-  }
-
-  @Test
-  void shouldDropBackOffBookkeepingWhenLockDisappearsAndResetWhenItReappears() {
-    // given a lock that has been polled and is now backing off
+  void shouldReconcilePurelyFromCurrentLockStateEachTick() {
+    // given a lock that has been reconciled once
     addLock("wf", "ck", holderKeyOnPartition(2, 1));
     scheduler.run();
     verify(mockCommandSender, org.mockito.Mockito.times(1))
@@ -257,7 +200,7 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
     // when the lock disappears (its holder completed and the lock was released elsewhere)
     locks.clear();
     scheduler.run();
-    // then nothing is polled and the back-off bookkeeping for it is dropped
+    // then nothing is reconciled — the scheduler keeps no memory of the vanished lock
     verify(mockCommandSender, org.mockito.Mockito.times(1))
         .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
 
@@ -265,8 +208,8 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
     addLock("wf", "ck", holderKeyOnPartition(2, 2));
     scheduler.run();
 
-    // then it is treated as newly observed and polled immediately without inheriting the earlier
-    // back-off, even though the clock has not advanced
+    // then it is reconciled again purely from the current state, without inheriting anything from
+    // the earlier entry
     verify(mockCommandSender, org.mockito.Mockito.times(2))
         .sendDirectCorrelationKeyLockReleaseQuery(eq(2), any());
   }
@@ -286,6 +229,10 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   private void addLock(
       final String bpmnProcessId, final String correlationKey, final long holderKey) {
     locks.add(new Lock(bpmnProcessId, correlationKey, holderKey, "<default>"));
+  }
+
+  private void removeLock(final String correlationKey) {
+    locks.removeIf(lock -> lock.correlationKey.equals(correlationKey));
   }
 
   private static long holderKeyOnPartition(final int partition, final long sequence) {

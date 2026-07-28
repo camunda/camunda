@@ -66,16 +66,8 @@ public class ProcessInstanceCreationTest {
     void shouldSetDefaultMessageStartLockReleasePollInterval() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
           .returns(
-              Duration.ofSeconds(1),
-              ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval);
-    }
-
-    @Test
-    void shouldSetDefaultMessageStartLockReleasePollMaxBackoff() {
-      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(
               Duration.ofSeconds(30),
-              ProcessInstanceCreationCfg::getMessageStartLockReleasePollMaxBackoff);
+              ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval);
     }
 
     @Test
@@ -93,7 +85,6 @@ public class ProcessInstanceCreationTest {
         "camunda.process-instance-creation.message-start-dedup-expiration-sweep-batch-limit=250",
         "camunda.process-instance-creation.message-start-ask-retry-interval=5s",
         "camunda.process-instance-creation.message-start-lock-release-poll-interval=2s",
-        "camunda.process-instance-creation.message-start-lock-release-poll-max-backoff=45s",
         "camunda.process-instance-creation.message-start-lock-release-poll-batch-limit=128",
       })
   class WithOnlyUnifiedConfigSet {
@@ -116,9 +107,6 @@ public class ProcessInstanceCreationTest {
           .returns(
               Duration.ofSeconds(2),
               ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval)
-          .returns(
-              Duration.ofSeconds(45),
-              ProcessInstanceCreationCfg::getMessageStartLockReleasePollMaxBackoff)
           .returns(128, ProcessInstanceCreationCfg::getMessageStartLockReleasePollBatchLimit);
     }
   }
