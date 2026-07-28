@@ -11,7 +11,10 @@ import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
 import java.util.Map.Entry;
+=======
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,9 +75,13 @@ public class IndexSchemaValidator {
           filterIndexMappings(mappings, indexDescriptor);
       // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
+        final DifferingIndices differingIndices =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
         validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
+=======
+        validateDifferenceAndCollectNewFields(indexDescriptor, differingIndices, newFields);
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
       }
     }
     return newFields;
@@ -82,6 +89,7 @@ public class IndexSchemaValidator {
 
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
       final IndexMappingDifference difference,
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     if (difference != null && !difference.equal()) {
@@ -96,12 +104,35 @@ public class IndexSchemaValidator {
         // to collect any new fields, so we should continue to the next checks instead of making
         // this part of the if/else block
         failIfIndexNotDynamic(difference, indexDescriptor);
+=======
+      final DifferingIndices differingIndices,
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    if (differingIndices != null) {
+      final IndexMappingDifference difference = differingIndices.difference();
+      LOGGER.debug(
+          "Index fields differ from expected. Index names: {}. Difference: {}.",
+          differingIndices.indexNames(),
+          difference);
+
+      if (!difference.entriesDiffering().isEmpty()) {
+        final String errorMsg =
+            String.format(
+                "Index names: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
+                differingIndices.indexNames(), difference.entriesDiffering());
+        LOGGER.error(errorMsg);
+        throw new IndexSchemaValidationException(errorMsg);
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
       }
 
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
             "Index '{}': Field deletion is requested, will be ignored. Fields: {}",
             indexDescriptor.getIndexName(),
+=======
+            "Index names '{}': Field deletion is requested, will be ignored. Fields: {}",
+            differingIndices.indexNames(),
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
             difference.entriesOnlyOnRight());
 
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
@@ -113,29 +144,71 @@ public class IndexSchemaValidator {
     }
   }
 
-  private IndexMappingDifference getIndexMappingDifference(
+  private DifferingIndices getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.readIndex(indexDescriptor);
 
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
     final var differences =
         indexMappingsGroup.values().stream()
             .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
             .filter(difference -> !difference.equal())
             .distinct()
             .toList();
+=======
+    // sorted by index name so grouping and the reported index names are stable regardless of
+    // the source map's (HashMap) iteration order
+    final Map<IndexMappingDifference, List<String>> differencesByIndexName =
+        indexMappingsGroup.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(),
+                        filterOutDynamicProperties(
+                            IndexMappingDifference.of(indexMappingMustBe, entry.getValue()))))
+            // filtered after dynamic properties are stripped: `equal` is fixed at construction
+            // and won't reflect a diff that only turned out to be dynamic-property noise
+            .filter(entry -> hasRealDifference(entry.getValue()))
+            .collect(
+                Collectors.groupingBy(
+                    Map.Entry::getValue,
+                    LinkedHashMap::new,
+                    Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
 
-    if (differences.isEmpty()) {
+    if (differencesByIndexName.isEmpty()) {
       return null;
     }
 
+<<<<<<< HEAD:zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/schema/IndexSchemaValidator.java
     if (differences.size() > 1) {
+=======
+    if (differencesByIndexName.size() > 1) {
+      LOGGER.debug(
+          "Ambiguous schema update. Index names: {}. Difference: {}.",
+          indexMappingsGroup.keySet(),
+          differencesByIndexName);
+>>>>>>> 8a859b9a (fix: name specific index in schema validation error messages):schema-manager/src/main/java/io/camunda/search/schema/IndexSchemaValidator.java
       throw new IndexSchemaValidationException(
           String.format(
-              "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
-              indexDescriptor.getIndexName(), differences));
+              "Ambiguous schema update. Multiple indices for mapping '%s' have different fields. Differences by index: %s",
+              indexDescriptor.getIndexName(), differencesByIndexName));
     }
 
-    return differences.getFirst();
+    final var onlyEntry = differencesByIndexName.entrySet().iterator().next();
+    return new DifferingIndices(onlyEntry.getKey(), onlyEntry.getValue());
+  }
+
+  /**
+   * {@link IndexMappingDifference#equal()} is fixed at construction time and isn't recomputed by
+   * {@link #filterOutDynamicProperties}, so it can no longer be trusted after filtering. Checks the
+   * actual remaining entries instead.
+   */
+  private boolean hasRealDifference(final IndexMappingDifference difference) {
+    return !difference.entriesDiffering().isEmpty()
+        || !difference.entriesOnlyOnLeft().isEmpty()
+        || !difference.entriesOnlyOnRight().isEmpty();
   }
 
   /**
@@ -178,4 +251,6 @@ public class IndexSchemaValidator {
       throw new IndexSchemaValidationException(errorMsg);
     }
   }
+
+  private record DifferingIndices(IndexMappingDifference difference, List<String> indexNames) {}
 }
