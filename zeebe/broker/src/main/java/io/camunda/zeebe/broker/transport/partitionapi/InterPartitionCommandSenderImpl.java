@@ -24,8 +24,11 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
 
   public static final String LEGACY_TOPIC_PREFIX = "inter-partition-";
@@ -59,7 +62,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
   }
@@ -69,10 +72,10 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo) {
-    final MemberId partitionLeader = partitionLeaders.get(receiverPartitionId);
+      final @Nullable AuthInfo authInfo) {
+    final var partitionLeader = partitionLeaders.get(receiverPartitionId);
     if (partitionLeader == null) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
@@ -125,9 +128,9 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
-        final Long recordKey,
+        final @Nullable Long recordKey,
         final BufferWriter command,
-        final BufferWriter authInfo) {
+        final @Nullable BufferWriter authInfo) {
       final var commandLength = command.getLength();
       final var authInfoLength = authInfo != null ? authInfo.getLength() : 0;
       final var messageLength =
