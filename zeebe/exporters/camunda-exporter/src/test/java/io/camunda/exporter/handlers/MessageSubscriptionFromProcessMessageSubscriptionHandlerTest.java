@@ -12,12 +12,17 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -103,8 +108,11 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   }
 
   @Test
-  void testGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long processInstanceKey = 123L;
     final long elementInstanceKey = 456L;
     final var recordValue =
@@ -116,17 +124,20 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION, r -> r.withValue(recordValue));
 
-    // when
-    final var ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids)
-        .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(
+            new IdAndIndex(
+                String.format(ID_PATTERN, processInstanceKey, elementInstanceKey), index));
   }
 
   @Test
-  void shouldGenerateIdForNewVersionRecord() {
+  void shouldExtractIdAndIndexesForNewVersionRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 110L;
     exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey - 1);
     final var recordValue =
@@ -143,16 +154,20 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(idsAndIndexes).containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey - 1);
   }
 
   @Test
-  void shouldGenerateIdForOldVersionRecord() {
+  void shouldExtractIdAndIndexesForOldVersionRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 90L;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
@@ -171,17 +186,23 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids)
-        .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    assertThat(idsAndIndexes)
+        .containsExactly(
+            new IdAndIndex(
+                String.format(ID_PATTERN, processInstanceKey, elementInstanceKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey + 1);
   }
 
   @Test
   void shouldSetFirstProcessMessageSubscriptionKeyOnCreatedIntent() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 100L;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -197,10 +218,10 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(idsAndIndexes).containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey);
   }
 

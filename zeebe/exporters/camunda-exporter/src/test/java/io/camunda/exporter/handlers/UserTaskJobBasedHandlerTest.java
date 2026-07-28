@@ -8,16 +8,21 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -221,8 +226,12 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdForNewVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForNewVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 110;
@@ -241,16 +250,18 @@ public class UserTaskJobBasedHandlerTest {
                             .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(jobRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(flowNodeInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, jobRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(flowNodeInstanceKey), index));
   }
 
   @Test
-  void shouldGenerateIdForPreviousVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForPreviousVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 90;
@@ -269,11 +280,9 @@ public class UserTaskJobBasedHandlerTest {
                             .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(jobRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(recordKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, jobRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
   }
 
   @Test
