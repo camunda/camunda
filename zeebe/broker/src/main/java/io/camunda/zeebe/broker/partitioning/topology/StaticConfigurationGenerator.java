@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -29,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,15 +40,20 @@ public final class StaticConfigurationGenerator {
   private StaticConfigurationGenerator() {}
 
   public static StaticConfiguration getStaticConfiguration(
-      final BrokerCfg brokerCfg, final MemberId localMemberId) {
+      final BrokerCfg brokerCfg,
+      final Map<String, BrokerCfg> physicalTenantConfigs,
+      final MemberId localMemberId) {
     final var clusterCfg = brokerCfg.getCluster();
     final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
-    final var partitionCount = clusterCfg.getPartitionsCount();
     final var replicationFactor = clusterCfg.getReplicationFactor();
-
     final var partitionDistributor = getPartitionDistributor(partitioningCfg);
     final var clusterMembers = getRaftGroupMembers(clusterCfg, partitioningCfg);
-    final var partitionIds = getSortedPartitionIds(partitionCount);
+    final var partitionCountPerTenant =
+        physicalTenantConfigs.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey, e -> e.getValue().getCluster().getPartitionsCount()));
+    final var partitionIds = getSortedPartitionIds(partitionCountPerTenant);
     final var partitionConfig = generatePartitionConfig(brokerCfg);
     final var clusterId = clusterCfg.getClusterId();
 
@@ -127,10 +132,14 @@ public final class StaticConfigurationGenerator {
         .collect(Collectors.toSet());
   }
 
-  private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
+  private static List<PartitionId> getSortedPartitionIds(
+      final Map<String, Integer> partitionCountPerTenant) {
     // partition ids start from 1
-    return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(p -> new PartitionId(PartitionManagerImpl.DEFAULT_GROUP_NAME, p))
+    return partitionCountPerTenant.entrySet().stream()
+        .flatMap(
+            ptConfig ->
+                IntStream.rangeClosed(1, ptConfig.getValue())
+                    .mapToObj(p -> new PartitionId(ptConfig.getKey(), p)))
         .sorted()
         .toList();
   }

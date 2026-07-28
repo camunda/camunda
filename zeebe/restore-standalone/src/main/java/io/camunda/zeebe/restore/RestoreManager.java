@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
@@ -271,7 +272,10 @@ public class RestoreManager implements CloseableSilently {
         Path.of(configuration.getData().getDirectory())
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var staticConfiguration =
-        StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
+        StaticConfigurationGenerator.getStaticConfiguration(
+            configuration,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, configuration),
+            coordinatorId);
     final var initializer = new StaticInitializer<>(staticConfiguration::generateTopology);
     // it's ok to block, it's not really async
     final var base = initializer.initialize().get();
@@ -325,7 +329,10 @@ public class RestoreManager implements CloseableSilently {
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var clusterTopology =
         new PartitionDistribution(
-            StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
+            StaticConfigurationGenerator.getStaticConfiguration(
+                    configuration,
+                    Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, configuration),
+                    localMember)
                 .generatePartitionDistribution());
     final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 

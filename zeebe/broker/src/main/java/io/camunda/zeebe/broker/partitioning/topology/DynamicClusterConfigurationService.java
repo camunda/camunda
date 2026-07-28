@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -24,6 +25,8 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
@@ -212,8 +215,24 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
 
+    final Map<String, BrokerCfg> physicalTenantConfigs;
+
+    if (ClusterConfigurationManagerService.USE_NEW_CONFIG) {
+      physicalTenantConfigs =
+          brokerStartupContext.getPhysicalTenantIds().known().stream()
+              .collect(
+                  Collectors.toMap(
+                      id -> id, id -> brokerStartupContext.getPhysicalTenantContext(id).config()));
+    } else {
+      // Until we have a proper multi-tenant configuration, we cannot generate partition
+      // distribution for multiple tenants.
+      physicalTenantConfigs =
+          Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerConfiguration);
+    }
+
     final var staticConfiguration =
-        StaticConfigurationGenerator.getStaticConfiguration(brokerConfiguration, localMember);
+        StaticConfigurationGenerator.getStaticConfiguration(
+            brokerConfiguration, physicalTenantConfigs, localMember);
 
     return clusterConfigurationManagerService.start(
         brokerStartupContext.getActorSchedulingService(), staticConfiguration);

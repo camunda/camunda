@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
@@ -59,7 +61,10 @@ class StaticConfigurationGeneratorTest {
 
     // when
     final var partitionDistribution =
-        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("1"))
+        StaticConfigurationGenerator.getStaticConfiguration(
+                brokerCfg,
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
+                MemberId.from("1"))
             .generatePartitionDistribution();
 
     // then
@@ -125,13 +130,109 @@ fixed:
 
     // when
     final var partitionDistribution =
-        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("1"))
+        StaticConfigurationGenerator.getStaticConfiguration(
+                brokerCfg,
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
+                MemberId.from("1"))
             .generatePartitionDistribution();
 
     // then
     // FixedPartitionDistributorTest verifies more cases.
     final var actualDistribution = getDistribution(partitionDistribution);
     assertThat(actualDistribution).containsExactlyInAnyOrderEntriesOf(expectedDistribution);
+  }
+
+  @Test
+  void shouldGeneratePartitionsAcrossMultiplePhysicalTenants() {
+    // given -- two physical tenants, each with their own partition count
+    final PartitioningCfg partitioningCfg = new PartitioningCfg();
+    partitioningCfg.setScheme(Scheme.ROUND_ROBIN);
+    final ClusterCfg clusterCfg = new ClusterCfg();
+    clusterCfg.setClusterSize(3);
+    clusterCfg.setPartitionsCount(2);
+    clusterCfg.setReplicationFactor(3);
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    brokerCfg.setExporters(Map.of());
+
+    final ClusterCfg tenantBClusterCfg = new ClusterCfg();
+    tenantBClusterCfg.setClusterSize(3);
+    tenantBClusterCfg.setPartitionsCount(3);
+    tenantBClusterCfg.setReplicationFactor(3);
+    final BrokerCfg tenantBBrokerCfg = new BrokerCfg();
+    tenantBBrokerCfg.setCluster(tenantBClusterCfg);
+    tenantBBrokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    tenantBBrokerCfg.setExporters(Map.of());
+
+    final var physicalTenantConfigs = Map.of("tenantA", brokerCfg, "tenantB", tenantBBrokerCfg);
+
+    // when
+    final var staticConfiguration =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            brokerCfg, physicalTenantConfigs, MemberId.from("1"));
+
+    // then -- partition ids are generated per tenant, starting from 1 for each tenant
+    assertThat(staticConfiguration.partitionIds())
+        .containsExactlyInAnyOrder(
+            new PartitionId("tenantA", 1),
+            new PartitionId("tenantA", 2),
+            new PartitionId("tenantB", 1),
+            new PartitionId("tenantB", 2),
+            new PartitionId("tenantB", 3));
+
+    final var partitionDistribution = staticConfiguration.generatePartitionDistribution();
+    assertThat(partitionDistribution).hasSize(5);
+    assertThat(partitionDistribution.stream().map(PartitionMetadata::id))
+        .containsExactlyInAnyOrder(
+            new PartitionId("tenantA", 1),
+            new PartitionId("tenantA", 2),
+            new PartitionId("tenantB", 1),
+            new PartitionId("tenantB", 2),
+            new PartitionId("tenantB", 3));
+  }
+
+  @Test
+  void shouldGenerateFixedDistributionUsingConfiguredPhysicalTenantId() throws IOException {
+    // given -- fixed partitions explicitly assigned to different physical tenants
+    final String config =
+"""
+fixed:
+   - partitionId: 1
+     physicalTenantId: tenantA
+     nodes:
+       - nodeId: 0
+         priority: 1
+   - partitionId: 1
+     physicalTenantId: tenantB
+     nodes:
+       - nodeId: 1
+         priority: 1
+""";
+
+    final var partitioningCfg =
+        new ObjectMapper(new YAMLFactory()).readValue(config, PartitioningCfg.class);
+    final var clusterCfg = new ClusterCfg();
+    clusterCfg.setClusterSize(2);
+    clusterCfg.setReplicationFactor(1);
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    brokerCfg.setExporters(Map.of());
+
+    final var physicalTenantConfigs = Map.of("tenantA", brokerCfg, "tenantB", brokerCfg);
+
+    // when
+    final var partitionDistribution =
+        StaticConfigurationGenerator.getStaticConfiguration(
+                brokerCfg, physicalTenantConfigs, MemberId.from("0"))
+            .generatePartitionDistribution();
+
+    // then -- each partition is assigned to the members configured for its physical tenant
+    final var byId =
+        partitionDistribution.stream().collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    assertThat(byId.get(new PartitionId("tenantA", 1)).members()).containsExactly(member(0));
+    assertThat(byId.get(new PartitionId("tenantB", 1)).members()).containsExactly(member(1));
   }
 
   private static MemberId member(final int id) {
@@ -161,7 +262,10 @@ fixed:
 
     // when
     final var partitionDistribution =
-        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("us-east", 0))
+        StaticConfigurationGenerator.getStaticConfiguration(
+                brokerCfg,
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
+                MemberId.from("us-east", 0))
             .generatePartitionDistribution();
 
     // then — every partition has 3 members (RF=3)
@@ -173,6 +277,75 @@ fixed:
         p -> p.members().forEach(m -> assertThat(m.zone()).isNotNull().isIn("us-east", "us-west")));
 
     // Primary should be from the highest-priority zone (us-east)
+    partitionDistribution.forEach(
+        p -> assertThat(p.getPrimary().orElseThrow().isInZone("us-east")).isTrue());
+  }
+
+  @Test
+  void shouldGenerateZoneAwareDistributionAcrossMultiplePhysicalTenants() {
+    // given — 2 zones: us-east (2 brokers, 2 replicas), us-west (1 broker, 1 replica)
+    // and 2 physical tenants with a different number of partitions each
+    final var zoneAwareCfg =
+        new ZoneAwareCfg(
+            List.of(new ZoneCfg("us-east", 4, 2, 1000), new ZoneCfg("us-west", 2, 1, 500)));
+
+    final var partitioningCfg = new PartitioningCfg();
+    partitioningCfg.setScheme(Scheme.ZONE_AWARE);
+    partitioningCfg.setZoneAware(zoneAwareCfg);
+
+    final var clusterCfg = new ClusterCfg();
+    clusterCfg.setClusterSize(3);
+    clusterCfg.setPartitionsCount(2);
+    clusterCfg.setReplicationFactor(3);
+
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    brokerCfg.setExporters(Map.of());
+
+    final var tenantBClusterCfg = new ClusterCfg();
+    tenantBClusterCfg.setClusterSize(3);
+    tenantBClusterCfg.setPartitionsCount(3);
+    tenantBClusterCfg.setReplicationFactor(3);
+    final var tenantBBrokerCfg = new BrokerCfg();
+    tenantBBrokerCfg.setCluster(tenantBClusterCfg);
+    tenantBBrokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    tenantBBrokerCfg.setExporters(Map.of());
+
+    final var physicalTenantConfigs = Map.of("tenantA", brokerCfg, "tenantB", tenantBBrokerCfg);
+
+    // when
+    final var staticConfiguration =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            brokerCfg, physicalTenantConfigs, MemberId.from("us-east", 0));
+
+    // then -- partition ids are generated per tenant, starting from 1 for each tenant
+    assertThat(staticConfiguration.partitionIds())
+        .containsExactlyInAnyOrder(
+            new PartitionId("tenantA", 1),
+            new PartitionId("tenantA", 2),
+            new PartitionId("tenantB", 1),
+            new PartitionId("tenantB", 2),
+            new PartitionId("tenantB", 3));
+
+    final var partitionDistribution = staticConfiguration.generatePartitionDistribution();
+
+    // then — 5 partitions in total (2 for tenantA, 3 for tenantB), each with 3 members (RF=3)
+    assertThat(partitionDistribution).hasSize(5);
+    assertThat(partitionDistribution.stream().map(PartitionMetadata::id))
+        .containsExactlyInAnyOrder(
+            new PartitionId("tenantA", 1),
+            new PartitionId("tenantA", 2),
+            new PartitionId("tenantB", 1),
+            new PartitionId("tenantB", 2),
+            new PartitionId("tenantB", 3));
+    partitionDistribution.forEach(p -> assertThat(p.members()).hasSize(3));
+
+    // All members use zone_nodeId format
+    partitionDistribution.forEach(
+        p -> p.members().forEach(m -> assertThat(m.zone()).isNotNull().isIn("us-east", "us-west")));
+
+    // Primary should be from the highest-priority zone (us-east) for every tenant's partitions
     partitionDistribution.forEach(
         p -> assertThat(p.getPrimary().orElseThrow().isInZone("us-east")).isTrue());
   }
