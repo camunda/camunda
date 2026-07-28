@@ -57,7 +57,7 @@ public final class FixedPartitionCfg {
     return "FixedPartitionCfg{"
         + "partitionId="
         + partitionId
-        + ",  physicalTenantId="
+        + ", physicalTenantId="
         + physicalTenantId
         + ", nodes="
         + nodes
