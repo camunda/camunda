@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -47,7 +48,8 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 
 @ExcludeAuthorizationCheck
-public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
+public final class BpmnStreamProcessor
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
@@ -159,6 +161,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       }
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+    // termination must be able to complete on a suspended instance; forward-progress element
+    // events are buffered instead
+    return switch ((ProcessInstanceIntent) record.getIntent()) {
+      case TERMINATE_ELEMENT, CONTINUE_TERMINATING_ELEMENT -> SuspensionBehavior.PROCESS;
+      default -> SuspensionBehavior.BUFFER;
+    };
   }
 
   private void processEvent(

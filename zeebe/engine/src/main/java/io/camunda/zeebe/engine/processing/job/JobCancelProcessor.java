@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -26,7 +28,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
-public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobCancelProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
@@ -69,5 +72,11 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
       rejectionWriter.appendRejection(
           record, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
     }
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    // a job belonging to a suspended process instance must not make forward progress
+    return SuspensionBehavior.REJECT;
   }
 }

@@ -20,6 +20,8 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -53,7 +55,8 @@ import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobThrowErrorProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   /**
    * Marker element ID. This ID is used to indicate that a given catch event could not be found. The
@@ -272,5 +275,11 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
             b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
         job,
         AuthorizationRejectionMapper.noPrincipal());
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    // a job belonging to a suspended process instance must not make forward progress
+    return SuspensionBehavior.REJECT;
   }
 }

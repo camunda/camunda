@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -21,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobUpdateProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final TypedRejectionWriter rejectionWriter;
@@ -87,5 +90,11 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
     responseWriter.writeRejectedResponseOnCommand(
         command, RejectionType.INVALID_ARGUMENT, errorMessage);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    // a job belonging to a suspended process instance must not make forward progress
+    return SuspensionBehavior.REJECT;
   }
 }

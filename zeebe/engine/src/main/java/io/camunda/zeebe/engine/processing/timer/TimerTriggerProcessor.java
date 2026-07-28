@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,7 +39,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 @ExcludeAuthorizationCheck
-public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class TimerTriggerProcessor
+    implements TypedRecordProcessor<TimerRecord>, SuspensionAware<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
@@ -198,5 +201,11 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
     final Interval refreshedInterval =
         timer.getInterval().withStart(Instant.ofEpochMilli(record.getDueDate()));
     return new RepeatingInterval(repetitions, refreshedInterval);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
+    // a timer belonging to a suspended process instance must not make forward progress
+    return SuspensionBehavior.REJECT;
   }
 }

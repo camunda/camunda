@@ -28,6 +28,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -77,7 +79,8 @@ import org.agrona.Strings;
 import org.slf4j.Logger;
 
 public final class ProcessInstanceModificationModifyProcessor
-    implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceModificationRecord>,
+        SuspensionAware<ProcessInstanceModificationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
@@ -1519,6 +1522,13 @@ public final class ProcessInstanceModificationModifyProcessor
           "Cannot enrich rejection command for process instance modification with key {} because the process instance was not found",
           processInstanceKey);
     }
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<ProcessInstanceModificationRecord> record) {
+    // a process instance modification must not make forward progress on a suspended instance
+    return SuspensionBehavior.REJECT;
   }
 
   /**

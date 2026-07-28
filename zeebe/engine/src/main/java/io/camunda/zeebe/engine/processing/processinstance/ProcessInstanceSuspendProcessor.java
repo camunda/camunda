@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,7 +33,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class ProcessInstanceSuspendProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to suspend a process instance with key '%d', but ";
@@ -149,5 +151,16 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  /**
+   * SUSPEND must always reach this processor, even while a suspension marker is already present:
+   * its own {@link #validateCommand} is what produces the "already suspended" rejection. It is
+   * classified REJECT (not the BUFFER default) so the primary gate rejects it uniformly whenever a
+   * marker is present, matching that existing validation.
+   */
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionBehavior.REJECT;
   }
 }

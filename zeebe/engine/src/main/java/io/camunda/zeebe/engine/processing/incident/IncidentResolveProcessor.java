@@ -13,6 +13,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -42,7 +44,8 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
-public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
+public final class IncidentResolveProcessor
+    implements TypedRecordProcessor<IncidentRecord>, SuspensionAware<IncidentRecord> {
 
   public static final String NO_RETRIES_LEFT_MSG =
       "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
@@ -303,5 +306,12 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
   private static boolean isJobRelatedIncident(final long jobKey) {
     return jobKey > 0;
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<IncidentRecord> record) {
+    // resolving an incident must not make forward progress while the process instance is
+    // suspended
+    return SuspensionBehavior.REJECT;
   }
 }

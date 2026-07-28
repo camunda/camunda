@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -33,7 +35,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Optional;
 
 public final class ProcessInstanceCancelProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
@@ -88,6 +90,12 @@ public final class ProcessInstanceCancelProcessor
         command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+    // cancellation of a suspended instance must be able to complete
+    return SuspensionBehavior.PROCESS;
   }
 
   private boolean validateCommand(
