@@ -49,7 +49,8 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.prefer-snapshot-replication-threshold=110",
         "camunda.cluster.raft.preallocate-segment-files=false",
         "camunda.cluster.raft.rebalance.replication-lag-threshold=16MB",
-        "camunda.cluster.raft.rebalance.replication-timeout=30s"
+        "camunda.cluster.raft.rebalance.replication-timeout=30s",
+        "camunda.cluster.raft.rebalance.max-transfer-attempts=5"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -108,7 +109,8 @@ public class ClusterRaftTest {
     void shouldSetRebalance() {
       assertThat(brokerCfg.getCluster().getRaft())
           .returns(DataSize.ofMegabytes(16), RaftCfg::getRebalanceReplicationLagThreshold)
-          .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout);
+          .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout)
+          .returns(5, RaftCfg::getRebalanceMaxTransferAttempts);
     }
   }
 
