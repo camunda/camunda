@@ -909,8 +909,15 @@ public class PassiveRole extends InactiveRole {
       }
     }
 
-    // Set the first commit index.
-    raft.setFirstCommitIndex(request.commitIndex(), lastLogIndex);
+    // Set the first commit index. The data-loss check compares against the node's actual log end
+    // rather than the request-relative lastLogIndex: for an empty heartbeat, lastLogIndex is just
+    // the request's prevLogIndex, which can lie before this node's own commit index even though
+    // its log is fully intact - e.g. the position of the leader's committed reader for a PASSIVE
+    // member is the leader's commit index, which lags behind right after an election. An
+    // ex-leader that is demoted to PASSIVE and receives its first-ever append then tripped the
+    // check spuriously. Real data loss still trips it: a truncated log ends before the persisted
+    // commit index, and lastLogIndex never exceeds the log end.
+    raft.setFirstCommitIndex(request.commitIndex(), raft.getLog().getLastIndex());
 
     try {
       //     Make sure all entries are flushed before ack to ensure we have persisted what we
