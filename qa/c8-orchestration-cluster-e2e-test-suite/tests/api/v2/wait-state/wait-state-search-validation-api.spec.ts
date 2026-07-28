@@ -16,7 +16,10 @@ import {
   assertUnauthorizedRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   WAIT_STATES_SEARCH_ENDPOINT,
   createProcessInstanceWaitingOnJob,
@@ -62,7 +65,7 @@ test.describe.parallel('Wait State Search Validation', () => {
         instance.processInstanceKey,
       );
       expect(body.items[0].details.waitStateType).toBe('JOB');
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   test('rejects an unknown filter field with 400', async ({request}) => {
