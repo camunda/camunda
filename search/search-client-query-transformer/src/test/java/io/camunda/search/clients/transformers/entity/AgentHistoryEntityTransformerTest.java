@@ -122,19 +122,6 @@ class AgentHistoryEntityTransformerTest {
   }
 
   @Test
-  void shouldMapNullLoopIterationAsNull() {
-    // given
-    final var source = buildSource();
-    source.setLoopIteration(null);
-
-    // when
-    final AgentInstanceHistoryEntity result = transformer.apply(source);
-
-    // then
-    assertThat(result.loopIteration()).isNull();
-  }
-
-  @Test
   void shouldMapTextContent() {
     // given
     final var source = buildSource();

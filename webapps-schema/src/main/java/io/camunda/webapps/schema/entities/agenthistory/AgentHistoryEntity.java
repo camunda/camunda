@@ -64,9 +64,8 @@ public final class AgentHistoryEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String jobLease;
 
-  /** Nullable — protocol value {@code <= 0} is stored as {@code null}. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private Integer loopIteration;
+  private int loopIteration;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private AgentHistoryRole role;
@@ -206,11 +205,11 @@ public final class AgentHistoryEntity
     return this;
   }
 
-  public Integer getLoopIteration() {
+  public int getLoopIteration() {
     return loopIteration;
   }
 
-  public AgentHistoryEntity setLoopIteration(final Integer loopIteration) {
+  public AgentHistoryEntity setLoopIteration(final int loopIteration) {
     this.loopIteration = loopIteration;
     return this;
   }
@@ -334,7 +333,7 @@ public final class AgentHistoryEntity
         && partitionId == that.partitionId
         && jobKey == that.jobKey
         && Objects.equals(jobLease, that.jobLease)
-        && Objects.equals(loopIteration, that.loopIteration)
+        && loopIteration == that.loopIteration
         && Objects.equals(role, that.role)
         && Objects.equals(commitStatus, that.commitStatus)
         && Objects.equals(producedAt, that.producedAt)
