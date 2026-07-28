@@ -100,6 +100,7 @@ RUN \
     fi && \
     # Locate the jar (version-agnostic)
     ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    [ -n "$ROCKSDB_JAR" ] && [ -f "$ROCKSDB_JAR" ] || { echo "rocksdbjni jar not found under camunda-zeebe/lib" >&2; exit 1; } && \
     SO="librocksdbjni-${ROCKSDB_ARCH}.so" && \
     UNPACK=$(mktemp -d) && \
     ( cd "$UNPACK" && jar xf "$OLDPWD/$ROCKSDB_JAR" ) && \
@@ -188,7 +189,7 @@ COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 # Install the RocksDB native lib into the default Linux java.library.path entry so
 # RocksDB.loadLibrary() resolves it via System.loadLibrary without unpacking the jar.
-COPY --from=dist --chown=1001:0 /camunda/rocksdb-lib/ /usr/java/packages/lib/
+COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
