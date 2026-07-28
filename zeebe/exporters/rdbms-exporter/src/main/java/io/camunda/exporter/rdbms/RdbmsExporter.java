@@ -117,6 +117,7 @@ public final class RdbmsExporter {
     // further than what's been acknowledged - e.g. under async LSN-based replication
     // (LsnReplicationController), acking is intentionally delayed until replication is confirmed.
     lastPosition = Math.max(controller.getLastExportedRecordPosition(), lastFlushedPosition);
+    replicationController = replicationControllerFactory.createReplicationController(controller);
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
       if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
         // This is needed since the brokers last exported position is from its last snapshot and can
@@ -126,7 +127,13 @@ public final class RdbmsExporter {
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
-        updatePositionInBroker();
+        // Advance the broker through the replication controller instead of acking it directly: the
+        // RDBMS position only reflects what was flushed to the primary DB, not what replicas have
+        // confirmed. Under async replication acking the broker straight to this position would let
+        // the journal drop records that were never replicated (see #51588). The controller acks the
+        // broker according to its replication policy (immediately for NONE, once confirmed for
+        // LSN).
+        replicationController.onFlush(lastPosition);
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         logInfo(
             "Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
@@ -147,7 +154,6 @@ public final class RdbmsExporter {
     }
     lastFlushedPosition = lastPosition;
 
-    replicationController = replicationControllerFactory.createReplicationController(controller);
     rdbmsWriters
         .getExporterPositionService()
         .registerLockPositionHook(partitionId, () -> lastFlushedPosition);
@@ -318,11 +324,6 @@ public final class RdbmsExporter {
     }
 
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
-  }
-
-  private void updatePositionInBroker() {
-    logTrace("Updating position to {} in broker", lastPosition);
-    controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void updatePositionInRdbms() {
