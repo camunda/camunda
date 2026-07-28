@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.protocol.rest.ClusterModeChangeResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -40,14 +41,13 @@ import org.awaitility.Awaitility;
 public final class InProcessRestoreTestUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   private InProcessRestoreTestUtil() {}
 
   /** POSTs a restore request with the given body to {@code v2/restore} and returns the response. */
   static HttpResponse<String> sendRestoreRequest(
       final CamundaClient client, final Map<String, Object> body) {
-    try {
+    try (final var httpClient = HttpClient.newHttpClient()) {
       final var uri =
           URI.create(
               "%sv2/restore?dryRun=false".formatted(client.getConfiguration().getRestAddress()));
@@ -56,7 +56,7 @@ public final class InProcessRestoreTestUtil {
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(OBJECT_MAPPER.writeValueAsString(body)))
               .build();
-      return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to trigger restore via REST endpoint", e);
     } catch (final InterruptedException e) {
@@ -83,7 +83,8 @@ public final class InProcessRestoreTestUtil {
         .describedAs("restore REST response: %s".formatted(response.body()))
         .isEqualTo(202);
     try {
-      return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
+      return Long.parseLong(
+          OBJECT_MAPPER.readValue(response.body(), ClusterModeChangeResponse.class).getChangeId());
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to parse restore REST response", e);
     }
@@ -95,18 +96,19 @@ public final class InProcessRestoreTestUtil {
    */
   public static long changeMode(
       final CamundaClient client, final String mode, final boolean dryRun) {
-    try {
+    try (final var httpClient = HttpClient.newHttpClient()) {
       final var uri =
           URI.create(
               "%sv2/mode?mode=%s&dryRun=%s"
                   .formatted(client.getConfiguration().getRestAddress(), mode, dryRun));
       final var request =
           HttpRequest.newBuilder(uri).method("PATCH", HttpRequest.BodyPublishers.noBody()).build();
-      final var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       assertThat(response.statusCode())
           .describedAs("mode change REST response: %s".formatted(response.body()))
           .isEqualTo(200);
-      return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
+      return Long.parseLong(
+          OBJECT_MAPPER.readValue(response.body(), ClusterModeChangeResponse.class).getChangeId());
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to trigger mode change via REST endpoint", e);
     } catch (final InterruptedException e) {
