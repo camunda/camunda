@@ -93,8 +93,8 @@ public final class StreamProcessorBuilder {
     return streamProcessorContext;
   }
 
-  public @Nullable ActorSchedulingService getActorSchedulingService() {
-    return actorSchedulingService;
+  public ActorSchedulingService getActorSchedulingService() {
+    return requireNonNull(actorSchedulingService);
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
@@ -107,12 +107,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public @Nullable ZeebeDb getZeebeDb() {
-    return zeebeDb;
+  public ZeebeDb<?> getZeebeDb() {
+    return requireNonNull(zeebeDb);
   }
 
-  public @Nullable List<RecordProcessor> getRecordProcessors() {
-    return recordProcessors;
+  public List<RecordProcessor> getRecordProcessors() {
+    return requireNonNull(recordProcessors);
   }
 
   public StreamProcessorBuilder scheduledCommandCache(
@@ -135,6 +135,7 @@ public final class StreamProcessorBuilder {
     requireNonNull(actorSchedulingService, "No task scheduler provided.");
     requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(recordProcessors, "Record processors cannot be empty.");
     if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
       requireNonNull(
           streamProcessorContext.getPartitionCommandSender(),

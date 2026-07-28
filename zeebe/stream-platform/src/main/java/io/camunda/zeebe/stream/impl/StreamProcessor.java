@@ -118,9 +118,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
-    actorSchedulingService = requireNonNull(processorBuilder.getActorSchedulingService());
+    actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = new ArrayList<>(processorBuilder.getLifecycleListeners());
-    zeebeDb = requireNonNull(processorBuilder.getZeebeDb());
+    zeebeDb = processorBuilder.getZeebeDb();
     scheduledCommandCache = processorBuilder.scheduledCommandCache();
 
     streamProcessorContext =
@@ -133,7 +133,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     metrics = new StreamProcessorMetrics(streamProcessorContext.getMeterRegistry());
     metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
-    recordProcessors.addAll(requireNonNull(processorBuilder.getRecordProcessors()));
+    recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
   public static StreamProcessorBuilder builder() {
