@@ -14,7 +14,8 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -180,8 +181,13 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     final var clusterConfiguration =
         brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
 
-    final var memberState = clusterConfiguration.getMember(memberId);
-    return memberState != null && State.RECOVERING == memberState.state();
+    final PartitionGroupConfiguration partitionGroupConfiguration =
+        clusterConfiguration.partitionGroup(physicalTenantId);
+    if (partitionGroupConfiguration == null) {
+      return false;
+    }
+    final var memberState = partitionGroupConfiguration.members().get(memberId);
+    return memberState != null && memberState.mode() == Mode.RECOVERING;
   }
 
   private ActorFuture<Void> stopModeChangeHandler() {

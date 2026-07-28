@@ -136,7 +136,7 @@ final class PartitionModeHandlerTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution())
+    when(clusterConfigurationService.getPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(metadata));
   }
 
@@ -506,7 +506,6 @@ final class PartitionModeHandlerTest {
       assertThat(result.isCompletedExceptionally()).isFalse();
       verify(recoveryManager).start();
       verify(brokerStartupContext).addPartitionManager(NON_DEFAULT_GROUP, recoveryManager);
-      // partition change exeuctor are not registered by recovery manager.
       verify(clusterConfigurationService, never())
           .registerPartitionChangeExecutors(any(), any(), any());
     }

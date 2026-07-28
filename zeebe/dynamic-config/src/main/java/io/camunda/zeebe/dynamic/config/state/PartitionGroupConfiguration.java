@@ -389,4 +389,21 @@ public record PartitionGroupConfiguration(
     return new PartitionGroupConfiguration(
         version, incarnationNumber, updatedMembers, routingState, pendingChanges, lastChange);
   }
+
+  public int partitionCount() {
+    return members.values().stream()
+        .flatMap(broker -> broker.partitions().keySet().stream())
+        .distinct()
+        .toList()
+        .size();
+  }
+
+  public Optional<MemberId> getPrimaryForPartition(final int partitionId) {
+    return members.entrySet().stream()
+        .filter(entry -> entry.getValue().hasPartition(partitionId))
+        .max(
+            Comparator.comparingInt(
+                e -> Objects.requireNonNull(e.getValue().getPartition(partitionId)).priority()))
+        .map(Entry::getKey);
+  }
 }

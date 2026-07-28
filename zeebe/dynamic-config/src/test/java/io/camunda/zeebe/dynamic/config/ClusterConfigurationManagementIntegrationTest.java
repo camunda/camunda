@@ -340,13 +340,13 @@ class ClusterConfigurationManagementIntegrationTest {
   private Set<PartitionMetadata> getExpectedPartitionDistribution() {
     return Set.of(
         new PartitionMetadata(
-            new PartitionId("test", 1),
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
             Map.of(MemberId.from("0"), 1, MemberId.from("1"), 2, MemberId.from("2"), 3),
             3,
             MemberId.from("2")),
         new PartitionMetadata(
-            new PartitionId("test", 2),
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 2),
             Set.of(MemberId.from("2")),
             Map.of(MemberId.from("2"), 1),
             1,

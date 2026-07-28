@@ -10,12 +10,14 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -35,8 +37,12 @@ public record StaticConfiguration(
 
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
-    return ConfigurationUtil.getClusterConfigFrom(
-        partitionDistribution, partitionConfig, clusterId);
+    // Legacy model can only work with default partition group.
+    final var defaultPartitions =
+        partitionDistribution.stream()
+            .filter(p -> p.id().group().equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+            .collect(Collectors.toSet());
+    return ConfigurationUtil.getClusterConfigFrom(defaultPartitions, partitionConfig, clusterId);
   }
 
   /**

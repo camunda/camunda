@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.adminapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_MOCKS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -464,9 +467,10 @@ final class AdminApiRequestHandlerTest {
       when(raftPartition.getRole()).thenReturn(Role.LEADER);
       final var partitionId = 1;
       final var primaryBrokerMemberId = io.atomix.cluster.BrokerMemberId.from("2");
-      final var clusterConfig =
-          Mockito.mock(io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.class);
-      when(clusterConfig.getPrimaryMemberForPartition(partitionId))
+      final var clusterConfig = Mockito.mock(CurrentClusterConfiguration.class);
+      final var partitionConfig = Mockito.mock(PartitionGroupConfiguration.class);
+      when(clusterConfig.partitionGroup(any())).thenReturn(partitionConfig);
+      when(partitionConfig.getPrimaryForPartition(partitionId))
           .thenReturn(java.util.Optional.of(primaryBrokerMemberId.memberId()));
       when(clusterConfigurationService.getLatestClusterConfiguration())
           .thenReturn(
@@ -492,9 +496,10 @@ final class AdminApiRequestHandlerTest {
       final var partitionId = 1;
       final var primaryBrokerMemberId =
           io.atomix.cluster.BrokerMemberId.from("1"); // Same as nodeId
-      final var clusterConfig =
-          Mockito.mock(io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.class);
-      when(clusterConfig.getPrimaryMemberForPartition(partitionId))
+      final var clusterConfig = Mockito.mock(CurrentClusterConfiguration.class);
+      final var partitionConfig = Mockito.mock(PartitionGroupConfiguration.class);
+      when(clusterConfig.partitionGroup(any())).thenReturn(partitionConfig);
+      when(partitionConfig.getPrimaryForPartition(partitionId))
           .thenReturn(java.util.Optional.of(primaryBrokerMemberId.memberId()));
       when(clusterConfigurationService.getLatestClusterConfiguration())
           .thenReturn(
@@ -518,9 +523,10 @@ final class AdminApiRequestHandlerTest {
       // given
       when(raftPartition.getRole()).thenReturn(Role.LEADER);
       final var partitionId = 1;
-      final var clusterConfig =
-          Mockito.mock(io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.class);
-      when(clusterConfig.getPrimaryMemberForPartition(partitionId))
+      final var clusterConfig = Mockito.mock(CurrentClusterConfiguration.class);
+      final var partitionConfig = Mockito.mock(PartitionGroupConfiguration.class);
+      when(clusterConfig.partitionGroup(any())).thenReturn(partitionConfig);
+      when(partitionConfig.getPrimaryForPartition(partitionId))
           .thenReturn(java.util.Optional.empty());
       when(clusterConfigurationService.getLatestClusterConfiguration())
           .thenReturn(

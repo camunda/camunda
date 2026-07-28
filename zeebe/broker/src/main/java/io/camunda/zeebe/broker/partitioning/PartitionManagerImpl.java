@@ -313,6 +313,7 @@ public final class PartitionManagerImpl
                   final var initialPartitionConfig =
                       clusterConfigurationService
                           .getInitialClusterConfiguration()
+                          .partitionGroup(partitionGroup)
                           .members()
                           .get(localMemberId)
                           .getPartition(partitionMetadata.id().number())
@@ -732,8 +733,7 @@ public final class PartitionManagerImpl
     // config; other physical tenants derive their distribution by rewriting the group on every
     // PartitionId.
     return clusterConfigurationService
-        .getPartitionDistribution()
-        .withGroupName(partitionGroup)
+        .getPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

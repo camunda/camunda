@@ -25,7 +25,7 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
@@ -90,10 +90,10 @@ final class RecoveryPartitionManagerTest {
     final var metadata = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     clusterConfigurationService = mock(ClusterConfigurationService.class);
-    when(clusterConfigurationService.getPartitionDistribution())
+    when(clusterConfigurationService.getPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
     when(clusterConfigurationService.getCurrentClusterConfiguration())
-        .thenReturn(ClusterConfiguration.uninitialized());
+        .thenReturn(CurrentClusterConfiguration.uninitialized());
 
     brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
@@ -343,7 +343,7 @@ final class RecoveryPartitionManagerTest {
     @Test
     void shouldCompleteImmediatelyWhenNoLocalPartitions() {
       // given
-      when(clusterConfigurationService.getPartitionDistribution())
+      when(clusterConfigurationService.getPartitionDistribution(any()))
           .thenReturn(new PartitionDistribution(Set.of()));
 
       // when
@@ -419,7 +419,7 @@ final class RecoveryPartitionManagerTest {
     void shouldBeIdempotentWhenDirectoryIsAlreadyEmpty() {
       // given: no local partitions, so preRestore's target directory is never created, and
       // start() only needs to set up the restoreExecutor for this to be a no-op deletion
-      when(clusterConfigurationService.getPartitionDistribution())
+      when(clusterConfigurationService.getPartitionDistribution(any()))
           .thenReturn(new PartitionDistribution(Set.of()));
       controlActor.run(() -> partitionManager.start());
       await().atMost(Duration.ofSeconds(10)).until(() -> true); // let start() settle

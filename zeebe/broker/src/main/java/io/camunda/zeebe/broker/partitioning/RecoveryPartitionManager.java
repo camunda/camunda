@@ -203,7 +203,9 @@ public final class RecoveryPartitionManager
     }
 
     final var partitionCount =
-        clusterConfigurationService.getCurrentClusterConfiguration().partitionCount();
+        clusterConfigurationService
+            .getCurrentClusterConfiguration()
+            .getPartitionCount(partitionGroup);
     clusterConfigurationService.registerRequestValidator(
         partitionGroup,
         new RestoreValidator(partitionCount, backupStore, exportedPositionSupplier));
@@ -555,8 +557,7 @@ public final class RecoveryPartitionManager
     // config; other physical tenants derive their distribution by rewriting the group on every
     // PartitionId.
     return clusterConfigurationService
-        .getPartitionDistribution()
-        .withGroupName(partitionGroup)
+        .getPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

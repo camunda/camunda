@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import io.camunda.cluster.PhysicalTenantIds;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -21,20 +21,25 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
-public class DynamicClusterConfigurationService implements ClusterConfigurationService {
+public class DynamicClusterConfigurationService
+    implements ClusterConfigurationService, ClusterConfigurationUpdateListener {
 
-  private PartitionDistribution partitionDistribution;
+  private final Map<String, PartitionDistribution> partitionDistributionPerPhysicalTenant =
+      new HashMap<>();
 
-  private volatile ClusterConfiguration initialClusterConfiguration;
-  private volatile ClusterConfiguration currentClusterConfiguration;
+  private volatile CurrentClusterConfiguration initialClusterConfiguration;
+  private volatile CurrentClusterConfiguration currentClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private final ClusterChangeExecutor clusterChangeExecutor;
@@ -44,8 +49,14 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public PartitionDistribution getPartitionDistribution() {
-    return partitionDistribution;
+  public PartitionDistribution getPartitionDistribution(final String physicalTenantId) {
+    return partitionDistributionPerPhysicalTenant.getOrDefault(
+        physicalTenantId, new PartitionDistribution(Set.of()));
+  }
+
+  @Override
+  public Map<String, PartitionDistribution> getPartitionDistribution() {
+    return partitionDistributionPerPhysicalTenant;
   }
 
   @Override
@@ -108,20 +119,16 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
           } else {
             clusterConfigurationManagerService.addUpdateListener(
                 brokerStartupContext.getBrokerClient().getTopologyManager());
-            clusterConfigurationManagerService.addUpdateListener(
-                config -> currentClusterConfiguration = config);
+            clusterConfigurationManagerService.addUpdateListener(this);
             clusterConfigurationManagerService
-                .getClusterTopology()
+                .getClusterConfiguration()
                 .onComplete(
                     (configuration, error) -> {
                       if (error != null) {
                         started.completeExceptionally(error);
                       } else {
                         try {
-                          partitionDistribution =
-                              new PartitionDistribution(
-                                  ConfigurationUtil.getPartitionDistributionFrom(
-                                      configuration, PartitionManagerImpl.DEFAULT_GROUP_NAME));
+                          populatePartitionDistribution(configuration);
                           initialClusterConfiguration = configuration;
                           if (currentClusterConfiguration == null) {
                             currentClusterConfiguration = configuration;
@@ -177,12 +184,12 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public ClusterConfiguration getInitialClusterConfiguration() {
+  public CurrentClusterConfiguration getInitialClusterConfiguration() {
     return initialClusterConfiguration;
   }
 
   @Override
-  public ClusterConfiguration getCurrentClusterConfiguration() {
+  public CurrentClusterConfiguration getCurrentClusterConfiguration() {
     return currentClusterConfiguration;
   }
 
@@ -192,20 +199,31 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> getLatestClusterConfiguration() {
+  public ActorFuture<CurrentClusterConfiguration> getLatestClusterConfiguration() {
     if (clusterConfigurationManagerService != null) {
-      return clusterConfigurationManagerService.getClusterTopology();
+      return clusterConfigurationManagerService.getClusterConfiguration();
     } else {
-      final CompletableActorFuture<ClusterConfiguration> future = new CompletableActorFuture<>();
+      final CompletableActorFuture<CurrentClusterConfiguration> future =
+          new CompletableActorFuture<>();
       future.completeExceptionally(
           new IllegalStateException("ClusterConfigurationService is not started"));
       return future;
     }
   }
 
+  private void populatePartitionDistribution(final CurrentClusterConfiguration configuration) {
+    final Map<String, Set<PartitionMetadata>> perPtConfig =
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration);
+    partitionDistributionPerPhysicalTenant.putAll(
+        perPtConfig.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, entry -> new PartitionDistribution(entry.getValue()))));
+  }
+
   @Override
   public ActorFuture<Void> closeAsync() {
-    partitionDistribution = null;
+    partitionDistributionPerPhysicalTenant.clear();
     currentClusterConfiguration = null;
     if (clusterConfigurationManagerService != null) {
       return clusterConfigurationManagerService.closeAsync();
@@ -221,20 +239,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
 
-    final Map<String, BrokerCfg> physicalTenantConfigs;
-
-    if (ClusterConfigurationManagerService.USE_NEW_CONFIG) {
-      physicalTenantConfigs =
-          brokerStartupContext.getPhysicalTenantIds().known().stream()
-              .collect(
-                  Collectors.toMap(
-                      id -> id, id -> brokerStartupContext.getPhysicalTenantContext(id).config()));
-    } else {
-      // Until we have a proper multi-tenant configuration, we cannot generate partition
-      // distribution for multiple tenants.
-      physicalTenantConfigs =
-          Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerConfiguration);
-    }
+    final Map<String, BrokerCfg> physicalTenantConfigs =
+        brokerStartupContext.getPhysicalTenantIds().known().stream()
+            .collect(
+                Collectors.toMap(
+                    id -> id, id -> brokerStartupContext.getPhysicalTenantContext(id).config()));
 
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(
@@ -255,5 +264,16 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
         brokerStartupContext.getMeterRegistry());
+  }
+
+  @Override
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    // NOOP
+  }
+
+  @Override
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    currentClusterConfiguration = clusterConfiguration;
   }
 }

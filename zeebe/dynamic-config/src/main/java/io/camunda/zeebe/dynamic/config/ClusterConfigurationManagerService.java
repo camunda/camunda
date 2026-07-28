@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -57,7 +59,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -96,6 +100,7 @@ public final class ClusterConfigurationManagerService
   private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
   private final boolean useNewConfig;
   private final Map<String, ModeChangeExecutor> modeChangeExecutorPerTenant = new HashMap<>();
+  private Set<String> knownGroups = Set.of();
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -294,6 +299,11 @@ public final class ClusterConfigurationManagerService
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
 
+    knownGroups =
+        staticConfiguration.partitionIds().stream()
+            .map(PartitionId::group)
+            .collect(Collectors.toSet());
+
     configurationRequestServer.start();
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
@@ -344,6 +354,41 @@ public final class ClusterConfigurationManagerService
     return clusterConfigurationManager.getClusterConfiguration();
   }
 
+  public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {
+    if (useNewConfig) {
+      return clusterConfigurationManager.getMultiConfiguration();
+    } else {
+      return clusterConfigurationManager
+          .getClusterConfiguration()
+          .thenApply(
+              legacy -> {
+                if (legacy != null) {
+                  // the callers rely on having all physical tenants in the configuration. Until the
+                  // feature flag is enabled, use a fake config made from default physical tenant.
+                  // This aligns with the existing behavior in the broker where it derived the
+                  // config from default tenant.
+                  final var defaultGroupConfig = CurrentClusterConfiguration.fromLegacy(legacy);
+                  final Map<String, PartitionGroupConfiguration> groups =
+                      knownGroups.stream()
+                          .collect(
+                              Collectors.toMap(
+                                  id -> id,
+                                  id ->
+                                      Objects.requireNonNull(
+                                          defaultGroupConfig.partitionGroup(
+                                              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))));
+                  return new CurrentClusterConfiguration(
+                      defaultGroupConfig.version(),
+                      defaultGroupConfig.globalConfiguration(),
+                      groups,
+                      defaultGroupConfig.phasedChangeState());
+                } else {
+                  return null;
+                }
+              });
+    }
+  }
+
   public Optional<ConfigurationChangeCoordinator> getTopologyChangeCoordinator() {
     return Optional.ofNullable(configurationChangeCoordinator);
   }
@@ -376,14 +421,15 @@ public final class ClusterConfigurationManagerService
       final RestoreChangeExecutor restoreChangeExecutor) {
     managerActor.run(
         () -> {
+          if (!useNewConfig && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(groupId)) {
+            return; // noop
+          }
+
           final ModeChangeExecutor modeChangeExecutor = modeChangeExecutorPerTenant.get(groupId);
           Objects.requireNonNull(
               modeChangeExecutor,
               "ModeChangeExecutor not set before registering topology appliers.");
 
-          if (!useNewConfig && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(groupId)) {
-            return; // noop
-          }
           if (!useNewConfig) {
             clusterConfigurationManager.registerTopologyChangeAppliers(
                 new ConfigurationChangeAppliersImpl(
