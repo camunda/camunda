@@ -80,6 +80,19 @@ public class OptimizeTomcatConfig {
             "/index.html"
           });
 
+  /**
+   * Extra allowed suffixes for CSL mode ({@code optimize.security.csl.enabled=true}), appended to
+   * {@link #ALLOWED_URL_EXTENSION}. CSL serves login initiation from {@code
+   * /oauth2/authorization/{registrationId}} and logout from {@code /logout}; neither exists in the
+   * legacy stack, so both would otherwise be rewritten to the SPA home instead of reaching the
+   * security chain (ADR-0038).
+   *
+   * <p>The CSL OIDC callback needs no entry of its own: it is {@code /api/authentication/callback}
+   * on CCSM and {@code /sso-callback} on CCSaaS, both already covered above.
+   */
+  private static final String CSL_ALLOWED_URL_EXTENSION =
+      String.join("|", new String[] {"/oauth2", "/logout"});
+
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
 
   @Autowired private ConfigurationService configurationService;
@@ -125,17 +138,32 @@ public class OptimizeTomcatConfig {
     LOG.debug("Registering filter 'urlRedirector'...");
 
     final String contextPath = getContextPath().orElse("");
-
-    // This regex includes all the URL suffixes that we allow.
-    // The list of suffixes is stored in ALLOWED_URL_EXTENSION, and the regex does not
-    // handle the home page URL: that is handled explicitly from within the URLRedirectFilter.
-    final String regex = "^(?!" + "(" + contextPath + ALLOWED_URL_EXTENSION + ")).+";
+    final String regex = buildRedirectExclusionRegex(contextPath, isCslEnabled());
 
     final URLRedirectFilter filter = new URLRedirectFilter(regex, contextPath + URL_BASE);
     final FilterRegistrationBean<URLRedirectFilter> registration = new FilterRegistrationBean<>();
     registration.addUrlPatterns("/*");
     registration.setFilter(filter);
     return registration;
+  }
+
+  /**
+   * Builds the regex matching every request URI the SPA-routing filter should rewrite to {@code
+   * /#}, that is everything which is not one of the allowed suffixes. The home page URL is not
+   * covered here; {@link URLRedirectFilter} handles it explicitly.
+   *
+   * @param cslEnabled when {@code true}, the CSL auth endpoints are allowed through as well
+   */
+  static String buildRedirectExclusionRegex(final String contextPath, final boolean cslEnabled) {
+    final String allowed =
+        cslEnabled
+            ? ALLOWED_URL_EXTENSION + "|" + CSL_ALLOWED_URL_EXTENSION
+            : ALLOWED_URL_EXTENSION;
+    return "^(?!" + "(" + contextPath + allowed + ")).+";
+  }
+
+  private boolean isCslEnabled() {
+    return environment.getProperty("optimize.security.csl.enabled", Boolean.class, false);
   }
 
   @Bean
