@@ -185,7 +185,7 @@ public final class ZeebePartitionFactory {
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId()),
-            localBroker.getPartitionsCount(),
+            brokerCfg.getCluster().getPartitionsCount(),
             communicationService,
             raftPartition,
             partitionListeners,
@@ -279,7 +279,7 @@ public final class ZeebePartitionFactory {
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
-          localBroker.getPartitionsCount(),
+          brokerCfg.getCluster().getPartitionsCount(),
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,

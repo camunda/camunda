@@ -146,6 +146,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
+  @Deprecated
   public int getPartitionsCount() {
     if (partitionsCountNullValue() == partitionsCount) {
       throw new IllegalStateException("partitionsCount is not set");
@@ -153,6 +154,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return partitionsCount;
   }
 
+  @Deprecated
   public BrokerInfo setPartitionsCount(final int partitionsCount) {
     if (partitionsCount <= 0) {
       throw new IllegalArgumentException(
@@ -177,6 +179,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
+  @Deprecated
   public int getReplicationFactor() {
     if (replicationFactorNullValue() == replicationFactor) {
       throw new IllegalStateException("replicationFactor is not set");
@@ -184,6 +187,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return replicationFactor;
   }
 
+  @Deprecated
   public BrokerInfo setReplicationFactor(final int replicationFactor) {
     if (replicationFactor <= 0) {
       throw new IllegalArgumentException(

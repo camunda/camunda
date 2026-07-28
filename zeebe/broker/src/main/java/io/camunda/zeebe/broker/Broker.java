@@ -141,10 +141,7 @@ public final class Broker implements AutoCloseable {
 
     // initialize this fields from config for the first startup, they will be overwritten with
     // the persisted values once the cluster has bootstrapped
-    result
-        .setClusterSize(clusterCfg.getClusterSize())
-        .setPartitionsCount(clusterCfg.getPartitionsCount())
-        .setReplicationFactor(clusterCfg.getReplicationFactor());
+    result.setClusterSize(clusterCfg.getClusterSize());
 
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
