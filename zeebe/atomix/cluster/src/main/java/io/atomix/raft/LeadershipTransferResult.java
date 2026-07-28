@@ -41,6 +41,8 @@ public enum LeadershipTransferResult {
    * to cannot be frozen.
    */
   CONFIGURATION_CHANGE_IN_PROGRESS,
+  /** The transfer attempt was canceled (due to e.g. error, timeout or operator intervention). */
+  CANCELLED,
   /** The desired leader did not finish replicating within {@code replicationTimeout}. */
   REPLICATION_TIMED_OUT,
   /** TimeoutNow did not move leadership within {@code maxTransferAttempts}. */
