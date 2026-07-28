@@ -445,6 +445,10 @@ paths:
   # Cluster endpoints
   /status:
     $ref: 'cluster.yaml#/paths/~1status'
+  # Not served under this document's `/v2` server base — the path item carries its own `servers`
+  # override so the absolute `/cluster/v2/status` resolves correctly.
+  /cluster/v2/status:
+    $ref: 'cluster.yaml#/paths/~1cluster~1v2~1status'
 
   # System endpoints
   /system/usage-metrics:

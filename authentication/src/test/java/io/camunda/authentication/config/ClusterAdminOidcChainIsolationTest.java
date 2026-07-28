@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -88,21 +89,20 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
 
   @Test
   public void shouldAllowPublicStatusEndpointWithoutToken() {
-    // when — the carved-out public status endpoint is hit with no bearer token
+    // when — the public status endpoint is hit with no bearer token
     final MvcTestResult result =
         mockMvcTester
             .get()
             .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
             .exchange();
 
-    // then — permitAll lets it through (dummy returns 200; the real endpoint returns 204)
+    // then — its own chain permits it (dummy returns 200; so does the real endpoint)
     assertThat(result).hasStatus2xxSuccessful();
   }
 
   @Test
-  public void shouldRejectMalformedBearerOnPublicStatusEndpoint() {
-    // given — the decoder rejects this specific token, standing in for a real malformed/invalid
-    // JWT (this context's JwtDecoder is a no-op mock that never validates real tokens)
+  public void shouldAllowPublicStatusEndpointWithAMalformedBearer() {
+    // given — a token the decoder would reject outright
     final String malformedToken = "not-a-valid-jwt";
     when(jwtDecoder.decode(eq(malformedToken))).thenThrow(new BadJwtException("malformed token"));
 
@@ -114,9 +114,10 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
             .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
             .exchange();
 
-    // then — permitAll only waives a missing token; a bad one is still rejected by the bearer
-    // filter before the authorization decision is reached
-    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+    // then — the status chain installs no resource-server filter, so the token is never decoded and
+    // the stubbed rejection is never reached. Clients migrating from /v2/status send their own
+    // access token, which this chain could not validate; it must be ignored, not rejected.
+    assertThat(result).hasStatus2xxSuccessful();
   }
 
   @Test
