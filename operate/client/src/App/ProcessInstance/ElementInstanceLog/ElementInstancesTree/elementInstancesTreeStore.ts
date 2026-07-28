@@ -20,6 +20,7 @@ import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
+const DEFAULT_SORT_ORDER: QuerySortOrder = 'desc';
 
 type PageMetadata = {
   totalItems: number;
@@ -51,7 +52,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   isPollRequestRunning: boolean = false;
   intervalId: ReturnType<typeof setInterval> | null = null;
   pollAbortController: AbortController | null = null;
-  private sortOrder: QuerySortOrder = 'desc';
+  private sortOrder: QuerySortOrder = DEFAULT_SORT_ORDER;
 
   constructor() {
     super();
@@ -417,6 +418,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
     this.isPollRequestRunning = false;
+    this.sortOrder = DEFAULT_SORT_ORDER;
   }
 
   private hasRunningChildren = (scopeKey: string): boolean => {

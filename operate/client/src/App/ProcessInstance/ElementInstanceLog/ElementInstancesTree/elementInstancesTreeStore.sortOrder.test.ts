@@ -138,4 +138,30 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
       {timeout: 2000},
     );
   });
+
+  it('should fall back to the default sort order after a reset', async () => {
+    // given a store left in ascending order
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      sortOrder: 'asc',
+    });
+
+    await waitFor(() => {
+      expect(requestedSortByScope[mockProcessInstanceKey]).toEqual([
+        {field: 'startDate', order: 'asc'},
+        {field: 'elementInstanceKey', order: 'asc'},
+      ]);
+    });
+
+    // when the store is reset and a root is set without an explicit order
+    elementInstancesTreeStore.reset();
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    // then the default latest-first order is used again
+    await waitFor(() => {
+      expect(requestedSortByScope[mockProcessInstanceKey]).toEqual([
+        {field: 'startDate', order: 'desc'},
+        {field: 'elementInstanceKey', order: 'desc'},
+      ]);
+    });
+  });
 });
