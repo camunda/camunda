@@ -15,8 +15,16 @@
 // types (e.g. `string | undefined`), which complicates consumer code and
 // obscures the actual API contract. The convention is to list every response
 // field in the `required` array.
+//
+// EXCEPTION: a property marked `x-feature-gated: true` is omitted from the
+// response entirely while its feature flag is disabled, so it cannot be
+// declared `required` without breaking the schema contract for the default
+// configuration. Such properties are skipped by this rule. Use this only for
+// properties whose presence is controlled by a configuration flag — not to
+// avoid declaring a genuinely optional field.
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
+const FEATURE_GATED = 'x-feature-gated';
 
 module.exports = (input, _opts, context) => {
   if (!input || typeof input !== 'object') {
@@ -118,7 +126,7 @@ function checkSchema(
   for (const { name, schema: propSchema, path: propPath } of propertyEntries) {
     if (!propSchema || typeof propSchema !== 'object') continue;
 
-    if (!requiredSet.has(name)) {
+    if (!requiredSet.has(name) && propSchema[FEATURE_GATED] !== true) {
       const renderedPath = propPath.join('/');
       errors.push({
         message: `Response property \`${name}\` at \`${schemaLocation}/${renderedPath}\` must be listed in \`required\`.`,

@@ -493,8 +493,6 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
-        - updatedBy
-        - updatedAt
       properties:
         processDefinitionId:
           allOf:
@@ -553,14 +551,20 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
         updatedBy:
-          description: The actor ID from the latest accessible successful audit log entry for this incident.
+          description: |
+            The actor ID from the latest accessible successful audit log entry for this incident.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           nullable: true
+          x-feature-gated: true
         updatedAt:
-          description: The timestamp of the latest accessible successful audit log entry for this incident.
+          description: |
+            The timestamp of the latest accessible successful audit log entry for this incident.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           format: date-time
           nullable: true
+          x-feature-gated: true
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"

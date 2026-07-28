@@ -234,8 +234,6 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
-        - updatedBy
-        - updatedAt
       properties:
         name:
           description: Name of this variable.
@@ -269,14 +267,20 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         updatedBy:
-          description: The actor ID from the latest accessible successful audit log entry for this variable.
+          description: |
+            The actor ID from the latest accessible successful audit log entry for this variable.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           nullable: true
+          x-feature-gated: true
         updatedAt:
-          description: The timestamp of the latest accessible successful audit log entry for this variable.
+          description: |
+            The timestamp of the latest accessible successful audit log entry for this variable.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           format: date-time
           nullable: true
+          x-feature-gated: true
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"

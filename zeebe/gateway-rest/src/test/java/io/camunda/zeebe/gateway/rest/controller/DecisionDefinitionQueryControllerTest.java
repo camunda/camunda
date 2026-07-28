@@ -65,9 +65,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                       "decisionRequirementsId": "drId",
                       "decisionRequirementsKey": "2",
                       "decisionRequirementsName": "drN",
-                      "decisionRequirementsVersion": 2,
-                      "updatedBy": null,
-                      "updatedAt": null
+                      "decisionRequirementsVersion": 2
                   }
               ],
               "page": {
@@ -471,9 +469,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "decisionRequirementsId": "drId",
               "decisionRequirementsKey": "2",
               "decisionRequirementsName": "drN",
-              "decisionRequirementsVersion": 2,
-              "updatedBy": null,
-              "updatedAt": null
+              "decisionRequirementsVersion": 2
             }""";
     // when/then
     webClient

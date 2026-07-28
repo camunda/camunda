@@ -120,9 +120,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id",
-            "updatedBy": null,
-            "updatedAt": null
+            "businessId": "biz-id"
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -146,9 +144,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id",
-                  "updatedBy": null,
-                  "updatedAt": null
+                  "businessId": "biz-id"
                 }
               ],
               "page": {
@@ -198,9 +194,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId",
-                  "updatedBy": null,
-                  "updatedAt": null
+                  "tenantId": "tenantId"
                 }
               ],
               "page": {
@@ -771,6 +765,31 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldOmitUpdateMetadataKeysEntirelyWhenFlagDisabled() {
+    // given - the flag defaults to disabled
+    final var validProcesInstanceKey = 123L;
+    when(processInstanceServices.getByKey(
+            eq(validProcesInstanceKey), any(CamundaAuthentication.class)))
+        .thenReturn(PROCESS_INSTANCE_ENTITY);
+
+    // when / then - the properties must be absent, not serialized as null
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, validProcesInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .doesNotExist()
+        .jsonPath("$.updatedAt")
+        .doesNotExist();
+
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
   public void shouldPopulateUpdateMetadataWhenFlagEnabled() {
     // given
     final var validProcesInstanceKey = 123L;
@@ -854,9 +873,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null,
-              "updatedBy": null,
-              "updatedAt": null
+              "businessId": null
             }
             """;
 

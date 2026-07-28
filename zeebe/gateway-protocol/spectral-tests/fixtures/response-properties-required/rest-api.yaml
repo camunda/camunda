@@ -29,6 +29,10 @@ paths:
   /valid-empty/get:
     $ref: 'things.yaml#/paths/~1valid-empty~1get'
 
+  # Non-required property explicitly opted out via x-feature-gated
+  /valid-feature-gated/get:
+    $ref: 'things.yaml#/paths/~1valid-feature-gated~1get'
+
   # ── Invalid cases ───────────────────────────────────────────
   # One property not in required
   /invalid-missing-one/get:

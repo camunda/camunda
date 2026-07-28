@@ -1746,8 +1746,6 @@ components:
         - rootProcessInstanceKey
         - tags
         - businessId
-        - updatedBy
-        - updatedAt
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1820,14 +1818,20 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         updatedBy:
-          description: The actor ID from the latest accessible successful audit log entry for this process instance.
+          description: |
+            The actor ID from the latest accessible successful audit log entry for this process instance.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           nullable: true
+          x-feature-gated: true
         updatedAt:
-          description: The timestamp of the latest accessible successful audit log entry for this process instance.
+          description: |
+            The timestamp of the latest accessible successful audit log entry for this process instance.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           format: date-time
           nullable: true
+          x-feature-gated: true
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.8"

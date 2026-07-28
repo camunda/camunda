@@ -714,8 +714,6 @@ components:
         - followUpDate
         - processDefinitionVersion
         - formKey
-        - updatedBy
-        - updatedAt
       properties:
         name:
           nullable: true
@@ -831,14 +829,20 @@ components:
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         updatedBy:
-          description: The actor ID from the latest accessible successful audit log entry for this user task.
+          description: |
+            The actor ID from the latest accessible successful audit log entry for this user task.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           nullable: true
+          x-feature-gated: true
         updatedAt:
-          description: The timestamp of the latest accessible successful audit log entry for this user task.
+          description: |
+            The timestamp of the latest accessible successful audit log entry for this user task.
+            Only present when `camunda.rest.update-metadata.enabled` is `true`.
           type: string
           format: date-time
           nullable: true
+          x-feature-gated: true
       x-properties-added-in-version:
         - propertyName: name
           addedInVersion: "8.8"

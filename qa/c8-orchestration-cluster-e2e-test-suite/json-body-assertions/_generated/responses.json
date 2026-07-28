@@ -2815,7 +2815,9 @@
                 {
                   "name": "version",
                   "type": "number"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -2826,8 +2828,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -2902,7 +2903,9 @@
           {
             "name": "version",
             "type": "number"
-          },
+          }
+        ],
+        "optional": [
           {
             "name": "updatedAt",
             "type": "string",
@@ -2913,8 +2916,7 @@
             "type": "string",
             "nullable": true
           }
-        ],
-        "optional": []
+        ]
       }
     },
     {
@@ -4296,7 +4298,9 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -4307,8 +4311,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -5062,7 +5065,9 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -5073,8 +5078,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -5193,7 +5197,9 @@
           {
             "name": "tenantId",
             "type": "string"
-          },
+          }
+        ],
+        "optional": [
           {
             "name": "updatedAt",
             "type": "string",
@@ -5204,8 +5210,7 @@
             "type": "string",
             "nullable": true
           }
-        ],
-        "optional": []
+        ]
       }
     },
     {
@@ -7377,7 +7382,9 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -7388,8 +7395,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -7547,7 +7553,9 @@
             "underlyingPrimitive": "string",
             "rawRefName": "schema",
             "wrapper": true
-          },
+          }
+        ],
+        "optional": [
           {
             "name": "updatedAt",
             "type": "string",
@@ -7558,8 +7566,7 @@
             "type": "string",
             "nullable": true
           }
-        ],
-        "optional": []
+        ]
       }
     },
     {
@@ -7694,7 +7701,9 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -7705,8 +7714,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -9449,7 +9457,9 @@
                 {
                   "name": "userTaskKey",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -9460,8 +9470,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -9625,7 +9634,9 @@
           {
             "name": "userTaskKey",
             "type": "string"
-          },
+          }
+        ],
+        "optional": [
           {
             "name": "updatedAt",
             "type": "string",
@@ -9636,8 +9647,7 @@
             "type": "string",
             "nullable": true
           }
-        ],
-        "optional": []
+        ]
       }
     },
     {
@@ -9935,7 +9945,9 @@
                 {
                   "name": "variableKey",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -9946,8 +9958,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -10054,7 +10065,9 @@
                 {
                   "name": "variableKey",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -10065,8 +10078,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -10143,7 +10155,9 @@
                 {
                   "name": "variableKey",
                   "type": "string"
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "updatedAt",
                   "type": "string",
@@ -10154,8 +10168,7 @@
                   "type": "string",
                   "nullable": true
                 }
-              ],
-              "optional": []
+              ]
             }
           },
           {
@@ -10223,7 +10236,9 @@
           {
             "name": "variableKey",
             "type": "string"
-          },
+          }
+        ],
+        "optional": [
           {
             "name": "updatedAt",
             "type": "string",
@@ -10234,8 +10249,7 @@
             "type": "string",
             "nullable": true
           }
-        ],
-        "optional": []
+        ]
       }
     }
   ]

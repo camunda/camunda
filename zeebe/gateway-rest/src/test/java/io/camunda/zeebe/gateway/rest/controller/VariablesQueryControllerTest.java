@@ -68,9 +68,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "tenantId": "<default>",
-              "updatedBy": null,
-              "updatedAt": null
+              "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
       """
@@ -81,9 +79,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "tenantId": "<default>",
-              "updatedBy": null,
-              "updatedAt": null
+              "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -97,9 +93,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
-                        "isTruncated": false,
-                        "updatedBy": null,
-                        "updatedAt": null
+                        "isTruncated": false
                   },
                   {
                         "variableKey": "1",
@@ -109,9 +103,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
-                        "isTruncated": true,
-                        "updatedBy": null,
-                        "updatedAt": null
+                        "isTruncated": true
                   }
               ],
               "page": {
@@ -134,9 +126,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
-                        "isTruncated": false,
-                        "updatedBy": null,
-                        "updatedAt": null
+                        "isTruncated": false
                   },
                   {
                         "variableKey": "1",
@@ -146,9 +136,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
-                        "isTruncated": false,
-                        "updatedBy": null,
-                        "updatedAt": null
+                        "isTruncated": false
                   }
               ],
               "page": {

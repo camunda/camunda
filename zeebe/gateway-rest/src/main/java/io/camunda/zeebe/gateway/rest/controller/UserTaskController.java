@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.AssignUserTaskRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.CompleteUserTaskRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateUserTaskRequest;
-import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
@@ -44,9 +43,7 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
-import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper.ResolvedMetadata;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -131,21 +128,17 @@ public class UserTaskController {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var userTask =
           serviceRegistry.userTaskServices(physicalTenantId).getByKey(userTaskKey, authentication);
-      final UserTaskResult response;
+      final var response = SearchQueryResponseMapper.toUserTask(userTask);
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final var metadata =
-            UpdateMetadataMapper.resolve(
-                userTask,
-                t -> String.valueOf(t.userTaskKey()),
-                USER_TASK,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication,
-                t -> ResponseMapper.formatDate(t.creationDate()));
-        response =
-            SearchQueryResponseMapper.toUserTask(
-                userTask, metadata.updatedBy(), metadata.updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toUserTask(userTask);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            UserTaskResult::getUserTaskKey,
+            USER_TASK,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            UserTaskResult::setUpdatedBy,
+            UserTaskResult::setUpdatedAt,
+            UserTaskResult::getCreationDate);
       }
 
       return ResponseEntity.ok().body(response);
@@ -225,25 +218,17 @@ public class UserTaskController {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = userTaskServices.search(query, authentication);
-      final UserTaskSearchQueryResult response;
+      final var response = SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result);
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final Function<io.camunda.search.entities.UserTaskEntity, String> keyFn =
-            t -> String.valueOf(t.userTaskKey());
-        final var metadata =
-            UpdateMetadataMapper.resolveAll(
-                result.items(),
-                keyFn,
-                USER_TASK,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication,
-                t -> ResponseMapper.formatDate(t.creationDate()));
-        response =
-            SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
-                result,
-                t -> metadata.getOrDefault(keyFn.apply(t), ResolvedMetadata.EMPTY).updatedBy(),
-                t -> metadata.getOrDefault(keyFn.apply(t), ResolvedMetadata.EMPTY).updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            UserTaskResult::getUserTaskKey,
+            USER_TASK,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            UserTaskResult::setUpdatedBy,
+            UserTaskResult::setUpdatedAt,
+            UserTaskResult::getCreationDate);
       }
 
       return ResponseEntity.ok(response);

@@ -251,7 +251,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -511,20 +510,6 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
-      final SearchQueryResult<ProcessInstanceEntity> result,
-      final Function<ProcessInstanceEntity, String> updatedByFn,
-      final Function<ProcessInstanceEntity, String> updatedAtFn) {
-    final var page = toSearchQueryPageResponse(result);
-    return ProcessInstanceSearchQueryResult.Builder.create()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(items -> toProcessInstances(items, updatedByFn, updatedAtFn))
-                .orElseGet(Collections::emptyList))
-        .build();
-  }
-
   public static JobSearchQueryResult toJobSearchQueryResponse(
       final SearchQueryResult<JobEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -683,20 +668,6 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  public static DecisionDefinitionSearchQueryResult toDecisionDefinitionSearchQueryResponse(
-      final SearchQueryResult<DecisionDefinitionEntity> result,
-      final Function<DecisionDefinitionEntity, String> updatedByFn,
-      final Function<DecisionDefinitionEntity, String> updatedAtFn) {
-    final var page = toSearchQueryPageResponse(result);
-    return DecisionDefinitionSearchQueryResult.Builder.create()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(items -> toDecisionDefinitions(items, updatedByFn, updatedAtFn))
-                .orElseGet(Collections::emptyList))
-        .build();
-  }
-
   public static DecisionRequirementsSearchQueryResult toDecisionRequirementsSearchQueryResponse(
       final SearchQueryResult<DecisionRequirementsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -845,20 +816,6 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result,
-      final Function<UserTaskEntity, String> updatedByFn,
-      final Function<UserTaskEntity, String> updatedAtFn) {
-    final var page = toSearchQueryPageResponse(result);
-    return UserTaskSearchQueryResult.Builder.create()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(tasks -> toUserTasks(tasks, updatedByFn, updatedAtFn))
-                .orElseGet(Collections::emptyList))
-        .build();
-  }
-
   public static UserSearchResult toUserSearchQueryResponse(
       final SearchQueryResult<UserEntity> result) {
     return UserSearchResult.Builder.create()
@@ -902,20 +859,6 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toIncidents)
-                .orElseGet(Collections::emptyList))
-        .build();
-  }
-
-  public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
-      final SearchQueryResult<IncidentEntity> result,
-      final Function<IncidentEntity, String> updatedByFn,
-      final Function<IncidentEntity, String> updatedAtFn) {
-    final var page = toSearchQueryPageResponse(result);
-    return IncidentSearchQueryResult.Builder.create()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(items -> toIncidents(items, updatedByFn, updatedAtFn))
                 .orElseGet(Collections::emptyList))
         .build();
   }
@@ -984,15 +927,6 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  private static List<ProcessInstanceResult> toProcessInstances(
-      final List<ProcessInstanceEntity> instances,
-      final Function<ProcessInstanceEntity, String> updatedByFn,
-      final Function<ProcessInstanceEntity, String> updatedAtFn) {
-    return instances.stream()
-        .map(p -> toProcessInstance(p, updatedByFn.apply(p), updatedAtFn.apply(p)))
-        .toList();
-  }
-
   private static List<JobSearchResult> toJobs(final List<JobEntity> jobs) {
     return jobs.stream().map(SearchQueryResponseMapper::toJob).toList();
   }
@@ -1029,11 +963,6 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
-    return toProcessInstance(p, null, null);
-  }
-
-  public static ProcessInstanceResult toProcessInstance(
-      final ProcessInstanceEntity p, final String updatedBy, final String updatedAt) {
     // processDefinitionId/Version/Key are @Nullable on the entity due to the onlyKeys(true)
     // source projection in ProcessInstanceItemProvider#fetchItemPage; that path doesn't reach
     // this mapper, but the contract has to admit the null so we fall back to spec-compliant
@@ -1057,8 +986,6 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .build();
   }
 
@@ -1261,15 +1188,6 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
-  private static List<DecisionDefinitionResult> toDecisionDefinitions(
-      final List<DecisionDefinitionEntity> instances,
-      final Function<DecisionDefinitionEntity, String> updatedByFn,
-      final Function<DecisionDefinitionEntity, String> updatedAtFn) {
-    return instances.stream()
-        .map(d -> toDecisionDefinition(d, updatedByFn.apply(d), updatedAtFn.apply(d)))
-        .toList();
-  }
-
   private static List<DecisionRequirementsResult> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
@@ -1305,11 +1223,6 @@ public final class SearchQueryResponseMapper {
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
-    return toDecisionDefinition(d, null, null);
-  }
-
-  public static DecisionDefinitionResult toDecisionDefinition(
-      final DecisionDefinitionEntity d, final String updatedBy, final String updatedAt) {
     return DecisionDefinitionResult.Builder.create()
         .decisionDefinitionId(d.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(d.decisionDefinitionKey()))
@@ -1320,8 +1233,6 @@ public final class SearchQueryResponseMapper {
         .name(d.name())
         .tenantId(d.tenantId())
         .version(d.version())
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .build();
   }
 
@@ -1346,34 +1257,11 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  private static List<UserTaskResult> toUserTasks(
-      final List<UserTaskEntity> tasks,
-      final Function<UserTaskEntity, String> updatedByFn,
-      final Function<UserTaskEntity, String> updatedAtFn) {
-    return tasks.stream()
-        .map(t -> toUserTask(t, updatedByFn.apply(t), updatedAtFn.apply(t)))
-        .toList();
-  }
-
   public static List<IncidentResult> toIncidents(final List<IncidentEntity> incidents) {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
 
-  private static List<IncidentResult> toIncidents(
-      final List<IncidentEntity> incidents,
-      final Function<IncidentEntity, String> updatedByFn,
-      final Function<IncidentEntity, String> updatedAtFn) {
-    return incidents.stream()
-        .map(t -> toIncident(t, updatedByFn.apply(t), updatedAtFn.apply(t)))
-        .toList();
-  }
-
   public static IncidentResult toIncident(final IncidentEntity t) {
-    return toIncident(t, null, null);
-  }
-
-  public static IncidentResult toIncident(
-      final IncidentEntity t, final String updatedBy, final String updatedAt) {
     return IncidentResult.Builder.create()
         .incidentKey(keyToString(t.incidentKey()))
         .processDefinitionKey(keyToString(t.processDefinitionKey()))
@@ -1396,8 +1284,6 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId())
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .build();
   }
 
@@ -1469,11 +1355,6 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskResult toUserTask(final UserTaskEntity t) {
-    return toUserTask(t, null, null);
-  }
-
-  public static UserTaskResult toUserTask(
-      final UserTaskEntity t, final String updatedBy, final String updatedAt) {
     return UserTaskResult.Builder.create()
         .tenantId(t.tenantId())
         .userTaskKey(keyToString(t.userTaskKey()))
@@ -1502,8 +1383,6 @@ public final class SearchQueryResponseMapper {
         .followUpDate(formatDateOrNull(t.followUpDate()))
         .processDefinitionVersion(t.processDefinitionVersion())
         .formKey(keyToStringOrNull(t.formKey()))
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .build();
   }
 
@@ -1690,49 +1569,13 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  public static VariableSearchQueryResult toVariableSearchQueryResponse(
-      final SearchQueryResult<VariableEntity> result,
-      final boolean truncateValues,
-      final Function<VariableEntity, String> updatedByFn,
-      final Function<VariableEntity, String> updatedAtFn) {
-    final var page = toSearchQueryPageResponse(result);
-    return VariableSearchQueryResult.Builder.create()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(entity -> toVariables(entity, truncateValues, updatedByFn, updatedAtFn))
-                .orElseGet(Collections::emptyList))
-        .build();
-  }
-
   private static List<VariableSearchResult> toVariables(
       final List<VariableEntity> variableEntities, final boolean truncateValues) {
     return variableEntities.stream().map(entity -> toVariable(entity, truncateValues)).toList();
   }
 
-  private static List<VariableSearchResult> toVariables(
-      final List<VariableEntity> variableEntities,
-      final boolean truncateValues,
-      final Function<VariableEntity, String> updatedByFn,
-      final Function<VariableEntity, String> updatedAtFn) {
-    return variableEntities.stream()
-        .map(
-            entity ->
-                toVariable(
-                    entity, truncateValues, updatedByFn.apply(entity), updatedAtFn.apply(entity)))
-        .toList();
-  }
-
   private static VariableSearchResult toVariable(
       final VariableEntity variableEntity, final boolean truncateValues) {
-    return toVariable(variableEntity, truncateValues, null, null);
-  }
-
-  private static VariableSearchResult toVariable(
-      final VariableEntity variableEntity,
-      final boolean truncateValues,
-      final String updatedBy,
-      final String updatedAt) {
     return VariableSearchResult.Builder.create()
         .name(variableEntity.name())
         .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
@@ -1740,8 +1583,6 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
@@ -1766,11 +1607,6 @@ public final class SearchQueryResponseMapper {
   }
 
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {
-    return toVariableItem(variableEntity, null, null);
-  }
-
-  public static VariableResult toVariableItem(
-      final VariableEntity variableEntity, final String updatedBy, final String updatedAt) {
     return VariableResult.Builder.create()
         .name(variableEntity.name())
         .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
@@ -1778,8 +1614,6 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .updatedBy(updatedBy)
-        .updatedAt(updatedAt)
         .value(getFullValueIfPresent(variableEntity))
         .build();
   }

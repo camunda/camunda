@@ -76,9 +76,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": "101",
-                      "tenantId": "tenantId",
-                      "updatedBy": null,
-                      "updatedAt": null
+                      "tenantId": "tenantId"
                   }
               ],
               "page": {
@@ -127,9 +125,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "creationTime": "2024-05-23T23:05:00.000Z",
                            "state": "ACTIVE",
                            "jobKey": "101",
-                           "tenantId": "tenantId",
-                           "updatedBy": null,
-                           "updatedAt": null
+                           "tenantId": "tenantId"
                       }
           """;
 
@@ -442,8 +438,9 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
+        // no actor is known without an audit log entry, so the key stays absent
         .jsonPath("$.updatedBy")
-        .isEqualTo(null)
+        .doesNotExist()
         .jsonPath("$.updatedAt")
         .isEqualTo("2024-05-23T23:05:00.000Z");
   }

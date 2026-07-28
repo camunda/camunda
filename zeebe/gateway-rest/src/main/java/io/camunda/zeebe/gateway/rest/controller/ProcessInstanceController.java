@@ -55,10 +55,8 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
-import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper.ResolvedMetadata;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -201,24 +199,21 @@ public class ProcessInstanceController {
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var entity =
-          serviceRegistry
-              .processInstanceServices(physicalTenantId)
-              .getByKey(processInstanceKey, authentication);
-      final Object response;
+      final var response =
+          SearchQueryResponseMapper.toProcessInstance(
+              serviceRegistry
+                  .processInstanceServices(physicalTenantId)
+                  .getByKey(processInstanceKey, authentication));
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final var metadata =
-            UpdateMetadataMapper.resolve(
-                entity,
-                p -> String.valueOf(p.processInstanceKey()),
-                PROCESS_INSTANCE,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication);
-        response =
-            SearchQueryResponseMapper.toProcessInstance(
-                entity, metadata.updatedBy(), metadata.updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toProcessInstance(entity);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
+            PROCESS_INSTANCE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getStartDate);
       }
       // Success case: Return the left side with the ProcessInstanceItem wrapped in ResponseEntity
       return ResponseEntity.ok().body(response);
@@ -418,24 +413,17 @@ public class ProcessInstanceController {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = processInstanceServices.search(query, authentication);
-      final ProcessInstanceSearchQueryResult response;
+      final var response = SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result);
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final Function<io.camunda.search.entities.ProcessInstanceEntity, String> keyFn =
-            p -> String.valueOf(p.processInstanceKey());
-        final var metadata =
-            UpdateMetadataMapper.resolveAll(
-                result.items(),
-                keyFn,
-                PROCESS_INSTANCE,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication);
-        response =
-            SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-                result,
-                p -> metadata.getOrDefault(keyFn.apply(p), ResolvedMetadata.EMPTY).updatedBy(),
-                p -> metadata.getOrDefault(keyFn.apply(p), ResolvedMetadata.EMPTY).updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getProcessInstanceKey,
+            PROCESS_INSTANCE,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedBy,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::setUpdatedAt,
+            io.camunda.gateway.protocol.model.ProcessInstanceResult::getStartDate);
       }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {

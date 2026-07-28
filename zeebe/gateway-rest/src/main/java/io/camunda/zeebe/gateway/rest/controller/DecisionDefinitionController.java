@@ -31,10 +31,8 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
-import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper.ResolvedMetadata;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -89,24 +87,20 @@ public class DecisionDefinitionController {
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var entity =
-          serviceRegistry
-              .decisionDefinitionServices(physicalTenantId)
-              .getByKey(decisionDefinitionKey, authentication);
-      final DecisionDefinitionResult response;
+      final var response =
+          SearchQueryResponseMapper.toDecisionDefinition(
+              serviceRegistry
+                  .decisionDefinitionServices(physicalTenantId)
+                  .getByKey(decisionDefinitionKey, authentication));
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final var metadata =
-            UpdateMetadataMapper.resolve(
-                entity,
-                d -> String.valueOf(d.decisionDefinitionKey()),
-                DECISION,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication);
-        response =
-            SearchQueryResponseMapper.toDecisionDefinition(
-                entity, metadata.updatedBy(), metadata.updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toDecisionDefinition(entity);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            DecisionDefinitionResult::getDecisionDefinitionKey,
+            DECISION,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            DecisionDefinitionResult::setUpdatedBy,
+            DecisionDefinitionResult::setUpdatedAt);
       }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {
@@ -141,24 +135,17 @@ public class DecisionDefinitionController {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = decisionDefinitionServices.search(query, authentication);
-      final DecisionDefinitionSearchQueryResult response;
+      final var response =
+          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result);
       if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
-        final Function<io.camunda.search.entities.DecisionDefinitionEntity, String> keyFn =
-            d -> String.valueOf(d.decisionDefinitionKey());
-        final var metadata =
-            UpdateMetadataMapper.resolveAll(
-                result.items(),
-                keyFn,
-                DECISION,
-                serviceRegistry.auditLogServices(physicalTenantId),
-                authentication);
-        response =
-            SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(
-                result,
-                d -> metadata.getOrDefault(keyFn.apply(d), ResolvedMetadata.EMPTY).updatedBy(),
-                d -> metadata.getOrDefault(keyFn.apply(d), ResolvedMetadata.EMPTY).updatedAt());
-      } else {
-        response = SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result);
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            DecisionDefinitionResult::getDecisionDefinitionKey,
+            DECISION,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            DecisionDefinitionResult::setUpdatedBy,
+            DecisionDefinitionResult::setUpdatedAt);
       }
       return ResponseEntity.ok(response);
     } catch (final Exception e) {

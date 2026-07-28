@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,11 +31,13 @@ import io.camunda.gateway.protocol.model.CategoryFilterProperty;
 import io.camunda.gateway.protocol.model.ClusterVariableKindFilterProperty;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeFilterProperty;
 import io.camunda.gateway.protocol.model.DateTimeFilterProperty;
+import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateFilterProperty;
 import io.camunda.gateway.protocol.model.ElementInstanceStateFilterProperty;
 import io.camunda.gateway.protocol.model.EntityTypeFilterProperty;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeFilterProperty;
+import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentStateFilterProperty;
 import io.camunda.gateway.protocol.model.IntegerFilterProperty;
 import io.camunda.gateway.protocol.model.JobKindFilterProperty;
@@ -45,10 +48,13 @@ import io.camunda.gateway.protocol.model.MessageSubscriptionTypeFilterProperty;
 import io.camunda.gateway.protocol.model.OperationTypeFilterProperty;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
 import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
+import io.camunda.gateway.protocol.model.VariableResultBase;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryCommitStatusFilterPropertyDeserializer;
@@ -86,6 +92,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializ
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.WaitStateElementTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.WaitStateTypeFilterPropertyDeserializer;
+import java.util.List;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,6 +100,19 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class JacksonConfig {
+
+  /**
+   * Response models carrying the feature-gated {@code updatedBy}/{@code updatedAt} properties.
+   * {@code VariableResult} and {@code VariableSearchResult} inherit them from {@code
+   * VariableResultBase}, so registering the base type covers both.
+   */
+  private static final List<Class<?>> UPDATE_METADATA_TYPES =
+      List.of(
+          ProcessInstanceResult.class,
+          UserTaskResult.class,
+          IncidentResult.class,
+          DecisionDefinitionResult.class,
+          VariableResultBase.class);
 
   @Bean("gatewayRestObjectMapperCustomizer")
   public Consumer<Jackson2ObjectMapperBuilder> gatewayRestObjectMapperCustomizer() {
@@ -176,6 +196,8 @@ public class JacksonConfig {
         new WaitStateElementTypeFilterPropertyDeserializer());
     module.addDeserializer(
         WaitStateTypeFilterProperty.class, new WaitStateTypeFilterPropertyDeserializer());
+    UPDATE_METADATA_TYPES.forEach(
+        type -> module.setMixInAnnotation(type, UpdateMetadataMixin.class));
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
@@ -198,5 +220,23 @@ public class JacksonConfig {
             });
     gatewayRestObjectMapperCustomizer().accept(builder);
     return builder.build();
+  }
+
+  /**
+   * Omits {@code updatedBy}/{@code updatedAt} from serialized responses when they carry no value.
+   *
+   * <p>The generated response models are annotated {@code @JsonInclude(ALWAYS)} at class level, so
+   * without this mix-in these properties would be emitted as explicit nulls even while {@code
+   * camunda.rest.update-metadata.enabled} is {@code false}. Property-level inclusion declared on a
+   * mix-in takes precedence over the class-level default, so the keys are absent unless a value was
+   * resolved.
+   */
+  abstract static class UpdateMetadataMixin {
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    abstract String getUpdatedBy();
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    abstract String getUpdatedAt();
   }
 }

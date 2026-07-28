@@ -63,6 +63,13 @@ describe('verifyResponsePropertiesRequired', () => {
     });
   });
 
+  describe('valid: non-required property marked x-feature-gated', () => {
+    it('produces no violations', () => {
+      const v = filterByApiPath(violations, '/valid-feature-gated/get');
+      assert.equal(v.length, 0);
+    });
+  });
+
   // ── Invalid cases ────────────────────────────────────────────────
 
   describe('invalid: one property not in required', () => {
