@@ -174,6 +174,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setDiskSpaceAvailable(final boolean b) {}
 
   @Override
+  public void setPausedForTransfer(final boolean pausedForTransfer) {}
+
+  @Override
   public TopologyManager getTopologyManager() {
     return null;
   }

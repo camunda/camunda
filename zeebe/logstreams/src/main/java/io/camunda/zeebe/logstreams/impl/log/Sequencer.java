@@ -98,6 +98,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
         return switch (rejected) {
           case RequestLimitExhausted -> Either.left(WriteFailure.REQUEST_LIMIT_EXHAUSTED);
           case WriteRateLimitExhausted -> Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
+          case PartitionPaused -> Either.left(WriteFailure.PARTITION_PAUSED);
         };
       }
       case Either.Right<Rejection, InFlightEntry>(final var accepted) -> inFlightEntry = accepted;
@@ -116,6 +117,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final long acquireTime;
     final long highestPosition;
     try {
+      if (flowControl.isPaused()) {
+        // Frozen after this writer passed tryAcquire but before it took the lock. Reject under the
+        // lock (releasing the reservation).
+        inFlightEntry.cleanup();
+        return Either.left(WriteFailure.PARTITION_PAUSED);
+      }
       acquireTime = System.nanoTime();
       final var currentPosition = position;
       highestPosition = currentPosition + batchSize - 1;
@@ -156,6 +163,26 @@ final class Sequencer implements LogStreamWriter, Closeable {
     sequencerMetrics.observeLockHoldTime(context, holdNanos);
     sequencerMetrics.observeBatchLengthBytes(batchLength);
     sequencerMetrics.observeBatchSize(batchSize);
+  }
+
+  /**
+   * Freezes write admission and drains in-flight writers for a leadership transfer. Taking the lock
+   * ensures any writer inside the critical section has submitted its append, and any writer past
+   * {@link FlowControl#tryAcquire} but still awaiting the lock is rejected once it takes the lock
+   * in {@link #tryWrite}. After this returns nothing can be appended until {@link #resumeWrites()}.
+   */
+  void pauseWrites() {
+    lock.lock();
+    try {
+      flowControl.pause();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** Resumes write admission after a leadership transfer. */
+  void resumeWrites() {
+    flowControl.resume();
   }
 
   /**

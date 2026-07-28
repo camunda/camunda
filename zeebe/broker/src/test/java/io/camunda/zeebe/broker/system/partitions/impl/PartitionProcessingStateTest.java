@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,16 +44,75 @@ class PartitionProcessingStateTest {
 
     // then
     assertThat(persistedProcessorPauseState).describedAs("Processor State file exists.").exists();
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.isProcessingPaused())
-        .isTrue();
+    assertThat(partitionProcessingState.isProcessingPaused()).isTrue();
 
     partitionProcessingState.resumeProcessing();
 
     assertThat(persistedProcessorPauseState)
         .describedAs("Processor State file does not exist.")
         .doesNotExist();
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.isProcessingPaused())
-        .isFalse();
+    assertThat(partitionProcessingState.isProcessingPaused()).isFalse();
+  }
+
+  @Test
+  void shouldNotProcessWhilePausedForTransfer() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setDiskSpaceAvailable(true);
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
+
+    // when
+    partitionProcessingState.setPausedForTransfer(true);
+
+    // then
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+
+    // and when the transfer pause is cleared, processing may run again
+    partitionProcessingState.setPausedForTransfer(false);
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
+  }
+
+  @Test
+  void shouldStayPausedWhenDiskRecoversMidTransfer() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setPausedForTransfer(true);
+    partitionProcessingState.setDiskSpaceAvailable(false);
+
+    // when
+    partitionProcessingState.setDiskSpaceAvailable(true);
+
+    // then
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+  }
+
+  @Test
+  void shouldStayPausedWhenAdminResumesMidTransfer() throws IOException {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setDiskSpaceAvailable(true);
+    partitionProcessingState.setPausedForTransfer(true);
+    partitionProcessingState.pauseProcessing();
+
+    // when
+    partitionProcessingState.resumeProcessing();
+
+    // then
+    assertThat(partitionProcessingState.isProcessingPaused()).isFalse();
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
+  }
+
+  @Test
+  void shouldNotPersistTransferPause() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.setPausedForTransfer(true);
+
+    // when
+    final var reloaded = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+
+    // then
+    assertThat(reloaded.isPausedForTransfer()).isFalse();
   }
 
   @Test

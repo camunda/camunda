@@ -519,8 +519,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     metrics.setStreamProcessorPaused();
   }
 
-  public void resumeProcessing() {
-    actor.call(
+  public ActorFuture<Void> resumeProcessing() {
+    return actor.call(
         () -> {
           if (!shouldProcess) {
             shouldProcess = true;

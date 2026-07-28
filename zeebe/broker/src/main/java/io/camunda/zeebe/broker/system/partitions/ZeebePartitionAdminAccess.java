@@ -166,9 +166,10 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           try {
             adminControl.resumeProcessing();
             if (adminControl.getStreamProcessor() != null && adminControl.shouldProcess()) {
-              adminControl.getStreamProcessor().resumeProcessing();
+              adminControl.getStreamProcessor().resumeProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
             }
-            completed.complete(null);
           } catch (final IOException e) {
             LOG.error("Could not resume processing", e);
             completed.completeExceptionally(e);

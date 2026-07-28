@@ -38,6 +38,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
@@ -133,6 +134,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  private final RebalanceMetrics rebalanceMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
@@ -193,6 +195,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
+    rebalanceMetrics = new RebalanceMetrics(name, meterRegistry);
 
     this.electionConfig = electionConfig;
     if (electionConfig.isPriorityElectionEnabled()) {
@@ -1133,6 +1136,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftRoleMetrics getRaftRoleMetrics() {
     return raftRoleMetrics;
+  }
+
+  public RebalanceMetrics getRebalanceMetrics() {
+    return rebalanceMetrics;
   }
 
   /**
