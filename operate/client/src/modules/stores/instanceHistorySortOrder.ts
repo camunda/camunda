@@ -18,7 +18,7 @@ type State = {
 const STORAGE_KEY = 'instanceHistorySortOrder';
 const DEFAULT_ORDER: QuerySortOrder = 'desc';
 
-const STORED_ORDER: QuerySortOrder = getStateLocally()[STORAGE_KEY];
+const STORED_ORDER: unknown = getStateLocally()[STORAGE_KEY];
 const INITIAL_ORDER: QuerySortOrder =
   STORED_ORDER === 'asc' || STORED_ORDER === 'desc'
     ? STORED_ORDER
