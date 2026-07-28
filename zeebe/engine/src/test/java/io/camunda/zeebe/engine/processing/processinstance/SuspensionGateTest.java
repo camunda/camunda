@@ -24,12 +24,11 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -39,8 +38,8 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 /**
- * Verifies the primary suspension gate in {@code Engine.process} (see #57521): commands targeting a
- * suspended process instance are either buffered, rejected, or passed through, depending on the
+ * Verifies the primary suspension gate in {@code Engine.process}: commands targeting a suspended
+ * process instance are either buffered, rejected, or passed through, depending on the
  * classification of their {@code TypedRecordProcessor}.
  */
 public final class SuspensionGateTest {
@@ -98,31 +97,34 @@ public final class SuspensionGateTest {
 
   @Test
   public void shouldBufferInternalCommandWhileSuspended() {
-    // given - a real timer whose CANCEL command (BUFFER category) is targeted at the process
-    // instance while it is suspended
+    // given - an internal COMPLETE_ELEMENT command (BUFFER category via BpmnStreamProcessor) is
+    // targeted at an element of the process instance while it is suspended
     final String processId = Strings.newRandomValidBpmnId();
+    final String jobType = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .intermediateCatchEvent("timer", e -> e.timerWithDuration("PT10S"))
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final Record<TimerRecordValue> timerCreated =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
+    final Record<ProcessInstanceRecordValue> taskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
     // when
     ENGINE.writeRecords(
         RecordToWrite.command()
-            .timer(TimerIntent.CANCEL, timerCreated.getValue())
-            .key(timerCreated.getKey()));
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, taskActivated.getValue())
+            .key(taskActivated.getKey()));
 
-    // then - the command is buffered instead of being handed to TimerCancelProcessor
+    // then - the command is buffered instead of being handed to BpmnStreamProcessor
     final Record<RecordValue> buffered =
         RecordingExporter.records()
             .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
@@ -135,36 +137,39 @@ public final class SuspensionGateTest {
             .getFirst();
     final var bufferedValue = (ProcessInstanceBufferedCommandRecordValue) buffered.getValue();
     assertThat(bufferedValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(bufferedValue.getCommandKey()).isEqualTo(timerCreated.getKey());
-    assertThat(bufferedValue.getIntent()).isEqualTo(TimerIntent.CANCEL);
+    assertThat(bufferedValue.getCommandKey()).isEqualTo(taskActivated.getKey());
+    assertThat(bufferedValue.getIntent()).isEqualTo(ProcessInstanceIntent.COMPLETE_ELEMENT);
 
-    // and no forward progress was made: the timer still exists, i.e. it was never actually
-    // canceled by TimerCancelProcessor
-    final var timerValue = timerCreated.getValue();
-    assertThat(
-            ((MutableProcessingState) ENGINE.getProcessingState())
-                .getTimerState()
-                .get(timerValue.getElementInstanceKey(), timerCreated.getKey()))
-        .isNotNull();
+    // and no forward progress was made: the element is still activated, i.e. it was never
+    // completed by BpmnStreamProcessor
+    final var elementInstance =
+        ((MutableProcessingState) ENGINE.getProcessingState())
+            .getElementInstanceState()
+            .getInstance(taskActivated.getKey());
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getState()).isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
   @Test
   public void shouldPassThroughBufferCategoryCommandWhileResuming() {
     // given - seed the RESUMING marker directly since it is currently unreachable in production
-    // (draining is implemented in a follow-up issue, #57792)
+    // (draining is implemented in a follow-up issue)
     final String processId = Strings.newRandomValidBpmnId();
+    final String jobType = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .intermediateCatchEvent("timer", e -> e.timerWithDuration("PT10S"))
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final Record<TimerRecordValue> timerCreated =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
+    final Record<ProcessInstanceRecordValue> taskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
     ((MutableProcessingState) ENGINE.getProcessingState())
         .getSuspensionState()
@@ -173,15 +178,16 @@ public final class SuspensionGateTest {
     // when
     ENGINE.writeRecords(
         RecordToWrite.command()
-            .timer(TimerIntent.CANCEL, timerCreated.getValue())
-            .key(timerCreated.getKey()));
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, taskActivated.getValue())
+            .key(taskActivated.getKey()));
 
     // then - the BUFFER-category command passes through and is actually processed
-    final Record<TimerRecordValue> canceled =
-        RecordingExporter.timerRecords(TimerIntent.CANCELED)
+    final Record<ProcessInstanceRecordValue> completed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
-    Assertions.assertThat(canceled.getValue()).hasProcessInstanceKey(processInstanceKey);
+    Assertions.assertThat(completed.getValue()).hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -217,7 +223,7 @@ public final class SuspensionGateTest {
   @Test
   public void shouldRejectMessageCorrelateWhileResuming() {
     // given - an instance waiting on a message catch event, with the RESUMING marker seeded
-    // directly (draining is implemented in a follow-up issue, #57792)
+    // directly (draining is implemented in a follow-up issue)
     final String processId = Strings.newRandomValidBpmnId();
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = Strings.newRandomValidBpmnId();
@@ -275,7 +281,7 @@ public final class SuspensionGateTest {
   }
 
   @Test
-  public void shouldRejectMessageCorrelateWhenOneOfMultipleTargetsSuspended() {
+  public void shouldCorrelateToActiveTargetWhenAnotherTargetSuspended() {
     // given - two instances of different processes waiting on the same message, one suspended
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = Strings.newRandomValidBpmnId();
@@ -294,23 +300,26 @@ public final class SuspensionGateTest {
     ENGINE.processInstance().withInstanceKey(suspendedInstanceKey).suspend();
 
     // when
-    final Record<MessageCorrelationRecordValue> rejection =
-        ENGINE
-            .messageCorrelation()
-            .withName(messageName)
-            .withCorrelationKey(correlationKey)
-            .expectRejection()
-            .correlate();
+    ENGINE
+        .messageCorrelation()
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .correlate();
 
-    // then - the entire correlate is rejected (all-or-nothing) referencing the suspended instance;
-    // because the gate rejects before any state write, the active instance is left untouched and
-    // the
-    // message is preserved for a post-resume retry
-    Assertions.assertThat(rejection)
-        .hasIntent(MessageCorrelationIntent.CORRELATE)
-        .hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(rejection.getRejectionReason())
-        .contains("process instance with key '" + suspendedInstanceKey + "'");
+    // then - the active instance receives the message and completes, while the suspended instance
+    // is
+    // skipped, so only the active instance correlates and the command is not rejected
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(activeInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withMessageName(messageName)
+                .limit(1))
+        .extracting(r -> r.getValue().getProcessInstanceKey())
+        .containsExactly(activeInstanceKey);
   }
 
   private long deployAndStartProcessWithMessageCatchEvent(
