@@ -115,6 +115,9 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 - Header: name the effect (the bug prevented or behavior enabled), not the mechanism. Prefer
   `fix: prevent duplicate job activation under concurrent polling` over `fix: add mutex around job activation`.
 - Do not use commit scopes — commitlint enforces `scope-empty`. Use `fix: ...` not `fix(ci): ...`
+- Every commit gets a body — including tests and reverts. A test needs the context for why it's
+  needed and the design rationale behind it; a revert needs the reason. Only a purely mechanical
+  change, like a formatter run, stands on its header alone.
 - Body: inverted-pyramid — the problem and its root cause first, then the approach and why it over
   the alternatives. Summarize the approach; don't restate the diff. Never compress the why — it's the
   one thing the diff can't say. Include background if needed. If long, use headings for structure.
