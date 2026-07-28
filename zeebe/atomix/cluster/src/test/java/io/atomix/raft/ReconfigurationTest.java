@@ -1200,6 +1200,87 @@ final class ReconfigurationTest {
   }
 
   @Nested
+  final class TwoPhaseReconfiguration {
+    /**
+     * Pins the PROMOTABLE catch-up contract: the leader ships its uncommitted tail to a PROMOTABLE
+     * member through an uncommitted reader (see {@link
+     * io.atomix.raft.cluster.impl.RaftMemberContext}), and the member appends and acknowledges that
+     * tail even though the entries are not committed, so it can reach the leader's last index and
+     * become eligible for promotion.
+     */
+    @Test
+    void shouldReplicateUncommittedEntriesToPromotableMember(@TempDir final Path tmp) {
+      // given - a cluster [1A, 2A] with a PROMOTABLE member 3, and generous timeouts so that
+      // holding back the ACTIVE follower's acks doesn't make the leader step down within this
+      // test's observation window (see removedLeaderStepsDownAtCommitNotAtAppend for why)
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final Consumer<RaftPartitionConfig> testTimeouts =
+          config -> {
+            config.setMaxQuorumResponseTimeout(Duration.ofSeconds(60));
+            config.setElectionTimeout(Duration.ofSeconds(3));
+          };
+
+      final var m1 =
+          createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3), testTimeouts);
+      final var m2 =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3), testTimeouts);
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+      assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      final var m3 =
+          createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2), testTimeouts);
+      assertThat(m3.join(Type.PROMOTABLE, List.of(id1, id2, id3)))
+          .succeedsWithin(Duration.ofSeconds(30));
+
+      final var leader = getLeaderServer(List.of(m1, m2)).orElseThrow();
+      final var follower = Stream.of(m1, m2).filter(s -> s != leader).findAny().orElseThrow();
+      final var followerId = MemberId.from(follower.name());
+
+      // when - nothing new can commit because entry-carrying appends to the only ACTIVE follower
+      // fail (the ACTIVE commit quorum is 2 out of 2, the PROMOTABLE member is in no quorum), and
+      // the leader appends several new entries. Every append exchange is delayed by a few
+      // milliseconds to avoid busy-looping the raft actor thread with the in-memory test protocol
+      // (see removedLeaderStepsDownAtCommitNotAtAppend).
+      final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+      leaderProtocol.interceptDelivery(
+          VersionedAppendRequest.class,
+          (receiver, request) -> {
+            final var result = new CompletableFuture<Void>();
+            CompletableFuture.runAsync(
+                () -> {
+                  if (receiver.equals(followerId) && !request.entries().isEmpty()) {
+                    result.completeExceptionally(new ConnectException());
+                  } else {
+                    result.complete(null);
+                  }
+                },
+                CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
+            return result;
+          });
+
+      final var commitIndexBefore = leader.getContext().getCommitIndex();
+      final var leaderRole = getLeader(leader).orElseThrow();
+      for (int i = 0; i < 5; i++) {
+        appendEntry(leaderRole).write().join();
+      }
+      final var lastIndex = leader.getContext().getLog().getLastIndex();
+      assertThat(lastIndex).isGreaterThan(commitIndexBefore);
+
+      // then - the PROMOTABLE member catches up to the leader's last index even though the
+      // leader's commit index stays behind it
+      Awaitility.await("the promotable member catches up to the leader's last uncommitted index")
+          .untilAsserted(
+              () -> assertThat(m3.getContext().getLog().getLastIndex()).isEqualTo(lastIndex));
+      assertThat(leader.getContext().getCommitIndex())
+          .describedAs("the appended entries must not have committed")
+          .isEqualTo(commitIndexBefore);
+    }
+  }
+
+  @Nested
   class ForceConfigureTest {
     final MemberId id1 = MemberId.from("1");
     final MemberId id2 = MemberId.from("2");

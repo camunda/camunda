@@ -78,15 +78,18 @@ public final class ReconfigurationHelper {
             return;
           }
 
-          // Always transition to PASSIVE or the last member type as found by
+          // Always transition to the requested type or the last member type as found by
           // `reloadConfigurationFromLog`.
           // This ensures that the member trying to join is not stuck in `INACTIVE` which would
           // prevent the joining from completing, particularly when joining a single-member cluster
           // where this new node is already required for quorum.
           switch (raftContext.getCluster().getLocalMember().getType()) {
             // The last configuration entry is probably old and has the local member as INACTIVE.
-            // Ignore this and become PASSIVE instead.
-            case INACTIVE -> raftContext.transition(Type.PASSIVE);
+            // Ignore this and start in the requested type instead, so that e.g. a PROMOTABLE
+            // joiner accepts the uncommitted tail from the very first append. ACTIVE joins keep
+            // starting as PASSIVE: a member without a configuration must not enter the follower
+            // role, and it is promoted by the configuration disseminated by the leader anyway.
+            case INACTIVE -> raftContext.transition(type == Type.ACTIVE ? Type.PASSIVE : type);
             // The last configuration entry has the local member as PASSIVE or ACTIVE, we can
             // directly transition to that.
             case final Type memberType -> raftContext.transition(memberType);
