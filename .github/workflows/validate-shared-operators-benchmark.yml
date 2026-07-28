@@ -1,0 +1,135 @@
+# description: Showcase / validation that the cluster-wide shared operators (ECK,
+#              CloudNativePG, Keycloak) on camunda-benchmark-prod reconcile team-owned
+#              CRs created via the GitHub Actions Teleport bot. Spins up an Elasticsearch
+#              and a Postgres cluster in a throwaway c8-* namespace plus a Keycloak in the
+#              shared keycloak-operator namespace, waits for them to become healthy, then
+#              cleans everything up.
+# test location: .github/config/shared-operators-benchmark/
+# type: CI
+# owner: camunda/infrastructure
+name: validate-shared-operators-benchmark.yml
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  NAMESPACE: c8-shared-operators-test
+  KEYCLOAK_NAME: c8-shared-operators-test-kc
+  KEYCLOAK_NS: keycloak-operator
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+permissions: {}
+
+jobs:
+  validate-shared-operators:
+    name: Validate shared operators (benchmark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Create test namespace
+        run: |
+          kubectl create namespace "${NAMESPACE}"
+          # janitor TTL is best-effort on benchmark (annotation-only); the cleanup
+          # step below is the real backstop.
+          kubectl annotate namespace "${NAMESPACE}" janitor/ttl=1h --overwrite
+
+      - name: Wait for replicated editor RoleBinding
+        run: |
+          # The replicator-tool copies the base kube-editor-binding into every c8-* namespace
+          # as `zeebe-kube-editor-binding`. Without it the bot cannot create CRs here.
+          for i in $(seq 1 24); do
+            if kubectl get rolebinding zeebe-kube-editor-binding -n "${NAMESPACE}" >/dev/null 2>&1; then
+              echo "RoleBinding replicated."
+              exit 0
+            fi
+            echo "Waiting for zeebe-kube-editor-binding in ${NAMESPACE} (attempt ${i}/24)..."
+            sleep 5
+          done
+          echo "::error::zeebe-kube-editor-binding was not replicated into ${NAMESPACE} in time."
+          exit 1
+
+      - name: Apply Elasticsearch and CNPG CRs
+        run: |
+          kubectl apply -f .github/config/shared-operators-benchmark/elasticsearch.yaml
+          kubectl apply -f .github/config/shared-operators-benchmark/cnpg.yaml
+
+      - name: Create placeholder Keycloak DB secret
+        run: |
+          # The Keycloak CR references a DB that never actually serves traffic; the
+          # showcase only checks that the operator reconciles the CR into a StatefulSet.
+          kubectl create secret generic "${KEYCLOAK_NAME}-db-credentials" \
+            -n "${KEYCLOAK_NS}" \
+            --from-literal=username=placeholder \
+            --from-literal=password=placeholder
+
+      - name: Apply Keycloak CR
+        run: kubectl apply -f .github/config/shared-operators-benchmark/keycloak.yaml
+
+      - name: Wait for Elasticsearch to be green
+        run: |
+          kubectl wait --for=jsonpath='{.status.health}'=green \
+            elasticsearch/c8-shared-operators-test \
+            -n "${NAMESPACE}" --timeout=600s
+
+      - name: Wait for CNPG cluster to be ready
+        run: |
+          kubectl wait --for=condition=Ready \
+            cluster.postgresql.cnpg.io/c8-shared-operators-test \
+            -n "${NAMESPACE}" --timeout=600s
+
+      - name: Wait for Keycloak StatefulSet to be created
+        run: |
+          for i in $(seq 1 60); do
+            if kubectl get statefulset "${KEYCLOAK_NAME}" -n "${KEYCLOAK_NS}" >/dev/null 2>&1; then
+              echo "Keycloak StatefulSet created."
+              exit 0
+            fi
+            echo "Waiting for Keycloak StatefulSet ${KEYCLOAK_NAME} (attempt ${i}/60)..."
+            sleep 5
+          done
+          echo "::error::Keycloak StatefulSet ${KEYCLOAK_NAME} was not created in time."
+          exit 1
+
+      - name: Clean up
+        if: always()
+        run: |
+          kubectl delete namespace "${NAMESPACE}" --ignore-not-found --wait=false
+          kubectl delete keycloak "${KEYCLOAK_NAME}" -n "${KEYCLOAK_NS}" --ignore-not-found
+          kubectl delete secret "${KEYCLOAK_NAME}-db-credentials" -n "${KEYCLOAK_NS}" --ignore-not-found
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
