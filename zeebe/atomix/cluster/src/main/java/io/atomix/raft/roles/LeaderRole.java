@@ -37,6 +37,8 @@ import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -542,7 +544,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (desiredLeader.equals(localMember)) {
       return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
     }
-    if (pausedForTransfer) {
+    if (leadershipTransferRunner.isInProgress() || pausedForTransfer) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
     final var coordinatorRejection = validateCoordinator(coordinator, coordinatorConfigIndex);
@@ -801,6 +803,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return future;
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    raft.checkThread();
+    logRequest(request);
+    final var rejectionReason =
+        precheckTransfer(
+            request.desiredLeader(), request.coordinator(), request.coordinatorConfigIndex());
+    if (rejectionReason.isPresent()) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              LeadershipTransferInitiateResponse.builder()
+                  .withStatus(Status.OK)
+                  .withRejectionReason(rejectionReason.get())
+                  .build()));
+    }
+    leadershipTransferRunner.start(request);
+    return CompletableFuture.completedFuture(
+        logResponse(LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build()));
   }
 
   @Override
