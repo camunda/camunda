@@ -173,11 +173,16 @@ outputs:
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
+    # Deliberately NOT gated on ci-relevant: the openapi-x-added-in-version
+    # check is expensive (clones return-of-api-added-in-analysis and bundles
+    # every 8.x spec) and is only meaningful when the spec, its lint config,
+    # or the verifier itself changes. Firing it on every workflow-file bump
+    # produced spurious failures whenever the base branch gained a new
+    # operation between fork and CI run.
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
   stable-branch-changes:

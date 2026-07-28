@@ -2305,6 +2305,15 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          # Pin the checkout to the PR head SHA so the working tree matches
+          # the SHA passed to the bundler as LATEST_BRANCH below. The default
+          # `pull_request` checkout is the refs/pull/N/merge commit, which
+          # includes changes from `main` that the bundler (fetching by
+          # LATEST_BRANCH) does not see. That mismatch causes
+          # UNKNOWN_OPERATION_IN_YAML failures on unrelated PRs whenever the
+          # base branch gains a new operation between fork and CI run.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
