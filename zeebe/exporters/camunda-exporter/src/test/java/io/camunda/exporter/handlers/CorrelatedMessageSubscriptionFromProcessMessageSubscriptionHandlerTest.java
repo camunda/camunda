@@ -8,11 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -26,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -89,8 +93,11 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
   }
 
   @Test
-  void shouldGenerateCompositeId() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -103,11 +110,10 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
                             .withMessageKey(67890L)
                             .build()));
 
-    // when
-    final List<String> ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids).hasSize(1).containsExactly("67890_12345");
+    // when - then
+    final String compositeId = "67890_12345";
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex(compositeId, index));
   }
 
   @Test
