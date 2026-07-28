@@ -637,9 +637,10 @@ public final class EventAppliers implements EventApplier {
   }
 
   /**
-   * Appliers for the pull-based correlation-key lock release lookup. Both event intents are
-   * introduced together with this feature and have no prior stream history, so a single V1 applier
-   * per intent is sufficient.
+   * Appliers for the cross-partition correlation-key lock release. The release is normally pushed
+   * by {@code P_B} on holder completion; these query/reconciliation intents are the backstop half.
+   * Both event intents are introduced together with this feature and have no prior stream history,
+   * so a single V1 applier per intent is sufficient.
    *
    * <ul>
    *   <li>{@code QUERIED}: acknowledgement event on {@code P_B} with no state effect.

@@ -25,9 +25,12 @@ import java.util.Set;
  * with the same {@code businessId} already exists.
  *
  * <p>This processor writes the {@link MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED}
- * follow-up event whose applier does the bookkeeping cleanup (pending-ask state removal). The
- * message stays buffered on {@code P_K}, waiting for the pull-based release mechanism in Increment
- * 4.
+ * follow-up event whose applier keeps the pending-ask entry and backs it off — incrementing its
+ * rejection count, never removing it. The message stays buffered on {@code P_K} and its ask is
+ * re-sent to {@code P_B} under capped exponential back-off by the pending-ask scheduler until the
+ * holder frees the {@code businessId} (the reply then flips to {@code STARTED}) or the buffered
+ * message reaches its TTL (ADR 0002 D2/D3). The cross-partition correlation-key lock release is a
+ * separate mechanism and does not retry a uniqueness rejection (ADR 0002 D4).
  *
  * <p>When the delegating command was a synchronous {@code correlate} (rather than a {@code
  * publish}), the client is still awaiting a response; this processor additionally flushes the

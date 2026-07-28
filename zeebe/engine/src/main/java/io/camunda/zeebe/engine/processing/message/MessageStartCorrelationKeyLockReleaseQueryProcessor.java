@@ -25,19 +25,21 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * hash(businessId)}, the partition where a message-start instance created via the cross-partition
  * handshake actually runs.
  *
- * <p>{@code P_K} polls this processor to discover when such holder instances have completed, so it
- * can release the correlation-key locks it is holding for them. A query batches one holder per lock
- * entry {@code P_K} is polling for a given {@code P_B}; the processor answers per holder: a holder
- * is "still active" iff a local element instance exists for its key and the instance is not banned.
- * A banned holder is treated as gone, mirroring the banned-instance filter on the uniqueness check,
- * so a stuck holder does not block its correlation key forever.
+ * <p>This is the reconciliation backstop, not the primary release path: a cross-partition holder
+ * normally pushes a {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} to {@code P_K} the
+ * moment it completes. {@code P_K}'s coarse reconciliation poll queries this processor only to
+ * recover locks whose push was lost, so it can still release them. A query batches one holder per
+ * lock entry {@code P_K} is reconciling for a given {@code P_B}; the processor answers per holder:
+ * a holder is "still active" iff a local element instance exists for its key and the instance is
+ * not banned. A banned holder is treated as gone, mirroring the banned-instance filter on the
+ * uniqueness check, so a stuck holder does not block its correlation key forever.
  *
  * <p>The processor always acknowledges with {@link
  * MessageStartCorrelationKeyLockReleaseIntent#QUERIED} for an observable trail, and replies {@link
  * MessageStartCorrelationKeyLockReleaseIntent#RELEASE} back to {@code P_K} for each holder that is
- * gone. Holders that are still active produce no reply — {@code P_K} keeps polling them with
- * back-off until completion. Each reply is routed back to {@code P_K} via the partition encoded in
- * the query's {@code requestKey}.
+ * gone. Holders that are still active produce no reply — {@code P_K} re-queries them on a later
+ * reconciliation tick until completion. Each reply is routed back to {@code P_K} via the partition
+ * encoded in the query's {@code requestKey}.
  *
  * <p>A gone holder that never ran the completion push (e.g. one that was banned, so it had no
  * transition to push) still has its holder-origin entry on this partition. For such a holder this

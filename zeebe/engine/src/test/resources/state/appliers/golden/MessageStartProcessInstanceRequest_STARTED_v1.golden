@@ -74,8 +74,9 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  * io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior}: every active root PI with a
  * {@code businessId} lives on {@code P_B = hash(businessId)}, and {@code P_K} keeps a local
  * correlation-key lock so further triggers with the same correlation key are buffered regardless of
- * their {@code businessId}. The recorded holder instance is what the pull-based release loop polls
- * {@code P_B} for to decide when that lock can be released.
+ * their {@code businessId}. The recorded holder instance is what {@code P_K}'s reconciliation poll
+ * queries {@code P_B} for, as a backstop deciding when that lock can be released if the holder's
+ * completion push from {@code P_B} was lost.
  */
 final class MessageStartProcessInstanceStartedV1Applier
     implements TypedEventApplier<
