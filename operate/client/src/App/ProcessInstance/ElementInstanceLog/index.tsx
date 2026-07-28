@@ -9,7 +9,13 @@
 import {observer} from 'mobx-react';
 import {useSearchParams} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
+import {
+  Container,
+  PanelHeader,
+  ErrorMessage,
+  PanelBody,
+  SearchRow,
+} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
@@ -44,14 +50,18 @@ const Layout: React.FC<LayoutProps> = observer(
           <PanelHeader title="Instance History" size="sm">
             {!modificationsStore.isModificationModeEnabled && (
               <Stack orientation="horizontal" gap={5}>
-                <SortOrderToggle />
                 <TimeStampPill />
                 <ExecutionCountToggle />
               </Stack>
             )}
           </PanelHeader>
         )}
-        {!modificationsStore.isModificationModeEnabled && searchInput}
+        {!modificationsStore.isModificationModeEnabled && (
+          <SearchRow>
+            {searchInput}
+            <SortOrderToggle />
+          </SearchRow>
+        )}
         {children}
       </Container>
     );

@@ -453,6 +453,9 @@ describe('ElementInstanceLog — search flow', () => {
     expect(
       screen.getByRole('searchbox', {name: 'Search instance history'}),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Latest first'}),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Execution count')).not.toBeInTheDocument();
     expect(
