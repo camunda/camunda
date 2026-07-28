@@ -199,6 +199,33 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getExpiresAt()).isEqualTo(null);
   }
 
+  @Test
+  public void testCslDisabledByDefault() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CCSM_PROFILE});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.isCslEnabled()).isFalse();
+  }
+
+  @Test
+  public void testCslEnabledWhenFlagSet() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CCSM_PROFILE});
+    when(environment.getProperty("optimize.security.csl.enabled")).thenReturn("true");
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.isCslEnabled()).isTrue();
+  }
+
   private void initializeMocks() {
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);

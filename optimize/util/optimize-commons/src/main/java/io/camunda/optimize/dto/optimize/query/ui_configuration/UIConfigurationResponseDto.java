@@ -26,6 +26,7 @@ public class UIConfigurationResponseDto {
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
   private boolean logoutHidden;
+  private boolean cslEnabled;
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
@@ -177,6 +178,18 @@ public class UIConfigurationResponseDto {
     this.logoutHidden = logoutHidden;
   }
 
+  /**
+   * Whether Optimize runs with the CSL security stack ({@code optimize.security.csl.enabled}). The
+   * SPA reads this to drive the CSL server-side logout flow instead of the legacy cookie logout.
+   */
+  public boolean isCslEnabled() {
+    return cslEnabled;
+  }
+
+  public void setCslEnabled(final boolean cslEnabled) {
+    this.cslEnabled = cslEnabled;
+  }
+
   public int getMaxNumDataSourcesForReport() {
     return maxNumDataSourcesForReport;
   }
@@ -257,6 +270,7 @@ public class UIConfigurationResponseDto {
   public int hashCode() {
     return Objects.hash(
         logoutHidden,
+        cslEnabled,
         maxNumDataSourcesForReport,
         userTaskAssigneeAnalyticsEnabled,
         emailEnabled,
@@ -283,6 +297,7 @@ public class UIConfigurationResponseDto {
     }
     final UIConfigurationResponseDto that = (UIConfigurationResponseDto) o;
     return logoutHidden == that.logoutHidden
+        && cslEnabled == that.cslEnabled
         && maxNumDataSourcesForReport == that.maxNumDataSourcesForReport
         && userTaskAssigneeAnalyticsEnabled == that.userTaskAssigneeAnalyticsEnabled
         && emailEnabled == that.emailEnabled
@@ -323,6 +338,8 @@ public class UIConfigurationResponseDto {
         + getNotificationsUrl()
         + ", logoutHidden="
         + isLogoutHidden()
+        + ", cslEnabled="
+        + isCslEnabled()
         + ", maxNumDataSourcesForReport="
         + getMaxNumDataSourcesForReport()
         + ", exportCsvLimit="
