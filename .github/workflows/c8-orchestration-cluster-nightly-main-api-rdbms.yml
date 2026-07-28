@@ -9,7 +9,13 @@ name: C8 Orchestration Cluster Nightly main - API Tests (RDBMS)
 on:
   schedule:
     - cron: "30 1 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      include_Slack_Reporter:
+        description: "Send test results to Slack (uncheck to disable Slack reporting)"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -18,14 +24,16 @@ jobs:
   nightly-api-tests-rdbms:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
     with:
-      branch: main
+      branch: test-nightly-rdbms-slack-off-waitstate
+      include_slack_reporter: ${{ github.event_name != 'workflow_dispatch' || inputs.include_Slack_Reporter }}
     secrets: inherit
 
   nightly-api-tests-rdbms-all-in-one:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
     with:
-      branch: main
+      branch: test-nightly-rdbms-slack-off-waitstate
       camunda_mode: all-in-one
+      include_slack_reporter: ${{ github.event_name != 'workflow_dispatch' || inputs.include_Slack_Reporter }}
     secrets: inherit
 
   # Auto-retry when a matrix leg failed because its self-hosted runner was
