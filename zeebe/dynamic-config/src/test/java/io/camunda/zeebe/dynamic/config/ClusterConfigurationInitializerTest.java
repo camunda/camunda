@@ -74,7 +74,8 @@ final class ClusterConfigurationInitializerTest {
   @Test
   void shouldInitializeFromExistingFile() throws IOException {
     // given
-    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
+    final var fileInitializer =
+        FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer());
     // write initial topology to the file
     persistedClusterConfiguration.update(initialClusterConfiguration);
     // when
@@ -87,7 +88,8 @@ final class ClusterConfigurationInitializerTest {
   @Test
   void shouldNotInitializeFromEmptyFile() {
     // given
-    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
+    final var fileInitializer =
+        FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer());
 
     // when
     final var initializeFuture = fileInitializer.initialize();
@@ -99,7 +101,8 @@ final class ClusterConfigurationInitializerTest {
   @Test
   void shouldNotInitializeFromCorruptedFile() throws IOException {
     // given
-    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
+    final var fileInitializer =
+        FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer());
     // Corrupt file
     Files.write(
         topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
@@ -433,9 +436,10 @@ final class ClusterConfigurationInitializerTest {
     assertThatClusterTopology(initializeFuture.join()).isUninitialized();
   }
 
-  private ClusterConfigurationInitializer getStaticInitializer() {
+  private ClusterConfigurationInitializer<ClusterConfiguration> getStaticInitializer() {
     final var member = MemberId.from("10");
-    return new StaticInitializer(getStaticConfiguration(member, Set.of(member)));
+    return StaticInitializer.legacyStaticInitializer(
+        getStaticConfiguration(member, Set.of(member)));
   }
 
   private StaticConfiguration getStaticConfiguration(
@@ -485,7 +489,7 @@ final class ClusterConfigurationInitializerTest {
     void shouldInitializeFromFileWhenNotEmpty() throws IOException {
       // given
       final var fileInitializer =
-          new FileInitializer(topologyFile, new ProtoBufSerializer())
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
                   new GossipInitializer(
                       new TestClusterConfigurationNotifier(),
@@ -508,7 +512,7 @@ final class ClusterConfigurationInitializerTest {
       final TestClusterConfigurationNotifier topologyUpdateNotifier =
           new TestClusterConfigurationNotifier();
       final var initializer =
-          new FileInitializer(topologyFile, new ProtoBufSerializer())
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
                   new GossipInitializer(
                       topologyUpdateNotifier,
@@ -537,7 +541,7 @@ final class ClusterConfigurationInitializerTest {
       final TestClusterConfigurationNotifier topologyUpdateNotifier =
           new TestClusterConfigurationNotifier();
       final var initializer =
-          new FileInitializer(topologyFile, new ProtoBufSerializer())
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
                   new GossipInitializer(
                       topologyUpdateNotifier,
@@ -572,7 +576,8 @@ final class ClusterConfigurationInitializerTest {
               ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
 
       final var initializer =
-          new FileInitializer(topologyFile, new ProtoBufSerializer()).orThen(syncInitializer);
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
+              .orThen(syncInitializer);
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -603,7 +608,7 @@ final class ClusterConfigurationInitializerTest {
               ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
 
       final var initializer =
-          new FileInitializer(topologyFile, new ProtoBufSerializer())
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(syncInitializer)
               .orThen(getStaticInitializer());
 
@@ -632,7 +637,7 @@ final class ClusterConfigurationInitializerTest {
           // member 0 was removed, member 1 last remaining in the cluster
           getStaticConfiguration(MemberId.from("1"), Set.of(MemberId.from("1")));
       final var initializer =
-          new StaticInitializer(updatedConfiguration)
+          StaticInitializer.legacyStaticInitializer(updatedConfiguration)
               .andThen(new PartitionDistributorInitializer(staticConfiguration));
 
       // when
@@ -651,7 +656,7 @@ final class ClusterConfigurationInitializerTest {
           getStaticConfiguration(
               MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
       final var initializer =
-          new StaticInitializer(staticConfiguration)
+          StaticInitializer.legacyStaticInitializer(staticConfiguration)
               .andThen(new PartitionDistributorInitializer(staticConfiguration));
 
       // when
@@ -670,7 +675,7 @@ final class ClusterConfigurationInitializerTest {
           getStaticConfiguration(
               MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
       final var initializer =
-          new StaticInitializer(staticConfiguration)
+          StaticInitializer.legacyStaticInitializer(staticConfiguration)
               .andThen(new ClusterIdInitializer("cluster-id-123", MemberId.from("1")));
 
       // when
@@ -708,8 +713,10 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldIgnoreRecoveryOnSuccess() throws IOException {
       // given
-      final var recovery = Mockito.mock(ClusterConfigurationInitializer.class);
-      final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
+      final ClusterConfigurationInitializer<ClusterConfiguration> recovery =
+          Mockito.mock(ClusterConfigurationInitializer.class);
+      final var fileInitializer =
+          FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer());
       final var recoveringInitializer =
           fileInitializer.recover(PersistedConfigurationIsBroken.class, recovery);
 
@@ -724,13 +731,13 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldUseChainedInitializerAfterSkippingRecovery() {
       // given
-      final ClusterConfigurationInitializer unsuccessfulInitializer =
+      final ClusterConfigurationInitializer<ClusterConfiguration> unsuccessfulInitializer =
           () -> CompletableActorFuture.completed(ClusterConfiguration.uninitialized());
 
-      final ClusterConfigurationInitializer successfulInitializer =
+      final ClusterConfigurationInitializer<ClusterConfiguration> successfulInitializer =
           () -> CompletableActorFuture.completed(initialClusterConfiguration);
 
-      final ClusterConfigurationInitializer recoveryInitializer =
+      final ClusterConfigurationInitializer<ClusterConfiguration> recoveryInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
                   new RuntimeException("shouldn't happen"));
@@ -748,15 +755,15 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldUseChainedInitializerAfterUnsuccessfulRecovery() {
       // given
-      final ClusterConfigurationInitializer failingInitializer =
+      final ClusterConfigurationInitializer<ClusterConfiguration> failingInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
                   new PersistedConfigurationIsBroken(topologyFile, null));
 
-      final ClusterConfigurationInitializer unsuccessfulRecovery =
+      final ClusterConfigurationInitializer<ClusterConfiguration> unsuccessfulRecovery =
           () -> CompletableActorFuture.completed(ClusterConfiguration.uninitialized());
 
-      final ClusterConfigurationInitializer finalInitializer =
+      final ClusterConfigurationInitializer<ClusterConfiguration> finalInitializer =
           () -> CompletableActorFuture.completed(initialClusterConfiguration);
 
       // when

@@ -25,9 +25,11 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
+import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
@@ -36,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -43,6 +46,7 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -57,9 +61,24 @@ import org.jspecify.annotations.Nullable;
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
+
+  /**
+   * Static feature flag switching the manager between the legacy single-group model and the new
+   * multi-partition-group model. Kept {@code false} in production for now; the new path is
+   * exercised via the {@code useNewConfig} constructor parameter (see {@link #USE_NEW_CONFIG}).
+   * When {@code false}, the legacy code path runs completely unchanged.
+   */
+  static final boolean USE_NEW_CONFIG = false;
+
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final PersistedClusterConfiguration persistedClusterConfiguration;
+  // Exactly one of persistedClusterConfiguration (legacy model) /
+  // persistedCurrentClusterConfiguration
+  // (new model) is set, matching ClusterConfigurationManagerImpl.USE_NEW_CONFIG. Both classes read
+  // the same on-disk file, distinguished by an internal header version, so only one may ever open
+  // it.
+  private final @Nullable PersistedClusterConfiguration persistedClusterConfiguration;
+  private final @Nullable PersistedCurrentClusterConfiguration persistedCurrentClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
   private final ClusterConfigurationRequestServer configurationRequestServer;
@@ -72,6 +91,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterMembershipService membershipService;
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
+  private final boolean useNewConfig;
   private ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
@@ -81,6 +101,31 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        clusterChangeExecutor,
+        meterRegistry,
+        USE_NEW_CONFIG);
+  }
+
+  /**
+   * @param useNewConfig overrides {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} for
+   *     testing; production code always goes through the constructor above, which uses the
+   *     compile-time flag.
+   */
+  @VisibleForTesting
+  ClusterConfigurationManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterConfigurationGossiperConfig config,
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final MeterRegistry meterRegistry,
+      final boolean useNewConfig) {
+    this.useNewConfig = useNewConfig;
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
@@ -94,13 +139,28 @@ public final class ClusterConfigurationManagerService
     membershipService = memberShipService;
     localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
-    persistedClusterConfiguration =
-        PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
     gossipActor = Actor.newActor().name("ClusterConfigGossip").build();
     managerActor = Actor.newActor().name("ClusterConfigManager").build();
-    clusterConfigurationManager =
-        new ClusterConfigurationManagerImpl(
-            managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
+
+    if (useNewConfig) {
+      persistedClusterConfiguration = null;
+      persistedCurrentClusterConfiguration =
+          PersistedCurrentClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+      clusterConfigurationManager =
+          new ClusterConfigurationManagerImpl(
+              managerActor,
+              localMemberId,
+              persistedCurrentClusterConfiguration,
+              topologyManagerMetrics);
+    } else {
+      persistedCurrentClusterConfiguration = null;
+      persistedClusterConfiguration =
+          PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+      clusterConfigurationManager =
+          new ClusterConfigurationManagerImpl(
+              managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
+    }
+
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             gossipActor,
@@ -108,7 +168,10 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterConfigurationManager::onGossipReceived,
+            // Dead on the new model: setCurrentConfigurationUpdateHandler (below) makes the
+            // gossiper prefer the new-model handler, so this legacy one is never invoked.
+            useNewConfig ? ignored -> {} : clusterConfigurationManager::onGossipReceived,
+            useNewConfig ? clusterConfigurationManager::onGossipReceivedCurrent : null,
             topologyMetrics);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
@@ -120,17 +183,24 @@ public final class ClusterConfigurationManagerService
             new ClusterConfigurationManagementRequestsHandler(
                 configurationChangeCoordinator, localMemberId, managerActor, validators));
 
-    clusterConfigurationManager.setConfigurationGossiper(
-        clusterConfigurationGossiper::updateClusterConfiguration);
+    if (useNewConfig) {
+      clusterConfigurationManager.setCurrentConfigurationGossiper(
+          clusterConfigurationGossiper::updateCurrentClusterConfiguration);
+    } else {
+      clusterConfigurationManager.setConfigurationGossiper(
+          clusterConfigurationGossiper::updateClusterConfiguration);
+    }
   }
 
-  private ClusterConfigurationInitializer getNonCoordinatorInitializer(
+  private ClusterConfigurationInitializer<ClusterConfiguration> getNonCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
-    return new FileInitializer(configurationFile, new ProtoBufSerializer())
+    return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
-        // This is important so that we don't silently revert to uninitialized configuration when
-        // multiple members have a broken configuration file at the same time, for example because
+        // This is important so that we don't silently revert to uninitialized configuration
+        // when
+        // multiple members have a broken configuration file at the same time, for example
+        // because
         // of a serialization bug.
         .recover(
             PersistedConfigurationIsBroken.class,
@@ -154,18 +224,20 @@ public final class ClusterConfigurationManagerService
                 managerActor,
                 false))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
-        // Must be initialized by the coordinator only. However, we still define it here because the
-        // actual coordinator might be different from what is provided in the static configuration.
+        // Must be initialized by the coordinator only. However, we still define it here because
+        // the
+        // actual coordinator might be different from what is provided in the static
+        // configuration.
         // These initializers will be skipped if they are not running on the latest coordinator
         // based on the initialized configuration.
         .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
-  private ClusterConfigurationInitializer getCoordinatorInitializer(
+  private ClusterConfigurationInitializer<ClusterConfiguration> getCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
-    return new FileInitializer(configurationFile, new ProtoBufSerializer())
+    return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
                 gossiperConfig.syncInitializerDelay(),
@@ -174,7 +246,7 @@ public final class ClusterConfigurationManagerService
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration,
                 gossiperConfig.bootstrapTimeout()))
-        .orThen(new StaticInitializer(staticConfiguration))
+        .orThen(new StaticInitializer<>(staticConfiguration::generateTopology))
         .andThen(
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
@@ -218,14 +290,6 @@ public final class ClusterConfigurationManagerService
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
-    final var coordinatorMemberId =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(staticConfiguration.clusterMembers())
-            .getDefaultCoordinator();
-    final var isCoordinator = coordinatorMemberId.equals(localMemberId);
-    final ClusterConfigurationInitializer clusterConfigurationInitializer =
-        isCoordinator
-            ? getCoordinatorInitializer(staticConfiguration)
-            : getNonCoordinatorInitializer(staticConfiguration);
 
     configurationRequestServer.start();
 
@@ -237,7 +301,34 @@ public final class ClusterConfigurationManagerService
             (ok, error) -> {
               if (error != null) {
                 result.completeExceptionally(error);
+              } else if (useNewConfig) {
+                // Registered here rather than in the constructor: registerGlobalChangeAppliers goes
+                // through managerActor's executor.
+                clusterConfigurationManager.registerGlobalChangeAppliers(
+                    new GlobalConfigurationChangeAppliersImpl(
+                        new NoopClusterMembershipChangeExecutor(), clusterChangeExecutor));
+                // Intermediate migration step: only the file and static initializer exists for the
+                // new model, used unconditionally for both coordinator and non-coordinator role.
+                // File/gossip/sync recovery and the coordinator/non-coordinator split are a
+                // follow-up.
+                final ClusterConfigurationInitializer<CurrentClusterConfiguration> initializer =
+                    FileInitializer.fromPersistedConfiguration(
+                            configurationFile, new ProtoBufSerializer())
+                        .orThen(
+                            new StaticInitializer<>(
+                                staticConfiguration::generateCurrentClusterConfiguration));
+                clusterConfigurationManager.start(initializer).onComplete(result);
               } else {
+                final var coordinatorMemberId =
+                    ClusterConfigurationCoordinatorSupplier.ofMembers(
+                            staticConfiguration.clusterMembers())
+                        .getDefaultCoordinator();
+                final var isCoordinator = coordinatorMemberId.equals(localMemberId);
+                final ClusterConfigurationInitializer<ClusterConfiguration>
+                    clusterConfigurationInitializer =
+                        isCoordinator
+                            ? getCoordinatorInitializer(staticConfiguration)
+                            : getNonCoordinatorInitializer(staticConfiguration);
                 clusterConfigurationManager
                     .start(clusterConfigurationInitializer)
                     .onComplete(result);
@@ -302,6 +393,45 @@ public final class ClusterConfigurationManagerService
 
   public void removeModeChangeExecutor() {
     managerActor.run(() -> modeChangeExecutor = null);
+  }
+
+  /**
+   * Registers the appliers for a single partition group (physical tenant) on the new
+   * multi-partition-group model, keyed by {@code groupId}. Unlike {@link
+   * #registerPartitionChangeExecutors}/{@link #registerModeChangeExecutor} (one shared registration
+   * for the single legacy group), this is called once per physical tenant — each tenant's own
+   * executors are scoped to that tenant only.
+   *
+   * <p>Not yet called by any broker code: broker integration (registering every physical tenant's
+   * {@code PartitionManagerImpl}/{@code PartitionModeHandler} here instead of only the default
+   * tenant's) is a follow-up.
+   */
+  public void registerPartitionGroupChangeExecutors(
+      final String groupId,
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ModeChangeExecutor modeChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
+    if (!useNewConfig) {
+      return; // noop on legacy mode
+    }
+    managerActor.run(
+        () ->
+            clusterConfigurationManager.registerPartitionGroupChangeAppliers(
+                groupId,
+                new PartitionGroupConfigurationChangeAppliersImpl(
+                    partitionChangeExecutor,
+                    partitionScalingChangeExecutor,
+                    clusterChangeExecutor,
+                    modeChangeExecutor,
+                    restoreChangeExecutor)));
+  }
+
+  public void removePartitionGroupChangeExecutors(final String groupId) {
+    if (!useNewConfig) {
+      return; // noop on legacy mode
+    }
+    managerActor.run(() -> clusterConfigurationManager.removePartitionGroupChangeAppliers(groupId));
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {

@@ -17,7 +17,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
  * enabled. All members will initialize the same routing state (as long as their statically
  * configured partition counts match).
  */
-public class RoutingStateInitializer implements ClusterConfigurationModifier {
+public class RoutingStateInitializer implements ClusterConfigurationModifier<ClusterConfiguration> {
 
   private final int staticPartitionCount;
 

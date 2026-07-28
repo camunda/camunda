@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.List;
@@ -36,6 +37,19 @@ public record StaticConfiguration(
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(
         partitionDistribution, partitionConfig, clusterId);
+  }
+
+  /**
+   * Generates the multi-partition-group counterpart of {@link #generateTopology()}, used by the new
+   * configuration model. Partitions are split into groups by their {@link
+   * io.camunda.cluster.PartitionId#group()}; every configured cluster member is visible in the
+   * result regardless of partition assignment. See {@link
+   * ConfigurationUtil#getCurrentClusterConfigurationFrom} for details.
+   */
+  public CurrentClusterConfiguration generateCurrentClusterConfiguration() {
+    final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+        clusterMembers, partitionDistribution, partitionConfig, clusterId);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

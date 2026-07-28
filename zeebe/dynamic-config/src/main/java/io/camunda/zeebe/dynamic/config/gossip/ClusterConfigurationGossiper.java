@@ -57,7 +57,7 @@ public final class ClusterConfigurationGossiper
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
   // New-model handler; when set, received gossip is delivered as a CurrentClusterConfiguration
   // (field 2, or migrated from field 1) instead of through the legacy handler.
-  private Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
+  private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
   private final TopologyMetrics topologyMetrics;
 
   public ClusterConfigurationGossiper(
@@ -67,6 +67,7 @@ public final class ClusterConfigurationGossiper
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
       final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
+      final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler,
       final TopologyMetrics topologyMetrics) {
     this.executor = executor;
     this.communicationService = communicationService;
@@ -74,6 +75,7 @@ public final class ClusterConfigurationGossiper
     this.config = config;
     this.serializer = serializer;
     this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
+    this.currentConfigurationUpdateHandler = currentConfigurationUpdateHandler;
     this.topologyMetrics = topologyMetrics;
   }
 
@@ -240,15 +242,6 @@ public final class ClusterConfigurationGossiper
             onConfigurationUpdated(clusterConfiguration);
           }
         });
-  }
-
-  /**
-   * Sets the handler invoked with the received {@link CurrentClusterConfiguration} (new model).
-   * Setting it switches the receive path from the legacy handler to this one.
-   */
-  public void setCurrentConfigurationUpdateHandler(
-      final Consumer<CurrentClusterConfiguration> handler) {
-    executor.run(() -> currentConfigurationUpdateHandler = handler);
   }
 
   /**

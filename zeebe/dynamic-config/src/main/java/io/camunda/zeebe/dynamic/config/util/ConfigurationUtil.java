@@ -10,13 +10,20 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -57,6 +64,81 @@ public final class ConfigurationUtil {
         .clusterId(Optional.ofNullable(clusterId))
         .incarnationNumber(ClusterConfiguration.INITIAL_INCARNATION_NUMBER)
         .build();
+  }
+
+  /**
+   * Generates the multi-partition-group counterpart of {@link #getClusterConfigFrom}, used by the
+   * new configuration model. Every member in {@code clusterMembers} appears in the returned {@link
+   * GlobalConfiguration} as {@code ACTIVE}, regardless of whether it replicates any partition — the
+   * global configuration is the single authority for cluster membership, independent of partition
+   * assignment. {@code partitionDistribution} is split into one {@link PartitionGroupConfiguration}
+   * per distinct {@link PartitionId#group()} found in it, each with its own {@link RoutingState}
+   * initialized from that group's own partition count; only members that replicate at least one
+   * partition of a group appear in that group.
+   *
+   * <p>{@code partitionConfig} (exporter state) is applied uniformly to every partition regardless
+   * of group, since {@code StaticConfiguration} has no per-group exporter configuration yet.
+   */
+  public static CurrentClusterConfiguration getCurrentClusterConfigurationFrom(
+      final Set<MemberId> clusterMembers,
+      final Set<PartitionMetadata> partitionDistribution,
+      final DynamicPartitionConfig partitionConfig,
+      @Nullable final String clusterId) {
+    final Map<MemberId, BrokerState> brokerStates = new HashMap<>();
+    for (final var member : clusterMembers) {
+      brokerStates.put(member, BrokerState.initializeAsActive());
+    }
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            GlobalConfiguration.INITIAL_VERSION,
+            Optional.ofNullable(clusterId),
+            brokerStates,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+
+    final var partitionStatesByGroupAndMember =
+        new HashMap<String, Map<MemberId, Map<Integer, PartitionState>>>();
+    for (final var partitionMetadata : partitionDistribution) {
+      final var groupId = partitionMetadata.id().group();
+      final var partitionId = partitionMetadata.id().number();
+      for (final var member : partitionMetadata.members()) {
+        final var memberPriority = partitionMetadata.getPriority(member);
+        partitionStatesByGroupAndMember
+            .computeIfAbsent(groupId, ignored -> new HashMap<>())
+            .computeIfAbsent(member, ignored -> new HashMap<>())
+            .put(partitionId, PartitionState.active(memberPriority, partitionConfig));
+      }
+    }
+
+    final Map<String, PartitionGroupConfiguration> partitionGroups = new HashMap<>();
+    for (final var groupEntry : partitionStatesByGroupAndMember.entrySet()) {
+      final var partitionsByMember = groupEntry.getValue();
+      final Map<MemberId, BrokerPartitionState> brokerPartitionStates = new HashMap<>();
+      final var partitionIdsInGroup = new HashSet<Integer>();
+      for (final var memberEntry : partitionsByMember.entrySet()) {
+        brokerPartitionStates.put(
+            memberEntry.getKey(), BrokerPartitionState.initialize(memberEntry.getValue()));
+        partitionIdsInGroup.addAll(memberEntry.getValue().keySet());
+      }
+      final var routingState =
+          Optional.of(RoutingState.initializeWithPartitionCount(partitionIdsInGroup.size()));
+      partitionGroups.put(
+          groupEntry.getKey(),
+          new PartitionGroupConfiguration(
+              PartitionGroupConfiguration.INITIAL_VERSION,
+              PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+              brokerPartitionStates,
+              routingState,
+              Optional.empty(),
+              Optional.empty()));
+    }
+
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        globalConfiguration,
+        partitionGroups,
+        PhasedChangeState.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(

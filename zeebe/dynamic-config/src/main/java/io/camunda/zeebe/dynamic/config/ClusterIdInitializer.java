@@ -24,7 +24,8 @@ import org.slf4j.LoggerFactory;
  * configured partition counts match).
  */
 @NullMarked
-public class ClusterIdInitializer extends ClusterConfigurationModifier.CoordinatorOnly {
+public class ClusterIdInitializer
+    extends ClusterConfigurationModifier.CoordinatorOnly<ClusterConfiguration> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterIdInitializer.class);
   private final String clusterId;

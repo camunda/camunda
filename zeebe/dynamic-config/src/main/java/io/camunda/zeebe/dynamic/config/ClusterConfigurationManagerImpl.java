@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
  * See {@link ConfigurationChangeAppliers} to see how a change is applied locally.
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
+
   private static final Logger LOG = LoggerFactory.getLogger(ClusterConfigurationManagerImpl.class);
   private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(10);
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
@@ -82,9 +83,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
-
-  // Temporary flag to switch between the old single-partition-group model and the new
-  // multi-partition-group model. This is used for testing and will be removed in the future.
   private final boolean useNewConfig;
 
   // New-model state, only used when useNewConfig is true.
@@ -139,9 +137,24 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * Constructs a manager operating on the new multi-partition-group model. Used only in tests now.
-   * The legacy {@code PersistedClusterConfiguration} is not used in this mode.
+   * Constructs a manager operating on the new multi-partition-group model. Used when {@link
+   * ClusterConfigurationManagerService#USE_NEW_CONFIG} is enabled. The legacy {@code
+   * PersistedClusterConfiguration} is not used in this mode.
    */
+  ClusterConfigurationManagerImpl(
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedCurrentClusterConfiguration persistedCurrentConfiguration,
+      final TopologyManagerMetrics topologyMetrics) {
+    this(
+        executor,
+        localMemberId,
+        persistedCurrentConfiguration,
+        topologyMetrics,
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY);
+  }
+
   @VisibleForTesting
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
@@ -247,7 +260,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return future;
   }
 
-  ActorFuture<Void> start(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
+  ActorFuture<Void> start(
+      final ClusterConfigurationInitializer<? extends InitializableClusterConfiguration>
+          clusterConfigurationInitializer) {
     executor.run(
         () -> {
           if (startFuture.isDone()) {
@@ -263,7 +278,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.configurationGossiper = configurationGossiper;
   }
 
-  private void initialize(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
+  private void initialize(
+      final ClusterConfigurationInitializer<? extends InitializableClusterConfiguration>
+          clusterConfigurationInitializer) {
     clusterConfigurationInitializer
         .initialize()
         .onComplete(
@@ -277,19 +294,45 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
-                try {
-                  // merge in case there was a concurrent update via gossip
-                  persistedClusterConfiguration.update(
-                      configuration.merge(persistedClusterConfiguration.getConfiguration()));
-                  LOG.debug(
-                      "Initialized cluster configuration '{}'",
-                      persistedClusterConfiguration.getConfiguration());
-                  configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
-                  setStarted();
-                } catch (final IOException e) {
+                // temporary workaround to support both legacy and new configuration models.
+                if (configuration instanceof final ClusterConfiguration clusterConfiguration) {
+                  try {
+                    // merge in case there was a concurrent update via gossip
+                    persistedClusterConfiguration.update(
+                        clusterConfiguration.merge(
+                            persistedClusterConfiguration.getConfiguration()));
+                    LOG.debug(
+                        "Initialized (legacy) cluster configuration '{}'",
+                        persistedClusterConfiguration.getConfiguration());
+                    configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
+                  } catch (final IOException e) {
+                    startFuture.completeExceptionally(
+                        "Failed to start update cluster configuration", e);
+                  }
+                } else if (configuration
+                    instanceof final CurrentClusterConfiguration currentClusterConfiguration) {
+                  try {
+                    // merge in case there was a concurrent update via gossip
+                    persistedCurrentConfiguration.update(
+                        currentClusterConfiguration.merge(
+                            persistedCurrentConfiguration.getConfiguration()));
+                    LOG.debug(
+                        "Initialized cluster configuration '{}'",
+                        persistedCurrentConfiguration.getConfiguration());
+                    if (currentConfigurationGossiper != null) {
+                      currentConfigurationGossiper.accept(
+                          persistedCurrentConfiguration.getConfiguration());
+                    }
+                  } catch (final IOException e) {
+                    startFuture.completeExceptionally(
+                        "Failed to start update cluster configuration", e);
+                  }
+                } else {
                   startFuture.completeExceptionally(
-                      "Failed to start update cluster configuration", e);
+                      new IllegalStateException(
+                          "Unexpected configuration type: " + configuration.getClass()));
                 }
+                setStarted();
               }
             });
   }
