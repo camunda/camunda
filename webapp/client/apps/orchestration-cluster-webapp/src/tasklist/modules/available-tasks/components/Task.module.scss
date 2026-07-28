@@ -70,6 +70,17 @@ $focused-border-width: 2px;
 		padding: $spacing;
 	}
 
+	// DS-only (see Task.tsx — .activeDS is only ever added alongside .active
+	// when featureFlags.dsTasklistUI is on). Trying out AppSidebar's own
+	// active-item pattern here instead of Carbon's left-border-accent: a plain
+	// neutral fill, no border, so padding doesn't need the border-width
+	// compensation .active's own rule above uses.
+	&.activeDS .taskLink {
+		background-color: var(--neutral-background-strong);
+		border-left: none;
+		padding: $spacing;
+	}
+
 	&:not(.active) {
 		&:hover .taskLink {
 			background-color: var(--cds-layer-hover);
@@ -103,6 +114,10 @@ $focused-border-width: 2px;
 }
 
 .inlineIcon {
+	display: inline-block;
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
 	vertical-align: text-bottom;
 	margin-right: var(--cds-spacing-01);
 }

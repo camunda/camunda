@@ -10,6 +10,26 @@
 @use '@carbon/grid';
 @use '@carbon/type';
 
+/*
+ * AppSidebar (src/components/ui/app-sidebar.tsx) is designed as a global,
+ * position:fixed nav rail (left:0, top:12, bottom:0, z-40) — but this panel
+ * sits in-flow as the first grid column inside TasksLayoutPage's own layout,
+ * next to the task list, not as a page-level overlay. !important is
+ * deliberate: these are the component's own literal, unconditional utility
+ * classes (fixed/inset/z-index), not something we can reliably out-cascade by
+ * source order alone since it's a vendored DS component, not app code we can
+ * adjust upstream.
+ */
+.dsSidebar {
+	position: static !important;
+	top: auto !important;
+	bottom: auto !important;
+	left: auto !important;
+	z-index: auto !important;
+	height: 100%;
+	border-right: 1px solid var(--cds-border-subtle);
+}
+
 .base {
 	height: 100%;
 	border-right: 1px solid var(--cds-border-subtle);

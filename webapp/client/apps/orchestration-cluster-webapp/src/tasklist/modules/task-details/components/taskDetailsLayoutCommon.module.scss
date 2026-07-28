@@ -36,6 +36,18 @@
 	gap: var(--cds-spacing-05);
 }
 
+/*
+ * Applied conditionally (only when featureFlags.dsTasklistUI is on) in
+ * TaskDetailsHeader.tsx — .header itself is shared by both old and new UI
+ * (same component, unconditional CSS module class), so the border can't live
+ * directly on .header without also changing old-UI's appearance, which was
+ * never asked for.
+ */
+.headerBorder {
+	padding-bottom: var(--cds-spacing-05);
+	border-bottom: 1px solid var(--cds-border-subtle);
+}
+
 .headerLeftContainer {
 	display: flex;
 	flex-direction: column;
@@ -58,7 +70,39 @@
 	overflow: auto;
 }
 
+/*
+ * Old-UI only (see TabListNav.tsx — applied conditionally there, only when
+ * the flag is off). A simple border-top+bottom, unconditional since before
+ * this migration touched this file. Carbon's real TabList is naturally
+ * full-width, so this already looks like a correct row divider there;
+ * that's why it's harmless/unchanged for that path specifically.
+ */
 .tabs {
 	border-top: 1px solid var(--cds-border-subtle);
+	border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+/*
+ * DS (flag on) only, by construction: targets the DS Tabs root's own
+ * [data-slot="tabs"] attribute, which Carbon's real Tabs component never
+ * sets. Needed because carbon-compat's Tabs wrapper (tabs.tsx) doesn't
+ * forward a className to its own root, only TabList's (onto TabsList, the
+ * inner pill widget) — styling needed here is on the outer wrapper, not the
+ * pill, so it can't go through TabListNav's className prop the way .tabs
+ * above does.
+ *
+ * - width: 100% + align-self: flex-start: .content (the parent Section) is a
+ *   flex column with align-items: center, which centers this wrapper since
+ *   it's naturally only as wide as the pill inside it. Breaks out of that so
+ *   the tab row (and its border) sits flush left instead of centered.
+ * - border-bottom here (not on TabsList itself): a border on the pill
+ *   itself just outlines the small pill; this spans the full row width
+ *   underneath it instead, like a proper section divider.
+ */
+.content > [data-slot='tabs'] {
+	width: 100%;
+	align-self: flex-start;
+	padding-left: var(--cds-spacing-05);
+	padding-bottom: var(--cds-spacing-03);
 	border-bottom: 1px solid var(--cds-border-subtle);
 }

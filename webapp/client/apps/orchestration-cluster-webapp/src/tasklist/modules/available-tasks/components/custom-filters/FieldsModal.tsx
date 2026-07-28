@@ -34,6 +34,7 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
 import {cn} from '#/shared/cn';
+import {featureFlags} from '#/shared/feature-flags';
 import {
 	type NamedCustomFilters,
 	namedCustomFiltersSchema,
@@ -96,10 +97,23 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 	return (
 		<ComposedModal
 			open={isOpen}
-			preventCloseOnClickOutside
 			size="md"
+			className={featureFlags.dsTasklistUI ? styles.modal : undefined}
 			onClose={onClose}
 			aria-label={t('tasklist.customFiltersModalAriaLabel')}
+			// carbon-compat drops preventCloseOnClickOutside entirely (confirmed via
+			// warnDroppedProps in carbon-compat/modal.tsx). onPointerDownOutside isn't
+			// in ComposedModal's prop allowlist, so it passes through the wrapper's
+			// ...rest spread straight to the underlying Radix DialogContent, which
+			// does support it. Needed so in-progress filter edits (e.g. task variables
+			// being typed) aren't lost to an accidental outside click. Not part of
+			// ComposedModalProps (Carbon's own type), so it's spread in as an escape
+			// hatch rather than typed directly on the component. Gated behind the flag:
+			// with it off, ComposedModal is Carbon's real component, which wouldn't
+			// recognize this prop at all (harmless, but pointless to pass).
+			{...(featureFlags.dsTasklistUI
+				? ({onPointerDownOutside: (event: Event) => event.preventDefault()} as Record<string, unknown>)
+				: {})}
 		>
 			{isOpen ? (
 				<Form<FormValues>
@@ -145,11 +159,12 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 					{({handleSubmit, form, values}) => (
 						<>
 							<ModalHeader
+								className={featureFlags.dsTasklistUI ? styles.modalHeader : undefined}
 								title={t('tasklist.customFiltersModalApplyFiltersTitle')}
 								iconDescription={t('tasklist.optionsModalCloseButton')}
 								buttonOnClick={onClose}
 							/>
-							<ModalBody hasForm>
+							<ModalBody className={featureFlags.dsTasklistUI ? styles.modalBody : undefined} hasForm>
 								<form className={styles.twoColumnGrid} onSubmit={handleSubmit} tabIndex={-1}>
 									{[undefined, 'custom'].includes(initialValues?.name) ? null : (
 										<Field name="name" defaultValue="">
@@ -478,7 +493,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 									) : null}
 								</form>
 							</ModalBody>
-							<ModalFooter className={styles.modalFooter}>
+							<ModalFooter className={featureFlags.dsTasklistUI ? styles.modalFooter : undefined}>
 								<Button
 									kind="ghost"
 									onClick={() => {

@@ -57,15 +57,41 @@
  * `revert` returns these properties to the user-agent default, which
  * Carbon then layers its own styles on. DS components use utility
  * classes (specificity 0,1,0) that still win over this `:where(.c4-ui)`
- * rule (0,0,1).
+ * rule (0,0,1) for properties they explicitly set (font-size, font-weight,
+ * margin, padding). font-family is the exception: DS components rely on
+ * inheriting it from `body { font-family: var(--font-sans) }` rather than
+ * re-declaring it per component, and an inherited value loses to ANY rule
+ * that targets the element directly, regardless of specificity. Reverting
+ * the full `font` shorthand here (previously `font: revert`) was reverting
+ * font-family too, silently falling every DS button/input/select back to
+ * the browser's UA default (Arial-ish) instead of the DS's Geist Sans.
+ * Only font-size/line-height are needed for the height-calibration fix
+ * this rule exists for, so font-family is scoped out below.
  *
  * Discovered on /clusters route (C3DataTable filter toolbar overlapping
- * the table header row) during PoC validation 2026-06-16.
+ * the table header row) during PoC validation 2026-06-16. Font-family
+ * regression discovered on Tasklist's custom-filters modal 2026-07-24.
  */
 :where(.c4-ui) :is(button, input, optgroup, select, textarea) {
-  font: revert;
+  font-size: revert;
+  line-height: revert;
   margin: revert;
   padding: revert;
 }
 
 /* Consumer overrides go below. */
+
+/* Select dropdown height cap.
+ *
+ * DS SelectContent defaults to `max-h-(--radix-select-content-available-height)`,
+ * i.e. it fills whatever space is available up to the viewport edge. For
+ * fields backed by long lists (e.g. process definitions, which can run into
+ * the hundreds) this renders an oversized dropdown instead of a compact,
+ * scrollable one. carbon-compat's Select wrapper doesn't forward a className
+ * to SelectContent, so this can't be scoped per-instance from app code —
+ * capping it globally here instead. ~10 rows visible (36px row + 8px viewport
+ * padding, per DS SelectItem/Viewport padding) before it scrolls.
+ */
+:where(.c4-ui) [data-slot='select-content'] {
+  max-height: 23rem;
+}

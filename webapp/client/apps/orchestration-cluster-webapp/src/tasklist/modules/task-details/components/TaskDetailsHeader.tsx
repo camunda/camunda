@@ -10,6 +10,8 @@ import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {CheckmarkFilledIcon, Stack} from '#/shared/design-system-compat';
 import {AssigneeTag} from '#/tasklist/modules/available-tasks/components/AssigneeTag';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {ActiveTransitionLoadingText} from './ActiveTransitionLoadingText';
 import styles from './TaskDetailsHeader.module.scss';
 import layoutStyles from './taskDetailsLayoutCommon.module.scss';
@@ -94,7 +96,10 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 	}
 
 	return (
-		<header className={layoutStyles.header} title={t('tasklist.taskDetailsHeader')}>
+		<header
+			className={cn(layoutStyles.header, featureFlags.dsTasklistUI && layoutStyles.headerBorder)}
+			title={t('tasklist.taskDetailsHeader')}
+		>
 			<div className={layoutStyles.headerLeftContainer}>
 				<span className={styles.taskName}>{taskName}</span>
 				<span className={styles.processName}>{processName}</span>

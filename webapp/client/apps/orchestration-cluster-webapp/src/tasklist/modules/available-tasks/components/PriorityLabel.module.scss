@@ -8,12 +8,22 @@
 
 @use '@carbon/type';
 
+/*
+ * Old-UI only (see PriorityLabel.tsx — applied conditionally there, only
+ * when the flag is off). No color here (Carbon's .cds--popover-content sets
+ * that itself at the container level — confirmed redundant), but the
+ * type-style IS needed: Carbon's popover container sets no font-size of its
+ * own at all.
+ */
 .popoverBody {
-	color: var(--cds-text-primary);
 	@include type.type-style('body-short-01');
 }
 
 .inlineIcon {
+	display: inline-block;
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
 	vertical-align: text-bottom;
 	margin-right: var(--cds-spacing-01);
 }

@@ -42,7 +42,7 @@ describe('<LabelWithPopover />', () => {
 
 		await userEvent.hover(screen.getByTitle('hover title'));
 
-		await expect.element(screen.getByText('Popover details')).toBeVisible();
+		await expect.element(screen.getByTestId('label-with-popover-content')).toBeVisible();
 	});
 
 	it('should hide popover content on mouse leave', async () => {
@@ -53,10 +53,16 @@ describe('<LabelWithPopover />', () => {
 		);
 
 		await userEvent.hover(screen.getByTitle('hover title'));
-		await expect.element(screen.getByText('Popover details')).toBeVisible();
+		await expect.element(screen.getByTestId('label-with-popover-content')).toBeVisible();
 
+		// Radix keeps the tooltip open if the pointer moves from the trigger
+		// straight into the content region (deliberate "hoverable content"
+		// behavior) — unhover the trigger, then move the pointer somewhere
+		// definitely outside both, or Radix never registers the pointer as
+		// having left.
 		await userEvent.unhover(screen.getByTitle('hover title'));
+		await userEvent.hover(screen.baseElement);
 
-		await expect.element(screen.getByText('Popover details')).not.toBeVisible();
+		await expect.element(screen.getByTestId('label-with-popover-content')).not.toBeInTheDocument();
 	});
 });

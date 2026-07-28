@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {Link, useMatch} from '@tanstack/react-router';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {CalendarIcon, CheckmarkFilledIcon, NotificationIcon, Stack, WarningIcon} from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {getSecondaryDate} from '#/tasklist/modules/available-tasks/getSecondaryDate';
@@ -70,7 +71,12 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 		});
 
 		return (
-			<article className={cn(styles.container, {[styles.active!]: isActive})}>
+			<article
+				className={cn(styles.container, {
+					[styles.active!]: isActive,
+					[styles.activeDS!]: isActive && featureFlags.dsTasklistUI,
+				})}
+			>
 				<Link
 					className={styles.taskLink}
 					to="/tasklist/$userTaskKey"

@@ -8,12 +8,17 @@
 
 @use '@carbon/type';
 
+/*
+ * Old-UI only (see DateLabel.tsx — applied conditionally there, only when
+ * the flag is off). No color on either rule (Carbon's .cds--popover-content
+ * sets that itself at the container level — confirmed redundant), but the
+ * type-styles ARE needed: Carbon's popover container sets no font-size of
+ * its own at all.
+ */
 .popoverHeading {
-	color: var(--cds-text-primary);
 	@include type.type-style('heading-01');
 }
 
 .popoverBody {
-	color: var(--cds-text-primary);
 	@include type.type-style('body-short-01');
 }

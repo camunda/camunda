@@ -55,6 +55,9 @@ import {
 	StructuredListWrapper as CarbonStructuredListWrapper,
 	Tag as CarbonTag,
 	TableHeader as CarbonTableHeader,
+	Tab as CarbonTab,
+	TabList as CarbonTabList,
+	Tabs as CarbonTabs,
 	TabsSkeleton as CarbonTabsSkeleton,
 	TextInput as CarbonTextInput,
 	Toggle as CarbonToggle,
@@ -97,6 +100,9 @@ import {
 	StructuredListWrapper as CompatStructuredListWrapper,
 	Tag as CompatTag,
 	TableHeader as CompatTableHeader,
+	Tab as CompatTab,
+	TabList as CompatTabList,
+	Tabs as CompatTabs,
 	TabsSkeleton as CompatTabsSkeleton,
 	TextInput as CompatTextInput,
 	Toggle as CompatToggle,
@@ -289,6 +295,14 @@ export const Section = featureFlags.dsTasklistUI ? CompatSection : CarbonSection
 // site) are Carbon's own and are fully preserved.
 export const ContainedList = featureFlags.dsTasklistUI ? CompatContainedList : CarbonContainedList;
 export const ContainedListItem = featureFlags.dsTasklistUI ? CompatContainedListItem : CarbonContainedListItem;
+
+// Tabs/TabList/Tab: SWAP tier. carbon-compat's adapter re-implements Carbon's
+// index-based Tabs/TabList/Tab API (selectedIndex/onChange) on top of the DS's
+// Radix-backed Tabs, mapping index <-> a synthetic `tab-<n>` value internally.
+// No JSX restructuring needed at call sites using this same index-based API.
+export const Tabs = featureFlags.dsTasklistUI ? CompatTabs : CarbonTabs;
+export const TabList = featureFlags.dsTasklistUI ? CompatTabList : CarbonTabList;
+export const Tab = featureFlags.dsTasklistUI ? CompatTab : CarbonTab;
 
 // TabsSkeleton: SWAP tier (docs/kb/carbon-migration-tiers.md). carbon-compat
 // ships a Tailwind `animate-pulse` adapter that renders a tab-bar-shaped

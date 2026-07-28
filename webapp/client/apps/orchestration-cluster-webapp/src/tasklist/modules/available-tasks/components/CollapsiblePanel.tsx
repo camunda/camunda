@@ -23,6 +23,8 @@ import {
 	SidePanelCloseIcon,
 	SidePanelOpenIcon,
 } from '#/shared/design-system-compat';
+import {AppSidebar, TooltipProvider, type SidebarNode} from '@camunda/design-system';
+import {CircleCheck, CircleDashed, CircleUser, Filter, ListTodo, Plus} from 'lucide-react';
 import {Link, useNavigate, useSearch} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
@@ -30,6 +32,7 @@ import {usePrevious} from '@uidotdev/usehooks';
 import {cn} from '#/shared/cn';
 import {queries} from '#/shared/http/queries';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {featureFlags} from '#/shared/feature-flags';
 import {FILTER_VALUES} from '#/tasklist/modules/available-tasks/searchSchema';
 import {getCustomFilterSearch} from '#/tasklist/modules/available-tasks/getCustomFilterSearch';
 import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
@@ -44,6 +47,21 @@ const BUILT_IN_FILTERS: {id: BuiltInFilter; labelKey: string}[] = [
 	{id: 'unassigned', labelKey: 'tasklist.taskFilterPanelUnassigned'},
 	{id: 'completed', labelKey: 'tasklist.taskFilterPanelCompleted'},
 ];
+
+// AppSidebar's SidebarItem requires an icon (there's no icon-less variant) — this
+// UI previously had none, so these are new. Chosen to match existing semantic
+// icon choices already used elsewhere in this migration (docs/kb/carbon-icons-to-lucide.md
+// precedent + this file's own compat exports): CircleDashed for unassigned
+// (matches CircleDashIcon/AssigneeTag), CircleCheck for completed (matches
+// CheckmarkFilledIcon), CircleUser for assignee (matches UserAvatarIcon). No
+// existing precedent for "all open tasks" or a generic custom-filter icon —
+// ListTodo and Filter (matches this file's own FilterIcon) are new choices.
+const BUILT_IN_FILTER_ICONS: Record<BuiltInFilter, typeof ListTodo> = {
+	'all-open': ListTodo,
+	'assigned-to-me': CircleUser,
+	unassigned: CircleDashed,
+	completed: CircleCheck,
+};
 
 const ELLIPSIS_CUTOFF_LENGTH = 17;
 
@@ -131,6 +149,111 @@ const CollapsiblePanel: React.FC = () => {
 			onDelete={handleModalDelete}
 		/>
 	);
+
+	const deleteFilterModal = (
+		<DeleteFilterModal
+			data-testid="direct-delete-filter-modal"
+			filterId={customFilterToDelete ?? ''}
+			isOpen={customFilterToDelete !== undefined}
+			onClose={() => {
+				setCustomFilterToDelete(undefined);
+			}}
+			onDelete={handleDelete}
+		/>
+	);
+
+	if (featureFlags.dsTasklistUI) {
+		const items: SidebarNode[] = [
+			...BUILT_IN_FILTERS.map(
+				({id, labelKey}): SidebarNode => ({
+					type: 'item',
+					key: id,
+					label: t(labelKey),
+					icon: BUILT_IN_FILTER_ICONS[id],
+					isActive: id === filter,
+					onClick: () => {
+						navigate({to: '.', search: id === 'completed' ? {filter: id, sortBy: 'completion'} : {filter: id}});
+					},
+				}),
+			),
+			{
+				type: 'item',
+				key: 'new-filter',
+				label: t('tasklist.taskFilterPanelNewFilter'),
+				icon: Plus,
+				onClick: openModal,
+			},
+			...customFilters.map(([filterId, {name}]): SidebarNode => {
+				const label = filterId === 'custom' || name === undefined ? t('tasklist.taskFilterPanelCustom') : name;
+				return {
+					type: 'item',
+					key: filterId,
+					label,
+					icon: Filter,
+					isActive: filter === filterId,
+					onClick: () => {
+						navigate({
+							to: '.',
+							search: getCustomFilterSearch({currentSearch: search, filter: filterId, username}),
+						});
+					},
+					trailingElement: (
+						<OverflowMenu
+							iconDescription={t('tasklist.taskFilterPanelCustomFilterActions')}
+							size="md"
+							direction="top"
+							flipped
+							align="top-end"
+						>
+							<OverflowMenuItem
+								itemText={t('tasklist.taskFilterPanelEdit')}
+								onClick={() => {
+									setCustomFilterToEdit(filterId);
+								}}
+							/>
+							<OverflowMenuItem
+								hasDivider
+								isDelete
+								itemText={t('tasklist.taskFilterPanelDelete')}
+								onClick={() => {
+									setCustomFilterToDelete(filterId);
+								}}
+							/>
+						</OverflowMenu>
+					),
+				};
+			}),
+		];
+
+		return (
+			<>
+				{/* AppSidebar's collapsed rail wraps every item (and its own collapse
+				    toggle) in a <Tooltip>, which throws without an ancestor
+				    TooltipProvider — this repo has no app-root one yet (same gap noted
+				    in design-system-compat/IconButton.tsx). Self-contained per-instance
+				    provider as a stopgap, same precedent as IconButton.tsx. */}
+				<TooltipProvider>
+					<AppSidebar
+						ariaLabel={t('tasklist.taskFilterPanelControlsAria')}
+						items={items}
+						expanded={!isCollapsed}
+						onExpandedChange={(expanded) => setIsCollapsed(!expanded)}
+						resizable={false}
+						expandedWidth="12.25rem"
+						// 3.5rem, not 2.5rem: AppSidebar's inner content div has its own
+						// px-2 (16px) padding, and its collapsed nav buttons are
+						// min-h-10 (40px). At 2.5rem (40px) rail width, the buttons only
+						// get 24px of width after that padding — squashed, not square.
+						// 3.5rem gives them the full 40px back, matching height.
+						collapsedWidth="3.5rem"
+						className={styles.dsSidebar}
+					/>
+				</TooltipProvider>
+				{filtersModal}
+				{deleteFilterModal}
+			</>
+		);
+	}
 
 	if (isCollapsed) {
 		return (
@@ -276,15 +399,7 @@ const CollapsiblePanel: React.FC = () => {
 				</div>
 			</nav>
 			{filtersModal}
-			<DeleteFilterModal
-				data-testid="direct-delete-filter-modal"
-				filterId={customFilterToDelete ?? ''}
-				isOpen={customFilterToDelete !== undefined}
-				onClose={() => {
-					setCustomFilterToDelete(undefined);
-				}}
-				onDelete={handleDelete}
-			/>
+			{deleteFilterModal}
 		</Layer>
 	);
 };

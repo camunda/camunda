@@ -8,9 +8,46 @@
 
 @use '@carbon/layout';
 
+/*
+ * ComposedModal/ModalHeader/ModalBody/ModalFooter render as plain stacked
+ * divs in carbon-compat with no flex layout of their own — the DS Dialog's
+ * own max-h-[calc(100dvh-2rem)]/overflow-y-auto ends up scrolling the header
+ * and footer away along with the body instead of just the body. Making
+ * .modal a column flexbox and pinning header/footer via
+ * .modalHeader/.modalBody below fixes that: only the body (where content
+ * actually grows, e.g. added task variables) scrolls.
+ *
+ * max-height is set explicitly here too (85vh, a plain vh value rather than
+ * the DS's calc(100dvh - 2rem)) as a direct, guaranteed cap on this specific
+ * modal — belt-and-suspenders alongside the DS's own constraint, since a
+ * flex child's flex/min-height:0 shrink-to-scroll behavior only reliably
+ * kicks in when its flex container has a real height limit to enforce.
+ */
+.modal {
+	display: flex;
+	flex-direction: column;
+	max-width: 45rem;
+	max-height: 85vh;
+}
+
+.modalHeader {
+	flex: none;
+}
+
+.modalBody {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+}
+
 .modalFooter {
 	display: grid;
-	grid-template-columns: 40% 20% 20% 20%;
+	grid-template-columns: 1fr auto auto auto;
+	align-items: center;
+
+	& > :first-child {
+		justify-self: start;
+	}
 }
 
 .twoColumnGrid {
@@ -18,7 +55,7 @@
 	display: grid;
 	grid-template-columns: auto auto;
 	grid-gap: var(--cds-spacing-06) var(--cds-spacing-03);
-	align-items: flex-end;
+	align-items: start;
 
 	& > * {
 		width: 100%;

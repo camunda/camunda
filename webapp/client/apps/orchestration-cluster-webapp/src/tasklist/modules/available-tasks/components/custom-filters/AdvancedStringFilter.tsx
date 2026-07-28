@@ -11,6 +11,7 @@ import {t} from 'i18next';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
+import {featureFlags} from '#/shared/feature-flags';
 import {Dropdown, TextInput} from '#/shared/design-system-compat';
 import {
 	encodeFilterOperation,
@@ -86,13 +87,23 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 
 	return (
 		<div className={styles.container}>
-			<label htmlFor={input.name} className={cn('cds--label', styles.label)}>
+			{/* text-sm font-medium (DS typography) vs cds--label (Carbon's own label
+			    class) — Tailwind utility classes exist in the bundle regardless of
+			    the flag, so this needs its own explicit branch: unlike components
+			    routed through design-system-compat, a plain className here isn't
+			    naturally gated by anything. */}
+			<label
+				htmlFor={input.name}
+				className={cn(featureFlags.dsTasklistUI ? 'text-sm font-medium' : 'cds--label', styles.label)}
+			>
 				{label}
 			</label>
 			<Dropdown<AdvancedStringFilterOperator>
 				id={`${input.name}.operator`}
 				size="md"
 				direction="top"
+				className={featureFlags.dsTasklistUI ? styles.hiddenDropdownLabel : undefined}
+				aria-label={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}
 				titleText={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}
 				hideLabel
 				label={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}

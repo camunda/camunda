@@ -62,18 +62,28 @@ describe('<DateLabel />', () => {
 	it('should show popover with absolute date on hover and hide it on unhover', async () => {
 		const screen = await render(<DateLabel date={monthsDate} relativeLabel="Created" absoluteLabel="Created on" />);
 
-		await expect.element(screen.getByText('Created on')).not.toBeVisible();
-		await expect.element(screen.getByText('6 Jan 2024')).not.toBeVisible();
+		// Radix Tooltip content unmounts entirely while closed (Portal-based, no
+		// forceMount) rather than staying in the DOM hidden via CSS, so it's not
+		// just "not visible" pre-hover/post-unhover — it isn't in the document at all.
+		await expect.element(screen.getByText('Created on')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('6 Jan 2024')).not.toBeInTheDocument();
 
 		await userEvent.hover(screen.getByTitle('Created on 6th of January'));
 
-		await expect.element(screen.getByText('Created on')).toBeVisible();
-		await expect.element(screen.getByText('6 Jan 2024')).toBeVisible();
+		// .first(): Radix Tooltip nests a visually-hidden accessibility announcer
+		// with duplicate text inside the real content once opened — .first()
+		// resolves to the real (DOM-order-first) content, not the announcer.
+		await expect.element(screen.getByText('Created on').first()).toBeVisible();
+		await expect.element(screen.getByText('6 Jan 2024').first()).toBeVisible();
 
+		// Radix keeps a tooltip open if the pointer moves from the trigger
+		// straight into the content ("hoverable content") — unhover the trigger,
+		// then move the pointer somewhere definitely outside both.
 		await userEvent.unhover(screen.getByTitle('Created on 6th of January'));
+		await userEvent.hover(screen.baseElement);
 
-		await expect.element(screen.getByText('Created on')).not.toBeVisible();
-		await expect.element(screen.getByText('6 Jan 2024')).not.toBeVisible();
+		await expect.element(screen.getByText('Created on')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('6 Jan 2024')).not.toBeInTheDocument();
 	});
 
 	it('should render an icon alongside the relative date text when provided', async () => {

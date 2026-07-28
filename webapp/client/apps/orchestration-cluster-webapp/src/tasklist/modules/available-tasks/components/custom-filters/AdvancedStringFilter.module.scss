@@ -16,3 +16,9 @@
 .label {
 	grid-column: 1 / -1;
 }
+
+// carbon-compat Dropdown ignores hideLabel and always renders titleText as a
+// visible label. aria-label covers accessibility, so hide it visually here.
+.hiddenDropdownLabel > label {
+	display: none;
+}

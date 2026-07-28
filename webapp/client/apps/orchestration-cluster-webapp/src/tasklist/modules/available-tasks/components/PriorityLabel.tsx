@@ -8,18 +8,18 @@
 
 import {
 	CriticalIcon,
-	Popover,
 	SkillLevelAdvancedIcon,
 	SkillLevelBasicIcon,
 	SkillLevelIntermediateIcon,
 } from '#/shared/design-system-compat';
-import {LabelWithPopover} from './LabelWithPopover';
+import {featureFlags} from '#/shared/feature-flags';
+import {LabelWithPopover, type Align} from './LabelWithPopover';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import styles from './PriorityLabel.module.scss';
 
 type PriorityLabelProps = {
 	priority: number;
-	align?: React.ComponentProps<typeof Popover>['align'];
+	align?: Align;
 };
 
 const ICON_MAPPINGS = {
@@ -36,7 +36,18 @@ const PriorityLabel: React.FC<PriorityLabelProps> = ({priority, align = 'top-end
 	return (
 		<LabelWithPopover
 			title={priorityLabel.long}
-			popoverContent={<span className={styles.popoverBody}>{priorityLabel.long}</span>}
+			// Carbon's .cds--popover-content sets no font-size of its own (only
+			// color/background — verified directly against its scss), so old-UI's
+			// popover text relied entirely on this explicit type-style. Plain text
+			// (no wrapper) is correct only for the DS Tooltip path, which sizes via
+			// its own text-xs default.
+			popoverContent={
+				featureFlags.dsTasklistUI ? (
+					priorityLabel.long
+				) : (
+					<span className={styles.popoverBody}>{priorityLabel.long}</span>
+				)
+			}
 			align={align}
 		>
 			<PriorityIcon className={styles.inlineIcon} />

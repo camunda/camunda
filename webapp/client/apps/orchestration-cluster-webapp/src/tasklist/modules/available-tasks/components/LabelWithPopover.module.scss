@@ -17,6 +17,10 @@
 	}
 }
 
+// Old-UI only (see LabelWithPopoverLegacy in LabelWithPopover.tsx). The DS
+// TooltipContent path deliberately has no className override — it needs to
+// stay matched to the sidebar's default tooltip padding.
 .popoverContent {
-	padding: var(--cds-spacing-03);
+	padding: 0.5rem;
 }
+

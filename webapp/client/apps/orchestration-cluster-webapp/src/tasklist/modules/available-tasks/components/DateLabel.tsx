@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover, Stack} from '#/shared/design-system-compat';
+import {Stack} from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
-import {LabelWithPopover} from './LabelWithPopover';
+import {LabelWithPopover, type Align} from './LabelWithPopover';
 import styles from './DateLabel.module.scss';
 
 const DateLabel: React.FC<{
@@ -16,7 +17,7 @@ const DateLabel: React.FC<{
 	relativeLabel: string;
 	absoluteLabel: string;
 	icon?: React.ReactNode;
-	align?: React.ComponentProps<typeof Popover>['align'];
+	align?: Align;
 }> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
 	<LabelWithPopover
 		title={
@@ -24,10 +25,14 @@ const DateLabel: React.FC<{
 				? `${absoluteLabel} ${date.relative.speech}`
 				: `${relativeLabel} ${date.relative.speech}`
 		}
+		// Carbon's .cds--popover-content sets no font-size of its own (only
+		// color/background), so old-UI's popover text relied entirely on these
+		// explicit type-styles. Plain spans (no classNames) are correct only for
+		// the DS Tooltip path, which sizes via its own text-xs default.
 		popoverContent={
 			<Stack orientation="vertical" gap={2}>
-				<span className={styles.popoverHeading}>{absoluteLabel}</span>
-				<span className={styles.popoverBody}>{date.absolute.text}</span>
+				<span className={featureFlags.dsTasklistUI ? undefined : styles.popoverHeading}>{absoluteLabel}</span>
+				<span className={featureFlags.dsTasklistUI ? undefined : styles.popoverBody}>{date.absolute.text}</span>
 			</Stack>
 		}
 		align={align}
