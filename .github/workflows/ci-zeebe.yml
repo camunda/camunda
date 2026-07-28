@@ -470,11 +470,11 @@ jobs:
     permissions:
       contents: read
     with:
-      base_group_name: deploy-load-test-images
+      base_group_name: build-load-test-images
 
-  deploy-load-test-images:
-    name: Deploy load test images
-    timeout-minutes: 5
+  build-load-test-images:
+    name: Build load test images
+    timeout-minutes: 20
     needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-load-test ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
@@ -488,6 +488,10 @@ jobs:
       TEST_OWNER: '@camunda/reliability-testing'
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
       IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+      # Jib's default HTTP timeout (20s) for registry push/pull is too low and has caused
+      # intermittent failures pushing the load-test images; see discussion in
+      # https://camunda.slack.com/archives/C5AHF1D8T/p1784723160353049
+      JIB_HTTP_TIMEOUT: 60000
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@9f994ff942efdab9e4ffb41bc1cc610d3488e9cc # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -501,9 +505,9 @@ jobs:
           minimus: true
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
       - name: Observe build status
         if: always()
         continue-on-error: true
