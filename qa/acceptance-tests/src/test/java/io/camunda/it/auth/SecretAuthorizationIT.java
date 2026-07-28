@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -23,6 +24,8 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -31,10 +34,14 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -45,25 +52,41 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * exercises the real per-reference {@code SECRET:REVEAL} / {@code SECRET:READ} checks so the
  * security guarantee is proven, not assumed.
  *
- * <p>The secret backend is mocked in Phase 1 (#56567, #56568): references in the service's mock
- * allow-list ({@code camunda.secrets.token} etc.) resolve to a placeholder value or are listed;
- * authorization is real.
+ * <p>The broker runs with a real file-based secret store (#58497), so a resolved reference carries
+ * the value that is actually on disk and the listing is the store's own enumeration. The gateway
+ * path answers without a broker round-trip, so no resolved value can reach state or exported
+ * records; the response body is the only place a value appears, which the tests below pin down.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class SecretAuthorizationIT {
 
+  private static final String TOKEN_VALUE = "token-file-value";
+  private static final String OTHER_VALUE = "a-file-value";
+
+  // Written before the broker starts, since the broker's store is configured to read this
+  // directory. Declared above BROKER so its initializer runs first.
+  private static final Path SECRETS_DIRECTORY = createSecretsDirectory();
+
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          .withUnifiedConfig(
+              config -> {
+                final var store = new FileStore();
+                store.setPath(SECRETS_DIRECTORY.toString());
+                config.getSecrets().getStores().getFile().put("it", store);
+              });
 
   private static final ObjectMapper JSON =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-  // Resolvable by the mock backend (see SecretServices#MOCK_RESOLVABLE_REFERENCES).
+  // Held by the store (one file per secret, the file name being the bare secret name).
   private static final String GRANTED_REFERENCE = "camunda.secrets.token";
   private static final String OTHER_REFERENCE = "camunda.secrets.a";
-  // Not in SecretServices#MOCK_RESOLVABLE_REFERENCES, so a wildcard-authorized lookup misses.
+  // No file of that name exists, so a wildcard-authorized lookup misses.
   private static final String UNKNOWN_REFERENCE = "camunda.secrets.doesnotexist";
 
   // Under a physical tenant, secret authorization is resolved against root storage, so grants
@@ -119,6 +142,39 @@ class SecretAuthorizationIT {
           // Granted READ on all references via the "*" wildcard.
           List.of(new Permissions(SECRET, READ, List.of("*"))));
 
+  /**
+   * Creates the store's directory and writes one file per secret. {@code tls.crt} is deliberately
+   * among them: the file store accepts that name but it cannot form a {@code
+   * camunda.secrets.<name>} reference, so the listing has to leave it out.
+   */
+  private static Path createSecretsDirectory() {
+    try {
+      final var directory = Files.createTempDirectory("secret-authorization-it-");
+      Files.writeString(directory.resolve("token"), TOKEN_VALUE, StandardCharsets.UTF_8);
+      Files.writeString(directory.resolve("a"), OTHER_VALUE, StandardCharsets.UTF_8);
+      Files.writeString(directory.resolve("b"), "b-file-value", StandardCharsets.UTF_8);
+      Files.writeString(directory.resolve("tls.crt"), "certificate", StandardCharsets.UTF_8);
+      return directory;
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create the secrets directory", e);
+    }
+  }
+
+  @AfterAll
+  static void deleteSecretsDirectory() throws IOException {
+    try (final var entries = Files.walk(SECRETS_DIRECTORY)) {
+      entries.sorted(Comparator.reverseOrder()).forEach(SecretAuthorizationIT::delete);
+    }
+  }
+
+  private static void delete(final Path path) {
+    try {
+      Files.deleteIfExists(path);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete " + path, e);
+    }
+  }
+
   @Test
   @DisabledIfSystemProperty(
       named = PHYSICAL_TENANT_PROPERTY,
@@ -129,10 +185,11 @@ class SecretAuthorizationIT {
     // when a user with SECRET:REVEAL on the reference resolves it
     final var response = resolve(client, REVEAL_USER, List.of(GRANTED_REFERENCE));
 
-    // then it succeeds with the (mocked) value and no errors
+    // then it succeeds with the value the store holds on disk, and no errors
     assertThat(response.statusCode()).isEqualTo(200);
     final var body = read(response.body());
     assertThat(references(body.get("resolved"))).containsExactly(GRANTED_REFERENCE);
+    assertThat(body.get("resolved").get(0).get("value").asText()).isEqualTo(TOKEN_VALUE);
     assertThat(body.get("errors")).isEmpty();
   }
 
@@ -180,10 +237,11 @@ class SecretAuthorizationIT {
     // when a user granted SECRET:REVEAL:* resolves a reference it was not explicitly granted
     final var response = resolve(client, WILDCARD_USER, List.of(OTHER_REFERENCE));
 
-    // then the wildcard grant authorizes it and it resolves with no errors
+    // then the wildcard grant authorizes it and it resolves to that secret's own stored value
     assertThat(response.statusCode()).isEqualTo(200);
     final var body = read(response.body());
     assertThat(references(body.get("resolved"))).containsExactly(OTHER_REFERENCE);
+    assertThat(body.get("resolved").get(0).get("value").asText()).isEqualTo(OTHER_VALUE);
     assertThat(body.get("errors")).isEmpty();
   }
 
@@ -194,11 +252,11 @@ class SecretAuthorizationIT {
       disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldReportNotFoundForAuthorizedUnknownReference(
       @Authenticated(WILDCARD_USER) final CamundaClient client) throws Exception {
-    // when a wildcard-authorized user resolves a reference the mock backend does not know
+    // when a wildcard-authorized user resolves a reference the store does not hold
     final var response = resolve(client, WILDCARD_USER, List.of(UNKNOWN_REFERENCE));
 
     // then it is NOT_FOUND rather than ACCESS_DENIED, exercising the third error code through the
-    // full stack (authorization granted, mock lookup misses)
+    // full stack (authorization granted, store lookup misses)
     assertThat(response.statusCode()).isEqualTo(200);
     final var body = read(response.body());
     assertThat(body.get("resolved")).isEmpty();
@@ -251,7 +309,9 @@ class SecretAuthorizationIT {
     // when a user granted SECRET:READ:* lists references
     final var response = list(client, WILDCARD_READ_USER);
 
-    // then every reference the mock backend knows is returned, names only
+    // then every secret the store holds is returned as a reference, names only. The store's
+    // tls.crt is left out: it cannot form a valid reference, so it would only offer the caller
+    // something resolve() and any BPMN expression reject.
     assertThat(response.statusCode()).isEqualTo(200);
     final var body = read(response.body());
     assertThat(referenceNames(body.get("references")))
