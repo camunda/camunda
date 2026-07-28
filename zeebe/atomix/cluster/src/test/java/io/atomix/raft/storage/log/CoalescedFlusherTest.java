@@ -257,6 +257,96 @@ final class CoalescedFlusherTest {
   }
 
   @Test
+  void shouldFlushOnCallingThreadWhenIdle() throws CheckedJournalException {
+    // given
+    lastIndex.set(6);
+
+    // when
+    final var result = flusher.flushBlocking(journal, 6);
+
+    // then - flushed inline: already complete, and nothing was ever handed to the flush context
+    assertThat(result).isCompleted();
+    assertThat(scheduler.isIdle()).isTrue();
+    verify(journal, times(1)).flush();
+  }
+
+  @Test
+  void shouldSkipInlineFlushWhenIndexAlreadyDurable() throws CheckedJournalException {
+    // given
+    lastIndex.set(5);
+    lastFlushedIndex.set(5);
+
+    // when
+    final var result = flusher.flushBlocking(journal, 5);
+
+    // then
+    assertThat(result).isCompleted();
+    assertThat(scheduler.isIdle()).isTrue();
+    verify(journal, times(0)).flush();
+  }
+
+  @Test
+  void shouldQueueInsteadOfFlushingInlineWhileFlushInFlight() throws CheckedJournalException {
+    // given - an async request has claimed the flush but it has not run yet
+    lastIndex.set(8);
+    final var pending = flusher.flush(journal, 6);
+
+    // when - a blocking request arrives while that flush is in flight
+    final var blocking = flusher.flushBlocking(journal, 8);
+
+    // then - it must not flush inline, or two flushes would run concurrently
+    verify(journal, times(0)).flush();
+    assertThat(blocking).isNotCompleted();
+
+    // and - the in-flight flush covers both
+    scheduler.runUntilIdle();
+    verify(journal, times(1)).flush();
+    assertThat(pending).isCompleted();
+    assertThat(blocking).isCompleted();
+  }
+
+  @Test
+  void shouldCompleteEarlierWaitersWhenFlushingInline() {
+    // given - two waiters queued behind a flush that has not run yet
+    lastIndex.set(8);
+    final List<Integer> completionOrder = new ArrayList<>();
+    flusher.flush(journal, 6).whenComplete((ok, error) -> completionOrder.add(6));
+    flusher.flush(journal, 7).whenComplete((ok, error) -> completionOrder.add(7));
+
+    // when - the scheduled flush runs and an inline request follows
+    scheduler.runUntilIdle();
+    final var inline = flusher.flushBlocking(journal, 8);
+    inline.whenComplete((ok, error) -> completionOrder.add(8));
+
+    // then - request order is preserved across the two flush paths
+    assertThat(inline).isCompleted();
+    assertThat(completionOrder).containsExactly(6, 7, 8);
+  }
+
+  @Test
+  void shouldRecoverAfterFailedInlineFlush() throws CheckedJournalException {
+    // given - the first flush fails
+    lastIndex.set(6);
+    final var failure = new FlushException(new IOException("failed to sync"));
+    doThrow(failure)
+        .doAnswer(
+            invocation -> {
+              lastFlushedIndex.set(lastIndex.get());
+              return null;
+            })
+        .when(journal)
+        .flush();
+
+    // when
+    final var failed = flusher.flushBlocking(journal, 6);
+
+    // then - the failure is reported and the flush claim was released, so the flusher stays usable
+    assertThat(failed).isCompletedExceptionally();
+    final var retried = flusher.flushBlocking(journal, 6);
+    assertThat(retried).isCompleted();
+  }
+
+  @Test
   void shouldFailPendingOnLogTruncation() {
     // given - pending requests both above and below the truncation index
     lastIndex.set(8);

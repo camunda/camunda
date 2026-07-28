@@ -81,6 +81,59 @@ public final class CoalescedFlusher implements RaftLogFlusher {
     return waiter.result();
   }
 
+  /**
+   * Unlike {@link #flush(Journal, long)}, this runs the flush on the calling thread when no flush is
+   * in flight, instead of handing it off to the flush context. The caller blocks on the result
+   * anyway, so the hand-off would only add a scheduling round trip to the critical path - which for
+   * the leader's commit-index advance is exactly the path that matters. Requests arriving while a
+   * flush is in flight still queue and are covered by it, so follower-side group commit is
+   * unaffected.
+   */
+  @Override
+  public CompletableFuture<Void> flushBlocking(final Journal journal, final long index) {
+    final Waiter waiter;
+
+    synchronized (this) {
+      if (closed) {
+        return CompletableFuture.failedFuture(closedError(null));
+      }
+
+      // fast path: the requested index is already durable, no flush is needed
+      if (index <= journal.getLastFlushedIndex()) {
+        return COMPLETED;
+      }
+
+      waiter = new Waiter(index, new CompletableFuture<>());
+      pending.add(waiter);
+
+      if (flushing) {
+        // the in-flight flush, or the follow-up it schedules, covers this waiter; just block on it
+        return waiter.result();
+      }
+
+      // nothing in flight, so claim the flush and run it below. Claiming under the monitor preserves
+      // the single-in-flight-flush invariant: a concurrent requester can only ever queue.
+      flushing = true;
+    }
+
+    // must not hold the monitor while flushing, for the same reason flushNext does not
+    final Exception failure;
+    try {
+      failure = tryFlush(journal);
+    } catch (final Throwable t) {
+      // tryFlush catches Exception, so only Errors reach here. Releasing the claim matters: leaving
+      // `flushing` set would stall this flusher's every future request.
+      synchronized (this) {
+        flushing = false;
+        drainPending(new FlushException("Flush failed with an unrecoverable error", t));
+      }
+      throw t;
+    }
+
+    completeRequests(journal, failure);
+    return waiter.result();
+  }
+
   @Override
   public synchronized void onLogTruncation(final long newLastIndex) {
     if (pending.isEmpty()) {

@@ -59,6 +59,24 @@ public interface RaftLogFlusher extends CloseableSilently {
   CompletableFuture<Void> flush(Journal journal, long index);
 
   /**
+   * Same as {@link #flush(Journal, long)}, but for a caller which will block on the result, as {@link
+   * RaftLog#flushSync(long)} does on the Raft thread when the leader advances its commit index.
+   *
+   * <p>The durability guarantee, the completion ordering and the failure behavior are all identical.
+   * The only difference is that implementations which normally flush on a separate thread may flush
+   * on the calling thread instead: a caller that blocks gains nothing from the hand-off, and pays a
+   * scheduling round trip for it. Implementations which already flush on the calling thread need not
+   * override this.
+   *
+   * @param journal the journal to flush
+   * @param index the index up to which durability is requested
+   * @return a future which completes once records up to the given index may be treated as durable
+   */
+  default CompletableFuture<Void> flushBlocking(final Journal journal, final long index) {
+    return flush(journal, index);
+  }
+
+  /**
    * Signals that all records with an index greater than the given index ceased to exist, e.g.
    * because the log was truncated after a conflict, or reset when receiving a snapshot. Pending
    * flush results for such records must be failed instead of completed, as the records can never

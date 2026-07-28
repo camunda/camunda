@@ -278,14 +278,17 @@ class RaftLogTest {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
-      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
+      // flushSync uses flushBlocking, so a flusher can flush on the calling thread instead of
+      // handing off to another one
+      when(flusher.flushBlocking(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
       final var log = new RaftLog(journal, flusher);
 
       // when
       log.flushSync(3L);
 
       // then
-      verify(flusher, times(1)).flush(journal, 3L);
+      verify(flusher, times(1)).flushBlocking(journal, 3L);
+      verify(flusher, times(0)).flush(journal, 3L);
     }
 
     @Test
@@ -294,7 +297,7 @@ class RaftLogTest {
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
       final var failure = new FlushException(new IOException("failed to sync"));
-      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.failedFuture(failure));
+      when(flusher.flushBlocking(journal, 3L)).thenReturn(CompletableFuture.failedFuture(failure));
       final var log = new RaftLog(journal, flusher);
 
       // when - then

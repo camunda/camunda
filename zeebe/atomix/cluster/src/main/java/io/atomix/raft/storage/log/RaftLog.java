@@ -234,7 +234,9 @@ public final class RaftLog implements Closeable {
    */
   public void flushSync(final long index) throws FlushException {
     try {
-      flush(index).join();
+      // flushBlocking, not flush: this caller blocks on the result, so a flusher which would
+      // normally hand the flush off to another thread can run it here and skip the round trip
+      flusher.flushBlocking(journal, index).join();
     } catch (final CompletionException e) {
       final var cause = e.getCause();
       if (cause instanceof final FlushException flushException) {
