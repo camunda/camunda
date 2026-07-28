@@ -8,6 +8,7 @@
 
 import {ReactNode} from 'react';
 import {getLanguage, t} from './translation/translation';
+import {csrfRequestHeader, storeCsrfToken} from './csrf';
 
 type Handler = {
   fct: (response: Response, payload: RequestPayload) => Promise<Response>;
@@ -104,11 +105,14 @@ export async function request(payload: RequestPayload): Promise<Response> {
       'Content-Type': 'application/json',
       'X-Optimize-Client-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
       'X-Optimize-Client-Locale': getLanguage(),
+      ...csrfRequestHeader(method),
       ...headers,
     },
     mode: 'cors',
     credentials: 'same-origin',
   });
+
+  storeCsrfToken(response);
 
   for (const handlerToCall of handlers) {
     if (handlerToCall) {
