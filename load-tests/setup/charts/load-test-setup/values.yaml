@@ -245,18 +245,12 @@ keycloak:
         value: n2-standard-4
         effect: NoSchedule
 
-# -- Configuration for OpenSearch
-opensearch:
-  # -- Set to true to deploy an OpenSearch cluster via the OpenSearch Helm Chart (not implemented yet).
-  # Leave unset rather than explicitly "false" — see the dependency condition in "Chart.yaml".
-  enabled:
-
 # -- Configuration for the Prometheus exporter for Elasticsearch
 # See https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter
 prometheus-elasticsearch-exporter:
-  # -- Forcefully enable/disable the exporter, regardless of "elasticsearch.enabled"/"opensearch.enabled".
-  # Leave unset to auto-enable based on those — see the dependency condition in "Chart.yaml".
-  enabled:
+  # -- Enable/disable the Prometheus exporter for Elasticsearch
+  # This should most probably be enabled if you deploy Elasticsearch or OpenSearch.
+  enabled: false
 
   # Other options for the Prometheus exporter for Elasticsearch.
   # See https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-elasticsearch-exporter/values.yaml for the list of options.

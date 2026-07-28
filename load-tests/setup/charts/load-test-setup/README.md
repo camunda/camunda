@@ -17,8 +17,7 @@ This Helm Chart sets up the surrounding infrastructure for a Camunda load test n
   metrics from the Camunda components (see [the `metrics-exporter`
   component](../../../metrics-exporter))
 * An optional **[Prometheus Elasticsearch exporter](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter)**
-  subchart to monitor Elasticsearch/OpenSearch. It's automatically enabled when
-  Elasticsearch or OpenSearch is enabled.
+  subchart to monitor Elasticsearch/OpenSearch (`prometheus-elasticsearch-exporter.enabled`).
 * The **`load-tester` subchart** ([`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)),
   which deploys the actual load generators (starter/worker). Can be disabled for a bare
   infrastructure-only setup.
@@ -28,38 +27,23 @@ is not made to be generally reusable.
 
 ## Dependencies
 
-|                                                                     Chart                                                                     |                Alias                |                                                       Enabled when                                                       |
-|-----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| [`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)                                                                    | `load-tester`                       | `load-tester.enabled` (default: `true`)                                                                                  |
-| [`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter) | `prometheus-elasticsearch-exporter` | `prometheus-elasticsearch-exporter.enabled`, or `opensearch.enabled`, or `elasticsearch.enabled` (checked in that order) |
+|                                                                     Chart                                                                     |                Alias                |                          Enabled when                          |
+|-----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------------------------------------------------|
+| [`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)                                                                    | `load-tester`                       | `load-tester.enabled` (default: `true`)                        |
+| [`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter) | `prometheus-elasticsearch-exporter` | `prometheus-elasticsearch-exporter.enabled` (default: `false`) |
 
 ## Prometheus Exporter for Elasticsearch/OpenSearch
 
-This section configures the
+This Helm Chart can deploy and configure the
 [`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter)
-subchart. It turns on automatically based on your storage choice — in most cases you don't need
-to set anything for it yourself:
+subchart. To enable the exporter, configure your values file with:
 
-|                     If you set...                      | The exporter is... |                       Why                        |
-|--------------------------------------------------------|--------------------|--------------------------------------------------|
-| `elasticsearch.enabled=true`                           | **on**             | Elasticsearch storage is in use                  |
-| `opensearch.enabled=true`                              | **on**             | OpenSearch storage is in use                     |
-| Neither of the above                                   | **off**            | No ES/OS storage to monitor                      |
-| `prometheus-elasticsearch-exporter.enabled=true/false` | **forced on/off**  | Explicit override, takes priority over the above |
+```yaml
+prometheus-elasticsearch-exporter:
+  enabled: true
+```
 
-Under the hood, this is resolved as a chain of three values, checked in order, and the first one
-that is explicitly set (`true` or `false`) wins:
-
-| Order |                    Value                    | Default |
-|:-----:|---------------------------------------------|---------|
-|   1   | `prometheus-elasticsearch-exporter.enabled` | unset   |
-|   2   | `opensearch.enabled`                        | unset   |
-|   3   | `elasticsearch.enabled`                     | `false` |
-
-> [!IMPORTANT]
-> **Don't set `opensearch.enabled: false` explicitly.** Leave it unset when not in use. Since Helm
-> stops at the first value that resolves to a boolean, an explicit `false` here shadows
-> `elasticsearch.enabled` and always disables the exporter, even when Elasticsearch is on.
+If you deploy Elasticsearch or OpenSearch, you most likely want to enable the exporter so Prometheus can scrape metrics from it.
 
 ## Keycloak
 

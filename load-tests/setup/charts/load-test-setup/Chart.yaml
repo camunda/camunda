@@ -18,18 +18,4 @@ dependencies:
   - name: prometheus-elasticsearch-exporter
     version: "7.2.1"
     repository: oci://ghcr.io/prometheus-community/charts
-    # Enable the exporter if:
-    #   1. It's explicitly enabled/disabled (prometheus-elasticsearch-exporter.enabled), or
-    #      otherwise
-    #   2. OpenSearch is enabled (opensearch.enabled), or otherwise
-    #   3. Elasticsearch is enabled (elasticsearch.enabled) — its default (false) also
-    #      acts as the fallback when none of the above are set.
-    #
-    # Helm evaluates this comma-separated list left to right and stops at the FIRST
-    # option that resolves to a boolean; it is NOT an OR across all of them. That's why
-    # "opensearch.enabled" has no default in values.yaml (an explicit `false` there would
-    # block "elasticsearch.enabled" from ever being checked) while "elasticsearch.enabled"
-    # keeps its real `false` default to close the chain. Don't set
-    # "opensearch.enabled: false" explicitly — leave it unset — or it will shadow
-    # "elasticsearch.enabled".
-    condition: prometheus-elasticsearch-exporter.enabled,opensearch.enabled,elasticsearch.enabled
+    condition: prometheus-elasticsearch-exporter.enabled

@@ -211,6 +211,12 @@ elif [[ "$enable_optimize" == "true" ]]; then
   fi
 fi
 
+# The exporter is only useful when there's an Elasticsearch/OpenSearch cluster to scrape.
+prometheusExporterEnabled=false
+if [[ "$elasticsearchEnabled" == "true" || "$opensearchEnabled" == "true" ]]; then
+  prometheusExporterEnabled=true
+fi
+
 cd "$TARGET_DIRECTORY"
 
 # Bake values into the rendered Makefile.
@@ -263,29 +269,23 @@ loadTest:
 EOF
   fi
 
-  # Keep the option unset if Elasticsearch is **not** enabled.
-  # Explicitly turning it off may forcefully disable dependent subcharts.
-  if [[ "$elasticsearchEnabled" == "true" ]]; then
-    cat <<EOF
+  cat <<EOF
 elasticsearch:
   # Elasticsearch settings are configured through the options from
   # charts/load-test-setup/values.yaml
   enabled: $elasticsearchEnabled
 
 EOF
-    if [[ -n "$elasticsearch_version" ]]; then
-      echo "  version: \"$elasticsearch_version\""
-    fi
+  if [[ "$elasticsearchEnabled" == "true" && -n "$elasticsearch_version" ]]; then
+    echo "  version: \"$elasticsearch_version\""
+    echo
   fi
 
-  # Keep the option unset if OpenSearch is **not** enabled.
-  # Explicitly turning it off may forcefully disable dependent subcharts.
-  if [[ "$opensearchEnabled" == "true" ]]; then
-    cat <<EOF
+  cat <<EOF
 opensearch:
   enabled: $opensearchEnabled
+
 EOF
-  fi
 
   if [[ -n "$es_uri" ]]; then
     cat <<EOF
@@ -293,9 +293,15 @@ metricsExporter:
   database:
     url: "$es_uri"
 
-# Auto-enabled by the "load-test-setup" chart's own condition chain, based on
-# the elasticsearch/opensearch enabled flags set above.
+EOF
+  fi
+
+  cat <<EOF
 prometheus-elasticsearch-exporter:
+  enabled: $prometheusExporterEnabled
+EOF
+  if [[ "$prometheusExporterEnabled" == "true" ]]; then
+    cat <<EOF
   es:
     uri: "$es_uri"
 
