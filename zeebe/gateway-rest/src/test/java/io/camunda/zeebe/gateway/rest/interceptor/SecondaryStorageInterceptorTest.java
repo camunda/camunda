@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
@@ -118,6 +119,34 @@ class SecondaryStorageInterceptorTest {
         new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageDegradedException.class);
+  }
+
+  @Test
+  void shouldHintRetryAfterWhenPhysicalTenantDegraded() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+
+    final var interceptor =
+        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
+        .isInstanceOf(SecondaryStorageDegradedException.class);
+
+    verify(response).setHeader(HttpHeaders.RETRY_AFTER, "5");
+  }
+
+  @Test
+  void shouldNotHintRetryAfterWhenSecondaryStorageDisabled() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+
+    final var interceptor =
+        new SecondaryStorageInterceptor(
+            CAMUNDA_DATABASE_TYPE_NONE, SecondaryStorageReadiness.ALWAYS_READY);
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
+        .isInstanceOf(SecondaryStorageUnavailableException.class);
+
+    verifyNoInteractions(response);
   }
 
   @Test

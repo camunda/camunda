@@ -18,6 +18,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -29,13 +30,19 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * <ul>
  *   <li>HTTP 403 Forbidden when secondary storage is not configured at all (camunda.database.type =
  *       none).
- *   <li>HTTP 503 Service Unavailable when secondary storage is configured but the request's
- *       physical tenant's secondary storage is currently degraded (see {@link
- *       SecondaryStorageReadiness}).
+ *   <li>HTTP 503 Service Unavailable, with a {@code Retry-After} hint, when secondary storage is
+ *       configured but the request's physical tenant's secondary storage is currently degraded (see
+ *       {@link SecondaryStorageReadiness}).
  * </ul>
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
+
+  /**
+   * Degradation is expected to be transient (e.g. schema initialization still in progress), so hint
+   * callers to retry rather than treat the 503 as terminal.
+   */
+  private static final String RETRY_AFTER_SECONDS = "5";
 
   private final boolean secondaryStorageDisabled;
   private final SecondaryStorageReadiness secondaryStorageReadiness;
@@ -53,7 +60,7 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
     if (handler instanceof final HandlerMethod handlerMethod
         && requiresSecondaryStorage(handlerMethod)) {
-      validateSecondaryStorageReady(request);
+      validateSecondaryStorageReady(request, response);
     }
 
     return true;
@@ -64,7 +71,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
         || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
   }
 
-  private void validateSecondaryStorageReady(final HttpServletRequest request) {
+  private void validateSecondaryStorageReady(
+      final HttpServletRequest request, final HttpServletResponse response) {
     if (secondaryStorageDisabled) {
       throw new SecondaryStorageUnavailableException();
     }
@@ -76,6 +84,9 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
     }
     final String physicalTenantId = PhysicalTenantContext.current();
     if (!secondaryStorageReadiness.isReady(physicalTenantId)) {
+      // Set before throwing: the exception handler only writes status and problem-detail body, so
+      // headers already set on the response survive.
+      response.setHeader(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS);
       throw new SecondaryStorageDegradedException(physicalTenantId);
     }
   }
