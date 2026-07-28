@@ -2335,10 +2335,19 @@ jobs:
           # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
           # forwards process.env to its bundler, which uses LATEST_BRANCH as
           # the camunda/camunda ref to bundle as the next (in-development)
-          # version. Pinned to the PR head SHA here so the bundle reflects
-          # exactly the spec changes under review (vs the scheduled
-          # workflow, which tracks a branch name for the rolling latest).
-          LATEST_BRANCH: ${{ github.event.pull_request.head.sha || github.sha }}
+          # version. Must be the commit the step above checked out, otherwise the
+          # difference between the two is reported as annotation drift: on
+          # `pull_request` this was previously pinned to the PR head SHA while
+          # the checkout resolves the ephemeral merge commit (head merged into
+          # the current base tip), so spec changes that landed on the base
+          # branch after the PR branched off were present in the YAML but absent
+          # from the version map, producing findings the PR never caused.
+          # `github.sha` is exactly what actions/checkout resolves by default for
+          # every event that triggers this workflow — the merge commit on
+          # `pull_request`, the pushed/queued commit otherwise — so the bundle
+          # always covers the same tree that gets verified. (The scheduled
+          # workflow instead tracks a branch name for the rolling latest.)
+          LATEST_BRANCH: ${{ github.sha }}
           RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
       - name: Run PR verifier
