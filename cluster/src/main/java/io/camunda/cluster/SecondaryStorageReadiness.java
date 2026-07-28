@@ -57,8 +57,10 @@ public interface SecondaryStorageReadiness {
   /**
    * @param physicalTenantId the physical tenant id to check
    * @return {@code true} if the physical tenant's secondary storage is ready (not degraded); {@code
-   *     false} for a degraded physical tenant, or for an unknown physical tenant id (defense in
-   *     depth — unknown tenant ids are already rejected upstream by the security chain)
+   *     false} for a degraded physical tenant. Implementations backed by a per-tenant registry also
+   *     return {@code false} for an unknown physical tenant id (defense in depth — unknown tenant
+   *     ids are already rejected upstream by the security chain); {@link #ALWAYS_READY} has no
+   *     registry to consult and reports every id as ready.
    */
   boolean isReady(String physicalTenantId);
 
