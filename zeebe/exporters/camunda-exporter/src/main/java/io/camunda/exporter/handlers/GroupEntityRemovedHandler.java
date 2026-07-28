@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
 public class GroupEntityRemovedHandler
-    implements ExportHandler<GroupMemberEntity, GroupRecordValue> {
+    implements MainIndexExporterHandler<GroupMemberEntity, GroupRecordValue> {
 
   private final String indexName;
 

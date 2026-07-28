@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import java.util.List;
 
 public class GlobalListenerDeletedHandler
-    implements ExportHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
+    implements MainIndexExporterHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
 
   private static final GlobalListenerIntent SUPPORTED_INTENT = GlobalListenerIntent.DELETED;
   private final String indexName;

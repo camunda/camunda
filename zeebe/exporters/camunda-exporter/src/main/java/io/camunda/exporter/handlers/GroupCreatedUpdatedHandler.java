@@ -20,7 +20,8 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class GroupCreatedUpdatedHandler implements ExportHandler<GroupEntity, GroupRecordValue> {
+public class GroupCreatedUpdatedHandler
+    implements MainIndexExporterHandler<GroupEntity, GroupRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(GroupIntent.CREATED, GroupIntent.UPDATED);
