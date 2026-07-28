@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -131,7 +133,7 @@ public class ProcessingScheduleServiceImpl
 
     logStreamWriter = writerSupplier.get();
     actorControl = control;
-    openFuture.complete(null);
+    openFuture.complete(unit());
     actorControl.runAtFixedRate(Duration.ofMillis(interval), this::processScheduledTasks);
     return openFuture;
   }

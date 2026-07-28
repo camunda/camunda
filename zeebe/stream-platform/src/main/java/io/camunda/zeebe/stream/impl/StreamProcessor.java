@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -177,7 +179,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       replayStateMachine =
           new ReplayStateMachine(recordProcessors, streamProcessorContext, this::shouldProcessNext);
 
-      openFuture.complete(null);
+      openFuture.complete(unit());
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
 
       if (!shouldProcess) {
@@ -221,7 +223,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   protected void onActorClosed() {
-    closeFuture.complete(null);
+    closeFuture.complete(unit());
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
@@ -253,7 +255,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
-    closeFuture.complete(null);
+    closeFuture.complete(unit());
   }
 
   private boolean shouldProcessNext() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -46,14 +48,14 @@ class AsyncScheduleServiceContext {
                 actorSchedulingService.submitActor(
                     entry.getValue(), entry.getKey().getSchedulingHints()))
         .collect(new ActorFutureCollector<>(concurrencyControl))
-        .thenApply(results -> null, concurrencyControl);
+        .thenApply(results -> unit(), concurrencyControl);
   }
 
   public ActorFuture<Void> closeActors(final ConcurrencyControl concurrencyControl) {
     return asyncActors.values().stream()
         .map(AsyncProcessingScheduleServiceActor::closeAsync)
         .collect(new ActorFutureCollector<>(concurrencyControl))
-        .thenApply(results -> null, concurrencyControl);
+        .thenApply(results -> unit(), concurrencyControl);
   }
 
   private EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {
