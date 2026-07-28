@@ -886,6 +886,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
 
+    // Stop the current role before closing the log. A running role may have queued tasks on the
+    // thread context that append to the log, for example a leader coming out of joint consensus.
+    // Such tasks bail out once the role is no longer running, but if they run against a closed
+    // journal, they write into unmapped memory and crash the JVM.
+    try {
+      role.stop().get();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.error("Interrupted while stopping role {} on close", role.role(), e);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to stop role {} on close", role.role(), e);
+    }
+
     // Close the log.
     try {
       raftLog.close();

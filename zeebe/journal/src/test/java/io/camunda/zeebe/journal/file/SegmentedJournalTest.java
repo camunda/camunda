@@ -1080,6 +1080,26 @@ class SegmentedJournalTest {
     assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
   }
 
+  @Test
+  void shouldRejectAppendAfterClose() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    journal.append(1, journalFactory.entry());
+    journal.close();
+
+    // when - then
+    assertThatThrownBy(() -> journal.append(2, journalFactory.entry()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+    assertThatThrownBy(() -> journal.append(journalFactory.entry()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+    assertThatThrownBy(() -> journal.append(1L, "data".getBytes(StandardCharsets.UTF_8)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+  }
+
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
   }
