@@ -27,7 +27,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldGenerateRecoveringOperationsForAllActiveMembers() {
     // given
-    final var transformer = new ModeChangeRequestTransformer(Mode.RECOVERING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.RECOVERING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
@@ -52,7 +52,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldGenerateProcessingOperationsForAllRecoveringMembers() {
     // given
-    final var transformer = new ModeChangeRequestTransformer(Mode.PROCESSING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.PROCESSING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering())
@@ -78,7 +78,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldOnlyTargetActiveMembersWhenEnteringRecovery() {
     // given — id0 active, id1 already recovering
-    final var transformer = new ModeChangeRequestTransformer(Mode.RECOVERING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.RECOVERING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
@@ -98,7 +98,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldOnlyTargetRecoveringMembersWhenExitingRecovery() {
     // given — id0 still active, id1 recovering
-    final var transformer = new ModeChangeRequestTransformer(Mode.PROCESSING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.PROCESSING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
@@ -118,7 +118,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldSucceedWithNoOperationsWhenEnteringRecoveryAndNoActiveMembers() {
     // given — all members already recovering, so the request is a no-op
-    final var transformer = new ModeChangeRequestTransformer(Mode.RECOVERING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.RECOVERING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering());
@@ -134,7 +134,7 @@ final class ModeChangeRequestTransformerTest {
   @Test
   void shouldSucceedWithNoOperationsWhenExitingRecoveryAndNoRecoveringMembers() {
     // given — all members active, so the request is a no-op
-    final var transformer = new ModeChangeRequestTransformer(Mode.PROCESSING);
+    final var transformer = new ModeChangeRequestTransformer("default", Mode.PROCESSING);
     final var clusterConfiguration =
         ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
 

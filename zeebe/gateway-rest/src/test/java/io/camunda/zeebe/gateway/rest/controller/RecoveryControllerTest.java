@@ -59,7 +59,7 @@ public class RecoveryControllerTest extends RestControllerTest {
             List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     Mockito.when(
             clusterConfigurationRequestSender.modeChange(
-                new ModeChangeRequest(Mode.RECOVERING, false)))
+                new ModeChangeRequest("default", Mode.RECOVERING, false)))
         .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
 
     final var expectedResponse =
@@ -92,7 +92,7 @@ public class RecoveryControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             clusterConfigurationRequestSender.modeChange(
-                new ModeChangeRequest(Mode.RECOVERING, false)))
+                new ModeChangeRequest("default", Mode.RECOVERING, false)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(

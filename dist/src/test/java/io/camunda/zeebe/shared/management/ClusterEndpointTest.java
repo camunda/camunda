@@ -16,11 +16,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
@@ -79,73 +77,6 @@ final class ClusterEndpointTest {
 
   private ClusterEndpoint createEndpoint() {
     return new ClusterEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
-  }
-
-  @Nested
-  class ModeChangeEndpoint {
-    @Test
-    void shouldAllowModeQueryParameter() {
-      // given
-      final var endpoint = createEndpoint();
-      final var request = mock(HttpServletRequest.class);
-      when(request.getParameterMap()).thenReturn(Map.of("mode", new String[] {"RECOVERING"}));
-
-      // when - then
-      assertThatCode(() -> endpoint.validateRequestParameters(request)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void shouldRequestModeChangeToRecovering() {
-      // given
-      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
-      final var changeResponse =
-          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, false)))
-          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
-
-      // when
-      final var response = endpoint.updateMode(Mode.RECOVERING, false);
-
-      // then
-      assertThat(response.getStatusCode().value()).isEqualTo(202);
-      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, false));
-    }
-
-    @Test
-    void shouldRequestModeChangeToProcessing() {
-      // given
-      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
-      final var changeResponse =
-          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.PROCESSING, false)))
-          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
-
-      // when
-      final var response = endpoint.updateMode(Mode.PROCESSING, false);
-
-      // then
-      assertThat(response.getStatusCode().value()).isEqualTo(202);
-      verify(sender).modeChange(new ModeChangeRequest(Mode.PROCESSING, false));
-    }
-
-    @Test
-    void shouldPassDryRunFlagOnModeChange() {
-      // given
-      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
-      final var changeResponse =
-          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
-      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, true)))
-          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
-
-      // when
-      endpoint.updateMode(Mode.RECOVERING, true);
-
-      // then
-      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, true));
-    }
   }
 
   @Nested

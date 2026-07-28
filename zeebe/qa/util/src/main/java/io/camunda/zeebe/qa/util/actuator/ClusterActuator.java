@@ -405,17 +405,6 @@ public interface ClusterActuator {
   PlannedOperationsResponse addZone(
       @Param final String zoneId, @RequestBody final AddZoneRequest request, @Param boolean dryRun);
 
-  /**
-   * Requests a cluster mode change.
-   *
-   * @param mode the target mode, e.g. {@code "RECOVERING"} or {@code "PROCESSING"}
-   * @param dryRun if true, changes are not applied but only simulated
-   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
-   */
-  @RequestLine("PATCH /mode?mode={mode}&dryRun={dryRun}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PlannedOperationsResponse updateMode(@Param final String mode, @Param boolean dryRun);
-
   // -- BrokerId dispatch methods (default) --
 
   /**

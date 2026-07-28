@@ -66,7 +66,7 @@ public final class RecoveryController {
     return RequestExecutor.executeServiceMethod(
         () ->
             clusterConfigurationRequestSender
-                .modeChange(new ModeChangeRequest(mode, dryRun))
+                .modeChange(new ModeChangeRequest(physicalTenantId, mode, dryRun))
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.OK);
