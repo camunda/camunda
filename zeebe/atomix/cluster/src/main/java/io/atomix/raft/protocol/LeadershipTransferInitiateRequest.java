@@ -16,6 +16,7 @@
 package io.atomix.raft.protocol;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
@@ -28,22 +29,26 @@ import java.util.Objects;
  * leadership to {@code desiredLeader}. The leader validates the request and either rejects it
  * immediately (returning a skip result in the {@link LeadershipTransferInitiateResponse}) or
  * accepts it and drives the transfer, reporting the terminal outcome asynchronously via a {@link
- * LeadershipTransferResultRequest}. The {@code coordinator} and {@code coordinatorConfigVersion}
- * let the leader reject a request from a stale or non-coordinator node.
+ * LeadershipTransferResultRequest} carrying the same {@code correlationId}. The {@code coordinator}
+ * and {@code coordinatorConfigVersion} let the leader reject a request from a stale or
+ * non-coordinator node.
  */
 public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest {
 
   private final MemberId desiredLeader;
   private final MemberId coordinator;
   private final long coordinatorConfigVersion;
+  private final long correlationId;
 
   private LeadershipTransferInitiateRequest(
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long coordinatorConfigVersion) {
+      final long coordinatorConfigVersion,
+      final long correlationId) {
     this.desiredLeader = desiredLeader;
     this.coordinator = coordinator;
     this.coordinatorConfigVersion = coordinatorConfigVersion;
+    this.correlationId = correlationId;
   }
 
   public static Builder builder() {
@@ -65,6 +70,15 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return coordinatorConfigVersion;
   }
 
+  /**
+   * The coordinator-generated id of the rebalance operation this transfer belongs to. Echoed back
+   * in the {@link LeadershipTransferResultRequest} so the coordinator can tell the result of this
+   * operation apart from a delayed result of an earlier one.
+   */
+  public long correlationId() {
+    return correlationId;
+  }
+
   @Override
   public MemberId from() {
     return coordinator;
@@ -72,7 +86,8 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), desiredLeader, coordinator, coordinatorConfigVersion);
+    return Objects.hash(
+        getClass(), desiredLeader, coordinator, coordinatorConfigVersion, correlationId);
   }
 
   @Override
@@ -85,6 +100,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     }
     final LeadershipTransferInitiateRequest other = (LeadershipTransferInitiateRequest) object;
     return coordinatorConfigVersion == other.coordinatorConfigVersion
+        && correlationId == other.correlationId
         && desiredLeader.equals(other.desiredLeader)
         && coordinator.equals(other.coordinator);
   }
@@ -95,6 +111,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
         .add("desiredLeader", desiredLeader)
         .add("coordinator", coordinator)
         .add("coordinatorConfigVersion", coordinatorConfigVersion)
+        .add("correlationId", correlationId)
         .toString();
   }
 
@@ -105,6 +122,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     private MemberId desiredLeader;
     private MemberId coordinator;
     private long coordinatorConfigVersion;
+    private long correlationId;
 
     public Builder withDesiredLeader(final MemberId desiredLeader) {
       this.desiredLeader = checkNotNull(desiredLeader, "desiredLeader cannot be null");
@@ -121,18 +139,24 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return this;
     }
 
+    public Builder withCorrelationId(final long correlationId) {
+      this.correlationId = correlationId;
+      return this;
+    }
+
     @Override
     protected void validate() {
       super.validate();
       checkNotNull(desiredLeader, "desiredLeader cannot be null");
       checkNotNull(coordinator, "coordinator cannot be null");
+      checkArgument(correlationId != 0, "correlationId must be set");
     }
 
     @Override
     public LeadershipTransferInitiateRequest build() {
       validate();
       return new LeadershipTransferInitiateRequest(
-          desiredLeader, coordinator, coordinatorConfigVersion);
+          desiredLeader, coordinator, coordinatorConfigVersion, correlationId);
     }
   }
 }

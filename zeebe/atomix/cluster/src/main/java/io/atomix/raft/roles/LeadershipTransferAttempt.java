@@ -42,6 +42,8 @@ final class LeadershipTransferAttempt {
     final long startMs = System.currentTimeMillis();
     final var desiredLeader = request.desiredLeader();
     final var coordinator = request.coordinator();
+    // Belongs to this attempt only: a later request rejected while this one runs cannot change it.
+    final var correlationId = request.correlationId();
     final var resumeTimeout = raft.getRebalanceReplicationTimeout();
     pause(resumeTimeout)
         .whenCompleteAsync(
@@ -53,7 +55,7 @@ final class LeadershipTransferAttempt {
                     desiredLeader,
                     result,
                     error);
-                finish(coordinator, desiredLeader, result, startMs);
+                finish(coordinator, desiredLeader, correlationId, result, startMs);
                 return;
               }
               leader
@@ -61,7 +63,12 @@ final class LeadershipTransferAttempt {
                   .whenComplete(
                       (catchUpResult, ignored) -> {
                         if (catchUpResult.isPresent()) {
-                          finish(coordinator, desiredLeader, catchUpResult.get(), startMs);
+                          finish(
+                              coordinator,
+                              desiredLeader,
+                              correlationId,
+                              catchUpResult.get(),
+                              startMs);
                           return;
                         }
                         // The desired leader is caught up. We don't yet implement the actual
@@ -77,6 +84,7 @@ final class LeadershipTransferAttempt {
   private void finish(
       final MemberId coordinator,
       final MemberId desiredLeader,
+      final long correlationId,
       final LeadershipTransferResult result,
       final long startMs) {
     raft.getRebalanceMetrics()
@@ -99,6 +107,7 @@ final class LeadershipTransferAttempt {
                       .withLeader(raft.getCluster().getLocalMember().memberId())
                       .withDesiredLeader(desiredLeader)
                       .withResult(result)
+                      .withCorrelationId(correlationId)
                       .build();
               raft.getProtocol()
                   .leadershipTransferResult(coordinator, notification)

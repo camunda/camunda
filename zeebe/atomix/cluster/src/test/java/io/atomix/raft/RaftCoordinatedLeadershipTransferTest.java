@@ -16,6 +16,7 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.impl.RaftNamespaces;
@@ -51,7 +52,8 @@ public class RaftCoordinatedLeadershipTransferTest {
             .getContext()
             .getProtocol()
             .leadershipTransferInitiate(
-                memberId(leader), initiate(targetId, coordinator(leader), configVersion(leader)))
+                memberId(leader),
+                initiate(targetId, coordinator(leader), configVersion(leader), 0x5eed_0001L))
             .get(5, TimeUnit.SECONDS);
 
     // then
@@ -74,7 +76,7 @@ public class RaftCoordinatedLeadershipTransferTest {
             .getProtocol()
             .leadershipTransferInitiate(
                 memberId(follower),
-                initiate(memberId(leader), coordinatorId, configVersion(leader)))
+                initiate(memberId(leader), coordinatorId, configVersion(leader), 0x5eed_0002L))
             .get(5, TimeUnit.SECONDS);
 
     // then
@@ -95,7 +97,8 @@ public class RaftCoordinatedLeadershipTransferTest {
             .getContext()
             .getProtocol()
             .leadershipTransferInitiate(
-                memberId(leader), initiate(memberId(leader), coordinatorId, configVersion(leader)))
+                memberId(leader),
+                initiate(memberId(leader), coordinatorId, configVersion(leader), 0x5eed_0003L))
             .get(5, TimeUnit.SECONDS);
 
     // then
@@ -144,19 +147,24 @@ public class RaftCoordinatedLeadershipTransferTest {
             .getContext()
             .getProtocol()
             .leadershipTransferInitiate(
-                memberId(leader), initiate(targetId, coordinatorId, configVersion(leader)))
+                memberId(leader),
+                initiate(targetId, coordinatorId, configVersion(leader), 0x5eed_0004L))
             .get(5, TimeUnit.SECONDS);
 
     // then
     assertThat(ack.accepted()).isTrue();
-    assertThat(reported.get(10, TimeUnit.SECONDS).result())
+    final var notification = reported.get(10, TimeUnit.SECONDS);
+    assertThat(notification.result())
         .isEqualTo(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
+    assertThat(notification.correlationId())
+        .as("the failure notification echoes the initiate request's correlation id")
+        .isEqualTo(0x5eed_0004L);
   }
 
   @Test
   public void shouldRoundTripTransferMessagesThroughRaftNamespace() {
     // given
-    final var initiateRequest = initiate(MemberId.from("2"), MemberId.from("1"), 7);
+    final var initiateRequest = initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0005L);
     final var initiateResponse =
         LeadershipTransferInitiateResponse.builder()
             .withStatus(Status.OK)
@@ -165,19 +173,145 @@ public class RaftCoordinatedLeadershipTransferTest {
             .withLeader(MemberId.from("3"))
             .build();
     final var resultRequest =
-        LeadershipTransferResultRequest.builder()
-            .withLeader(MemberId.from("3"))
-            .withDesiredLeader(MemberId.from("2"))
-            .withResult(LeadershipTransferResult.TRANSFERRED)
-            .build();
+        result(
+            MemberId.from("3"),
+            MemberId.from("2"),
+            LeadershipTransferResult.TRANSFERRED,
+            0x5eed_0005L);
 
     // when / then
     assertThat(roundTrip(initiateRequest)).isEqualTo(initiateRequest);
+    assertThat(roundTrip(initiateRequest).correlationId()).isEqualTo(0x5eed_0005L);
     final LeadershipTransferInitiateResponse deserializedResponse = roundTrip(initiateResponse);
     assertThat(deserializedResponse.accepted()).isFalse();
     assertThat(deserializedResponse.result()).isEqualTo(LeadershipTransferResult.LAG_TOO_HIGH);
     assertThat(deserializedResponse.leader()).isEqualTo(MemberId.from("3"));
     assertThat(roundTrip(resultRequest)).isEqualTo(resultRequest);
+    assertThat(roundTrip(resultRequest).correlationId()).isEqualTo(0x5eed_0005L);
+  }
+
+  @Test
+  public void shouldTellRequestsApartByCorrelationId() {
+    // given
+    final var initiateRequest = initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0006L);
+    final var sameInitiateRequest =
+        initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0006L);
+    final var otherInitiateRequest =
+        initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0007L);
+    final var resultRequest =
+        result(
+            MemberId.from("3"),
+            MemberId.from("2"),
+            LeadershipTransferResult.TRANSFERRED,
+            0x5eed_0006L);
+    final var sameResultRequest =
+        result(
+            MemberId.from("3"),
+            MemberId.from("2"),
+            LeadershipTransferResult.TRANSFERRED,
+            0x5eed_0006L);
+    final var otherResultRequest =
+        result(
+            MemberId.from("3"),
+            MemberId.from("2"),
+            LeadershipTransferResult.TRANSFERRED,
+            0x5eed_0007L);
+
+    // then
+    assertThat(initiateRequest.correlationId()).isEqualTo(0x5eed_0006L);
+    assertThat(initiateRequest)
+        .isEqualTo(sameInitiateRequest)
+        .hasSameHashCodeAs(sameInitiateRequest)
+        .isNotEqualTo(otherInitiateRequest);
+    assertThat(resultRequest.correlationId()).isEqualTo(0x5eed_0006L);
+    assertThat(resultRequest)
+        .isEqualTo(sameResultRequest)
+        .hasSameHashCodeAs(sameResultRequest)
+        .isNotEqualTo(otherResultRequest);
+  }
+
+  @Test
+  public void shouldRejectRequestsBuiltWithoutACorrelationId() {
+    // given
+    final var initiateBuilder =
+        LeadershipTransferInitiateRequest.builder()
+            .withDesiredLeader(MemberId.from("2"))
+            .withCoordinator(MemberId.from("1"))
+            .withCoordinatorConfigVersion(7);
+    final var resultBuilder =
+        LeadershipTransferResultRequest.builder()
+            .withLeader(MemberId.from("3"))
+            .withDesiredLeader(MemberId.from("2"))
+            .withResult(LeadershipTransferResult.TRANSFERRED);
+
+    // when / then
+    assertThatThrownBy(initiateBuilder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("correlationId");
+    assertThatThrownBy(resultBuilder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("correlationId");
+  }
+
+  @Test
+  public void shouldKeepAcceptedCorrelationIdWhenAnotherInitiateIsRejected() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+    final var coordinatorId = coordinator(leader);
+    final CompletableFuture<LeadershipTransferResultRequest> reported = new CompletableFuture<>();
+    protocolOf(coordinatorId)
+        .registerLeadershipTransferResultHandler(
+            request -> {
+              reported.complete(request);
+              return CompletableFuture.completedFuture(
+                  LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
+            });
+
+    // holding the freeze open keeps the accepted attempt in flight while the second one arrives
+    final var freeze = new CompletableFuture<Long>();
+    leader
+        .getContext()
+        .setLeadershipTransferPauseControl(
+            new LeadershipTransferPauseControl() {
+              @Override
+              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+                return freeze;
+              }
+
+              @Override
+              public CompletableFuture<Void> resumeFromTransfer() {
+                return CompletableFuture.completedFuture(null);
+              }
+            });
+
+    // when
+    final var accepted =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader),
+                initiate(targetId, coordinatorId, configVersion(leader), 0x5eed_0008L))
+            .get(5, TimeUnit.SECONDS);
+    final var rejected =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader),
+                initiate(targetId, coordinatorId, configVersion(leader), 0x5eed_0009L))
+            .get(5, TimeUnit.SECONDS);
+    freeze.completeExceptionally(new RuntimeException("freeze abandoned in test"));
+
+    // then
+    assertThat(accepted.accepted()).isTrue();
+    assertThat(rejected.accepted()).isFalse();
+    assertThat(rejected.result()).isEqualTo(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    assertThat(reported.get(10, TimeUnit.SECONDS).correlationId())
+        .as("the rejected request does not replace the in-flight attempt's correlation id")
+        .isEqualTo(0x5eed_0008L);
   }
 
   private TestRaftServerProtocol protocolOf(final MemberId memberId) {
@@ -194,11 +328,28 @@ public class RaftCoordinatedLeadershipTransferTest {
   }
 
   private LeadershipTransferInitiateRequest initiate(
-      final MemberId desiredLeader, final MemberId coordinator, final long configVersion) {
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long configVersion,
+      final long correlationId) {
     return LeadershipTransferInitiateRequest.builder()
         .withDesiredLeader(desiredLeader)
         .withCoordinator(coordinator)
         .withCoordinatorConfigVersion(configVersion)
+        .withCorrelationId(correlationId)
+        .build();
+  }
+
+  private static LeadershipTransferResultRequest result(
+      final MemberId leader,
+      final MemberId desiredLeader,
+      final LeadershipTransferResult result,
+      final long correlationId) {
+    return LeadershipTransferResultRequest.builder()
+        .withLeader(leader)
+        .withDesiredLeader(desiredLeader)
+        .withResult(result)
+        .withCorrelationId(correlationId)
         .build();
   }
 

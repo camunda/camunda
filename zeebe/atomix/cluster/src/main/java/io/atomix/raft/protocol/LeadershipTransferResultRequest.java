@@ -16,6 +16,7 @@
 package io.atomix.raft.protocol;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
@@ -26,18 +27,26 @@ import java.util.Objects;
  * Reports the terminal outcome of a coordinated leadership transfer from the current leader back to
  * the rebalancing coordinator that initiated it. Sent after an accepted {@link
  * LeadershipTransferInitiateRequest} resolves.
+ *
+ * <p>The {@code correlationId} echoes the one from the initiate request this result belongs to, so
+ * the coordinator can reject a delayed or out-of-order result from another rebalance operation.
  */
 public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
 
   private final MemberId leader;
   private final MemberId desiredLeader;
   private final LeadershipTransferResult result;
+  private final long correlationId;
 
   private LeadershipTransferResultRequest(
-      final MemberId leader, final MemberId desiredLeader, final LeadershipTransferResult result) {
+      final MemberId leader,
+      final MemberId desiredLeader,
+      final LeadershipTransferResult result,
+      final long correlationId) {
     this.leader = leader;
     this.desiredLeader = desiredLeader;
     this.result = result;
+    this.correlationId = correlationId;
   }
 
   public static Builder builder() {
@@ -59,6 +68,14 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
     return result;
   }
 
+  /**
+   * The id carried by the {@link LeadershipTransferInitiateRequest} this result answers, echoed
+   * back unchanged.
+   */
+  public long correlationId() {
+    return correlationId;
+  }
+
   @Override
   public MemberId from() {
     return leader;
@@ -66,7 +83,7 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), leader, desiredLeader, result);
+    return Objects.hash(getClass(), leader, desiredLeader, result, correlationId);
   }
 
   @Override
@@ -79,6 +96,7 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
     }
     final LeadershipTransferResultRequest other = (LeadershipTransferResultRequest) object;
     return result == other.result
+        && correlationId == other.correlationId
         && leader.equals(other.leader)
         && desiredLeader.equals(other.desiredLeader);
   }
@@ -89,6 +107,7 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
         .add("leader", leader)
         .add("desiredLeader", desiredLeader)
         .add("result", result)
+        .add("correlationId", correlationId)
         .toString();
   }
 
@@ -99,6 +118,7 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
     private MemberId leader;
     private MemberId desiredLeader;
     private LeadershipTransferResult result;
+    private long correlationId;
 
     public Builder withLeader(final MemberId leader) {
       this.leader = checkNotNull(leader, "leader cannot be null");
@@ -115,18 +135,24 @@ public final class LeadershipTransferResultRequest extends AbstractRaftRequest {
       return this;
     }
 
+    public Builder withCorrelationId(final long correlationId) {
+      this.correlationId = correlationId;
+      return this;
+    }
+
     @Override
     protected void validate() {
       super.validate();
       checkNotNull(leader, "leader cannot be null");
       checkNotNull(desiredLeader, "desiredLeader cannot be null");
       checkNotNull(result, "result cannot be null");
+      checkArgument(correlationId != 0, "correlationId must be set");
     }
 
     @Override
     public LeadershipTransferResultRequest build() {
       validate();
-      return new LeadershipTransferResultRequest(leader, desiredLeader, result);
+      return new LeadershipTransferResultRequest(leader, desiredLeader, result, correlationId);
     }
   }
 }
