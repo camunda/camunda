@@ -158,20 +158,27 @@ public class ClusterAdminOidcAuthenticationIT {
     // when — the public cluster status endpoint is hit with no bearer token
     final HttpResponse<String> response = get(statusUri(), null);
 
-    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
-    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
-    assertThat(response.body()).isEmpty();
+    // then — reachable unauthenticated, reporting the aggregated status and nothing else, so an
+    // unauthenticated caller cannot enumerate the cluster's physical tenants
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(JSON.readTree(response.body()).properties())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getKey()).isEqualTo("status");
+              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
+            });
   }
 
   @Test
-  void shouldRejectMalformedTokenOnPublicStatusEndpoint() throws Exception {
-    // when — the public status endpoint is hit with a malformed bearer token
+  void shouldAllowPublicStatusEndpointWithAMalformedToken() throws Exception {
+    // when — a malformed bearer token, which /cluster/v2/topology answers with 401. Clients
+    // migrating here from /v2/status send their own access token, which this chain could not
+    // validate anyway, so it must be ignored rather than decoded.
     final HttpResponse<String> response = get(statusUri(), "Bearer not-a-valid-jwt");
 
-    // then — permitAll only waives a missing token; a bad one is still rejected by the bearer
-    // filter before the authorization decision is reached, matching /v2/status
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    // then — the status endpoint has its own chain with no resource-server filter
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
@@ -213,33 +220,6 @@ public class ClusterAdminOidcAuthenticationIT {
     assertThat(response.headers().firstValue("content-type").orElse(""))
         .contains("application/problem+json");
     assertThat(response.body()).contains("\"status\":401");
-  }
-
-  @Test
-  void shouldAllowClusterStatusWithoutAnyToken() throws Exception {
-    // when — the one public endpoint in the cluster-admin namespace
-    final HttpResponse<String> response = get(statusUri(), null);
-
-    // then — reachable unauthenticated, reporting an aggregated status and nothing else, so an
-    // unauthenticated caller cannot enumerate the cluster's physical tenants
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-    assertThat(JSON.readTree(response.body()).properties())
-        .singleElement()
-        .satisfies(
-            entry -> {
-              assertThat(entry.getKey()).isEqualTo("status");
-              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
-            });
-  }
-
-  @Test
-  void shouldAllowClusterStatusWithATokenThisChainWouldReject() throws Exception {
-    // when — a malformed bearer token, which /cluster/v2/topology answers with 401. Clients
-    // migrating here from /v2/status send their own token, so it must be ignored, not decoded.
-    final HttpResponse<String> response = get(statusUri(), "Bearer not-a-valid-jwt");
-
-    // then
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   private static void configureRealm() {

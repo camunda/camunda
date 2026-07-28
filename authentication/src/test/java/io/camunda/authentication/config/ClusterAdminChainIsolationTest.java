@@ -106,21 +106,6 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
   }
 
   @Test
-  public void shouldAllowClusterStatusWithoutAnyCredentials() {
-    // when — the one public endpoint in the cluster-admin namespace, called by monitoring
-    final MvcTestResult result =
-        mockMvcTester
-            .get()
-            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_STATUS_ENDPOINT)
-            .exchange();
-
-    // then
-    assertThat(result)
-        .as("the cluster status endpoint must be reachable unauthenticated")
-        .hasStatus(HttpStatus.OK);
-  }
-
-  @Test
   public void shouldAllowClusterStatusWithCredentialsUnknownToTheClusterAdminStore() {
     // given / when — a DB-backed user's credentials, which the isolated cluster-admin store does
     // not know. Clients migrating here from /v2/status send whatever they are configured with, so
@@ -131,28 +116,13 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
             .headers(
                 basicAuth(
                     TestUserDetailsService.DEMO_USERNAME, TestUserDetailsService.DEMO_USERNAME))
-            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_STATUS_ENDPOINT)
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
             .exchange();
 
     // then — no authentication filter runs on this chain, so the header is never inspected
     assertThat(result)
         .as("a foreign credential must not turn the public cluster status into a 401")
         .hasStatus(HttpStatus.OK);
-  }
-
-  @Test
-  public void shouldStillProtectTheRestOfTheClusterAdminNamespace() {
-    // when — the status exemption is an exact path, not a prefix
-    final MvcTestResult result =
-        mockMvcTester
-            .get()
-            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_ENDPOINT)
-            .exchange();
-
-    // then
-    assertThat(result)
-        .as("only /cluster/v2/status is public; the rest of the namespace stays protected")
-        .hasStatus(HttpStatus.UNAUTHORIZED);
   }
 
   private static HttpHeaders basicAuth(final String username, final String password) {

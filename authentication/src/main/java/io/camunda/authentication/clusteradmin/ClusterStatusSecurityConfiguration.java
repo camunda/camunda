@@ -29,7 +29,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <p><strong>Why a separate chain rather than {@code permitAll()} inside the cluster-admin
  * chains:</strong> {@code permitAll()} authorizes the request but does not stop {@link
- * ClusterAdminSecurityConfiguration}'s {@code httpBasic} or {@link
+ * ClusterAdminBasicSecurityConfiguration}'s {@code httpBasic} or {@link
  * ClusterAdminOidcSecurityConfiguration}'s {@code oauth2ResourceServer} from processing a present
  * {@code Authorization} header and rejecting it. Callers migrating here from {@code /v2/status} —
  * notably {@code CamundaClient}, which sends its configured credentials on every request — carry
@@ -39,9 +39,9 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <p>Registered at {@link
  * io.camunda.security.spring.security.CamundaSecurityFilterChainConstants#ORDER_UNPROTECTED}, ahead
- * of both cluster-admin chains at {@code ORDER_WEBAPP_API}: {@code FilterChainProxy} dispatches to
- * the first chain whose matcher matches, so the cluster-admin chains never see this request and
- * need no change. The matcher is deliberately an exact path with no wildcard, so the rest of {@code
+ * of both cluster-admin chains at {@code ORDER_API}: {@code FilterChainProxy} dispatches to the
+ * first chain whose matcher matches, so the cluster-admin chains never see this request and need no
+ * change. The matcher is deliberately an exact path with no wildcard, so the rest of {@code
  * /cluster/v2/**} keeps falling through to them. It is not restricted to {@code GET} either, so an
  * unsupported method on this path answers 405 from the MVC layer rather than a misleading 401 from
  * the cluster-admin chain.

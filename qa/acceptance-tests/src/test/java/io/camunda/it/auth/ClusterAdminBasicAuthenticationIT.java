@@ -118,21 +118,27 @@ public class ClusterAdminBasicAuthenticationIT {
     // when — the public cluster status endpoint is hit with no credentials
     final HttpResponse<String> response = send(clusterUri(PATH_CLUSTER_STATUS), null);
 
-    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
-    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
-    assertThat(response.body()).isEmpty();
+    // then — reachable unauthenticated, reporting the aggregated status and nothing else, so an
+    // unauthenticated caller cannot enumerate the cluster's physical tenants
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(new ObjectMapper().readTree(response.body()).properties())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getKey()).isEqualTo("status");
+              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
+            });
   }
 
   @Test
-  void shouldRejectWrongPasswordOnPublicStatusEndpoint() throws Exception {
-    // when — the public status endpoint is hit with a wrong password
+  void shouldAllowPublicStatusEndpointWithAWrongPassword() throws Exception {
+    // when — the public status endpoint is hit with a wrong password for a known cluster-admin user
     final HttpResponse<String> response =
         send(clusterUri(PATH_CLUSTER_STATUS), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
 
-    // then — permitAll only waives a missing credential; a bad one is still rejected by the Basic
-    // auth filter before the authorization decision is reached, matching /v2/status
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    // then — the status endpoint has its own chain with no Basic auth filter, so the credential is
+    // never verified. A health check must not fail because the caller sent a stale password.
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
@@ -145,23 +151,6 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — cluster-admin users exist only for /cluster/v2/**
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
-  }
-
-  @Test
-  void shouldAllowClusterStatusWithoutCredentials() throws Exception {
-    // when — the one public endpoint in the cluster-admin namespace
-    final HttpResponse<String> response = send(clusterUri(PATH_CLUSTER_STATUS), null);
-
-    // then — reachable unauthenticated, and reporting an aggregated status and nothing else, so an
-    // unauthenticated caller cannot enumerate the cluster's physical tenants
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-    assertThat(new ObjectMapper().readTree(response.body()).properties())
-        .singleElement()
-        .satisfies(
-            entry -> {
-              assertThat(entry.getKey()).isEqualTo("status");
-              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
-            });
   }
 
   @Test

@@ -43,8 +43,10 @@ paths:
         partition of its group with a healthy leader. This endpoint is scoped to the default physical
         tenant only: it is available unprefixed and at `/physical-tenants/default/v2/status`, but not
         for any other physical tenant id (`/physical-tenants/{id}/v2/status` returns 404 for every
-        other id, whether or not a physical tenant with that id exists). If the cluster has only a
-        single physical tenant (the default), this endpoint is equivalent to `/cluster/v2/status`.
+        other id, whether or not a physical tenant with that id exists). On a cluster with only the
+        default physical tenant this endpoint answers the same question as `/cluster/v2/status`,
+        though not with the same response: `/cluster/v2/status` reports its status in a body and so
+        also distinguishes a degraded tenant from a healthy one.
         Use `/cluster/v2/status` for the aggregated status of the whole cluster, or
         `/physical-tenants/{id}/v2/topology` for the health of a specific physical tenant's
         partitions.
