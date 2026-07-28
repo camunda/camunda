@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.SecretErrorCode;
@@ -295,5 +296,22 @@ class ContainerSecretResolverTest {
     // then
     verify(client)
         .getSecretValue(GetSecretValueRequest.builder().secretId("camunda/app-config").build());
+  }
+
+  @Test
+  void shouldProbeConnectivityWithGetSecretValueOnContainerSecretOnly() {
+    // given
+    final var resolver = new ContainerSecretResolver(client, "camunda/", "app-config");
+    when(client.getSecretValue(any(GetSecretValueRequest.class)))
+        .thenReturn(GetSecretValueResponse.builder().secretString("{}").build());
+
+    // when
+    resolver.validateConnectivity();
+
+    // then — probes the container secret itself, needing only GetSecretValue and never the broader
+    // ListSecrets, so the startup check stays within this mode's minimal IAM policy
+    verify(client)
+        .getSecretValue(GetSecretValueRequest.builder().secretId("camunda/app-config").build());
+    verifyNoMoreInteractions(client);
   }
 }

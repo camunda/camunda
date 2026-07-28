@@ -30,4 +30,11 @@ interface AwsSecretResolver {
    *     is malformed
    */
   List<String> list();
+
+  /**
+   * Probes AWS with the same API this resolver uses at runtime, so a startup connectivity check
+   * never demands a broader IAM policy than resolution itself needs. Any AWS/SDK error propagates
+   * to the caller, which logs a warning and continues; called once at construction time.
+   */
+  void validateConnectivity();
 }

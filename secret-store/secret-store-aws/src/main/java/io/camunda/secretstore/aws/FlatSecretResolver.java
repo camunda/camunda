@@ -245,6 +245,13 @@ final class FlatSecretResolver implements AwsSecretResolver {
     }
   }
 
+  @Override
+  public void validateConnectivity() {
+    // flat mode resolves via GetSecretValue/BatchGetSecretValue and lists via ListSecrets; a
+    // single-result ListSecrets is the cheapest probe that exercises this mode's IAM footprint.
+    client.listSecrets(ListSecretsRequest.builder().maxResults(1).build());
+  }
+
   private String secretId(final String name) {
     return pathPrefix + name;
   }
