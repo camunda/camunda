@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,6 +147,40 @@ public final class SuspensionGateTest {
                 .getTimerState()
                 .get(timerValue.getElementInstanceKey(), timerCreated.getKey()))
         .isNotNull();
+  }
+
+  @Test
+  public void shouldTriggerTimerAfterResume() {
+    // given - an instance waiting on a timer that comes due while the instance is suspended
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("timer", e -> e.timerWithDuration("PT10S"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when - the timer becomes due while suspended (skipped by the checker, no TRIGGER), then the
+    // instance is resumed
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+    // advance again so the checker pass that RESUME re-armed actually runs
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then - resuming re-arms the due-date checker and the timer finally fires
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test

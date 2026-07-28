@@ -33,5 +33,7 @@ public interface ScheduledTaskState {
 
   BatchOperationState getBatchOperationState();
 
+  SuspensionState getSuspensionState();
+
   DbRoutingState getRoutingState();
 }

@@ -18,7 +18,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.TriggerTimersSideEffect;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.WriteTriggerTimerCommandVisitor;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.YieldingDecorator;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -64,7 +66,9 @@ class DueDateTimerCheckSchedulerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
+      final var sut =
+          new TriggerTimersSideEffect(
+              testTimerInstanceState, mock(SuspensionState.class), testActorClock, true);
 
       // when
       sut.apply(mockTaskResultBuilder);
@@ -108,7 +112,9 @@ class DueDateTimerCheckSchedulerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
+      final var sut =
+          new TriggerTimersSideEffect(
+              testTimerInstanceState, mock(SuspensionState.class), testActorClock, true);
 
       // when
       sut.apply(mockTaskResultBuilder);
@@ -180,6 +186,59 @@ class DueDateTimerCheckSchedulerTest {
       // then
       assertThat(actual).isFalse();
       verifyNoInteractions(mockDelegate);
+    }
+  }
+
+  @Nested
+  final class WriteTriggerTimerCommandVisitorTest {
+
+    @Test
+    void shouldSkipTimerOfSuspendedInstanceWithoutAppendingTrigger() {
+      // given
+      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
+      final var suspensionState = mock(SuspensionState.class);
+      final var processInstanceKey = 100L;
+      when(suspensionState.isSuspended(processInstanceKey)).thenReturn(true);
+
+      final var mockTimer = mock(TimerInstance.class);
+      when(mockTimer.getProcessInstanceKey()).thenReturn(processInstanceKey);
+
+      final var sut = new WriteTriggerTimerCommandVisitor(mockTaskResultBuilder, suspensionState);
+
+      // when
+      final var consumed = sut.visit(mockTimer);
+
+      // then - the timer is consumed (iteration advances) but no TRIGGER is written
+      assertThat(consumed).isTrue();
+      verifyNoInteractions(mockTaskResultBuilder);
+    }
+
+    @Test
+    void shouldAppendTriggerForNonSuspendedInstance() {
+      // given
+      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
+      when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
+      final var suspensionState = mock(SuspensionState.class);
+      final var processInstanceKey = 100L;
+      when(suspensionState.isSuspended(processInstanceKey)).thenReturn(false);
+
+      final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
+      final var timerKey = 42L;
+      when(mockTimer.getKey()).thenReturn(timerKey);
+      when(mockTimer.getProcessInstanceKey()).thenReturn(processInstanceKey);
+      when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      when(mockTimer.getBpmnProcessId()).thenReturn("bpmnProcessId");
+      when(mockTimer.getElementType()).thenReturn(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+
+      final var sut = new WriteTriggerTimerCommandVisitor(mockTaskResultBuilder, suspensionState);
+
+      // when
+      final var consumed = sut.visit(mockTimer);
+
+      // then
+      assertThat(consumed).isTrue();
+      verify(mockTaskResultBuilder)
+          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
     }
   }
 

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -89,7 +90,12 @@ public class JobTimeoutCheckSchedulerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(
+            jobState,
+            mock(SuspensionState.class),
+            pollingInterval,
+            batchLimit,
+            InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -120,7 +126,12 @@ public class JobTimeoutCheckSchedulerTest {
     final int batchLimit = 3;
 
     final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(
+            jobState,
+            mock(SuspensionState.class),
+            pollingInterval,
+            batchLimit,
+            InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -164,7 +175,12 @@ public class JobTimeoutCheckSchedulerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+        new JobTimeoutCheckScheduler(
+            jobState,
+            mock(SuspensionState.class),
+            pollingInterval,
+            batchLimit,
+            InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -182,5 +198,27 @@ public class JobTimeoutCheckSchedulerTest {
     verify(mockScheduleService, times(1))
         .runAt(timestampCaptor.capture(), ArgumentMatchers.<Task>any());
     assertThat(timestampCaptor.getValue()).isLessThanOrEqualTo(ActorClock.currentTimeMillis());
+  }
+
+  @Test
+  public void shouldSkipTimedOutJobsOfSuspendedInstances() {
+    // given - every timed-out job belongs to a suspended instance
+    final var suspensionState = mock(SuspensionState.class);
+    when(suspensionState.isSuspended(anyLong())).thenReturn(true);
+
+    final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
+    final int batchLimit = Integer.MAX_VALUE;
+
+    final var task =
+        new JobTimeoutCheckScheduler(
+            jobState, suspensionState, pollingInterval, batchLimit, InstantSource.system());
+    task.setProcessingContext(mockContext);
+    task.setShouldReschedule(true);
+
+    // when
+    task.execute(mockTaskResultBuilder);
+
+    // then - no TIME_OUT command is written for the suspended instances
+    verify(mockTaskResultBuilder, never()).appendCommandRecord(anyLong(), eq(TIME_OUT), any());
   }
 }

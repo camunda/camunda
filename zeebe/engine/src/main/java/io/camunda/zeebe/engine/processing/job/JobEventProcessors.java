@@ -134,6 +134,7 @@ public final class JobEventProcessors {
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
+                scheduledTaskStateFactory.get().getSuspensionState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
                 config.getJobsTimeoutCheckerBatchLimit(),
                 clock))

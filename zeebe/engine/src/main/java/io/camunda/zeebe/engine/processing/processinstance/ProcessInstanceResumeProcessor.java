@@ -14,10 +14,12 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
@@ -45,18 +47,23 @@ public final class ProcessInstanceResumeProcessor
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
+  private final DueDateTimerCheckScheduler timerChecker;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final DueDateTimerCheckScheduler timerChecker) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
     this.cslCheck = cslCheck;
+    this.timerChecker = timerChecker;
     suspensionState = processingState.getSuspensionState();
   }
 
@@ -75,6 +82,16 @@ public final class ProcessInstanceResumeProcessor
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
+
+    // Re-arm the due-date checker on resume. Timers that came due while suspended were skipped by
+    // the checker (see DueDateTimerCheckScheduler) and left their TimerInstance in place; on a
+    // quiet
+    // partition the checker may have run off the end and idled, so it needs a nudge to fire them.
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          timerChecker.scheduleTimer(-1);
+          return true;
+        });
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -29,6 +30,7 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
 
   public DueDateTimerCheckScheduler(
       final TimerInstanceState timerInstanceState,
+      final SuspensionState suspensionState,
       final FeatureFlags featureFlags,
       final InstantSource clock) {
     dueDateChecker =
@@ -36,7 +38,7 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
             TIMER_RESOLUTION,
             featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(
-                timerInstanceState, clock, featureFlags.yieldingDueDateChecker()),
+                timerInstanceState, suspensionState, clock, featureFlags.yieldingDueDateChecker()),
             clock);
   }
 
@@ -75,13 +77,16 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
     private final InstantSource clock;
 
     private final TimerInstanceState timerInstanceState;
+    private final SuspensionState suspensionState;
     private final boolean yieldControl;
 
     public TriggerTimersSideEffect(
         final TimerInstanceState timerInstanceState,
+        final SuspensionState suspensionState,
         final InstantSource clock,
         final boolean yieldControl) {
       this.timerInstanceState = timerInstanceState;
+      this.suspensionState = suspensionState;
       this.clock = clock;
       this.yieldControl = yieldControl;
     }
@@ -96,9 +101,11 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
       if (yieldControl) {
         timerVisitor =
             new YieldingDecorator(
-                clock, yieldAfter, new WriteTriggerTimerCommandVisitor(taskResultBuilder));
+                clock,
+                yieldAfter,
+                new WriteTriggerTimerCommandVisitor(taskResultBuilder, suspensionState));
       } else {
-        timerVisitor = new WriteTriggerTimerCommandVisitor(taskResultBuilder);
+        timerVisitor = new WriteTriggerTimerCommandVisitor(taskResultBuilder, suspensionState);
       }
 
       return timerInstanceState.processTimersWithDueDateBefore(now, timerVisitor);
@@ -110,13 +117,23 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
     private final TimerRecord timerRecord = new TimerRecord();
 
     private final TaskResultBuilder taskResultBuilder;
+    private final SuspensionState suspensionState;
 
-    public WriteTriggerTimerCommandVisitor(final TaskResultBuilder taskResultBuilder) {
+    public WriteTriggerTimerCommandVisitor(
+        final TaskResultBuilder taskResultBuilder, final SuspensionState suspensionState) {
       this.taskResultBuilder = taskResultBuilder;
+      this.suspensionState = suspensionState;
     }
 
     @Override
     public boolean visit(final TimerInstance timer) {
+      // Skip timers of suspended instances: the primary gate would reject the TRIGGER anyway (see
+      // TimerTriggerProcessor). Returning true (consumed) without appending avoids a rejection loop
+      // and lets iteration advance past this timer; the checker is re-armed on RESUME.
+      if (suspensionState.isSuspended(timer.getProcessInstanceKey())) {
+        return true;
+      }
+
       timerRecord.reset();
       timerRecord
           .setElementInstanceKey(timer.getElementInstanceKey())

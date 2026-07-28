@@ -146,7 +146,10 @@ public final class EngineProcessors {
 
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
-            scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
+            scheduledTaskStateFactory.get().getTimerState(),
+            scheduledTaskStateFactory.get().getSuspensionState(),
+            featureFlags,
+            clock);
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =

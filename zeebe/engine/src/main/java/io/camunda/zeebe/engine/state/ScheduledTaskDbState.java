@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
 
@@ -52,6 +54,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final MessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
   private final UserTaskState userTaskState;
   private final BatchOperationState batchOperationState;
+  private final SuspensionState suspensionState;
   private final DbRoutingState routingState;
 
   public ScheduledTaskDbState(
@@ -79,6 +82,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
         new DbMessageStartProcessInstanceAskState(zeebeDb, transactionContext, transientAskState);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    suspensionState = new DbSuspensionState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
   }
 
@@ -135,6 +139,11 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public BatchOperationState getBatchOperationState() {
     return batchOperationState;
+  }
+
+  @Override
+  public SuspensionState getSuspensionState() {
+    return suspensionState;
   }
 
   @Override

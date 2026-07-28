@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -33,6 +34,7 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
   private DeadlineIndex startAtIndex = null;
 
   private final JobState state;
+  private final SuspensionState suspensionState;
   private ReadonlyStreamProcessorContext processingContext;
   private final Duration pollingInterval;
   private final int batchLimit;
@@ -40,10 +42,12 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
 
   public JobTimeoutCheckScheduler(
       final JobState state,
+      final SuspensionState suspensionState,
       final Duration pollingInterval,
       final int batchLimit,
       final InstantSource clock) {
     this.state = state;
+    this.suspensionState = suspensionState;
     this.pollingInterval = pollingInterval;
     this.batchLimit = batchLimit;
     this.clock = clock;
@@ -71,6 +75,13 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
             (key, record) -> {
               if (counter.getAndIncrement() >= batchLimit) {
                 return false;
+              }
+
+              // Skip timed-out jobs of suspended instances: the primary gate would reject the
+              // TIME_OUT (see JobTimeOutProcessor). The poller reschedules unconditionally, so the
+              // timeout is re-evaluated once the instance resumes.
+              if (suspensionState.isSuspended(record.getProcessInstanceKey())) {
+                return true;
               }
 
               return taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
