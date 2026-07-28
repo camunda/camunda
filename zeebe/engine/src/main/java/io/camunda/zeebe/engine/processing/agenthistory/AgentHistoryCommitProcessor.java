@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -20,7 +22,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 // COMMIT is always a follow-up command emitted internally by the engine and is never issued
 // through the public API, so there is no user to authorize against.
 @ExcludeAuthorizationCheck
-public final class AgentHistoryCommitProcessor implements TypedRecordProcessor<AgentHistoryRecord> {
+public final class AgentHistoryCommitProcessor
+    implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
 
   private final StateWriter stateWriter;
   private final AgentHistoryState agentHistoryState;
@@ -55,5 +58,10 @@ public final class AgentHistoryCommitProcessor implements TypedRecordProcessor<A
           });
     }
     // no-op when no items exist — backward-compatible with non-agentic jobs
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }

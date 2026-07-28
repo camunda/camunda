@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -24,7 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceBatchTerminateProcessor
-    implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
+    implements TypedRecordProcessor<ProcessInstanceBatchRecord>,
+        SuspensionAware<ProcessInstanceBatchRecord> {
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -61,6 +64,12 @@ public final class ProcessInstanceBatchTerminateProcessor
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
     }
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionBehavior.PROCESS;
   }
 
   private List<ElementInstance> getChildInstances(

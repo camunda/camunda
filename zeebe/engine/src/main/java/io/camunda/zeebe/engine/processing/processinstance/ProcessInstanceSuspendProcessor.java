@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,7 +33,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class ProcessInstanceSuspendProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to suspend a process instance with key '%d', but ";
@@ -149,5 +151,12 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+    // reject: a repeated suspend while a marker is present must fail like the processor's own
+    // "already suspended" rejection; buffering would silently swallow it.
+    return SuspensionBehavior.REJECT;
   }
 }

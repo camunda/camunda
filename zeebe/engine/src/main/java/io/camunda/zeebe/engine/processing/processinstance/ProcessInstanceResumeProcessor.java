@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,7 +31,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class ProcessInstanceResumeProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to resume a process instance with key '%d', but ";
@@ -68,11 +70,16 @@ public final class ProcessInstanceResumeProcessor
 
     final ProcessInstanceRecord value = elementInstance.getValue();
 
-    // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
+    // TODO: append a DRAIN command instead of writing RESUMED directly, once chunked
     // draining of buffered commands is implemented.
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionBehavior.PROCESS;
   }
 
   private boolean validateCommand(

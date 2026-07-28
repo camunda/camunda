@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,7 +26,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
 @ExcludeAuthorizationCheck
-public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobYieldProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
   private final JobState jobState;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StateWriter stateWriter;
@@ -57,5 +60,13 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
             },
             rejection ->
                 rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    // YIELD is an internal command (written by the job-stream error handler when a client is
+    // blocked); buffer it while suspended so the yield is applied once the instance resumes instead
+    // of being lost to a rejection.
+    return SuspensionBehavior.BUFFER;
   }
 }
