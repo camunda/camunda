@@ -8,10 +8,17 @@
 package io.camunda.optimize.rest.security.csl;
 
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
+import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
+import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
+import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -20,8 +27,10 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 /**
  * Opt-in configuration that adopts CSL for Optimize. See <a
@@ -88,6 +97,34 @@ public class OptimizeCamundaSecurityConfig {
     registration.addUrlPatterns("/*");
     registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
     return registration;
+  }
+
+  /**
+   * Converts a CSL login session ({@code OAuth2AuthenticationToken}) into a {@code
+   * CamundaAuthentication}. CSL ships the converter but registers no converter beans of its own, so
+   * without this the delegating converter finds no match and every request that resolves the
+   * current user fails with a 500.
+   */
+  @Bean
+  public CamundaAuthenticationConverter<Authentication> oidcUserAuthenticationConverter(
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
+      final LazyTokenClaimsConverter tokenClaimsConverter,
+      final HttpServletRequest request) {
+    return new OidcUserAuthenticationConverter(
+        authorizedClientRepository, accessTokenDecoderFactory, tokenClaimsConverter, request);
+  }
+
+  /**
+   * The same for bearer tokens ({@code JwtAuthenticationToken}) on the API chain, so the public API
+   * does not hit the identical failure. Optimize needs both because one {@code
+   * CamundaAuthenticationProvider} serves both chains.
+   */
+  @Bean
+  public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
+      final LazyTokenClaimsConverter tokenClaimsConverter,
+      final OidcClaimsProvider oidcClaimsProvider) {
+    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
   }
 
   /** Overrides CSL's default OIDC entry point; see {@link OptimizeOidcAuthenticationEntryPoint}. */
