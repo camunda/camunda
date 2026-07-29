@@ -187,6 +187,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * that store in a single batched call, and every value read is cached. A reference no store could
    * resolve is reported with the reason of the last store that failed on it, or {@code NOT_FOUND}
    * if no store knew it at all.
+   *
+   * <p>A physical tenant is capped at one configured store in this release (enforced at startup by
+   * {@code SecretStoreConfiguration}), so the loop below sees a single store today. The
+   * multiple-store wording above describes how it behaves once that cap is lifted: which store wins
+   * a reference both hold is then decided by iteration order, which the registry does not currently
+   * promise, so a precedence order has to be defined along with the cap.
    */
   private SecretResolution readFromStores(
       final List<String> references,
