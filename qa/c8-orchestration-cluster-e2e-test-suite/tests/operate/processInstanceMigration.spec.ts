@@ -647,8 +647,15 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      // Navigate directly via URL instead of re-selecting the source process
+      // and version through the filter panel. Switching the process combobox
+      // back to the source (clear + reselect) races with the version dropdown
+      // auto-defaulting to the latest version, which intermittently left the
+      // version option unclickable. The URL-driven filter (used elsewhere in
+      // this file) is deterministic.
+      await page.goto(
+        `operate/processes?active=true&incidents=true&processDefinitionId=${sourceBpmnProcessId}&processDefinitionVersion=${sourceVersion}`,
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('3 results')).toBeVisible({
