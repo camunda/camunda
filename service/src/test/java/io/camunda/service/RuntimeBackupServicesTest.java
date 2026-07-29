@@ -270,6 +270,34 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
+  public void listBackupsShouldDelegateWhenUserHasReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.READ);
+    when(backupApi.listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    final var future = manualModeServices.listBackups(null, authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+    verify(backupApi).listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD);
+  }
+
+  @Test
+  public void listBackupsShouldCompleteExceptionallyWhenUserHasNoReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.CREATE, PermissionType.DELETE);
+
+    // when
+    final var future = manualModeServices.listBackups(null, authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.FORBIDDEN);
+    verify(backupApi, never()).listBackups(any(), any());
+  }
+
+  @Test
   public void deleteBackupShouldDelegate() {
     // given
     when(backupApi.deleteBackup(PHYSICAL_TENANT_ID, 42L))
@@ -332,6 +360,36 @@ public class RuntimeBackupServicesTest {
 
     // then
     assertServiceExceptionStatus(future, Status.UNAVAILABLE);
+  }
+
+  @Test
+  public void getRuntimeStateShouldDelegateWhenUserHasReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.READ);
+    when(backupApi.getCheckpointState(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(new CheckpointStateResponse()));
+    when(backupApi.getBackupRanges(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+
+    // when
+    final var future = manualModeServices.getRuntimeState(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void getRuntimeStateShouldCompleteExceptionallyWhenUserHasNoReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.CREATE, PermissionType.DELETE);
+
+    // when
+    final var future = manualModeServices.getRuntimeState(authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.FORBIDDEN);
+    verify(backupApi, never()).getCheckpointState(any());
+    verify(backupApi, never()).getBackupRanges(any());
   }
 
   @Test

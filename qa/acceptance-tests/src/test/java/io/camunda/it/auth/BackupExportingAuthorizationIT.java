@@ -132,6 +132,19 @@ class BackupExportingAuthorizationIT {
   private static final Endpoint PAUSE_EXPORTING = new Endpoint("POST", "v2/exporting/pause");
   private static final Endpoint RESUME_EXPORTING = new Endpoint("POST", "v2/exporting/resume");
 
+  private static final List<Endpoint> BACKUP_ENDPOINTS =
+      List.of(
+          TAKE_BACKUP,
+          LIST_BACKUPS,
+          GET_BACKUP,
+          GET_STATE,
+          SYNC_STATE,
+          DELETE_BACKUP,
+          DELETE_STATE);
+
+  private static final List<Endpoint> EXPORTING_ENDPOINTS =
+      List.of(PAUSE_EXPORTING, RESUME_EXPORTING);
+
   @AfterAll
   static void deleteBackupDirectory() throws IOException {
     if (!Files.exists(BACKUP_DIR)) {
@@ -152,47 +165,37 @@ class BackupExportingAuthorizationIT {
   }
 
   static Stream<Arguments> allEndpoints() {
-    return Stream.of(
-            TAKE_BACKUP,
-            LIST_BACKUPS,
-            GET_BACKUP,
-            GET_STATE,
-            SYNC_STATE,
-            DELETE_BACKUP,
-            DELETE_STATE,
-            PAUSE_EXPORTING,
-            RESUME_EXPORTING)
+    return Stream.concat(BACKUP_ENDPOINTS.stream(), EXPORTING_ENDPOINTS.stream())
         .map(Arguments::of);
   }
 
   static Stream<Arguments> endpointsDeniedToBackupReader() {
-    // BACKUP:READ must not imply write access, nor any access to exporting
-    return Stream.of(TAKE_BACKUP, SYNC_STATE, DELETE_BACKUP, DELETE_STATE, PAUSE_EXPORTING)
-        .map(Arguments::of);
+    // BACKUP:READ must not imply write access
+    return deniedToBackupGrant(TAKE_BACKUP, SYNC_STATE, DELETE_BACKUP, DELETE_STATE);
   }
 
   static Stream<Arguments> endpointsDeniedToBackupCreator() {
     // BACKUP:CREATE must not imply read or delete access
-    return Stream.of(LIST_BACKUPS, GET_BACKUP, GET_STATE, DELETE_BACKUP, DELETE_STATE)
-        .map(Arguments::of);
+    return deniedToBackupGrant(LIST_BACKUPS, GET_BACKUP, GET_STATE, DELETE_BACKUP, DELETE_STATE);
   }
 
   static Stream<Arguments> endpointsDeniedToBackupDeleter() {
     // BACKUP:DELETE must not imply read or create access
-    return Stream.of(TAKE_BACKUP, LIST_BACKUPS, GET_BACKUP, GET_STATE, SYNC_STATE)
-        .map(Arguments::of);
+    return deniedToBackupGrant(TAKE_BACKUP, LIST_BACKUPS, GET_BACKUP, GET_STATE, SYNC_STATE);
   }
 
   static Stream<Arguments> backupEndpoints() {
     // EXPORTER:PAUSE must not grant anything on the BACKUP resource type
-    return Stream.of(
-            TAKE_BACKUP,
-            LIST_BACKUPS,
-            GET_BACKUP,
-            GET_STATE,
-            SYNC_STATE,
-            DELETE_BACKUP,
-            DELETE_STATE)
+    return BACKUP_ENDPOINTS.stream().map(Arguments::of);
+  }
+
+  /**
+   * Builds the denial matrix for a caller holding a single {@code BACKUP} permission: the backup
+   * endpoints that permission must not reach, plus <em>both</em> exporting endpoints — no {@code
+   * BACKUP} grant may ever authorize exporting, in either direction.
+   */
+  private static Stream<Arguments> deniedToBackupGrant(final Endpoint... backupEndpoints) {
+    return Stream.concat(Stream.of(backupEndpoints), EXPORTING_ENDPOINTS.stream())
         .map(Arguments::of);
   }
 
@@ -223,10 +226,10 @@ class BackupExportingAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("endpointsDeniedToBackupReader")
-  void shouldDenyWriteEndpointsWithReadOnlyGrant(
+  void shouldDenyWriteAndExportingEndpointsWithReadOnlyGrant(
       final Endpoint endpoint, @Authenticated(BACKUP_READ_USER) final CamundaClient client)
       throws Exception {
-    // when a user granted only BACKUP:READ calls a write endpoint
+    // when a user granted only BACKUP:READ calls a backup write or an exporting endpoint
     final var response = send(client, endpoint, BACKUP_READ_USER);
 
     // then it is forbidden: READ implies neither CREATE nor DELETE, and grants nothing on EXPORTER
@@ -235,10 +238,10 @@ class BackupExportingAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("endpointsDeniedToBackupCreator")
-  void shouldDenyReadAndDeleteEndpointsWithCreateOnlyGrant(
+  void shouldDenyReadDeleteAndExportingEndpointsWithCreateOnlyGrant(
       final Endpoint endpoint, @Authenticated(BACKUP_CREATE_USER) final CamundaClient client)
       throws Exception {
-    // when a user granted only BACKUP:CREATE calls a read or delete endpoint
+    // when a user granted only BACKUP:CREATE calls a read, delete or exporting endpoint
     final var response = send(client, endpoint, BACKUP_CREATE_USER);
 
     // then it is forbidden
@@ -247,10 +250,10 @@ class BackupExportingAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("endpointsDeniedToBackupDeleter")
-  void shouldDenyReadAndCreateEndpointsWithDeleteOnlyGrant(
+  void shouldDenyReadCreateAndExportingEndpointsWithDeleteOnlyGrant(
       final Endpoint endpoint, @Authenticated(BACKUP_DELETE_USER) final CamundaClient client)
       throws Exception {
-    // when a user granted only BACKUP:DELETE calls a read or create endpoint
+    // when a user granted only BACKUP:DELETE calls a read, create or exporting endpoint
     final var response = send(client, endpoint, BACKUP_DELETE_USER);
 
     // then it is forbidden
