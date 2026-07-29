@@ -231,8 +231,10 @@ public class Secrets {
   }
 
   /**
-   * Configuration for a GCP Secret Manager store. Authentication is always identity-based (GCP
-   * Application Default Credentials chain): no static credentials are accepted here by design.
+   * Configuration for a GCP Secret Manager store. Authentication uses the GCP Application Default
+   * Credentials (ADC) chain (e.g. a service-account key file referenced by {@code
+   * GOOGLE_APPLICATION_CREDENTIALS}, gcloud user credentials, or the attached service account via
+   * the compute metadata server). This config does not accept explicit credentials fields.
    */
   public static class GcpSecretManagerStore {
 
@@ -331,10 +333,10 @@ public class Secrets {
      * length is checked together with the container id (the only id fully known at config time);
      * per-reference ids in flat mode are formed at runtime and validated there.
      *
-     * @throws IllegalArgumentException if project-id or container-secret-id is set but blank, if
-     *     path-prefix or container-secret-id contains characters outside {@code [a-zA-Z0-9_-]}, or
-     *     if the effective container secret id (path-prefix + container-secret-id) exceeds 255
-     *     characters
+     * @throws IllegalArgumentException if project-id, container-secret-id, or endpoint is set but
+     *     blank, if path-prefix or container-secret-id contains characters outside {@code
+     *     [a-zA-Z0-9_-]}, or if the effective container secret id (path-prefix +
+     *     container-secret-id) exceeds 255 characters
      */
     void validate(final String storeId) {
       if (projectId != null && projectId.isBlank()) {
@@ -344,6 +346,10 @@ public class Secrets {
       if (containerSecretId != null && containerSecretId.isBlank()) {
         throw new IllegalArgumentException(
             "camunda.secrets.stores.gcp." + storeId + ".container-secret-id must not be blank");
+      }
+      if (endpoint != null && endpoint.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.gcp." + storeId + ".endpoint must not be blank");
       }
       if (pathPrefix != null && !SECRET_ID_PATTERN.matcher(pathPrefix).matches()) {
         throw new IllegalArgumentException(

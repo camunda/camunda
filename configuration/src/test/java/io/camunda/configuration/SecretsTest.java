@@ -400,6 +400,29 @@ class SecretsTest {
   }
 
   @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.endpoint= "})
+  class WithBlankGcpEndpoint {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpEndpoint(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankEndpoint() {
+      // given endpoint is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("endpoint must not be blank");
+    }
+  }
+
+  @Nested
   @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.container-secret-id= "})
   class WithBlankGcpContainerSecretId {
     private final UnifiedConfiguration unifiedConfiguration;
