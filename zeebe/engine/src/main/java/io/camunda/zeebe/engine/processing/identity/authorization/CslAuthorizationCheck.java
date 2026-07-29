@@ -175,10 +175,12 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Rejects a claims-free caller outright: unlike {@link #checkTenant}, this method has no
-   * no-principal skip. Use it only for command sites that call the tenant check directly, with no
-   * preceding {@link #check}, and that verify membership across a list of tenant IDs at once, using
-   * {@link AuthorizedTenants#isAuthorizedForTenantIds}.
+   * Unlike {@link #checkTenant}, this method has no no-principal skip: a claims-free caller is
+   * rejected for every tenant it names, rather than vacuously authorized. (The
+   * multi-tenancy-disabled and anonymous-caller skips still apply, same as {@link #checkTenant}.)
+   * Use it only for command sites that call the tenant check directly, with no preceding {@link
+   * #check}, and that verify membership across a list of tenant IDs at once, using {@link
+   * AuthorizedTenants#isAuthorizedForTenantIds}.
    *
    * <p>Without a preceding {@link #check} to reject a claims-free command first, sharing {@link
    * #checkTenant}'s no-principal skip here would silently authorize a claims-free caller for every
