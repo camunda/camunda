@@ -18,6 +18,7 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -46,9 +47,7 @@ public class RaftLeadershipTransferInitiateTest {
     final var leaderId = memberId(leader);
 
     // when
-    final var result =
-        onRaftThread(
-            leader, () -> leaderRole(leader).precheckTransfer(leaderId, leaderId, index(leader)));
+    final var result = initiate(leader, leaderId, leaderId, index(leader));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.ALREADY_LEADER);
@@ -61,13 +60,7 @@ public class RaftLeadershipTransferInitiateTest {
     final var leader = raftRule.getLeader().orElseThrow();
 
     // when
-    final var result =
-        onRaftThread(
-            leader,
-            () ->
-                leaderRole(leader)
-                    .precheckTransfer(
-                        MemberId.from("nonmember"), coordinator(leader), index(leader)));
+    final var result = initiate(leader, MemberId.from("nonmember"));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.NOT_MEMBER);
@@ -83,13 +76,10 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
+        initiate(
             leader,
-            () -> {
-              leader.getContext().getCluster().getMemberContext(targetId).appendFailed();
-              return leaderRole(leader)
-                  .precheckTransfer(targetId, coordinator(leader), index(leader));
-            });
+            targetId,
+            () -> leader.getContext().getCluster().getMemberContext(targetId).appendFailed());
 
     // then
     assertThat(result).contains(LeadershipTransferResult.NOT_REPLICATING);
@@ -104,12 +94,7 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
-            leader,
-            () ->
-                leaderRole(leader)
-                    .precheckTransfer(
-                        memberId(target), MemberId.from("not-the-coordinator"), index(leader)));
+        initiate(leader, memberId(target), MemberId.from("not-the-coordinator"), index(leader));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.NOT_COORDINATOR);
@@ -123,19 +108,14 @@ public class RaftLeadershipTransferInitiateTest {
     final var target = raftRule.getFollower().orElseThrow();
 
     // when
-    final var result =
-        onRaftThread(
-            leader,
-            () ->
-                leaderRole(leader)
-                    .precheckTransfer(memberId(target), coordinator(leader), index(leader) - 1));
+    final var result = initiate(leader, memberId(target), coordinator(leader), index(leader) - 1);
 
     // then
     assertThat(result).contains(LeadershipTransferResult.STALE_CONFIGURATION);
   }
 
   @Test
-  public void shouldPassPrecheckForCaughtUpFollower() throws Exception {
+  public void shouldAcceptTransferToCaughtUpFollower() throws Exception {
     // given
     raftRule.appendEntries(10);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -143,14 +123,10 @@ public class RaftLeadershipTransferInitiateTest {
     final var targetId = memberId(target);
 
     // when
-    final var result =
-        onRaftThread(
-            leader,
-            () ->
-                leaderRole(leader).precheckTransfer(targetId, coordinator(leader), index(leader)));
+    final var result = initiate(leader, targetId);
 
     // then
-    assertThat(result).as("pre-checks pass for a caught-up follower").isEmpty();
+    assertThat(result).as("a caught-up follower is accepted").isEmpty();
   }
 
   @Test
@@ -163,18 +139,12 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     raftRule.partition(target);
+    Awaitility.await("the leader stops hearing from the partitioned follower")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> outOfContact(leader, targetId));
 
     // then
-    Awaitility.await("the leader stops treating the partitioned follower as reachable")
-        .atMost(Duration.ofSeconds(15))
-        .until(
-            () ->
-                onRaftThread(
-                        leader,
-                        () ->
-                            leaderRole(leader)
-                                .precheckTransfer(targetId, coordinator(leader), index(leader)))
-                    .equals(Optional.of(LeadershipTransferResult.UNREACHABLE)));
+    assertThat(initiate(leader, targetId)).contains(LeadershipTransferResult.UNREACHABLE);
   }
 
   @Test
@@ -187,13 +157,15 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
+        initiate(
             leader,
-            () -> {
-              leader.getContext().getCluster().getMemberContext(targetId).incrementFailureCount();
-              return leaderRole(leader)
-                  .precheckTransfer(targetId, coordinator(leader), index(leader));
-            });
+            targetId,
+            () ->
+                leader
+                    .getContext()
+                    .getCluster()
+                    .getMemberContext(targetId)
+                    .incrementFailureCount());
 
     // then
     assertThat(result).as("a member that is still answering stays eligible").isEmpty();
@@ -209,18 +181,16 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
+        initiate(
             leader,
-            () -> {
-              leader
-                  .getContext()
-                  .getCluster()
-                  .getMemberContext(targetId)
-                  .setSnapshotReplicationLag(
-                      leader.getContext().getRebalanceReplicationLagThreshold() + 1);
-              return leaderRole(leader)
-                  .precheckTransfer(targetId, coordinator(leader), index(leader));
-            });
+            targetId,
+            () ->
+                leader
+                    .getContext()
+                    .getCluster()
+                    .getMemberContext(targetId)
+                    .setSnapshotReplicationLag(
+                        leader.getContext().getRebalanceReplicationLagThreshold() + 1));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.LAG_TOO_HIGH);
@@ -240,13 +210,10 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
+        initiate(
             leader,
-            () -> {
-              leaderRole(leader).onReconfigure(removeFollowerRequest(leader, leavingFollower));
-              return leaderRole(leader)
-                  .precheckTransfer(targetId, coordinator(leader), index(leader));
-            });
+            targetId,
+            () -> leaderRole(leader).onReconfigure(removeFollowerRequest(leader, leavingFollower)));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
@@ -262,14 +229,12 @@ public class RaftLeadershipTransferInitiateTest {
 
     // when
     final var result =
-        onRaftThread(
+        initiate(
             leader,
-            () -> {
-              leaderRole(leader)
-                  .pauseForTransfer(Duration.ofSeconds(30), System.currentTimeMillis());
-              return leaderRole(leader)
-                  .precheckTransfer(targetId, coordinator(leader), index(leader));
-            });
+            targetId,
+            () ->
+                leaderRole(leader)
+                    .pauseForTransfer(Duration.ofSeconds(30), System.currentTimeMillis()));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
@@ -309,16 +274,67 @@ public class RaftLeadershipTransferInitiateTest {
         .until(() -> newLeader.getRole() == RaftServer.Role.LEADER);
 
     // when
-    final var result =
-        onRaftThread(
-            newLeader,
-            () ->
-                leaderRole(newLeader)
-                    .precheckTransfer(
-                        memberId(oldLeader), coordinator(newLeader), index(newLeader)));
+    final var result = initiate(newLeader, memberId(oldLeader));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.LEADER_INITIALIZING);
+  }
+
+  /**
+   * Sends an initiate request the leader has no reason to refuse other than the one under test, and
+   * returns the reason it refused, or empty if it accepted.
+   */
+  private static Optional<LeadershipTransferResult> initiate(
+      final RaftServer leader, final MemberId desiredLeader) throws Exception {
+    return initiate(leader, desiredLeader, () -> {});
+  }
+
+  /** As {@link #initiate(RaftServer, MemberId)}, running {@code setUp} on the Raft thread first. */
+  private static Optional<LeadershipTransferResult> initiate(
+      final RaftServer leader, final MemberId desiredLeader, final Runnable setUp)
+      throws Exception {
+    return onRaftThread(
+        leader,
+        () -> {
+          setUp.run();
+          // setUp may move the configuration on, so read it afterwards
+          return submit(leader, desiredLeader, coordinator(leader), index(leader));
+        });
+  }
+
+  private static Optional<LeadershipTransferResult> initiate(
+      final RaftServer leader,
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long coordinatorConfigIndex)
+      throws Exception {
+    return onRaftThread(
+        leader, () -> submit(leader, desiredLeader, coordinator, coordinatorConfigIndex));
+  }
+
+  private static Optional<LeadershipTransferResult> submit(
+      final RaftServer leader,
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long coordinatorConfigIndex) {
+    final var request =
+        LeadershipTransferInitiateRequest.builder()
+            .withDesiredLeader(desiredLeader)
+            .withCoordinator(coordinator)
+            .withCoordinatorConfigIndex(coordinatorConfigIndex)
+            .withCorrelationId(1)
+            .build();
+    return Optional.ofNullable(
+        leaderRole(leader).onLeadershipTransferInitiate(request).join().rejectionReason());
+  }
+
+  /**
+   * Whether the leader has heard nothing from {@code member} for longer than an election timeout.
+   */
+  private static boolean outOfContact(final RaftServer leader, final MemberId member) {
+    final var context = leader.getContext().getCluster().getMemberContext(member);
+    final var silenceMs = System.currentTimeMillis() - context.getResponseTime();
+    return silenceMs > leader.getContext().getElectionTimeout().toMillis();
   }
 
   private static <T> void dropSends(final RaftServer server, final Class<T> requestType) {
