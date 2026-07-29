@@ -66,6 +66,7 @@ const MigrateAction: React.FC = observer(() => {
 
     processInstanceMigrationStore.setSelectedInstancesCount(
       processInstancesSelectionStore.selectedCount,
+      processInstancesSelectionStore.isSelectedCountTruncated,
     );
     processInstanceMigrationStore.setBatchOperationQuery({
       conditions:

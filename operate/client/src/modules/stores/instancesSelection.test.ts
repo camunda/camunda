@@ -569,6 +569,57 @@ describe('InstancesSelection - excludedIds', () => {
   });
 });
 
+describe('InstancesSelection - isSelectedCountTruncated', () => {
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should be false in INCLUDE mode even when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      hasMoreTotalItems: true,
+      visibleIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.select('1');
+
+    expect(processInstancesSelectionStore.isSelectedCountTruncated).toBe(false);
+  });
+
+  it('should be true in ALL mode when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      hasMoreTotalItems: true,
+      visibleIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.isSelectedCountTruncated).toBe(true);
+  });
+
+  it('should be true in EXCLUDE mode when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      hasMoreTotalItems: true,
+      visibleIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAll();
+    processInstancesSelectionStore.select('1');
+
+    expect(processInstancesSelectionStore.isSelectedCountTruncated).toBe(true);
+  });
+
+  it('should be false in ALL mode when there are no more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      hasMoreTotalItems: false,
+      visibleIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.isSelectedCountTruncated).toBe(false);
+  });
+});
+
 describe('InstancesSelection - resetState', () => {
   beforeEach(() => {
     processInstancesSelectionStore.setRuntime({
