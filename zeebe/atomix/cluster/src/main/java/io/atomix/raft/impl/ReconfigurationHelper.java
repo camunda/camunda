@@ -52,8 +52,15 @@ public final class ReconfigurationHelper {
     this.raftContext = raftContext;
   }
 
-  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
+  public CompletableFuture<Void> join(final Type type, final Collection<MemberId> clusterMembers) {
     final var result = new CompletableFuture<Void>();
+    if (type == Type.INACTIVE) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Cannot join cluster as %s, must join as %s, %s or %s"
+                  .formatted(type, Type.PASSIVE, Type.PROMOTABLE, Type.ACTIVE)));
+      return result;
+    }
     threadContext.execute(
         () -> {
           // If the previous join was partially or fully completed, i.e. committed the first
@@ -71,15 +78,18 @@ public final class ReconfigurationHelper {
             return;
           }
 
-          // Always transition to PASSIVE or the last member type as found by
+          // Always transition to the requested type or the last member type as found by
           // `reloadConfigurationFromLog`.
           // This ensures that the member trying to join is not stuck in `INACTIVE` which would
           // prevent the joining from completing, particularly when joining a single-member cluster
           // where this new node is already required for quorum.
           switch (raftContext.getCluster().getLocalMember().getType()) {
             // The last configuration entry is probably old and has the local member as INACTIVE.
-            // Ignore this and become PASSIVE instead.
-            case INACTIVE -> raftContext.transition(Type.PASSIVE);
+            // Ignore this and start in the requested type instead, so that e.g. a PROMOTABLE
+            // joiner accepts the uncommitted tail from the very first append. ACTIVE joins keep
+            // starting as PASSIVE: a member without a configuration must not enter the follower
+            // role, and it is promoted by the configuration disseminated by the leader anyway.
+            case INACTIVE -> raftContext.transition(type == Type.ACTIVE ? Type.PASSIVE : type);
             // The last configuration entry has the local member as PASSIVE or ACTIVE, we can
             // directly transition to that.
             case final Type memberType -> raftContext.transition(memberType);
@@ -89,7 +99,7 @@ public final class ReconfigurationHelper {
           // retry join any way.
           final var joining =
               new DefaultRaftMember(
-                  raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
+                  raftContext.getCluster().getLocalMember().memberId(), type, Instant.now());
           final var assistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))

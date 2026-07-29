@@ -293,17 +293,34 @@ public interface RaftServer {
   }
 
   /**
-   * Starts this raft server by joining an existing replication group. A {@link
-   * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
+   * Starts this raft server by joining an existing replication group as an {@link
+   * RaftMember.Type#ACTIVE} member. A {@link io.atomix.raft.protocol.JoinRequest} is sent to an
+   * arbitrary member of the cluster.
    *
    * @param cluster a list of member ids that are part of the cluster and assist in joining.
    * @return A completable future to be completed once the server has joined the cluster.
    */
-  CompletableFuture<RaftServer> join(Collection<MemberId> cluster);
+  default CompletableFuture<RaftServer> join(final Collection<MemberId> cluster) {
+    return join(Type.ACTIVE, cluster);
+  }
 
   /**
-   * Starts this raft server by joining an existing replication group. A {@link
-   * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
+   * Starts this raft server by joining an existing replication group as a member of the given type.
+   * A {@link io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
+   *
+   * @param type the type the member joins as: {@link RaftMember.Type#ACTIVE} for a one-shot voting
+   *     join (current production behavior), {@link RaftMember.Type#PROMOTABLE} for the two-phase
+   *     learner flow where the member is caught up first and promoted to ACTIVE in a second
+   *     configuration change. {@link RaftMember.Type#INACTIVE} is rejected.
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster);
+
+  /**
+   * Starts this raft server by joining an existing replication group as an {@link
+   * RaftMember.Type#ACTIVE} member. A {@link io.atomix.raft.protocol.JoinRequest} is sent to an
+   * arbitrary member of the cluster.
    *
    * @param cluster a list of member ids that are part of the cluster and assist in joining.
    * @return A completable future to be completed once the server has joined the cluster.

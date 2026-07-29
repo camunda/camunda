@@ -22,16 +22,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.hash.Hashing;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftException;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.Scheduled;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /** Cluster member. */
@@ -140,30 +144,53 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
       return CompletableFuture.completedFuture(null);
     }
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    cluster.getContext().getThreadContext().execute(() -> configure(type, future));
+    // The retry timer is owned by this operation, not by the member: a stale response for an
+    // earlier, already completed operation must never cancel a newer operation's timer - the only
+    // thing that would drive that operation forward - and would otherwise hang its future
+    // forever. At the same time there is at most one live timer per operation: every reschedule
+    // replaces (and cancels) the previous one, so duplicated in-flight attempts of the same
+    // operation cannot multiply timers.
+    final var retryTimer = new AtomicReference<Scheduled>();
+    cluster.getContext().getThreadContext().execute(() -> configure(type, future, retryTimer));
     return future;
   }
 
   /** Recursively reconfigures the cluster. */
-  private void configure(final RaftMember.Type type, final CompletableFuture<Void> future) {
-    // Set a timer to retry the attempt to leave the cluster.
-    configureTimeout =
-        cluster
-            .getContext()
-            .getThreadContext()
-            .schedule(cluster.getContext().getElectionTimeout(), () -> configure(type, future));
+  private void configure(
+      final RaftMember.Type type,
+      final CompletableFuture<Void> future,
+      final AtomicReference<Scheduled> retryTimer) {
+    if (future.isDone()) {
+      // The operation already completed, e.g. the retry timer fired while the response that
+      // completed the future was still in flight. Don't send another request or re-arm the timer.
+      return;
+    }
+    final var currentConfiguration = cluster.getConfiguration();
+    if (currentConfiguration == null) {
+      // The local member does not know a configuration yet, for example a PROMOTABLE member whose
+      // join completed before the leader disseminated the configuration to it. The request is
+      // built from the local configuration view, so fail fast - like a stale-view
+      // CONFIGURATION_ERROR - and let the caller retry once a configuration is known.
+      cancelRetryTimer(retryTimer);
+      future.completeExceptionally(
+          new RaftException.ConfigurationException(
+              null, "Cannot change type of member %s to %s: no known configuration", id, type));
+      return;
+    }
 
-    // Attempt to leave the cluster by submitting a LeaveRequest directly to the server state.
+    // Set a timer to retry the attempt in case the response is lost.
+    scheduleRetry(cluster.getContext().getElectionTimeout(), type, future, retryTimer);
+
+    // Attempt to reconfigure by submitting a ReconfigureRequest directly to the server state.
     // Non-leader states should forward the request to the leader if there is one. Leader states
     // will log, replicate, and commit the reconfiguration.
-    final var currentConfiguration = cluster.getConfiguration();
     cluster
         .getContext()
         .getRaftRole()
         .onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
-                .withTerm(currentConfiguration.term())
+                .withTerm(configurationTerm(currentConfiguration))
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(new DefaultRaftMember(id, type, updated))
@@ -171,36 +198,103 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                 .build())
         .whenComplete(
             (response, error) -> {
+              if (future.isDone()) {
+                // A late response for an already completed operation must not touch any timer:
+                // the caller may have observed the completion and started a new operation, whose
+                // timer must stay armed.
+                return;
+              }
               if (error == null) {
                 if (response.status() == RaftResponse.Status.OK) {
-                  cancelConfigureTimer();
-                  cluster.configure(
-                      new Configuration(
-                          response.index(),
-                          response.term(),
-                          response.timestamp(),
-                          response.members()));
-                  future.complete(null);
+                  cancelRetryTimer(retryTimer);
+                  // Complete the future even if applying the new configuration fails: the
+                  // exception would otherwise be swallowed by this callback and, with the retry
+                  // timer already cancelled, hang the future forever.
+                  try {
+                    cluster.configure(
+                        new Configuration(
+                            response.index(),
+                            response.term(),
+                            response.timestamp(),
+                            response.members()));
+                    future.complete(null);
+                  } catch (final Exception e) {
+                    future.completeExceptionally(e);
+                  }
                 } else if (response.error() == null
                     || response.error().type() == RaftError.Type.UNAVAILABLE
                     || response.error().type() == RaftError.Type.PROTOCOL_ERROR
                     || response.error().type() == RaftError.Type.NO_LEADER) {
-                  cancelConfigureTimer();
-                  configureTimeout =
-                      cluster
-                          .getContext()
-                          .getThreadContext()
-                          .schedule(
-                              cluster.getContext().getElectionTimeout().multipliedBy(2),
-                              () -> configure(type, future));
+                  scheduleRetry(
+                      cluster.getContext().getElectionTimeout().multipliedBy(2),
+                      type,
+                      future,
+                      retryTimer);
                 } else {
-                  cancelConfigureTimer();
+                  cancelRetryTimer(retryTimer);
                   future.completeExceptionally(response.error().createException());
                 }
               } else {
+                cancelRetryTimer(retryTimer);
                 future.completeExceptionally(error);
               }
             });
+  }
+
+  /**
+   * Replaces the operation's retry timer with a new one, so that at most one timer is live per
+   * operation. The member-level configureTimeout field tracks the newest timer solely so that
+   * {@link #close()} can cancel it.
+   */
+  private void scheduleRetry(
+      final Duration delay,
+      final RaftMember.Type type,
+      final CompletableFuture<Void> future,
+      final AtomicReference<Scheduled> retryTimer) {
+    final var timer =
+        cluster
+            .getContext()
+            .getThreadContext()
+            .schedule(delay, () -> configure(type, future, retryTimer));
+    final var previous = retryTimer.getAndSet(timer);
+    if (previous != null) {
+      previous.cancel();
+    }
+    configureTimeout = timer;
+  }
+
+  private void cancelRetryTimer(final AtomicReference<Scheduled> retryTimer) {
+    final var timer = retryTimer.getAndSet(null);
+    if (timer != null) {
+      timer.cancel();
+    }
+  }
+
+  /**
+   * Returns the term identifying the given configuration towards the leader.
+   *
+   * <p>The locally stored configuration term is not reliable for this: followers store the
+   * leadership term under which the configuration was disseminated ({@code ConfigureRequest}
+   * carries the leader's then-current term), while the leader's own configuration - which {@code
+   * LeaderRole#onReconfigure} validates reconfigure requests against - keeps the term at which the
+   * configuration entry was appended. Whenever an election happened between appending and
+   * disseminating a configuration, the two terms differ and a request built from the stored term
+   * would be rejected as stale forever. Prefer the actual term of the local log's configuration
+   * entry, falling back to the stored term when the entry is not in the log (e.g. for the initial
+   * configuration, which has no entry, or when this member has not received the entry yet - the
+   * possibly-rejected request is safe to retry).
+   */
+  private long configurationTerm(final Configuration configuration) {
+    try (final var reader = cluster.getContext().getLog().openUncommittedReader()) {
+      reader.seek(configuration.index());
+      if (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.index() == configuration.index() && entry.entry() instanceof ConfigurationEntry) {
+          return entry.term();
+        }
+      }
+    }
+    return configuration.term();
   }
 
   @Override

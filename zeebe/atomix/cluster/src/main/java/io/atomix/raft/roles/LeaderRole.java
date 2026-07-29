@@ -243,6 +243,59 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
+    // Gate promotions of existing members to ACTIVE on the member being caught up: it joins the
+    // commit quorum as soon as the joint configuration is appended, so a promoted member lagging
+    // far behind would stall commits until it caught up. The gate bounds that stall window with
+    // the byte-exact replication lag rather than an entry count: the stall is bytes divided by
+    // replication bandwidth (entries range from tens of bytes to full batches, and entry counts
+    // are blind to a pending snapshot install, which the byte lag includes - a member
+    // mid-install is rejected by construction). Only in-configuration non-ACTIVE -> ACTIVE type
+    // changes are gated; members that are not part of the current configuration at all -
+    // brand-new one-shot ACTIVE joiners, the current production join path - are unaffected.
+    // CONFIGURATION_ERROR makes the requester fail fast and retry the whole promotion (see
+    // DefaultRaftMember#configure), unlike the internally retried NO_LEADER/UNAVAILABLE/
+    // PROTOCOL_ERROR responses.
+    for (final var updatedMember : updatedMembers) {
+      if (updatedMember.getType() != RaftMember.Type.ACTIVE) {
+        continue;
+      }
+      final var currentMember =
+          configuration.newMembers().stream()
+              .filter(member -> member.memberId().equals(updatedMember.memberId()))
+              .findAny();
+      if (currentMember.isEmpty() || currentMember.get().getType() == RaftMember.Type.ACTIVE) {
+        continue;
+      }
+      final var memberContext = raft.getCluster().getMemberContext(updatedMember.memberId());
+      // Requiring a positive match index closes an optimism window right after a leadership
+      // change: resetState zeroes the replication lag and opens the replication reader at the
+      // end of the log, so a far-behind member briefly reads as lag 0 until its first probe
+      // response repositions the reader and recalculates the lag from its actual position
+      // (RaftMemberContext#reset). The match index is also per-leadership and only ever set by a
+      // real acknowledgement, so a rejection here has already made the lag exact for the retry.
+      if (memberContext == null
+          || memberContext.getMatchIndex() <= 0
+          || memberContext.getReplicationLagBytes() > raft.getPromotionLagThreshold()) {
+        return CompletableFuture.completedFuture(
+            logResponse(
+                ReconfigureResponse.builder()
+                    .withStatus(RaftResponse.Status.ERROR)
+                    .withError(
+                        Type.CONFIGURATION_ERROR,
+                        "Cannot promote %s to ACTIVE because it is not caught up (match index %s, replication lag %s bytes, threshold %d bytes)"
+                            .formatted(
+                                updatedMember.memberId(),
+                                memberContext == null
+                                    ? "unknown"
+                                    : String.valueOf(memberContext.getMatchIndex()),
+                                memberContext == null
+                                    ? "unknown"
+                                    : String.valueOf(memberContext.getReplicationLagBytes()),
+                                raft.getPromotionLagThreshold()))
+                    .build()));
+      }
+    }
+
     ongoingReconfigurationRequestFuture = new CompletableFuture<>();
     configure(updatedMembers, currentMembers)
         .whenComplete(
@@ -275,6 +328,24 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
     raft.checkThread();
     final var currentConfiguration = raft.getCluster().getConfiguration();
+
+    // Joining must never demote a member that is already part of the configuration: for example,
+    // a crash-recovery retry of join(PROMOTABLE) must not downgrade a member that was promoted to
+    // ACTIVE in the meantime. Strictly greater is deliberate: an equal-type duplicate must keep
+    // falling through to onReconfigure's duplicate handling, which returns the ongoing
+    // reconfiguration future and completes the join only when the configuration commits -
+    // acknowledging it here would weaken the join's completion semantics while the member's own
+    // first join is still an in-flight joint configuration.
+    final var existingMember =
+        currentConfiguration.newMembers().stream()
+            .filter(member -> member.memberId().equals(request.joiningMember().memberId()))
+            .findAny();
+    if (existingMember.isPresent()
+        && existingMember.get().getType().ordinal() > request.joiningMember().getType().ordinal()) {
+      return CompletableFuture.completedFuture(
+          logResponse(JoinResponse.builder().withStatus(Status.OK).build()));
+    }
+
     return onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
@@ -361,6 +432,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private void leaveJointConsensus(
       final Collection<RaftMember> updatedMembers, final Configuration configuration) {
+    if (!isRunning() || !raft.isRunning()) {
+      // This runs deferred - from the completion of the joint configuration's commit or from a
+      // task scheduled in start() - so the role may have stopped or the server may have shut down
+      // in the meantime. Do not append as an ex-leader; the next elected leader resumes the exit
+      // from joint consensus (see start()). Both checks are needed: stepping down stops the role
+      // but a closing server does not stop it before closing the log.
+      ongoingReconfigurationRequestFuture.complete(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(Type.NO_LEADER, "Leader stopped before leaving joint consensus")
+                  .build()));
+      return;
+    }
     configure(updatedMembers, List.of())
         .whenComplete(
             (leftJointConsensusIndex, leftJointConsensusError) -> {
