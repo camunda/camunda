@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -48,20 +49,12 @@ import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.EnumMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
-
-  /**
-   * Slack added to a RESOLUTION_REQUESTED event's value length when checking batch capacity, to
-   * cover the log entry's key, source index, and metadata framing (see {@code
-   * LogAppendEntry#getLength}), so a guarded append never overflows the record batch.
-   */
-  private static final int RESOLUTION_EVENT_FRAMING_SLACK = 512;
 
   /** Scratch copy of the batch that carries the injected secret values to the response only. */
   private final JobBatchRecord responseValue = new JobBatchRecord();
@@ -210,10 +203,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
                 raiseIncidentJobTooLargeForMessageSize(
                     largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
-    // capture before activateJobBatch: building the response injects the secret values, which
+    // snapshot before activateJobBatch: building the response injects the secret values, which
     // resets the injector and clears the jobs registered for resolution
-    final var jobsWithNonCachedSecrets =
-        new LinkedHashMap<>(jobSecretInjector.jobsWithNonCachedSecrets());
+    final var jobsWithNonCachedSecrets = jobSecretInjector.jobsWithNonCachedSecrets();
 
     activateJobBatch(record, value, jobBatchKey);
 
@@ -239,7 +231,13 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
               .setStoreId(reference.storeId())
               .setSecretReference(reference.name());
       waiting.getValue().forEach(event::addJobKey);
-      if (!stateWriter.canWriteEventOfLength(event.getLength() + RESOLUTION_EVENT_FRAMING_SLACK)) {
+      // the capacity check needs the length of the whole log entry, whose metadata is only
+      // decorated with the command's authorization, agent and request source info once the entry is
+      // appended. The batch calculation buffer covers that framing on top of the value, the same
+      // way the collector sizes the job records it appends; over-estimating only defers a reference
+      // to the next activation, which keeps its jobs activatable.
+      if (!stateWriter.canWriteEventOfLength(
+          event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
         return;
       }
       stateWriter.appendFollowUpEvent(
