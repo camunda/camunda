@@ -21,9 +21,15 @@ import {
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Error API Tests', () => {
+  // Use a dedicated process definition and job type unique to this file. The
+  // job API specs run in parallel (one worker per file) and activation grabs
+  // any available job of a given type across the cluster, so sharing a single
+  // 'jobApiTaskType' across job specs let another spec consume or cancel the
+  // job this test just activated — surfacing as a 404 on the first throw-error.
+  // A per-file type keeps this file's job pool isolated.
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
-    'job_api_process',
-    'jobApiProcess',
+    'job_error_api_process',
+    'jobErrorApiProcess',
   );
 
   test.beforeAll(beforeAll);
@@ -35,7 +41,7 @@ test.describe('Job Error API Tests', () => {
   test('Throw Error for Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
-      'jobApiTaskType',
+      'jobErrorApiTaskType',
     );
 
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
@@ -84,7 +90,7 @@ test.describe('Job Error API Tests', () => {
     await test.step('Activate job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        'jobErrorApiTaskType',
       );
     });
 
