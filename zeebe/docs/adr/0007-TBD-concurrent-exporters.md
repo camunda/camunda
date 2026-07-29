@@ -60,11 +60,21 @@ record of each other, so retained log volume stays small; once exporters progres
 stalled exporter can fall arbitrarily far behind its siblings, and retained log volume grows with
 that gap until the stalled exporter recovers, is paused, or is removed.
 
-**D5. Failure isolation replaces shared failure.**
+**D5. Failure isolation replaces shared failure — scoped to throughput and liveness, not fatal
+errors.**
 An unrecoverable error in one exporter today halts exporting for the entire partition. Under this
 decision, it parks only that exporter — preserving its position for a later restart — while
 siblings continue unaffected. Partition-level health becomes an aggregate (worst-of) over
 individual exporter health, not a single shared state.
+
+This isolation has a deliberate boundary: because the aggregate is worst-of, one exporter reporting
+an unrecoverable (dead) failure still makes the partition's own health report dead, which — via the
+broker's existing health-monitoring wiring — still stops the partition as a whole (not just
+exporting), exactly as a fatal error in today's single shared actor does. What changes is scoped to
+the *slow-or-stuck-but-retrying* case: such an exporter no longer blocks its siblings' throughput or
+degrades partition health at all. A *fatal* error in one exporter remains, by design, a
+partition-wide event — decoupling exporters from each other does not decouple the partition's
+availability from any single exporter's correctness.
 
 **D6. No public API changes.**
 The `Exporter`/`Controller`/`Context` SPI exporter implementations are built against is untouched.
@@ -84,8 +94,9 @@ each other, not a change to what an exporter implementation does or receives.
 
 - Multi-exporter deployments gain real throughput and latency improvements: exporters no longer
   wait on each other.
-- One exporter's fatal error, network partition, or backlog no longer stops exporting for the
-  whole partition.
+- One exporter's stall, backlog, or transient (retryable) failure no longer stops exporting for the
+  whole partition or degrades partition health at all. A *fatal* (unrecoverable) error in one
+  exporter still stops the partition as a whole, same as today — see D5.
 - The number of actors scheduled per partition grows from one to one-per-configured-exporter;
   in practice this is small (deployments typically configure a handful of exporters), but it is a
   real increase in scheduled units on the broker's IO-bound actor pool.

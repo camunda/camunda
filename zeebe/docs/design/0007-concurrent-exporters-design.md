@@ -382,3 +382,35 @@ The three branches above are the entire failure-isolation story: a permanently-t
 just keeps retrying (with backoff) on its own actor forever, on a log reader no other exporter
 shares, without any other exporter's loop ever being aware it's happening.
 
+## 9. Backpressure interaction with `FlowControl`
+
+Neither this document nor the ADR originally accounted for `LogStream`'s write-rate throttle
+(`io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl`), which slows down new appends based on
+how far writing has outpaced exporting (`lastWrittenPosition - lastExportedPosition`). Before this
+refactor, `FlowControl.onExported(position)` was only ever called once every configured exporter had
+accepted a record, so the throttle was implicitly gated by the slowest exporter.
+
+Moving each exporter onto its own actor broke that implicit gating: each `ExporterActor` began
+calling `onExported` independently with its own position, and since `FlowControl` simply overwrites
+its tracked position on each call (no per-exporter awareness), the throttle ended up reflecting
+whichever exporter happened to report *last* — typically the fastest one — silently weakening
+backpressure exactly when a lagging exporter should have been triggering it.
+
+This is fixed by `ExporterExportedPositions`
+(`zeebe/broker/src/main/java/io/camunda/zeebe/broker/exporter/stream/ExporterExportedPositions.java`),
+a small class shared by every `ExporterActor` on a partition (the same "one instance passed to every
+actor" pattern already used for `ExporterMetrics`): it tracks each exporter's own last-known
+position and reports the *minimum* across all of them to `FlowControl`, restoring the pre-refactor
+throttling behavior.
+
+**This intentionally restores a coupling, not just a bug fix.** With the fix in place, if any one
+configured exporter stalls (e.g. its downstream store is down), the partition's write-rate throttle
+engages exactly as it did before this refactor — new command/record appends slow down or are
+rejected (`WriteRateLimitExhausted`, surfaced to clients as `RESOURCE_EXHAUSTED`) based on that
+exporter's lag, not just that exporter's own throughput. Decoupling exporters from each other does
+not, and was never intended to, decouple the engine's write throughput from the slowest exporter —
+that coupling exists for a correctness reason independent of this refactor (bounding how far writing
+can outpace exporting) and predates the per-exporter-actor design entirely. Operators should not
+expect this refactor to change how a single stalled exporter affects overall write throughput; it
+only changes whether that exporter also blocks *other exporters*.
+
