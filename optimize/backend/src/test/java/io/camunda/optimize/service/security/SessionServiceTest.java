@@ -9,15 +9,22 @@ package io.camunda.optimize.service.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeApiConfiguration;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
@@ -33,20 +45,28 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 class SessionServiceTest {
 
   private static final String USER_SUBJECT = "user123";
+  private static final String CSL_USERNAME = "auth0|csl-user";
 
   @Mock private TerminatedSessionService terminatedSessionService;
   @Mock private ConfigurationService configurationService;
   @Mock private AuthConfiguration authConfiguration;
   @Mock private OptimizeApiConfiguration apiConfiguration;
+  @Mock private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   private SessionService sessionService;
 
   @BeforeEach
   void setUp() {
-    when(authConfiguration.getTokenSecret()).thenReturn(Optional.empty());
-    when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
-    when(configurationService.getOptimizeApiConfiguration()).thenReturn(apiConfiguration);
-    sessionService = new SessionService(terminatedSessionService, configurationService);
+    lenient().when(authConfiguration.getTokenSecret()).thenReturn(Optional.empty());
+    lenient().when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
+    lenient().when(configurationService.getOptimizeApiConfiguration()).thenReturn(apiConfiguration);
+    // Legacy setup by default: no CamundaAuthenticationProvider bean exists.
+    sessionService = sessionServiceWith(noCamundaAuthenticationProvider());
+  }
+
+  private SessionService sessionServiceWith(
+      final ObjectProvider<CamundaAuthenticationProvider> provider) {
+    return new SessionService(terminatedSessionService, configurationService, provider);
   }
 
   @AfterEach
@@ -88,6 +108,98 @@ class SessionServiceTest {
     // when - then
     assertThatThrownBy(() -> sessionService.getRequestUserOrFailNotAuthorized(emptyRequest()))
         .isInstanceOf(NotAuthorizedException.class);
+  }
+
+  @Test
+  void shouldReturnCslAuthenticatedUsernameForAnOauth2Session() {
+    // given — CSL mode: an oauth2Login session, no Optimize auth cookie
+    sessionService = sessionServiceWith(camundaAuthenticationProviderOf(CSL_USERNAME));
+    SecurityContextHolder.getContext().setAuthentication(oauth2Session());
+
+    // when — CSL resolves first, so the cookie path is never reached
+    final String user =
+        sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class));
+
+    // then
+    assertThat(user).isEqualTo(CSL_USERNAME);
+  }
+
+  @Test
+  void shouldFailWhenCslResolvesNoUsernameForAnOauth2Session() {
+    // given — provider present but no authenticated username to offer, and no cookie to fall back
+    // to, so the request must not be attributed to some other identity
+    sessionService = sessionServiceWith(camundaAuthenticationProviderOf(null));
+    SecurityContextHolder.getContext().setAuthentication(oauth2Session());
+
+    // when - then
+    assertThatThrownBy(() -> sessionService.getRequestUserOrFailNotAuthorized(emptyRequest()))
+        .isInstanceOf(NotAuthorizedException.class);
+  }
+
+  @Test
+  void shouldNotConsultCslForABearerAuthenticatedRequest() {
+    // given — CSL present, but the context holds a bearer JWT rather than an oauth2 session, so the
+    // bearer subject must win and CSL must not be asked
+    when(apiConfiguration.isJwtAuthForApiEnabled()).thenReturn(true);
+    sessionService = sessionServiceWith(camundaAuthenticationProviderOf(CSL_USERNAME));
+    SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(buildJwt()));
+
+    // when — the bearer subject resolves first, so the cookie path is never reached
+    final String user =
+        sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class));
+
+    // then
+    assertThat(user).isEqualTo(USER_SUBJECT);
+    verifyNoInteractions(camundaAuthenticationProvider);
+  }
+
+  private ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderOf(
+      final String username) {
+    final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+    lenient().when(authentication.authenticatedUsername()).thenReturn(username);
+    lenient()
+        .when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(authentication);
+    return singletonProvider(camundaAuthenticationProvider);
+  }
+
+  private static ObjectProvider<CamundaAuthenticationProvider> noCamundaAuthenticationProvider() {
+    return singletonProvider(null);
+  }
+
+  private static ObjectProvider<CamundaAuthenticationProvider> singletonProvider(
+      final CamundaAuthenticationProvider provider) {
+    return new ObjectProvider<>() {
+      @Override
+      public CamundaAuthenticationProvider getObject() {
+        return provider;
+      }
+
+      @Override
+      public CamundaAuthenticationProvider getObject(final Object... args) {
+        return provider;
+      }
+
+      @Override
+      public CamundaAuthenticationProvider getIfAvailable() {
+        return provider;
+      }
+
+      @Override
+      public CamundaAuthenticationProvider getIfUnique() {
+        return provider;
+      }
+    };
+  }
+
+  private static OAuth2AuthenticationToken oauth2Session() {
+    final OidcIdToken idToken =
+        new OidcIdToken(
+            "id-token", Instant.now(), Instant.now().plusSeconds(300), Map.of("sub", CSL_USERNAME));
+    return new OAuth2AuthenticationToken(
+        new DefaultOidcUser(AuthorityUtils.createAuthorityList("ROLE_USER"), idToken),
+        List.of(),
+        "oidc");
   }
 
   /** Returns a mock request that has no auth cookie and won't NPE inside AuthCookieService. */

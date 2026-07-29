@@ -19,6 +19,8 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -30,8 +32,10 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
@@ -48,14 +52,21 @@ public class SessionService implements ConfigurationReloadable {
 
   private final TerminatedSessionService terminatedSessionService;
   private final ConfigurationService configurationService;
+
+  // Present only under CSL; absent in the legacy setup, which resolves the user from the auth
+  // cookie or a bearer token's sub claim.
+  private final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider;
+
   private Algorithm hashingAlgorithm;
   private JWTVerifier jwtVerifier;
 
   public SessionService(
       final TerminatedSessionService terminatedSessionService,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider) {
     this.terminatedSessionService = terminatedSessionService;
     this.configurationService = configurationService;
+    this.camundaAuthenticationProviderProvider = camundaAuthenticationProviderProvider;
 
     initJwtVerifier();
   }
@@ -89,6 +100,9 @@ public class SessionService implements ConfigurationReloadable {
    * <p>Resolution order:
    *
    * <ol>
+   *   <li>Under CSL, the username CSL resolved for the interactive session (see {@link
+   *       #cslAuthenticatedUsername()}). There is no Optimize auth cookie in that mode, so without
+   *       this step every endpoint using this method would fail with a 401.
    *   <li>If the {@link SecurityContextHolder} already holds a {@link JwtAuthenticationToken} (set
    *       by Spring Security's OAuth2 resource server bearer-token authentication when {@code
    *       api.jwtAuthForApiEnabled=true}), the subject is taken directly from that token. This
@@ -100,12 +114,39 @@ public class SessionService implements ConfigurationReloadable {
    * @throws NotAuthorizedException if no authenticated identity can be resolved.
    */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
-    return subjectFromSecurityContext()
+    return cslAuthenticatedUsername()
+        .or(this::subjectFromSecurityContext)
         .or(
             () ->
                 AuthCookieService.getAuthCookieToken(request)
                     .flatMap(AuthCookieService::getTokenSubject))
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
+  }
+
+  /**
+   * Resolves the user id CSL authenticated the interactive session as, which is the id Optimize
+   * stores entity ownership under (CSL's configured {@code username-claim}). Mirrors {@code
+   * CCSMTokenService#getCurrentUserIdFromAuthToken}, which reads the same source.
+   *
+   * <p>Empty unless CSL is active: the {@link CamundaAuthenticationProvider} bean exists only then,
+   * and the {@link OAuth2AuthenticationToken} check restricts this to sessions established by CSL's
+   * {@code oauth2Login} chain, so the legacy cookie path is unaffected.
+   */
+  private Optional<String> cslAuthenticatedUsername() {
+    final CamundaAuthenticationProvider provider =
+        camundaAuthenticationProviderProvider == null
+            ? null
+            : camundaAuthenticationProviderProvider.getIfAvailable();
+    if (provider == null) {
+      return Optional.empty();
+    }
+    if (!(SecurityContextHolder.getContext().getAuthentication()
+        instanceof OAuth2AuthenticationToken)) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(provider.getCamundaAuthentication())
+        .map(CamundaAuthentication::authenticatedUsername)
+        .filter(username -> !username.isBlank());
   }
 
   /**
