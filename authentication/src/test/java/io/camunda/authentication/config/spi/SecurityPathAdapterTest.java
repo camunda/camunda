@@ -37,9 +37,19 @@ class SecurityPathAdapterTest {
 
   @Test
   void shouldExposeUnprotectedPaths() {
+    // /cluster/v2/status is here rather than in unprotectedApiPaths() on purpose: it must be served
+    // by a chain with no authentication filter, so a credential the cluster-admin chain would
+    // reject
+    // is ignored instead of turning a health check into a 401.
     assertThat(port.unprotectedPaths())
         .containsExactlyInAnyOrder(
-            "/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
+            "/error",
+            "/actuator/**",
+            "/ready",
+            "/health",
+            "/startup",
+            "/favicon.ico",
+            "/cluster/v2/status");
   }
 
   @Test
