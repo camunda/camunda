@@ -383,6 +383,12 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Department', 'Rome');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    // Wait for the toast to auto-dismiss before completing the second task;
+    // otherwise both "Task completed" toasts can be on screen at once and the
+    // banner locator matches two elements (strict-mode violation).
+    await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+      timeout: 15000,
+    });
 
     await taskPanelPage.filterBy('Unassigned');
     // The next task can take a moment to be indexed/rendered right after
