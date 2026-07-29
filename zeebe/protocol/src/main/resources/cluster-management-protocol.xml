@@ -15,6 +15,7 @@
       <validValue name="SOFT_PAUSE_EXPORTING">4</validValue>
       <validValue name="SET_FLOW_CONTROL">5</validValue>
       <validValue name="GET_FLOW_CONTROL">6</validValue>
+      <validValue name="GET_EXPORTING_STATE">7</validValue>
     </enum>
 
     <enum name="BackupRequestType" encodingType="uint8">
