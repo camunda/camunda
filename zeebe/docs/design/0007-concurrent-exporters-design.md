@@ -28,6 +28,13 @@ new records until the stuck one clears, and the reader itself cannot move forwar
 
 ## 2. Target class design
 
+> **As implemented:** the class-level shape below shipped largely as proposed, with two naming
+> deviations kept deliberately for a smaller diff: the coordinator class kept the name
+> `ExporterDirector` rather than being renamed to `ExporterCoordinator`, and `RecordExporter` was
+> kept rather than deleted — each `ExporterActor` constructs its own `RecordExporter` over a
+> single-element container list (`List.of(container)`), so its per-record loop degenerates to one
+> iteration instead of walking a shared list. See §8 for the as-built runtime diagrams.
+
 ### `ExporterActor` (new)
 
 One instance per configured exporter per partition. Folds in the per-exporter fields currently on
@@ -45,7 +52,7 @@ soft-pause flag, `ExporterReplayControl`) plus:
 `softPauseExporter`/`undoSoftPauseExporter` move onto `ExporterActor` largely unchanged in logic —
 the behavior per exporter is the same, only the driving loop around it changes.
 
-### `ExporterCoordinator` (replaces `ExporterDirector` as the broker-facing surface)
+### `ExporterCoordinator` (as implemented: kept the name `ExporterDirector`)
 
 Owns a `Map<String, ExporterActor>` instead of the `ArrayList<ExporterContainer>` +
 `recordExporter.resetExporterIndex()` dance. Responsibilities:
@@ -64,11 +71,13 @@ Owns a `Map<String, ExporterActor>` instead of the `ArrayList<ExporterContainer>
 - owns `ExporterStateDistributionService` exactly as today — a single batch broadcast of all
   exporters' positions, built from `ExportersState.visitExporterState`, unchanged in wire format
 
-### `RecordExporter` — deleted
+### `RecordExporter` (as implemented: kept, scoped to a single container)
 
 Its only purpose was the shared `exporterIndex` cursor across multiple containers. With one
 container per actor, there is no list to walk; exporting a record is a direct
-retry-until-success call on that actor's own record.
+retry-until-success call on that actor's own record. Rather than deleting the class, each
+`ExporterActor` constructs its own `RecordExporter` over `List.of(container)` — a single-element
+list — so the existing per-record loop still runs, it just always terminates after one iteration.
 
 ## 3. State ownership and RocksDB access
 
@@ -148,4 +157,228 @@ passing under sustained load with an intentionally stalled exporter.
 - Add a compaction regression test with deliberately divergent per-exporter positions, confirming
   `getLowestPosition()` still returns the true minimum and compaction still never deletes segments
   the slowest exporter has not consumed.
+
+## 8. Runtime architecture (as implemented)
+
+This section documents the shipped code, not the plan — see the note in §2 for the two naming
+deviations. It focuses on two things: how the classes relate to each other, and — the part that
+matters most for a concurrency refactor — exactly where a thread/actor boundary sits, since that is
+what determines whether two exporters can genuinely make progress at the same time.
+
+### 8.1 Class relationships
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Exporter {
+        <<interface>>
+        +configure(Context)
+        +open(Controller)
+        +export(Record)
+        +close()
+        +purge()
+    }
+
+    class Controller {
+        <<interface>>
+        +updateLastExportedRecordPosition(long)
+        +scheduleCancellableTask(Duration, Runnable) ScheduledTask
+        +requestReplay(long) boolean
+    }
+
+    class LogStreamReader {
+        <<interface>>
+        +hasNext() boolean
+        +next() LoggedEvent
+        +seek(long) boolean
+        +seekToNextEvent(long) boolean
+    }
+
+    class ExporterContainer {
+        -Exporter exporter
+        -long position
+        -ActorControl actor
+        -ExportersState exportersState
+        +openExporter()
+        +exportRecord(metadata, record) ExportOutcome
+        +requestReplay(long) boolean
+        +close()
+    }
+
+    class RecordExporter {
+        -List~ExporterContainer~ containers
+        -int exporterIndex
+        +wrap(LoggedEvent)
+        +export() ExportOutcome
+    }
+
+    class ExporterActor {
+        -LogStreamReader logStreamReader
+        -ExporterContainer container
+        -RecordExporter recordExporter
+        -RetryStrategy exportingRetryStrategy
+        +readNextEvent()
+        +exportEvent(LoggedEvent)
+        +pauseExporting() ActorFuture~Void~
+        +resumeExporting() ActorFuture~Void~
+    }
+
+    class ExporterDirector {
+        -Map~String,ExporterActor~ exporterActors
+        -List~ExporterContainer~ containers
+        -ExportersState state
+        +pauseExporting() ActorFuture~Void~
+        +resumeExporting() ActorFuture~Void~
+        +removeExporter(id) ActorFuture~Void~
+        +closeAsync() ActorFuture~Void~
+    }
+
+    ExporterContainer ..|> Controller : implements
+    ExporterContainer --> "1" Exporter : wraps user impl
+    RecordExporter --> "1" ExporterContainer : List.of(container) — single element
+    ExporterActor *-- "1" RecordExporter : constructs in onActorStarted()
+    ExporterActor *-- "1" LogStreamReader : owns exclusively
+    ExporterActor --> "1" ExporterContainer : rebinds + drives
+    ExporterDirector ..> ExporterContainer : constructs + configures (before handoff)
+    ExporterDirector *-- "0..*" ExporterActor : schedules, owns lifecycle, aggregates health
+```
+
+Note the asymmetry: `ExporterDirector` **constructs** each `ExporterContainer` and its
+`LogStreamReader` up front (`createContainer`/`initContainers`), but ownership of both is
+permanently handed off to that exporter's `ExporterActor` before it ever opens the exporter or reads
+a record — from that point on, `ExporterDirector` never touches them again. `RecordExporter` still
+has the shape of "iterate over a list of containers" from the old shared-cursor design, but each
+`ExporterActor` only ever gives it one container, so that loop always runs exactly once per record.
+
+### 8.2 Actor/thread topology — where the concurrency actually is
+
+Every actor in this diagram is scheduled with `SchedulingHints.ioBound()` onto the same shared
+IO-bound thread pool, but each **actor** is single-threaded and mutually exclusive with itself: the
+scheduler guarantees only one job of a given actor runs at a time, though *which* physical worker
+thread runs it can vary between jobs. What changed in this refactor is not the pool — it's how many
+independent actors (and therefore how many independently-progressing execution contexts) exist per
+partition.
+
+```mermaid
+flowchart TB
+    subgraph pool["IO-bound actor thread pool (zb-fs-workers-*) — shared by all actors below"]
+        direction LR
+
+        subgraph dirActor["ExporterDirector — one actor, one exclusive execution context"]
+            D["ExporterDirector<br/>(coordinator, no reading/exporting)"]
+        end
+
+        subgraph actorA["ExporterActor A — independent actor/thread"]
+            direction TB
+            AA["ExporterActor A"]
+            LA["LogStreamReader A"]
+            CA["ExporterContainer A"]
+            EA["Exporter impl A"]
+            AA --> LA
+            AA --> CA
+            CA --> EA
+        end
+
+        subgraph actorB["ExporterActor B — independent actor/thread"]
+            direction TB
+            AB["ExporterActor B"]
+            LB["LogStreamReader B"]
+            CB["ExporterContainer B"]
+            EB["Exporter impl B"]
+            AB --> LB
+            AB --> CB
+            CB --> EB
+        end
+    end
+
+    D -- "① construct container + reader<br/>(still on Director's own execution)" --> CA
+    D -- "① construct container + reader" --> CB
+
+    D == "② schedule + open<br/>THREAD BOUNDARY — container/reader<br/>ownership permanently hands off" ==> AA
+    D == "② schedule + open<br/>THREAD BOUNDARY" ==> AB
+
+    D -. "③ pause/resume/remove:<br/>actor.call() fan-out — concurrent,<br/>independent per exporter" .-> AA
+    D -. "③ pause/resume/remove" .-> AB
+
+    AA -. "④ health/failure:<br/>actor.run() hop back onto Director" .-> D
+    AB -. "④ health/failure" .-> D
+
+    style dirActor fill:#eef,stroke:#557
+    style actorA fill:#efe,stroke:#575
+    style actorB fill:#efe,stroke:#575
+```
+
+Reading this diagram as the answer to "where does concurrency happen":
+
+1. **Construction (①)** happens on the Director's own execution, before any handoff — this is
+   inherently sequential and cheap (no I/O), so it isn't a bottleneck.
+2. **The thread boundary (②)** is the one-way handoff: `ExporterDirector.scheduleExporterActor()`
+   submits a brand-new `ExporterActor` to the scheduler, and that actor's own `onActorStarted()`
+   rebinds the container's `ActorControl` to itself before opening the exporter (see the comment in
+   `ExporterActor.onActorStarted()` for why this ordering matters — an exporter can schedule a
+   periodic task synchronously from `open()`, and that task must be bound to the right actor from
+   the start). After this point, `ExporterContainer`, `LogStreamReader`, and `RecordExporter` for
+   that exporter are touched exclusively by that one `ExporterActor` — never by the Director, never
+   by another exporter's actor. **This is the actual concurrency**: exporter A's read-export-retry
+   loop and exporter B's are two independent actors, so a slow or stuck `Exporter.export()` call in
+   A never blocks B's own loop from advancing, and the two can be scheduled onto different physical
+   worker threads at the same time.
+3. **Control-plane calls (③)** — pause, resume, soft-pause, remove — still originate from the
+   Director's thread but fan out as independent `actor.call(...)`/`closeAsync()` calls, one per
+   child, each crossing its own thread boundary; a slow exporter responding to a pause request
+   doesn't block another exporter's pause from completing.
+4. **Health/failure reporting (④)** flows the other way: each `ExporterActor` registers itself as a
+   `FailureListener` source, and reports hop back onto the Director's own actor via `actor.run(...)`
+   so that health aggregation (`HealthReport.fromChildrenStatus`) and the single
+   `HealthMonitorable` registration point stay single-threaded from the Director's perspective, even
+   though the failures themselves can arrive concurrently from any number of exporter actors.
+
+No arrow ever goes directly between `actorA` and `actorB` — that absence is the whole point of the
+redesign. The old design had one actor, one `LogStreamReader`, and one shared `exporterIndex` cursor
+walking every container in lock-step, so a stuck exporter blocked the reader itself from advancing
+for every other exporter too. Now each exporter has its own reader, its own container, and its own
+actor, so nothing about exporter B's progress can be observed by, or depend on, exporter A's actor.
+
+### 8.3 One exporter's read-export loop — entirely inside its own actor
+
+This is the loop that actually runs concurrently across exporters (per §8.2). Within a single
+`ExporterActor`, though, it's strictly sequential — the actor model gives single-threaded semantics
+for free, so there's no additional locking inside `ExporterContainer`/`RecordExporter`.
+
+```mermaid
+sequenceDiagram
+    participant LSR as LogStreamReader (A)
+    participant AA as ExporterActor (A)
+    participant RE as RecordExporter (A)
+    participant EC as ExporterContainer (A)
+    participant EX as Exporter impl (A)
+
+    Note over AA,EX: Everything below runs on ExporterActor A's own actor thread.<br/>Exporter B's actor is never involved and never blocked by this.
+
+    AA->>LSR: hasNext() / next()
+    LSR-->>AA: LoggedEvent
+    AA->>RE: wrap(event)
+    AA->>RE: export()
+    RE->>EC: exportRecord(metadata, typedEvent)
+    EC->>EX: export(record)
+    alt exported successfully
+        EC-->>RE: ExportOutcome.EXPORTED
+        RE-->>AA: EXPORTED
+        AA->>AA: actor.submit(readNextEvent) — next tick, same actor
+    else Exporter.export() throws
+        EC-->>RE: ExportOutcome.RETRY
+        RE-->>AA: RETRY
+        AA->>AA: BackOffRetryStrategy reschedules export()<br/>after backoff — still the same actor, same thread
+    else ExporterException(REOPEN) triggers a reopen mid-stream
+        EC->>EC: reopenExporter() → exporter.close(); exporter.open(this)
+        EC-->>RE: ExportOutcome.ABORT_REPLAY
+        RE-->>AA: ABORT_REPLAY
+        AA->>AA: abandon record, actor.submit(readNextEvent)<br/>(record is redelivered once reading resumes)
+    end
+```
+
+The three branches above are the entire failure-isolation story: a permanently-throwing exporter
+just keeps retrying (with backoff) on its own actor forever, on a log reader no other exporter
+shares, without any other exporter's loop ever being aware it's happening.
 
