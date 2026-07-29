@@ -32,6 +32,11 @@ import java.util.Objects;
  * LeadershipTransferResultRequest} carrying the same {@code correlationId}. The {@code coordinator}
  * and {@code coordinatorConfigVersion} let the leader reject a request from a stale or
  * non-coordinator node.
+ *
+ * <p>The two halves travel on separate subjects rather than as one request/response pair because a
+ * transfer takes far longer than the {@code requestTimeout} bounding a single round trip, and has
+ * to survive the leader it was sent to stepping down. The {@code correlationId} is what ties them
+ * back together.
  */
 public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest {
 
