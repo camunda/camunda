@@ -556,6 +556,31 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldReleaseAllocatedResourcesWhenOpenFails() throws Exception {
+    // given - open() allocates the replication controller (which schedules a background poll task)
+    // and only afterwards schedules the flush task; make that scheduling fail so open() throws
+    // after the controller and the execution-queue listeners have already been allocated
+    createExporter(b -> b, true, false, null);
+    when(controller.scheduleCancellableTask(any(), any()))
+        .thenThrow(new RuntimeException("scheduling failed"));
+
+    // when
+    assertThatThrownBy(() -> exporter.open(controller)).isInstanceOf(RuntimeException.class);
+
+    // then - close() must run its full cleanup so a retried open starts from a clean state: the
+    // replication controller (and its background poll task) is released and the pending writes are
+    // flushed. The flush task and background task manager are allocated only after the failing
+    // step, so there is nothing to release for those here.
+    verify(replicationController).close();
+    verify(rdbmsWriters).close();
+    // reset() runs twice, and that is expected: once at the start of open() (so re-registering
+    // listeners/hooks on a reopen never duplicates them) and once again inside close() as part of
+    // teardown. reset() is idempotent, so running it on both the open and close paths is harmless;
+    // we pin the count only to document the two distinct call sites.
+    verify(executionQueue, times(2)).reset();
+  }
+
+  @Test
   void shouldNotRequestReplayWhenBrokerAndRdbmsPositionAreEqual() {
     // given - broker position equals RDBMS position
     final long position = 1000L;
@@ -872,6 +897,23 @@ class RdbmsExporterTest {
         .when(rdbmsWriters)
         .flush(true);
     doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
+
+    // mirror the real RdbmsWriters.close(): final flush followed by an execution-queue reset
+    try {
+      doAnswer(
+              (invocation) -> {
+                try {
+                  executionQueue.flush();
+                } finally {
+                  executionQueue.reset();
+                }
+                return null;
+              })
+          .when(rdbmsWriters)
+          .close();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
 
     final var builder =
         new RdbmsExporter.Builder()

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -104,6 +105,18 @@ public final class RdbmsExporter {
   }
 
   public void open(final Controller controller) {
+    try {
+      doOpen(controller);
+    } catch (final RuntimeException e) {
+      // open() may fail after allocating resources (replication controller, scheduled flush task,
+      // background task manager). Release them via close() before propagating so a retried open
+      // starts from a clean state instead of leaking the partial allocation.
+      close();
+      throw e;
+    }
+  }
+
+  private void doOpen(final Controller controller) {
     this.controller = controller;
     rdbmsWriters.getExecutionQueue().reset();
     log(
@@ -194,27 +207,15 @@ public final class RdbmsExporter {
 
   public void close() {
     try {
-      if (currentFlushTask != null) {
-        currentFlushTask.cancel();
-      }
-      if (backgroundTaskManager != null) {
-        backgroundTaskManager.close();
-        backgroundTaskManager = null;
-      }
-
-      try {
-        rdbmsWriters.flush(true);
-      } catch (final Exception e) {
-        log(WARN, "Failed to execute final flush on close for partition {}", partitionId);
-        throw e;
-      }
-
-      rdbmsWriters.getExecutionQueue().reset();
-
-      if (replicationController != null) {
-        replicationController.close();
-        replicationController = null;
-      }
+      CloseHelper.closeAll(
+          () -> {
+            if (currentFlushTask != null) {
+              currentFlushTask.cancel();
+            }
+          },
+          backgroundTaskManager,
+          rdbmsWriters,
+          replicationController);
     } catch (final Exception e) {
       log(WARN, "Failed to flush records before closing exporter.", e);
     }

@@ -72,8 +72,11 @@ import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class RdbmsWriters {
+public class RdbmsWriters implements AutoCloseable {
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsWriters.class);
 
   private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
@@ -378,5 +381,17 @@ public class RdbmsWriters {
    */
   public int getErrorMessageSize() {
     return vendorDatabaseProperties.errorMessageSize();
+  }
+
+  @Override
+  public void close() throws Exception {
+    try {
+      flush(true);
+    } catch (final Exception e) {
+      LOG.warn("Failed to execute final flush on close");
+      throw e;
+    } finally {
+      getExecutionQueue().reset();
+    }
   }
 }
