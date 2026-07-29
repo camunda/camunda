@@ -201,7 +201,10 @@ jobs:
                 patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
               done
             elif [ "$test_type" = "api_es" ]; then
-              patterns+=("json-report-nightly-api-${safe_version}|elasticsearch")
+              # Trailing glob tolerates the mode suffix (e.g. "-profiles") the
+              # API-tests job now appends to the artifact name. Does not collide
+              # with rdbms artifacts (json-report-nightly-api-rdbms-...).
+              patterns+=("json-report-nightly-api-${safe_version}*|elasticsearch")
             elif [ "$test_type" = "api_rdbms" ]; then
               # List the per-database artifact names from the run
               gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
