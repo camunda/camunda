@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -144,15 +145,13 @@ class ReadyzAtRootPathTest {
         .thenReturn(null);
   }
 
-  private static void registerServlets(final jakarta.servlet.ServletContext servletContext) {
+  private static void registerServlets(final ServletContext servletContext) {
     registerOkServlet(servletContext, "readyz", READYZ);
     registerOkServlet(servletContext, "uiConfiguration", OTHER_ENDPOINT);
   }
 
   private static void registerOkServlet(
-      final jakarta.servlet.ServletContext servletContext,
-      final String name,
-      final String mapping) {
+      final ServletContext servletContext, final String name, final String mapping) {
     servletContext
         .addServlet(
             name,
