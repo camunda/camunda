@@ -15,181 +15,63 @@
  */
 package io.atomix.raft.roles;
 
-import com.google.common.base.Throwables;
-import io.atomix.cluster.MemberId;
-import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
-import io.atomix.raft.protocol.LeadershipTransferResultRequest;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Runs the coordinated leadership transfers a {@link LeaderRole} accepts, one at a time. Shares the
  * role's lifecycle rather than being per-transfer: a leader that stays leader after a transfer
- * fails can run another.
+ * fails can run another. Each accepted transfer runs as its own one-shot {@link
+ * LeadershipTransferAttempt}, so no state survives from one transfer into the next.
  */
+@NullMarked
 final class LeadershipTransferRunner {
-  private static final Logger LOG = LoggerFactory.getLogger(LeadershipTransferRunner.class);
   private final RaftContext raft;
   private final LeaderRole leader;
-  // Set as soon as the transfer is accepted, before the pause is entered
-  private volatile boolean inProgress;
-  private CatchUpWait activeCatchUp;
+  // Set as soon as a transfer is accepted, before the pause is entered; cleared when the attempt
+  // finishes.
+  private volatile @Nullable LeadershipTransferAttempt currentAttempt;
 
   LeadershipTransferRunner(final RaftContext raft, final LeaderRole leader) {
     this.raft = raft;
     this.leader = leader;
   }
 
-  /** Whether a transfer is still running, i.e. has not reached {@link #finish}. */
+  /** Whether a transfer is still running, i.e. the accepted attempt has not finished. */
   boolean isInProgress() {
-    return inProgress;
+    return currentAttempt != null;
   }
 
   void start(final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
-    inProgress = true;
-    final long startMs = System.currentTimeMillis();
-    final var desiredLeader = request.desiredLeader();
-    final var coordinator = request.coordinator();
-    final var correlationId = request.correlationId();
-    final var resumeTimeout = raft.getRebalanceReplicationTimeout();
-    pause(resumeTimeout)
-        .whenCompleteAsync(
-            (targetIndex, error) -> {
-              if (error != null) {
-                final var result = pauseFailureResult(error);
-                LOG.warn(
-                    "Failed to pause partition for transfer to {}, reporting {}",
-                    desiredLeader,
-                    result,
-                    error);
-                finish(coordinator, desiredLeader, correlationId, result, startMs);
-                return;
-              }
-              final var catchUp =
-                  new CatchUpWait(raft, leader::isRunning, desiredLeader, targetIndex);
-              activeCatchUp = catchUp;
-              catchUp
-                  .start()
-                  .whenComplete(
-                      (catchUpResult, ignored) -> {
-                        activeCatchUp = null;
-                        if (catchUpResult.isPresent()) {
-                          finish(
-                              coordinator,
-                              desiredLeader,
-                              correlationId,
-                              catchUpResult.get(),
-                              startMs);
-                          return;
-                        }
-                        // The desired leader is caught up. We don't yet implement the actual
-                        // transfer, so just resume. This run is over either way, so release the
-                        // runner for the next transfer the leader is asked to make.
-                        LOG.info(
-                            "Desired leader {} caught up to index {}", desiredLeader, targetIndex);
-                        inProgress = false;
-                        resume();
-                      });
-            },
-            raft.getThreadContext());
-  }
-
-  private void finish(
-      final MemberId coordinator,
-      final MemberId desiredLeader,
-      final long correlationId,
-      final LeadershipTransferResult result,
-      final long startMs) {
-    inProgress = false;
-    raft.getRebalanceMetrics()
-        .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
-    resume()
-        .whenComplete(
-            (ignored, resumeError) -> {
-              if (resumeError != null) {
-                // Cleanup failed: the partition may still be frozen. The pause watchdog is the
-                // safety net and steps the leader down once the resume deadline passes.
-                LOG.error(
-                    "Failed to resume partition after leadership transfer to {} (result {}); "
-                        + "relying on the pause watchdog to recover if still frozen",
-                    desiredLeader,
-                    result,
-                    resumeError);
-              }
-              final var notification =
-                  LeadershipTransferResultRequest.builder()
-                      .withLeader(raft.getCluster().getLocalMember().memberId())
-                      .withDesiredLeader(desiredLeader)
-                      .withResult(result)
-                      .withCorrelationId(correlationId)
-                      .build();
-              raft.getProtocol()
-                  .leadershipTransferResult(coordinator, notification)
-                  .whenComplete(
-                      (ack, notifyError) -> {
-                        if (notifyError != null) {
-                          LOG.debug(
-                              "Failed to notify coordinator {} of transfer result {}",
-                              coordinator,
-                              result,
-                              notifyError);
-                        }
-                      });
-            });
+    final var attempt =
+        new LeadershipTransferAttempt(raft, leader, request, () -> currentAttempt = null);
+    currentAttempt = attempt;
+    attempt.start();
   }
 
   void onLeaderStopped() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onLeaderStopped();
+    final var attempt = currentAttempt;
+    if (attempt != null) {
+      attempt.onLeaderStopped();
     }
   }
 
   /** The freeze ended. */
   void onPauseCleared() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseCleared();
+    final var attempt = currentAttempt;
+    if (attempt != null) {
+      attempt.onPauseCleared();
     }
   }
 
   /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
   void onPauseDeadlineExpired() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseDeadlineExpired();
+    final var attempt = currentAttempt;
+    if (attempt != null) {
+      attempt.onPauseDeadlineExpired();
     }
-  }
-
-  private CompletableFuture<Long> pause(final Duration resumeTimeout) {
-    final var control = raft.getLeadershipTransferPauseControl();
-    if (control != null) {
-      return control.pauseForTransfer(resumeTimeout);
-    }
-    // No broker control registered (e.g. Raft-only tests with no writes to freeze).
-    return CompletableFuture.completedFuture(
-        leader.pauseForTransfer(resumeTimeout, System.currentTimeMillis()));
-  }
-
-  private CompletableFuture<Void> resume() {
-    final var control = raft.getLeadershipTransferPauseControl();
-    if (control != null) {
-      return control.resumeFromTransfer();
-    }
-    leader.resumeFromTransfer();
-    return CompletableFuture.completedFuture(null);
-  }
-
-  /**
-   * Distinguishes a pause the leader refused because a configuration change started after the
-   * pre-check passed apart from one that failed with another exception.
-   */
-  private static LeadershipTransferResult pauseFailureResult(final Throwable error) {
-    return Throwables.getCausalChain(error).stream()
-            .anyMatch(LeaderRole.ConfigurationChangeInProgressException.class::isInstance)
-        ? LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS
-        : LeadershipTransferResult.PAUSE_FAILED;
   }
 }
