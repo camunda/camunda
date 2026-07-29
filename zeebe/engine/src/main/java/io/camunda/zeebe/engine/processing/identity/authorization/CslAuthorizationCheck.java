@@ -178,27 +178,18 @@ public final class CslAuthorizationCheck {
    * list of tenant IDs at once ({@code JobBatchActivateProcessor}), using {@link
    * AuthorizedTenants#isAuthorizedForTenantIds}.
    *
-   * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip. Unlike {@link
-   * #checkTenant}'s callers, {@code JobBatchActivateProcessor} is
+   * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip: that site is
    * {@code @ExcludeAuthorizationCheck} and calls this method directly with no preceding {@link
-   * #check} to have already rejected a no-principal, authorizations-enabled command — so skipping
-   * here would silently authorize a claims-free caller for every tenant it names. This matches the
-   * site's own pre-CSL-migration behavior (a direct {@code isAuthorizedForTenantIds} call with no
-   * skip-logic at all), which this method restores after an intermediate migration in this PR
-   * temporarily introduced the skip and regressed it.
+   * #check}, so skipping here would silently authorize a claims-free caller for every tenant it
+   * names. This restores the site's pre-CSL-migration behavior after an intermediate migration in
+   * this PR temporarily introduced the skip and regressed it.
    *
-   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants}
-   * instead of resolving it internally, and a lazy {@code Supplier<Rejection>} instead of an eager
-   * {@link Rejection} — its one caller (the highest-throughput command in the engine) already
-   * resolves tenants once per command and must not pay for a second resolution or eager
-   * message-building on every activation.
-   *
-   * <p>The supplier is only invoked when {@code isAuthorizedForTenantIds} returns {@code false},
-   * which never happens for an anonymous principal ({@link
-   * io.camunda.zeebe.engine.processing.identity.AnonymouslyAuthorizedTenants#isAuthorizedForTenantIds}
-   * always returns {@code true}) — so a rejection supplier that calls {@code
-   * authorizedTenants.getAuthorizedTenantIds()} is always safe to invoke here, unlike calling it
-   * unconditionally as a method argument (which previously crashed for anonymous callers).
+   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants} and a
+   * lazy {@code Supplier<Rejection>} rather than resolving internally and building the rejection
+   * eagerly — its one caller resolves tenants once per command already and shouldn't pay twice or
+   * build a message on the happy path. The supplier is only invoked on rejection, which never
+   * happens for an anonymous principal, so it's always safe to call {@code
+   * authorizedTenants.getAuthorizedTenantIds()} inside it.
    *
    * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
    *     {@link #resolveAuthorizedTenants} from the same command's claims
