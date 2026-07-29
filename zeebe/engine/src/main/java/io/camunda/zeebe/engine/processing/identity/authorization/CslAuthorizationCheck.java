@@ -139,10 +139,11 @@ public final class CslAuthorizationCheck {
    * <p>This no-principal skip is load-bearing: most callers reach this method via {@link
    * #checkAuthorizationAndTenant}, which already ran {@link #check} first — when authorizations are
    * enabled, {@code check} itself rejects a no-principal command before this method ever runs; when
-   * authorizations are disabled, letting a claims-free command through here (e.g. deployment/process
-   * lifecycle commands issued without an explicit user, common in tests and tooling) is the
-   * established, relied-upon behavior. Do not remove this skip without auditing every caller,
-   * direct and via {@link #checkAuthorizationAndTenant} — see camunda-security-library#556.
+   * authorizations are disabled, letting a claims-free command through here (e.g.
+   * deployment/process lifecycle commands issued without an explicit user, common in tests and
+   * tooling) is the established, relied-upon behavior. Do not remove this skip without auditing
+   * every caller, direct and via {@link #checkAuthorizationAndTenant} — see
+   * camunda-security-library#556.
    *
    * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
    * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
@@ -178,19 +179,19 @@ public final class CslAuthorizationCheck {
    * AuthorizedTenants#isAuthorizedForTenantIds}.
    *
    * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip. Unlike {@link
-   * #checkTenant}'s callers, {@code JobBatchActivateProcessor} is {@code @ExcludeAuthorizationCheck}
-   * and calls this method directly with no preceding {@link #check} to have already rejected a
-   * no-principal, authorizations-enabled command — so skipping here would silently authorize a
-   * claims-free caller for every tenant it names. This matches the site's own pre-CSL-migration
-   * behavior (a direct {@code isAuthorizedForTenantIds} call with no skip-logic at all), which this
-   * method restores after an intermediate migration in this PR temporarily introduced the skip and
-   * regressed it.
+   * #checkTenant}'s callers, {@code JobBatchActivateProcessor} is
+   * {@code @ExcludeAuthorizationCheck} and calls this method directly with no preceding {@link
+   * #check} to have already rejected a no-principal, authorizations-enabled command — so skipping
+   * here would silently authorize a claims-free caller for every tenant it names. This matches the
+   * site's own pre-CSL-migration behavior (a direct {@code isAuthorizedForTenantIds} call with no
+   * skip-logic at all), which this method restores after an intermediate migration in this PR
+   * temporarily introduced the skip and regressed it.
    *
-   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants} instead
-   * of resolving it internally, and a lazy {@code Supplier<Rejection>} instead of an eager {@link
-   * Rejection} — its one caller (the highest-throughput command in the engine) already resolves
-   * tenants once per command and must not pay for a second resolution or eager message-building on
-   * every activation.
+   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants}
+   * instead of resolving it internally, and a lazy {@code Supplier<Rejection>} instead of an eager
+   * {@link Rejection} — its one caller (the highest-throughput command in the engine) already
+   * resolves tenants once per command and must not pay for a second resolution or eager
+   * message-building on every activation.
    *
    * <p>The supplier is only invoked when {@code isAuthorizedForTenantIds} returns {@code false},
    * which never happens for an anonymous principal ({@link
