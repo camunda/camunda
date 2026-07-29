@@ -136,14 +136,15 @@ public final class CslAuthorizationCheck {
    * requirement against). Otherwise the authorized tenants are resolved from the command's claims
    * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
    *
-   * <p>This no-principal skip is load-bearing: most callers reach this method via {@link
-   * #checkAuthorizationAndTenant}, which already ran {@link #check} first — when authorizations are
-   * enabled, {@code check} itself rejects a no-principal command before this method ever runs; when
-   * authorizations are disabled, letting a claims-free command through here (e.g.
-   * deployment/process lifecycle commands issued without an explicit user, common in tests and
-   * tooling) is the established, relied-upon behavior. Do not remove this skip without auditing
-   * every caller, direct and via {@link #checkAuthorizationAndTenant} — see
-   * camunda-security-library#556.
+   * <p>This no-principal skip is load-bearing: every caller runs {@link #check} first — either
+   * directly, composed via {@link #checkAuthorizationAndTenant}, or (for the sole remaining direct
+   * caller) via an equivalent {@code check(...).flatMap(v -> checkTenant(...))} of its own — before
+   * this method is ever reached. When authorizations are enabled, {@code check} itself rejects a
+   * no-principal command before this method runs; when authorizations are disabled, letting a
+   * claims-free command through here (e.g. deployment/process lifecycle commands issued without an
+   * explicit user, common in tests and tooling) is the established, relied-upon behavior. Do not
+   * call this method directly without a preceding {@link #check}, and do not remove this skip
+   * without auditing every caller.
    *
    * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
    * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
@@ -174,22 +175,20 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Like {@link #checkTenant} but for the one command site that must verify membership across a
-   * list of tenant IDs at once ({@code JobBatchActivateProcessor}), using {@link
-   * AuthorizedTenants#isAuthorizedForTenantIds}.
+   * Like {@link #checkTenant} but for command sites that call the tenant check directly, with no
+   * preceding {@link #check}, and that verify membership across a list of tenant IDs at once, using
+   * {@link AuthorizedTenants#isAuthorizedForTenantIds}.
    *
-   * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip: that site is
-   * {@code @ExcludeAuthorizationCheck} and calls this method directly with no preceding {@link
-   * #check}, so skipping here would silently authorize a claims-free caller for every tenant it
-   * names. This restores the site's pre-CSL-migration behavior after an intermediate migration in
-   * this PR temporarily introduced the skip and regressed it.
+   * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip: without a
+   * preceding {@link #check} to reject a claims-free command first, that skip would silently
+   * authorize a claims-free caller for every tenant it names instead of rejecting it.
    *
    * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants} and a
    * lazy {@code Supplier<Rejection>} rather than resolving internally and building the rejection
-   * eagerly — its one caller resolves tenants once per command already and shouldn't pay twice or
-   * build a message on the happy path. The supplier is only invoked on rejection, which never
-   * happens for an anonymous principal, so it's always safe to call {@code
-   * authorizedTenants.getAuthorizedTenantIds()} inside it.
+   * eagerly — callers that already resolved tenants for the same command don't pay to resolve
+   * twice, and the rejection message is only built on the rejected path. The supplier is only
+   * invoked on rejection, which never happens for an anonymous principal, so it's always safe to
+   * call {@code authorizedTenants.getAuthorizedTenantIds()} inside it.
    *
    * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
    *     {@link #resolveAuthorizedTenants} from the same command's claims
