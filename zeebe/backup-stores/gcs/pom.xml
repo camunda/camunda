@@ -197,6 +197,8 @@
             <ignoredUsedUndeclaredDependency>com.google.auth:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.apis:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.api:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.cloud:google-cloud-core-http</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.http-client:google-http-client</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
