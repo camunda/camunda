@@ -104,7 +104,7 @@
 
   <!-- bulk-insert element instance keys — default: PostgreSQL, H2, MariaDB, MySQL, MSSQL -->
   <insert id="insertElementInstanceKeys"
-    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$AgentInstanceElementInstanceKeysDto">
     INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
     VALUES
     <foreach collection="elementInstanceKeys" item="elementInstanceKey" separator=", ">
@@ -114,7 +114,7 @@
 
   <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
   <insert id="insertElementInstanceKeys"
-    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel"
+    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$AgentInstanceElementInstanceKeysDto"
     databaseId="oracle">
     INSERT ALL
     <foreach collection="elementInstanceKeys" item="elementInstanceKey">
