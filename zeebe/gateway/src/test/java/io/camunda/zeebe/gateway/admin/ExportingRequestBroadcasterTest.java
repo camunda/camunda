@@ -147,6 +147,22 @@ public class ExportingRequestBroadcasterTest {
   }
 
   @ParameterizedTest
+  @MethodSource("validTopologies")
+  void shouldReportMixedWhenReplicasAgreeOnAnUnrecognisedPhase(final BrokerClusterState topology) {
+    // given every replica agrees, but on a phase this gateway does not know -- as would happen if
+    // a newer broker gained a phase; it must not be mistaken for a confirmed pause
+    final var client = setupBrokerClient(topology);
+    final var service = new ExportingRequestBroadcaster(client);
+    when(client.sendRequest(any())).thenAnswer(invocation -> respondWithPhase("SOME_FUTURE_PHASE"));
+
+    // when
+    final var status = service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(ExportingStatus.MIXED);
+  }
+
+  @ParameterizedTest
   @MethodSource("invalidTopologies")
   void shouldFailToReportStatusOnIncompleteTopology(final BrokerClusterState topology) {
     // given

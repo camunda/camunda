@@ -25,12 +25,25 @@ public enum ExportingStatus {
   PAUSED,
   /** All replicas keep exporting but do not commit their position. */
   SOFT_PAUSED,
-  /** Replicas report different phases, so the tenant is in no single well-defined phase. */
+  /**
+   * The tenant is in no single well-defined phase: either the replicas report different phases, or
+   * at least one of them reports a phase this gateway does not recognise.
+   */
   MIXED;
 
   /**
-   * Aggregates the phases reported by the individual replicas: a single phase if they all agree,
-   * {@link #MIXED} otherwise.
+   * Aggregates the phases reported by the individual replicas: a single phase if they all agree on
+   * one this gateway recognises, {@link #MIXED} otherwise.
+   *
+   * <p>An unrecognised phase yields {@link #MIXED} rather than a dedicated status because {@link
+   * #MIXED} already carries the only meaning a caller can safely act on -- "this is not a confirmed
+   * pause". Distinguishing it would oblige every caller to handle a second indistinguishable
+   * non-answer for no gain in what they can do about it. In practice the branch is unreachable: the
+   * phase is read from the replica's persisted partition state, which only ever holds {@code
+   * EXPORTING}, {@code PAUSED} or {@code SOFT_PAUSED} -- the broker's fourth {@code ExporterPhase},
+   * {@code CLOSED}, is held by the exporter director and never persisted. It is kept so a future
+   * phase added on the broker side degrades to a safe answer instead of being mistaken for a pause
+   * on an older gateway.
    */
   public static ExportingStatus aggregate(final Set<String> reportedPhases) {
     if (reportedPhases.size() != 1) {

@@ -116,7 +116,8 @@ components:
         - `EXPORTING`: all replicas are exporting and committing their position.
         - `PAUSED`: all replicas are paused, nothing is being exported.
         - `SOFT_PAUSED`: all replicas keep exporting but do not commit their position.
-        - `MIXED`: replicas report different phases, so the tenant is in no single phase.
+        - `MIXED`: the tenant is in no single phase, because replicas report different phases or
+          one of them reports a phase this version does not recognise.
       type: string
       enum:
         - EXPORTING
