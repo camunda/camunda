@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
@@ -67,6 +68,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -516,6 +518,78 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .observePauseDuration(
               Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
+  }
+
+  /**
+   * Evaluates whether we should accept a leadership transfer for {@code desiredLeader} on behalf of
+   * {@code coordinator}. Returns the skip reason if any check fails, or empty if the transfer may
+   * proceed.
+   *
+   * @param desiredLeader the desired leader
+   * @param coordinator the node that requested the transfer
+   * @param coordinatorConfigIndex the Raft configuration index the coordinator based its request on
+   */
+  public Optional<LeadershipTransferResult> precheckTransfer(
+      final MemberId desiredLeader, final MemberId coordinator, final long coordinatorConfigIndex) {
+    raft.checkThread();
+    final var localMember = raft.getCluster().getLocalMember().memberId();
+
+    if (desiredLeader.equals(localMember)) {
+      return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
+    }
+    if (pausedForTransfer) {
+      return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    }
+    final var coordinatorRejection = validateCoordinator(coordinator, coordinatorConfigIndex);
+    if (coordinatorRejection.isPresent()) {
+      return coordinatorRejection;
+    }
+    // A configuration entry would move the frozen log head the desired leader has to catch up to,
+    // and can drop the desired leader from the replica set altogether, so a transfer cannot start
+    // while one is in flight. We also check this again once paused.
+    if (configuring() || jointConsensus()) {
+      return Optional.of(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
+    }
+    final var desiredContext = raft.getCluster().getMemberContext(desiredLeader);
+    if (desiredContext == null || !raft.getCluster().isMember(desiredLeader)) {
+      return Optional.of(LeadershipTransferResult.NOT_MEMBER);
+    }
+    if (!desiredContext.hasAckedAppend()) {
+      return Optional.of(LeadershipTransferResult.NOT_REPLICATING);
+    }
+    // We tolerate missed appends here - only silence beyond an election timeout counts as out of
+    // contact (that being the earliest point at which the desired leader may start campaigning
+    // against us anyway).
+    final var silenceMs = System.currentTimeMillis() - desiredContext.getResponseTime();
+    if (silenceMs > raft.getElectionTimeout().toMillis()) {
+      return Optional.of(LeadershipTransferResult.UNREACHABLE);
+    }
+    // Point-in-time lag sample: the threshold should be tuned so a passing desired leader reliably
+    // catches up within replicationTimeout once the pause begins.
+    if (desiredContext.getReplicationLagBytes() > raft.getRebalanceReplicationLagThreshold()) {
+      return Optional.of(LeadershipTransferResult.LAG_TOO_HIGH);
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * The coordinator is the lowest-id member of the leader's committed configuration. A request from
+   * any other member, or one carrying a Raft configuration index older than the leader's, is
+   * rejected so a stale or non-coordinator node cannot request a transfer.
+   */
+  private Optional<LeadershipTransferResult> validateCoordinator(
+      final MemberId coordinator, final long coordinatorConfigIndex) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration == null || coordinatorConfigIndex < configuration.index()) {
+      return Optional.of(LeadershipTransferResult.STALE_CONFIGURATION);
+    }
+    final var isCoordinator =
+        configuration.newMembers().stream()
+            .map(RaftMember::memberId)
+            .min(MemberId.ID_COMPARATOR)
+            .map(coordinator::equals)
+            .orElse(false);
+    return isCoordinator ? Optional.empty() : Optional.of(LeadershipTransferResult.NOT_COORDINATOR);
   }
 
   /** Ensures the local server is not the leader. */
