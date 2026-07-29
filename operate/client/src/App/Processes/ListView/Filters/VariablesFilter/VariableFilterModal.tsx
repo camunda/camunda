@@ -310,7 +310,7 @@ const VariableFilterModal: React.FC = observer(() => {
                           role="status"
                         />
                       )}
-                      <FieldArray<DraftCondition> name="conditions">
+                      <FieldArray name="conditions">
                         {({fields}) => (
                           <>
                             <ConditionRowsScroll>

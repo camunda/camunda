@@ -77,6 +77,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
 
           if (index !== -1 && lastRemovedModification.source !== 'variables') {
             if (lastAddModification !== undefined) {
+              // @ts-expect-error - wrong type definition
               fieldArray.fields.update(index, {
                 id: lastAddModification.id,
                 name: lastAddModification.name,
