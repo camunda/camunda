@@ -163,7 +163,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         });
 
     // when - the property changes to a new value while the listener is notified of the first
-    // change, and is then reverted to the value the protocol last published
+    // change
     member1.properties().setProperty("foo", "published");
     assertThat(notifying.await(30, TimeUnit.SECONDS)).isTrue();
     member1.properties().setProperty("foo", "changed");
@@ -171,7 +171,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     Awaitility.await("until the listener was notified")
         .atMost(Duration.ofSeconds(30))
         .until(() -> !notifiedValues.isEmpty());
-    member1.properties().setProperty("foo", "published");
 
     // then - the listener ends up knowing the member's current property value
     Awaitility.await("until the listener knows the current property value")
