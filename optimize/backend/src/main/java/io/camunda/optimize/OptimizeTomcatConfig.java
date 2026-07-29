@@ -24,7 +24,9 @@ import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
 import io.camunda.optimize.tomcat.ResponseTimezoneFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
+import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
+import org.apache.catalina.valves.rewrite.RewriteValve;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.coyote.http2.Http2Protocol;
 import org.apache.tomcat.util.net.SSLHostConfig;
@@ -94,6 +96,10 @@ public class OptimizeTomcatConfig {
   private static final String CSL_ALLOWED_URL_EXTENSION =
       String.join("|", new String[] {"/oauth2", "/logout"});
 
+  /** Readiness endpoint, relative to the servlet context path. */
+  private static final String READYZ_ENDPOINT =
+      OptimizeResourceConstants.REST_API_PATH + HealthRestService.READYZ_PATH;
+
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
 
   @Autowired private ConfigurationService configurationService;
@@ -108,6 +114,9 @@ public class OptimizeTomcatConfig {
         final Optional<String> contextPath = getContextPath();
         if (contextPath.isPresent()) {
           factory.setContextPath(contextPath.get());
+          if (isCslEnabled() && servesUnderSubPath(contextPath.get())) {
+            factory.addEngineValves(readyzAtRootValve(contextPath.get()));
+          }
         }
 
         // NOTE: With the current implementation, we install the mandatory HTTPS connector first,
@@ -269,5 +278,52 @@ public class OptimizeTomcatConfig {
     }
 
     connector.addSslHostConfig(getSslHostConfig());
+  }
+
+  /**
+   * True when the context path actually moves the app off the root. A blank or {@code "/"} context
+   * path already serves the readiness endpoint at the root, so rewriting would be a no-op.
+   */
+  private static boolean servesUnderSubPath(final String contextPath) {
+    return StringUtils.isNotBlank(contextPath) && !"/".equals(contextPath.trim());
+  }
+
+  /** Builds the readiness rewrite valve for the given servlet context path. */
+  static RewriteValve readyzAtRootValve(final String contextPath) {
+    return new ReadyzAtRootValve(contextPath);
+  }
+
+  /**
+   * Serves {@link #READYZ_ENDPOINT} at the root path in addition to the servlet context path, by
+   * rewriting {@code /api/readyz} to {@code <contextPath>/api/readyz} in the Tomcat engine
+   * pipeline, which runs before a request is mapped to a context.
+   *
+   * <p>CSL mode derives a {@code /<clusterId>} servlet context path on CCSaaS, but the SaaS
+   * readiness and liveness probes target {@code /api/readyz} on the main connector without that
+   * prefix, so they would 404 and the pod would never become ready. Rewriting keeps those probes
+   * working without a deployment change.
+   *
+   * <p>Only the readiness endpoint is rewritten. It is an unprotected path, so this grants no
+   * access that the context-path-prefixed URL does not already grant.
+   */
+  private static final class ReadyzAtRootValve extends RewriteValve {
+
+    private final String rule;
+
+    private ReadyzAtRootValve(final String contextPath) {
+      rule = "RewriteRule ^" + READYZ_ENDPOINT + "$ " + contextPath + READYZ_ENDPOINT;
+    }
+
+    @Override
+    protected void startInternal() throws LifecycleException {
+      // The superclass looks for a rewrite.config file, finds none and leaves the rules untouched;
+      // it also initialises the logger that setConfiguration needs, so ours must be applied after.
+      super.startInternal();
+      try {
+        setConfiguration(rule);
+      } catch (final Exception e) {
+        throw new LifecycleException("Could not apply the readiness rewrite rule: " + rule, e);
+      }
+    }
   }
 }
