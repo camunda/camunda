@@ -243,6 +243,10 @@ public class MultiTenancyEnabledTest extends GatewayTest {
 
   @Test
   public void createProcessInstanceWithResultRequestShouldContainAuthorizedTenants() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
     // when
     final CreateProcessInstanceWithResultResponse response =
         client.createProcessInstanceWithResult(
@@ -267,6 +271,10 @@ public class MultiTenancyEnabledTest extends GatewayTest {
 
   @Test
   public void createProcessInstanceWithResultResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
     // when
     final CreateProcessInstanceWithResultResponse response =
         client.createProcessInstanceWithResult(
