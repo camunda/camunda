@@ -8,10 +8,10 @@ tears everything down.
 
 ## Files
 
-| File         | Purpose                                                              |
-|--------------|----------------------------------------------------------------------|
-| `main.tf`    | The Aurora global cluster, networking, IAM and SSM bastion.          |
-| `cleanup.sh` | Recovery tool to tear down infrastructure a failed run left behind.  |
+|     File     |                               Purpose                               |
+|--------------|---------------------------------------------------------------------|
+| `main.tf`    | The Aurora global cluster, networking, IAM and SSM bastion.         |
+| `cleanup.sh` | Recovery tool to tear down infrastructure a failed run left behind. |
 
 ## Resource naming
 
