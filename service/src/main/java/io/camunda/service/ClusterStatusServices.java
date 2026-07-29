@@ -46,9 +46,8 @@ public final class ClusterStatusServices {
   }
 
   /**
-   * @return the aggregated status over all known physical tenants. A failure to determine a single
-   *     tenant's status fails the whole result rather than being silently folded in — an
-   *     indeterminate tenant must not be reported as healthy.
+   * @return the aggregated status over all known physical tenants. Counts a tenant whose status
+   *     cannot be determined as {@link ClusterStatus#UNHEALTHY}.
    */
   public CompletableFuture<AggregatedStatus> getStatus() {
     if (topologyServicesByPhysicalTenant.isEmpty()) {
@@ -64,6 +63,7 @@ public final class ClusterStatusServices {
                     entry
                         .getValue()
                         .getStatus()
+                        .exceptionally(error -> ClusterStatus.UNHEALTHY)
                         .thenApply(status -> statusOf(entry.getKey(), status)))
             .toList();
 

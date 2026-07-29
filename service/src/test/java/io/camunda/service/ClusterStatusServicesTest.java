@@ -11,7 +11,6 @@ import static io.camunda.service.ClusterStatusServices.AggregatedStatus.DEGRADED
 import static io.camunda.service.ClusterStatusServices.AggregatedStatus.DOWN;
 import static io.camunda.service.ClusterStatusServices.AggregatedStatus.HEALTHY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 class ClusterStatusServicesTest {
@@ -114,20 +112,40 @@ class ClusterStatusServicesTest {
   }
 
   @Test
-  void shouldFailWhenATenantStatusCannotBeDetermined() {
-    // given — an indeterminate tenant must not be folded in as healthy
-    final var failing = mock(TopologyServices.class);
-    when(failing.getStatus())
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("topology unavailable")));
-    final var healthy = mock(TopologyServices.class);
-    when(healthy.getStatus()).thenReturn(CompletableFuture.completedFuture(ClusterStatus.HEALTHY));
+  void shouldCountATenantWhoseStatusCannotBeDeterminedAsUnhealthy() {
+    // given — one tenant is healthy, the other's status cannot be determined
     final var services =
-        new ClusterStatusServices(Map.of(TENANT_A, healthy, TENANT_B, failing), tenantId -> true);
+        new ClusterStatusServices(
+            Map.of(TENANT_A, healthy(), TENANT_B, indeterminate()), tenantId -> true);
 
-    // when / then
-    assertThatThrownBy(() -> services.getStatus().get())
-        .isInstanceOf(ExecutionException.class)
-        .hasRootCauseMessage("topology unavailable");
+    // when / then — the indeterminate tenant counts as DOWN rather than failing the whole request,
+    // so the aggregate is DEGRADED and the response stays within the declared status codes
+    assertThat(statusOf(services)).isEqualTo(DEGRADED);
+  }
+
+  @Test
+  void shouldBeDownWhenNoTenantStatusCanBeDetermined() {
+    // given
+    final var services =
+        new ClusterStatusServices(Map.of(TENANT_A, indeterminate()), tenantId -> true);
+
+    // when / then — never HEALTHY, and never a failed future: propagating would answer 500 with an
+    // exception message in the body, on an endpoint that must reveal nothing to anonymous callers
+    assertThat(statusOf(services)).isEqualTo(DOWN);
+  }
+
+  private static TopologyServices healthy() {
+    final var topologyServices = mock(TopologyServices.class);
+    when(topologyServices.getStatus())
+        .thenReturn(CompletableFuture.completedFuture(ClusterStatus.HEALTHY));
+    return topologyServices;
+  }
+
+  private static TopologyServices indeterminate() {
+    final var topologyServices = mock(TopologyServices.class);
+    when(topologyServices.getStatus())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("topology unavailable")));
+    return topologyServices;
   }
 
   private static ClusterStatusServices services(
