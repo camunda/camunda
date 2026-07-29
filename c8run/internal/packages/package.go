@@ -42,8 +42,8 @@ var conservativeJREModules = []string{
 
 var runtimeProviderJREModules = []string{
 	// The connectors runtime is a Spring Boot fat JAR. Running jdeps directly against it only sees
-	// the loader classes (everything else is nested under BOOT-INF), so its real module needs -
-	// verified by running jdeps against the exploded BOOT-INF/classes and BOOT-INF/lib - are kept
+	// the loader classes, since everything else is nested under BOOT-INF, so its real module needs
+	// (verified by running jdeps against the exploded BOOT-INF/classes and BOOT-INF/lib) are kept
 	// explicit here instead. Without java.desktop in particular, the bundled runtime fails on any
 	// JDK version with NoClassDefFoundError: java/beans/PropertyEditorSupport while Spring Boot
 	// binds configuration properties.
