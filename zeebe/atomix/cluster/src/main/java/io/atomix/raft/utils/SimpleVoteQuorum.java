@@ -40,7 +40,7 @@ public class SimpleVoteQuorum implements VoteQuorum {
   }
 
   @Override
-  public void fail(final MemberId member) {
+  public void fail(final MemberId member, final VoteErrorStatus statusCode) {
     if (members.remove(member)) {
       failed++;
       checkComplete();

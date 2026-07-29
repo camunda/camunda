@@ -17,7 +17,7 @@ public interface VoteQuorum {
 
   void succeed(MemberId member);
 
-  void fail(MemberId member);
+  void fail(MemberId member, final VoteErrorStatus statusCode);
 
   void cancel();
 
