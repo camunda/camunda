@@ -21,9 +21,7 @@ import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
-import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +37,7 @@ final class LeadershipTransferRunner {
   private final LeaderRole leader;
   // Set as soon as the transfer is accepted, before the pause is entered
   private volatile boolean inProgress;
-  private Scheduled catchUpPollTimer;
-  private CompletableFuture<Optional<LeadershipTransferResult>> catchUpFuture;
+  private CatchUpWait activeCatchUp;
 
   LeadershipTransferRunner(final RaftContext raft, final LeaderRole leader) {
     this.raft = raft;
@@ -73,9 +70,14 @@ final class LeadershipTransferRunner {
                 finish(coordinator, desiredLeader, correlationId, result, startMs);
                 return;
               }
-              awaitDesiredLeaderCaughtUp(desiredLeader, targetIndex)
+              final var catchUp =
+                  new CatchUpWait(raft, leader::isRunning, desiredLeader, targetIndex);
+              activeCatchUp = catchUp;
+              catchUp
+                  .start()
                   .whenComplete(
                       (catchUpResult, ignored) -> {
+                        activeCatchUp = null;
                         if (catchUpResult.isPresent()) {
                           finish(
                               coordinator,
@@ -142,91 +144,23 @@ final class LeadershipTransferRunner {
   }
 
   void onLeaderStopped() {
-    if (catchUpFuture != null) {
-      LOG.debug("Lost leadership while catching up the desired leader; reporting LEADER_CHANGED");
-      completeCatchUp(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
+    if (activeCatchUp != null) {
+      activeCatchUp.onLeaderStopped();
     }
   }
 
-  /**
-   * The freeze ended, so a run still waiting for the desired leader to catch up can no longer
-   * succeed.
-   */
+  /** The freeze ended. */
   void onPauseCleared() {
-    if (catchUpFuture != null) {
-      completeCatchUp(Optional.of(LeadershipTransferResult.PAUSE_FAILED));
-    } else {
-      cancelCatchUp();
+    if (activeCatchUp != null) {
+      activeCatchUp.onPauseCleared();
     }
   }
 
-  /** The leader's freeze watchdog fired, so the desired leader is out of time to catch up. */
+  /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
   void onPauseDeadlineExpired() {
-    if (catchUpFuture != null) {
-      completeCatchUp(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
+    if (activeCatchUp != null) {
+      activeCatchUp.onPauseDeadlineExpired();
     }
-  }
-
-  /**
-   * Waits until {@code desiredLeader}'s {@code matchIndex} reaches {@code targetIndex}, polling on
-   * the Raft thread each {@code heartbeatInterval}. The wait is bounded by the pause watchdog.
-   *
-   * <p>The returned future completes with an empty {@link Optional} once the desired leader is
-   * fully caught up (proceed to promotion), or with a terminal reason if there was a
-   * failure/timeout.
-   */
-  CompletableFuture<Optional<LeadershipTransferResult>> awaitDesiredLeaderCaughtUp(
-      final MemberId desiredLeader, final long targetIndex) {
-    raft.checkThread();
-    catchUpFuture = new CompletableFuture<>();
-    // Hold a local reference: completeCatchUp() clears the field, so we must return this.
-    final var future = catchUpFuture;
-
-    if (isCaughtUp(desiredLeader, targetIndex)) {
-      completeCatchUp(Optional.empty());
-      return future;
-    }
-
-    final var pollInterval = raft.getHeartbeatInterval();
-    catchUpPollTimer =
-        raft.getThreadContext()
-            .schedule(
-                pollInterval,
-                pollInterval,
-                () -> {
-                  if (catchUpFuture == null) {
-                    return;
-                  }
-                  if (!leader.isRunning()) {
-                    completeCatchUp(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
-                  } else if (raft.getCluster().getMemberContext(desiredLeader) == null) {
-                    completeCatchUp(Optional.of(LeadershipTransferResult.NOT_MEMBER));
-                  } else if (isCaughtUp(desiredLeader, targetIndex)) {
-                    completeCatchUp(Optional.empty());
-                  }
-                });
-    return future;
-  }
-
-  private boolean isCaughtUp(final MemberId desiredLeader, final long targetIndex) {
-    final var context = raft.getCluster().getMemberContext(desiredLeader);
-    return context != null && context.getMatchIndex() >= targetIndex;
-  }
-
-  private void completeCatchUp(final Optional<LeadershipTransferResult> result) {
-    final var future = catchUpFuture;
-    cancelCatchUp();
-    if (future != null) {
-      future.complete(result);
-    }
-  }
-
-  private void cancelCatchUp() {
-    if (catchUpPollTimer != null) {
-      catchUpPollTimer.cancel();
-      catchUpPollTimer = null;
-    }
-    catchUpFuture = null;
   }
 
   private CompletableFuture<Long> pause(final Duration resumeTimeout) {

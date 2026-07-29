@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LeadershipTransferCatchUpTest {
+public class CatchUpWaitTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
@@ -38,10 +38,9 @@ public class LeadershipTransferCatchUpTest {
     final long committed = raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var targetId = memberId(raftRule.getFollower().orElseThrow());
-    final var runner = new LeadershipTransferRunner(leader.getContext(), leaderRole(leader));
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, runner, targetId, committed + 5);
+    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 5);
     raftRule.appendEntries(5);
 
     // then
@@ -54,10 +53,9 @@ public class LeadershipTransferCatchUpTest {
     final long committed = raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
-    final var runner = new LeadershipTransferRunner(leader.getContext(), leaderRole(leader));
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, runner, memberId(target), committed + 1_000);
+    final var caughtUp = awaitCaughtUp(leader, memberId(target), committed + 1_000);
     target.leave().get(30, TimeUnit.SECONDS);
 
     // then
@@ -67,18 +65,19 @@ public class LeadershipTransferCatchUpTest {
   }
 
   private static CompletableFuture<Optional<LeadershipTransferResult>> awaitCaughtUp(
-      final RaftServer leader,
-      final LeadershipTransferRunner runner,
-      final MemberId desiredLeader,
-      final long targetIndex) {
+      final RaftServer leader, final MemberId desiredLeader, final long targetIndex) {
     final var caughtUp = new CompletableFuture<Optional<LeadershipTransferResult>>();
     leader
         .getContext()
         .getThreadContext()
         .execute(
             () ->
-                runner
-                    .awaitDesiredLeaderCaughtUp(desiredLeader, targetIndex)
+                new CatchUpWait(
+                        leader.getContext(),
+                        leaderRole(leader)::isRunning,
+                        desiredLeader,
+                        targetIndex)
+                    .start()
                     .whenComplete(
                         (result, error) -> {
                           if (error != null) {
