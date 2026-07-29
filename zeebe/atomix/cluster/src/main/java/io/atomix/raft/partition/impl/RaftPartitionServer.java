@@ -23,7 +23,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.LeadershipTransferPauseControl;
+import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -38,7 +38,6 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
-import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -61,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -294,50 +292,12 @@ public class RaftPartitionServer implements HealthMonitorable {
     return Optional.empty();
   }
 
-  public CompletableFuture<Long> pauseForTransfer(
-      final Duration resumeTimeout, final long pausedSinceMs) {
-    return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout, pausedSinceMs));
-  }
-
   /**
-   * Registers the broker-supplied control the leader uses to freeze/unfreeze the partition during a
-   * coordinated leadership transfer.
+   * Registers the broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes
+   * during a coordinated leadership transfer.
    */
-  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
-    server.getContext().setLeadershipTransferPauseControl(control);
-  }
-
-  /** Resumes this partition after a coordinated leadership transfer, if it is still the leader. */
-  public CompletableFuture<Void> resumeFromTransfer() {
-    return runOnLeaderRole(
-        leader -> {
-          leader.resumeFromTransfer();
-          return null;
-        });
-  }
-
-  private <T> CompletableFuture<T> runOnLeaderRole(final Function<LeaderRole, T> action) {
-    final var future = new CompletableFuture<T>();
-    server
-        .getContext()
-        .getThreadContext()
-        .execute(
-            () -> {
-              final RaftRole raftRole = server.getContext().getRaftRole();
-              if (raftRole instanceof final LeaderRole leader) {
-                try {
-                  future.complete(action.apply(leader));
-                } catch (final Exception e) {
-                  future.completeExceptionally(e);
-                }
-              } else {
-                future.completeExceptionally(
-                    new IllegalStateException(
-                        "Invoked an operation that expected this node to be leader (but was %s)"
-                            .formatted(raftRole.role())));
-              }
-            });
-    return future;
+  public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
+    server.getContext().setLeadershipTransferWriteBarrier(barrier);
   }
 
   public Role getRole() {

@@ -24,7 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
-import io.atomix.raft.LeadershipTransferPauseControl;
+import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
@@ -154,7 +154,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
-  private LeadershipTransferPauseControl leadershipTransferPauseControl;
+  private LeadershipTransferWriteBarrier leadershipTransferWriteBarrier =
+      LeadershipTransferWriteBarrier.NONE;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -1050,15 +1051,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * The broker-supplied control the leader uses to freeze/unfreeze the partition during a
-   * coordinated leadership transfer, or {@code null} when none is registered.
+   * The broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes during a
+   * coordinated leadership transfer. Defaults to {@link LeadershipTransferWriteBarrier#NONE} when
+   * no broker is attached.
    */
-  public LeadershipTransferPauseControl getLeadershipTransferPauseControl() {
-    return leadershipTransferPauseControl;
+  public LeadershipTransferWriteBarrier getLeadershipTransferWriteBarrier() {
+    return leadershipTransferWriteBarrier;
   }
 
-  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
-    leadershipTransferPauseControl = control;
+  public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
+    leadershipTransferWriteBarrier = barrier;
   }
 
   /**
