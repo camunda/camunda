@@ -22,6 +22,7 @@ import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
@@ -154,31 +155,43 @@ public class RaftLeadershipTransferInitiateTest {
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
     final var targetId = memberId(target);
+
+    // when
     raftRule.partition(target);
 
-    Awaitility.await("leader records contact failures to the partitioned follower")
+    // then
+    Awaitility.await("the leader stops treating the partitioned follower as reachable")
         .atMost(Duration.ofSeconds(15))
         .until(
             () ->
                 onRaftThread(
                         leader,
                         () ->
-                            leader
-                                .getContext()
-                                .getCluster()
-                                .getMemberContext(targetId)
-                                .getFailureCount())
-                    > 0);
+                            leaderRole(leader)
+                                .precheckTransfer(targetId, coordinator(leader), index(leader)))
+                    .equals(Optional.of(LeadershipTransferResult.UNREACHABLE)));
+  }
+
+  @Test
+  public void shouldTolerateASingleMissedAppendToTheDesiredLeader() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = memberId(target);
 
     // when
     final var result =
         onRaftThread(
             leader,
-            () ->
-                leaderRole(leader).precheckTransfer(targetId, coordinator(leader), index(leader)));
+            () -> {
+              leader.getContext().getCluster().getMemberContext(targetId).incrementFailureCount();
+              return leaderRole(leader)
+                  .precheckTransfer(targetId, coordinator(leader), index(leader));
+            });
 
     // then
-    assertThat(result).contains(LeadershipTransferResult.UNREACHABLE);
+    assertThat(result).as("a member that is still answering stays eligible").isEmpty();
   }
 
   @Test

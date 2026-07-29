@@ -560,7 +560,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (!desiredContext.hasAckedAppend()) {
       return Optional.of(LeadershipTransferResult.NOT_REPLICATING);
     }
-    if (desiredContext.getFailureCount() > 0) {
+    // We tolerate missed appends here - only silence beyond an election timeout counts as out of
+    // contact (that being the earliest point at which the desired leader may start campaigning
+    // against us anyway).
+    final var silenceMs = System.currentTimeMillis() - desiredContext.getResponseTime();
+    if (silenceMs > raft.getElectionTimeout().toMillis()) {
       return Optional.of(LeadershipTransferResult.UNREACHABLE);
     }
     // Point-in-time lag sample: the threshold should be tuned so a passing desired leader reliably
