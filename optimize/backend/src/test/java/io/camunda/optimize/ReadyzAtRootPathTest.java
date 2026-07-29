@@ -48,6 +48,7 @@ class ReadyzAtRootPathTest {
 
   private static final String CONTEXT = "/cluster-1";
   private static final String READYZ = "/api/readyz";
+  private static final String OTHER_ENDPOINT = "/api/ui-configuration";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
   @Mock private Environment environment;
@@ -61,15 +62,19 @@ class ReadyzAtRootPathTest {
     realFactory.setContextPath(CONTEXT);
     realFactory.addEngineValves(OptimizeTomcatConfig.readyzAtRootValve(CONTEXT));
 
-    final WebServer server = realFactory.getWebServer(ReadyzAtRootPathTest::registerReadyzServlet);
+    final WebServer server = realFactory.getWebServer(ReadyzAtRootPathTest::registerServlets);
     server.start();
     try {
       assertThat(statusOf(server.getPort(), CONTEXT + READYZ)).isEqualTo(200);
       assertThat(statusOf(server.getPort(), READYZ))
           .describedAs("the legacy probe path must keep working behind a context path")
           .isEqualTo(200);
-      assertThat(statusOf(server.getPort(), "/api/ui-configuration"))
-          .describedAs("only the readiness endpoint is rewritten")
+
+      // Control for the assertion below: this endpoint is served under the context path, so a 404
+      // at the root can only mean the request was not rewritten.
+      assertThat(statusOf(server.getPort(), CONTEXT + OTHER_ENDPOINT)).isEqualTo(200);
+      assertThat(statusOf(server.getPort(), OTHER_ENDPOINT))
+          .describedAs("only the readiness endpoint is rewritten, this is not a prefix strip")
           .isEqualTo(404);
     } finally {
       server.stop();
@@ -139,10 +144,18 @@ class ReadyzAtRootPathTest {
         .thenReturn(null);
   }
 
-  private static void registerReadyzServlet(final jakarta.servlet.ServletContext servletContext) {
+  private static void registerServlets(final jakarta.servlet.ServletContext servletContext) {
+    registerOkServlet(servletContext, "readyz", READYZ);
+    registerOkServlet(servletContext, "uiConfiguration", OTHER_ENDPOINT);
+  }
+
+  private static void registerOkServlet(
+      final jakarta.servlet.ServletContext servletContext,
+      final String name,
+      final String mapping) {
     servletContext
         .addServlet(
-            "readyz",
+            name,
             new HttpServlet() {
               @Override
               protected void doGet(
@@ -152,7 +165,7 @@ class ReadyzAtRootPathTest {
                 response.getWriter().write("ok");
               }
             })
-        .addMapping(READYZ);
+        .addMapping(mapping);
   }
 
   private static int statusOf(final int port, final String path) throws Exception {
