@@ -489,10 +489,20 @@ test.describe('task details page', () => {
     // The next task can take a moment to be indexed/rendered right after
     // the previous one completes, so allow more time than the default 10s
     // before handing off to openTask's own (shorter) click timeout.
+    //
+    // This spec runs under several Playwright projects (chromium/firefox/
+    // msedge/tasklist-v1-e2e/tasklist-v2-e2e) against one shared cluster, and
+    // each project's beforeAll seeds its own instance. Every run advances its
+    // "Employee Details" task to "Confirm Employee Details", so more than one
+    // such task can be present at once. Scope to .first() to avoid a
+    // strict-mode violation; openTask already targets .nth(0) and every run
+    // fills identical values, so any matching task is equivalent here.
     await expect(
-      taskPanelPage.availableTasks.getByText('Confirm Employee Details', {
-        exact: true,
-      }),
+      taskPanelPage.availableTasks
+        .getByText('Confirm Employee Details', {
+          exact: true,
+        })
+        .first(),
     ).toBeVisible({timeout: 30000});
     await taskPanelPage.openTask('Confirm Employee Details');
     await taskDetailsPage.clickAssignToMeButton();
@@ -712,7 +722,11 @@ test.describe('task details page', () => {
         },
       });
       const body = await res.json();
-      expect(body.items.length).toBe(1);
+      // This spec runs under several Playwright projects against one shared
+      // cluster and each project's beforeAll seeds an instance, so more than
+      // one ACTIVE instance of this process can exist. Take any one and drive
+      // the rest of the flow against that specific instance.
+      expect(body.items.length).toBeGreaterThanOrEqual(1);
       processInstanceKey = body.items[0].processInstanceKey;
     }).toPass(defaultAssertionOptions);
 
@@ -730,7 +744,11 @@ test.describe('task details page', () => {
       TaskHeaderTest: 'TaskHeaderValue',
     });
 
-    await taskPanelPage.openTask('Task with custom headers');
+    // Navigate straight to the task we tracked above by its key. Opening by
+    // name would click .nth(0) among all the projects' identically-named
+    // tasks and could complete a different instance than processInstanceKey,
+    // making the final state assertion non-deterministic.
+    await taskPanelPage.goToTaskDetails(userTaskKey);
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await taskDetailsPage.clickCompleteTaskButton();
