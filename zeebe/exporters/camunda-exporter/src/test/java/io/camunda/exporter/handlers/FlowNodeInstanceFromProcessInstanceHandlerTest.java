@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -451,6 +452,49 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
     assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
+  }
+
+  @Test
+  public void shouldRetainStaleNameWhenAdHocInnerInstanceIsMigrated() {
+    // given
+    final long targetProcessDefinitionKey = 222L;
+    processCache.put(
+        targetProcessDefinitionKey,
+        new CachedProcessEntity(
+            "targetProcess",
+            1,
+            null,
+            List.of(),
+            Map.of("targetAdHocSubProcess", "Target ad-hoc subprocess"),
+            false,
+            Map.of()));
+
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .withElementId("targetAdHocSubProcess#innerInstance")
+            .withProcessDefinitionKey(targetProcessDefinitionKey)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                    .withValue(processInstanceRecordValue));
+
+    final FlowNodeInstanceEntity flowNodeInstanceEntity =
+        new FlowNodeInstanceEntity().setFlowNodeName("List users");
+
+    // when
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getFlowNodeName())
+        .describedAs(
+            "pre-migration inner-instance name survives migration, unresolved against the "
+                + "target process definition")
+        .isEqualTo("List users");
   }
 
   @ParameterizedTest
