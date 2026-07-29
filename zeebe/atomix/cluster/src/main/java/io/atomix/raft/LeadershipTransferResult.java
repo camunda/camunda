@@ -25,13 +25,21 @@ public enum LeadershipTransferResult {
   TRANSFERRED,
   /** The desired leader is already the leader; nothing to do. */
   ALREADY_LEADER,
-  /** The desired leader is offline or not a member of the partition. */
-  OFFLINE,
+  /** The desired leader is not a member of the partition. */
+  NOT_MEMBER,
   /**
-   * The request did not come from the current coordinator (the lowest-id member of the leader's
-   * committed configuration), or carried a stale Raft configuration index.
+   * The desired leader has not acknowledged an append in this term, so its log has not converged.
    */
-  INVALID_COORDINATOR,
+  NOT_REPLICATING,
+  /** The desired leader is out of contact with this leader. */
+  UNREACHABLE,
+  /**
+   * The request did not come from the current coordinator, the lowest-id member of the leader's
+   * committed configuration.
+   */
+  NOT_COORDINATOR,
+  /** The request carried a Raft configuration index older than the leader's. */
+  STALE_CONFIGURATION,
   /** This leader is already running a transfer. */
   TRANSFER_IN_PROGRESS,
   /** The desired leader's replication lag is above the configured threshold. */

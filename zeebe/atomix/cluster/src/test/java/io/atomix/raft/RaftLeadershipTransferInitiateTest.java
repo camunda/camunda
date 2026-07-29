@@ -64,7 +64,29 @@ public class RaftLeadershipTransferInitiateTest {
                         MemberId.from("nonmember"), coordinator(leader), index(leader)));
 
     // then
-    assertThat(result).contains(LeadershipTransferResult.OFFLINE);
+    assertThat(result).contains(LeadershipTransferResult.NOT_MEMBER);
+  }
+
+  @Test
+  public void shouldRejectTransferToMemberWithUnconvergedLog() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = memberId(target);
+
+    // when
+    final var result =
+        onRaftThread(
+            leader,
+            () -> {
+              leader.getContext().getCluster().getMemberContext(targetId).appendFailed();
+              return leaderRole(leader)
+                  .precheckTransfer(targetId, coordinator(leader), index(leader));
+            });
+
+    // then
+    assertThat(result).contains(LeadershipTransferResult.NOT_REPLICATING);
   }
 
   @Test
@@ -84,7 +106,26 @@ public class RaftLeadershipTransferInitiateTest {
                         memberId(target), MemberId.from("not-the-coordinator"), index(leader)));
 
     // then
-    assertThat(result).contains(LeadershipTransferResult.INVALID_COORDINATOR);
+    assertThat(result).contains(LeadershipTransferResult.NOT_COORDINATOR);
+  }
+
+  @Test
+  public void shouldRejectTransferOnAStaleConfiguration() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+
+    // when
+    final var result =
+        onRaftThread(
+            leader,
+            () ->
+                leaderRole(leader)
+                    .precheckTransfer(memberId(target), coordinator(leader), index(leader) - 1));
+
+    // then
+    assertThat(result).contains(LeadershipTransferResult.STALE_CONFIGURATION);
   }
 
   @Test
@@ -137,7 +178,7 @@ public class RaftLeadershipTransferInitiateTest {
                 leaderRole(leader).precheckTransfer(targetId, coordinator(leader), index(leader)));
 
     // then
-    assertThat(result).contains(LeadershipTransferResult.OFFLINE);
+    assertThat(result).contains(LeadershipTransferResult.UNREACHABLE);
   }
 
   @Test

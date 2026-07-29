@@ -543,8 +543,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (transferInProgress) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
-    if (!isCurrentCoordinator(coordinator, coordinatorConfigIndex)) {
-      return Optional.of(LeadershipTransferResult.INVALID_COORDINATOR);
+    final var coordinatorRejection = validateCoordinator(coordinator, coordinatorConfigIndex);
+    if (coordinatorRejection.isPresent()) {
+      return coordinatorRejection;
     }
     // A configuration entry would move the frozen log head the desired leader has to catch up to,
     // and can drop the desired leader from the replica set altogether, so a transfer cannot start
@@ -553,11 +554,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return Optional.of(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
     }
     final var desiredContext = raft.getCluster().getMemberContext(desiredLeader);
-    if (desiredContext == null
-        || !raft.getCluster().isMember(desiredLeader)
-        || !desiredContext.hasAckedAppend()
-        || desiredContext.getFailureCount() > 0) {
-      return Optional.of(LeadershipTransferResult.OFFLINE);
+    if (desiredContext == null || !raft.getCluster().isMember(desiredLeader)) {
+      return Optional.of(LeadershipTransferResult.NOT_MEMBER);
+    }
+    if (!desiredContext.hasAckedAppend()) {
+      return Optional.of(LeadershipTransferResult.NOT_REPLICATING);
+    }
+    if (desiredContext.getFailureCount() > 0) {
+      return Optional.of(LeadershipTransferResult.UNREACHABLE);
     }
     // Point-in-time lag sample: the threshold should be tuned so a passing desired leader reliably
     // catches up within replicationTimeout once the pause begins.
@@ -572,20 +576,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    * any other member, or one carrying a Raft configuration index older than the leader's, is
    * rejected so a stale or non-coordinator node cannot request a transfer.
    */
-  private boolean isCurrentCoordinator(
+  private Optional<LeadershipTransferResult> validateCoordinator(
       final MemberId coordinator, final long coordinatorConfigIndex) {
     final var configuration = raft.getCluster().getConfiguration();
-    if (configuration == null) {
-      return false;
+    if (configuration == null || coordinatorConfigIndex < configuration.index()) {
+      return Optional.of(LeadershipTransferResult.STALE_CONFIGURATION);
     }
-    if (coordinatorConfigIndex < configuration.index()) {
-      return false;
-    }
-    return configuration.newMembers().stream()
-        .map(RaftMember::memberId)
-        .min(MemberId.ID_COMPARATOR)
-        .map(coordinator::equals)
-        .orElse(false);
+    final var isCoordinator =
+        configuration.newMembers().stream()
+            .map(RaftMember::memberId)
+            .min(MemberId.ID_COMPARATOR)
+            .map(coordinator::equals)
+            .orElse(false);
+    return isCoordinator ? Optional.empty() : Optional.of(LeadershipTransferResult.NOT_COORDINATOR);
   }
 
   /** Ensures the local server is not the leader. */
