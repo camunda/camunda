@@ -407,7 +407,12 @@ public class Raft {
     this.segmentPreallocationStrategy = segmentPreallocationStrategy;
   }
 
-  /** Coordinated leadership transfer (rebalancing) options under {@code ....raft.rebalance}. */
+  /**
+   * Coordinated leadership transfer (rebalancing) options under {@code ....raft.rebalance}.
+   *
+   * <p>Operators can override these values for each rebalance request - these are defaults that
+   * apply when no overrides are specified.
+   */
   public static class Rebalance {
     /**
      * The maximum replication lag a desired leader may have for the current leader to attempt a

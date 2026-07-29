@@ -69,7 +69,7 @@ public final class LeadershipTransferRunner {
   public LeadershipTransferInitiateResponse handleInitiate(
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
-    final var configuration = raft.getRebalanceConfiguration();
+    final var configuration = request.effectiveConfiguration(raft.getRebalanceConfiguration());
     final var rejectionReason =
         admission.precheck(
             request.desiredLeader(),
