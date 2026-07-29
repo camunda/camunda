@@ -357,7 +357,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   validate-base-image:
-    if: inputs.runDockerfileChecks
+    if: inputs.runDockerfileChecks && github.event_name != 'push' && github.event_name != 'schedule'
     name: "Tool / Dockerfile / Validate Base Image"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -387,11 +387,17 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
       # Same class of check as camunda.Dockerfile gets in the docker-checks job
-      # (.github/workflows/ci.yml) via a full build; here it's a metadata-only resolve since
-      # this job never builds the image. Minimus "-dev" tags are floating and old digests get
-      # GC'd fast, so a digest pinned by Renovate can go stale before it's ever built - which for
-      # optimize.Dockerfile only happens post-merge (deploy-optimize-docker-snapshot runs only on
-      # push to main/stable, never on pull_request). Catch that here instead of on main.
+      # (.github/workflows/ci.yml), but here it's a metadata-only resolve since this job never
+      # builds the image. The pinned digest is content-addressable, so we must resolve it by digest
+      # exactly as BuildKit does for `FROM ${BASE_IMAGE}@${BASE_DIGEST}`. `docker buildx imagetools
+      # inspect` mirrors that resolution path; plain `docker manifest inspect` on the tag@digest
+      # form instead false-fails as soon as the rolling Minimus 25-dev tag advances off the pinned
+      # digest, even though that digest is still perfectly pullable. This job runs only on
+      # pull_request/merge_group, where it gates a Renovate digest bump before it lands. On push
+      # to main/stable the digest is already resolved as a side effect of the real image build in
+      # deploy-optimize-docker-snapshot (.github/workflows/ci.yml) - mirroring how docker-checks
+      # covers camunda.Dockerfile - so running this standalone resolve on push/schedule would be
+      # redundant, hence it is scoped out of push/schedule events.
       - name: Validate base image digest is resolvable
         if: steps.is-fork.outputs.is-fork != 'true'
         run: |
@@ -399,7 +405,7 @@ jobs:
           base_image=$(grep -m1 '^ARG BASE_IMAGE=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
           base_digest=$(grep -m1 '^ARG BASE_DIGEST=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
           echo "Resolving ${base_image}@${base_digest}"
-          docker manifest inspect "${base_image}@${base_digest}" > /dev/null
+          docker buildx imagetools inspect "${base_image}@${base_digest}" > /dev/null
       - name: Observe build status
         if: always()
         continue-on-error: true
