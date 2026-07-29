@@ -209,7 +209,44 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldNotUpsertNullFields() {
+  public void shouldOmitAbsentOptionalFieldsFromUpsert() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.SERVICE_TASK)
+            .setState(FlowNodeState.ACTIVE)
+            .setFlowNodeId("flowNode1")
+            .setFlowNodeName("flowNodeName")
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    // when
+    underTest.flush(index, inputEntity, mockRequest);
+    // then
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldUpsertNullFlowNodeNameForNormalElement() {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("111")
