@@ -162,11 +162,15 @@ public final class JobSecretInjector {
 
   /**
    * Returns the keys of the jobs waiting on each non-cached secret reference, grouped by reference
-   * in registration order. The processor consumes this before {@link #injectSecretValues} resets
-   * the injector.
+   * in registration order. The processor takes this snapshot before {@link #injectSecretValues}
+   * resets the injector; the snapshot is immutable and detached from the reset, so the caller keeps
+   * the keys registered at the time of the call.
    */
   public Map<SecretReference, List<Long>> jobsWithNonCachedSecrets() {
-    return Collections.unmodifiableMap(jobsWithNonCachedSecrets);
+    final Map<SecretReference, List<Long>> snapshot = new LinkedHashMap<>();
+    jobsWithNonCachedSecrets.forEach(
+        (reference, jobKeys) -> snapshot.put(reference, List.copyOf(jobKeys)));
+    return Collections.unmodifiableMap(snapshot);
   }
 
   /**

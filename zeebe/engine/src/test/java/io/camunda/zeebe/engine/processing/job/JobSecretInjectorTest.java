@@ -16,6 +16,7 @@ import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
@@ -83,10 +84,13 @@ final class JobSecretInjectorTest {
 
   private static Map<String, List<Long>> resolutionsByReferenceName(
       final JobSecretInjector injector) {
+    return byReferenceName(injector.jobsWithNonCachedSecrets());
+  }
+
+  private static Map<String, List<Long>> byReferenceName(
+      final Map<SecretReference, List<Long>> jobsByReference) {
     final Map<String, List<Long>> byName = new LinkedHashMap<>();
-    injector
-        .jobsWithNonCachedSecrets()
-        .forEach((reference, keys) -> byName.put(reference.name(), keys));
+    jobsByReference.forEach((reference, keys) -> byName.put(reference.name(), keys));
     return byName;
   }
 
@@ -441,6 +445,26 @@ final class JobSecretInjectorTest {
 
       // then
       assertThat(injector.jobsWithNonCachedSecrets()).isEmpty();
+    }
+
+    @Test
+    void shouldReturnRegisteredResolutionsAsImmutableSnapshot() {
+      // given
+      final var injector = injector(Map.of());
+      collect(
+          injector,
+          job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")),
+          job(Map.of("b", "camunda.secrets.token"), ref("token", "/b")));
+      final var snapshot = injector.jobsWithNonCachedSecrets();
+
+      // when - the caller tries to change the snapshot, and the next command resets the injector
+      assertThatThrownBy(() -> snapshot.values().iterator().next().add(999L))
+          .isInstanceOf(UnsupportedOperationException.class);
+      assertThatThrownBy(snapshot::clear).isInstanceOf(UnsupportedOperationException.class);
+      injector.reset();
+
+      // then - the snapshot still holds the job keys registered when it was taken
+      assertThat(byReferenceName(snapshot)).containsOnly(entry("token", List.of(100L, 101L)));
     }
   }
 
