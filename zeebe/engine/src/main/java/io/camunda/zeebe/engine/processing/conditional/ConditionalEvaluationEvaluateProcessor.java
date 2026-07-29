@@ -94,7 +94,7 @@ public class ConditionalEvaluationEvaluateProcessor
 
     final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var tenantCheck =
-        cslCheck.checkTenants(
+        cslCheck.checkTenantsRequiringPrincipal(
             List.of(record.getTenantId()),
             authorizedTenants,
             record,

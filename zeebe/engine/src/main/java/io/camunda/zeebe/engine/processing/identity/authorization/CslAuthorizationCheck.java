@@ -175,13 +175,14 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Like {@link #checkTenant} but for command sites that call the tenant check directly, with no
+   * Rejects a claims-free caller outright: unlike {@link #checkTenant}, this method has no
+   * no-principal skip. Use it only for command sites that call the tenant check directly, with no
    * preceding {@link #check}, and that verify membership across a list of tenant IDs at once, using
    * {@link AuthorizedTenants#isAuthorizedForTenantIds}.
    *
-   * <p>Deliberately does <b>not</b> share {@link #checkTenant}'s no-principal skip: without a
-   * preceding {@link #check} to reject a claims-free command first, that skip would silently
-   * authorize a claims-free caller for every tenant it names instead of rejecting it.
+   * <p>Without a preceding {@link #check} to reject a claims-free command first, sharing {@link
+   * #checkTenant}'s no-principal skip here would silently authorize a claims-free caller for every
+   * tenant it names instead of rejecting it — hence the guarantee is deliberate, not an oversight.
    *
    * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants} and a
    * lazy {@code Supplier<Rejection>} rather than resolving internally and building the rejection
@@ -195,7 +196,7 @@ public final class CslAuthorizationCheck {
    * @param notAssignedRejection supplies the rejection to return when the principal is not assigned
    *     to all of {@code tenantIds}; only invoked on that failure path
    */
-  public <T> Either<Rejection, T> checkTenants(
+  public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
       final List<String> tenantIds,
       final AuthorizedTenants authorizedTenants,
       final T value,

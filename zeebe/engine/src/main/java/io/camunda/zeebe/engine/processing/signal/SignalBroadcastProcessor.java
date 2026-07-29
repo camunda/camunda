@@ -98,7 +98,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (isAuthNeeded) {
       final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
       final var tenantCheck =
-          cslCheck.checkTenants(
+          cslCheck.checkTenantsRequiringPrincipal(
               List.of(signalRecord.getTenantId()),
               authorizedTenants,
               signalRecord,

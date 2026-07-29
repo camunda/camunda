@@ -116,7 +116,7 @@ public final class MessageCorrelationCorrelateProcessor
     if (!command.isInternalCommand()) {
       final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
       final var tenantCheck =
-          cslCheck.checkTenants(
+          cslCheck.checkTenantsRequiringPrincipal(
               List.of(messageCorrelationRecord.getTenantId()),
               authorizedTenants,
               messageCorrelationRecord,

@@ -214,7 +214,7 @@ final class CslAuthorizationCheckTest {
 
     // when
     final var result =
-        cslCheck.checkTenants(
+        cslCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"),
             new AuthenticatedAuthorizedTenants(List.of()),
             "ok",
@@ -234,7 +234,7 @@ final class CslAuthorizationCheckTest {
 
     // when
     final var result =
-        cslCheck.checkTenants(
+        cslCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"),
             authorizedTenants,
             "ok",
@@ -254,7 +254,7 @@ final class CslAuthorizationCheckTest {
 
     // when — tenant-b is requested in addition to tenant-a
     final var result =
-        cslCheck.checkTenants(
+        cslCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"), authorizedTenants, "ok", () -> rejection);
 
     // then — the caller-supplied rejection is returned verbatim
@@ -269,7 +269,7 @@ final class CslAuthorizationCheckTest {
 
     // when
     final var result =
-        cslCheck.checkTenants(
+        cslCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"),
             AuthorizedTenants.ANONYMOUS,
             "ok",
@@ -290,7 +290,8 @@ final class CslAuthorizationCheckTest {
 
     // when
     final var result =
-        cslCheck.checkTenants(List.of("tenant-a"), authorizedTenants, "ok", () -> rejection);
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a"), authorizedTenants, "ok", () -> rejection);
 
     // then
     assertThat(result.isLeft()).isTrue();

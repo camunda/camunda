@@ -152,7 +152,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private Either<Rejection, Void> validateTenantAuthorization(
       final JobBatchRecord value, final AuthorizedTenants authorizedTenantIds) {
     final var tenantIds = resolveProvidedTenantIds(value);
-    return cslCheck.checkTenants(
+    return cslCheck.checkTenantsRequiringPrincipal(
         tenantIds,
         authorizedTenantIds,
         null,
