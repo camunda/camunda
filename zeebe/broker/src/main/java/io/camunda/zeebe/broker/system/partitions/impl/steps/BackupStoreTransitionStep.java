@@ -108,19 +108,25 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
   }
 
   private static BackupStore createS3Store(final BackupCfg backupCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
+    final var storeConfig =
+        S3BackupStoreConfig.toStoreConfig(
+            backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return S3BackupStore.of(storeConfig);
   }
 
   private static BackupStore createGcsStore(final BackupCfg backupCfg) {
     final var brokerGcsConfig = backupCfg.getGcs();
-    final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
+    final var storeGcsConfig =
+        GcsBackupStoreConfig.toStoreConfig(
+            brokerGcsConfig, backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return GcsBackupStore.of(storeGcsConfig);
   }
 
   private static BackupStore createAzureStore(final BackupCfg backupCfg) {
     final var brokerAzureConfig = backupCfg.getAzure();
-    final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
+    final var storeAzureConfig =
+        AzureBackupStoreConfig.toStoreConfig(
+            brokerAzureConfig, backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return AzureBackupStore.of(storeAzureConfig);
   }
 
