@@ -8,21 +8,32 @@
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
+import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Profile("consolidated-auth")
@@ -32,11 +43,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AuthenticationController {
   private final CamundaUserPort camundaUserPort;
   private final ServiceRegistry serviceRegistry;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public AuthenticationController(
-      final CamundaUserPort camundaUserPort, final ServiceRegistry serviceRegistry) {
+      final CamundaUserPort camundaUserPort,
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.camundaUserPort = camundaUserPort;
     this.serviceRegistry = serviceRegistry;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaGetMapping(path = "/me")
@@ -47,6 +62,45 @@ public class AuthenticationController {
     }
     final var tenants = resolveTenants(authenticatedUser.tenants());
     return ResponseEntity.ok(toCamundaUser(authenticatedUser, tenants));
+  }
+
+  /**
+   * Returns the current authenticated user's own authorization records — those granted directly to
+   * the user, as well as those reachable via a group, role, or mapping rule the user belongs to.
+   *
+   * <p>Unlike {@code POST /v2/authorizations/search}, this endpoint requires no {@code
+   * AUTHORIZATION:READ} permission: seeing which authorizations apply to yourself is always
+   * allowed. It returns 401 for anonymous/unauthenticated callers, mirroring {@link
+   * #getCurrentUser()}.
+   */
+  @CamundaPostMapping(path = "/me/authorizations")
+  public ResponseEntity<AuthorizationSearchResult> searchOwnAuthorizations(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody(required = false) final AuthorizationSearchQuery query) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    if (authentication == null || authentication.isAnonymous()) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    return SearchQueryRequestMapper.toAuthorizationQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> searchOwn(physicalTenantId, q, authentication));
+  }
+
+  private ResponseEntity<AuthorizationSearchResult> searchOwn(
+      final String physicalTenantId,
+      final AuthorizationQuery query,
+      final CamundaAuthentication authentication) {
+    try {
+      final var result =
+          serviceRegistry
+              .authorizationServices(physicalTenantId)
+              .searchOwnAuthorizations(query, authentication);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   /**
