@@ -38,6 +38,7 @@ const useAgentInstanceHistory = <
   const historyPayload: QueryAgentInstanceHistoryRequestBody = {
     sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
     filter: {
+      role: {$in: ['ASSISTANT', 'USER', 'TOOL_RESULT']},
       commitStatus: 'COMMITTED',
       elementInstanceKey: options?.elementInstanceKey ?? undefined,
     },
