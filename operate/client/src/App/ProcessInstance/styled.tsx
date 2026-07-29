@@ -17,7 +17,12 @@ const BottomPanel = styled.div`
   z-index: 1;
   border-top: 1px solid var(--cds-border-subtle-01);
 
-  & > div > .HorizontalPanel:first-child {
+  /* Backs up the ResizablePanel minWidths, which only apply while dragging and
+     so let a stored percentage scale through the floor on window resize. The
+     class comes from ResizablePanel's own \`classes\` prop, not from the
+     splitter library; the selector stays a descendant one so it does not also
+     depend on how deeply the library nests its panels. */
+  & .HorizontalPanel:first-child {
     min-width: ${INSTANCE_HISTORY_MIN_WIDTH}px;
   }
 `;
