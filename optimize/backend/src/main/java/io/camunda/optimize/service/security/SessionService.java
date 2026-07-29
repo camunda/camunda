@@ -97,12 +97,16 @@ public class SessionService implements ConfigurationReloadable {
    * Resolves the authenticated user ID from the current request, regardless of whether the request
    * was authenticated via an Identity session cookie or a bearer JWT token.
    *
-   * <p>Resolution order:
+   * <p>A CSL login session is resolved on its own: when CSL is active and the request carries one,
+   * the user is whatever CSL authenticated (see {@link #cslAuthenticatedUsername(
+   * CamundaAuthenticationProvider)}) or nothing at all. It never falls back to the branches below,
+   * because the cookie branch reads its subject from an unverified token: under CSL no filter
+   * validates the Optimize auth cookie, so a stale or injected one could otherwise attribute the
+   * request to a different user.
+   *
+   * <p>Otherwise, in order:
    *
    * <ol>
-   *   <li>Under CSL, the username CSL resolved for the interactive session (see {@link
-   *       #cslAuthenticatedUsername()}). There is no Optimize auth cookie in that mode, so without
-   *       this step every endpoint using this method would fail with a 401.
    *   <li>If the {@link SecurityContextHolder} already holds a {@link JwtAuthenticationToken} (set
    *       by Spring Security's OAuth2 resource server bearer-token authentication when {@code
    *       api.jwtAuthForApiEnabled=true}), the subject is taken directly from that token. This
@@ -114,8 +118,15 @@ public class SessionService implements ConfigurationReloadable {
    * @throws NotAuthorizedException if no authenticated identity can be resolved.
    */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
-    return cslAuthenticatedUsername()
-        .or(this::subjectFromSecurityContext)
+    final CamundaAuthenticationProvider cslProvider = cslAuthenticationProvider();
+    if (cslProvider != null && isCslLoginSession()) {
+      return cslAuthenticatedUsername(cslProvider)
+          .orElseThrow(
+              () ->
+                  new NotAuthorizedException(
+                      "Could not extract request user from the CSL login session!"));
+    }
+    return subjectFromSecurityContext()
         .or(
             () ->
                 AuthCookieService.getAuthCookieToken(request)
@@ -123,27 +134,26 @@ public class SessionService implements ConfigurationReloadable {
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }
 
+  /** The CSL authentication provider, or {@code null} when CSL is not active. */
+  private CamundaAuthenticationProvider cslAuthenticationProvider() {
+    return camundaAuthenticationProviderProvider == null
+        ? null
+        : camundaAuthenticationProviderProvider.getIfAvailable();
+  }
+
+  /** True when the current request was authenticated by CSL's {@code oauth2Login} chain. */
+  private static boolean isCslLoginSession() {
+    return SecurityContextHolder.getContext().getAuthentication()
+        instanceof OAuth2AuthenticationToken;
+  }
+
   /**
-   * Resolves the user id CSL authenticated the interactive session as, which is the id Optimize
-   * stores entity ownership under (CSL's configured {@code username-claim}). Mirrors {@code
+   * Resolves the user id CSL authenticated the session as, which is the id Optimize stores entity
+   * ownership under (CSL's configured {@code username-claim}). Mirrors {@code
    * CCSMTokenService#getCurrentUserIdFromAuthToken}, which reads the same source.
-   *
-   * <p>Empty unless CSL is active: the {@link CamundaAuthenticationProvider} bean exists only then,
-   * and the {@link OAuth2AuthenticationToken} check restricts this to sessions established by CSL's
-   * {@code oauth2Login} chain, so the legacy cookie path is unaffected.
    */
-  private Optional<String> cslAuthenticatedUsername() {
-    final CamundaAuthenticationProvider provider =
-        camundaAuthenticationProviderProvider == null
-            ? null
-            : camundaAuthenticationProviderProvider.getIfAvailable();
-    if (provider == null) {
-      return Optional.empty();
-    }
-    if (!(SecurityContextHolder.getContext().getAuthentication()
-        instanceof OAuth2AuthenticationToken)) {
-      return Optional.empty();
-    }
+  private static Optional<String> cslAuthenticatedUsername(
+      final CamundaAuthenticationProvider provider) {
     return Optional.ofNullable(provider.getCamundaAuthentication())
         .map(CamundaAuthentication::authenticatedUsername)
         .filter(username -> !username.isBlank());

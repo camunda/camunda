@@ -14,12 +14,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeApiConfiguration;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Collections;
@@ -46,6 +49,7 @@ class SessionServiceTest {
 
   private static final String USER_SUBJECT = "user123";
   private static final String CSL_USERNAME = "auth0|csl-user";
+  private static final String OTHER_USER_SUBJECT = "someone-else";
 
   @Mock private TerminatedSessionService terminatedSessionService;
   @Mock private ConfigurationService configurationService;
@@ -126,14 +130,44 @@ class SessionServiceTest {
 
   @Test
   void shouldFailWhenCslResolvesNoUsernameForAnOauth2Session() {
-    // given — provider present but no authenticated username to offer, and no cookie to fall back
-    // to, so the request must not be attributed to some other identity
+    // given — provider present but no authenticated username to offer
     sessionService = sessionServiceWith(camundaAuthenticationProviderOf(null));
     SecurityContextHolder.getContext().setAuthentication(oauth2Session());
 
     // when - then
-    assertThatThrownBy(() -> sessionService.getRequestUserOrFailNotAuthorized(emptyRequest()))
+    assertThatThrownBy(
+            () -> sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class)))
         .isInstanceOf(NotAuthorizedException.class);
+  }
+
+  @Test
+  void shouldNotFallBackToTheLegacyCookieForACslSession() {
+    // given — a CSL session that resolves no username, plus a leftover Optimize auth cookie naming
+    // a different user. That cookie's subject is decoded without verifying the signature, and under
+    // CSL no filter validates it, so it must never be used to attribute the request.
+    sessionService = sessionServiceWith(camundaAuthenticationProviderOf(null));
+    SecurityContextHolder.getContext().setAuthentication(oauth2Session());
+
+    // when - then
+    assertThatThrownBy(
+            () -> sessionService.getRequestUserOrFailNotAuthorized(requestWithAuthCookie()))
+        .isInstanceOf(NotAuthorizedException.class);
+  }
+
+  /** A request carrying a leftover Optimize auth cookie whose subject is a different user. */
+  private static HttpServletRequest requestWithAuthCookie() {
+    final HttpServletRequest request = mock(HttpServletRequest.class);
+    lenient().when(request.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
+    lenient()
+        .when(request.getCookies())
+        .thenReturn(
+            new Cookie[] {
+              new Cookie(
+                  AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
+                  AuthCookieService.createOptimizeAuthCookieValue(
+                      JWT.create().withSubject(OTHER_USER_SUBJECT).sign(Algorithm.none())))
+            });
+    return request;
   }
 
   @Test
