@@ -1,0 +1,104 @@
+# description: Reusable workflow — analytics-exporter isolated regression
+#              tests (Prometheus/Loki counter parity + disabled-by-default).
+#              Called by the main-branch nightly API workflow.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Reusable Analytics Exporter Tests
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Branch to test (e.g. main)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
+jobs:
+  # Manages its own throwaway broker/collector stack via
+  # utils/dockerComposeControl.ts — never touches a shared Elasticsearch
+  # container, so it needs none of the setup (ES/Vault/TestRail) the main
+  # api-tests job carries. Only called for main — not backporting, the
+  # exporter's config differs too much on stable/8.7/8.8/8.9.
+  analytics-exporter-tests:
+    name: Analytics Exporter Isolated Tests (${{ inputs.branch }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run analytics-exporter isolated tests
+        shell: bash
+        run: npm run test -- --project=analytics-exporter-isolated
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Clean up analytics-exporter isolated environment
+        if: always()
+        shell: bash
+        env:
+          # Combining with docker-compose.yml means Compose validates the
+          # whole merged service graph, including the shared camunda
+          # service's ${DATABASE} reference — a valid literal service name
+          # satisfies validation; this job never starts that service.
+          DATABASE: elasticsearch
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.analytics-isolated.yml \
+            -p analytics-isolated down -v || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: json-report-nightly-analytics-exporter-${{ inputs.branch }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
+      - name: Upload Playwright traces to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-nightly-analytics-exporter-${{ inputs.branch }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
+          if-no-files-found: ignore
+          retention-days: 5
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-e2e-nightly-analytics-exporter-tests/${{ inputs.branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

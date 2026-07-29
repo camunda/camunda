@@ -26,3 +26,9 @@ jobs:
       branch: main
       camunda_mode: all-in-one
     secrets: inherit
+
+  nightly-analytics-exporter-tests:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-analytics-exporter-tests.yml
+    with:
+      branch: main
+    secrets: inherit
