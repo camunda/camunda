@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String endpoint;
@@ -84,8 +85,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
 
   public static AzureBackupConfig toStoreConfig(
       final AzureBackupStoreConfig config,
-      final Duration readTimeout,
-      final Duration writeTimeout) {
+      final @Nullable Duration readTimeout,
+      final @Nullable Duration writeTimeout) {
     // if sas token is enabled, then we don't create the container initially. This is due to the
     // fact that both delegation sas token and service sas token don't have permissions to
     // create/list a container. On the other hand account sas token can be configured to have the
