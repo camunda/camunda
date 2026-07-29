@@ -96,15 +96,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
+      final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
       final var tenantCheck =
-          cslCheck.checkTenant(
-              command,
-              signalRecord.getTenantId(),
+          cslCheck.checkTenants(
+              List.of(signalRecord.getTenantId()),
+              authorizedTenants,
               signalRecord,
-              new Rejection(
-                  RejectionType.FORBIDDEN,
-                  "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
-                      .formatted(signalRecord.getTenantId())));
+              () ->
+                  new Rejection(
+                      RejectionType.FORBIDDEN,
+                      "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+                          .formatted(signalRecord.getTenantId())));
       if (tenantCheck.isLeft()) {
         final var rejection = tenantCheck.getLeft();
         rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

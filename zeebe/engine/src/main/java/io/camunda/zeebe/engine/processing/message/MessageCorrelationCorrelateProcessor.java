@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -113,15 +114,17 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Check tenant authorization if not an internal command
     if (!command.isInternalCommand()) {
+      final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
       final var tenantCheck =
-          cslCheck.checkTenant(
-              command,
-              messageCorrelationRecord.getTenantId(),
+          cslCheck.checkTenants(
+              List.of(messageCorrelationRecord.getTenantId()),
+              authorizedTenants,
               messageCorrelationRecord,
-              new Rejection(
-                  RejectionType.FORBIDDEN,
-                  "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
-                      .formatted(messageCorrelationRecord.getTenantId())));
+              () ->
+                  new Rejection(
+                      RejectionType.FORBIDDEN,
+                      "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
+                          .formatted(messageCorrelationRecord.getTenantId())));
       if (tenantCheck.isLeft()) {
         final var rejection = tenantCheck.getLeft();
         rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
