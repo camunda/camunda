@@ -30,12 +30,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * One accepted coordinated leadership transfer, sequenced from freezing the partition to reporting
- * the outcome: pause, wait for the desired leader to catch up, then resume. A fresh attempt is
- * created per accepted transfer, so no state can leak from one transfer into the next.
+ * the result to the coordinator: pause, wait for the desired leader to catch up, promote it, then
+ * resume and report. A fresh attempt is created per accepted transfer, so no state can leak from
+ * one transfer into the next.
  *
  * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
- * currently in flight. Failures converge on {@link #finish}, which reports them to the coordinator;
- * the transfer is not executed yet, so a desired leader that catches up simply ends the attempt.
+ * currently in flight, and every terminal outcome converges on {@link #finish}.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -136,24 +136,20 @@ final class LeadershipTransferAttempt {
         .whenComplete(
             (failureReason, ignored) -> {
               activePhase = null;
-              failureReason.ifPresentOrElse(this::finish, () -> onCaughtUp(targetIndex));
+              failureReason.ifPresentOrElse(this::finish, this::promote);
             });
   }
 
-  /**
-   * The desired leader is caught up, which is as far as a transfer gets until the promotion step
-   * exists: the attempt is measured as a success and the partition resumed, but there is no
-   * leadership change to report to the coordinator yet.
-   */
-  private void onCaughtUp(final long targetIndex) {
-    LOG.info("Desired leader {} caught up to index {}", desiredLeader, targetIndex);
-    if (finished) {
-      return;
-    }
-    finished = true;
-    finishListener.run();
-    observeDuration(LeadershipTransferResult.TRANSFERRED);
-    resume();
+  private void promote() {
+    final var promotion = new TimeoutNowPromotion(raft, leader::isRunning, desiredLeader);
+    activePhase = promotion;
+    promotion
+        .start()
+        .whenComplete(
+            (result, ignored) -> {
+              activePhase = null;
+              finish(result);
+            });
   }
 
   private void finish(final LeadershipTransferResult result) {
@@ -175,7 +171,12 @@ final class LeadershipTransferAttempt {
 
   /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
   private Duration pauseBudget() {
-    return raft.getRebalanceReplicationTimeout().plus(PAUSE_BUDGET_SLACK);
+    return raft.getRebalanceReplicationTimeout().plus(promotionBudget()).plus(PAUSE_BUDGET_SLACK);
+  }
+
+  /** The wall time {@link TimeoutNowPromotion} can spend spacing out its attempts. */
+  private Duration promotionBudget() {
+    return raft.getHeartbeatInterval().multipliedBy(raft.getRebalanceMaxTransferAttempts());
   }
 
   private void observeDuration(final LeadershipTransferResult result) {

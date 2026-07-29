@@ -23,7 +23,9 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -33,8 +35,12 @@ final class CoordinatedTransferDriver {
   private final RaftRule raftRule;
   private final RaftServer leader;
   private final MemberId coordinatorId;
-  private final CompletableFuture<LeadershipTransferResultRequest> reported =
-      new CompletableFuture<>();
+
+  private final List<CompletableFuture<LeadershipTransferResultRequest>> reported =
+      new ArrayList<>();
+
+  private int received;
+  private int consumed;
   private long nextCorrelationId = 0x5eed_0100L;
 
   CoordinatedTransferDriver(final RaftRule raftRule, final RaftServer leader) {
@@ -48,7 +54,9 @@ final class CoordinatedTransferDriver {
     protocolOf(coordinatorId)
         .registerLeadershipTransferResultHandler(
             request -> {
-              reported.complete(request);
+              synchronized (reported) {
+                slot(received++).complete(request);
+              }
               return CompletableFuture.completedFuture(
                   LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
             });
@@ -82,9 +90,21 @@ final class CoordinatedTransferDriver {
         .get(5, TimeUnit.SECONDS);
   }
 
-  /** Completes with the terminal result the leader reports to the coordinator. */
+  /**
+   * Completes with the next terminal result the leader reports to the coordinator. Successive calls
+   * hand out successive results in report order.
+   */
   CompletableFuture<LeadershipTransferResultRequest> reportedResult() {
-    return reported;
+    synchronized (reported) {
+      return slot(consumed++);
+    }
+  }
+
+  private CompletableFuture<LeadershipTransferResultRequest> slot(final int index) {
+    while (reported.size() <= index) {
+      reported.add(new CompletableFuture<>());
+    }
+    return reported.get(index);
   }
 
   static MemberId memberId(final RaftServer server) {

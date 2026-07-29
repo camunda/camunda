@@ -49,7 +49,7 @@ public class RaftLeadershipTransferCatchUpTest {
           });
 
   @Test
-  public void shouldRecordTransferDurationWhenTheDesiredLeaderCatchesUp() throws Exception {
+  public void shouldRecordTransferDurationWhenTheTransferSucceeds() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -61,7 +61,7 @@ public class RaftLeadershipTransferCatchUpTest {
 
     // then
     assertThat(ack.accepted()).isTrue();
-    Awaitility.await("the attempt is measured once the desired leader is caught up")
+    Awaitility.await("the attempt is measured once the transfer succeeds")
         .atMost(Duration.ofSeconds(15))
         .untilAsserted(
             () ->

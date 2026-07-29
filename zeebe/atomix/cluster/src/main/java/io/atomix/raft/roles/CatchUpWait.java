@@ -32,7 +32,8 @@ import org.slf4j.LoggerFactory;
  * Raft thread each heartbeat interval until it catches up or {@code deadlineMs} passes.
  *
  * <p>The future returned by {@link #start()} completes with an empty {@link Optional} once the
- * desired leader is fully caught up, or with a terminal reason if there was a failure/timeout.
+ * desired leader is fully caught up (proceed to promotion), or with a terminal reason if there was
+ * a failure/timeout.
  */
 @NullMarked
 final class CatchUpWait implements TransferPhase {

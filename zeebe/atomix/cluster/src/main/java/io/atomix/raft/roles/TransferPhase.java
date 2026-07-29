@@ -22,7 +22,7 @@ package io.atomix.raft.roles;
  * <p>Role and pause events are forwarded to the currently active phase only; each phase reacts to
  * the events that affect it and ignores the rest. All events arrive on the Raft thread.
  */
-sealed interface TransferPhase permits CatchUpWait {
+sealed interface TransferPhase permits CatchUpWait, TimeoutNowPromotion {
 
   /** The leader role is stopping, e.g. because this node stepped down. */
   default void onLeaderStopped() {}
