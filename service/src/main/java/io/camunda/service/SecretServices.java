@@ -21,6 +21,7 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -105,8 +106,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
 
   /**
    * Returns the secret stores and caches of this service's physical tenant. Not consulted by the
-   * mocked backend yet; the store-backed resolve/list lands with #58497.
+   * mocked backend yet; the store-backed resolve/list lands with #58497, and reads the field
+   * directly. Exposed only so the wiring can be asserted, deliberately not a production read path:
+   * a caller holding the registry could read a value without the per-reference {@code
+   * SECRET:REVEAL} check {@link #resolve} applies.
    */
+  @VisibleForTesting
   public SecretStoreRegistry getSecretStoreRegistry() {
     return secretStoreRegistry;
   }
