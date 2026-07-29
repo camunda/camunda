@@ -12,6 +12,7 @@ import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import java.net.ConnectException;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 
 public interface VoteQuorum {
 
@@ -23,6 +24,7 @@ public interface VoteQuorum {
 
   enum VoteErrorStatus {
     NO_SUCH_MEMBER,
+    MEMBER_TIMED_OUT,
     REJECTED,
     INVALID_TERM,
     UNKNOWN;
@@ -32,6 +34,7 @@ public interface VoteQuorum {
         case final NoSuchMemberException noSuchMemberException -> NO_SUCH_MEMBER;
         case final ConnectException connectException -> NO_SUCH_MEMBER;
         case final NoRemoteHandler noRemoteHandler -> NO_SUCH_MEMBER;
+        case final TimeoutException timeoutException -> MEMBER_TIMED_OUT;
         case final CompletionException completionException -> {
           if (completionException.getCause() != null) {
             yield of(completionException.getCause());
