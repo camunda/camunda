@@ -69,6 +69,7 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
   private final LogStreamReader logStreamReader;
   private final AtomicBoolean hasStartedExporting;
   private final ExporterMetrics metrics;
+  private final ExporterExportedPositions exportedPositions;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final EventFilter eventFilter;
@@ -92,6 +93,7 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
       final LogStreamReader logStreamReader,
       final AtomicBoolean hasStartedExporting,
       final ExporterMetrics metrics,
+      final ExporterExportedPositions exportedPositions,
       final EventFilter positionsToSkipFilter,
       final InstantSource clock,
       final ExporterPhase initialPhase,
@@ -103,6 +105,7 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
     this.logStreamReader = logStreamReader;
     this.hasStartedExporting = hasStartedExporting;
     this.metrics = metrics;
+    this.exportedPositions = exportedPositions;
     this.clock = clock;
     this.zeebeDb = zeebeDb;
     this.recordExporterWrapper = recordExporterWrapper;
@@ -136,6 +139,10 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
     // resources.
     final var ownState = new ExportersState(zeebeDb, zeebeDb.createContext());
     container.initContainer(actor, metrics, ownState, phase);
+    // Seed this exporter's starting position immediately, so it's accounted for in the
+    // cross-exporter minimum reported to FlowControl from the very start, not only once it
+    // exports its first record.
+    exportedPositions.recover(container.getId(), container.getPosition());
 
     openWithRetry();
   }
@@ -252,7 +259,8 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
             inExportingPhase = false;
             actor.submit(this::readNextEvent);
           } else {
-            logStream.getFlowControl().onExported(recordExporter.getTypedEvent().getPosition());
+            exportedPositions.onExported(
+                container.getId(), recordExporter.getTypedEvent().getPosition());
             metrics.eventExported(recordExporter.getTypedEvent().getValueType());
             inExportingPhase = false;
             actor.submit(this::readNextEvent);
@@ -347,6 +355,9 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
     // controller.updateLastExportedRecordPosition(...), which does actor.run(...) against this
     // same actor - that only still works while this actor is mid-close, not once it is dead.
     container.close();
+    // Stop pinning the cross-exporter minimum reported to FlowControl once this exporter is no
+    // longer part of the exporting set (removed, disabled, or the whole partition closing).
+    exportedPositions.remove(container.getId());
   }
 
   @Override
