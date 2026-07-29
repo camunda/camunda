@@ -70,28 +70,35 @@ esac
 
 echo "Target resource prefix: ${PREFIX}"
 
-# --- discovery: show what is still tagged, in both regions ------------------
+# --- discovery ---------------------------------------------------------------
+# The Resource Groups Tagging API does NOT support wildcards in tag-filter
+# values, so we cannot match `${PREFIX}-*`. Instead we filter server-side on the
+# shared `Purpose` tag and narrow to this run client-side with a JMESPath
+# `starts_with` on the `Name` tag (which is `${PREFIX}` or `${PREFIX}-<suffix>`).
+# $1 region, $2 optional resource-type filter (e.g. `kms`).
+tagged_arns() {
+  local region="$1" rtf="${2:-}" args
+  args=(--region "${region}" --tag-filters "Key=Purpose,Values=aurora-async-replication-it")
+  [[ -n "${rtf}" ]] && args+=(--resource-type-filters "${rtf}")
+  aws resourcegroupstaggingapi get-resources "${args[@]}" \
+    --query "ResourceTagMappingList[?Tags[?Key=='Name' && starts_with(Value, '${PREFIX}')]].ResourceARN" \
+    --output text 2>/dev/null || true
+}
+
 list_orphans() {
   for region in "${PRIMARY_REGION}" "${SECONDARY_REGION}"; do
     echo "== tagged resources in ${region} =="
-    aws resourcegroupstaggingapi get-resources \
-      --region "${region}" \
-      --tag-filters "Key=Name,Values=${PREFIX},${PREFIX}-*" "Key=Purpose,Values=aurora-async-replication-it" \
-      --query 'ResourceTagMappingList[].ResourceARN' \
-      --output table || true
+    tagged_arns "${region}" | tr '\t' '\n'
   done
 }
 
 # Count tagged resources across both regions (used to decide whether the aws
 # fallback still has work to do).
 count_orphans() {
-  local total=0 region n
+  local total=0 region arns
   for region in "${PRIMARY_REGION}" "${SECONDARY_REGION}"; do
-    n="$(aws resourcegroupstaggingapi get-resources \
-      --region "${region}" \
-      --tag-filters "Key=Name,Values=${PREFIX},${PREFIX}-*" "Key=Purpose,Values=aurora-async-replication-it" \
-      --query 'length(ResourceTagMappingList)' --output text 2>/dev/null || echo 0)"
-    total=$((total + n))
+    arns="$(tagged_arns "${region}")"
+    total=$((total + $(printf '%s' "${arns}" | wc -w)))
   done
   echo "${total}"
 }
@@ -177,10 +184,7 @@ delete_kms_keys() {
   # deletion and then strip the tags so the key drops out of the orphan tag filter
   # (it lingers in PendingDeletion until the window elapses, which is expected).
   local region="$1" arns keyid state tagkeys
-  arns="$(aws resourcegroupstaggingapi get-resources --region "${region}" \
-    --resource-type-filters kms \
-    --tag-filters "Key=Name,Values=${PREFIX},${PREFIX}-*" "Key=Purpose,Values=aurora-async-replication-it" \
-    --query 'ResourceTagMappingList[].ResourceARN' --output text 2>/dev/null || true)"
+  arns="$(tagged_arns "${region}" kms)"
   for arn in ${arns}; do
     keyid="${arn##*/}"
     state="$(aws kms describe-key --region "${region}" --key-id "${keyid}" \
@@ -223,9 +227,9 @@ if [[ "$(count_orphans)" -gt 0 ]]; then
   # Secondary (read replica) before primary, then the global cluster shell.
   delete_db_cluster "${SECONDARY_REGION}" "${PREFIX}-secondary"
   delete_db_cluster "${PRIMARY_REGION}" "${PREFIX}-primary"
-  if aws rds describe-global-clusters --global-cluster-identifier "${PREFIX}-global" >/dev/null 2>&1; then
+  if aws rds describe-global-clusters --region "${PRIMARY_REGION}" --global-cluster-identifier "${PREFIX}-global" >/dev/null 2>&1; then
     echo "  deleting global cluster ${PREFIX}-global"
-    wait_quiet rds delete-global-cluster --global-cluster-identifier "${PREFIX}-global"
+    wait_quiet rds delete-global-cluster --region "${PRIMARY_REGION}" --global-cluster-identifier "${PREFIX}-global"
   fi
 
   delete_subnet_group "${PRIMARY_REGION}" "${PREFIX}-primary"
@@ -254,11 +258,11 @@ fi
 
 # --- purge the state object (versioned bucket) ------------------------------
 echo "Deleting Terraform state object versions for ${STATE_KEY}"
-RAW="$(aws s3api list-object-versions --bucket "${STATE_BUCKET}" --prefix "${STATE_KEY}" --output json 2>/dev/null || echo '{}')"
+RAW="$(aws s3api list-object-versions --region "${STATE_BUCKET_REGION}" --bucket "${STATE_BUCKET}" --prefix "${STATE_KEY}" --output json 2>/dev/null || echo '{}')"
 OBJECTS="$(echo "${RAW}" | jq '{Objects: ((.Versions // []) + (.DeleteMarkers // [])) | map({Key: .Key, VersionId: .VersionId})}')"
 COUNT="$(echo "${OBJECTS}" | jq '.Objects | length')"
 if [[ "${COUNT}" -gt 0 ]]; then
-  aws s3api delete-objects --bucket "${STATE_BUCKET}" --delete "${OBJECTS}" >/dev/null
+  aws s3api delete-objects --region "${STATE_BUCKET_REGION}" --bucket "${STATE_BUCKET}" --delete "${OBJECTS}" >/dev/null
   echo "Deleted ${COUNT} state object version(s)."
 else
   echo "No state objects found for ${STATE_KEY}."
