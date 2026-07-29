@@ -176,22 +176,6 @@ public class BackupCfg implements ConfigurationEntry {
     this.writeTimeout = writeTimeout;
   }
 
-  public @Nullable Duration getReadTimeout() {
-    return readTimeout;
-  }
-
-  public void setReadTimeout(final @Nullable Duration readTimeout) {
-    this.readTimeout = readTimeout;
-  }
-
-  public @Nullable Duration getWriteTimeout() {
-    return writeTimeout;
-  }
-
-  public void setWriteTimeout(final @Nullable Duration writeTimeout) {
-    this.writeTimeout = writeTimeout;
-  }
-
   public enum BackupStoreType {
     /**
      * When type = S3, {@link io.camunda.zeebe.backup.s3.S3BackupStore} will be used as the backup
