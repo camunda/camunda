@@ -7,17 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * The transformed input mappings of a flow node: one entry per {@code zeebe:input} element, in
- * modeling order, plus the secret references detected in them, keyed by the JSON pointer (RFC 6901)
- * of the leaf each secret belongs to (e.g. {@code /tokens/token}). {@code secretReferences} is
- * empty when no input mapping references a secret.
+ * A single transformed input mapping: the parsed source expression and the target path it is stored
+ * under, split into its {@code '.'}-separated segments (e.g. target {@code a.b.c} becomes {@code
+ * [a, b, c]}). Input mappings are evaluated one by one in modeling order at runtime.
  */
 @NullMarked
-public record InputMappings(
-    List<InputMapping> mappings, Map<String, Set<SecretReference>> secretReferences) {}
+public record InputMapping(Expression source, List<String> targetPath) {}

@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
@@ -74,14 +75,20 @@ import java.util.stream.Collectors;
  *       })
  *   }
  * </pre>
+ *
+ * <p><b>Input mappings</b> are not combined into a single context expression. Each mapping is kept
+ * as its own parsed source expression plus its split target path, so that mappings can be evaluated
+ * one by one in modeling order at runtime, with each mapping's result visible to subsequent
+ * mappings (see {@link InputMapping} and {@code BpmnVariableMappingBehavior}).
  */
 public final class VariableMappingTransformer {
 
   private static final String EXPRESSION_MARKER = "=";
 
   /**
-   * Transforms the input mappings into the FEEL expression that produces the local variables and,
-   * in the same pass, detects the secret references they use (see {@link #detectSecretReferences}).
+   * Transforms the input mappings, keeping each mapping as its own source expression plus target
+   * path so they can be evaluated one by one in modeling order at runtime and, in the same pass,
+   * detects the secret references they use (see {@link #detectSecretReferences}).
    */
   public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
@@ -89,10 +96,29 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(inputMappings, expressionLanguage);
     final var context = asContext(mappings);
-    final var contextExpression =
-        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
-    final var expression = parseExpression(contextExpression, expressionLanguage);
-    return new InputMappings(expression, detectSecretReferences(context));
+
+    final var transformedMappings =
+        mappings.stream()
+            .map(
+                mapping ->
+                    new InputMapping(
+                        toInputSourceExpression(mapping.source, expressionLanguage),
+                        splitPathExpression(mapping.target)))
+            .toList();
+    return new InputMappings(transformedMappings, detectSecretReferences(context));
+  }
+
+  private static Expression toInputSourceExpression(
+      final Expression source, final ExpressionLanguage expressionLanguage) {
+    if (source instanceof StaticExpression) {
+      // A static input source is treated as a string literal, byte-identical to the previous
+      // combined FEEL context expression (including the #16043 double-quote escaping): e.g. source
+      // "1" stays the string "1" instead of being type-inferred to the number 1. FEEL and null
+      // sources are left untouched.
+      final var escaped = source.getExpression().replaceAll("\"", "\\\\\"");
+      return expressionLanguage.parseExpression(EXPRESSION_MARKER + "\"" + escaped + "\"");
+    }
+    return source;
   }
 
   public Expression transformOutputMappings(
