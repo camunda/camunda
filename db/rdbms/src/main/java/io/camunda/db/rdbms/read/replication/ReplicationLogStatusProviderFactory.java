@@ -17,6 +17,7 @@ public final class ReplicationLogStatusProviderFactory {
   public static final String POSTGRESQL_DATABASE_ID = "postgresql";
   public static final String MSSQL_DATABASE_ID = "mssql";
   public static final String MYSQL_DATABASE_ID = "mysql";
+  public static final String ORACLE_DATABASE_ID = "oracle";
   private static final Logger LOG =
       LoggerFactory.getLogger(ReplicationLogStatusProviderFactory.class);
   private final VendorDatabaseProperties vendorDatabaseProperties;
@@ -33,7 +34,8 @@ public final class ReplicationLogStatusProviderFactory {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
-      case MSSQL_DATABASE_ID -> new DefaultReplicationLogStatusProvider(replicationStatusMapper);
+      case MSSQL_DATABASE_ID, ORACLE_DATABASE_ID ->
+          new DefaultReplicationLogStatusProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLogStatusProvider for null database id");
