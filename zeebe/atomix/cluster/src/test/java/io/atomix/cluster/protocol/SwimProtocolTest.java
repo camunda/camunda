@@ -47,9 +47,12 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
@@ -122,6 +125,57 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     // then
     checkEvent(member1, MEMBER_ADDED, member1);
     checkMembers(member1, member1);
+  }
+
+  /**
+   * The properties of the local member are mutated in place by other components, e.g. by the broker
+   * to publish partition roles and health, while listeners are notified asynchronously. A change
+   * that is applied and reverted while a listener is being notified of the previous change must
+   * still leave that listener with the member's current properties.
+   */
+  @Test
+  public void shouldNotifyListenersOfPropertyChangedWithCorrectValue() throws Exception {
+    // given - a listener that is blocked while being notified of a first property change; the
+    // gossip interval is long enough that no further metadata check runs while the test changes the
+    // properties below
+    reset();
+    final var protocol =
+        startProtocol(member1, config -> config.setGossipInterval(Duration.ofSeconds(5)));
+    checkEvent(member1, MEMBER_ADDED, member1);
+
+    final var notifying = new CountDownLatch(1);
+    final var resumeNotifying = new CountDownLatch(1);
+    final List<String> notifiedValues = new CopyOnWriteArrayList<>();
+    protocol.addListener(
+        event -> {
+          if (event.type() != METADATA_CHANGED) {
+            return;
+          }
+
+          notifying.countDown();
+          try {
+            resumeNotifying.await(30, TimeUnit.SECONDS);
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          notifiedValues.add(event.member().properties().getProperty("foo"));
+        });
+
+    // when - the property changes to a new value while the listener is notified of the first
+    // change
+    member1.properties().setProperty("foo", "published");
+    assertThat(notifying.await(30, TimeUnit.SECONDS)).isTrue();
+    member1.properties().setProperty("foo", "changed");
+    resumeNotifying.countDown();
+    Awaitility.await("until the listener was notified")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> !notifiedValues.isEmpty());
+
+    // then - the listener ends up knowing the member's current property value
+    Awaitility.await("until the listener knows the current property value")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(notifiedValues.getLast()).isEqualTo("published"));
   }
 
   @Test
