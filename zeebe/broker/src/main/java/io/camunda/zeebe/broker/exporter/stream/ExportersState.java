@@ -19,6 +19,16 @@ import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Each {@link io.camunda.zeebe.broker.exporter.stream.ExporterActor} constructs its own instance of
+ * this class over its own independent {@link TransactionContext} against the partition's shared
+ * {@link ZeebeDb} - safe only because every instance touches exclusively the {@link
+ * ZbColumnFamilies#EXPORTER} column family, keyed by exporter id. {@link TransactionContext}s are
+ * not RocksDB transactions with conflict detection: two contexts writing the same key would
+ * silently lose one write. Do not extend this class (or anything reachable from an exporter actor's
+ * own context) to read or write any column family whose keys could collide with another exporter's
+ * or the engine's own state.
+ */
 public final class ExportersState {
 
   public static final long VALUE_NOT_FOUND = -1;
