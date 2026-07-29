@@ -18,6 +18,8 @@ import type {
   QueryAuditLogsResponseBody,
   QueryElementInstanceInspectionResponseBody,
   GetProcessInstanceWaitStateStatisticsResponseBody,
+  QueryAgentInstancesResponseBody,
+  QueryAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
@@ -45,6 +47,8 @@ function mockResponses({
   auditLogs,
   waitStates,
   waitStateStatistics,
+  agentInstances,
+  agentHistory,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -57,6 +61,8 @@ function mockResponses({
   auditLogs?: QueryAuditLogsResponseBody;
   waitStates?: QueryElementInstanceInspectionResponseBody;
   waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
+  agentInstances?: QueryAgentInstancesResponseBody;
+  agentHistory?: QueryAgentInstanceHistoryResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -98,18 +104,45 @@ function mockResponses({
       });
     }
 
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/agent-instances\/[^/]+\/history\/search/)
+    ) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          agentHistory ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          },
+        ),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     if (route.request().url().includes('/v2/agent-instances/search')) {
       return route.fulfill({
         status: 200,
-        body: JSON.stringify({
-          items: [],
-          page: {
-            totalItems: 0,
-            startCursor: null,
-            endCursor: null,
-            hasMoreTotalItems: false,
+        body: JSON.stringify(
+          agentInstances ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
           },
-        }),
+        ),
         headers: {
           'content-type': 'application/json',
         },
@@ -344,3 +377,8 @@ export {waitStateRunningInstance} from './waitStateRunningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
 export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';
+export {
+  agentInstance,
+  agentInstancesResponse,
+  agentHistoryResponse,
+} from './agentInstance.mocks';
