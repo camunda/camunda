@@ -159,13 +159,26 @@ func TestMergeModulesAddsRuntimeJREModules(t *testing.T) {
 	// then
 	for _, expectedModule := range []string{
 		"java.base",
+		"java.compiler",
+		"java.desktop",
+		"java.instrument",
+		"java.management",
 		"java.management.rmi",
+		"java.naming",
+		"java.net.http",
+		"java.prefs",
+		"java.scripting",
+		"java.security.jgss",
+		"java.sql",
 		"java.xml.crypto",
 		"jdk.charsets",
 		"jdk.crypto.ec",
+		"jdk.jfr",
 		"jdk.localedata",
 		"jdk.management.agent",
 		"jdk.naming.dns",
+		"jdk.net",
+		"jdk.unsupported",
 		"jdk.zipfs",
 	} {
 		found := false
