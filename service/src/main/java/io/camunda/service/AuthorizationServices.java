@@ -12,12 +12,14 @@ import static io.camunda.service.authorization.Authorizations.AUTHORIZATION_READ
 
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationOwnerType;
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.search.core.SearchQueryService;
@@ -28,6 +30,10 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,6 +68,42 @@ public class AuthorizationServices
                     securityContextProvider.provideSecurityContext(
                         authentication, AUTHORIZATION_READ_AUTHORIZATION))
                 .searchAuthorizations(query));
+  }
+
+  public SearchQueryResult<AuthorizationEntity> searchForCurrentUser(
+      final AuthorizationQuery query, final CamundaAuthentication authentication) {
+    final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(authentication);
+    if (ownerTypeToOwnerIds.isEmpty()) {
+      return SearchQueryResult.empty();
+    }
+
+    final var requestedFilter = query.filter();
+    final var filterBuilder =
+        new AuthorizationFilter.Builder()
+            .authorizationKey(requestedFilter.authorizationKey())
+            .resourceType(requestedFilter.resourceType())
+            .ownerTypeToOwnerIds(ownerTypeToOwnerIds);
+    if (requestedFilter.resourceMatcher() != null) {
+      filterBuilder.resourceMatcher(
+          AuthorizationResourceMatcher.from(requestedFilter.resourceMatcher()));
+    }
+    if (requestedFilter.resourceIds() != null) {
+      filterBuilder.resourceIds(requestedFilter.resourceIds());
+    }
+    if (requestedFilter.resourcePropertyNames() != null) {
+      filterBuilder.resourcePropertyNames(requestedFilter.resourcePropertyNames());
+    }
+    if (requestedFilter.permissionTypes() != null) {
+      filterBuilder.permissionTypes(requestedFilter.permissionTypes());
+    }
+    final var filter = filterBuilder.build();
+    final var currentUserQuery = new AuthorizationQuery(filter, query.sort(), query.page());
+
+    return executeSearchRequest(
+        () ->
+            authorizationSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .searchAuthorizations(currentUserQuery));
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
@@ -132,4 +174,29 @@ public class AuthorizationServices
       String resourcePropertyName,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
+
+  private static Map<EntityType, Set<String>> collectOwnerTypeToOwnerIds(
+      final CamundaAuthentication authentication) {
+    final var ownerTypeToOwnerIds = new EnumMap<EntityType, Set<String>>(EntityType.class);
+    if (authentication.authenticatedUsername() != null) {
+      ownerTypeToOwnerIds.put(EntityType.USER, Set.of(authentication.authenticatedUsername()));
+    }
+    if (authentication.authenticatedClientId() != null) {
+      ownerTypeToOwnerIds.put(EntityType.CLIENT, Set.of(authentication.authenticatedClientId()));
+    }
+    addOwnerIds(ownerTypeToOwnerIds, EntityType.GROUP, authentication.authenticatedGroupIds());
+    addOwnerIds(ownerTypeToOwnerIds, EntityType.ROLE, authentication.authenticatedRoleIds());
+    addOwnerIds(
+        ownerTypeToOwnerIds, EntityType.MAPPING_RULE, authentication.authenticatedMappingRuleIds());
+    return ownerTypeToOwnerIds;
+  }
+
+  private static void addOwnerIds(
+      final Map<EntityType, Set<String>> ownerTypeToOwnerIds,
+      final EntityType ownerType,
+      final List<String> ownerIds) {
+    if (ownerIds != null && !ownerIds.isEmpty()) {
+      ownerTypeToOwnerIds.put(ownerType, new HashSet<>(ownerIds));
+    }
+  }
 }
