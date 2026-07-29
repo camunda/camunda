@@ -31,6 +31,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
@@ -42,6 +44,8 @@ import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -385,6 +389,9 @@ public class DefaultExporterResourceProviderTest {
     final var decisionRequirementsCache = resourceProvider.getDecisionRequirementsCache();
     final var formCache = resourceProvider.getFormCache();
     final var processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    final var exportHandlersByIdentity =
+        Collections.newSetFromMap(new IdentityHashMap<ExportHandler<?, ?>, Boolean>());
+    exportHandlersByIdentity.addAll(resourceProvider.getExportHandlers());
 
     // when
     resourceProvider.reset();
@@ -405,27 +412,42 @@ public class DefaultExporterResourceProviderTest {
         .isNotSameAs(processIndex)
         .extracting(IndexDescriptor::getFullQualifiedName)
         .isEqualTo(processIndex.getFullQualifiedName());
-    assertThat(resourceProvider.getExportHandlers()).isNotEmpty();
+    assertThat(resourceProvider.getExportHandlers())
+        .isNotEmpty()
+        .noneMatch(exportHandlersByIdentity::contains);
   }
 
   @Test
-  void shouldIgnoreMissingDocumentErrorsOnlyForOperationIndex() {
+  void shouldIgnoreMissingDocumentErrorsOnlyForConfiguredIndices() {
     // given
     final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
     final var operationIndex =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class).getFullQualifiedName();
+    final var batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
+    final var listViewIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    final var processIndex =
+        resourceProvider.getIndexDescriptor(ProcessIndex.class).getFullQualifiedName();
     final var formIndex =
         resourceProvider.getIndexDescriptor(FormIndex.class).getFullQualifiedName();
     final var customErrorHandlers = resourceProvider.getCustomErrorHandlers();
     final var missingDocument = new Error("missing", "document_missing_exception", 404);
     final var versionConflict = new Error("conflict", "version_conflict_engine_exception", 409);
 
-    // when
-    final var missingOperationError =
-        catchThrowable(() -> customErrorHandlers.accept(operationIndex, missingDocument));
-
     // then
-    assertThat(missingOperationError).isNull();
+    assertThat(catchThrowable(() -> customErrorHandlers.accept(operationIndex, missingDocument)))
+        .isNull();
+    assertThat(
+            catchThrowable(() -> customErrorHandlers.accept(batchOperationIndex, missingDocument)))
+        .isNull();
+    assertThat(catchThrowable(() -> customErrorHandlers.accept(listViewIndex, missingDocument)))
+        .isNull();
+    assertThat(catchThrowable(() -> customErrorHandlers.accept(processIndex, missingDocument)))
+        .isNull();
+
     assertThatThrownBy(() -> customErrorHandlers.accept(formIndex, missingDocument))
         .isInstanceOf(PersistenceException.class)
         .hasMessage("missing");
