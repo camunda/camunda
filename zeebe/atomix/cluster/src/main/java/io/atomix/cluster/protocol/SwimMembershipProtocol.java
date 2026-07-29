@@ -224,14 +224,24 @@ public class SwimMembershipProtocol
 
   /** Checks the local member metadata for changes. */
   private void checkMetadata() {
-    if (!localMember.properties().equals(localProperties)) {
-      localProperties = new Properties();
-      localProperties.putAll(localMember.properties());
-      LOGGER.debug("{} - Detected local properties change {}", localMember.id(), localProperties);
-      localMember.setIncarnationNumber(localMember.getIncarnationNumber() + 1);
-      post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, localMember));
-      recordUpdate(localMember.copy());
+    final var liveProperties = localMember.properties();
+    if (liveProperties.equals(localProperties)) {
+      return;
     }
+
+    final var currentProperties = (Properties) liveProperties.clone();
+    localProperties = currentProperties;
+    LOGGER.debug("{} - Detected local properties change {}", localMember.id(), currentProperties);
+    localMember.setIncarnationNumber(localMember.getIncarnationNumber() + 1);
+
+    // The properties of the local member are mutated in place by other components, e.g. to publish
+    // partition roles and health. Listeners are notified asynchronously, so they must observe
+    // exactly the properties we diffed against here: if they read the live properties instead, a
+    // change applied and reverted before the next check is observed but never published again,
+    // leaving those listeners permanently stale.
+    final var snapshot = localMember.copy(currentProperties);
+    post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, snapshot));
+    recordUpdate(snapshot);
   }
 
   /**
@@ -1087,18 +1097,31 @@ public class SwimMembershipProtocol
     }
 
     /**
-     * Copies the member's state to a new object.
+     * Copies the member's state to a new object. The copy shares the properties instance with this
+     * member, so it observes any later mutation of them. Use {@link #copy(Properties)} to copy with
+     * a stable set of properties.
      *
      * @return the copied object
      */
     ImmutableMember copy() {
+      return copy(properties());
+    }
+
+    /**
+     * Copies the member's state to a new object, using the given properties instead of this
+     * member's own, mutable ones.
+     *
+     * @param properties the properties the copy should report
+     * @return the copied object
+     */
+    ImmutableMember copy(final Properties properties) {
       return new ImmutableMember(
           id(),
           address(),
           zone(),
           rack(),
           host(),
-          properties(),
+          properties,
           version(),
           timestamp(),
           state,
