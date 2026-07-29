@@ -544,6 +544,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (coordinatorRejection.isPresent()) {
       return coordinatorRejection;
     }
+    // Until this term's initial entry is committed the pause refuses to freeze the log head, so
+    // accepting here would freeze the partition only to roll it back again.
+    if (initializing()) {
+      return Optional.of(LeadershipTransferResult.LEADER_INITIALIZING);
+    }
     // A configuration entry would move the frozen log head the desired leader has to catch up to,
     // and can drop the desired leader from the replica set altogether, so a transfer cannot start
     // while one is in flight. We also check this again once paused.

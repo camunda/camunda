@@ -44,6 +44,8 @@ public enum LeadershipTransferResult {
   TRANSFER_IN_PROGRESS,
   /** The desired leader's replication lag is above the configured threshold. */
   LAG_TOO_HIGH,
+  /** This leader has not committed the initial entry of its term yet. */
+  LEADER_INITIALIZING,
   /**
    * A Raft configuration change is in progress, so the log head the desired leader would catch up
    * to cannot be frozen.
