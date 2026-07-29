@@ -114,7 +114,7 @@ public class OptimizeTomcatConfig {
         final Optional<String> contextPath = getContextPath();
         if (contextPath.isPresent()) {
           factory.setContextPath(contextPath.get());
-          if (isCslEnabled()) {
+          if (isCslEnabled() && servesUnderSubPath(contextPath.get())) {
             factory.addEngineValves(readyzAtRootValve(contextPath.get()));
           }
         }
@@ -278,6 +278,14 @@ public class OptimizeTomcatConfig {
     }
 
     connector.addSslHostConfig(getSslHostConfig());
+  }
+
+  /**
+   * True when the context path actually moves the app off the root. A blank or {@code "/"} context
+   * path already serves the readiness endpoint at the root, so rewriting would be a no-op.
+   */
+  private static boolean servesUnderSubPath(final String contextPath) {
+    return StringUtils.isNotBlank(contextPath) && !"/".equals(contextPath.trim());
   }
 
   /** Builds the readiness rewrite valve for the given servlet context path. */

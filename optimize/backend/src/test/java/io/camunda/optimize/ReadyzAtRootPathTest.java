@@ -25,9 +25,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,6 +48,7 @@ class ReadyzAtRootPathTest {
 
   private static final String CONTEXT = "/cluster-1";
   private static final String READYZ = "/api/readyz";
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
   @Mock private Environment environment;
   @Mock private ConfigurationService configurationService;
@@ -106,6 +110,18 @@ class ReadyzAtRootPathTest {
     verify(factory, never()).addEngineValves(any());
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"", "  ", "/"})
+  void shouldNotRegisterTheValveForARootContextPath(final String contextPath) {
+    // given — the app already serves the readiness endpoint at the root, so a rewrite is pointless
+    givenContextPath(contextPath);
+    givenCslEnabled(true);
+
+    optimizeTomcatConfig.tomcatFactoryCustomizer().customize(factory);
+
+    verify(factory, never()).addEngineValves(any());
+  }
+
   private void givenContextPath(final String contextPath) {
     lenient().when(environment.getProperty(CONTEXT_PATH)).thenReturn(contextPath);
   }
@@ -140,11 +156,14 @@ class ReadyzAtRootPathTest {
   }
 
   private static int statusOf(final int port, final String path) throws Exception {
+    // Bounded so a failed server start or a hung request fails this test instead of the suite.
+    final HttpClient client = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build();
     final HttpResponse<String> response =
-        HttpClient.newHttpClient()
-            .send(
-                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).build(),
-                HttpResponse.BodyHandlers.ofString());
+        client.send(
+            HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                .timeout(REQUEST_TIMEOUT)
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 }
