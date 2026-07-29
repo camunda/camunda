@@ -204,6 +204,64 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
+  // The search row is rendered from the same branch as the sort control, so a
+  // panel with no tree yet must show neither.
+  it('should not offer the sort order control while the panel is still loading', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    // given the skeleton is still showing
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
+
+    // then neither the search box nor the sort control is offered
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /first$/}),
+    ).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+  });
+
+  it('should not offer the sort order control when the panel failed to load', async () => {
+    mockFetchProcessDefinitionXml().withServerError();
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    // given the panel is showing its error message
+    expect(
+      await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+
+    // then the sort control is not offered over a panel that has no tree
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /first$/}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should display permissions error when access to the process definition is forbidden', async () => {
     mockFetchProcessDefinitionXml().withServerError(403);
     mockSearchElementInstances().withSuccess(mockElementInstances);

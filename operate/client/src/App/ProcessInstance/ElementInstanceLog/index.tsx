@@ -56,7 +56,10 @@ const Layout: React.FC<LayoutProps> = observer(
             )}
           </PanelHeader>
         )}
-        {!modificationsStore.isModificationModeEnabled && (
+        {/* Gated on searchInput as well as the mode: the skeleton and error
+            branches render Layout without one, and neither the search box nor
+            the sort control is meaningful over a panel that has no tree yet. */}
+        {!modificationsStore.isModificationModeEnabled && searchInput && (
           <SearchRow>
             {searchInput}
             <SortOrderToggle />
