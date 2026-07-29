@@ -127,7 +127,10 @@ test.describe('Operations', () => {
 
       // The cancel operation's success count is only rendered once Operate's
       // importer marks the cancellation complete, which can lag under load.
-      // Reload and retry generously so this importer delay does not flake.
+      // Reload and retry so this importer delay does not flake — via the
+      // captured URL, so the current filtered view is restored rather than
+      // dropping a fill-based filter on a bare reload.
+      const filteredProcessUrl = page.url();
       let cancelOperationIds: string[] = [];
       await waitForAssertion({
         assertion: async () => {
@@ -148,7 +151,7 @@ test.describe('Operations', () => {
           await expect(operationEntry.getByText(DATE_REGEX)).toBeVisible();
         },
         onFailure: async () => {
-          await page.reload();
+          await page.goto(filteredProcessUrl);
         },
         maxRetries: 15,
       });
@@ -165,6 +168,9 @@ test.describe('Operations', () => {
     });
 
     await test.step('Validate canceled instance details', async () => {
+      // Restore this exact (operationId-filtered) view on retry instead of a
+      // bare reload, keeping recovery consistent with the rest of the test.
+      const canceledInstanceUrl = page.url();
       await waitForAssertion({
         assertion: async () => {
           const instanceRow = operateProcessesPage.getInstanceRow(0);
@@ -181,7 +187,7 @@ test.describe('Operations', () => {
           ).toBeVisible();
         },
         onFailure: async () => {
-          await page.reload();
+          await page.goto(canceledInstanceUrl);
         },
         maxRetries: 8,
       });
