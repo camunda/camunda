@@ -13,24 +13,16 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
-import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.retention.BackupRetention;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.CheckpointScheduler;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -86,7 +78,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
     final var retentionCfg = backupCfg.getRetention();
     if (shouldRegisterRetentionJob()) {
-      final var backupStore = buildBackupStore(backupCfg);
+      final var backupStore = BackupStoreFactory.createStore(backupCfg);
       backupRetentionJob =
           new BackupRetention(
               backupStore,
@@ -196,38 +188,5 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         && !retentionCfg.getWindow().isZero()
         && retentionCfg.getCleanupSchedule() != null
         && !(retentionCfg.getCleanupSchedule() instanceof NoneSchedule);
-  }
-
-  private BackupStore buildBackupStore(final BackupCfg backupCfg) {
-    final var store = backupCfg.getStore();
-    return switch (store) {
-      case S3 -> buildS3BackupStore(backupCfg);
-      case GCS -> buildGcsBackupStore(backupCfg);
-      case AZURE -> buildAzureBackupStore(backupCfg);
-      case FILESYSTEM -> buildFilesystemBackupStore(backupCfg);
-      case NONE ->
-          throw new IllegalArgumentException(
-              "No backup store configured, cannot restore from backup.");
-    };
-  }
-
-  private static BackupStore buildS3BackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
-    return S3BackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildGcsBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs());
-    return GcsBackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildAzureBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure());
-    return AzureBackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildFilesystemBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem());
-    return FilesystemBackupStore.of(storeConfig);
   }
 }
