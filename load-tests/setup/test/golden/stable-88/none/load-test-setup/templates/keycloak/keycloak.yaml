@@ -56,7 +56,10 @@ spec:
     enabled: false
 
   hostname:
-    hostname: "c8-golden-stable-88-none"
+    # The hostname as exposed to UI clients when redirecting after authentication.
+    # Since the assumption is to port-forward to Keycloak and open it through
+    # localhost:18080, the hostname should be localhost here.
+    hostname: localhost
     strict: false
 
   resources:
