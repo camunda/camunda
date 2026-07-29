@@ -33,6 +33,17 @@ public class RdbmsConnectionPool {
    */
   private Duration leakDetectionThreshold = Duration.ZERO;
 
+  /**
+   * Interval at which the pool probes idle connections for aliveness, evicting dead ones before
+   * they are handed out. Set to {@link Duration#ZERO} (the HikariCP default) to disable. Useful
+   * with failover-aware JDBC drivers (e.g. AWS Aurora) so connections bound to a demoted writer are
+   * discarded proactively instead of only on borrow.
+   */
+  private Duration keepaliveTime = Duration.ZERO;
+
+  /** Maximum time the pool waits for a connection to be validated as alive. */
+  private Duration validationTimeout = Duration.ofMillis(5_000);
+
   public int getMaximumPoolSize() {
     return maximumPoolSize;
   }
@@ -79,5 +90,21 @@ public class RdbmsConnectionPool {
 
   public void setLeakDetectionThreshold(final Duration leakDetectionThreshold) {
     this.leakDetectionThreshold = leakDetectionThreshold;
+  }
+
+  public Duration getKeepaliveTime() {
+    return keepaliveTime;
+  }
+
+  public void setKeepaliveTime(final Duration keepaliveTime) {
+    this.keepaliveTime = keepaliveTime;
+  }
+
+  public Duration getValidationTimeout() {
+    return validationTimeout;
+  }
+
+  public void setValidationTimeout(final Duration validationTimeout) {
+    this.validationTimeout = validationTimeout;
   }
 }

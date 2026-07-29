@@ -806,6 +806,11 @@ camunda: # Type: io.camunda.configuration.Camunda
           connection-timeout: "30000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_CONNECTIONTIMEOUT
           # Maximum time a connection is allowed to sit idle in the pool before being evicted.
           idle-timeout: "600000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_IDLETIMEOUT
+          # Interval at which the pool probes idle connections for aliveness, evicting dead ones before they are
+          # handed out. Set to {@link Duration#ZERO} (the HikariCP default) to disable. Useful with
+          # failover-aware JDBC drivers (e.g. AWS Aurora) so connections bound to a demoted writer are discarded
+          # proactively instead of only on borrow.
+          keepalive-time: 0 # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_KEEPALIVETIME
           # Threshold for logging a possible connection leak. Set to {@link Duration#ZERO} (the HikariCP
           # default) to disable leak detection.
           leak-detection-threshold: 0 # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_LEAKDETECTIONTHRESHOLD
@@ -815,6 +820,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           maximum-pool-size: 10 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXIMUMPOOLSIZE
           # Minimum number of idle connections kept by the pool.
           minimum-idle: 2 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MINIMUMIDLE
+          # Maximum time the pool waits for a connection to be validated as alive.
+          validation-timeout: "5000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_VALIDATIONTIMEOUT
         
         # The database vendor id. It is used to determine the dialect to use for the database. If not set, the
         # dialect is determined automatically.

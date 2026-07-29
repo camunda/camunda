@@ -198,10 +198,12 @@ data.secondary-storage.rdbms.batch-operation-cache
 data.secondary-storage.rdbms.batch-operation-item-insert-block-size
 data.secondary-storage.rdbms.connection-pool.connection-timeout
 data.secondary-storage.rdbms.connection-pool.idle-timeout
+data.secondary-storage.rdbms.connection-pool.keepalive-time
 data.secondary-storage.rdbms.connection-pool.leak-detection-threshold
 data.secondary-storage.rdbms.connection-pool.max-lifetime
 data.secondary-storage.rdbms.connection-pool.maximum-pool-size
 data.secondary-storage.rdbms.connection-pool.minimum-idle
+data.secondary-storage.rdbms.connection-pool.validation-timeout
 data.secondary-storage.rdbms.database-vendor-id
 data.secondary-storage.rdbms.ddl-lock-wait-timeout
 data.secondary-storage.rdbms.export-batch-operation-items-on-creation
