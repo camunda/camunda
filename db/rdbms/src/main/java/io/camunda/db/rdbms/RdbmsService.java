@@ -42,6 +42,7 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -210,6 +211,10 @@ public class RdbmsService {
 
   public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {
     return tenantReaders.correlatedMessageSubscriptionReader();
+  }
+
+  public ProcessDefinitionStatisticsDbReader getProcessDefinitionStatisticsReader() {
+    return tenantReaders.processDefinitionStatisticsReader();
   }
 
   public ProcessDefinitionInstanceStatisticsDbReader
