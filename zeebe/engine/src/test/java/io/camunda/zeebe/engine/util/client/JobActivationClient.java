@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -160,6 +161,20 @@ public final class JobActivationClient {
     final long position =
         writer.writeCommandOnPartition(
             partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord, username);
+
+    return expectation.apply(partitionId, position);
+  }
+
+  public Record<JobBatchRecordValue> activate(final AuthInfo authorizations) {
+    final long position =
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                r.intent(JobBatchIntent.ACTIVATE)
+                    .event(jobBatchRecord)
+                    .authorizations(authorizations)
+                    .requestId(1L)
+                    .requestStreamId(1));
 
     return expectation.apply(partitionId, position);
   }

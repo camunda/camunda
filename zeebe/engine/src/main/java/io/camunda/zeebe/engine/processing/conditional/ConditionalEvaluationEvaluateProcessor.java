@@ -92,14 +92,16 @@ public class ConditionalEvaluationEvaluateProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
+    final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var tenantCheck =
-        cslCheck.checkTenant(
-            command,
-            record.getTenantId(),
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of(record.getTenantId()),
+            authorizedTenants,
             record,
-            new Rejection(
-                RejectionType.FORBIDDEN,
-                USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId())));
+            () ->
+                new Rejection(
+                    RejectionType.FORBIDDEN,
+                    USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId())));
     if (tenantCheck.isLeft()) {
       final var rejection = tenantCheck.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

@@ -20,7 +20,9 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
@@ -179,6 +181,121 @@ final class CslAuthorizationCheckTest {
     // then — anonymous access is authorized for every tenant; no claims conversion needed
     assertThat(result.isRight()).isTrue();
     verifyNoInteractions(claimsConverter, authCheckPort);
+  }
+
+  @Test
+  void shouldSkipTenantCheckWhenNoIdentityClaims() {
+    // given — multi-tenancy on but the command carries neither a username nor a clientId claim;
+    // most callers reach checkTenant via checkAuthorizationAndTenant, which already runs `check`
+    // first and rejects a no-principal command when authorizations are enabled — so by the time
+    // checkTenant sees a no-principal command, either authorizations are disabled (and this skip
+    // is the established behavior many callers rely on) or the command was already rejected
+    // upstream
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ false, true);
+    when(command.getAuthorizations()).thenReturn(Map.of());
+    final var rejection = new Rejection(RejectionType.FORBIDDEN, "not assigned");
+
+    // when
+    final var result = cslCheck.checkTenant(command, "tenant-a", "ok", rejection);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo("ok");
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldSkipTenantsCheckWhenMultiTenancyDisabled() {
+    // given — multi-tenancy checks disabled, and a non-anonymous, empty authorized-tenants set
+    // that would fail isAuthorizedForTenantIds if the multi-tenancy gate didn't short-circuit
+    // first — so a pass here can only be explained by the gate, not by trivial authorization
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, false);
+    final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized");
+
+    // when
+    final var result =
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"),
+            new AuthenticatedAuthorizedTenants(List.of()),
+            "ok",
+            () -> rejection);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo("ok");
+  }
+
+  @Test
+  void shouldAllowWhenPrincipalIsAssignedToAllTenants() {
+    // given — a principal pre-resolved as assigned to tenant-a and tenant-b
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    final var authorizedTenants =
+        new AuthenticatedAuthorizedTenants(List.of("tenant-a", "tenant-b"));
+
+    // when
+    final var result =
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"),
+            authorizedTenants,
+            "ok",
+            () -> new Rejection(RejectionType.UNAUTHORIZED, "denied"));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo("ok");
+  }
+
+  @Test
+  void shouldRejectWhenPrincipalIsNotAssignedToAllTenants() {
+    // given — a principal pre-resolved as assigned only to tenant-a
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of("tenant-a"));
+    final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized for tenant-b");
+
+    // when — tenant-b is requested in addition to tenant-a
+    final var result =
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"), authorizedTenants, "ok", () -> rejection);
+
+    // then — the caller-supplied rejection is returned verbatim
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo(rejection);
+  }
+
+  @Test
+  void shouldAllowAnonymousUserForAnyTenants() {
+    // given — the pre-resolved tenants represent an anonymous caller
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+
+    // when
+    final var result =
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"),
+            AuthorizedTenants.ANONYMOUS,
+            "ok",
+            () -> new Rejection(RejectionType.UNAUTHORIZED, "denied"));
+
+    // then — anonymous access is authorized for every tenant
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldRejectWhenNoPrincipalAssignedToAnyTenants() {
+    // given — a pre-resolved empty-tenant set (what AuthorizedTenantsResolver returns for a
+    // no-principal, non-anonymous command when multi-tenancy is enabled); the rejection supplier
+    // must be safely callable here since the check failed for a non-anonymous result
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of());
+    final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized");
+
+    // when
+    final var result =
+        cslCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a"), authorizedTenants, "ok", () -> rejection);
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo(rejection);
   }
 
   private CslAuthorizationCheck cslCheck(
