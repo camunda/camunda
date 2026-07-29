@@ -36,6 +36,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private Long parentElementInstanceKey;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
+  private OffsetDateTime suspendedDate;
   private ProcessInstanceState state;
   private Boolean hasIncident;
   private String tenantId;
@@ -98,6 +99,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   }
 
   @Override
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
+  }
+
+  @Override
   public ProcessInstanceState getState() {
     return state;
   }
@@ -149,6 +155,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
 
   public ProcessInstanceBuilder setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
+  }
+
+  public ProcessInstanceBuilder setSuspendedDate(final OffsetDateTime suspendedDate) {
+    this.suspendedDate = suspendedDate;
     return this;
   }
 
