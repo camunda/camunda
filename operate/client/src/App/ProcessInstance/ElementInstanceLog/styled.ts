@@ -29,6 +29,10 @@ const Container = styled.div`
   }
 `;
 
+// These rules keep the title and the existing toggles readable once the panel is
+// dragged down to INSTANCE_HISTORY_MIN_WIDTH, and are asserted by the "instance
+// history header stays readable at the panel minimum width" Playwright guard.
+// They are unrelated to the sort control, which lives in SearchRow, not here.
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
   gap: var(--cds-spacing-03);
