@@ -630,7 +630,10 @@ test.describe('task details page', () => {
         },
       });
       const body = await res.json();
-      expect(body.items.length).toBe(1);
+      // beforeAll runs once per worker, so several active instances of this
+      // process can exist in parallel runs; operate on any one of them rather
+      // than assuming exactly one.
+      expect(body.items.length).toBeGreaterThanOrEqual(1);
       processInstanceKey = body.items[0].processInstanceKey;
     }).toPass(defaultAssertionOptions);
 
