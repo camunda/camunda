@@ -34,8 +34,13 @@ public class ClusterVariableMetadataIT {
 
   private static CamundaClient camundaClient;
 
-  // Unique marker shared by all search fixtures so filters only match this test's data.
-  private static final String GROUP = UUID.randomUUID().toString();
+  // Unique marker shared by the search fixtures so filters only match those four variables.
+  private static final String SEARCH_GROUP = UUID.randomUUID().toString();
+
+  // Separate marker for variables created by the CRUD and runtime tests. Those variables stay
+  // indexed for the rest of the run, so they must never carry the marker the search tests filter
+  // on, otherwise they leak into exact-result assertions depending on indexing timing.
+  private static final String OTHER_GROUP = UUID.randomUUID().toString();
   private static final String SCHEMA_REF = "io.camunda.connector.slack:" + UUID.randomUUID();
   private static final String OTHER_SCHEMA_REF = "io.camunda.connector.github:" + UUID.randomUUID();
   private static final String TENANT_ID = "metadata_tenant";
@@ -60,14 +65,16 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(credVar1, "v1_" + credVar1)
-        .metadata(metadata("testValue", "CREDENTIAL", "schemaRef", SCHEMA_REF, "schemaVersion", 2))
+        .metadata(
+            searchMetadata("testValue", "CREDENTIAL", "schemaRef", SCHEMA_REF, "schemaVersion", 2))
         .send()
         .join();
 
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(credVar2, "v2_" + credVar2)
-        .metadata(metadata("testValue", "CREDENTIAL", "schemaRef", SCHEMA_REF, "schemaVersion", 3))
+        .metadata(
+            searchMetadata("testValue", "CREDENTIAL", "schemaRef", SCHEMA_REF, "schemaVersion", 3))
         .send()
         .join();
 
@@ -75,7 +82,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(configVar, "v_" + configVar)
-        .metadata(metadata("testValue", "CONFIG"))
+        .metadata(searchMetadata("testValue", "CONFIG"))
         .send()
         .join();
 
@@ -84,7 +91,8 @@ public class ClusterVariableMetadataIT {
         .newTenantScopedClusterVariableCreateRequest(TENANT_ID)
         .create(tenantCredVar, "vt_" + tenantCredVar)
         .metadata(
-            metadata("testValue", "CREDENTIAL", "schemaRef", OTHER_SCHEMA_REF, "schemaVersion", 4))
+            searchMetadata(
+                "testValue", "CREDENTIAL", "schemaRef", OTHER_SCHEMA_REF, "schemaVersion", 4))
         .send()
         .join();
 
@@ -98,10 +106,19 @@ public class ClusterVariableMetadataIT {
         camundaClient, tenantCredVar, TENANT_ID, "vt_" + tenantCredVar);
   }
 
-  // Builds a metadata bag that always carries the GROUP marker plus the given key/value pairs.
-  private static Map<String, Object> metadata(final Object... keyValues) {
+  // Metadata bag for the search fixtures: carries SEARCH_GROUP plus the given key/value pairs.
+  private static Map<String, Object> searchMetadata(final Object... keyValues) {
+    return metadata(SEARCH_GROUP, keyValues);
+  }
+
+  // Metadata bag for everything outside the search fixtures, marked so it cannot match a search.
+  private static Map<String, Object> otherMetadata(final Object... keyValues) {
+    return metadata(OTHER_GROUP, keyValues);
+  }
+
+  private static Map<String, Object> metadata(final String group, final Object... keyValues) {
     final Map<String, Object> metadata = new HashMap<>();
-    metadata.put("group", GROUP);
+    metadata.put("group", group);
     for (int i = 0; i < keyValues.length; i += 2) {
       metadata.put((String) keyValues[i], keyValues[i + 1]);
     }
@@ -115,7 +132,7 @@ public class ClusterVariableMetadataIT {
     // given
     final var name = "crudCreate_" + UUID.randomUUID();
     final var value = "value_" + UUID.randomUUID();
-    final var expectedMetadata = metadata("testValue", "CREDENTIAL", "schemaVersion", 2);
+    final var expectedMetadata = otherMetadata("testValue", "CREDENTIAL", "schemaVersion", 2);
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, value)
@@ -131,7 +148,7 @@ public class ClusterVariableMetadataIT {
     // then
     assertThat(response.getMetadata())
         .hasSize(expectedMetadata.size())
-        .containsEntry("group", GROUP)
+        .containsEntry("group", OTHER_GROUP)
         .containsEntry("testValue", "CREDENTIAL");
     assertThat(((Number) response.getMetadata().get("schemaVersion")).intValue()).isEqualTo(2);
   }
@@ -143,7 +160,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, "initial")
-        .metadata(metadata("obsolete", "remove-me", "schemaVersion", 1))
+        .metadata(otherMetadata("obsolete", "remove-me", "schemaVersion", 1))
         .send()
         .join();
 
@@ -152,7 +169,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableUpdateRequest()
         .update(name, updatedValue)
-        .metadata(metadata("schemaVersion", 2))
+        .metadata(otherMetadata("schemaVersion", 2))
         .send()
         .join();
     TestHelper.waitForClusterVariableToBeIndexed(camundaClient, name, updatedValue);
@@ -161,7 +178,7 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient.newGloballyScopedClusterVariableGetRequest().withName(name).send().join();
     assertThat(response.getMetadata()).doesNotContainKey("obsolete");
-    assertThat(response.getMetadata()).containsEntry("group", GROUP);
+    assertThat(response.getMetadata()).containsEntry("group", OTHER_GROUP);
     assertThat(((Number) response.getMetadata().get("schemaVersion")).intValue()).isEqualTo(2);
   }
 
@@ -172,7 +189,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, "initial")
-        .metadata(metadata())
+        .metadata(otherMetadata())
         .send()
         .join();
 
@@ -192,7 +209,7 @@ public class ClusterVariableMetadataIT {
     final var searchResponse =
         camundaClient
             .newClusterVariableSearchRequest()
-            .filter(f -> f.name(name).metadata("group", m -> m.eq(GROUP)))
+            .filter(f -> f.name(name).metadata("group", m -> m.eq(OTHER_GROUP)))
             .send()
             .join();
     assertThat(searchResponse.items()).isEmpty();
@@ -223,7 +240,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, value)
-        .metadata(metadata("testValue", "CREDENTIAL"))
+        .metadata(otherMetadata("testValue", "CREDENTIAL"))
         .send()
         .join();
     TestHelper.waitForClusterVariableToBeIndexed(camundaClient, name, value);
@@ -255,7 +272,7 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient
             .newClusterVariableSearchRequest()
-            .filter(f -> f.metadata(Map.of("group", GROUP, "testValue", "CREDENTIAL")))
+            .filter(f -> f.metadata(Map.of("group", SEARCH_GROUP, "testValue", "CREDENTIAL")))
             .send()
             .join();
 
@@ -275,7 +292,9 @@ public class ClusterVariableMetadataIT {
         camundaClient
             .newClusterVariableSearchRequest()
             .filter(
-                f -> f.metadata("group", m -> m.eq(GROUP)).metadata("schemaVersion", m -> m.eq(2)))
+                f ->
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
+                        .metadata("schemaVersion", m -> m.eq(2)))
             .send()
             .join();
 
@@ -291,7 +310,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("schemaVersion", m -> m.gte(3.0)))
             .send()
             .join();
@@ -311,7 +330,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("schemaVersion", m -> m.exists(true)))
             .send()
             .join();
@@ -329,7 +348,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("schemaVersion", m -> m.exists(false)))
             .send()
             .join();
@@ -348,7 +367,7 @@ public class ClusterVariableMetadataIT {
                 f ->
                     f.scope(ClusterVariableScope.GLOBAL)
                         .name(credVar1)
-                        .metadata("group", m -> m.eq(GROUP)))
+                        .metadata("group", m -> m.eq(SEARCH_GROUP)))
             .send()
             .join();
 
@@ -362,7 +381,7 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient
             .newClusterVariableSearchRequest()
-            .filter(f -> f.metadata(Map.of("group", GROUP, "testValue", "CREDENTIAL")))
+            .filter(f -> f.metadata(Map.of("group", SEARCH_GROUP, "testValue", "CREDENTIAL")))
             .send()
             .join();
 
@@ -391,7 +410,7 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient
             .newClusterVariableSearchRequest()
-            .filter(f -> f.tenantId(TENANT_ID).metadata("group", m -> m.eq(GROUP)))
+            .filter(f -> f.tenantId(TENANT_ID).metadata("group", m -> m.eq(SEARCH_GROUP)))
             .send()
             .join();
 
@@ -409,7 +428,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("schemaRef", m -> m.like("*connector.slack*")))
             .send()
             .join();
@@ -428,7 +447,8 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP)).metadata("schemaVersion", m -> m.gt(3.0)))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
+                        .metadata("schemaVersion", m -> m.gt(3.0)))
             .send()
             .join();
 
@@ -446,7 +466,8 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP)).metadata("schemaVersion", m -> m.lt(3.0)))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
+                        .metadata("schemaVersion", m -> m.lt(3.0)))
             .send()
             .join();
 
@@ -462,7 +483,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("schemaVersion", m -> m.lte(3.0)))
             .send()
             .join();
@@ -481,7 +502,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("testValue", m -> m.neq("CREDENTIAL")))
             .send()
             .join();
@@ -498,7 +519,7 @@ public class ClusterVariableMetadataIT {
             .newClusterVariableSearchRequest()
             .filter(
                 f ->
-                    f.metadata("group", m -> m.eq(GROUP))
+                    f.metadata("group", m -> m.eq(SEARCH_GROUP))
                         .metadata("testValue", m -> m.in("CONFIG", "UNKNOWN")))
             .send()
             .join();
@@ -619,7 +640,7 @@ public class ClusterVariableMetadataIT {
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, Map.of("user", "alice"))
-        .metadata(metadata("testValue", "CREDENTIAL", "schemaVersion", 2))
+        .metadata(otherMetadata("testValue", "CREDENTIAL", "schemaVersion", 2))
         .send()
         .join();
 
