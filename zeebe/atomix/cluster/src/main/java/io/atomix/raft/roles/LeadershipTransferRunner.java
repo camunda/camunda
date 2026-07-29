@@ -19,26 +19,40 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Runs the coordinated leadership transfers the leader accepts, one at a time. Shares the role's
- * lifecycle rather than being per-transfer: a leader that stays leader after a transfer fails can
- * run another. Each accepted transfer runs as its own one-shot {@link LeadershipTransferAttempt},
- * so no state survives from one transfer into the next.
+ * The single entry point for coordinated leadership transfers on the leader: decides whether to
+ * accept a transfer and runs the accepted ones, one at a time. Shares the role's lifecycle rather
+ * than being per-transfer: a leader that stays leader after a transfer fails can run another. Each
+ * accepted transfer runs as its own one-shot {@link LeadershipTransferAttempt}, so no state
+ * survives from one transfer into the next.
  */
 @NullMarked
 final class LeadershipTransferRunner {
   private final RaftContext raft;
   private final LeaderRole leader;
+  private final LeadershipTransferAdmission admission;
   // Set as soon as a transfer is accepted, before the pause is entered; cleared when the attempt
   // finishes.
   private volatile @Nullable LeadershipTransferAttempt currentAttempt;
 
-  LeadershipTransferRunner(final RaftContext raft, final LeaderRole leader) {
+  LeadershipTransferRunner(
+      final RaftContext raft,
+      final LeaderRole leader,
+      final BooleanSupplier pausedForTransfer,
+      final BooleanSupplier initializing,
+      final BooleanSupplier configurationChanging) {
     this.raft = raft;
     this.leader = leader;
+    admission =
+        new LeadershipTransferAdmission(
+            raft,
+            () -> isInProgress() || pausedForTransfer.getAsBoolean(),
+            initializing,
+            configurationChanging);
   }
 
   /** Whether a transfer is still running, i.e. the accepted attempt has not finished. */
@@ -55,7 +69,7 @@ final class LeadershipTransferRunner {
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
     final var rejectionReason =
-        leader.precheckTransfer(
+        admission.precheck(
             request.desiredLeader(), request.coordinator(), request.coordinatorConfigIndex());
     if (rejectionReason.isPresent()) {
       return LeadershipTransferInitiateResponse.builder()
