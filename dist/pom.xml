@@ -264,23 +264,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-filesystem</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-s3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-gcs</artifactId>
     </dependency>
 
     <dependency>
@@ -779,6 +764,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -804,7 +794,8 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
+      <artifactId>zeebe-backup-store-filesystem</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -1142,6 +1133,8 @@
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
+            <!-- Kept only for its oauth2-oidc-sdk exclusion, see dependency declaration above -->
+            <dep>io.camunda:zeebe-backup-store-azure</dep>
           </ignoredUnusedDeclaredDependencies>
           <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
                transitively at compile scope via camunda-authentication / operate-webapp. We

@@ -16,8 +16,10 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class BackupCfg implements ConfigurationEntry {
 
   private BackupStoreType store = BackupStoreType.NONE;
@@ -30,9 +32,11 @@ public class BackupCfg implements ConfigurationEntry {
   private BackupSchedulerRetentionCfg retention = new BackupSchedulerRetentionCfg();
   private boolean continuous = false;
   private boolean required = false;
-  private String schedule;
-  private Duration checkpointInterval;
+  private @Nullable String schedule;
+  private @Nullable Duration checkpointInterval;
   private long offset = 0L;
+  private @Nullable Duration readTimeout;
+  private @Nullable Duration writeTimeout;
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -105,6 +109,10 @@ public class BackupCfg implements ConfigurationEntry {
         .append(offset)
         .append(", retention=")
         .append(retention)
+        .append(", readTimeout=")
+        .append(readTimeout)
+        .append(", writeTimeout=")
+        .append(writeTimeout)
         .append('}');
     return sb.toString();
   }
@@ -125,7 +133,7 @@ public class BackupCfg implements ConfigurationEntry {
     this.schedule = schedule;
   }
 
-  public Duration getCheckpointInterval() {
+  public @Nullable Duration getCheckpointInterval() {
     return checkpointInterval;
   }
 
@@ -157,16 +165,40 @@ public class BackupCfg implements ConfigurationEntry {
     this.retention = retention;
   }
 
+  public @Nullable Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final @Nullable Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public @Nullable Duration getWriteTimeout() {
+    return writeTimeout;
+  }
+
+  public void setWriteTimeout(final @Nullable Duration writeTimeout) {
+    this.writeTimeout = writeTimeout;
+  }
+
   public interface BackupStoreFactory {
     /** Returns {@code null} for {@link BackupCfg.BackupStoreType#NONE}. */
     @Nullable
     static BackupStore createStore(final BackupCfg backupCfg) {
       return switch (backupCfg.getStore()) {
         case NONE -> null;
-        case S3 -> S3BackupStore.of(S3BackupStoreConfig.toStoreConfig(backupCfg.getS3()));
-        case GCS -> GcsBackupStore.of(GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs()));
+        case S3 ->
+            S3BackupStore.of(
+                S3BackupStoreConfig.toStoreConfig(
+                    backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()));
+        case GCS ->
+            GcsBackupStore.of(
+                GcsBackupStoreConfig.toStoreConfig(
+                    backupCfg.getGcs(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()));
         case AZURE ->
-            AzureBackupStore.of(AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure()));
+            AzureBackupStore.of(
+                AzureBackupStoreConfig.toStoreConfig(
+                    backupCfg.getAzure(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()));
         case FILESYSTEM ->
             FilesystemBackupStore.of(
                 FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem()));

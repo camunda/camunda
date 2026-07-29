@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class S3BackupStoreConfig implements ConfigurationEntry {
 
@@ -143,9 +144,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.ssecKey = ssecKey;
   }
 
-  public static S3BackupConfig toStoreConfig(final S3BackupStoreConfig config) {
+  public static S3BackupConfig toStoreConfig(
+      final S3BackupStoreConfig config,
+      final @Nullable Duration readTimeout,
+      final @Nullable Duration writeTimeout) {
     final var builder =
         new Builder()
+            .withReadTimeout(readTimeout)
+            .withWriteTimeout(writeTimeout)
             .withBucketName(config.getBucketName())
             .withEndpoint(config.getEndpoint())
             .withRegion(config.getRegion())

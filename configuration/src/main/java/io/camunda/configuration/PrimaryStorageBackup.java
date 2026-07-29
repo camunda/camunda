@@ -11,6 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
 import java.time.Duration;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class PrimaryStorageBackup implements Cloneable {
@@ -45,6 +46,8 @@ public class PrimaryStorageBackup implements Cloneable {
   private String schedule;
   private Duration checkpointInterval;
   private long offset;
+  private @Nullable Duration readTimeout;
+  private @Nullable Duration writeTimeout;
 
   /** Configuration for backup store AWS S3 */
   @NestedConfigurationProperty private S3 s3 = new S3();
@@ -149,6 +152,22 @@ public class PrimaryStorageBackup implements Cloneable {
 
   public void setOffset(final long offset) {
     this.offset = offset;
+  }
+
+  public @Nullable Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final @Nullable Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public @Nullable Duration getWriteTimeout() {
+    return writeTimeout;
+  }
+
+  public void setWriteTimeout(final @Nullable Duration writeTimeout) {
+    this.writeTimeout = writeTimeout;
   }
 
   @Override
