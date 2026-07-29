@@ -16,6 +16,7 @@
 package io.camunda.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
@@ -46,8 +47,23 @@ final class PhysicalTenantRestPathTest {
   }
 
   private static void sendTopologyRequest(final CamundaClient client) {
+    send(() -> client.newTopologyRequest().send().join());
+  }
+
+  private static void sendPublishMessageCommand(final CamundaClient client) {
+    send(
+        () ->
+            client
+                .newPublishMessageCommand()
+                .messageName("message")
+                .correlationKey("key")
+                .send()
+                .join());
+  }
+
+  private static void send(final Runnable request) {
     try {
-      client.newTopologyRequest().send().join();
+      request.run();
     } catch (final Exception ignored) {
       // only the outgoing request URL is under test; the (unstubbed) response is irrelevant
     }
@@ -103,6 +119,19 @@ final class PhysicalTenantRestPathTest {
     // then the gateway serves the cluster status outside the per-tenant path, so keeping the
     // prefix would produce an unroutable URL
     verify(getRequestedFor(urlEqualTo("/cluster/v2/status")));
+  }
+
+  @Test
+  void shouldPrefixRestBasePathOfRequestWithBody(final WireMockRuntimeInfo mockInfo) {
+    // given
+    try (final CamundaClient client = client(mockInfo, true)) {
+      // when a request carrying a body is sent
+      sendPublishMessageCommand(client);
+    }
+
+    // then
+    verify(
+        postRequestedFor(urlEqualTo("/physical-tenants/riskproduction/v2/messages/publication")));
   }
 
   @Test

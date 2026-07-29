@@ -78,6 +78,7 @@ import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
+import io.camunda.client.api.command.ListSecretsCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -85,6 +86,7 @@ import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
+import io.camunda.client.api.command.ResolveSecretsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -274,6 +276,7 @@ import io.camunda.client.impl.command.GloballyScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.JobUpdatePriorityCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
+import io.camunda.client.impl.command.ListSecretsCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PinClockCommandImpl;
@@ -281,6 +284,7 @@ import io.camunda.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
+import io.camunda.client.impl.command.ResolveSecretsCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.ResumeProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
@@ -1858,6 +1862,16 @@ public final class CamundaClientImpl implements CamundaClient {
   public AgentInstanceHistorySearchRequest newAgentInstanceHistorySearchRequest(
       final long agentInstanceKey) {
     return new AgentInstanceHistorySearchRequestImpl(agentInstanceKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public ResolveSecretsCommandStep1 newResolveSecretsCommand() {
+    return new ResolveSecretsCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ListSecretsCommandStep1 newListSecretsCommand() {
+    return new ListSecretsCommandImpl(httpClient);
   }
 
   private JobClient newJobClient() {
