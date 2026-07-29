@@ -69,12 +69,11 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(CCSM_PROFILE)
 public abstract class AbstractCCSMIT extends AbstractIT {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractCCSMIT.class);
-
   @RegisterExtension
   @Order(4)
   protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
 
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractCCSMIT.class);
   protected final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
       () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
@@ -444,9 +443,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilMinimumDataExportedCount(
       final long minimumCount, final String indexName, final TermsQueryContainer queryContainer) {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
-    // A single wait, not one for the index plus one for the count: a missing index and a
-    // zero count are the same "nothing exported yet" state, so chaining two 60s waits only
-    // doubled the cost of a failure without adding signal.
     try {
       Awaitility.given()
           .ignoreExceptions()
@@ -475,19 +471,20 @@ public abstract class AbstractCCSMIT extends AbstractIT {
       final String expectedIndex,
       final long minimumCount,
       final TermsQueryContainer queryContainer) {
-    final boolean indexExists = databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex);
+    Boolean indexExists = null;
     Long totalDocs = null;
     Long matchingDocs = null;
-    if (indexExists) {
-      try {
+    try {
+      indexExists = databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex);
+      if (indexExists) {
         totalDocs =
             databaseIntegrationTestExtension.countRecordsByQuery(
                 new TermsQueryContainer(), expectedIndex);
         matchingDocs =
             databaseIntegrationTestExtension.countRecordsByQuery(queryContainer, expectedIndex);
-      } catch (final Exception e) {
-        LOG.warn("Could not read record counts for index {}", expectedIndex, e);
       }
+    } catch (final Exception e) {
+      LOG.warn("Could not query diagnostics for index {}", expectedIndex, e);
     }
     LOG.error(
         "Zeebe export wait timed out. Expected at least {} record(s) in '{}' (prefix '{}'). "
