@@ -3461,31 +3461,7 @@ final class JsonSerializableToJsonTest {
       // ////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "ClusterVariableRecord (global scope with metadata)",
-        (Supplier<ClusterVariableRecord>)
-            () ->
-                new ClusterVariableRecord()
-                    .setName("myVar")
-                    .setGlobalScope()
-                    .setTenantId("<default>")
-                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42")))
-                    .setMetadata(
-                        new UnsafeBuffer(
-                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2"))))
-                    .setKind(ClusterVariableKind.SECRET_REFERENCE),
-        """
-                {
-                  "name": "myVar",
-                  "value": "42",
-                  "scope": "GLOBAL",
-                  "tenantId": "<default>",
-                  "metadata": { "credentialType": "OAUTH2" },
-                  "kind": "SECRET_REFERENCE"
-                }
-                """
-      },
-      {
-        "ClusterVariableRecord (tenant scope without metadata)",
+        "ClusterVariableRecord (minimal)",
         (Supplier<ClusterVariableRecord>)
             () ->
                 new ClusterVariableRecord()
@@ -3500,7 +3476,43 @@ final class JsonSerializableToJsonTest {
                   "scope": "TENANT",
                   "tenantId": "tenant-1",
                   "metadata": {},
-                  "kind": "JSON"
+                  "kind": "JSON",
+                  "secretReferences": []
+                }
+                """
+      },
+      {
+        "ClusterVariableRecord (fully populated)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("secretVar")
+                    .setGlobalScope()
+                    .setTenantId("<default>")
+                    .setValue(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(
+                                Map.of("auth", "camunda.secrets.token"))))
+                    .setMetadata(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2"))))
+                    .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                    .addSecretReference("", "token", "/auth"),
+        """
+                {
+                  "name": "secretVar",
+                  "value": "{\\"auth\\":\\"camunda.secrets.token\\"}",
+                  "scope": "GLOBAL",
+                  "tenantId": "<default>",
+                  "metadata": { "credentialType": "OAUTH2" },
+                  "kind": "SECRET_REFERENCE",
+                  "secretReferences": [
+                    {
+                      "storeId": "",
+                      "secretReference": "token",
+                      "path": "/auth"
+                    }
+                  ]
                 }
                 """
       },

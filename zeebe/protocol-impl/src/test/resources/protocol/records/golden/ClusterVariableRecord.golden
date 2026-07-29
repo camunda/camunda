@@ -8,17 +8,21 @@
 package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue.ClusterVariableSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,6 +36,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private static final StringValue SCOPE_KEY = new StringValue("scope");
   private static final StringValue METADATA_KEY = new StringValue("metadata");
   private static final StringValue KIND_KEY = new StringValue("kind");
+  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp =
@@ -42,15 +47,18 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private final DocumentProperty metadataProp = new DocumentProperty(METADATA_KEY);
   private final EnumProperty<ClusterVariableKind> kindProp =
       new EnumProperty<>(KIND_KEY, ClusterVariableKind.class, ClusterVariableKind.JSON);
+  private final ArrayProperty<ClusterVariableSecretReference> secretReferencesProp =
+      new ArrayProperty<>(SECRET_REFERENCES_KEY, ClusterVariableSecretReference::new);
 
   public ClusterVariableRecord() {
-    super(6);
+    super(7);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeProp)
         .declareProperty(tenantIdProp)
         .declareProperty(metadataProp)
-        .declareProperty(kindProp);
+        .declareProperty(kindProp)
+        .declareProperty(secretReferencesProp);
   }
 
   @Override
@@ -144,5 +152,52 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   @JsonIgnore
   public boolean isGloballyScoped() {
     return ClusterVariableScope.GLOBAL.equals(scopeProp.getValue());
+  }
+
+  @Override
+  public List<ClusterVariableSecretReferenceValue> getSecretReferences() {
+    // detach copies so the returned list stays valid if this record is reused or reset later
+    return secretReferencesProp.stream()
+        .map(
+            element -> {
+              final var copy = new ClusterVariableSecretReference();
+              copy.copy(element);
+              return (ClusterVariableSecretReferenceValue) copy;
+            })
+        .toList();
+  }
+
+  /**
+   * Direct access to the secret reference elements, without the detached copies of {@link
+   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
+   */
+  @JsonIgnore
+  public ValueArray<ClusterVariableSecretReference> secretReferences() {
+    return secretReferencesProp;
+  }
+
+  @JsonIgnore
+  public boolean hasSecretReferences() {
+    return !secretReferencesProp.isEmpty();
+  }
+
+  public ClusterVariableRecord addSecretReference(
+      final String storeId, final String secretReference, final String path) {
+    secretReferencesProp
+        .add()
+        .setStoreId(storeId)
+        .setSecretReference(secretReference)
+        .setPath(path);
+    return this;
+  }
+
+  /**
+   * Copies the values buffer-to-buffer, avoiding the String round-trip of {@link
+   * #addSecretReference}.
+   */
+  public ClusterVariableRecord copySecretReferencesFrom(final ClusterVariableRecord other) {
+    secretReferencesProp.reset();
+    other.secretReferencesProp.forEach(reference -> secretReferencesProp.add().wrap(reference));
+    return this;
   }
 }
