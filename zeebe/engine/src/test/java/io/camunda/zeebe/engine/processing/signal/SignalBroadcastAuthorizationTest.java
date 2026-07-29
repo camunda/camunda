@@ -11,9 +11,9 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -165,8 +165,7 @@ public class SignalBroadcastAuthorizationTest {
     // is the shape an unauthenticated gateway deployment would produce, and must be rejected
     // rather than vacuously authorized for the tenant now that multi-tenancy is enabled
     createProcessInstance();
-    final var authInfo = new AuthInfo();
-    authInfo.setClaims(Map.of());
+    final var authInfo = AuthorizationUtil.getClaimsFreeAuthInfo();
 
     // when
     final var rejection =
