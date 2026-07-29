@@ -996,10 +996,10 @@ jobs:
                 FLAKY=0
                 SETUP_FAILED=0
                 while IFS= read -r -d '' RESULTS; do
-                  T=$(jq '[.suites[]?.specs[]?] | length' "$RESULTS" 2>/dev/null || echo 0)
-                  F=$(jq '[.suites[]?.specs[]? | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
-                  K=$(jq '[.suites[]?.specs[]? | select(.tests[]?.results | length > 1) | select(.ok==true)] | length' "$RESULTS" 2>/dev/null || echo 0)
-                  S=$(jq '[.suites[]?.specs[]? | select((.file // "") | endswith("test-setup.spec.ts")) | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  T=$(jq '[.. | objects | select(.specs?) | .specs[]] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  F=$(jq '[.. | objects | select(.specs?) | .specs[] | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  K=$(jq '[.. | objects | select(.specs?) | .specs[] | select(.tests[]?.results | length > 1) | select(.ok==true)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  S=$(jq '[.. | objects | select(.specs?) | .specs[] | select((.file // "") | endswith("test-setup.spec.ts")) | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
                   TOTAL=$((TOTAL + T))
                   FAILED=$((FAILED + F))
                   FLAKY=$((FLAKY + K))
