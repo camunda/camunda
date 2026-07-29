@@ -44,6 +44,7 @@ final class TimeoutNowPromotion implements TransferPhase {
   private final RaftContext raft;
   private final BooleanSupplier leaderRunning;
   private final MemberId target;
+  private final int maxAttempts;
   private final CompletableFuture<LeadershipTransferResult> result = new CompletableFuture<>();
   private @Nullable Scheduled retryTimer;
   private @Nullable Consumer<RaftMember> leaderListener;
@@ -51,10 +52,14 @@ final class TimeoutNowPromotion implements TransferPhase {
   private boolean steppedDown;
 
   TimeoutNowPromotion(
-      final RaftContext raft, final BooleanSupplier leaderRunning, final MemberId target) {
+      final RaftContext raft,
+      final BooleanSupplier leaderRunning,
+      final MemberId target,
+      final int maxAttempts) {
     this.raft = raft;
     this.leaderRunning = leaderRunning;
     this.target = target;
+    this.maxAttempts = maxAttempts;
   }
 
   CompletableFuture<LeadershipTransferResult> start() {
@@ -70,7 +75,7 @@ final class TimeoutNowPromotion implements TransferPhase {
     LOG.info(
         "Starting TimeoutNow leadership transfer to {} (up to {} attempts, resending every {})",
         target,
-        raft.getRebalanceMaxTransferAttempts(),
+        maxAttempts,
         raft.getHeartbeatInterval());
 
     attemptTimeoutNow();
@@ -95,7 +100,7 @@ final class TimeoutNowPromotion implements TransferPhase {
     if (result.isDone() || !leaderRunning.getAsBoolean()) {
       return;
     }
-    if (attempts >= raft.getRebalanceMaxTransferAttempts()) {
+    if (attempts >= maxAttempts) {
       LOG.info(
           "TimeoutNow transfer to {} did not move leadership within {} attempts while still "
               + "leader; giving up",

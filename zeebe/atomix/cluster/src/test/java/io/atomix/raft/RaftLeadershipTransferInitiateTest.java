@@ -190,7 +190,8 @@ public class RaftLeadershipTransferInitiateTest {
                     .getCluster()
                     .getMemberContext(targetId)
                     .setSnapshotReplicationLag(
-                        leader.getContext().getRebalanceReplicationLagThreshold() + 1));
+                        leader.getContext().getRebalanceConfiguration().replicationLagThreshold()
+                            + 1));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.LAG_TOO_HIGH);
