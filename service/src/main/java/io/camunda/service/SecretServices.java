@@ -450,7 +450,19 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   public record SecretResolution(
       List<ResolvedSecret> resolved, List<SecretResolutionError> errors) {}
 
-  public record ResolvedSecret(String reference, String value) {}
+  /**
+   * A revealed secret. {@code toString} masks the value, mirroring the {@code secret-store} SPI's
+   * {@code SecretResolutionResult.Resolved}: a resolved value must never reach a log line, and the
+   * record's generated {@code toString} would print it in any log statement, exception message or
+   * test failure dump this ever lands in.
+   */
+  public record ResolvedSecret(String reference, String value) {
+
+    @Override
+    public String toString() {
+      return "ResolvedSecret[reference=" + reference + ", value=***]";
+    }
+  }
 
   public record SecretResolutionError(String reference, SecretErrorCode code, String message) {}
 

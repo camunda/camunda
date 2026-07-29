@@ -810,6 +810,23 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldMaskTheResolvedValueInToString() {
+    // given a resolved reference
+    authorizationsConfig.setEnabled(true);
+    grantReveal("camunda.secrets.token");
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.token"), authentication).join();
+
+    // when the outcome is rendered, as a log statement or a test failure would render it
+    final var rendered = resolution.toString();
+
+    // then the value is masked, so printing the outcome anywhere cannot leak the secret. Mirrors
+    // the store SPI's SecretResolutionResult.Resolved, which masks for the same reason.
+    assertThat(rendered).doesNotContain("token-value").contains("***");
+    assertThat(rendered).contains("camunda.secrets.token");
+  }
+
+  @Test
   void shouldListOnlyAuthorizedReferences() {
     // given the caller is granted READ on one of the three references the store holds
     authorizationsConfig.setEnabled(true);
