@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -156,6 +157,24 @@ public class SignalBroadcastAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectWhenNoPrincipalClaimAndMultiTenancyEnabled() {
+    // given — a command carrying no username/clientId claim at all (not anonymous either); this
+    // is the shape an unauthenticated gateway deployment would produce, and must be rejected
+    // rather than vacuously authorized for the tenant now that multi-tenancy is enabled
+    createProcessInstance();
+    final var authInfo = new AuthInfo();
+    authInfo.setClaims(Map.of());
+
+    // when
+    final var rejection =
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(authInfo);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
   }
 
   @Test

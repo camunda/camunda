@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -88,6 +89,11 @@ public class SignalClient {
 
   public Record<SignalRecordValue> broadcastWithMetadata(final String username) {
     final long position = writer.writeCommand(1, 1, SignalIntent.BROADCAST, signalRecord, username);
+    return expectation.apply(position);
+  }
+
+  public Record<SignalRecordValue> broadcast(final AuthInfo authorizations) {
+    final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord, authorizations);
     return expectation.apply(position);
   }
 }

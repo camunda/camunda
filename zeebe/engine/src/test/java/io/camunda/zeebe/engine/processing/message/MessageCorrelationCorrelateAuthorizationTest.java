@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -274,6 +275,29 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(unauthorizedProcessId));
+  }
+
+  @Test
+  public void shouldRejectWhenNoPrincipalClaimAndMultiTenancyEnabled() {
+    // given — a command carrying no username/clientId claim at all (not anonymous either); this
+    // is the shape an unauthenticated gateway deployment would produce, and must be rejected
+    // rather than vacuously authorized for the tenant now that multi-tenancy is enabled
+    final var correlationKey = "";
+    final var authInfo = new AuthInfo();
+    authInfo.setClaims(Map.of());
+
+    // when
+    final var rejection =
+        engine
+            .messageCorrelation()
+            .withName(START_MSG_NAME)
+            .withCorrelationKey(correlationKey)
+            .expectRejection()
+            .correlate(authInfo);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
   }
 
   @Test

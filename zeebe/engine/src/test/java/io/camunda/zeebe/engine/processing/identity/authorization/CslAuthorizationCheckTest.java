@@ -206,14 +206,19 @@ final class CslAuthorizationCheckTest {
 
   @Test
   void shouldSkipTenantsCheckWhenMultiTenancyDisabled() {
-    // given — multi-tenancy checks disabled
+    // given — multi-tenancy checks disabled, and a non-anonymous, empty authorized-tenants set
+    // that would fail isAuthorizedForTenantIds if the multi-tenancy gate didn't short-circuit
+    // first — so a pass here can only be explained by the gate, not by trivial authorization
     final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, false);
     final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized");
 
     // when
     final var result =
         cslCheck.checkTenants(
-            List.of("tenant-a", "tenant-b"), AuthorizedTenants.ANONYMOUS, "ok", () -> rejection);
+            List.of("tenant-a", "tenant-b"),
+            new AuthenticatedAuthorizedTenants(List.of()),
+            "ok",
+            () -> rejection);
 
     // then
     assertThat(result.isRight()).isTrue();
