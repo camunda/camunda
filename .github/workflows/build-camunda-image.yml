@@ -69,6 +69,7 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
+      # Keep action definitions on the trusted base commit; the checkout above may be PR code.
       - uses: camunda/camunda/.github/actions/setup-build@02078341e06bc5f8d76da410fcb3d9ff38e96716
         with:
           dockerhub-readonly: true
