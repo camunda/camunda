@@ -8,6 +8,7 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
+import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {adHocSubProcessInnerInstance, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
@@ -242,5 +243,183 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     });
 
     expect(screen.getByTestId('search')).toHaveTextContent(originalSearch);
+  });
+
+  describe('anchor selection follows the displayed sort order', () => {
+    // The inner instance row has no element instance of its own, so clicking it
+    // anchors the diagram + Details tab on one of its children. The child picked
+    // is the first one *as displayed*, which means the anchor moves with the
+    // Instance History sort order. Two children with distinct element ids are
+    // needed here — with a single child the anchor is the same either way.
+    const innerChildren = [
+      {
+        elementInstanceKey: 'inner-child-first',
+        processInstanceKey: '111111111111111',
+        processDefinitionKey: '222222222222222',
+        processDefinitionId: 'ad_hoc_inner_subprocess_test',
+        state: 'ACTIVE',
+        type: 'USER_TASK',
+        elementId: 'user_task_in_ad_hoc_subprocess',
+        elementName: 'User Task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:34.200+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
+      },
+      {
+        elementInstanceKey: 'inner-child-latest',
+        processInstanceKey: '111111111111111',
+        processDefinitionKey: '222222222222222',
+        processDefinitionId: 'ad_hoc_inner_subprocess_test',
+        state: 'ACTIVE',
+        type: 'SERVICE_TASK',
+        elementId: 'service_task_in_ad_hoc_subprocess',
+        elementName: 'Service Task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:36.500+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
+      },
+    ];
+
+    /**
+     * Answers the inner-instance child query the way the server would: applies the
+     * requested order and honours the page limit, so the assertion below only
+     * passes when the request actually carried the displayed sort order.
+     */
+    const mockSortAwareChildQuery = (
+      onSortRequested: (sort: unknown) => void,
+    ) => {
+      mockServer.use(
+        http.post(
+          endpoints.queryElementInstances.getUrl(),
+          async ({request}) => {
+            const body = await request.json();
+            const result =
+              queryElementInstancesRequestBodySchema.safeParse(body);
+
+            if (
+              !result.success ||
+              result.data?.filter?.elementInstanceScopeKey !== 'inner-1'
+            ) {
+              return HttpResponse.json(
+                {error: 'Unexpected request'},
+                {status: 400},
+              );
+            }
+
+            onSortRequested(result.data.sort);
+
+            const isDescending = result.data.sort?.[0]?.order === 'desc';
+            const sorted = isDescending
+              ? [...innerChildren].reverse()
+              : innerChildren;
+
+            return HttpResponse.json({
+              items: sorted.slice(0, result.data.page?.limit ?? sorted.length),
+              page: {
+                totalItems: innerChildren.length,
+                startCursor: null,
+                endCursor: null,
+                hasMoreTotalItems: false,
+              },
+            });
+          },
+          {once: true},
+        ),
+      );
+    };
+
+    const clickCollapsedInnerInstance = async (
+      onSortRequested: (sort: unknown) => void,
+    ) => {
+      const {businessObjects} = await parseBusinessObjects(
+        adHocSubProcessInnerInstance,
+      );
+      const {user} = render(
+        <ElementInstancesTree
+          processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
+          businessObjects={businessObjects}
+        />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
+
+      expect(
+        await screen.findByText('Ad Hoc Inner Subprocess Test'),
+      ).toBeInTheDocument();
+
+      // Installed only once the root tree has loaded, so it answers the child
+      // query rather than the root's own query.
+      mockSortAwareChildQuery(onSortRequested);
+
+      await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
+
+      await user.click(
+        await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
+          selector: "[aria-expanded='false']",
+        }),
+      );
+    };
+
+    afterEach(() => {
+      instanceHistorySortOrderStore.reset();
+    });
+
+    it('should anchor on the latest child when the history is latest-first', async () => {
+      // given the default latest-first order
+      expect(instanceHistorySortOrderStore.order).toBe('desc');
+
+      let requestedSort: unknown;
+
+      // when the collapsed inner instance is clicked
+      await clickCollapsedInnerInstance((sort) => {
+        requestedSort = sort;
+      });
+
+      // then the newest child anchors the selection
+      await waitFor(() => {
+        expect(screen.getByTestId('search')).toHaveTextContent(
+          '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=service_task_in_ad_hoc_subprocess',
+        );
+      });
+
+      expect(requestedSort).toEqual([
+        {field: 'startDate', order: 'desc'},
+        {field: 'elementInstanceKey', order: 'desc'},
+      ]);
+      expect(notificationsStore.notifications).toEqual([]);
+    });
+
+    it('should anchor on the earliest child when the history is oldest-first', async () => {
+      // given the user switched the history back to oldest-first
+      instanceHistorySortOrderStore.toggle();
+      expect(instanceHistorySortOrderStore.order).toBe('asc');
+
+      let requestedSort: unknown;
+
+      // when the collapsed inner instance is clicked
+      await clickCollapsedInnerInstance((sort) => {
+        requestedSort = sort;
+      });
+
+      // then the oldest child anchors the selection instead
+      await waitFor(() => {
+        expect(screen.getByTestId('search')).toHaveTextContent(
+          '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=user_task_in_ad_hoc_subprocess',
+        );
+      });
+
+      expect(requestedSort).toEqual([
+        {field: 'startDate', order: 'asc'},
+        {field: 'elementInstanceKey', order: 'asc'},
+      ]);
+      expect(notificationsStore.notifications).toEqual([]);
+    });
   });
 });

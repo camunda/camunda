@@ -20,6 +20,7 @@ import {searchResult} from 'modules/testUtils';
 const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey = '2251799813685630';
 const mockGrandchildKey = '2251799813685650';
+const mockGreatGrandchildKey = '2251799813685670';
 
 const createMockElementInstance = (
   overrides: Partial<ElementInstance> = {},
@@ -48,6 +49,12 @@ const grandchild = createMockElementInstance({
   elementName: 'Task 1',
   type: 'SERVICE_TASK',
 });
+const greatGrandchild = createMockElementInstance({
+  elementInstanceKey: mockGreatGrandchildKey,
+  elementId: 'task_2',
+  elementName: 'Task 2',
+  type: 'SERVICE_TASK',
+});
 
 describe('elementInstancesTreeStore - sortOrder changes', () => {
   let requestedSortByScope: Record<
@@ -69,7 +76,9 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
             ? [rootChild]
             : scopeKey === mockChildScopeKey
               ? [grandchild]
-              : [];
+              : scopeKey === mockGrandchildKey
+                ? [greatGrandchild]
+                : [];
 
         return HttpResponse.json(searchResult(items));
       }),
@@ -163,5 +172,101 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
         {field: 'elementInstanceKey', order: 'desc'},
       ]);
     });
+  });
+  it('should apply a sort order change to scopes nested more than one level deep', async () => {
+    // given a grandchild scope expanded under an already expanded child scope
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      sortOrder: 'desc',
+    });
+
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey);
+    await elementInstancesTreeStore.expandNode(mockGrandchildKey);
+
+    await waitFor(() => {
+      expect(requestedSortByScope[mockGrandchildKey]).toEqual([
+        {field: 'startDate', order: 'desc'},
+        {field: 'elementInstanceKey', order: 'desc'},
+      ]);
+    });
+
+    // when the sort order changes
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      sortOrder: 'asc',
+    });
+
+    // then the deepest scope is refetched with the new order and stays expanded
+    await waitFor(() => {
+      expect(requestedSortByScope[mockGrandchildKey]).toEqual([
+        {field: 'startDate', order: 'asc'},
+        {field: 'elementInstanceKey', order: 'asc'},
+      ]);
+    });
+
+    expect(elementInstancesTreeStore.isNodeExpanded(mockGrandchildKey)).toBe(
+      true,
+    );
+    expect(elementInstancesTreeStore.getItems(mockGrandchildKey)).toEqual([
+      greatGrandchild,
+    ]);
+  });
+
+  it('should discard an in-flight response when the sort order changes before it resolves', async () => {
+    // given a latest-first request that has not answered yet
+    let releaseStaleResponse: () => void = () => {};
+    const staleResponseReleased = new Promise<void>((resolve) => {
+      releaseStaleResponse = resolve;
+    });
+
+    const staleChild = createMockElementInstance({
+      elementInstanceKey: '2251799813685699',
+      elementId: 'stale_task',
+      elementName: 'Stale Task',
+    });
+
+    mockServer.use(
+      http.post(endpoints.queryElementInstances.getUrl(), async ({request}) => {
+        const body = (await request.json()) as QueryElementInstancesRequestBody;
+
+        if (body.sort?.[0]?.order === 'desc') {
+          await staleResponseReleased;
+          return HttpResponse.json(searchResult([staleChild]));
+        }
+
+        return HttpResponse.json(searchResult([rootChild]));
+      }),
+    );
+
+    // when the order is switched to oldest-first before that response lands
+    const stalePending = elementInstancesTreeStore.setRootNode(
+      mockProcessInstanceKey,
+      {sortOrder: 'desc'},
+    );
+    const freshPending = elementInstancesTreeStore.setRootNode(
+      mockProcessInstanceKey,
+      {sortOrder: 'asc'},
+    );
+
+    // and the superseded response only lands afterwards
+    await freshPending;
+
+    expect(elementInstancesTreeStore.getItems(mockProcessInstanceKey)).toEqual([
+      rootChild,
+    ]);
+
+    releaseStaleResponse();
+    await stalePending;
+
+    // then the superseded response never reaches the tree
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.getItems(mockProcessInstanceKey),
+      ).toEqual([rootChild]);
+    });
+
+    expect(
+      elementInstancesTreeStore
+        .getItems(mockProcessInstanceKey)
+        .map(({elementInstanceKey}) => elementInstanceKey),
+    ).not.toContain(staleChild.elementInstanceKey);
   });
 });
