@@ -21,6 +21,7 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationOwnerOption: (name: string) => Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
+  readonly accessPermissionCheckbox: (name: string) => Locator;
   readonly createAuthorizationOwnerTypeComboBox: Locator;
   readonly createAuthorizationOwnerTypeOption: (name: string) => Locator;
   readonly createAuthorizationSubmitButton: Locator;
@@ -65,6 +66,10 @@ export class IdentityAuthorizationsPage {
       });
     this.createAuthorizationAccessPermission = (name) =>
       this.page.locator(`label[for="${name.toUpperCase()}"]`);
+    // The clickable label and the underlying input are separate nodes; use this
+    // one to assert checked state, and the label above to toggle it.
+    this.accessPermissionCheckbox = (name) =>
+      this.page.locator(`input#${name.toUpperCase()}`);
     this.createAuthorizationOwnerTypeComboBox =
       this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
     this.createAuthorizationOwnerTypeOption = (name) =>
