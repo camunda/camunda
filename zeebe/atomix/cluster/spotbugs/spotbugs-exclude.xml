@@ -19,10 +19,6 @@
     <Class name="io.atomix.raft.cluster.impl.RaftMemberContext"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
-  <Match>
-    <Class name="io.atomix.raft.roles.LeaderRole"/>
-    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
-  </Match>
 
 
 </FindBugsFilter>
