@@ -17,7 +17,6 @@ package io.atomix.raft.protocol;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import java.util.Objects;
@@ -25,52 +24,44 @@ import java.util.Objects;
 /**
  * Immediate acknowledgement of a {@link LeadershipTransferInitiateRequest}.
  *
- * <p>If {@code accepted} is true the current leader has taken the transfer on and will report the
- * terminal outcome later via a {@link LeadershipTransferResultRequest}. If {@code accepted} is
- * false the transfer was resolved immediately: {@code result} carries the skip reason (a failed
- * pre-check) and {@code leader} points to the node the receiver believes is the leader, so a
- * request that reached a follower can be redirected.
+ * <p>An {@code OK} response comes from the leader. A null {@code rejectionReason} means it has
+ * accepted the transfer request and will report the terminal outcome later via a {@link
+ * LeadershipTransferResultRequest}; otherwise the rejection reason resolves the request
+ * immediately.
+ *
+ * <p>A receiver that is not the leader answers {@code ERROR} with {@link
+ * RaftError.Type#ILLEGAL_MEMBER_STATE}, like any other misrouted Raft request.
  */
 public class LeadershipTransferInitiateResponse extends AbstractRaftResponse {
 
-  private final boolean accepted;
-  private final LeadershipTransferResult result;
-  private final MemberId leader;
+  private final LeadershipTransferResult rejectionReason;
 
   public LeadershipTransferInitiateResponse(
-      final Status status,
-      final RaftError error,
-      final boolean accepted,
-      final LeadershipTransferResult result,
-      final MemberId leader) {
+      final Status status, final RaftError error, final LeadershipTransferResult rejectionReason) {
     super(status, error);
-    this.accepted = accepted;
-    this.result = result;
-    this.leader = leader;
+    this.rejectionReason = rejectionReason;
   }
 
   public static Builder builder() {
     return new Builder();
   }
 
-  /** Whether the leader accepted the transfer and will report the outcome asynchronously. */
+  /** Whether the leader took the transfer on and will report the outcome asynchronously. */
   public boolean accepted() {
-    return accepted;
+    return status == Status.OK && rejectionReason == null;
   }
 
-  /** The immediate skip result when the transfer was not accepted, or {@code null} otherwise. */
-  public LeadershipTransferResult result() {
-    return result;
-  }
-
-  /** The node the receiver believes is the leader, for redirecting a misrouted request. */
-  public MemberId leader() {
-    return leader;
+  /**
+   * The pre-check that resolved the transfer immediately, or {@code null} if the leader accepted
+   * it. Always {@code null} when {@code status} is not {@code OK}.
+   */
+  public LeadershipTransferResult rejectionReason() {
+    return rejectionReason;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), status, accepted, result, leader);
+    return Objects.hash(getClass(), status, rejectionReason);
   }
 
   @Override
@@ -83,9 +74,8 @@ public class LeadershipTransferInitiateResponse extends AbstractRaftResponse {
     }
     final LeadershipTransferInitiateResponse other = (LeadershipTransferInitiateResponse) object;
     return status == other.status
-        && accepted == other.accepted
-        && result == other.result
-        && Objects.equals(leader, other.leader);
+        && rejectionReason == other.rejectionReason
+        && Objects.equals(error, other.error);
   }
 
   @Override
@@ -93,9 +83,7 @@ public class LeadershipTransferInitiateResponse extends AbstractRaftResponse {
     if (status == Status.OK) {
       return toStringHelper(this)
           .add("status", status)
-          .add("accepted", accepted)
-          .add("result", result)
-          .add("leader", leader)
+          .add("rejectionReason", rejectionReason)
           .toString();
     }
     return toStringHelper(this).add("status", status).add("error", error).toString();
@@ -105,29 +93,17 @@ public class LeadershipTransferInitiateResponse extends AbstractRaftResponse {
   public static class Builder
       extends AbstractRaftResponse.Builder<Builder, LeadershipTransferInitiateResponse> {
 
-    private boolean accepted;
-    private LeadershipTransferResult result;
-    private MemberId leader;
+    private LeadershipTransferResult rejectionReason;
 
-    public Builder withAccepted(final boolean accepted) {
-      this.accepted = accepted;
-      return this;
-    }
-
-    public Builder withResult(final LeadershipTransferResult result) {
-      this.result = result;
-      return this;
-    }
-
-    public Builder withLeader(final MemberId leader) {
-      this.leader = leader;
+    public Builder withRejectionReason(final LeadershipTransferResult rejectionReason) {
+      this.rejectionReason = rejectionReason;
       return this;
     }
 
     @Override
     public LeadershipTransferInitiateResponse build() {
       validate();
-      return new LeadershipTransferInitiateResponse(status, error, accepted, result, leader);
+      return new LeadershipTransferInitiateResponse(status, error, rejectionReason);
     }
   }
 }

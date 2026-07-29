@@ -32,12 +32,17 @@ public class RaftCoordinatedLeadershipTransferTest {
   public void shouldRoundTripTransferMessagesThroughRaftNamespace() {
     // given
     final var initiateRequest = initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0005L);
-    final var initiateResponse =
+    final var acceptedResponse =
+        LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
+    final var rejectedResponse =
         LeadershipTransferInitiateResponse.builder()
             .withStatus(Status.OK)
-            .withAccepted(false)
-            .withResult(LeadershipTransferResult.LAG_TOO_HIGH)
-            .withLeader(MemberId.from("3"))
+            .withRejectionReason(LeadershipTransferResult.LAG_TOO_HIGH)
+            .build();
+    final var notLeaderResponse =
+        LeadershipTransferInitiateResponse.builder()
+            .withStatus(Status.ERROR)
+            .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
             .build();
     final var resultRequest =
         result(
@@ -49,10 +54,14 @@ public class RaftCoordinatedLeadershipTransferTest {
     // when / then
     assertThat(roundTrip(initiateRequest)).isEqualTo(initiateRequest);
     assertThat(roundTrip(initiateRequest).correlationId()).isEqualTo(0x5eed_0005L);
-    final LeadershipTransferInitiateResponse deserializedResponse = roundTrip(initiateResponse);
-    assertThat(deserializedResponse.accepted()).isFalse();
-    assertThat(deserializedResponse.result()).isEqualTo(LeadershipTransferResult.LAG_TOO_HIGH);
-    assertThat(deserializedResponse.leader()).isEqualTo(MemberId.from("3"));
+    assertThat(roundTrip(acceptedResponse).accepted()).isTrue();
+    final LeadershipTransferInitiateResponse deserializedRejection = roundTrip(rejectedResponse);
+    assertThat(deserializedRejection.accepted()).isFalse();
+    assertThat(deserializedRejection.rejectionReason())
+        .isEqualTo(LeadershipTransferResult.LAG_TOO_HIGH);
+    final LeadershipTransferInitiateResponse deserializedNotLeader = roundTrip(notLeaderResponse);
+    assertThat(deserializedNotLeader.accepted()).isFalse();
+    assertThat(deserializedNotLeader.error().type()).isEqualTo(RaftError.Type.ILLEGAL_MEMBER_STATE);
     assertThat(roundTrip(resultRequest)).isEqualTo(resultRequest);
     assertThat(roundTrip(resultRequest).correlationId()).isEqualTo(0x5eed_0005L);
   }
