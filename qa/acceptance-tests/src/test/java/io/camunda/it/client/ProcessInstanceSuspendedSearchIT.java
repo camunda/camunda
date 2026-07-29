@@ -76,7 +76,7 @@ public class ProcessInstanceSuspendedSearchIT {
   }
 
   @Test
-  void shouldNotFindActiveProcessInstanceByExistingSuspendedDate() {
+  void shouldFindOnlyActiveProcessInstanceByAbsentSuspendedDate() {
     // when
     final List<ProcessInstance> result =
         camundaClient
