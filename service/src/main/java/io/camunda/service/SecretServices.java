@@ -446,9 +446,18 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     }
   }
 
-  /** The per-reference outcome of a resolve request. */
+  /**
+   * The per-reference outcome of a resolve request. Copies both lists, since {@link
+   * #readFromStores} builds them by mutation and a caller must not be handed a handle on that.
+   */
   public record SecretResolution(
-      List<ResolvedSecret> resolved, List<SecretResolutionError> errors) {}
+      List<ResolvedSecret> resolved, List<SecretResolutionError> errors) {
+
+    public SecretResolution {
+      resolved = List.copyOf(resolved);
+      errors = List.copyOf(errors);
+    }
+  }
 
   /**
    * A revealed secret. {@code toString} masks the value, mirroring the {@code secret-store} SPI's

@@ -827,6 +827,23 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldReturnOutcomeListsThatCannotBeModified() {
+    // given a resolved and a failed reference, so both lists are non-empty
+    authorizationsConfig.setEnabled(true);
+    grantRevealWildcard();
+    final var resolution =
+        services
+            .resolve(List.of("camunda.secrets.token", "camunda.secrets.unknown"), authentication)
+            .join();
+
+    // when / then the caller cannot mutate the outcomes the service built
+    assertThatThrownBy(() -> resolution.resolved().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> resolution.errors().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
   void shouldListOnlyAuthorizedReferences() {
     // given the caller is granted READ on one of the three references the store holds
     authorizationsConfig.setEnabled(true);
