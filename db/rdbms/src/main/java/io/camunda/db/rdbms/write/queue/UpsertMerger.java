@@ -30,14 +30,9 @@ public class UpsertMerger<T extends Copyable<T>> implements QueueItemMerger {
   }
 
   /**
-   * Matches on {@code id + contextType + (parameter instanceof clazz)} only, deliberately ignoring
-   * {@code statementId} so an update can merge into an earlier create's row-level insert as well as
-   * a prior update. This means a writer must never enqueue two {@link QueueItem}s sharing the same
-   * {@code contextType} and {@code id} whose parameters are both instances of {@code clazz} unless
-   * every such item is meant to be a valid merge target for that key — otherwise the merge can land
-   * on the wrong one silently. Auxiliary/child-table statements queued alongside a row-level
-   * insert/update must use a dedicated parameter type (see {@code ProcessInstanceTagsDto}) so they
-   * are not accidentally merge-eligible (see issue #58968).
+   * Ignores {@code statementId} by design, so two {@link QueueItem}s sharing {@code contextType} +
+   * {@code id} must not both be instances of {@code clazz} unless either is a valid merge target
+   * (see issue #58968).
    */
   @Override
   public boolean canBeMerged(final QueueItem queueItem) {
