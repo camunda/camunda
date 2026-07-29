@@ -45,7 +45,7 @@ paths:
         - Exporting
       operationId: pauseExporting
       x-required-permissions:
-        - { resourceType: SYSTEM, permissionType: UPDATE }
+        - { resourceType: EXPORTER, permissionType: PAUSE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -86,7 +86,7 @@ paths:
         - Exporting
       operationId: resumeExporting
       x-required-permissions:
-        - { resourceType: SYSTEM, permissionType: UPDATE }
+        - { resourceType: EXPORTER, permissionType: PAUSE }
       security:
         - bearerAuth: []
         - basicAuth: []
