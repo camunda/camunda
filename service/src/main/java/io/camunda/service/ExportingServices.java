@@ -7,13 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.EXPORTER_PAUSE_AUTHORIZATION;
+
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
-import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
@@ -63,7 +62,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
 
   public CompletableFuture<Void> pauseExporting(
       final boolean soft, final CamundaAuthentication authentication) {
-    return withSystemUpdatePermission(
+    return withExporterPausePermission(
         authentication,
         () ->
             soft
@@ -72,24 +71,27 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
-    return withSystemUpdatePermission(
+    return withExporterPausePermission(
         authentication, () -> exportingRequestBroadcaster.resumeExporting(getPhysicalTenantId()));
   }
 
   /**
-   * Runs {@code action} only if the caller holds the {@code SYSTEM/UPDATE} permission, mapping
+   * Runs {@code action} only if the caller holds the {@code EXPORTER/PAUSE} permission, mapping
    * failures from both the synchronous and asynchronous phases to {@link
    * io.camunda.service.exception.ServiceException} so they surface with the correct status. The
    * broadcaster validates topology synchronously (throwing before it returns a future) but
    * dispatches the broker requests asynchronously, so the returned future may also complete
    * exceptionally — both paths must be mapped.
+   *
+   * <p>Resume is gated on the same permission as pause: {@code EXPORTER} only defines {@code
+   * PAUSE}, and a caller allowed to stop exporting must also be able to start it again — otherwise
+   * they could leave the cluster in a paused state they cannot undo.
    */
-  private CompletableFuture<Void> withSystemUpdatePermission(
+  private CompletableFuture<Void> withExporterPausePermission(
       final CamundaAuthentication authentication, final Supplier<CompletableFuture<Void>> action) {
-    if (!hasSystemUpdatePermission(authentication)) {
+    if (!hasExporterPausePermission(authentication)) {
       return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(
-              RequiredAuthorization.of(a -> a.system().permissionType(PermissionType.UPDATE))));
+          ErrorMapper.createForbiddenException(EXPORTER_PAUSE_AUTHORIZATION));
     }
 
     try {
@@ -101,14 +103,16 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
     }
   }
 
-  private boolean hasSystemUpdatePermission(final CamundaAuthentication authentication) {
+  private boolean hasExporterPausePermission(final CamundaAuthentication authentication) {
     if (!authorizationsConfig.isEnabled()) {
       return true;
     }
 
     return authorizationChecker
         .collectPermissionTypes(
-            AuthorizationScope.WILDCARD_CHAR, AuthorizationResourceType.SYSTEM, authentication)
-        .contains(PermissionType.UPDATE);
+            AuthorizationScope.WILDCARD_CHAR,
+            EXPORTER_PAUSE_AUTHORIZATION.resourceType(),
+            authentication)
+        .contains(EXPORTER_PAUSE_AUTHORIZATION.permissionType());
   }
 }

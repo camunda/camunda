@@ -7,10 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.BACKUP_CREATE_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.BACKUP_DELETE_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.BACKUP_READ_AUTHORIZATION;
+
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
-import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -62,8 +64,8 @@ public final class RuntimeBackupServices
 
   public CompletableFuture<Long> takeBackup(
       @Nullable final Long backupId, final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.UPDATE, authentication)) {
-      return failedFuture(PermissionType.UPDATE);
+    if (!hasPermission(BACKUP_CREATE_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_CREATE_AUTHORIZATION);
     }
 
     if (backupIdGenerated) {
@@ -91,8 +93,8 @@ public final class RuntimeBackupServices
 
   public CompletableFuture<BackupStatus> getBackupStatus(
       final long backupId, final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.READ, authentication)) {
-      return failedFuture(PermissionType.READ);
+    if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
 
     return mapErrors(
@@ -111,8 +113,8 @@ public final class RuntimeBackupServices
 
   public CompletableFuture<List<BackupStatus>> listBackups(
       final @Nullable String prefix, final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.READ, authentication)) {
-      return failedFuture(PermissionType.READ);
+    if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
 
     if (prefix != null && !prefix.endsWith(BackupApi.WILDCARD)) {
@@ -131,8 +133,8 @@ public final class RuntimeBackupServices
 
   public CompletableFuture<Void> deleteBackup(
       final long backupId, final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.UPDATE, authentication)) {
-      return failedFuture(PermissionType.UPDATE);
+    if (!hasPermission(BACKUP_DELETE_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_DELETE_AUTHORIZATION);
     }
 
     return mapErrors(
@@ -147,8 +149,8 @@ public final class RuntimeBackupServices
    */
   public CompletableFuture<RuntimeBackupState> getRuntimeState(
       final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.READ, authentication)) {
-      return failedFuture(PermissionType.READ);
+    if (!hasPermission(BACKUP_READ_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_READ_AUTHORIZATION);
     }
 
     final var checkpointState =
@@ -160,11 +162,14 @@ public final class RuntimeBackupServices
 
   /**
    * Force-writes checkpoint/backup metadata to the backup store, then returns the updated state.
+   *
+   * <p>Requires {@code BACKUP/CREATE} rather than {@code BACKUP/READ}: it creates backup metadata
+   * in the store, so it is a write operation from the caller's point of view.
    */
   public CompletableFuture<RuntimeBackupState> syncRuntimeState(
       final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.UPDATE, authentication)) {
-      return failedFuture(PermissionType.UPDATE);
+    if (!hasPermission(BACKUP_CREATE_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_CREATE_AUTHORIZATION);
     }
 
     final var ranges =
@@ -175,8 +180,8 @@ public final class RuntimeBackupServices
   }
 
   public CompletableFuture<Void> deleteRuntimeState(final CamundaAuthentication authentication) {
-    if (!hasPermission(PermissionType.UPDATE, authentication)) {
-      return failedFuture(PermissionType.UPDATE);
+    if (!hasPermission(BACKUP_DELETE_AUTHORIZATION, authentication)) {
+      return failedFuture(BACKUP_DELETE_AUTHORIZATION);
     }
 
     return mapErrors(
@@ -205,22 +210,23 @@ public final class RuntimeBackupServices
         });
   }
 
-  private <T> CompletableFuture<T> failedFuture(final PermissionType permissionType) {
+  private <T> CompletableFuture<T> failedFuture(
+      final RequiredAuthorization<?> requiredAuthorization) {
     return CompletableFuture.failedFuture(
-        ErrorMapper.createForbiddenException(
-            RequiredAuthorization.of(a -> a.system().permissionType(permissionType))));
+        ErrorMapper.createForbiddenException(requiredAuthorization));
   }
 
   private boolean hasPermission(
-      final PermissionType permission, final CamundaAuthentication authentication) {
+      final RequiredAuthorization<?> requiredAuthorization,
+      final CamundaAuthentication authentication) {
     if (!authorizationsConfig.isEnabled()) {
       return true;
     }
 
     return authorizationChecker
         .collectPermissionTypes(
-            AuthorizationScope.WILDCARD_CHAR, AuthorizationResourceType.SYSTEM, authentication)
-        .contains(permission);
+            AuthorizationScope.WILDCARD_CHAR, requiredAuthorization.resourceType(), authentication)
+        .contains(requiredAuthorization.permissionType());
   }
 
   public record RuntimeBackupState(
