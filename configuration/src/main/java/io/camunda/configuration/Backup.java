@@ -75,6 +75,22 @@ public class Backup {
    */
   private BackupStoreType store = BackupStoreType.NONE;
 
+  /**
+   * Timeout for reading a response from an already-established connection to the backup store. When
+   * unset, the store client's own default applies.
+   *
+   * <p>Note: This configuration applies to the backup of primary storage.
+   */
+  private Duration readTimeout;
+
+  /**
+   * Timeout for writing a request to an already-established connection to the backup store. When
+   * unset, the store client's own default applies.
+   *
+   * <p>Note: This configuration applies to the backup of primary storage.
+   */
+  private Duration writeTimeout;
+
   /** Configuration for backup store AWS S3 */
   private S3 s3 = new S3();
 
@@ -174,6 +190,22 @@ public class Backup {
     this.store = store;
   }
 
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public Duration getWriteTimeout() {
+    return writeTimeout;
+  }
+
+  public void setWriteTimeout(final Duration writeTimeout) {
+    this.writeTimeout = writeTimeout;
+  }
+
   @Override
   public Backup clone() {
     final Backup copy = new Backup();
@@ -181,6 +213,8 @@ public class Backup {
     copy.snapshotTimeout = snapshotTimeout;
     copy.incompleteCheckTimeout = incompleteCheckTimeout;
     copy.store = store;
+    copy.readTimeout = readTimeout;
+    copy.writeTimeout = writeTimeout;
     copy.s3 = s3;
     copy.gcs = gcs;
     copy.filesystem = filesystem;

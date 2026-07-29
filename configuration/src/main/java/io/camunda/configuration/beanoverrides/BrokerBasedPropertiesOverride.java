@@ -289,6 +289,16 @@ public class BrokerBasedPropertiesOverride {
     final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
     backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
 
+    if (backup.getReadTimeout() != null && !backup.getReadTimeout().isPositive()) {
+      throw new IllegalArgumentException("BackupStore readTimeout must be positive");
+    }
+    backupStoreCfg.setReadTimeout(backup.getReadTimeout());
+
+    if (backup.getWriteTimeout() != null && !backup.getWriteTimeout().isPositive()) {
+      throw new IllegalArgumentException("BackupStore writeTimeout must be positive");
+    }
+    backupStoreCfg.setWriteTimeout(backup.getWriteTimeout());
+
     populateFromS3(override);
     populateFromGcs(override);
     populateFromAzure(override);

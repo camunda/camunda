@@ -32,6 +32,11 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
  * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
  *     a connection pool to a remote service.
+ * @param readTimeout Timeout for reading a response from an already-established connection. A
+ *     single request exceeding this timeout fails and may be retried, as long as {@code
+ *     apiCallTimeout} is not exhausted. If empty, the AWS SDK default of 30s is used.
+ * @param writeTimeout Timeout for writing a request to an already-established connection, with the
+ *     same retry semantics as {@code readTimeout}. If empty, the AWS SDK default of 30s is used.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -51,7 +56,9 @@ public record S3BackupConfig(
     Optional<String> basePath,
     Integer maxConcurrentConnections,
     Duration connectionAcquisitionTimeout,
-    boolean supportLegacyMd5) {
+    boolean supportLegacyMd5,
+    Optional<Duration> readTimeout,
+    Optional<Duration> writeTimeout) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -95,6 +102,8 @@ public record S3BackupConfig(
     private Credentials credentials;
     private String basePath;
     private boolean supportLegacyMd5 = false;
+    private Duration readTimeout;
+    private Duration writeTimeout;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -157,6 +166,16 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withReadTimeout(final Duration readTimeout) {
+      this.readTimeout = readTimeout;
+      return this;
+    }
+
+    public Builder withWriteTimeout(final Duration writeTimeout) {
+      this.writeTimeout = writeTimeout;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -169,7 +188,9 @@ public record S3BackupConfig(
           Optional.ofNullable(basePath),
           maxConcurrentConnections,
           connectionAcquisitionTimeout,
-          supportLegacyMd5);
+          supportLegacyMd5,
+          Optional.ofNullable(readTimeout),
+          Optional.ofNullable(writeTimeout));
     }
   }
 

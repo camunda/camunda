@@ -384,12 +384,18 @@ public final class SystemContext {
     try {
       switch (backup.getStore()) {
         case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
-        case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
+        case S3 ->
+            S3BackupStore.validateConfig(
+                S3BackupStoreConfig.toStoreConfig(
+                    backup.getS3(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case GCS ->
-            GcsBackupStore.validateConfig(GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+            GcsBackupStore.validateConfig(
+                GcsBackupStoreConfig.toStoreConfig(
+                    backup.getGcs(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case AZURE ->
             AzureBackupStore.validateConfig(
-                AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
+                AzureBackupStoreConfig.toStoreConfig(
+                    backup.getAzure(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case FILESYSTEM ->
             FilesystemBackupStore.validateConfig(
                 FilesystemBackupStoreConfig.toStoreConfig(backup.getFilesystem()));

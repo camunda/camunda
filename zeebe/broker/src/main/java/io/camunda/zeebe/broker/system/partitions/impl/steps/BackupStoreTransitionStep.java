@@ -85,7 +85,9 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
-      final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
+      final var storeConfig =
+          S3BackupStoreConfig.toStoreConfig(
+              backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
       final var backupStore = S3BackupStore.of(storeConfig);
       context.setBackupStore(backupStore);
       installed.complete(null);
@@ -100,7 +102,9 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final ActorFuture<Void> installed) {
     try {
       final var brokerGcsConfig = backupCfg.getGcs();
-      final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
+      final var storeGcsConfig =
+          GcsBackupStoreConfig.toStoreConfig(
+              brokerGcsConfig, backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
       final var gcsStore = GcsBackupStore.of(storeGcsConfig);
       context.setBackupStore(gcsStore);
       installed.complete(null);
@@ -115,7 +119,9 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final ActorFuture<Void> installed) {
     try {
       final var brokerAzureConfig = backupCfg.getAzure();
-      final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
+      final var storeAzureConfig =
+          AzureBackupStoreConfig.toStoreConfig(
+              brokerAzureConfig, backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
       final var azureStore = AzureBackupStore.of(storeAzureConfig);
       context.setBackupStore(azureStore);
       installed.complete(null);
