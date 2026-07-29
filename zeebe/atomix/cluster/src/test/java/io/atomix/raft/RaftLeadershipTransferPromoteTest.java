@@ -43,7 +43,7 @@ public class RaftLeadershipTransferPromoteTest {
     final var leader = raftRule.getLeader().orElseThrow();
     final var driver = new CoordinatedTransferDriver(raftRule, leader);
     final var target = driver.followerOutsideCoordinator();
-    final int maxAttempts = leader.getContext().getRebalanceMaxTransferAttempts();
+    final int maxAttempts = leader.getContext().getRebalanceConfiguration().maxTransferAttempts();
     final var sends = dropTimeoutNow(leader, new CompletableFuture<>());
 
     // when
