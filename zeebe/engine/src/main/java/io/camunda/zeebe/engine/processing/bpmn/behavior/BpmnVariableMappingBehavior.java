@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -75,7 +75,7 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder = new InputMappingResultBuilder();
+    final var resultBuilder = new MappingResultBuilder();
     final var processor = expressionProcessor.withPrimaryContext(resultBuilder::getVariable);
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
