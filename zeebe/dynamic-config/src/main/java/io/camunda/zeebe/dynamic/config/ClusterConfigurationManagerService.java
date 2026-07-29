@@ -38,6 +38,10 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
+import io.camunda.zeebe.dynamic.config.rebalance.ProtoBufRebalanceSerializer;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceCoordinator;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestServer;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRunner;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -60,6 +64,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,6 +94,8 @@ public final class ClusterConfigurationManagerService
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
   private final ClusterConfigurationRequestServer configurationRequestServer;
+  private final RebalanceCoordinator rebalanceCoordinator;
+  private final RebalanceRequestServer rebalanceRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
   private final ClusterConfigurationGossiperConfig gossiperConfig;
@@ -108,7 +115,8 @@ public final class ClusterConfigurationManagerService
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final LongSupplier rebalanceIdGenerator) {
     this(
         dataRootDirectory,
         communicationService,
@@ -116,6 +124,7 @@ public final class ClusterConfigurationManagerService
         config,
         clusterChangeExecutor,
         meterRegistry,
+        rebalanceIdGenerator,
         USE_NEW_CONFIG);
   }
 
@@ -132,6 +141,7 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry,
+      final LongSupplier rebalanceIdGenerator,
       final boolean useNewConfig) {
     this.useNewConfig = useNewConfig;
     gossiperConfig = config;
@@ -190,6 +200,14 @@ public final class ClusterConfigurationManagerService
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
                 configurationChangeCoordinator, localMemberId, managerActor, validators));
+    // The rebalancing coordinator answers to the same lowest-id member the configuration requests
+    // are forwarded to, so it shares this service's actor rather than running one of its own.
+    rebalanceCoordinator =
+        new RebalanceCoordinator(
+            localMemberId, managerActor, RebalanceRunner.none(), rebalanceIdGenerator);
+    rebalanceRequestServer =
+        new RebalanceRequestServer(
+            communicationService, new ProtoBufRebalanceSerializer(), rebalanceCoordinator);
 
     if (useNewConfig) {
       clusterConfigurationManager.setCurrentConfigurationGossiper(
@@ -379,6 +397,8 @@ public final class ClusterConfigurationManagerService
             .collect(Collectors.toSet());
 
     configurationRequestServer.start();
+    rebalanceRequestServer.start();
+    addUpdateListener(rebalanceCoordinator);
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
     // it can immediately gossip it.
@@ -476,6 +496,8 @@ public final class ClusterConfigurationManagerService
     if (configurationRequestServer != null) {
       configurationRequestServer.close();
     }
+    rebalanceRequestServer.close();
+    removeUpdateListener(rebalanceCoordinator);
     clusterConfigurationGossiper.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }

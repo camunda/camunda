@@ -18,6 +18,8 @@ import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.rebalance.ProtoBufRebalanceSerializer;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -106,5 +108,15 @@ public class DynamicClusterServices {
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
+  }
+
+  @Bean
+  public RebalanceRequestSender rebalanceRequestSender(
+      final BrokerTopologyManager brokerTopologyManager) {
+    return new RebalanceRequestSender(
+        clusterCommunicationService,
+        ClusterConfigurationCoordinatorSupplier.from(
+            brokerTopologyManager::getClusterConfiguration),
+        new ProtoBufRebalanceSerializer());
   }
 }
