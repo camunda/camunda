@@ -78,9 +78,9 @@ paths:
         - Cluster
       operationId: getClusterStatus
       x-required-permissions: []
-      # Public health-check endpoint — declared unauthenticated at runtime via a dedicated
-      # permit-all filter chain. `security: []` overrides the conditional enforcement on the
-      # global schemes for this operation.
+      # Public health-check endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
       security: []
       summary: Get the status of the whole cluster
       description: >-

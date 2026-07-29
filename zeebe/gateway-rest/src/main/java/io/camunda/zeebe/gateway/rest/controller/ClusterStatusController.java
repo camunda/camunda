@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * Reports one aggregated status for the whole cluster, over all physical tenants (ADR 001 D4,
  * {@code docs/adr/management/001-physical-tenant-health-status-topology.md}).
  *
- * <p>Unlike every other {@code /cluster/v2} endpoint, this one is unauthenticated so that it can be
- * polled by monitoring — see {@code ClusterStatusSecurityConfiguration}. That is why the response
- * carries the aggregated status only: a physical tenant id, or even a tenant count, would let an
- * unauthenticated caller enumerate the cluster's tenants. Per-tenant detail is served by the
- * cluster-admin authenticated {@code GET /cluster/v2/topology}.
+ * <p>This endpoint is unauthenticated via {@code SecurityPathAdapter.unprotectedPaths()} so that it
+ * can be polled by monitoring. That is why the response carries the aggregated status only: a
+ * physical tenant id, or even a tenant count, would let an unauthenticated caller enumerate the
+ * cluster's tenants. Per-tenant detail is served by the cluster-admin authenticated {@code GET
+ * /cluster/v2/topology}.
  */
 @CamundaRestController
 @ClusterScoped
