@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,18 +95,35 @@ public final class InputMappingResultBuilder {
     return new UnsafeBuffer(buffer, 0, writer.getOffset());
   }
 
-  // recursion depth is bounded by the deepest target path, i.e. the number of '.'-separated
-  // segments in a zeebe:input target attribute — small by construction of the deployed model
-  private void writeMap(final Map<String, Object> map) {
-    writer.writeMapHeader(map.size());
-    map.forEach(
-        (key, value) -> {
-          writer.writeString(BufferUtil.wrapString(key));
-          if (value instanceof Map<?, ?>) {
-            writeMap(asNestedMap(value));
-          } else {
-            writer.writeRaw((DirectBuffer) value);
-          }
-        });
+  /**
+   * Writes a (possibly deeply nested) result map to msgpack using an iterative depth-first
+   * traversal instead of recursion. A {@code zeebe:input} target path can have an unbounded number
+   * of '.'-separated segments (ZeebeExpressionValidator's path pattern doesn't cap it), and this
+   * runs on every element activation — plain recursion here previously let a deeply-nested target
+   * throw an uncaught StackOverflowError before NestingDepthValidator ever got a chance to reject
+   * the document gracefully.
+   */
+  private void writeMap(final Map<String, Object> root) {
+    final Deque<Iterator<Map.Entry<String, Object>>> pending = new ArrayDeque<>();
+    writer.writeMapHeader(root.size());
+    pending.push(root.entrySet().iterator());
+
+    while (!pending.isEmpty()) {
+      final var iterator = pending.peek();
+      if (!iterator.hasNext()) {
+        pending.pop();
+        continue;
+      }
+      final var entry = iterator.next();
+      writer.writeString(BufferUtil.wrapString(entry.getKey()));
+      final var value = entry.getValue();
+      if (value instanceof Map<?, ?>) {
+        final var nested = asNestedMap(value);
+        writer.writeMapHeader(nested.size());
+        pending.push(nested.entrySet().iterator());
+      } else {
+        writer.writeRaw((DirectBuffer) value);
+      }
+    }
   }
 }
