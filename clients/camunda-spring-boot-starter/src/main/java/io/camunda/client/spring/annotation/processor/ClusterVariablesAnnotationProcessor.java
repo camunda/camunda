@@ -24,9 +24,14 @@ import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.MethodClusterVariablesValue;
 import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
+import io.camunda.client.spring.properties.ClusterVariableEntry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -98,38 +103,16 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
 
   @Override
   public void start(final CamundaClient client) {
-    // Process global variables from properties
-    final Map<String, Object> globalVariables = properties.getGlobal();
-    if (globalVariables != null && !globalVariables.isEmpty()) {
-      LOGGER.debug(
-          "Upserting {} globally-scoped cluster variable(s) from properties",
-          globalVariables.size());
-      upsertClusterVariables(client, globalVariables, null);
-    }
-
-    // Process tenant-scoped variables from properties
-    final Map<String, Map<String, Object>> tenantVariables = properties.getTenant();
-    if (tenantVariables != null && !tenantVariables.isEmpty()) {
-      for (final Map.Entry<String, Map<String, Object>> entry : tenantVariables.entrySet()) {
-        final String tenantId = entry.getKey();
-        if (tenantId == null || tenantId.isBlank()) {
-          throw new IllegalArgumentException(
-              "Invalid tenant ID in 'camunda.client.cluster-variables.tenant': tenant ID must not be null or blank");
-        }
-        final Map<String, Object> variables = entry.getValue();
-        if (variables != null && !variables.isEmpty()) {
-          LOGGER.debug(
-              "Upserting {} cluster variable(s) from properties for tenant '{}'",
-              variables.size(),
-              tenantId);
-          upsertClusterVariables(client, variables, tenantId);
-        }
-      }
+    // Process variables from properties
+    final List<ClusterVariableEntry> propertyVariables = properties.resolveVariables();
+    if (!propertyVariables.isEmpty()) {
+      LOGGER.debug("Upserting {} cluster variable(s) from properties", propertyVariables.size());
+      upsertClusterVariables(client, propertyVariables);
     }
 
     // Process variables from annotations
     for (final ClusterVariablesValue value : clusterVariablesValues) {
-      final Map<String, Object> variables;
+      final List<ClusterVariableEntry> variables;
       if (value instanceof ResourceClusterVariablesValue resourceValue) {
         variables = loadVariablesFromResources(resourceValue.getResources());
       } else if (value instanceof MethodClusterVariablesValue methodValue) {
@@ -137,7 +120,17 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
       } else {
         continue;
       }
-      upsertClusterVariables(client, variables, value.getTenantId());
+      variables.forEach(
+          entry -> {
+            if (tenantIdOf(entry) != null) {
+              throw new IllegalArgumentException(
+                  "Cluster variable '"
+                      + entry.getName()
+                      + "' must not define a tenantId; use @ClusterVariables(tenantId = ...) instead");
+            }
+            entry.setTenantId(value.getTenantId());
+          });
+      upsertClusterVariables(client, variables);
     }
   }
 
@@ -146,8 +139,9 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     clusterVariablesValues.clear();
   }
 
-  private Map<String, Object> loadVariablesFromResources(final List<String> resourcePatterns) {
-    final Map<String, Object> variables = new LinkedHashMap<>();
+  private List<ClusterVariableEntry> loadVariablesFromResources(
+      final List<String> resourcePatterns) {
+    final Map<String, ClusterVariableEntry> variables = new LinkedHashMap<>();
     final List<Resource> allResources =
         resourcePatterns.stream()
             .flatMap(pattern -> Arrays.stream(getResources(pattern)))
@@ -160,36 +154,60 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     for (final Resource resource : allResources) {
       try (final InputStream inputStream = resource.getInputStream()) {
         final String json = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        final Map<String, Object> loaded = jsonMapper.fromJsonAsMap(json);
+        final List<ClusterVariableEntry> loaded = parseVariables(json);
         LOGGER.debug(
             "Loaded {} variable(s) from resource '{}'", loaded.size(), resource.getFilename());
-        variables.putAll(loaded);
+        loaded.forEach(entry -> variables.put(entry.getName(), entry));
       } catch (final Exception e) {
         throw new RuntimeException(
             "Error reading cluster variables from resource: " + resource.getFilename(), e);
       }
     }
-    return variables;
+    return new ArrayList<>(variables.values());
   }
 
-  private Map<String, Object> loadVariablesFromSupplier(final Supplier<Object> variableSupplier) {
+  private List<ClusterVariableEntry> loadVariablesFromSupplier(
+      final Supplier<Object> variableSupplier) {
     final Object result = variableSupplier.get();
     if (result == null) {
       throw new IllegalStateException("@ClusterVariables method must not return null");
     }
-    return jsonMapper.fromJsonAsMap(jsonMapper.toJson(result));
+    return parseVariables(jsonMapper.toJson(result));
+  }
+
+  /**
+   * Parses either a JSON array of {@link ClusterVariableEntry} objects or a flat JSON object where
+   * each key becomes a variable name and the corresponding value becomes the variable value.
+   */
+  private List<ClusterVariableEntry> parseVariables(final String json) {
+    if (json != null && json.stripLeading().startsWith("[")) {
+      return new ArrayList<>(
+          Arrays.asList(jsonMapper.fromJson(json, ClusterVariableEntry[].class)));
+    }
+    final List<ClusterVariableEntry> variables = new ArrayList<>();
+    jsonMapper
+        .fromJsonAsMap(json)
+        .forEach(
+            (name, value) -> {
+              final ClusterVariableEntry entry = new ClusterVariableEntry();
+              entry.setName(name);
+              entry.setValue(value);
+              variables.add(entry);
+            });
+    return variables;
   }
 
   private void upsertClusterVariables(
-      final CamundaClient client, final Map<String, Object> variables, final String tenantId) {
-    for (final Map.Entry<String, Object> entry : variables.entrySet()) {
-      final String name = entry.getKey();
-      final Object value = entry.getValue();
+      final CamundaClient client, final List<ClusterVariableEntry> variables) {
+    for (final ClusterVariableEntry variable : variables) {
+      if (variable.getName() == null || variable.getName().isBlank()) {
+        throw new IllegalArgumentException("Cluster variable name must not be null or blank");
+      }
       try {
-        createClusterVariable(client, name, value, tenantId);
+        createClusterVariable(client, variable);
       } catch (final ProblemException e) {
         if (e.code() == 409) {
-          updateClusterVariable(client, name, value, tenantId);
+          updateClusterVariable(client, variable);
         } else {
           throw e;
         }
@@ -198,25 +216,75 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
   }
 
   private void createClusterVariable(
-      final CamundaClient client, final String name, final Object value, final String tenantId) {
+      final CamundaClient client, final ClusterVariableEntry variable) {
+    final String name = variable.getName();
+    final String tenantId = tenantIdOf(variable);
     if (tenantId != null) {
-      client.newTenantScopedClusterVariableCreateRequest(tenantId).create(name, value).execute();
+      TenantScopedClusterVariableCreationCommandStep1 command =
+          client
+              .newTenantScopedClusterVariableCreateRequest(tenantId)
+              .create(name, variable.getValue());
+      if (hasMetadata(variable)) {
+        command = command.metadata(variable.getMetadata());
+      }
+      if (variable.getKind() != null) {
+        command = command.kind(variable.getKind());
+      }
+      command.execute();
       LOGGER.debug("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
     } else {
-      client.newGloballyScopedClusterVariableCreateRequest().create(name, value).execute();
+      GloballyScopedClusterVariableCreationCommandStep1 command =
+          client.newGloballyScopedClusterVariableCreateRequest().create(name, variable.getValue());
+      if (hasMetadata(variable)) {
+        command = command.metadata(variable.getMetadata());
+      }
+      if (variable.getKind() != null) {
+        command = command.kind(variable.getKind());
+      }
+      command.execute();
       LOGGER.debug("Created globally-scoped cluster variable '{}'", name);
     }
   }
 
   private void updateClusterVariable(
-      final CamundaClient client, final String name, final Object value, final String tenantId) {
+      final CamundaClient client, final ClusterVariableEntry variable) {
+    final String name = variable.getName();
+    final String tenantId = tenantIdOf(variable);
+    if (variable.getKind() != null) {
+      LOGGER.warn(
+          "Ignoring kind '{}' for cluster variable '{}': the kind of an existing cluster variable cannot be changed",
+          variable.getKind(),
+          name);
+    }
     if (tenantId != null) {
-      client.newTenantScopedClusterVariableUpdateRequest(tenantId).update(name, value).execute();
+      TenantScopedClusterVariableUpdateCommandStep1 command =
+          client
+              .newTenantScopedClusterVariableUpdateRequest(tenantId)
+              .update(name, variable.getValue());
+      if (hasMetadata(variable)) {
+        command = command.metadata(variable.getMetadata());
+      }
+      command.execute();
       LOGGER.debug("Updated tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
     } else {
-      client.newGloballyScopedClusterVariableUpdateRequest().update(name, value).execute();
+      GloballyScopedClusterVariableUpdateCommandStep1 command =
+          client.newGloballyScopedClusterVariableUpdateRequest().update(name, variable.getValue());
+      if (hasMetadata(variable)) {
+        command = command.metadata(variable.getMetadata());
+      }
+      command.execute();
       LOGGER.debug("Updated globally-scoped cluster variable '{}'", name);
     }
+  }
+
+  /** A blank tenant ID means the variable is globally scoped. */
+  private static String tenantIdOf(final ClusterVariableEntry variable) {
+    final String tenantId = variable.getTenantId();
+    return tenantId == null || tenantId.isBlank() ? null : tenantId;
+  }
+
+  private static boolean hasMetadata(final ClusterVariableEntry variable) {
+    return variable.getMetadata() != null && !variable.getMetadata().isEmpty();
   }
 
   private Resource[] getResources(final String resourcePattern) {

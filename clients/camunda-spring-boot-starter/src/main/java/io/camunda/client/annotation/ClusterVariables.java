@@ -37,8 +37,11 @@ public @interface ClusterVariables {
    * JSON resource files to load cluster variables from. Supports Spring resource pattern resolver
    * mechanisms (e.g., {@code "classpath:cluster-variables.json"}).
    *
-   * <p>Each JSON file should contain a flat JSON object where each key becomes a variable name and
-   * the corresponding value becomes the variable value.
+   * <p>Each JSON file contains either a flat JSON object, where each key becomes a variable name
+   * and the corresponding value becomes the variable value, or a JSON array of entries of the form
+   * <code>{"name": ..., "value": ..., "metadata": {...}, "kind": ...}</code>, which additionally
+   * supports metadata. The same applies to the value returned by a method-level annotation. An
+   * entry must not define a {@code tenantId} — the scope is defined by {@link #tenantId()}.
    *
    * <p>Only effective on class level.
    */

@@ -28,12 +28,15 @@ import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandS
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
+import io.camunda.client.spring.properties.ClusterVariableEntry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -385,6 +388,171 @@ public class ClusterVariablesAnnotationProcessorTest {
     verify(tenantUpdateStep).update("tenantVar", "newValue");
   }
 
+  @Test
+  void shouldCreateVariablesWithMetadataFromProperties() {
+    // given
+    properties.setVariables(
+        List.of(entry("withMeta", "value", Map.of("owner", "platform"), null, null)));
+    mockGlobalCreateCommand();
+    when(globalCreateStep.metadata(anyMap())).thenReturn(globalCreateStep);
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).create("withMeta", "value");
+    verify(globalCreateStep).metadata(Map.of("owner", "platform"));
+  }
+
+  @Test
+  void shouldCreateVariableWithKindFromProperties() {
+    // given
+    properties.setVariables(
+        List.of(entry("secret", "my/secret", null, ClusterVariableKind.SECRET_REFERENCE, null)));
+    mockGlobalCreateCommand();
+    when(globalCreateStep.kind(any())).thenReturn(globalCreateStep);
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).kind(ClusterVariableKind.SECRET_REFERENCE);
+    verify(globalCreateStep, never()).metadata(anyMap());
+  }
+
+  @Test
+  void shouldCreateTenantScopedVariableFromVariablesProperty() {
+    // given
+    properties.setVariables(List.of(entry("tenantVar", "tenantValue", null, null, "my-tenant")));
+    mockTenantCreateCommand();
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(client).newTenantScopedClusterVariableCreateRequest("my-tenant");
+    verify(tenantCreateStep).create("tenantVar", "tenantValue");
+  }
+
+  @Test
+  void shouldPreferVariablesOverDeprecatedProperties() {
+    // given
+    properties.setVariables(List.of(entry("fromList", "listValue", null, null, null)));
+    properties.setGlobal(Map.of("fromGlobal", "globalValue"));
+    mockGlobalCreateCommand();
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).create("fromList", "listValue");
+    verify(globalCreateStep, never()).create("fromGlobal", "globalValue");
+  }
+
+  @Test
+  void shouldCreateVariablesWithMetadataFromResource() throws IOException {
+    // given
+    final Resource resource =
+        mockJsonResource(
+            "[{\"name\": \"region\", \"value\": \"eu-1\", \"metadata\": {\"owner\": \"platform\"}}, "
+                + "{\"name\": \"retries\", \"value\": 3}]");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+    mockGlobalCreateCommand();
+    when(globalCreateStep.metadata(anyMap())).thenReturn(globalCreateStep);
+
+    // when
+    processor.configureFor(beanInfo(new WithSingleResource()));
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).create("region", "eu-1");
+    verify(globalCreateStep).metadata(Map.of("owner", "platform"));
+    verify(globalCreateStep).create("retries", 3);
+  }
+
+  @Test
+  void shouldCreateVariablesWithMetadataFromMethod() {
+    // given
+    mockGlobalCreateCommand();
+    when(globalCreateStep.metadata(anyMap())).thenReturn(globalCreateStep);
+
+    // when
+    processor.configureFor(beanInfo(new WithEntryListMethod()));
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).create("environment", "production");
+    verify(globalCreateStep).metadata(Map.of("owner", "platform"));
+  }
+
+  @Test
+  void shouldRejectEntryLevelTenantIdFromResource() throws IOException {
+    // given
+    final Resource resource =
+        mockJsonResource("[{\"name\": \"var\", \"value\": \"v\", \"tenantId\": \"other\"}]");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+
+    // when / then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            })
+        .withMessageContaining("must not define a tenantId");
+  }
+
+  @Test
+  void shouldRejectVariableWithoutName() {
+    // given
+    properties.setVariables(List.of(entry(null, "value", null, null, null)));
+
+    // when / then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> processor.start(client))
+        .withMessageContaining("name must not be null or blank");
+  }
+
+  @Test
+  void shouldUpdateVariableWithMetadataWhenAlreadyExists() {
+    // given
+    properties.setVariables(
+        List.of(
+            entry(
+                "myVar", "newValue", Map.of("owner", "platform"), ClusterVariableKind.JSON, null)));
+    when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
+    when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+    when(globalCreateStep.metadata(anyMap())).thenReturn(globalCreateStep);
+    when(globalCreateStep.kind(any())).thenReturn(globalCreateStep);
+    doThrow(new ProblemException(409, "Conflict", null)).when(globalCreateStep).execute();
+    mockGlobalUpdateCommand();
+    when(globalUpdateStep.metadata(anyMap())).thenReturn(globalUpdateStep);
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(globalUpdateStep).update("myVar", "newValue");
+    verify(globalUpdateStep).metadata(Map.of("owner", "platform"));
+  }
+
+  private static ClusterVariableEntry entry(
+      final String name,
+      final Object value,
+      final Map<String, Object> metadata,
+      final ClusterVariableKind kind,
+      final String tenantId) {
+    final ClusterVariableEntry entry = new ClusterVariableEntry();
+    entry.setName(name);
+    entry.setValue(value);
+    entry.setMetadata(metadata);
+    entry.setKind(kind);
+    entry.setTenantId(tenantId);
+    return entry;
+  }
+
   private void mockGlobalCreateCommand() {
     when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
     when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
@@ -420,6 +588,14 @@ public class ClusterVariablesAnnotationProcessorTest {
     @ClusterVariables
     public Map<String, Object> clusterVariables() {
       return Map.of("environment", "production", "version", "1.0");
+    }
+  }
+
+  // Public to allow reflective method invocation from SpringMethodInfo (different package)
+  public static final class WithEntryListMethod {
+    @ClusterVariables
+    public List<ClusterVariableEntry> clusterVariables() {
+      return List.of(entry("environment", "production", Map.of("owner", "platform"), null, null));
     }
   }
 
