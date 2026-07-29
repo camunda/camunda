@@ -39,6 +39,7 @@ public class AsyncRequestBehavior {
         .setValueType(command.getValueType())
         .setRequestId(command.getRequestId())
         .setRequestStreamId(command.getRequestStreamId())
-        .setOperationReference(command.getOperationReference());
+        .setOperationReference(command.getOperationReference())
+        .setBatchOperationReference(command.getBatchOperationReference());
   }
 }

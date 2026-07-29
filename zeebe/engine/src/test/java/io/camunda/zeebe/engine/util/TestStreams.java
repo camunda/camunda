@@ -459,6 +459,11 @@ public final class TestStreams {
       return this;
     }
 
+    public FluentLogWriter batchOperationReference(final long batchOperationReference) {
+      metadata.batchOperationReference(batchOperationReference);
+      return this;
+    }
+
     public FluentLogWriter recordType(final RecordType recordType) {
       metadata.recordType(recordType);
       return this;
