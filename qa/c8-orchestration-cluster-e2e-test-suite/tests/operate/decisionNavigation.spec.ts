@@ -262,22 +262,21 @@ test.describe('Decision Navigation', () => {
         page.url(),
       ).toString();
 
-      await decisionInstanceLink.click();
-
       await waitForAssertion({
         assertion: async () => {
-          // The URL check alone isn't proof we landed: Operate redirects back
-          // to the list right after navigating if the instance isn't ready.
+          // Navigate to the detail URL on every attempt (first and retries use
+          // the same resilient path), then confirm we actually landed: the URL
+          // alone isn't proof, since Operate redirects back to the list right
+          // after navigating if the instance isn't ready yet.
+          await page.goto(detailUrl);
           await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
             timeout: 10_000,
           });
         },
         onFailure: async () => {
-          // Bounced back to the list. Give the importer time, then re-request
-          // the detail URL directly — a fresh fetch of this exact instance,
-          // decoupled from list render/filter state.
+          // Bounced back to the list — give the importer time before the next
+          // fresh fetch of this exact instance.
           await sleep(6000);
-          await page.goto(detailUrl);
         },
         maxRetries: 12,
       });

@@ -141,6 +141,11 @@ test.describe.serial('Process Instance Migration', () => {
       // reload can't recover because it re-restores the wrong version. Confirm
       // v1 actually stuck, re-selecting process+version on each retry — the same
       // recovery the child-migration filter test uses.
+      // Validate the version *and* the resulting count in a single attempt:
+      // the onFailure recovery (reload + re-select process/version) re-triggers
+      // the same auto-reset-to-latest race, so every attempt must confirm v1
+      // actually stuck before asserting "10 results" — otherwise a retry can
+      // run against v2 (no instances) and fail for the original root cause.
       await waitForAssertion({
         assertion: async () => {
           await expect
@@ -148,17 +153,6 @@ test.describe.serial('Process Instance Migration', () => {
               operateFiltersPanelPage.processVersionFilter.innerText(),
             )
             .toBe(sourceVersion);
-        },
-        onFailure: async () => {
-          await page.reload();
-          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-          await operateFiltersPanelPage.selectVersion(sourceVersion);
-        },
-        maxRetries: 5,
-      });
-
-      await waitForAssertion({
-        assertion: async () => {
           await expect(page.getByText('10 results')).toBeVisible({
             timeout: 30000,
           });
@@ -168,6 +162,7 @@ test.describe.serial('Process Instance Migration', () => {
           await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
           await operateFiltersPanelPage.selectVersion(sourceVersion);
         },
+        maxRetries: 5,
       });
     });
 
