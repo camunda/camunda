@@ -16,9 +16,9 @@ import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DecisionInstanceSortTest extends AbstractSortTransformerTest {
@@ -70,12 +70,18 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
             });
   }
 
-  @Test
-  void shouldSortDecisionInstanceIdByKeyAndExecutionIndex() {
+  @ParameterizedTest
+  @EnumSource(SortOrder.class)
+  void shouldSortDecisionInstanceIdByKeyAndExecutionIndex(final SortOrder sortOrder) {
     // when
     final var request =
         SearchQueryBuilders.decisionInstanceSearchQuery(
-            q -> q.sort(s -> s.decisionInstanceId().desc()));
+            q ->
+                q.sort(
+                    s ->
+                        sortOrder == SortOrder.ASC
+                            ? s.decisionInstanceId().asc()
+                            : s.decisionInstanceId().desc()));
     final var sort = transformRequest(request);
 
     // then
@@ -84,7 +90,7 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
         .containsExactly("key", "executionIndex", "id");
     assertThat(sort)
         .extracting(searchSort -> searchSort.field().order())
-        .containsExactly(SortOrder.DESC, SortOrder.DESC, SortOrder.ASC);
+        .containsExactly(sortOrder, sortOrder, SortOrder.ASC);
   }
 
   private record TestArguments(
