@@ -79,6 +79,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     final var retentionCfg = backupCfg.getRetention();
     if (shouldRegisterRetentionJob()) {
       final var backupStore = BackupStoreFactory.createStore(backupCfg);
+      if (backupStore == null) {
+        throw new IllegalStateException("No backup store configured");
+      }
       backupRetentionJob =
           new BackupRetention(
               backupStore,
