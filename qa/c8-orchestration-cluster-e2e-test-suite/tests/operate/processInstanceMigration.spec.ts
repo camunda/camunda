@@ -740,10 +740,12 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify Business rule task incident migration', async () => {
       // This step is not sharing data with anything else and already retries
-      // with reload — it failed in CI anyway after 3 attempts. Unlike the
-      // other fixes in this file, this isn't a data-uniqueness issue; it's
-      // backend contention from concurrently-running specs outlasting the
-      // retry budget. Bumping retries is a stopgap, not a fix for that.
+      // with reload — it failed in CI anyway after 3, then 5 attempts (run
+      // 30438261914). Unlike the other fixes in this file, this isn't a
+      // data-uniqueness issue; it's backend contention from concurrently-running
+      // specs outlasting the retry budget. Bumping retries / adding a settle
+      // sleep is a stopgap, not a fix for that — the durable fix is reducing
+      // Operate import/backend contention under the concurrent E2E load.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -752,10 +754,13 @@ test.describe.serial('Process Instance Migration', () => {
           );
         },
         onFailure: async () => {
+          // Let the contended import/backend catch up before re-reading rather
+          // than immediately reloading into the same contention window.
+          await sleep(5000);
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 5,
+        maxRetries: 8,
       });
     });
   });
