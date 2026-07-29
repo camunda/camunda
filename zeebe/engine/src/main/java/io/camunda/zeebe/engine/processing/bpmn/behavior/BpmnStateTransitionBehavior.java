@@ -333,7 +333,12 @@ public final class BpmnStateTransitionBehavior {
 
     if (asyncRequest != null) {
       stateWriter.appendFollowUpEvent(
-          key, transition, value, m -> m.operationReference(asyncRequest.operationReference()));
+          key,
+          transition,
+          value,
+          m ->
+              m.operationReference(asyncRequest.operationReference())
+                  .batchOperationReference(asyncRequest.batchOperationReference()));
       stateWriter.appendFollowUpEvent(
           asyncRequest.key(), AsyncRequestIntent.PROCESSED, asyncRequest.record());
     } else {
