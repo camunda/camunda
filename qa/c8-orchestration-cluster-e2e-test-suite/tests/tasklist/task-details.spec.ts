@@ -15,7 +15,8 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {findUserTask, expectProcessState} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
-import {defaultAssertionOptions} from 'utils/constants';
+
+let customHeadersProcessInstanceKey: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -84,8 +85,16 @@ test.beforeAll(async () => {
     createInstances('zeebe_and_job_worker_process', 1, 1),
     createInstances('bigVariableProcessWithForm', 1, 1),
     createInstances('employee_registration_no_output_mapping', 1, 1),
-    createInstances('usertask_with_custom_headers', 1, 1),
   ]);
+
+  const [customHeadersInstance] = await createInstances(
+    'usertask_with_custom_headers',
+    1,
+    1,
+  );
+  customHeadersProcessInstanceKey = String(
+    customHeadersInstance.processInstanceKey,
+  );
 
   await sleep(1000);
 });
@@ -710,25 +719,12 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    let processInstanceKey = '';
-    await expect(async () => {
-      const res = await request.post(buildUrl('/process-instances/search'), {
-        headers: jsonHeaders(),
-        data: {
-          filter: {
-            processDefinitionId: 'usertask_with_custom_headers',
-            state: 'ACTIVE',
-          },
-        },
-      });
-      const body = await res.json();
-      // This spec runs under several Playwright projects against one shared
-      // cluster and each project's beforeAll seeds an instance, so more than
-      // one ACTIVE instance of this process can exist. Take any one and drive
-      // the rest of the flow against that specific instance.
-      expect(body.items.length).toBeGreaterThanOrEqual(1);
-      processInstanceKey = body.items[0].processInstanceKey;
-    }).toPass(defaultAssertionOptions);
+    // Drive the flow against the exact instance this project seeded in
+    // beforeAll. This spec runs under several Playwright projects against one
+    // shared cluster, so searching /process-instances for an ACTIVE instance
+    // could return one another project is concurrently assigning/completing,
+    // making findUserTask's single-CREATED-task assertion race.
+    const processInstanceKey = customHeadersProcessInstanceKey;
 
     const userTaskKey = await findUserTask(
       request,
