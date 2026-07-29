@@ -163,6 +163,141 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.primary-storage.backup.read-timeout=90s",
+        "camunda.data.primary-storage.backup.write-timeout=120s"
+      })
+  class RequestTimeoutConfiguration {
+    final BackupCfg backupCfg;
+
+    RequestTimeoutConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupCfg = brokerCfg.getData().getBackup();
+    }
+
+    @Test
+    void shouldSetReadAndWriteTimeoutSeparately() {
+      assertThat(backupCfg.getReadTimeout()).isEqualTo(Duration.ofSeconds(90));
+      assertThat(backupCfg.getWriteTimeout()).isEqualTo(Duration.ofSeconds(120));
+    }
+  }
+
+  @Nested
+  class DefaultRequestTimeoutConfiguration {
+    final BackupCfg backupCfg;
+
+    DefaultRequestTimeoutConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupCfg = brokerCfg.getData().getBackup();
+    }
+
+    @Test
+    void shouldLeaveTimeoutsUnsetSoThatStoreDefaultsApply() {
+      assertThat(backupCfg.getReadTimeout()).isNull();
+      assertThat(backupCfg.getWriteTimeout()).isNull();
+    }
+  }
+
+  @Nested
+  class RequestTimeoutStartupValidation {
+
+    @Test
+    void shouldFailToStartWithNegativeReadTimeout() {
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.secondary-storage.type",
+              "rdbms",
+              "camunda.data.primary-storage.backup.read-timeout",
+              "-10s");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("BackupStore readTimeout must be positive");
+    }
+
+    @Test
+    void shouldFailToStartWithNegativeWriteTimeout() {
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.secondary-storage.type",
+              "rdbms",
+              "camunda.data.primary-storage.backup.write-timeout",
+              "-10s");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("BackupStore writeTimeout must be positive");
+    }
+
+    @Test
+    void shouldFailToStartWithZeroReadTimeout() {
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.secondary-storage.type",
+              "rdbms",
+              "camunda.data.primary-storage.backup.read-timeout",
+              "0s");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("BackupStore readTimeout must be positive");
+    }
+
+    @Test
+    void shouldFailToStartWithZeroWriteTimeout() {
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.secondary-storage.type",
+              "rdbms",
+              "camunda.data.primary-storage.backup.write-timeout",
+              "0s");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("BackupStore writeTimeout must be positive");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.continuous=true",
         "zeebe.broker.experimental.continuousBackups=true"

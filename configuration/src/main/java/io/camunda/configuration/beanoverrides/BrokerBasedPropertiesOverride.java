@@ -70,6 +70,7 @@ import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.util.Preconditions;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -750,6 +751,17 @@ public class BrokerBasedPropertiesOverride {
         camunda.getData().getPrimaryStorage().getBackup();
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setStore(BackupStoreType.valueOf(primaryStorageBackup.getStore().name()));
+    Preconditions.test(
+        primaryStorageBackup.getReadTimeout() != null
+            && !primaryStorageBackup.getReadTimeout().isPositive(),
+        "BackupStore readTimeout must be positive");
+    backupCfg.setReadTimeout(primaryStorageBackup.getReadTimeout());
+
+    Preconditions.test(
+        primaryStorageBackup.getWriteTimeout() != null
+            && !primaryStorageBackup.getWriteTimeout().isPositive(),
+        "BackupStore writeTimeout must be positive");
+    backupCfg.setWriteTimeout(primaryStorageBackup.getWriteTimeout());
 
     populateFromS3(override, camunda);
     populateFromGcs(override, camunda);

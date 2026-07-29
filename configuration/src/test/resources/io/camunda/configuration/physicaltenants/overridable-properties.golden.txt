@@ -56,6 +56,7 @@ data.primary-storage.backup.gcs.buffer-size
 data.primary-storage.backup.gcs.host
 data.primary-storage.backup.gcs.max-concurrent-transfers
 data.primary-storage.backup.offset
+data.primary-storage.backup.read-timeout
 data.primary-storage.backup.required
 data.primary-storage.backup.retention.window
 data.primary-storage.backup.s3.access-key
@@ -73,6 +74,7 @@ data.primary-storage.backup.s3.ssec-key
 data.primary-storage.backup.s3.support-legacy-md5
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
+data.primary-storage.backup.write-timeout
 data.primary-storage.directory
 data.primary-storage.disk.free-space.processing
 data.primary-storage.disk.free-space.replication
