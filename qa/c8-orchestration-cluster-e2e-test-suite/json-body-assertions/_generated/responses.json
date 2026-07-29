@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "df8ef20e91182d46387fa8f0b65fc5a460e81a6f",
-    "generatedAt": "2026-07-27T08:53:11.299Z",
+    "commit": "ad3b4bc073fa1267236bc50eb9d663d1e392a7a0",
+    "generatedAt": "2026-07-28T12:38:09.782Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "16897b5c23a1fd1b8e394014caf24c59bf13717dbc7b15de1a8bc1e7a17314d0"
+    "specSha256": "0dc4fc953ebe6d71b9dd16131a6e0ddca57c56200d552976637a4d2db0f48a81"
   },
   "responses": [
     {
@@ -1278,6 +1278,463 @@
               "TENANT",
               "USER",
               "USER_TASK"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/runtime",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/runtime",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/runtime/state",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupStates",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "checkpointId",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointTimestamp",
+                  "type": "string"
+                },
+                {
+                  "name": "checkpointType",
+                  "type": "string",
+                  "enumValues": [
+                    "MANUAL_BACKUP",
+                    "SCHEDULED_BACKUP"
+                  ]
+                },
+                {
+                  "name": "firstLogPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "checkpointStates",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "checkpointId",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointTimestamp",
+                  "type": "string"
+                },
+                {
+                  "name": "checkpointType",
+                  "type": "string",
+                  "enumValues": [
+                    "MARKER",
+                    "SCHEDULED_BACKUP",
+                    "MANUAL_BACKUP"
+                  ]
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "ranges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "end",
+                  "type": "items",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "checkpointId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointTimestamp",
+                        "type": "string"
+                      },
+                      {
+                        "name": "checkpointType",
+                        "type": "string",
+                        "enumValues": [
+                          "MANUAL_BACKUP",
+                          "SCHEDULED_BACKUP"
+                        ]
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "start",
+                  "type": "items",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "checkpointId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointTimestamp",
+                        "type": "string"
+                      },
+                      {
+                        "name": "checkpointType",
+                        "type": "string",
+                        "enumValues": [
+                          "MANUAL_BACKUP",
+                          "SCHEDULED_BACKUP"
+                        ]
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/runtime/state/sync",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupStates",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "checkpointId",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointTimestamp",
+                  "type": "string"
+                },
+                {
+                  "name": "checkpointType",
+                  "type": "string",
+                  "enumValues": [
+                    "MANUAL_BACKUP",
+                    "SCHEDULED_BACKUP"
+                  ]
+                },
+                {
+                  "name": "firstLogPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "checkpointStates",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "checkpointId",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointPosition",
+                  "type": "number"
+                },
+                {
+                  "name": "checkpointTimestamp",
+                  "type": "string"
+                },
+                {
+                  "name": "checkpointType",
+                  "type": "string",
+                  "enumValues": [
+                    "MARKER",
+                    "SCHEDULED_BACKUP",
+                    "MANUAL_BACKUP"
+                  ]
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "ranges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "end",
+                  "type": "items",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "checkpointId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointTimestamp",
+                        "type": "string"
+                      },
+                      {
+                        "name": "checkpointType",
+                        "type": "string",
+                        "enumValues": [
+                          "MANUAL_BACKUP",
+                          "SCHEDULED_BACKUP"
+                        ]
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "start",
+                  "type": "items",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "checkpointId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "checkpointTimestamp",
+                        "type": "string"
+                      },
+                      {
+                        "name": "checkpointType",
+                        "type": "string",
+                        "enumValues": [
+                          "MANUAL_BACKUP",
+                          "SCHEDULED_BACKUP"
+                        ]
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/runtime/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "details",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "brokerId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "brokerVersion",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "checkpointPosition",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "createdAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "failureReason",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "firstLogPosition",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "lastUpdatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "snapshotId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "state",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "failureReason",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "DOES_NOT_EXIST",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED",
+              "INCOMPLETE",
+              "DELETED"
             ]
           }
         ],
@@ -7873,6 +8330,20 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/secrets/list",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "references",
+            "type": "array<string>"
           }
         ],
         "optional": []
