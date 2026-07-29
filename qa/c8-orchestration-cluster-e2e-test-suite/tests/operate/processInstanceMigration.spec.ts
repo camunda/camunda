@@ -133,6 +133,30 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
+      // orderProcessMigration has two versions (v1, v2). Selecting a
+      // multi-version process makes Operate auto-select the latest version via
+      // an autorun that can fire *after* selectVersion, silently resetting the
+      // filter back to v2. When that happens the source-version list is empty
+      // ("no instances matching"), so "10 results" never appears — and a bare
+      // reload can't recover because it re-restores the wrong version. Confirm
+      // v1 actually stuck, re-selecting process+version on each retry — the same
+      // recovery the child-migration filter test uses.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
+            .toBe(sourceVersion);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+        },
+        maxRetries: 5,
+      });
+
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('10 results')).toBeVisible({
@@ -141,6 +165,8 @@ test.describe.serial('Process Instance Migration', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
         },
       });
     });
@@ -863,7 +889,9 @@ test.describe.serial('Process Instance Migration', () => {
       // rule task incident" flake above: reload and retry the click.
       await waitForAssertion({
         assertion: async () => {
-          await operateDiagramPage.resetDiagramZoomButton.click({timeout: 30_000});
+          await operateDiagramPage.resetDiagramZoomButton.click({
+            timeout: 30_000,
+          });
         },
         onFailure: async () => {
           await page.reload();
