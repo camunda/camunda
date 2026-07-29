@@ -17,14 +17,16 @@ package io.atomix.raft.roles;
 
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Runs the coordinated leadership transfers a {@link LeaderRole} accepts, one at a time. Shares the
- * role's lifecycle rather than being per-transfer: a leader that stays leader after a transfer
- * fails can run another. Each accepted transfer runs as its own one-shot {@link
- * LeadershipTransferAttempt}, so no state survives from one transfer into the next.
+ * Runs the coordinated leadership transfers the leader accepts, one at a time. Shares the role's
+ * lifecycle rather than being per-transfer: a leader that stays leader after a transfer fails can
+ * run another. Each accepted transfer runs as its own one-shot {@link LeadershipTransferAttempt},
+ * so no state survives from one transfer into the next.
  */
 @NullMarked
 final class LeadershipTransferRunner {
@@ -44,12 +46,28 @@ final class LeadershipTransferRunner {
     return currentAttempt != null;
   }
 
-  void start(final LeadershipTransferInitiateRequest request) {
+  /**
+   * Accepts or rejects an initiate request. A rejection carries its reason back in the response; an
+   * accepted request starts a one-shot attempt, whose outcome reaches the coordinator separately
+   * once the transfer finishes.
+   */
+  LeadershipTransferInitiateResponse handleInitiate(
+      final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
+    final var rejectionReason =
+        leader.precheckTransfer(
+            request.desiredLeader(), request.coordinator(), request.coordinatorConfigIndex());
+    if (rejectionReason.isPresent()) {
+      return LeadershipTransferInitiateResponse.builder()
+          .withStatus(Status.OK)
+          .withRejectionReason(rejectionReason.get())
+          .build();
+    }
     final var attempt =
         new LeadershipTransferAttempt(raft, leader, request, () -> currentAttempt = null);
     currentAttempt = attempt;
     attempt.start();
+    return LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
   }
 
   void onLeaderStopped() {

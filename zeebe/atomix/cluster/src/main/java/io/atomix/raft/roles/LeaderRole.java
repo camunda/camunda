@@ -810,20 +810,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
     logRequest(request);
-    final var rejectionReason =
-        precheckTransfer(
-            request.desiredLeader(), request.coordinator(), request.coordinatorConfigIndex());
-    if (rejectionReason.isPresent()) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              LeadershipTransferInitiateResponse.builder()
-                  .withStatus(Status.OK)
-                  .withRejectionReason(rejectionReason.get())
-                  .build()));
-    }
-    leadershipTransferRunner.start(request);
     return CompletableFuture.completedFuture(
-        logResponse(LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build()));
+        logResponse(leadershipTransferRunner.handleInitiate(request)));
   }
 
   @Override
