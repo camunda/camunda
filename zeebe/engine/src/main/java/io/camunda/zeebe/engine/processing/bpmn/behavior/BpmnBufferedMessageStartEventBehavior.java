@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -24,7 +25,10 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
@@ -43,6 +47,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   private final MessageCorrelateBehavior messageCorrelateBehavior;
   private final InstantSource clock;
+  private final StateWriter stateWriter;
+  private final SubscriptionCommandSender commandSender;
 
   public BpmnBufferedMessageStartEventBehavior(
       final ProcessingState processingState,
@@ -62,6 +68,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
     messageStartProcessInstanceAskState = processingState.getMessageStartProcessInstanceAskState();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.clock = clock;
+    stateWriter = writers.state();
+    this.commandSender = commandSender;
 
     final var eventHandle =
         new EventHandle(
@@ -93,6 +101,50 @@ public final class BpmnBufferedMessageStartEventBehavior {
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
     final var processInstanceKey = context.getProcessInstanceKey();
     return Optional.ofNullable(messageState.getProcessInstanceCorrelationKey(processInstanceKey));
+  }
+
+  /**
+   * Pushes a cross-partition message-start holder's completion or termination to {@code P_K}: when
+   * the given root process instance was created as such a holder via the handshake — signalled by a
+   * holder-origin entry on {@code P_B} — this emits a {@link
+   * MessageStartCorrelationKeyLockReleaseIntent#PUSHED} event (which drops the origin entry) and
+   * sends the {@code RELEASE} to {@code P_K}, so {@code P_K} frees the correlation-key lock and
+   * picks up the next buffered message the moment the holder is gone, rather than waiting to be
+   * polled.
+   *
+   * <p>Driven purely by the origin entry's presence, and everything the {@code RELEASE} carries is
+   * read from it — never from the completing element's context, which may belong to a migrated
+   * version declaring a different process id (or no message start event at all). For every
+   * non-holder root instance the lookup is a single point read that misses via the column family's
+   * bloom filter.
+   */
+  public void pushCrossPartitionHolderCompletion(final long processInstanceKey) {
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(processInstanceKey);
+    if (origin == null) {
+      return;
+    }
+
+    // the origin getters are backed by the shared read buffer: copy before appending the event
+    final var bpmnProcessId = BufferUtil.cloneBuffer(origin.getBpmnProcessIdBuffer());
+    final var correlationKey = BufferUtil.cloneBuffer(origin.getCorrelationKeyBuffer());
+    final var tenantId = BufferUtil.bufferAsString(origin.getTenantIdBuffer());
+    // the buffered message key's partition bits address P_K; synthesize the RELEASE's routing
+    // envelope from them (raw key 0: it is a partition address, not an event or request key)
+    final long requestKey =
+        Protocol.encodePartitionId(Protocol.decodePartitionId(origin.getMessageKey()), 0L);
+
+    final var record = new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(requestKey);
+    final var holder =
+        record
+            .addHolder()
+            .setProcessInstanceKey(processInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setCorrelationKey(correlationKey)
+            .setTenantId(tenantId);
+
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);
+    commandSender.sendCorrelationKeyLockRelease(requestKey, holder);
   }
 
   /**

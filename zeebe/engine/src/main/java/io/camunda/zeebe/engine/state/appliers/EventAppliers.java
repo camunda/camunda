@@ -616,7 +616,8 @@ public final class EventAppliers implements EventApplier {
         new MessageStartProcessInstanceStartedV1Applier(
             state.getMessageStartProcessInstanceDedupState(),
             state.getMessageStartProcessInstanceAskState(),
-            state.getMessageState()));
+            state.getMessageState(),
+            state.getPartitionId()));
     register(
         MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
         new MessageStartProcessInstanceExpiredDedupDeletedV1Applier(
@@ -636,15 +637,19 @@ public final class EventAppliers implements EventApplier {
   }
 
   /**
-   * Appliers for the pull-based correlation-key lock release lookup. Both event intents are
-   * introduced together with this feature and have no prior stream history, so a single V1 applier
-   * per intent is sufficient.
+   * Appliers for the cross-partition correlation-key lock release. The release is normally pushed
+   * by {@code P_B} on holder completion; these query/reconciliation intents are the backstop half.
+   * Both event intents are introduced together with this feature and have no prior stream history,
+   * so a single V1 applier per intent is sufficient.
    *
    * <ul>
    *   <li>{@code QUERIED}: acknowledgement event on {@code P_B} with no state effect.
    *   <li>{@code RELEASED}: applied on {@code P_K} for each holder reported gone; removes the
    *       active process-instance lock and the cross-partition lock marker for that correlation
    *       key. The buffered-message pick-up is not done here but in the RELEASE command processor.
+   *   <li>{@code PUSHED}: applied on {@code P_B} when a holder completes/terminates and its {@code
+   *       RELEASE} was pushed to {@code P_K}; drops the holder-origin entry {@code P_B} kept for
+   *       it.
    * </ul>
    */
   private void registerMessageStartCorrelationKeyLockReleaseAppliers(
@@ -653,6 +658,9 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartCorrelationKeyLockReleaseIntent.RELEASED,
         new MessageStartCorrelationKeyLockReleaseReleasedV1Applier(state.getMessageState()));
+    register(
+        MessageStartCorrelationKeyLockReleaseIntent.PUSHED,
+        new MessageStartCorrelationKeyLockReleasePushedV1Applier(state.getMessageState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

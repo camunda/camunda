@@ -25,8 +25,11 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *
  * <p>This processor writes the {@link
  * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} follow-up event whose applier
- * does the bookkeeping cleanup (pending-ask state removal). The message stays buffered on {@code
- * P_K}, preserving the same semantics as when a local start-event subscription is missing.
+ * keeps the pending-ask entry and backs it off — incrementing its rejection count, never removing
+ * it. The message stays buffered on {@code P_K} and its ask is re-sent to {@code P_B} under capped
+ * exponential back-off by the pending-ask scheduler until the subscription reaches {@code P_B} (the
+ * reply then flips to {@code STARTED}) or the buffered message reaches its TTL (ADR 0002 D2/D3),
+ * preserving the same semantics as when a local start-event subscription is missing.
  *
  * <p>When the delegating command was a synchronous {@code correlate} (rather than a {@code
  * publish}), the client is still awaiting a response; this processor additionally flushes the

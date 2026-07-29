@@ -24,9 +24,11 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.junit.Before;
@@ -36,21 +38,21 @@ import org.junit.Test;
 /**
  * Multi-partition behavioural pin for the pull-based correlation-key lock release. A message-start
  * instance created via the cross-partition handshake runs on {@code P_B = hash(businessId)} while
- * the correlation-key lock it holds lives on {@code P_K = hash(correlationKey)}; {@code P_K} cannot
- * observe that holder completing, so it polls {@code P_B} and releases the lock when the holder is
- * gone. These tests exercise that whole loop — scheduler on {@code P_K} → query handler on {@code
- * P_B} → release reply on {@code P_K} → buffered-message pick-up — through the real inter-partition
- * transport.
+ * the correlation-key lock it holds lives on {@code P_K = hash(correlationKey)}. On holder
+ * completion or termination {@code P_B} pushes a release straight to {@code P_K} (the fast path);
+ * {@code P_K} also reconciles periodically as a slow-path backstop for lost pushes. These tests
+ * exercise that whole loop — scheduler on {@code P_K} → query handler on {@code P_B} → release
+ * reply on {@code P_K} → buffered-message pick-up — through the real inter-partition transport.
  *
  * <p>Component-level behaviour that does not need the full transport is pinned with the code it
- * belongs to and is intentionally <em>not</em> re-tested here: the scheduler's back-off doubling /
- * cap and per-partition batching live in {@code
+ * belongs to and is intentionally <em>not</em> re-tested here: the scheduler's per-partition
+ * batching and stateless per-tick reconciliation live in {@code
  * CrossPartitionMessageStartLockReleaseSchedulerTest}; the {@code P_B} query outcomes (active /
  * gone / banned) live in {@code MessageStartCorrelationKeyLockReleaseQueryProcessorTest}; and the
  * {@code P_K} release handler's holder-precise idempotency guard lives in {@code
  * MessageStartCorrelationKeyLockReleaseReleaseProcessorTest}. Restart / leadership recovery is a
- * property of the transient back-off bookkeeping being rebuilt from local lock state (covered by
- * the scheduler unit test's reconcile case) and needs no dedicated multi-partition pin.
+ * property of the poll set being reconstructed from local lock state each tick (covered by the
+ * scheduler unit test's reconcile case) and needs no dedicated multi-partition pin.
  *
  * <p>The constants are chosen so {@code hash(correlationKey) != hash(businessId)}; an
  * {@code @Before} precondition fails loudly if a future hash change degenerates the scenario into a
@@ -68,9 +70,6 @@ public final class CrossPartitionMessageStartLockReleaseTest {
 
   private static final long LONG_TTL = Duration.ofMinutes(5).toMillis();
   private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
-  // Advanced well past a single lock's back-off so a second poll round is guaranteed to fire while
-  // the holder is still active (used as a "lock survived a full round" fence).
-  private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
   // Auto-completing message-start process: the holder completes on P_B on its own (the engine's job
   // client writes to the primary partition and could not complete a job living on P_B).
@@ -104,12 +103,11 @@ public final class CrossPartitionMessageStartLockReleaseTest {
           .endEvent()
           .done();
 
-  // Dual-start process on a *single* bpmnProcessId: the message-start path auto-completes (the
-  // cross-partition holder), while the none-start path parks on a service task so a second instance
-  // of the SAME process definition can actively hold the businessId. Needed because businessId
-  // uniqueness is scoped per (businessId, processDefinitionId, tenantId) — a different process
-  // could
-  // not contend for the same businessId.
+  // Dual-start process on a *single* bpmnProcessId: the message-start path parks on a service task
+  // (the cross-partition holder stays active), while the none-start path parks on a service task so
+  // a second instance of the SAME process definition can actively hold the businessId. Needed
+  // because businessId uniqueness is scoped per (businessId, processDefinitionId, tenantId) — a
+  // different process could not contend for the same businessId.
   private static final String CONTENDED_PROCESS_ID = "wf-contended";
   private static final String CONTENDED_MESSAGE_NAME = "contended-start-msg";
   private static final BpmnModelInstance CONTENDED_PROCESS = contendedProcess();
@@ -125,7 +123,15 @@ public final class CrossPartitionMessageStartLockReleaseTest {
 
   private static BpmnModelInstance contendedProcess() {
     final var process = Bpmn.createExecutableProcess(CONTENDED_PROCESS_ID);
-    process.startEvent("contendedMsgStart").message(CONTENDED_MESSAGE_NAME).endEvent();
+    // the message-start holder parks on a job so it stays active: it must not auto-complete, which
+    // would push its own release immediately (before the contender exists), a separately covered
+    // path. Deferring the release to the poll (via ban) lets the contender take the businessId
+    // first.
+    process
+        .startEvent("contendedMsgStart")
+        .message(CONTENDED_MESSAGE_NAME)
+        .serviceTask("contendedMsgTask", t -> t.zeebeJobType("hold"))
+        .endEvent();
     process
         .startEvent("contendedNoneStart")
         .serviceTask("contendedTask", t -> t.zeebeJobType("hold"))
@@ -141,6 +147,43 @@ public final class CrossPartitionMessageStartLockReleaseTest {
                 + " cross-partition lock-release loop is actually exercised",
             CORRELATION_KEY, BUSINESS_ID)
         .isNotEqualTo(partitionFor(BUSINESS_ID));
+  }
+
+  @Test
+  public void shouldWriteHolderOriginOnPBButNotOnPKForCrossPartitionStart() {
+    // given a cross-partition start whose holder stays active on P_B (service task) while the
+    // correlation-key lock lives on P_K
+    deployAndAwaitStartSubscriptions(SERVICE_PROCESS, SERVICE_MESSAGE_NAME);
+    publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(SERVICE_PROCESS_ID);
+    // holder active on P_B (its local STARTED applied) and the STARTED reply consumed on P_K
+    awaitHolderJobCreated(holderKey);
+    awaitMessageConsumedOnPK(SERVICE_MESSAGE_NAME);
+
+    // then the holder-origin entry exists on P_B (where the holder lives), keyed by the holder PI
+    // and carrying the lock coordinates plus a messageKey that addresses P_K
+    final var originOnPB =
+        engine
+            .getProcessingState(partitionFor(BUSINESS_ID))
+            .getMessageState()
+            .getCrossPartitionStartHolderOrigin(holderKey);
+    assertThat(originOnPB).as("the holder partition records the origin entry").isNotNull();
+    assertThat(BufferUtil.bufferAsString(originOnPB.getBpmnProcessIdBuffer()))
+        .isEqualTo(SERVICE_PROCESS_ID);
+    assertThat(BufferUtil.bufferAsString(originOnPB.getCorrelationKeyBuffer()))
+        .isEqualTo(CORRELATION_KEY);
+    assertThat(Protocol.decodePartitionId(originOnPB.getMessageKey()))
+        .as("the stored messageKey addresses P_K")
+        .isEqualTo(partitionFor(CORRELATION_KEY));
+
+    // and no entry is written on P_K, where the same STARTED reply is applied
+    assertThat(
+            engine
+                .getProcessingState(partitionFor(CORRELATION_KEY))
+                .getMessageState()
+                .getCrossPartitionStartHolderOrigin(holderKey))
+        .as("the lock partition never records a holder-origin entry")
+        .isNull();
   }
 
   @Test
@@ -172,6 +215,57 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
         .as("the buffered message is picked up and started on P_K after the lock is released")
         .isEqualTo(partitionFor(CORRELATION_KEY));
+  }
+
+  @Test
+  public void shouldReleaseCompletedHolderExactlyOnceEvenThoughReconciliationPollAlsoRuns() {
+    // Idempotency pin for push × poll coexistence: with the poll enabled, a lock that the
+    // completion push has already released must not be released a second time when a later
+    // reconciliation poll runs. P_K must emit exactly one RELEASED for the holder and re-drive the
+    // buffered message exactly once; the holder-precise guard on the release handler makes the
+    // redundant poll a no-op.
+    deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
+
+    // given a cross-partition start — holder created (and auto-completing) on P_B, correlation-key
+    // lock on P_K — with a same-key message buffered behind that lock
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long firstHolderKey = awaitHolderActivating(AUTO_PROCESS_ID);
+    awaitMessageConsumedOnPK(AUTO_MESSAGE_NAME);
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, null);
+
+    // and the completion push has already released the lock, so the poll can only ever act on an
+    // already-released lock
+    awaitLockReleasedFor(firstHolderKey);
+
+    // when the reconciliation poll then runs
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then, observed through a sentinel that bounds the record stream just past the poll tick (a
+    // second holder driven to completion; not part of the scenario — see the helper)
+    final var releasesThroughSentinel = awaitReleasesThroughPollSentinel();
+
+    // the first holder's lock is released exactly once — the poll did not release it again
+    final long releasesForFirstHolder =
+        releasesThroughSentinel.stream().filter(r -> holderHasKey(r, firstHolderKey)).count();
+    assertThat(releasesForFirstHolder)
+        .as("a completed holder's lock is released exactly once, even with the poll running")
+        .isEqualTo(1L);
+
+    // and the buffered message is re-driven exactly once: a single pick-up PI started on P_K within
+    // the same sentinel-bounded window (both holders live on P_B, so they are not pick-ups)
+    final long pickUps =
+        RecordingExporter.records()
+            .limit(nthReleased(2))
+            .processInstanceRecords()
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .filter(
+                r ->
+                    Protocol.decodePartitionId(r.getValue().getProcessInstanceKey())
+                        == partitionFor(CORRELATION_KEY))
+            .count();
+    assertThat(pickUps).as("the buffered message is re-driven exactly once").isEqualTo(1L);
   }
 
   @Test
@@ -227,10 +321,10 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     // and a second same-correlation-key publish buffered behind the lock
     publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, null);
 
-    // when the release poll fires, then fires again past the back-off
+    // when the reconciliation poll fires, then fires again on the next tick
     engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
     awaitQueryRounds(1);
-    engine.increaseTime(MAX_BACKOFF);
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
 
     // then a SECOND query round is observed — which can only happen if the lock still exists, i.e.
     // round 1 did not release the still-active holder. This re-query is the fence that proves the
@@ -295,6 +389,49 @@ public final class CrossPartitionMessageStartLockReleaseTest {
   }
 
   @Test
+  public void shouldDeleteHolderOriginDuringReconciliationWhenHolderBanned() {
+    // A holder that vanishes without completing — here, banned on P_B — never runs the completion
+    // push, so the push path never drops its holder-origin entry. The reconciliation poll, which
+    // releases the lock for such a gone holder, must also clean up the leftover origin entry, so a
+    // stuck cross-partition start does not leak one entry forever.
+    deployAndAwaitStartSubscriptions(SERVICE_PROCESS, SERVICE_MESSAGE_NAME);
+    publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(SERVICE_PROCESS_ID);
+    awaitHolderJobCreated(holderKey);
+    awaitMessageConsumedOnPK(SERVICE_MESSAGE_NAME);
+
+    // guard: the origin entry exists on P_B before the holder goes away, so the assertion below
+    // observes a deletion rather than an entry that was never written
+    final var pBMessageState =
+        engine.getProcessingState(partitionFor(BUSINESS_ID)).getMessageState();
+    assertThat(pBMessageState.getCrossPartitionStartHolderOrigin(holderKey))
+        .as("the holder-origin entry is written on P_B at holder creation")
+        .isNotNull();
+
+    // and the holder is banned on P_B — gone, but with no completion transition to push
+    engine.banInstanceInNewTransaction(partitionFor(BUSINESS_ID), holderKey);
+
+    // when the reconciliation poll fires
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then P_B appends a PUSHED for the gone holder (its applier drops the origin entry), on the
+    // holder's own partition
+    final var pushed =
+        RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+                MessageStartCorrelationKeyLockReleaseIntent.PUSHED)
+            .filter(r -> r.getKey() == holderKey)
+            .getFirst();
+    assertThat(Protocol.decodePartitionId(pushed.getKey()))
+        .as("the origin cleanup is applied on P_B, the holder's partition")
+        .isEqualTo(partitionFor(BUSINESS_ID));
+
+    // and the leaked origin entry is gone
+    assertThat(pBMessageState.getCrossPartitionStartHolderOrigin(holderKey))
+        .as("reconciliation deletes the leftover holder-origin entry on P_B")
+        .isNull();
+  }
+
+  @Test
   public void shouldReleaseCompletedHolderLockEvenWhenBusinessIdWasReusedByAnotherInstance() {
     // Pins holder-instance precision: the release polls the *specific holder instance*, not
     // businessId availability, so the lock is released once the holder completes even if a
@@ -346,17 +483,28 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     // leave two active root PIs sharing one businessId — the exact corruption the cross-partition
     // routing of the pick-up exists to prevent. Uses a dual-start process so the contender shares
     // the buffered message's process definition (uniqueness is scoped per process definition).
+    //
+    // The release is deferred to the reconciliation poll by *banning* the holder rather than
+    // completing it: a completing holder pushes its own release immediately — before the contender
+    // exists, while the businessId is free — which is a separately covered path. Banning frees the
+    // businessId (uniqueness excludes banned instances) while leaving the correlation-key lock for
+    // the poll to release, so the contender can take the businessId before the pick-up.
     deployAndAwaitStartSubscriptions(CONTENDED_PROCESS, CONTENDED_MESSAGE_NAME);
 
-    // the original holder starts on P_B via the message-start ask and auto-completes; lock on P_K
+    // the holder starts on P_B via the message-start ask and parks on a job (stays active); lock
+    // P_K
     publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
     final long holderKey = awaitHolderActivating(CONTENDED_PROCESS_ID);
+    awaitHolderJobCreated(holderKey);
     awaitMessageConsumedOnPK(CONTENDED_MESSAGE_NAME);
 
     // a second publish with the same correlation key AND the same businessId is buffered behind the
     // lock — it will have to be re-routed to P_B on pick-up
     publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
-    awaitHolderCompleted(CONTENDED_PROCESS_ID);
+
+    // ban the holder: frees the businessId without completing it, so no push fires and the
+    // correlation-key lock is left for the poll to release
+    engine.banInstanceInNewTransaction(partitionFor(BUSINESS_ID), holderKey);
 
     // a *different* instance of the same process now actively holds that businessId on P_B (via the
     // none-start path that parks on a service task), so the businessId is taken again before the
@@ -461,6 +609,53 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     return r ->
         r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.QUERIED
             && seen.incrementAndGet() == n;
+  }
+
+  /**
+   * A merged-stream bound that stops at the {@code n}-th RELEASED event. Each call returns a fresh
+   * stateful predicate, so it must not be shared across streams.
+   */
+  private static Predicate<Record<RecordValue>> nthReleased(final int n) {
+    final var seen = new AtomicInteger();
+    return r ->
+        r.getIntent() == MessageStartCorrelationKeyLockReleaseIntent.RELEASED
+            && seen.incrementAndGet() == n;
+  }
+
+  private static boolean holderHasKey(
+      final Record<MessageStartCorrelationKeyLockReleaseRecordValue> record, final long holderKey) {
+    return record.getValue().getHolders().stream()
+        .anyMatch(h -> h.getProcessInstanceKey() == holderKey);
+  }
+
+  /**
+   * Waits for the completion push to release the correlation-key lock held for {@code holderKey}.
+   */
+  private static void awaitLockReleasedFor(final long holderKey) {
+    RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASED)
+        .filter(r -> holderHasKey(r, holderKey))
+        .getFirst();
+  }
+
+  /**
+   * Sentinel that makes the reconciliation poll's (in)action observable without waiting on the
+   * absence of a record. It is not part of the scenario under test: it drives a <em>second</em>
+   * cross-partition holder on the same correlation key to completion (its businessId is free again
+   * now that the first holder completed), whose push emits a second RELEASED. Because P_K applies
+   * release records in order, observing that second RELEASED proves the poll tick queued earlier
+   * has already been fully processed — so the returned window contains every effect the poll could
+   * have had on the first holder.
+   *
+   * @return the first two RELEASED records: the first holder's release, then the sentinel's
+   */
+  private List<Record<MessageStartCorrelationKeyLockReleaseRecordValue>>
+      awaitReleasesThroughPollSentinel() {
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    return RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASED)
+        .limit(2)
+        .asList();
   }
 
   private void deployAndAwaitStartSubscriptions(

@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -23,19 +25,27 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * hash(businessId)}, the partition where a message-start instance created via the cross-partition
  * handshake actually runs.
  *
- * <p>{@code P_K} polls this processor to discover when such holder instances have completed, so it
- * can release the correlation-key locks it is holding for them. A query batches one holder per lock
- * entry {@code P_K} is polling for a given {@code P_B}; the processor answers per holder: a holder
- * is "still active" iff a local element instance exists for its key and the instance is not banned.
- * A banned holder is treated as gone, mirroring the banned-instance filter on the uniqueness check,
- * so a stuck holder does not block its correlation key forever.
+ * <p>This is the reconciliation backstop, not the primary release path: a cross-partition holder
+ * normally pushes a {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} to {@code P_K} the
+ * moment it completes. {@code P_K}'s coarse reconciliation poll queries this processor only to
+ * recover locks whose push was lost, so it can still release them. A query batches one holder per
+ * lock entry {@code P_K} is reconciling for a given {@code P_B}; the processor answers per holder:
+ * a holder is "still active" iff a local element instance exists for its key and the instance is
+ * not banned. A banned holder is treated as gone, mirroring the banned-instance filter on the
+ * uniqueness check, so a stuck holder does not block its correlation key forever.
  *
  * <p>The processor always acknowledges with {@link
  * MessageStartCorrelationKeyLockReleaseIntent#QUERIED} for an observable trail, and replies {@link
  * MessageStartCorrelationKeyLockReleaseIntent#RELEASE} back to {@code P_K} for each holder that is
- * gone. Holders that are still active produce no reply — {@code P_K} keeps polling them with
- * back-off until completion. Each reply is routed back to {@code P_K} via the partition encoded in
- * the query's {@code requestKey}.
+ * gone. Holders that are still active produce no reply — {@code P_K} re-queries them on a later
+ * reconciliation tick until completion. Each reply is routed back to {@code P_K} via the partition
+ * encoded in the query's {@code requestKey}.
+ *
+ * <p>A gone holder that never ran the completion push (e.g. one that was banned, so it had no
+ * transition to push) still has its holder-origin entry on this partition. For such a holder this
+ * processor also appends a {@link MessageStartCorrelationKeyLockReleaseIntent#PUSHED} event, whose
+ * applier drops that entry, so a stuck cross-partition start does not leak one origin entry
+ * forever. The reconciliation itself never needs the entry, so the cleanup is order-independent.
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
@@ -43,16 +53,19 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
 
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
 
   public MessageStartCorrelationKeyLockReleaseQueryProcessor(
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
+      final MessageState messageState,
       final SubscriptionCommandSender commandSender,
       final Writers writers) {
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
+    this.messageState = messageState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
   }
@@ -65,10 +78,35 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
         record.getKey(), MessageStartCorrelationKeyLockReleaseIntent.QUERIED, query);
 
     for (final var holder : query.getHolders()) {
-      if (!isHolderActive(holder.getProcessInstanceKey())) {
-        commandSender.sendCorrelationKeyLockRelease(query.getRequestKey(), holder);
+      if (isHolderActive(holder.getProcessInstanceKey())) {
+        continue;
       }
+      commandSender.sendCorrelationKeyLockRelease(query.getRequestKey(), holder);
+      cleanUpOriginIfLeftover(holder);
     }
+  }
+
+  /**
+   * Drops the holder-origin entry left behind by a gone holder that never pushed its completion
+   * (its only remover otherwise). Appends {@link
+   * MessageStartCorrelationKeyLockReleaseIntent#PUSHED}, keyed by the holder process-instance key
+   * the entry is stored under; the same applier the push path uses removes it. Skipped when no
+   * entry exists, so holders that already pushed add no record.
+   */
+  private void cleanUpOriginIfLeftover(final MessageStartLockReleaseHolderValue holder) {
+    final long holderKey = holder.getProcessInstanceKey();
+    if (messageState.getCrossPartitionStartHolderOrigin(holderKey) == null) {
+      return;
+    }
+    final var pushed = new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(-1L);
+    pushed
+        .addHolder()
+        .setProcessInstanceKey(holderKey)
+        .setBpmnProcessId(holder.getBpmnProcessId())
+        .setCorrelationKey(holder.getCorrelationKey())
+        .setTenantId(holder.getTenantId());
+    stateWriter.appendFollowUpEvent(
+        holderKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, pushed);
   }
 
   /**

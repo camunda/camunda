@@ -83,6 +83,17 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessorTest {
             .getFirst();
     assertThat(release.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertQueryPreserved(release.getValue(), ABSENT_HOLDER_KEY);
+
+    // and no PUSHED cleanup is appended: this gone holder has no leftover holder-origin entry, so
+    // the origin cleanup only fires for holders that actually left one behind (e.g. banned ones)
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
+                            MessageStartCorrelationKeyLockReleaseIntent.PUSHED)
+                        .exists()))
+        .as("a gone holder with no origin entry produces no PUSHED cleanup")
+        .isFalse();
   }
 
   @Test

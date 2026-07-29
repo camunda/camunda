@@ -615,6 +615,73 @@ public final class MessageStateTest {
     assertThat(messageState.getProcessInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
   }
 
+  @Test
+  public void shouldGetCrossPartitionStartHolderOrigin() {
+    // when
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process-1"));
+    assertThat(origin.getCorrelationKeyBuffer()).isEqualTo(wrapString("key-1"));
+    assertThat(origin.getTenantIdBuffer()).isEqualTo(wrapString("tenant-1"));
+    assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
+  @Test
+  public void shouldReturnNullForAbsentCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), DEFAULT_TENANT, 42L);
+
+    // then
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(2L)).isNull();
+  }
+
+  @Test
+  public void shouldRemoveCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+    messageState.putCrossPartitionStartHolderOrigin(
+        2L, wrapString("process-2"), wrapString("key-2"), "tenant-2", 43L);
+
+    // when
+    messageState.removeCrossPartitionStartHolderOrigin(1L);
+
+    // then
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(1L)).isNull();
+    final var remaining = messageState.getCrossPartitionStartHolderOrigin(2L);
+    assertThat(remaining).isNotNull();
+    assertThat(remaining.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process-2"));
+    assertThat(remaining.getMessageKey()).isEqualTo(43L);
+  }
+
+  @Test
+  public void shouldNotThrowWhenRemovingAbsentCrossPartitionStartHolderOrigin() {
+    // when - then (no exception)
+    messageState.removeCrossPartitionStartHolderOrigin(99L);
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(99L)).isNull();
+  }
+
+  @Test
+  public void shouldOverwriteCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // when - re-applied STARTED reply writes the same holder again
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
   private MessageRecord createMessage(final String name, final String correlationKey) {
     return new MessageRecord()
         .setName(name)

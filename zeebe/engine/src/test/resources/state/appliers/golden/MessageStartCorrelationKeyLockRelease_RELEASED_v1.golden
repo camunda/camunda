@@ -20,12 +20,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  * a cross-partition message-start holder instance has completed. For each holder carried by the
  * event it drops the underlying correlation-key lock ({@link
  * MutableMessageState#removeActiveProcessInstance}) so the next buffered message for that key can
- * be picked up, removes the holder-instance discriminator that the pull-based release loop polls on
- * ({@link MutableMessageState#removeCrossPartitionStartLock}), and removes the process-instance ->
- * correlation-key row ({@link MutableMessageState#removeProcessInstanceCorrelationKey}) that {@code
- * P_K} wrote for the remote holder when it created it via the handshake — otherwise that row leaks
- * once per cross-partition start, since the completing element lives on {@code P_B} and never
- * reaches {@code P_K}'s local cleanup path.
+ * be picked up, removes the holder-instance discriminator that {@code P_K}'s reconciliation poll
+ * queries on ({@link MutableMessageState#removeCrossPartitionStartLock}), and removes the
+ * process-instance -> correlation-key row ({@link
+ * MutableMessageState#removeProcessInstanceCorrelationKey}) that {@code P_K} wrote for the remote
+ * holder when it created it via the handshake — otherwise that row leaks once per cross-partition
+ * start, since the completing element lives on {@code P_B} and never reaches {@code P_K}'s local
+ * cleanup path.
  *
  * <p>The release decision — including the idempotency guard that ensures the lock is still held by
  * the exact instance the reply names — lives in the {@code RELEASE} processor; the event is only

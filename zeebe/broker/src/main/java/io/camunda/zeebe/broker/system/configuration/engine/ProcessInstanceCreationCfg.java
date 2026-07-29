@@ -13,7 +13,6 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
-import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
@@ -28,8 +27,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
   private Duration messageStartLockReleasePollInterval =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
-  private Duration messageStartLockReleasePollMaxBackoff =
-      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 
@@ -76,15 +73,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
     this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
   }
 
-  public Duration getMessageStartLockReleasePollMaxBackoff() {
-    return messageStartLockReleasePollMaxBackoff;
-  }
-
-  public void setMessageStartLockReleasePollMaxBackoff(
-      final Duration messageStartLockReleasePollMaxBackoff) {
-    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
-  }
-
   public int getMessageStartLockReleasePollBatchLimit() {
     return messageStartLockReleasePollBatchLimit;
   }
@@ -107,8 +95,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
         + messageStartAskRetryInterval
         + ", messageStartLockReleasePollInterval="
         + messageStartLockReleasePollInterval
-        + ", messageStartLockReleasePollMaxBackoff="
-        + messageStartLockReleasePollMaxBackoff
         + ", messageStartLockReleasePollBatchLimit="
         + messageStartLockReleasePollBatchLimit
         + '}';

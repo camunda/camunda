@@ -1,4 +1,4 @@
-# Business ID message correlation: P_K owns messages, P_B enforces uniqueness, P_K pulls for release
+# Business ID message correlation: P_K owns messages, P_B enforces uniqueness, P_B pushes lock release
 
 **DRI**: Mustafa Dagher
 
@@ -21,7 +21,8 @@ message and the instance it would create no longer co-locate.
 The outcome: message routing is unchanged; `P_K` remains the single owner of message state and
 `P_B` remains the single owner of Business ID uniqueness. Message-start events bridge the two
 partitions with a cross-partition ask; other message events filter locally; and the resulting
-cross-partition lock is released by `P_K` polling `P_B`.
+cross-partition lock is released by `P_B` pushing a release to `P_K` when the holder completes, with
+a coarse `P_K` reconciliation poll retained only as a backstop for lost pushes.
 
 ## Decision
 
@@ -48,7 +49,7 @@ businessId-bearing start would create its instance on a different `P_B`, `P_K` s
 subscription has not yet been distributed to `P_B`). On a rejection the message stays buffered on
 `P_K`.
 
-The pull-based release (D3), continuing from the `STARTED` reply above:
+The push-based release (D3), continuing from the `STARTED` reply above:
 
 ```mermaid
 sequenceDiagram
@@ -56,23 +57,33 @@ sequenceDiagram
     participant P_B as P_B = hash(businessId)
 
     Note over P_K: STARTED applied:<br/>correlation-key lock records holder on P_B
+    Note over P_B: remembers which lock to release when the holder ends
 
-    loop poll with back-off and batching, until holder completes (D3)
-        P_K->>P_B: is holder instance still active?
-        alt holder still active
-            P_B-->>P_K: yes
-        else holder completed or terminated
-            P_B-->>P_K: no
-            Note over P_K: release correlation-key lock,<br/>pick up next buffered message
+    alt holder completes or terminates on P_B (fast path, D3)
+        P_B->>P_K: RELEASE(holder)
+        Note over P_K: release correlation-key lock,<br/>pick up next buffered message
+    else push lost, or holder banned (reconciliation backstop, D3)
+        loop coarse poll, only while the lock is still held
+            P_K->>P_B: is holder instance still active?
+            P_B-->>P_K: RELEASE if the holder is gone
         end
     end
 ```
 
-**D3. The cross-partition correlation-key lock is released by pull, not push.** For a remotely
-created start, `P_K` records the holder instance and polls `P_B` (with back-off and batching) for
-that specific instance's completion, then releases the lock and picks up the next buffered message —
-keeping lock semantics identical to a single-partition start. Locally created starts use the
-existing local release path unchanged.
+**D3. The cross-partition correlation-key lock is released by a push from `P_B`, with polling
+demoted to a reconciliation backstop.** When the remotely-created holder completes or terminates,
+`P_B` pushes a `RELEASE` to `P_K`, which releases the lock and picks up the next buffered message —
+keeping lock semantics identical to a single-partition start, resolved at holder-completion latency
+rather than poll latency. The push and the reconciliation poll (below) resolve through the same
+`RELEASE` command rather than separate messages, and locally created starts keep their local release
+path unchanged.
+
+A coarse `P_K` poll is retained only as a self-healing backstop for what the push cannot cover — a
+`RELEASE` lost to dropped inter-partition traffic, or a holder banned with no completion transition
+to push from. It reconciles from `P_K`'s current lock state each tick and persists no coordination
+state, so it survives restarts and leadership changes. Because the `RELEASE` processor on `P_K` is
+idempotent — a redundant release is rejected — a push and a reconciling poll racing on the same
+holder cannot double-release.
 
 **D4. Cross-partition creates are idempotent via a dedup row on `P_B`.** `P_B` records
 `(processDefinitionKey, messageKey) → processInstanceKey` with a deletion deadline equal to the
@@ -147,10 +158,16 @@ sequenceDiagram
 - **`P_B` owns blocked starts; `P_K` forwards-and-forgets.** Moves the message itself to `P_B` on
   forward. Relocates cross-partition state rather than removing it, and breaks `messageId`
   deduplication and correlation to processes that listen for the same message without a Business ID.
-- **Push-based release notification from `P_B`.** `P_B` would track which partitions hold dependent
-  work and notify them on each completion. Rejected: it requires per-waiter bookkeeping and reliable
-  delivery on `P_B`, is not self-healing across restarts/leadership changes, and has no decisive
-  efficiency advantage over the pull (D3).
+- **Pure pull with exponential back-off (the original D3).** `P_K` alone drove release: it polled
+  `P_B` for each held lock on a short interval with per-lock exponential back-off, and `P_B` pushed
+  nothing. Superseded because it puts release latency on the poll interval for every cross-partition
+  start even though `P_B` knows the exact completion instant, and the back-off bookkeeping exists
+  only to dampen a steady-state poll the push removes. The original rejection of a push cited
+  per-waiter bookkeeping, reliable delivery, and restart self-healing — each addressed respectively
+  by the single holder-origin entry the `STARTED` applier already writes, the retained poll
+  backstop, and the poll's stateless reconciliation from current lock state. The push (D3) resolves
+  the common case at completion latency; the poll is kept, coarsened, and stripped of back-off as
+  the reconciliation backstop.
 
 ## Consequences
 
@@ -161,9 +178,14 @@ sequenceDiagram
 - A synchronous `correlate` to a cross-partition start is answered exactly once, when its remote
   outcome is known, by reusing the existing request-deferral state — so it never reports a spurious
   `NOT_FOUND` while the instance is being created (D6, closing camunda/camunda#58207).
-- The pull keeps all reaction-to-completion logic on the partition that owns the work and is
-  self-healing, at the cost of added latency on the release path (bounded by the poll interval and
-  back-off).
+- The push releases the lock at holder-completion latency, not poll latency, while the retained
+  reconciliation poll keeps release self-healing across lost pushes, restarts, and leadership
+  changes — the fast-path/safety-net pair (D3). Release logic stays on `P_K`, which owns the lock
+  and the buffer.
+- Operational signal: releases are normally push-driven, so a `RELEASE` preceded by a reconciliation
+  `QUERY` for the same holder means that holder's push was lost. A rising rate of query-preceded
+  `RELEASE`s is a symptom of inter-partition delivery loss (network/partition health), not a feature
+  regression — the lock is still released, just via the backstop rather than the fast path.
 - A start rejected purely on Business ID uniqueness stays buffered and relies on its TTL and existing
   buffered-message triggers, matching single-partition behaviour. Proactively retrying it when the
   Business ID frees is decided separately in

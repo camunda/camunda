@@ -243,8 +243,6 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
         .setMessageStartLockReleasePollInterval(
             processInstanceCreation.getMessageStartLockReleasePollInterval())
-        .setMessageStartLockReleasePollMaxBackoff(
-            processInstanceCreation.getMessageStartLockReleasePollMaxBackoff())
         .setMessageStartLockReleasePollBatchLimit(
             processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())

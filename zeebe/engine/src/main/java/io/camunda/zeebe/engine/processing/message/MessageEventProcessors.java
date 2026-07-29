@@ -219,7 +219,11 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
             MessageStartCorrelationKeyLockReleaseIntent.QUERY,
             new MessageStartCorrelationKeyLockReleaseQueryProcessor(
-                elementInstanceState, bannedInstanceState, subscriptionCommandSender, writers))
+                elementInstanceState,
+                bannedInstanceState,
+                messageState,
+                subscriptionCommandSender,
+                writers))
         // Holder-completion release handler on P_K - on a RELEASE reply from P_B, releases the
         // correlation-key lock and picks up the next buffered message for that key.
         .onCommand(
@@ -252,7 +256,6 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 scheduledTaskStateFactory.get().getMessageState(),
                 config::getMessageStartLockReleasePollInterval,
-                config::getMessageStartLockReleasePollMaxBackoff,
                 config::getMessageStartLockReleasePollBatchLimit));
   }
 }

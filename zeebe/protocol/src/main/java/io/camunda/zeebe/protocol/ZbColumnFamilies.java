@@ -353,7 +353,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
   // definition being deleted while it has running instances. Lives on the aggregating partition.
-  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL);
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL),
+
+  // holder processInstanceKey -> (bpmnProcessId, correlationKey, tenantId, messageKey).
+  // Origin entry for a cross-partition message-start holder, written on P_B so it can push a
+  // RELEASE to P_K (addressed by messageKey's partition bits) when the holder completes/terminates.
+  // Present only on P_B — the symmetric STARTED on P_K writes nothing here. See
+  // CrossPartitionMessageStartHolderOrigin and the STARTED / PUSHED appliers for the full
+  // write/delete lifecycle and the migration rationale.
+  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
