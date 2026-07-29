@@ -56,9 +56,11 @@ const Layout: React.FC<LayoutProps> = observer(
             )}
           </PanelHeader>
         )}
-        {/* Gated on searchInput as well as the mode: the skeleton and error
-            branches render Layout without one, and neither the search box nor
-            the sort control is meaningful over a panel that has no tree yet. */}
+        {/* Gated on searchInput as well as the mode, because the skeleton and
+            error branches render Layout without one - otherwise this row shows a
+            lone sort toggle over a panel that has no tree to sort. The header
+            toggles above keep rendering in those states; that is pre-existing
+            and deliberately left alone here. */}
         {!modificationsStore.isModificationModeEnabled && searchInput && (
           <SearchRow>
             {searchInput}

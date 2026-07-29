@@ -834,6 +834,13 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       processInstance.state === 'ACTIVE' &&
       !modificationsStore.isModificationModeEnabled;
 
+    // Modification mode is pinned to ascending because `visibleChildren` below
+    // appends staged placeholders after the loaded window and hides them while
+    // the scope hasNextPage - an append-at-the-end merge that is only correct
+    // oldest-first. Do not simplify this to read the store directly: in
+    // latest-first a staged token would render where the oldest events sit, and
+    // the pagination gate could hide it outright. The sort control is hidden in
+    // this mode, so no visible control disagrees with what is rendered.
     const sortOrder: QuerySortOrder =
       modificationsStore.isModificationModeEnabled
         ? 'asc'
