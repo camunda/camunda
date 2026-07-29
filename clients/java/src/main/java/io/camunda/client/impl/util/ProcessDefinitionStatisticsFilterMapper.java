@@ -36,6 +36,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
     target.setEndDate(filter.getEndDate());
     target.setState(filter.getState());
     target.setHasIncident(filter.getHasIncident());
+    target.setSuspendedDate(filter.getSuspendedDate());
     target.setTenantId(filter.getTenantId());
     target.setVariables(filter.getVariables());
     target.setProcessInstanceKey(filter.getProcessInstanceKey());

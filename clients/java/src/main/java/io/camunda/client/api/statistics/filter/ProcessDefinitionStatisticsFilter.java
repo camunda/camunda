@@ -84,6 +84,14 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   @Override
   ProcessDefinitionStatisticsFilter hasIncident(final Boolean hasIncident);
 
+  /** Filter by suspendedDate */
+  @Override
+  ProcessDefinitionStatisticsFilter suspendedDate(final OffsetDateTime suspendedDate);
+
+  /** Filter by suspendedDate using {@link DateTimeProperty} consumer */
+  @Override
+  ProcessDefinitionStatisticsFilter suspendedDate(final Consumer<DateTimeProperty> fn);
+
   /** Filter by tenantId */
   @Override
   ProcessDefinitionStatisticsFilter tenantId(final String tenantId);

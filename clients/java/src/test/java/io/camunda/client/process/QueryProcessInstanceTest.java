@@ -24,8 +24,10 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -71,6 +73,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endDate = OffsetDateTime.now();
+    final OffsetDateTime suspendedDate = OffsetDateTime.now().minusHours(2);
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
@@ -98,6 +101,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .endDate(endDate)
                     .state(ACTIVE)
                     .hasIncident(true)
+                    .suspendedDate(suspendedDate)
                     .tenantId("tenant")
                     .variables(variablesMap)
                     .batchOperationId("batchOperationId")
@@ -128,6 +132,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getState().get$Eq())
         .isEqualTo(io.camunda.client.protocol.rest.ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
+    assertThat(filter.getSuspendedDate().get$Eq()).isEqualTo(suspendedDate.toString());
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
     assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batchOperationId");
@@ -253,6 +258,28 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchProcessInstanceBySuspendedDateRange() {
+    // given
+    final OffsetDateTime from = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime to = OffsetDateTime.now();
+
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.suspendedDate(d -> d.gte(from).lte(to)))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getSuspendedDate().get$Gte()).isEqualTo(from.toString());
+    assertThat(filter.getSuspendedDate().get$Lte()).isEqualTo(to.toString());
+  }
+
+  @Test
   void shouldSearchProcessInstanceByVariablesFilter() {
     // given
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
@@ -305,6 +332,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .asc()
                     .endDate()
                     .asc()
+                    .suspendedDate()
+                    .desc()
                     .state()
                     .asc()
                     .hasIncident()
@@ -322,7 +351,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(14);
+    assertThat(sorts).hasSize(15);
     assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "processDefinitionName", SortOrderEnum.ASC);
@@ -333,10 +362,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertSort(sorts.get(7), "parentElementInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "startDate", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "endDate", SortOrderEnum.ASC);
-    assertSort(sorts.get(10), "state", SortOrderEnum.ASC);
-    assertSort(sorts.get(11), "hasIncident", SortOrderEnum.DESC);
-    assertSort(sorts.get(12), "tenantId", SortOrderEnum.ASC);
-    assertSort(sorts.get(13), "businessId", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "suspendedDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(11), "state", SortOrderEnum.ASC);
+    assertSort(sorts.get(12), "hasIncident", SortOrderEnum.DESC);
+    assertSort(sorts.get(13), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(14), "businessId", SortOrderEnum.ASC);
   }
 
   @Test
@@ -424,6 +454,32 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("batchOperationKey");
+  }
+
+  @Test
+  void shouldMapSuspendedDateFromResult() {
+    // given
+    final OffsetDateTime suspendedDate = OffsetDateTime.now();
+    final ProcessInstanceResult result =
+        new ProcessInstanceResult().suspendedDate(suspendedDate.toString());
+
+    // when
+    final ProcessInstance processInstance = new ProcessInstanceImpl(result);
+
+    // then
+    assertThat(processInstance.getSuspendedDate()).isEqualTo(suspendedDate);
+  }
+
+  @Test
+  void shouldMapNullSuspendedDateFromResult() {
+    // given
+    final ProcessInstanceResult result = new ProcessInstanceResult();
+
+    // when
+    final ProcessInstance processInstance = new ProcessInstanceImpl(result);
+
+    // then
+    assertThat(processInstance.getSuspendedDate()).isNull();
   }
 
   @Test

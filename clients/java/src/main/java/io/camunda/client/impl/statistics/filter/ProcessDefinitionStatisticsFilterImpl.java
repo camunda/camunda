@@ -128,6 +128,20 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
+  public ProcessDefinitionStatisticsFilter suspendedDate(final OffsetDateTime suspendedDate) {
+    suspendedDate(b -> b.eq(suspendedDate));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter suspendedDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setSuspendedDate(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionStatisticsFilter state(final ProcessInstanceState state) {
     return state(b -> b.eq(state));
   }

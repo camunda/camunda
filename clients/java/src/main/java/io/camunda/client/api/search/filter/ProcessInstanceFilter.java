@@ -122,6 +122,14 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter hasIncident(final Boolean hasIncident);
 
+  /** Filter by suspendedDate */
+  @Override
+  ProcessInstanceFilter suspendedDate(final OffsetDateTime suspendedDate);
+
+  /** Filter by suspendedDate using {@link DateTimeProperty} consumer */
+  @Override
+  ProcessInstanceFilter suspendedDate(final Consumer<DateTimeProperty> fn);
+
   /** Filter by tenantId */
   @Override
   ProcessInstanceFilter tenantId(final String tenantId);
