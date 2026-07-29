@@ -13,7 +13,6 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
-import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -711,6 +710,10 @@ test.describe('Process Instance Modifications', () => {
             await operateProcessInstancePage.clickInstanceHistoryElement(
               activityCollectMoney,
             );
+            // Selecting a flow node (and reloading in onFailure) resets the
+            // bottom panel to the Details tab, so the variables list is not
+            // rendered until the Variables tab is (re)selected.
+            await operateProcessInstancePage.clickVariablesTab();
             await expect(
               operateProcessInstancePage.existingVariableByName(
                 'testLocalVariable',
@@ -723,6 +726,7 @@ test.describe('Process Instance Modifications', () => {
             ).toContain('"addedValue"');
 
             await operateProcessInstancePage.navigateToRootScope();
+            await operateProcessInstancePage.clickVariablesTab();
             await expect(
               operateProcessInstancePage.existingVariableByName(
                 'testNewMeowVariable',
@@ -741,14 +745,9 @@ test.describe('Process Instance Modifications', () => {
             );
           },
           onFailure: async () => {
-            // Applying modifications runs asynchronously; under load the added
-            // variables can take a while to surface after reload, so wait
-            // before re-reading instead of retrying back-to-back.
-            await sleep(3_000);
             await page.reload();
             await hideHelperModals(page);
           },
-          maxRetries: 8,
         });
       });
     });
