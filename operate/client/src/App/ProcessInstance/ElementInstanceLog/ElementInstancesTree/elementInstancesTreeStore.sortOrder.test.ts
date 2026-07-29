@@ -16,33 +16,21 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {waitFor} from '@testing-library/react';
 import {searchResult} from 'modules/testUtils';
+import {
+  createMockElementInstance,
+  MOCK_PROCESS_INSTANCE_KEY as mockProcessInstanceKey,
+} from './mocks';
 
-const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey = '2251799813685630';
 const mockGrandchildKey = '2251799813685650';
 const mockGreatGrandchildKey = '2251799813685670';
 
-const createMockElementInstance = (
-  overrides: Partial<ElementInstance> = {},
-): ElementInstance => ({
+const rootChild = createMockElementInstance({
   elementInstanceKey: mockChildScopeKey,
   elementId: 'subprocess_1',
   elementName: 'Sub Process 1',
   type: 'SUB_PROCESS',
-  state: 'ACTIVE',
-  startDate: '2023-01-01T10:00:00.000Z',
-  processDefinitionKey: '2251799813685623',
-  processDefinitionId: 'test-process',
-  processInstanceKey: mockProcessInstanceKey,
-  hasIncident: false,
-  tenantId: '<default>',
-  endDate: null,
-  rootProcessInstanceKey: null,
-  incidentKey: null,
-  ...overrides,
 });
-
-const rootChild = createMockElementInstance();
 const grandchild = createMockElementInstance({
   elementInstanceKey: mockGrandchildKey,
   elementId: 'task_1',
@@ -62,6 +50,13 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
     QueryElementInstancesRequestBody['sort']
   >;
 
+  // root > child > grandchild > great-grandchild, one instance per level.
+  const itemsByScope: Record<string, ElementInstance[]> = {
+    [mockProcessInstanceKey]: [rootChild],
+    [mockChildScopeKey]: [grandchild],
+    [mockGrandchildKey]: [greatGrandchild],
+  };
+
   beforeEach(() => {
     requestedSortByScope = {};
 
@@ -71,16 +66,7 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
         const scopeKey = body.filter?.elementInstanceScopeKey ?? 'unknown';
         requestedSortByScope[scopeKey] = body.sort;
 
-        const items =
-          scopeKey === mockProcessInstanceKey
-            ? [rootChild]
-            : scopeKey === mockChildScopeKey
-              ? [grandchild]
-              : scopeKey === mockGrandchildKey
-                ? [greatGrandchild]
-                : [];
-
-        return HttpResponse.json(searchResult(items));
+        return HttpResponse.json(searchResult(itemsByScope[scopeKey] ?? []));
       }),
     );
   });
@@ -221,6 +207,7 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
       elementInstanceKey: '2251799813685699',
       elementId: 'stale_task',
       elementName: 'Stale Task',
+      type: 'SUB_PROCESS',
     });
 
     mockServer.use(

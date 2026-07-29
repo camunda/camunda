@@ -28,6 +28,7 @@ import {http, HttpResponse} from 'msw';
 import {
   endpoints,
   queryElementInstancesRequestBodySchema,
+  type ElementInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
@@ -251,38 +252,19 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     // is the first one *as displayed*, which means the anchor moves with the
     // Instance History sort order. Two children with distinct element ids are
     // needed here — with a single child the anchor is the same either way.
-    const innerChildren = [
+    // The existing level2 fixture is the earlier of the two; the later one is
+    // the same shape with a different element so the anchor is distinguishable.
+    const [earliestChild] =
+      adHocSubProcessInnerInstanceElementInstances.level2.items;
+    const innerChildren: ElementInstance[] = [
+      earliestChild!,
       {
-        elementInstanceKey: 'inner-child-first',
-        processInstanceKey: '111111111111111',
-        processDefinitionKey: '222222222222222',
-        processDefinitionId: 'ad_hoc_inner_subprocess_test',
-        state: 'ACTIVE',
-        type: 'USER_TASK',
-        elementId: 'user_task_in_ad_hoc_subprocess',
-        elementName: 'User Task',
-        hasIncident: false,
-        tenantId: '<default>',
-        startDate: '2020-08-18T12:07:34.200+0000',
-        rootProcessInstanceKey: null,
-        incidentKey: null,
-        endDate: null,
-      },
-      {
+        ...earliestChild!,
         elementInstanceKey: 'inner-child-latest',
-        processInstanceKey: '111111111111111',
-        processDefinitionKey: '222222222222222',
-        processDefinitionId: 'ad_hoc_inner_subprocess_test',
-        state: 'ACTIVE',
         type: 'SERVICE_TASK',
         elementId: 'service_task_in_ad_hoc_subprocess',
         elementName: 'Service Task',
-        hasIncident: false,
-        tenantId: '<default>',
         startDate: '2020-08-18T12:07:36.500+0000',
-        rootProcessInstanceKey: null,
-        incidentKey: null,
-        endDate: null,
       },
     ];
 
