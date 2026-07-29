@@ -6,6 +6,12 @@ modules:
       # changes
       use:
         - WIRE
+  - path: zeebe/rebalance/src/main/resources/proto
+    breaking:
+      # as we use this only internally, only break on wire incompatibility; ignore source breaking
+      # changes
+      use:
+        - WIRE
   - path: zeebe/gateway-protocol/src/main/proto
     breaking:
       # as this is meant to be consumed by clients for code generation, we do care about source
