@@ -1,0 +1,65 @@
+syntax = 'proto3';
+package rebalance_requests;
+
+option java_package = "io.camunda.zeebe.dynamic.config.rebalance.protocol";
+
+message TriggerRebalanceRequest {
+  RebalanceOverrides overrides = 1;
+  bool dryRun = 2;
+}
+
+// Each override is absent unless the operator set it, in which case the leader of every partition
+// transferred by this rebalance uses it in place of its own configured setting.
+message RebalanceOverrides {
+  optional int64 replicationLagThresholdBytes = 1;
+  optional int64 replicationTimeoutMillis = 2;
+  optional int32 maxTransferAttempts = 3;
+}
+
+message RebalanceStatusResponse {
+  // Absent while no rebalance is running.
+  RunningRebalance running = 1;
+  // Absent until a rebalance has run on this coordinator.
+  CompletedRebalance lastCompleted = 2;
+}
+
+message RunningRebalance {
+  int64 rebalanceId = 1;
+  RebalanceOverrides overrides = 2;
+  bool dryRun = 3;
+  bool cancelRequested = 4;
+}
+
+message CompletedRebalance {
+  int64 rebalanceId = 1;
+  RebalanceOutcome outcome = 2;
+}
+
+message CancelRebalanceResponse {
+  bool wasRunning = 1;
+}
+
+enum RebalanceOutcome {
+  COMPLETED = 0;
+  CANCELLED = 1;
+  FAILED = 2;
+}
+
+message Response {
+  oneof response {
+    RebalanceErrorResponse error = 1;
+    RebalanceStatusResponse status = 2;
+    CancelRebalanceResponse cancelled = 3;
+  }
+}
+
+message RebalanceErrorResponse {
+  RebalanceErrorCode errorCode = 1;
+  string errorMessage = 2;
+}
+
+enum RebalanceErrorCode {
+  INTERNAL_ERROR = 0;
+  REBALANCE_IN_PROGRESS = 1;
+  NOT_COORDINATOR = 2;
+}
