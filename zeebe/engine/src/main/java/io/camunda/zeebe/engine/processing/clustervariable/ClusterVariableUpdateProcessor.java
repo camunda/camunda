@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -40,18 +41,21 @@ public class ClusterVariableUpdateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ClusterVariableRecordValidator clusterVariableRecordValidator;
+  private final ClusterVariableSecretReferenceScanner secretReferenceScanner;
 
   public ClusterVariableUpdateProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ClusterVariableRecordValidator clusterVariableRecordValidator) {
+      final ClusterVariableRecordValidator clusterVariableRecordValidator,
+      final ClusterVariableSecretReferenceScanner secretReferenceScanner) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.cslCheck = cslCheck;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.clusterVariableRecordValidator = clusterVariableRecordValidator;
+    this.secretReferenceScanner = secretReferenceScanner;
   }
 
   @Override
@@ -60,7 +64,7 @@ public class ClusterVariableUpdateProcessor
     clusterVariableRecordValidator
         .ensureValidScope(commandRecord)
         .flatMap(clusterVariableRecordValidator::loadExisting)
-        .map(stored -> applyUpdate(stored, commandRecord))
+        .flatMap(stored -> applyUpdateWithSecretReferences(stored, commandRecord))
         .flatMap(record -> isAuthorized(record, command))
         .ifRightOrLeft(
             record -> {
@@ -99,10 +103,35 @@ public class ClusterVariableUpdateProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
+  /**
+   * For a SECRET_REFERENCE-stored variable, scans the command's value for secret references and
+   * sets them on the command record before applying the update; a non-SECRET_REFERENCE variable
+   * skips the scan. Kind is immutable-from-stored on update (the command may omit it), so scanning
+   * keys off the stored kind, not the (possibly absent) command kind. Only ever called on the
+   * origin partition ({@link #processNewCommand}), on the command record: the resulting refs then
+   * ride the distributed command, and the receiver's {@link #processDistributedCommand} copies them
+   * onto its stored record via {@link #applyUpdate} without re-scanning.
+   */
+  private Either<Rejection, ClusterVariableRecord> applyUpdateWithSecretReferences(
+      final ClusterVariableRecord stored, final ClusterVariableRecord command) {
+    if (stored.getKind() != ClusterVariableKind.SECRET_REFERENCE) {
+      return Either.right(applyUpdate(stored, command));
+    }
+    return secretReferenceScanner
+        .scan(command.getValueBuffer())
+        .map(
+            references -> {
+              references.forEach(ref -> command.addSecretReference("", ref.name(), ref.pointer()));
+              return applyUpdate(stored, command);
+            });
+  }
+
   private ClusterVariableRecord applyUpdate(
       final ClusterVariableRecord stored, final ClusterVariableRecord command) {
     stored.setValue(command.getValueBuffer());
     stored.setMetadata(command.getMetadataBuffer());
+    // reset-then-add so a value updated from secrets to none ends up empty rather than appended
+    stored.copySecretReferencesFrom(command);
     return stored;
   }
 
