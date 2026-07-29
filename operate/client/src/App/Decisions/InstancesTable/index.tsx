@@ -63,6 +63,7 @@ const InstancesTable: React.FC = observer(() => {
   useEffect(() => {
     decisionInstancesSelectionStore.setRuntime({
       totalCount: data?.totalCount ?? 0,
+      hasMoreTotalItems: data?.hasMoreTotalItems ?? false,
       visibleIds: (data?.decisionInstances ?? []).map(
         (instance) => instance.decisionEvaluationInstanceKey,
       ),
@@ -109,7 +110,12 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredDecisionInstancesCount}
         hasMoreTotalItems={hasMoreTotalItems}
       />
-      <Toolbar selectedCount={decisionInstancesSelectionStore.selectedCount} />
+      <Toolbar
+        selectedCount={decisionInstancesSelectionStore.selectedCount}
+        isSelectedCountTruncated={
+          decisionInstancesSelectionStore.isSelectedCountTruncated
+        }
+      />
       <PaginatedSortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
