@@ -81,9 +81,10 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
       continue
     fi
 
-    # Skip issues closed as not planned or as a duplicate - they were not actually released
+    # Skip issues closed as not planned (this also covers "closed as duplicate",
+    # since the GitHub REST API reports that as state_reason "not_planned" too)
     STATE_REASON=$(echo "$ISSUE_INFO" | jq -r '.state_reason // empty')
-    if [ "$STATE_REASON" = "not_planned" ] || [ "$STATE_REASON" = "duplicate" ]; then
+    if [ "$STATE_REASON" = "not_planned" ]; then
       echo "    Skipping #$ISSUE_NUMBER - closed as $STATE_REASON"
       continue
     fi
