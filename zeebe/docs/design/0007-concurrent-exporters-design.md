@@ -371,7 +371,7 @@ sequenceDiagram
         RE-->>AA: RETRY
         AA->>AA: BackOffRetryStrategy reschedules export()<br/>after backoff — still the same actor, same thread
     else ExporterException(REOPEN) triggers a reopen mid-stream
-        EC->>EC: reopenExporter() → exporter.close(); exporter.open(this)
+        EC->>EC: reopenExporter() → exporter.close(), then exporter.open(this)
         EC-->>RE: ExportOutcome.ABORT_REPLAY
         RE-->>AA: ABORT_REPLAY
         AA->>AA: abandon record, actor.submit(readNextEvent)<br/>(record is redelivered once reading resumes)
