@@ -133,16 +133,14 @@ public class SwimProtocolTest extends ConcurrentTestCase {
    * that is applied and reverted while a listener is being notified of the previous change must
    * still leave that listener with the member's current properties.
    */
-  @org.junit.jupiter.api.Test
+  @Test
   public void shouldNotifyListenersOfPropertyChangedWithCorrectValue() throws Exception {
     // given - a listener that is blocked while being notified of a first property change; the
     // gossip interval is long enough that no further metadata check runs while the test changes the
     // properties below
     reset();
     final var protocol =
-        startProtocol(
-            member1,
-            config -> config.setGossipInterval(Duration.ofSeconds(5)));
+        startProtocol(member1, config -> config.setGossipInterval(Duration.ofSeconds(5)));
     checkEvent(member1, MEMBER_ADDED, member1);
 
     final var notifying = new CountDownLatch(1);
