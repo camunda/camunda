@@ -20,7 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RebalanceConfiguration;
+import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Initiate request for a coordinated leadership transfer.
@@ -37,6 +40,11 @@ import java.util.Objects;
  * transfer takes far longer than the {@code requestTimeout} bounding a single round trip, and has
  * to survive the leader it was sent to stepping down. The {@code correlationId} is what ties them
  * back together.
+ *
+ * <p>The request may also override the leader's own rebalance settings for this one transfer, so an
+ * operator asking for a rebalance can pick bounds that suit the situation without reconfiguring the
+ * cluster. Whatever it leaves unset keeps the leader's configured value; see {@link
+ * #effectiveConfiguration}.
  */
 public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest {
 
@@ -44,16 +52,25 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
   private final MemberId coordinator;
   private final long coordinatorConfigIndex;
   private final long correlationId;
+  private final @Nullable Long replicationLagThreshold;
+  private final @Nullable Duration replicationTimeout;
+  private final @Nullable Integer maxTransferAttempts;
 
   private LeadershipTransferInitiateRequest(
       final MemberId desiredLeader,
       final MemberId coordinator,
       final long coordinatorConfigIndex,
-      final long correlationId) {
+      final long correlationId,
+      final @Nullable Long replicationLagThreshold,
+      final @Nullable Duration replicationTimeout,
+      final @Nullable Integer maxTransferAttempts) {
     this.desiredLeader = desiredLeader;
     this.coordinator = coordinator;
     this.coordinatorConfigIndex = coordinatorConfigIndex;
     this.correlationId = correlationId;
+    this.replicationLagThreshold = replicationLagThreshold;
+    this.replicationTimeout = replicationTimeout;
+    this.maxTransferAttempts = maxTransferAttempts;
   }
 
   public static Builder builder() {
@@ -84,6 +101,43 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return correlationId;
   }
 
+  /**
+   * The replication lag, in bytes, the desired leader may have for this transfer to be accepted, or
+   * {@code null} to use the leader's configured threshold.
+   */
+  public @Nullable Long replicationLagThreshold() {
+    return replicationLagThreshold;
+  }
+
+  /**
+   * How long the partition may stay frozen waiting for the desired leader to catch up, or {@code
+   * null} to use the leader's configured timeout.
+   */
+  public @Nullable Duration replicationTimeout() {
+    return replicationTimeout;
+  }
+
+  /**
+   * How many TimeoutNow requests the leader may send before giving up, or {@code null} to use the
+   * leader's configured limit.
+   */
+  public @Nullable Integer maxTransferAttempts() {
+    return maxTransferAttempts;
+  }
+
+  /**
+   * The settings this transfer runs under: whatever the coordinator overrode, falling back per
+   * setting to {@code configured}, the leader's own settings.
+   */
+  public RebalanceConfiguration effectiveConfiguration(final RebalanceConfiguration configured) {
+    return new RebalanceConfiguration(
+        replicationLagThreshold != null
+            ? replicationLagThreshold
+            : configured.replicationLagThreshold(),
+        replicationTimeout != null ? replicationTimeout : configured.replicationTimeout(),
+        maxTransferAttempts != null ? maxTransferAttempts : configured.maxTransferAttempts());
+  }
+
   @Override
   public MemberId from() {
     return coordinator;
@@ -92,7 +146,14 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
   @Override
   public int hashCode() {
     return Objects.hash(
-        getClass(), desiredLeader, coordinator, coordinatorConfigIndex, correlationId);
+        getClass(),
+        desiredLeader,
+        coordinator,
+        coordinatorConfigIndex,
+        correlationId,
+        replicationLagThreshold,
+        replicationTimeout,
+        maxTransferAttempts);
   }
 
   @Override
@@ -107,7 +168,10 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return coordinatorConfigIndex == other.coordinatorConfigIndex
         && correlationId == other.correlationId
         && desiredLeader.equals(other.desiredLeader)
-        && coordinator.equals(other.coordinator);
+        && coordinator.equals(other.coordinator)
+        && Objects.equals(replicationLagThreshold, other.replicationLagThreshold)
+        && Objects.equals(replicationTimeout, other.replicationTimeout)
+        && Objects.equals(maxTransferAttempts, other.maxTransferAttempts);
   }
 
   @Override
@@ -117,6 +181,9 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
         .add("coordinator", coordinator)
         .add("coordinatorConfigIndex", coordinatorConfigIndex)
         .add("correlationId", correlationId)
+        .add("replicationLagThreshold", replicationLagThreshold)
+        .add("replicationTimeout", replicationTimeout)
+        .add("maxTransferAttempts", maxTransferAttempts)
         .toString();
   }
 
@@ -128,6 +195,9 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     private MemberId coordinator;
     private long coordinatorConfigIndex;
     private long correlationId;
+    private @Nullable Long replicationLagThreshold;
+    private @Nullable Duration replicationTimeout;
+    private @Nullable Integer maxTransferAttempts;
 
     public Builder withDesiredLeader(final MemberId desiredLeader) {
       this.desiredLeader = checkNotNull(desiredLeader, "desiredLeader cannot be null");
@@ -149,6 +219,37 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return this;
     }
 
+    /** Overrides the leader's configured replication-lag threshold for this transfer. */
+    public Builder withReplicationLagThreshold(final long replicationLagThreshold) {
+      checkArgument(
+          replicationLagThreshold >= 0,
+          "replicationLagThreshold must not be negative but was %s",
+          replicationLagThreshold);
+      this.replicationLagThreshold = replicationLagThreshold;
+      return this;
+    }
+
+    /** Overrides the leader's configured replication timeout for this transfer. */
+    public Builder withReplicationTimeout(final Duration replicationTimeout) {
+      checkNotNull(replicationTimeout, "replicationTimeout cannot be null");
+      checkArgument(
+          !replicationTimeout.isZero() && !replicationTimeout.isNegative(),
+          "replicationTimeout must be positive but was %s",
+          replicationTimeout);
+      this.replicationTimeout = replicationTimeout;
+      return this;
+    }
+
+    /** Overrides the leader's configured TimeoutNow attempt limit for this transfer. */
+    public Builder withMaxTransferAttempts(final int maxTransferAttempts) {
+      checkArgument(
+          maxTransferAttempts > 0,
+          "maxTransferAttempts must be positive but was %s",
+          maxTransferAttempts);
+      this.maxTransferAttempts = maxTransferAttempts;
+      return this;
+    }
+
     @Override
     protected void validate() {
       super.validate();
@@ -161,7 +262,13 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     public LeadershipTransferInitiateRequest build() {
       validate();
       return new LeadershipTransferInitiateRequest(
-          desiredLeader, coordinator, coordinatorConfigIndex, correlationId);
+          desiredLeader,
+          coordinator,
+          coordinatorConfigIndex,
+          correlationId,
+          replicationLagThreshold,
+          replicationTimeout,
+          maxTransferAttempts);
     }
   }
 }

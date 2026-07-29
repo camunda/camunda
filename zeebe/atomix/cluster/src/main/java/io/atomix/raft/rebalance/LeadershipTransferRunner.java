@@ -65,11 +65,15 @@ public final class LeadershipTransferRunner {
    * Accepts or rejects an initiate request. A rejection carries its reason back in the response; an
    * accepted request starts a one-shot attempt, whose outcome reaches the coordinator separately
    * once the transfer finishes.
+   *
+   * <p>The settings bounding the transfer are resolved before the admission check, so any override
+   * the coordinator sent governs whether the transfer is accepted at all as well as how its phases
+   * are bounded.
    */
   public LeadershipTransferInitiateResponse handleInitiate(
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
-    final var configuration = raft.getRebalanceConfiguration();
+    final var configuration = request.effectiveConfiguration(raft.getRebalanceConfiguration());
     final var rejectionReason =
         admission.precheck(
             request.desiredLeader(),

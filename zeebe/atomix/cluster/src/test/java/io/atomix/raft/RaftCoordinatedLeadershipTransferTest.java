@@ -321,6 +321,16 @@ public class RaftCoordinatedLeadershipTransferTest {
   public void shouldRoundTripTransferMessagesThroughRaftNamespace() {
     // given
     final var initiateRequest = initiate(MemberId.from("2"), MemberId.from("1"), 7, 0x5eed_0005L);
+    final var overridingRequest =
+        LeadershipTransferInitiateRequest.builder()
+            .withDesiredLeader(MemberId.from("2"))
+            .withCoordinator(MemberId.from("1"))
+            .withCoordinatorConfigIndex(7)
+            .withCorrelationId(0x5eed_0005L)
+            .withReplicationLagThreshold(4096)
+            .withReplicationTimeout(Duration.ofSeconds(30))
+            .withMaxTransferAttempts(7)
+            .build();
     final var acceptedResponse =
         LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
     final var rejectedResponse =
@@ -343,6 +353,8 @@ public class RaftCoordinatedLeadershipTransferTest {
     // when / then
     assertThat(roundTrip(initiateRequest)).isEqualTo(initiateRequest);
     assertThat(roundTrip(initiateRequest).correlationId()).isEqualTo(0x5eed_0005L);
+    assertThat(roundTrip(overridingRequest)).isEqualTo(overridingRequest);
+    assertThat(roundTrip(overridingRequest).replicationTimeout()).isEqualTo(Duration.ofSeconds(30));
     assertThat(roundTrip(acceptedResponse).accepted()).isTrue();
     final LeadershipTransferInitiateResponse deserializedRejection = roundTrip(rejectedResponse);
     assertThat(deserializedRejection.accepted()).isFalse();
