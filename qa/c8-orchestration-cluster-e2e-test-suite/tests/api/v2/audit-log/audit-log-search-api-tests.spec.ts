@@ -148,12 +148,18 @@ for (const {description, sort} of sortTestCases) {
       const body = await res.json();
       const values = body.items.map(
         (item: Record<string, unknown>) => item[sort.field],
-      ) as Array<string | number>;
-      const sorted = [...values].sort();
+      ) as Array<string | number | null>;
+      // Where the backend places rows whose sort field is null is not defined
+      // by the API, and the secondary storages disagree: ES/OS return them last
+      // on ASC, RDBMS returns them first (camunda#57579). Asserting on them
+      // would make this test backend-specific, so only the rows that actually
+      // carry a value are checked for ordering.
+      const present = values.filter((value) => value !== null);
+      const sorted = [...present].sort();
       if (sort.order === 'DESC') {
         sorted.reverse();
       }
-      expect(values).toEqual(sorted);
+      expect(present).toEqual(sorted);
     }).toPass(defaultAssertionOptions);
   });
 }
