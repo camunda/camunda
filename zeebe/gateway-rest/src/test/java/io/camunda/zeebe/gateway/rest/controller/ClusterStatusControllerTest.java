@@ -75,16 +75,6 @@ class ClusterStatusControllerTest extends RestControllerTest {
         .json("{\"status\":\"DOWN\"}", JsonCompareMode.STRICT);
   }
 
-  @Test
-  void shouldNotExposeAnythingBesidesTheAggregatedStatus() {
-    // given — the endpoint is unauthenticated, so a physical tenant id or even a tenant count in
-    // the response would allow unauthenticated tenant enumeration
-    givenStatus(AggregatedStatus.DEGRADED);
-
-    // when / then — strict comparison: any additional field fails
-    getClusterStatus().expectBody().json("{\"status\":\"DEGRADED\"}", JsonCompareMode.STRICT);
-  }
-
   private void givenStatus(final AggregatedStatus status) {
     when(clusterStatusServices.getStatus()).thenReturn(CompletableFuture.completedFuture(status));
   }
