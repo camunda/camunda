@@ -1118,3 +1118,28 @@ jobs:
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
 
+  # Final job: hand a failed run to the triage agent. github.run_id here is this run,
+  # so the classifier reads this run's own artifacts.
+  #
+  # `continue-on-error` is not available on a job that calls a reusable workflow, so
+  # alwaysgreen-triage.yml keeps its own fallible steps continue-on-error instead. That
+  # is what stops a triage bug turning a one-job failure into two and skewing the
+  # streak detector's counts.
+  alwaysgreen-triage:
+    name: AlwaysGreen triage and fix dispatch
+    needs:
+      - should-run
+      - preflight
+      - build-operate-frontend
+      - build-tasklist-frontend
+      - build-identity-frontend
+      - build-and-push
+      - format-identifier
+      - helm-deploy-status
+      - trigger-saas-e2e
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    secrets: inherit
+    with:
+      base_ref: ${{ github.ref_name }}
+      chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
