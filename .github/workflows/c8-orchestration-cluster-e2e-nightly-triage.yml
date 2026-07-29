@@ -227,7 +227,7 @@ jobs:
                 rm -rf "$tmp_dir"
                 continue
               fi
-              mapfile -t results_files < <(find "$tmp_dir" -name 'results.json' -type f)
+mapfile -t results_files < <(find "$tmp_dir" -name 'results.json' -type f | LC_ALL=C sort)
               if [ "${#results_files[@]}" -eq 0 ]; then
                 rm -rf "$tmp_dir"
                 continue
