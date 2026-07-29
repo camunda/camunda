@@ -138,9 +138,13 @@ test.describe('Decision Instances', () => {
 
   /**
    * Operate must show the decision version that a FEEL version tag expression
-   * resolved to at runtime (product-hub#3501). The two deployed versions differ
-   * only in the output of rule 1, so the version shown in the header is the
-   * version whose rules produced the result.
+   * resolved to at runtime (product-hub#3501).
+   *
+   * The instance deliberately asks for the *older* version tag while a newer
+   * one is deployed. Targeting the newest version would make this pass even if
+   * the engine ignored the version tag and fell back to latest-version
+   * binding; requiring the older version means only genuine tag resolution can
+   * satisfy it.
    */
   test('Decision version resolved by a FEEL version tag expression is shown in Operate', async ({
     page,
@@ -152,18 +156,25 @@ test.describe('Decision Instances', () => {
     let expectedVersion: number;
     let decisionEvaluationInstanceKey: string;
 
+    let latestVersion: number;
+
     await test.step('Deploy two tagged decision versions and a process binding by FEEL expression', async () => {
       await deployEligibilityForm();
-      await deployTaggedDecision(ids, 'v1', true);
+      const v1 = await deployTaggedDecision(ids, 'v1', true);
       const v2 = await deployTaggedDecision(ids, 'v2', false);
-      expectedVersion = v2.version;
+      expectedVersion = v1.version;
+      latestVersion = v2.version;
+      expect(
+        latestVersion,
+        'v2 must be the newer deployment for this test to prove tag resolution',
+      ).toBeGreaterThan(expectedVersion);
       await deployEligibilityProcess(ids, '= decisionVersion');
     });
 
-    await test.step('Start an instance that requests version tag v2', async () => {
+    await test.step('Start an instance that requests the older version tag v1', async () => {
       processInstanceKey = await startEligibilityInstance(ids, {
         ...VIP_INPUT,
-        decisionVersion: 'v2',
+        decisionVersion: 'v1',
       });
       const decisionInstance = await getEvaluatedDecisionInstance(
         request,
@@ -181,12 +192,17 @@ test.describe('Decision Instances', () => {
       await expect(operateDecisionInstancePage.instanceHeader).toBeVisible();
     });
 
-    await test.step('Header shows the version the expression resolved to', async () => {
+    await test.step('Header shows the version the expression resolved to, not the latest', async () => {
       await expect(
         operateDecisionInstancePage.instanceHeader.getByRole('link', {
           name: `View decision "Decide Upgrade Eligibility version ${expectedVersion}" instances`,
         }),
       ).toBeVisible();
+      await expect(
+        operateDecisionInstancePage.instanceHeader.getByRole('link', {
+          name: `View decision "Decide Upgrade Eligibility version ${latestVersion}" instances`,
+        }),
+      ).toBeHidden();
       await expect(
         operateDecisionInstancePage.instanceHeader.getByRole('link', {
           name: `View process instance ${processInstanceKey}`,
