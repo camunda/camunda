@@ -84,7 +84,10 @@ RUN mkdir camunda-zeebe && \
     tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
 
 ARG TARGETARCH
-# Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+# Extract the target-arch RocksDB native lib into a system library dir and strip ALL
+# native libs from the JNI jar (~60 MB). At runtime RocksDB.loadLibrary() resolves the
+# lib via System.loadLibrary from /usr/java/packages/lib (default java.library.path entry
+# on Linux) before ever falling back to unpacking it from the jar.
 # hadolint ignore=DL3003
 RUN \
     # Map Docker TARGETARCH to the RocksDB native lib filename suffix
@@ -97,14 +100,16 @@ RUN \
     fi && \
     # Locate the jar (version-agnostic)
     ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    [ -n "$ROCKSDB_JAR" ] && [ -f "$ROCKSDB_JAR" ] || { echo "rocksdbjni jar not found under camunda-zeebe/lib" >&2; exit 1; } && \
+    SO="librocksdbjni-${ROCKSDB_ARCH}.so" && \
     UNPACK=$(mktemp -d) && \
-    # Unpack, remove all native libs except the one we need, validate, repack
     ( cd "$UNPACK" && jar xf "$OLDPWD/$ROCKSDB_JAR" ) && \
-    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
-      ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
-    # Verify only shared lib is left
-    count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
-    [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    [ -f "$UNPACK/$SO" ] || { echo "Native lib $SO not found in jar" >&2; exit 1; } && \
+    # Copy the one native lib we need into a dir installed into the final image
+    mkdir -p /camunda/rocksdb-lib && \
+    cp "$UNPACK/$SO" "/camunda/rocksdb-lib/$SO" && \
+    # Drop all native libs and repack; the .so is now served from the system lib dir
+    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) -delete && \
     rm "$ROCKSDB_JAR" && \
     ( cd "$UNPACK" && jar cMf "$OLDPWD/$ROCKSDB_JAR" . ) && \
     rm -rf "$UNPACK"
@@ -182,6 +187,9 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
+# Install the RocksDB native lib into the default Linux java.library.path entry so
+# RocksDB.loadLibrary() resolves it via System.loadLibrary without unpacking the jar.
+COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
