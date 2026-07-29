@@ -15,9 +15,31 @@ inputs:
     description: "Timeout for the healthcheck (in seconds)"
     required: false
     default: "300"
+  max_attempts:
+    description: "Maximum number of image-pull attempts before giving up"
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: "Seconds to wait between pull retry attempts"
+    required: false
+    default: "15"
 runs:
   using: composite
   steps:
+    # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
+    # 502s, see INC-6810) does not fail the whole job. Once images are cached locally,
+    # the compose "up" below does not need to hit the registry again.
+    - name: Pull ${{ inputs.project_name }} images with retry
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: 10
+        shell: bash
+        command: |
+          docker compose -f "${{ inputs.compose_file }}" \
+            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull
+
     - name: Run ${{ inputs.project_name }} compose
       uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
       with:
