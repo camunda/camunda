@@ -81,8 +81,12 @@ public class AuthorizationServices
     final var filterBuilder =
         new AuthorizationFilter.Builder()
             .authorizationKey(requestedFilter.authorizationKey())
+            .ownerType(requestedFilter.ownerType())
             .resourceType(requestedFilter.resourceType())
             .ownerTypeToOwnerIds(ownerTypeToOwnerIds);
+    if (requestedFilter.ownerIds() != null) {
+      filterBuilder.ownerIds(requestedFilter.ownerIds());
+    }
     if (requestedFilter.resourceMatcher() != null) {
       filterBuilder.resourceMatcher(
           AuthorizationResourceMatcher.from(requestedFilter.resourceMatcher()));

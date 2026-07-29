@@ -70,7 +70,8 @@ public class AuthenticationController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, q -> searchAuthorizations(physicalTenantId, q));
+        .fold(
+            RestErrorMapper::mapProblemToResponse, q -> searchAuthorizations(physicalTenantId, q));
   }
 
   private ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
@@ -84,7 +85,8 @@ public class AuthenticationController {
           serviceRegistry
               .authorizationServices(physicalTenantId)
               .searchForCurrentUser(query, authentication);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }

@@ -13,11 +13,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.security.core.port.in.CamundaUserPort;
@@ -113,14 +113,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
         .thenReturn(
             SearchQueryResult.of(
                 new AuthorizationEntity(
-                    100L,
-                    "groupId",
-                    "GROUP",
-                    "CLUSTER_VARIABLE",
-                    (short) 1,
-                    "*",
-                    null,
-                    Set.of())));
+                    100L, "groupId", "GROUP", "CLUSTER_VARIABLE", (short) 1, "*", null, Set.of())));
 
     // when / then
     webClient
@@ -145,6 +138,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
         .isEqualTo("CLUSTER_VARIABLE");
 
     verify(authorizationServices)
-        .searchForCurrentUser(any(AuthorizationQuery.class), eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
+        .searchForCurrentUser(
+            any(AuthorizationQuery.class), eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
   }
 }

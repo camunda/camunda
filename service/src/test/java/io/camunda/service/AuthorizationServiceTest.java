@@ -92,7 +92,9 @@ public class AuthorizationServiceTest {
     when(client.searchAuthorizations(
             argThat(
                 query ->
-                    query.filter().ownerTypeToOwnerIds()
+                    query
+                        .filter()
+                        .ownerTypeToOwnerIds()
                         .equals(
                             Map.of(
                                 EntityType.USER,
@@ -109,7 +111,8 @@ public class AuthorizationServiceTest {
 
     final var searchQuery =
         SearchQueryBuilders.authorizationSearchQuery(
-            builder -> builder.filter(new AuthorizationFilter.Builder().resourceType("USER").build()));
+            builder ->
+                builder.filter(new AuthorizationFilter.Builder().resourceType("USER").build()));
 
     // when
     final var searchQueryResult = services.searchForCurrentUser(searchQuery, authentication);
