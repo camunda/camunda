@@ -29,7 +29,6 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -48,6 +47,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -431,26 +431,45 @@ public class DefaultExporterResourceProviderTest {
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     final var processIndex =
         resourceProvider.getIndexDescriptor(ProcessIndex.class).getFullQualifiedName();
-    final var formIndex =
-        resourceProvider.getIndexDescriptor(FormIndex.class).getFullQualifiedName();
+    final var configuredIndices =
+        Set.of(operationIndex, batchOperationIndex, listViewIndex, processIndex);
     final var customErrorHandlers = resourceProvider.getCustomErrorHandlers();
-    final var missingDocument = new Error("missing", "document_missing_exception", 404);
+    // isolate each side of the production `status == 404 || type == document_missing_exception`
+    // check so a regression collapsing it to `&&` fails one of these, not just the combined case
+    final var missingDocumentByStatusOnly = new Error("missing", "some_other_exception_type", 404);
+    final var missingDocumentByTypeOnly = new Error("missing", "document_missing_exception", 400);
     final var versionConflict = new Error("conflict", "version_conflict_engine_exception", 409);
 
     // then
-    assertThat(catchThrowable(() -> customErrorHandlers.accept(operationIndex, missingDocument)))
-        .isNull();
-    assertThat(
-            catchThrowable(() -> customErrorHandlers.accept(batchOperationIndex, missingDocument)))
-        .isNull();
-    assertThat(catchThrowable(() -> customErrorHandlers.accept(listViewIndex, missingDocument)))
-        .isNull();
-    assertThat(catchThrowable(() -> customErrorHandlers.accept(processIndex, missingDocument)))
-        .isNull();
+    configuredIndices.forEach(
+        index -> {
+          assertThat(
+                  catchThrowable(
+                      () -> customErrorHandlers.accept(index, missingDocumentByStatusOnly)))
+              .isNull();
+          assertThat(
+                  catchThrowable(
+                      () -> customErrorHandlers.accept(index, missingDocumentByTypeOnly)))
+              .isNull();
+        });
 
-    assertThatThrownBy(() -> customErrorHandlers.accept(formIndex, missingDocument))
-        .isInstanceOf(PersistenceException.class)
-        .hasMessage("missing");
+    // exhaustively assert every other index/template still throws, so the "only" claim keeps
+    // holding even if a future index is added to the ignore list without updating this test
+    final var otherIndices =
+        Stream.concat(
+                resourceProvider.getIndexDescriptors().stream()
+                    .map(IndexDescriptor::getFullQualifiedName),
+                resourceProvider.getIndexTemplateDescriptors().stream()
+                    .map(IndexTemplateDescriptor::getFullQualifiedName))
+            .filter(index -> !configuredIndices.contains(index))
+            .toList();
+    assertThat(otherIndices).isNotEmpty();
+    otherIndices.forEach(
+        index ->
+            assertThatThrownBy(() -> customErrorHandlers.accept(index, missingDocumentByStatusOnly))
+                .isInstanceOf(PersistenceException.class)
+                .hasMessage("missing"));
+
     assertThatThrownBy(() -> customErrorHandlers.accept(operationIndex, versionConflict))
         .isInstanceOf(PersistenceException.class)
         .hasMessage("conflict");
