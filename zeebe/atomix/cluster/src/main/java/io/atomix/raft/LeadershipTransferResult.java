@@ -52,7 +52,7 @@ public enum LeadershipTransferResult {
   /** The desired leader did not finish replicating within {@code replicationTimeout}. */
   REPLICATION_TIMED_OUT,
   /** TimeoutNow did not move leadership within {@code maxTransferAttempts}. */
-  TRANSFER_FAILED,
+  TIMEOUT_NOW_EXHAUSTED,
   /**
    * Leadership changed (this node stepped down or another node was elected) during the transfer.
    */
