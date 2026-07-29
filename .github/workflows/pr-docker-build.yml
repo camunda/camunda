@@ -34,7 +34,8 @@ jobs:
   calculate-image-tag:
     name: Calculate image tag
     # Run when a build label is added, or on new pushes while a build label is present.
-    # Only allow same-repository PRs so fork code cannot enter the secret-consuming build.
+    # Only allow same-repository PRs so fork code cannot enter the secret-consuming build;
+    # fork PRs with these labels are silently skipped.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       ((github.event.action == 'labeled' && (github.event.label.name == 'build-docker-image' || github.event.label.name == 'build-docker-image-oc')) ||

@@ -5,6 +5,8 @@
 # optionally, the Optimize Docker image to the internal Harbor registry.
 # Called by camunda-load-test.yml and pr-docker-build.yml so image building lives in
 # one place.
+# Action implementations are pinned to the pre-PR base commit to keep PR checkouts
+# from changing the secret-consuming actions.
 ---
 name: Build Camunda image
 
