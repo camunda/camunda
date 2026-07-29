@@ -89,6 +89,10 @@ describe('elementInstancesTreeStore - polling', () => {
       state: 'ACTIVE',
     });
 
+    // One poll tick fires both scopes at once, and msw matches the most
+    // recently registered handler first. Registered in reverse order so the
+    // root scope (requested first) is answered by the second handler below and
+    // the child scope by the first.
     mockSearchElementInstances().withSuccess(
       searchResult([completedChild, newChild]),
     );

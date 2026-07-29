@@ -37,7 +37,10 @@ describe('stores/instanceHistorySortOrder', () => {
     expect(getStateLocally().instanceHistorySortOrder).toBe('desc');
   });
 
-  it('should restore the default order on reset', () => {
+  // reset() restores the order captured at import time (matching currentTheme),
+  // which is the persisted value when there is one - not DEFAULT_ORDER. It is
+  // the default here only because storage was empty when the module loaded.
+  it('should restore the initial order on reset', () => {
     instanceHistorySortOrderStore.toggle();
     expect(instanceHistorySortOrderStore.order).toBe('asc');
 
