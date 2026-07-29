@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -129,7 +130,8 @@ public class CamundaServicesConfiguration {
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
-      final ApiServicesExecutorProvider executor) {
+      final ApiServicesExecutorProvider executor,
+      final SecretStoreRegistries secretStoreRegistries) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
@@ -443,6 +445,7 @@ public class CamundaServicesConfiguration {
                           securityContextProvider,
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
+                          secretStoreRegistries.forPhysicalTenant(tenantId),
                           executor,
                           converter))
                   .signalServices(
