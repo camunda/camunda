@@ -69,6 +69,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   private final LogStream logStream;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
+  private final ExporterExportedPositions exportedPositions;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final Function<RecordExporter, RecordExporter> recordExporterWrapper;
   private ExportersState state;
@@ -122,6 +123,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     initialDescriptors = context.getDescriptors();
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
+    exportedPositions = new ExporterExportedPositions(logStream.getFlowControl());
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
@@ -405,6 +407,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
             pending.reader(),
             pending.hasStartedExporting(),
             metrics,
+            exportedPositions,
             positionsToSkipFilter,
             clock,
             exporterPhase,
