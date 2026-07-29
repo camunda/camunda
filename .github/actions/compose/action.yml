@@ -1,0 +1,59 @@
+name: Compose
+description: |
+  Compose Wrapper for elasticsearch container
+inputs:
+  compose_file:
+    description: "Full path to the compose file"
+    required: true
+  project_name:
+    description: "Project name to allow running the same file multiple times"
+    required: true
+  additional_flags:
+    description: "Additional flags to pass to the compose command"
+    required: false
+  timeout:
+    description: "Timeout for the healthcheck (in seconds)"
+    required: false
+    default: "300"
+  max_attempts:
+    description: "Maximum number of image-pull attempts before giving up"
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: "Seconds to wait between pull retry attempts"
+    required: false
+    default: "15"
+runs:
+  using: composite
+  steps:
+    # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
+    # 502s, see INC-6810) does not fail the whole job. Once images are cached locally,
+    # the compose "up" below does not need to hit the registry again.
+    - name: Pull ${{ inputs.project_name }} images with retry
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: 10
+        shell: bash
+        command: |
+          docker compose -f "${{ inputs.compose_file }}" \
+            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull
+
+    - name: Run ${{ inputs.project_name }} compose
+      uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
+      with:
+        compose-file: |
+          ${{ inputs.compose_file }}
+        compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
+    - name: Short sleep to let it startup
+      shell: bash
+      run: sleep 3
+    - name: Check if service is healthy
+      shell: bash
+      run: |
+        ${{ github.action_path }}/healthy.sh
+      env:
+        FILE: ${{ inputs.compose_file }}
+        TIMEOUT: ${{ inputs.timeout }}
+        COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"
