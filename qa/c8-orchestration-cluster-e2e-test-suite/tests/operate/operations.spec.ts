@@ -197,6 +197,11 @@ test.describe('Operations', () => {
     page,
   }) => {
     const instances = initialData.batchOperationInstances.slice(0, 5);
+    // Operate encodes the instance-key filter in the URL query string. Capture
+    // it once the filter is applied so recovery reloads can restore the exact
+    // filtered view: a bare page.reload() drops the fill-based filter, which is
+    // why reloads here have been unreliable.
+    let filteredProcessesUrl = '';
 
     await test.step('Filter by Process Instance Keys', async () => {
       await expect(operateProcessesPage.dataList).toBeVisible();
@@ -211,6 +216,8 @@ test.describe('Operations', () => {
       await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
         instances.length,
       );
+
+      filteredProcessesUrl = page.url();
     });
 
     await test.step('Select all instances and retry', async () => {
@@ -250,7 +257,7 @@ test.describe('Operations', () => {
           expect(retryOperationIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          await page.reload();
+          await page.goto(filteredProcessesUrl);
         },
         maxRetries: 10,
       });
@@ -259,9 +266,20 @@ test.describe('Operations', () => {
         retryOperationIds[0],
       );
       // Wait for the full batch to succeed, not just for the entry to appear.
-      await expect(
-        operationEntry.getByText(`${instances.length} success`),
-      ).toBeVisible({timeout: 60000});
+      // Reload via the captured (filter-preserving) URL to refresh a lagging
+      // panel count instead of polling a possibly-stale panel for the full 60s.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operationEntry.getByText(`${instances.length} success`),
+          ).toBeVisible({timeout: 20000});
+        },
+        onFailure: async () => {
+          await page.goto(filteredProcessesUrl);
+          await operateOperationPanelPage.expandOperationsPanel();
+        },
+        maxRetries: 3,
+      });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
 
@@ -317,7 +335,7 @@ test.describe('Operations', () => {
           expect(cancelOperationIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          await page.reload();
+          await page.goto(filteredProcessesUrl);
         },
         maxRetries: 10,
       });
@@ -326,9 +344,20 @@ test.describe('Operations', () => {
         cancelOperationIds[0],
       );
       // Wait for the full batch to succeed, not just for the entry to appear.
-      await expect(
-        operationEntry.getByText(`${instances.length} success`),
-      ).toBeVisible({timeout: 60000});
+      // Reload via the captured (filter-preserving) URL to refresh a lagging
+      // panel count instead of polling a possibly-stale panel for the full 60s.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operationEntry.getByText(`${instances.length} success`),
+          ).toBeVisible({timeout: 20000});
+        },
+        onFailure: async () => {
+          await page.goto(filteredProcessesUrl);
+          await operateOperationPanelPage.expandOperationsPanel();
+        },
+        maxRetries: 3,
+      });
 
       await Promise.all(
         instances.map((instance) =>

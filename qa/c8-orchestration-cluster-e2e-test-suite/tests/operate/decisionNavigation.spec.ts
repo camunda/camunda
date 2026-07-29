@@ -237,57 +237,48 @@ test.describe('Decision Navigation', () => {
         .filter({hasText: 'Assign Approver Group Navigation'})
         .getByRole('link', {name: /View decision instance/})
         .first();
-      // The full round trip (find row -> click -> land on the detail page)
-      // is retried as one unit, not as separate steps each retried in
-      // isolation. Confirmed in CI: clicking can pass the URL check
-      // (navigates to /operate/decisions/<id>) and then Operate redirects
-      // back to the decisions list — presumably because that specific
-      // decision instance isn't queryable yet — which a URL-only check
-      // doesn't catch, and which reloading *that* page can't fix since
-      // reload just reloads the list you already bounced back to. Redoing
-      // the whole thing from a freshly-filtered list is what actually
-      // recovers.
+      // Root cause is an import race: the decision instance is *list*-queryable
+      // (its row renders here) before it is *detail*-queryable, so navigating to
+      // /operate/decisions/<id> can redirect straight back to the list until the
+      // importer catches up. Earlier fixes retried the whole list round trip
+      // (re-filter -> re-click) with escalating settle sleeps (3s -> 6s); those
+      // still exhausted all 8 retries (runs 30057312392, 30424389693), because
+      // re-walking the list does not make the *detail* fetch succeed any sooner
+      // — only elapsed import time does.
+      //
+      // So capture the detail href from the row once, then retry the detail
+      // navigation itself: re-goto that exact URL each cycle, which forces a
+      // fresh instance fetch decoupled from list render/filter state. The test
+      // timeout is 12min but this loop previously gave up after ~2min, so widen
+      // the total settle budget (more attempts) to let a slow-but-eventual
+      // import land before failing.
+      await expect(decisionInstanceLink).toBeVisible({timeout: 30_000});
+      await expect(decisionInstanceLink).toHaveAttribute(
+        'href',
+        /\/operate\/decisions\//,
+      );
+      const detailUrl = new URL(
+        String(await decisionInstanceLink.getAttribute('href')),
+        page.url(),
+      ).toString();
+
       await waitForAssertion({
         assertion: async () => {
-          await expect(decisionInstanceLink).toBeVisible({timeout: 10_000});
-          await decisionInstanceLink.click();
-          await expect(page).toHaveURL(/\/operate\/decisions\/[^/?]+/, {
-            timeout: 10_000,
-          });
-          // The URL check alone isn't proof we're still there: Operate can
-          // redirect back to the list right after this if the decision
-          // instance isn't ready yet.
+          // Navigate to the detail URL on every attempt (first and retries use
+          // the same resilient path), then confirm we actually landed: the URL
+          // alone isn't proof, since Operate redirects back to the list right
+          // after navigating if the instance isn't ready yet.
+          await page.goto(detailUrl);
           await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
             timeout: 10_000,
           });
         },
         onFailure: async () => {
-          // A failed attempt can leave us on either page: the decisions list
-          // (if the row/click itself failed) or a decision instance detail
-          // page (if decisionPanel was just the slow part, or Operate
-          // redirected there before bouncing back). Recovering with reload is
-          // unsafe here: when Operate redirects off a not-yet-queryable
-          // decision instance it lands on `/operate/decisions?...&version=1`
-          // with the `name` param dropped, and reloading *that* URL rebuilds a
-          // broken filter state (empty Name combobox, disabled Version), so
-          // the retry keeps racing the same unfiltered list. Do a clean hard
-          // navigation back to the decisions list with only evaluated/failed
-          // filters (no name/version) — this resets both the URL params and the
-          // client-side React filter state deterministically. Then
-          // give the importer time to make the instance queryable before
-          // re-applying the name filter from scratch. Bumped from 3s: nightly
-          // run 30057312392 still exhausted all 8 retries with the same
-          // decisionPanel-not-visible failure, so the importer occasionally
-          // needs longer than 3s per cycle to catch up under nightly load.
-          await operateDecisionsPage.gotoDecisionsPage({
-            searchParams: {evaluated: 'true', failed: 'true'},
-          });
+          // Bounced back to the list — give the importer time before the next
+          // fresh fetch of this exact instance.
           await sleep(6000);
-          await operateDecisionsPage.selectDecisionName(
-            'Assign Approver Group Navigation',
-          );
         },
-        maxRetries: 8,
+        maxRetries: 12,
       });
     });
 

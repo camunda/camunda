@@ -133,15 +133,36 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
+      // orderProcessMigration has two versions (v1, v2). Selecting a
+      // multi-version process makes Operate auto-select the latest version via
+      // an autorun that can fire *after* selectVersion, silently resetting the
+      // filter back to v2. When that happens the source-version list is empty
+      // ("no instances matching"), so "10 results" never appears — and a bare
+      // reload can't recover because it re-restores the wrong version. Confirm
+      // v1 actually stuck, re-selecting process+version on each retry — the same
+      // recovery the child-migration filter test uses.
+      // Validate the version *and* the resulting count in a single attempt:
+      // the onFailure recovery (reload + re-select process/version) re-triggers
+      // the same auto-reset-to-latest race, so every attempt must confirm v1
+      // actually stuck before asserting "10 results" — otherwise a retry can
+      // run against v2 (no instances) and fail for the original root cause.
       await waitForAssertion({
         assertion: async () => {
+          await expect
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
+            .toBe(sourceVersion);
           await expect(page.getByText('10 results')).toBeVisible({
             timeout: 30000,
           });
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
         },
+        maxRetries: 5,
       });
     });
 
@@ -714,10 +735,12 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify Business rule task incident migration', async () => {
       // This step is not sharing data with anything else and already retries
-      // with reload — it failed in CI anyway after 3 attempts. Unlike the
-      // other fixes in this file, this isn't a data-uniqueness issue; it's
-      // backend contention from concurrently-running specs outlasting the
-      // retry budget. Bumping retries is a stopgap, not a fix for that.
+      // with reload — it failed in CI anyway after 3, then 5 attempts (run
+      // 30438261914). Unlike the other fixes in this file, this isn't a
+      // data-uniqueness issue; it's backend contention from concurrently-running
+      // specs outlasting the retry budget. Bumping retries / adding a settle
+      // sleep is a stopgap, not a fix for that — the durable fix is reducing
+      // Operate import/backend contention under the concurrent E2E load.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -726,10 +749,13 @@ test.describe.serial('Process Instance Migration', () => {
           );
         },
         onFailure: async () => {
+          // Let the contended import/backend catch up before re-reading rather
+          // than immediately reloading into the same contention window.
+          await sleep(5000);
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 5,
+        maxRetries: 8,
       });
     });
   });
@@ -863,7 +889,9 @@ test.describe.serial('Process Instance Migration', () => {
       // rule task incident" flake above: reload and retry the click.
       await waitForAssertion({
         assertion: async () => {
-          await operateDiagramPage.resetDiagramZoomButton.click({timeout: 30_000});
+          await operateDiagramPage.resetDiagramZoomButton.click({
+            timeout: 30_000,
+          });
         },
         onFailure: async () => {
           await page.reload();
