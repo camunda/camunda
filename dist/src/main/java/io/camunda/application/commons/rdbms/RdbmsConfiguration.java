@@ -24,6 +24,7 @@ import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -31,6 +32,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +51,28 @@ public class RdbmsConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
+  /**
+   * Shared across every physical tenant's {@link RdbmsTableRowCountProvider}: refreshing 49 tables
+   * x N tenants must never be able to hold more than a handful of RDBMS connections at once, even
+   * if the database is slow or unreachable and every refresh attempt hangs. Bounding this pool
+   * (rather than, say, one thread per refresh) is what keeps a stuck refresh from starving the
+   * connection pool shared with the RDBMS exporter and other read paths.
+   */
+  @Bean(destroyMethod = "shutdown")
+  public ExecutorService rdbmsTableRowCountRefreshExecutor() {
+    final var threadFactory =
+        Thread.ofPlatform()
+            .name("rdbms-table-row-count-refresh-", 0)
+            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
+            .factory();
+    return Executors.newFixedThreadPool(2, threadFactory);
+  }
+
   @Bean
   public PhysicalTenantsRdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final PhysicalTenantResolver physicalTenantResolver) {
+      final PhysicalTenantResolver physicalTenantResolver,
+      final ExecutorService rdbmsTableRowCountRefreshExecutor) {
     final var rowCountProviders =
         rdbmsMapperBundles.entrySet().stream()
             .collect(
@@ -67,7 +88,9 @@ public class RdbmsConfiguration {
                               .getMetrics()
                               .getTableRowCountCacheDuration();
                       return new RdbmsTableRowCountProvider(
-                          e.getValue().tableMetricsMapper(), cacheDuration);
+                          e.getValue().tableMetricsMapper(),
+                          cacheDuration,
+                          rdbmsTableRowCountRefreshExecutor);
                     }));
     return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders);
   }
