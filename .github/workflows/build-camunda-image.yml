@@ -69,7 +69,7 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
-      - uses: ./.github/actions/setup-build
+      - uses: camunda/camunda/.github/actions/setup-build@02078341e06bc5f8d76da410fcb3d9ff38e96716
         with:
           dockerhub-readonly: true
           harbor: true
@@ -77,40 +77,40 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
+      - uses: camunda/camunda/.github/actions/build-frontend@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Operate Frontend
         id: build-operate-fe
         if: ${{ inputs.build-frontend }}
         with:
           directory: ./operate/client
           package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
+      - uses: camunda/camunda/.github/actions/build-frontend@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Tasklist Frontend
         id: build-tasklist-fe
         if: ${{ inputs.build-frontend }}
         with:
           directory: ./tasklist/client
           package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
+      - uses: camunda/camunda/.github/actions/build-frontend@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Identity Frontend
         id: build-identity-fe
         if: ${{ inputs.build-frontend }}
         with:
           directory: ./identity/client
           package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
+      - uses: camunda/camunda/.github/actions/build-frontend@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Optimize Frontend
         id: build-optimize-fe
         if: ${{ inputs.build-frontend && inputs.enable-optimize }}
         with:
           directory: ./optimize/client
           package-manager: "yarn"
-      - uses: ./.github/actions/build-zeebe
+      - uses: camunda/camunda/.github/actions/build-zeebe@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Camunda Platform
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
-      - uses: ./.github/actions/build-platform-docker
+      - uses: camunda/camunda/.github/actions/build-platform-docker@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Camunda Docker Image
         with:
           repository: '${{ inputs.image-repository }}/camunda'
@@ -120,7 +120,7 @@ jobs:
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ inputs.platforms }}
           dockerfile: 'camunda.Dockerfile'
-      - uses: ./.github/actions/build-platform-docker
+      - uses: camunda/camunda/.github/actions/build-platform-docker@02078341e06bc5f8d76da410fcb3d9ff38e96716
         name: Build Optimize Docker Image
         if: ${{ inputs.enable-optimize }}
         with:
@@ -134,7 +134,7 @@ jobs:
       - name: Observe build status
         if: ${{ always() && inputs.report-build-status }}
         continue-on-error: true
-        uses: ./.github/actions/observe-build-status
+        uses: camunda/camunda/.github/actions/observe-build-status@02078341e06bc5f8d76da410fcb3d9ff38e96716
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
