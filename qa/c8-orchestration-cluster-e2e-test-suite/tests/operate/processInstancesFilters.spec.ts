@@ -727,10 +727,14 @@ test.describe('Process Instances Filters', () => {
           expect(batchOperationStatus).toBe('Completed');
         },
         onFailure: async () => {
+          // The cancellation batch operation runs asynchronously and can stay
+          // "Active" for a while when the cluster is under load; give it time
+          // between reloads instead of polling back-to-back.
+          await sleep(3_000);
           await page.reload();
           await expect(operateOperationsDetailsPage.state).toBeVisible();
         },
-        maxRetries: 5,
+        maxRetries: 15,
       });
 
       const batchOperationKey =

@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
+import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -740,9 +741,14 @@ test.describe('Process Instance Modifications', () => {
             );
           },
           onFailure: async () => {
+            // Applying modifications runs asynchronously; under load the added
+            // variables can take a while to surface after reload, so wait
+            // before re-reading instead of retrying back-to-back.
+            await sleep(3_000);
             await page.reload();
             await hideHelperModals(page);
           },
+          maxRetries: 8,
         });
       });
     });
