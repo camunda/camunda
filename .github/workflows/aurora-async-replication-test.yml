@@ -171,7 +171,7 @@ jobs:
         id: tfvars
         run: |
           set -euo pipefail
-          NAME_PREFIX="aurora-it-${{ github.run_id }}"
+          NAME_PREFIX="aurora-it-${{ github.run_id }}-${{ inputs.db_engine || 'postgresql' }}"
           # 32 hex chars (128 bits of entropy) stays under RDS's 41-character master
           # password limit for MySQL/MariaDB engines (PostgreSQL allows up to 128).
           MASTER_PASSWORD="$(openssl rand -hex 16)"
