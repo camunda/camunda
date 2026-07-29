@@ -34,20 +34,23 @@ public final class SecretReferenceResolutionRequestedApplier
     secretReferenceState.addPendingSecretReference(storeId, secretReference);
 
     for (final long jobKey : value.getJobKeys()) {
-      secretReferenceState.addWaitingJob(storeId, secretReference, jobKey);
-      parkJob(jobKey);
+      parkWaitingJob(storeId, secretReference, jobKey);
     }
   }
 
   /**
-   * Removes the job from the activatable index so a long poll does not collect it again while it
-   * waits for secret resolution. The job keeps its {@code ACTIVATABLE} state and is reactivated
-   * once the secret is resolved. A missing job record is skipped as a defensive guard.
+   * Records the job as waiting for the secret reference and removes it from the activatable index,
+   * so a long poll does not collect it again while it waits for the resolution. The job keeps its
+   * {@code ACTIVATABLE} state and is reactivated once the secret is resolved. A job that no longer
+   * exists is skipped entirely, leaving no waiting entry behind for it.
    */
-  private void parkJob(final long jobKey) {
+  private void parkWaitingJob(
+      final String storeId, final String secretReference, final long jobKey) {
     final JobRecord job = jobState.getJob(jobKey);
-    if (job != null) {
-      jobState.makeJobNotActivatable(jobKey, job);
+    if (job == null) {
+      return;
     }
+    secretReferenceState.addWaitingJob(storeId, secretReference, jobKey);
+    jobState.makeJobNotActivatable(jobKey, job);
   }
 }

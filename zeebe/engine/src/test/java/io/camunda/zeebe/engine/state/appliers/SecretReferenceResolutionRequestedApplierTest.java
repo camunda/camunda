@@ -63,6 +63,8 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldAddAllJobsWaitingForSecretReference() {
     // given
+    createActivatableJob(1L, wrapString("type-a"));
+    createActivatableJob(2L, wrapString("type-a"));
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -89,6 +91,8 @@ final class SecretReferenceResolutionRequestedApplierTest {
   void shouldAccumulateJobsAcrossSeparateResolutionRequestedEvents() {
     // given — two separate RESOLUTION_REQUESTED events for the same secret, each adding a different
     // job
+    createActivatableJob(1L, wrapString("type-a"));
+    createActivatableJob(2L, wrapString("type-a"));
     final var record1 =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -120,6 +124,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldIndexSecretReferenceByJob() {
     // given
+    createActivatableJob(1L, wrapString("type-a"));
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -143,6 +148,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldNotDuplicateJobOnRepeatedResolutionRequest() {
     // given
+    createActivatableJob(1L, wrapString("type-a"));
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -191,6 +197,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldIndexMultipleSecretReferencesByJob() {
     // given — the same job key waiting on two different secret references
+    createActivatableJob(1L, wrapString("type-a"));
     final var record1 =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -258,7 +265,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   }
 
   @Test
-  void shouldNotFailWhenWaitingJobDoesNotExist() {
+  void shouldNotRecordWaitingJobWhenJobDoesNotExist() {
     // given - a job key with no job in state (e.g. already completed or canceled)
     final var record =
         new SecretReferenceRecord()
@@ -266,8 +273,10 @@ final class SecretReferenceResolutionRequestedApplierTest {
             .setSecretReference("secret-a")
             .addJobKey(404L);
 
-    // when / then - the apply does not fail and still records the waiting reference
+    // when
     applier.applyState(100L, record);
+
+    // then - the reference is pending, but no waiting entry is left behind for a job that is gone
     assertThat(state.isPending("store-1", "secret-a")).isTrue();
     final List<Long> waitingJobs = new ArrayList<>();
     state.visitJobsBySecretReference(
@@ -277,7 +286,41 @@ final class SecretReferenceResolutionRequestedApplierTest {
           waitingJobs.add(jobKey);
           return true;
         });
-    assertThat(waitingJobs).containsExactly(404L);
+    assertThat(waitingJobs).isEmpty();
+    final List<Tuple> pairs = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        404L,
+        (storeId, secretReference) -> {
+          pairs.add(tuple(storeId, secretReference));
+          return true;
+        });
+    assertThat(pairs).isEmpty();
+  }
+
+  @Test
+  void shouldRecordOnlyTheJobsThatStillExist() {
+    // given - one existing job and one gone, both waiting on the same reference
+    createActivatableJob(1L, wrapString("type-a"));
+    final var record =
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(1L)
+            .addJobKey(404L);
+
+    // when
+    applier.applyState(100L, record);
+
+    // then
+    final List<Long> waitingJobs = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        "store-1",
+        "secret-a",
+        jobKey -> {
+          waitingJobs.add(jobKey);
+          return true;
+        });
+    assertThat(waitingJobs).containsExactly(1L);
   }
 
   private void createActivatableJob(final long key, final DirectBuffer type) {
