@@ -281,9 +281,11 @@ public final class RdbmsExporter {
         }
       }
       // causes a flush check after each processed record. Depending on the queue size and
-      // configuration, the writers ExecutionQueue may or may not flush here. When retrying an
-      // already-processed record we force the flush so the queue that failed to flush before is
-      // drained instead of lingering.
+      // configuration, the writers ExecutionQueue may or may not flush here. When a flush fails
+      // transiently, lastPosition has already advanced, so the broker redelivers the same record as
+      // a retry (alreadyProcessed). We force the flush to drain the batch that failed before,
+      // instead of letting it linger until the next interval flush. For re-deliveries with an empty
+      // queue this is a harmless no-op.
       try {
         final boolean shouldFlush =
             alreadyProcessed || flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
