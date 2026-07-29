@@ -222,30 +222,28 @@ public class ZeebePartitionTest {
   }
 
   @Test
-  public void shouldRunPauseBarrierInOrderAndReturnTargetIndex() {
+  public void shouldFreezeInOrderAndReturnFreezeTimestamp() {
     // given
     final var logStream = mock(LogStream.class);
     when(ctx.getLogStream()).thenReturn(logStream);
     final var streamProcessor = mock(StreamProcessor.class);
     when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
     when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
-    final var raftServer = raft.getServer();
-    when(raftServer.pauseForTransfer(any(), anyLong()))
-        .thenReturn(CompletableFuture.completedFuture(99L));
     schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Long> targetIndex = partition.pauseForTransfer(Duration.ofSeconds(5));
+    final ActorFuture<Long> frozenSince = partition.freezeForTransfer(Duration.ofSeconds(5));
     schedulerRule.workUntilDone();
 
     // then
-    final InOrder inOrder = inOrder(logStream, ctx, streamProcessor, raftServer);
+    final InOrder inOrder = inOrder(logStream, ctx, streamProcessor);
     inOrder.verify(ctx).setPausedForTransfer(true);
     inOrder.verify(streamProcessor).pauseProcessing();
     inOrder.verify(logStream).pauseWrites();
-    inOrder.verify(raftServer).pauseForTransfer(any(), anyLong());
-    assertThat(targetIndex).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(99L);
+    assertThat(frozenSince)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .satisfies(sinceMs -> assertThat(sinceMs).isPositive());
   }
 
   @Test
@@ -257,12 +255,11 @@ public class ZeebePartitionTest {
     when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
     when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
     when(ctx.shouldProcess()).thenReturn(true);
-    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
     schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 
     // when
-    partition.resumeFromTransfer();
+    partition.unfreezeAfterTransfer();
     schedulerRule.workUntilDone();
 
     // then
@@ -281,12 +278,11 @@ public class ZeebePartitionTest {
     when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
     when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
     when(ctx.shouldProcess()).thenReturn(true);
-    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
     schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> resume = partition.resumeFromTransfer();
+    final ActorFuture<Void> resume = partition.unfreezeAfterTransfer();
     schedulerRule.workUntilDone();
 
     // then
@@ -298,32 +294,6 @@ public class ZeebePartitionTest {
 
     // then
     assertThat(resume).succeedsWithin(Duration.ofSeconds(5));
-  }
-
-  @Test
-  public void shouldRollBackBarrierWhenRaftPauseFails() {
-    // given
-    final var logStream = mock(LogStream.class);
-    when(ctx.getLogStream()).thenReturn(logStream);
-    final var streamProcessor = mock(StreamProcessor.class);
-    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
-    when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
-    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
-    when(ctx.shouldProcess()).thenReturn(true);
-    when(raft.getServer().pauseForTransfer(any(), anyLong()))
-        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("not the leader")));
-    schedulerRule.submitActor(partition);
-    schedulerRule.workUntilDone();
-
-    // when
-    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
-    schedulerRule.workUntilDone();
-
-    // then
-    assertThat(result).failsWithin(Duration.ofSeconds(5));
-    verify(logStream).resumeWrites();
-    verify(ctx).setPausedForTransfer(false);
-    verify(streamProcessor).resumeProcessing();
   }
 
   @Test
@@ -341,14 +311,13 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    final ActorFuture<Long> result = partition.freezeForTransfer(Duration.ofSeconds(5));
     schedulerRule.workUntilDone();
 
     // then
     assertThat(result).failsWithin(Duration.ofSeconds(5));
     verify(logStream).resumeWrites();
     verify(ctx).setPausedForTransfer(false);
-    verify(raft.getServer(), never()).pauseForTransfer(any(), anyLong());
   }
 
   @Test
@@ -365,7 +334,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    final ActorFuture<Long> result = partition.freezeForTransfer(Duration.ofSeconds(5));
     schedulerRule.workUntilDone();
     schedulerRule.getClock().addTime(Duration.ofSeconds(5));
     schedulerRule.workUntilDone();
@@ -374,34 +343,10 @@ public class ZeebePartitionTest {
     assertThat(result).failsWithin(Duration.ofSeconds(5));
     verify(logStream).resumeWrites();
     verify(ctx).setPausedForTransfer(false);
-    verify(raft.getServer(), never()).pauseForTransfer(any(), anyLong());
   }
 
   @Test
-  public void shouldNotReopenAdmissionWhenRaftResumeFails() {
-    // given
-    final var logStream = mock(LogStream.class);
-    when(ctx.getLogStream()).thenReturn(logStream);
-    final var streamProcessor = mock(StreamProcessor.class);
-    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
-    when(raft.getServer().resumeFromTransfer())
-        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("not the leader")));
-    schedulerRule.submitActor(partition);
-    schedulerRule.workUntilDone();
-
-    // when
-    final ActorFuture<Void> result = partition.resumeFromTransfer();
-    schedulerRule.workUntilDone();
-
-    // then
-    assertThat(result).failsWithin(Duration.ofSeconds(5));
-    verify(logStream, never()).resumeWrites();
-    verify(ctx, never()).setPausedForTransfer(false);
-    verify(streamProcessor, never()).resumeProcessing();
-  }
-
-  @Test
-  public void shouldStepDownWhenStreamProcessorResumeFailsAfterRaftResume() {
+  public void shouldStepDownWhenStreamProcessorResumeFails() {
     // given
     final var logStream = mock(LogStream.class);
     when(ctx.getLogStream()).thenReturn(logStream);
@@ -410,7 +355,6 @@ public class ZeebePartitionTest {
     when(ctx.shouldProcess()).thenReturn(true);
     when(streamProcessor.resumeProcessing())
         .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
-    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
     when(raft.getRole()).thenReturn(Role.LEADER);
     when(raft.term()).thenReturn(1L);
     when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
@@ -419,7 +363,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> result = partition.resumeFromTransfer();
+    final ActorFuture<Void> result = partition.unfreezeAfterTransfer();
     schedulerRule.workUntilDone();
 
     // then
