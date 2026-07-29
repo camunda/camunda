@@ -69,9 +69,7 @@ const Toolbar: React.FC<Props> = observer(
                     isSelectedCountTruncated ? '+' : ''
                   } items selected`;
                 case 'carbon.table.batch.item.selected':
-                  return `${selectedCount}${
-                    isSelectedCountTruncated ? '+' : ''
-                  } item selected`;
+                  return `${selectedCount} item selected`;
                 case 'carbon.table.batch.selectAll':
                   return 'Select all items';
                 default:
