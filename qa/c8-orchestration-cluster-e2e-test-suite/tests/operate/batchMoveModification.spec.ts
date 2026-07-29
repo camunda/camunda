@@ -71,6 +71,8 @@ test.describe('Process Instance Batch Modification', () => {
         onFailure: async () => {
           // Let the seeded instances finish importing into Operate before
           // re-navigating; the count won't be exact until the import settles.
+          // Under nightly load importing all 10 can outlast the prior 5-retry
+          // budget (run 30434281504), so allow more settle cycles.
           await sleep(5000);
           await gotoProcessesPage(page, {
             searchParams: {
@@ -81,7 +83,7 @@ test.describe('Process Instance Batch Modification', () => {
             },
           });
         },
-        maxRetries: 5,
+        maxRetries: 8,
       });
     });
 
@@ -161,17 +163,36 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Wait for modification to complete and verify flow nodes', async () => {
-      await expect(
-        operateDiagramPage.diagram.getByTestId(
-          'state-overlay-shipArticles-active',
-        ),
-      ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+      // The diagram's flow-node state overlays are driven by a separate
+      // statistics fetch that lags behind the filtered instance list confirmed
+      // above, so the overlays are occasionally not rendered yet (element not
+      // found) on the first read. Retry with a reload — the shipArticles/
+      // canceled filters are URL params, so reload preserves them and
+      // re-triggers the statistics fetch.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDiagramPage.diagram.getByTestId(
+              'state-overlay-shipArticles-active',
+            ),
+          ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString(), {
+            timeout: 15000,
+          });
 
-      await expect(
-        operateDiagramPage.diagram.getByTestId(
-          'state-overlay-checkPayment-canceled',
-        ),
-      ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+          await expect(
+            operateDiagramPage.diagram.getByTestId(
+              'state-overlay-checkPayment-canceled',
+            ),
+          ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString(), {
+            timeout: 15000,
+          });
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
     });
   });
 
