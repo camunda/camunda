@@ -12,7 +12,6 @@ import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
 import static io.camunda.it.util.TestHelper.deployProcessForTenantAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessageForTenant;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
-import static io.camunda.it.util.TestHelper.waitForBatchOperationStatus;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForJobs;
@@ -35,7 +34,6 @@ import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.response.AuditLogResult;
@@ -1083,7 +1081,7 @@ public class AuditLogProcessOperationsIT {
 
     final var batchOperationKey = batchResult.getBatchOperationKey();
     waitForBatchOperationWithCorrectTotalCount(client, batchOperationKey, 2);
-    waitForBatchOperationStatus(client, batchOperationKey, BatchOperationState.COMPLETED);
+    waitForBatchOperationCompleted(client, batchOperationKey, 2, 0);
 
     final var batchAuditLogs =
         awaitAuditLogEntry(
@@ -1146,7 +1144,7 @@ public class AuditLogProcessOperationsIT {
 
     final var batchOperationKey = batchResult.getBatchOperationKey();
     waitForBatchOperationWithCorrectTotalCount(client, batchOperationKey, 2);
-    waitForBatchOperationStatus(client, batchOperationKey, BatchOperationState.COMPLETED);
+    waitForBatchOperationCompleted(client, batchOperationKey, 2, 0);
 
     final var batchAuditLogs =
         awaitAuditLogEntry(
