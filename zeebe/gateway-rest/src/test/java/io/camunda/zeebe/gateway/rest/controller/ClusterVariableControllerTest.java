@@ -283,6 +283,39 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAcceptCreationWithMaximumMetadataEntries() {
+    // given - exactly at the limit, so the entry-count check must not reject it
+    final var metadataEntries =
+        IntStream.range(0, 100)
+            .mapToObj(i -> "\"%d\": \"%d\"".formatted(i, i))
+            .collect(Collectors.joining(","));
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": { %s }
+        }"""
+            .formatted(metadataEntries);
+    when(clusterVariableServices.createGloballyScopedClusterVariable(
+            createRequestCaptor.capture(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    assertThat(createRequestCaptor.getValue().metadata()).hasSize(100);
+  }
+
+  @Test
   void shouldRejectCreationWithOversizedMetadata() {
     // given: exceeds the test-configured metadata size limit (see TestConfig) without needing a
     // huge payload
