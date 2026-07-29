@@ -137,14 +137,9 @@ test.describe('Decision Instances', () => {
   });
 
   /**
-   * Operate must show the decision version that a FEEL version tag expression
-   * resolved to at runtime (product-hub#3501).
-   *
-   * The instance deliberately asks for the *older* version tag while a newer
-   * one is deployed. Targeting the newest version would make this pass even if
-   * the engine ignored the version tag and fell back to latest-version
-   * binding; requiring the older version means only genuine tag resolution can
-   * satisfy it.
+   * Operate must show the version a FEEL version tag expression resolved to
+   * (product-hub#3501). Asks for the *older* tag while a newer one is deployed,
+   * so a latest-version fallback would fail this.
    */
   test('Decision version resolved by a FEEL version tag expression is shown in Operate', async ({
     page,

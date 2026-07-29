@@ -25,15 +25,12 @@ import {
 import {setVariables} from '../../../../utils/zeebeClient';
 
 /**
- * Regression coverage for calling a specific DMN version from a business rule
- * task through a FEEL version tag expression (product-hub#3501, eng#52338).
+ * Calling a specific DMN version from a business rule task through a FEEL
+ * version tag expression (product-hub#3501).
  *
- * The deployed decision versions differ only in the output of rule 1 (VIP with
- * an engagement score >= 25). With the same VIP input, the version that was
- * actually evaluated therefore decides which branch the process takes:
- *   eligible     -> user task "Review Application Details" is created
- *   not eligible -> pass-through rejection task, process completes
- * Each test asserts both the routed branch and the evaluated decision version.
+ * Versions differ only in rule 1's output, so with identical inputs the branch
+ * taken reveals which version ran: eligible -> review user task, not eligible
+ * -> process completes.
  */
 test.describe
   .parallel('Business rule task - FEEL version tag expression', () => {

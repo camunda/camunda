@@ -29,12 +29,7 @@ const FORM = './resources/decideUpgradeEligibilityCheck.form';
 export const BUSINESS_RULE_TASK_ID = 'Activity_1wwz77k';
 export const REVIEW_USER_TASK_ID = 'Activity_1851bui';
 
-/**
- * Inputs that match rule 1 of the decision table (VIP with an engagement score
- * of at least 25). Rule 1 is the only rule whose output differs between the
- * deployed version tags, so the branch the process takes after the gateway
- * reveals which DMN version was evaluated.
- */
+/** Matches rule 1 (VIP, score >= 25) - the only rule that differs per version. */
 export const VIP_INPUT = {
   userStatus: 'VIP',
   CalculateEngagementScore: 30,
@@ -54,11 +49,7 @@ export type DeployedDecisionVersion = {
   decisionDefinitionKey: string;
 };
 
-/**
- * Every test deploys its own decision and process definitions. Decision
- * resolution by version tag is scoped to a decision ID, so unique IDs keep
- * parallel specs from resolving each other's tags.
- */
+/** Unique IDs per test - tag lookup is scoped to a decision ID. */
 export function createEligibilityIds(label: string): EligibilityIds {
   const suffix = `${label}_${randomUUID().slice(0, 8)}`;
   return {
@@ -101,11 +92,7 @@ export async function deployEligibilityForm(): Promise<void> {
   await deploy([FORM]);
 }
 
-/**
- * Deploys one version of the decision under the given version tag. `vipEligible`
- * controls the output of rule 1, which is what makes the versions behave
- * differently at runtime.
- */
+/** Deploys one version under the given tag; `vipEligible` sets rule 1's output. */
 export async function deployTaggedDecision(
   ids: EligibilityIds,
   versionTag: string,
@@ -129,12 +116,7 @@ export async function deployTaggedDecision(
   };
 }
 
-/**
- * Deploys the process whose business rule task binds the decision by version
- * tag. `versionTagExpression` is written verbatim into the `versionTag`
- * attribute, so it can be a FEEL expression (`= decisionVersion`) or a static
- * tag.
- */
+/** `versionTagExpression` goes verbatim into the BPMN `versionTag` attribute. */
 export async function deployEligibilityProcess(
   ids: EligibilityIds,
   versionTagExpression: string,
@@ -167,10 +149,7 @@ const DECISION_INSTANCE_FIELDS = [
   'decisionDefinitionName',
 ];
 
-/**
- * Waits until the single decision instance of the process instance is indexed
- * and returns it.
- */
+/** Waits for the instance's single decision instance to be indexed. */
 export async function getEvaluatedDecisionInstance(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -185,17 +164,13 @@ export async function getEvaluatedDecisionInstance(
     const body = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body.items[0].state).toBe('EVALUATED');
-    // Fail loudly on API shape drift rather than returning silent undefineds.
     assertRequiredFields(body.items[0], DECISION_INSTANCE_FIELDS);
     Object.assign(found, body.items[0]);
   }).toPass(defaultAssertionOptions);
   return found as EvaluatedDecisionInstance;
 }
 
-/**
- * Asserts which deployed decision version the engine actually evaluated for the
- * given process instance.
- */
+/** Asserts which deployed version the engine actually evaluated. */
 export async function expectEvaluatedDecisionVersion(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -211,10 +186,7 @@ export async function expectEvaluatedDecisionVersion(
   );
 }
 
-/**
- * Asserts the process instance never created a user task, i.e. the gateway took
- * the "not eligible" branch.
- */
+/** No user task means the gateway took the "not eligible" branch. */
 export async function expectNoUserTask(
   request: APIRequestContext,
   processInstanceKey: string,
