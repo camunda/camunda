@@ -293,13 +293,7 @@ public class RaftLeadershipTransferInitiateTest {
   private static Optional<LeadershipTransferResult> initiate(
       final RaftServer leader, final MemberId desiredLeader, final Runnable setUp)
       throws Exception {
-    return onRaftThread(
-        leader,
-        () -> {
-          setUp.run();
-          // setUp may move the configuration on, so read it afterwards
-          return submit(leader, desiredLeader, coordinator(leader), index(leader));
-        });
+    return initiate(leader, desiredLeader, coordinator(leader), index(leader), setUp);
   }
 
   private static Optional<LeadershipTransferResult> initiate(
@@ -308,15 +302,16 @@ public class RaftLeadershipTransferInitiateTest {
       final MemberId coordinator,
       final long coordinatorConfigIndex)
       throws Exception {
-    return onRaftThread(
-        leader, () -> submit(leader, desiredLeader, coordinator, coordinatorConfigIndex));
+    return initiate(leader, desiredLeader, coordinator, coordinatorConfigIndex, () -> {});
   }
 
-  private static Optional<LeadershipTransferResult> submit(
+  private static Optional<LeadershipTransferResult> initiate(
       final RaftServer leader,
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long coordinatorConfigIndex) {
+      final long coordinatorConfigIndex,
+      final Runnable setUp)
+      throws Exception {
     final var request =
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(desiredLeader)
@@ -324,8 +319,13 @@ public class RaftLeadershipTransferInitiateTest {
             .withCoordinatorConfigIndex(coordinatorConfigIndex)
             .withCorrelationId(1)
             .build();
-    return Optional.ofNullable(
-        leaderRole(leader).onLeadershipTransferInitiate(request).join().rejectionReason());
+    return onRaftThread(
+        leader,
+        () -> {
+          setUp.run();
+          return Optional.ofNullable(
+              leaderRole(leader).onLeadershipTransferInitiate(request).join().rejectionReason());
+        });
   }
 
   /**
