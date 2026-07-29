@@ -91,7 +91,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private long transferPauseStartMs;
   private long transferPauseTargetIndex;
   private Scheduled transferPauseWatchdog;
-  private boolean transferInProgress;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -470,7 +469,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final Duration remaining = resumeTimeout.minusMillis(elapsedMs);
 
     pausedForTransfer = true;
-    transferInProgress = true;
     transferPauseStartMs = pausedSinceMs;
 
     // Writes must already have been frozen and the processor drained before this runs, so the last
@@ -520,7 +518,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .observePauseDuration(
               Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
-    transferInProgress = false;
   }
 
   /**
@@ -540,7 +537,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (desiredLeader.equals(localMember)) {
       return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
     }
-    if (transferInProgress) {
+    if (pausedForTransfer) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
     final var coordinatorRejection = validateCoordinator(coordinator, coordinatorConfigIndex);
