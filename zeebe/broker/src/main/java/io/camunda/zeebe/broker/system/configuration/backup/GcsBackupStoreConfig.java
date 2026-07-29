@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
@@ -73,7 +74,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
   }
 
   public static GcsBackupConfig toStoreConfig(
-      final GcsBackupStoreConfig config, final Duration readTimeout, final Duration writeTimeout) {
+      final GcsBackupStoreConfig config,
+      final @Nullable Duration readTimeout,
+      final @Nullable Duration writeTimeout) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withReadTimeout(readTimeout)
