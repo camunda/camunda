@@ -16,8 +16,8 @@ import java.util.Set;
 
 /**
  * Resolves the set of authorization-owner identities reachable by a given {@link
- * CamundaAuthentication}: the principal itself (user or client) plus every group, role, and
- * mapping rule it is a member of.
+ * CamundaAuthentication}: the principal itself (user or client) plus every group, role, and mapping
+ * rule it is a member of.
  *
  * <p>This mirrors the owner-id resolution used by {@code
  * io.camunda.security.core.authz.AuthorizationChecker} and is shared by every caller that needs to

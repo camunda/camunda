@@ -39,11 +39,7 @@ class AuthenticatedOwnerIdsTest {
     // given
     final var authentication =
         CamundaAuthentication.of(
-            b ->
-                b.user("foo")
-                    .role("roleId")
-                    .mappingRule("mappingRuleId")
-                    .group("groupId"));
+            b -> b.user("foo").role("roleId").mappingRule("mappingRuleId").group("groupId"));
 
     // when
     final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
