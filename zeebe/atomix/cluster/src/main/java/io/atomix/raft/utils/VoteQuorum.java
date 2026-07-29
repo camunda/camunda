@@ -32,7 +32,13 @@ public interface VoteQuorum {
         case final NoSuchMemberException noSuchMemberException -> NO_SUCH_MEMBER;
         case final ConnectException connectException -> NO_SUCH_MEMBER;
         case final NoRemoteHandler noRemoteHandler -> NO_SUCH_MEMBER;
-        case final CompletionException completionException -> of(completionException.getCause());
+        case final CompletionException completionException -> {
+          if (completionException.getCause() != null) {
+            yield of(completionException.getCause());
+          } else {
+            yield UNKNOWN;
+          }
+        }
         default -> UNKNOWN;
       };
     }
