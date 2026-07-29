@@ -19,6 +19,7 @@
 # Safety features:
 #   - Only processes closed issues
 #   - Excludes pull requests
+#   - Excludes issues closed as "not planned" or "duplicate"
 #   - Prevents duplicate comments
 #   - Supports dry-run mode for testing
 
