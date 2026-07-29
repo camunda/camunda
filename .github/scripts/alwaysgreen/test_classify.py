@@ -1,0 +1,411 @@
+"""Unit tests for the AlwaysGreen classifier.
+
+Cases are drawn from real failed runs of docker-build-helm-integration.yml so each
+one pins a mistake that was actually observed rather than a hypothetical.
+"""
+
+from __future__ import annotations
+
+import classify
+
+
+# ---------------------------------------------------------------------------
+# Platform noise
+# ---------------------------------------------------------------------------
+
+
+def test_platform_internal_error_is_noise():
+    # Run 30157503817: Cleanup and Observe both failed this way, no steps ran.
+    verdict = classify.noise_verdict(
+        conclusion="failure",
+        step_count=0,
+        failure_annotations=[
+            "GitHub Actions has encountered an internal error when running your job."
+        ],
+    )
+    assert verdict == classify.NOISE_PLATFORM
+
+
+def test_cancellation_is_noise_even_with_steps():
+    # Run 30078726133: Build and Push Docker Images had 20 steps but was cancelled,
+    # which the first census mistook for a real build failure.
+    verdict = classify.noise_verdict(
+        conclusion="failure",
+        step_count=20,
+        failure_annotations=["The operation was canceled."],
+    )
+    assert verdict == classify.NOISE_CANCELLED
+
+
+def test_no_steps_and_no_annotation_is_noise():
+    # Downstream run 30157726486: Create cluster generation on INT.
+    verdict = classify.noise_verdict(
+        conclusion="failure", step_count=0, failure_annotations=[]
+    )
+    assert verdict == classify.NOISE_NO_EVIDENCE
+
+
+def test_ordinary_step_failure_is_not_noise():
+    verdict = classify.noise_verdict(
+        conclusion="failure",
+        step_count=30,
+        failure_annotations=["Process completed with exit code 1."],
+    )
+    assert verdict is None
+
+
+def test_non_failure_conclusions_are_not_classified():
+    assert (
+        classify.noise_verdict(
+            conclusion="success", step_count=0, failure_annotations=[]
+        )
+        is None
+    )
+
+
+# ---------------------------------------------------------------------------
+# Surface classification
+# ---------------------------------------------------------------------------
+
+
+def test_nested_sm_e2e_job_name_maps_to_sm_surface():
+    name = (
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e after install - install on gke - agrn (1 of 1)"
+    )
+    assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
+
+
+def test_unrendered_template_job_name_still_matches_prefix():
+    # Skipped jobs keep the raw expressions; the prefix is the stable part.
+    name = (
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e after install - ${{ inputs.flow }} on "
+        "${{ inputs.distro-platform }} - ${{ inputs.shortname }}"
+    )
+    assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
+
+
+def test_observe_status_job_is_ignored():
+    assert classify.surface_for_job("Observe Helm chart Integration Tests status") is None
+
+
+def test_frontend_and_docker_builds_map_to_build():
+    assert classify.surface_for_job("Build Operate Frontend") == classify.SURFACE_BUILD
+    assert (
+        classify.surface_for_job("Build and Push Docker Images")
+        == classify.SURFACE_BUILD
+    )
+
+
+def test_helm_install_and_cleanup_are_distinct_surfaces():
+    base = "Helm chart Integration Tests / agrn - install - gke / "
+    assert (
+        classify.surface_for_job(base + "install for install on gke - agrn")
+        == classify.SURFACE_HELM_INSTALL
+    )
+    assert (
+        classify.surface_for_job(base + "Cleanup - install on gke - agrn")
+        == classify.SURFACE_HELM_CLEANUP
+    )
+
+
+def test_only_e2e_surfaces_dispatch_in_first_increment():
+    assert classify.SURFACE_SM_E2E in classify.DISPATCHABLE_SURFACES
+    assert classify.SURFACE_SAAS_E2E in classify.DISPATCHABLE_SURFACES
+    assert classify.SURFACE_HELM_INSTALL not in classify.DISPATCHABLE_SURFACES
+    assert classify.SURFACE_BUILD not in classify.DISPATCHABLE_SURFACES
+
+
+# ---------------------------------------------------------------------------
+# Playwright report parsing
+# ---------------------------------------------------------------------------
+
+
+def _nested_report(specs):
+    """Report shaped like Playwright's real output: file suite → describe suite."""
+    return {
+        "config": {"rootDir": "/w/node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10"},
+        "suites": [
+            {
+                "title": "smoke-tests.spec.js",
+                "file": "smoke-tests.spec.js",
+                "specs": [],
+                "suites": [{"title": "Smoke Tests", "specs": specs}],
+            }
+        ],
+    }
+
+
+def test_counting_walks_nested_suites():
+    # The pipeline's own one-level walk returns 0 here; that is the bug this
+    # guards. Real example: downstream run 30259132560 was 15 specs / 2 failures.
+    report = _nested_report(
+        [
+            {"file": "test-setup.spec.ts", "title": "a", "ok": False, "tests": [{"results": [{"status": "failed"}]}]},
+            {"file": "smoke-tests.spec.ts", "title": "b", "ok": True, "tests": [{"results": [{"status": "passed"}]}]},
+        ]
+    )
+    counts = classify.count_specs(report)
+    assert counts.total == 2
+    assert counts.failed == 1
+    assert counts.setup_failed == 1
+
+
+def test_flaky_counts_retried_specs_that_passed():
+    report = _nested_report(
+        [
+            {
+                "file": "smoke-tests.spec.ts",
+                "title": "eventually passed",
+                "ok": True,
+                "tests": [{"results": [{"status": "failed"}, {"status": "passed"}]}],
+            }
+        ]
+    )
+    counts = classify.count_specs(report)
+    assert counts.flaky == 1
+    assert counts.failed == 0
+
+
+def test_empty_report_counts_zero():
+    assert classify.count_specs({"suites": []}) == classify.SpecCounts()
+
+
+# ---------------------------------------------------------------------------
+# SaaS sub-classification
+# ---------------------------------------------------------------------------
+
+
+def test_setup_only_failures_are_provisioning():
+    # Observed shape: every failing spec was in test-setup.spec.ts
+    # (Create Default Cluster / Create AWS Cluster).
+    counts = classify.SpecCounts(total=15, failed=2, flaky=0, setup_failed=2)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_PROVISIONING
+    )
+
+
+def test_real_test_failures_are_saas_e2e():
+    counts = classify.SpecCounts(total=15, failed=2, flaky=0, setup_failed=0)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_E2E
+    )
+
+
+def test_no_failing_specs_is_infra_not_dispatchable():
+    counts = classify.SpecCounts(total=15, failed=0)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_INFRA
+    )
+
+
+def test_missing_artifacts_is_infra():
+    assert (
+        classify.saas_surface_from_counts(classify.SpecCounts(), has_artifacts=False)
+        == classify.SURFACE_SAAS_INFRA
+    )
+
+
+# ---------------------------------------------------------------------------
+# Spec → source path
+# ---------------------------------------------------------------------------
+
+
+def test_suite_recovered_from_rootdir():
+    root = "/__w/camunda/camunda/charts/camunda-platform-8.10/test/e2e/node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10"
+    assert classify.suite_from_rootdir(root) == "SM-8.10"
+
+
+def test_suite_is_none_when_rootdir_unhelpful():
+    assert classify.suite_from_rootdir("") is None
+    assert classify.suite_from_rootdir("/some/other/dir") is None
+
+
+def test_compiled_basename_maps_to_source_path():
+    assert (
+        classify.source_spec_path("smoke-tests.spec.js", suite="SM-8.10")
+        == "tests/SM-8.10/smoke-tests.spec.ts"
+    )
+
+
+def test_path_with_directories_is_left_alone():
+    assert (
+        classify.source_spec_path("tests/8.10/navigation.spec.ts", suite="8.10")
+        == "tests/8.10/navigation.spec.ts"
+    )
+
+
+def test_basename_without_suite_is_returned_unchanged():
+    assert classify.source_spec_path("smoke-tests.spec.js", suite=None) == (
+        "smoke-tests.spec.ts"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Failing-spec extraction
+# ---------------------------------------------------------------------------
+
+
+def test_failing_spec_carries_retry_history_and_is_deterministic():
+    # Run 30109387051: 3 attempts, all failed — the Keycloak error page case.
+    report = _nested_report(
+        [
+            {
+                "file": "smoke-tests.spec.js",
+                "title": "Most Common Flow User Flow With All Apps",
+                "ok": False,
+                "tests": [
+                    {
+                        "projectName": "smoke-tests",
+                        "results": [
+                            {"status": "failed"},
+                            {"status": "failed"},
+                            {
+                                "status": "failed",
+                                "error": {
+                                    "message": "\x1b[2mexpect(\x1b[22mlocator).toBeVisible failed"
+                                },
+                            },
+                        ],
+                    }
+                ],
+            }
+        ]
+    )
+    specs = classify.failing_specs(report, suite="SM-8.10")
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec.file == "tests/SM-8.10/smoke-tests.spec.ts"
+    assert spec.attempts == 3
+    assert spec.deterministic
+    assert "\x1b" not in spec.error
+    assert "toBeVisible failed" in spec.error
+
+
+def test_spec_that_eventually_passed_is_not_deterministic():
+    spec = classify.FailingSpec(
+        file="f", test_name="t", statuses=["failed", "failed", "passed"]
+    )
+    assert not spec.deterministic
+
+
+def test_spec_with_no_attempts_is_not_deterministic():
+    assert not classify.FailingSpec(file="f", test_name="t").deterministic
+
+
+def test_clean_error_truncates():
+    assert len(classify.clean_error("x" * 5000)) == 600
+
+
+# ---------------------------------------------------------------------------
+# Fingerprints
+# ---------------------------------------------------------------------------
+
+
+def test_fingerprint_is_stable_and_short():
+    fp = classify.spec_fingerprint("main", "sm-smoke-e2e", "a.spec.ts", "t")
+    assert fp == classify.spec_fingerprint("main", "sm-smoke-e2e", "a.spec.ts", "t")
+    assert len(fp) == 8
+
+
+def test_fingerprint_differs_per_branch():
+    assert classify.spec_fingerprint("main", "s", "f", "t") != classify.spec_fingerprint(
+        "stable/8.9", "s", "f", "t"
+    )
+
+
+def test_job_fingerprint_ignores_nesting_prefix():
+    a = classify.job_fingerprint("main", "helm-install", "A / B / install for install on gke - agrn")
+    b = classify.job_fingerprint("main", "helm-install", "install for install on gke - agrn")
+    assert a == b
+
+
+# ---------------------------------------------------------------------------
+# Blame
+# ---------------------------------------------------------------------------
+
+
+def test_human_pr_author_is_the_reviewer():
+    # Run 30078726133.
+    prs = [{"number": 58541, "merge_commit_sha": "sha1", "user": {"login": "slolatte"}}]
+    blame = classify.resolve_blame(head_sha="sha1", prs=prs)
+    assert blame.reviewer == "slolatte"
+    assert blame.via == "pr-author"
+
+
+def test_originating_pr_matches_merge_commit_not_list_order():
+    # /commits/{sha}/pulls also returns unrelated open PRs containing the commit.
+    prs = [
+        {"number": 999, "merge_commit_sha": "other", "user": {"login": "someone"}},
+        {"number": 58541, "merge_commit_sha": "sha1", "user": {"login": "slolatte"}},
+    ]
+    assert classify.originating_pr(prs, "sha1")["number"] == 58541
+
+
+def test_backport_bot_resolves_to_original_author():
+    # Run 30381967897: [Backport stable/8.7] … (#58938) authored by a bot.
+    prs = [
+        {
+            "number": 58990,
+            "merge_commit_sha": "sha1",
+            "title": "[Backport stable/8.7] pg/sigsegv-stop-raft-role-preemptively (#58938)",
+            "user": {"login": "monorepo-devops-automation[bot]"},
+        }
+    ]
+    blame = classify.resolve_blame(
+        head_sha="sha1",
+        prs=prs,
+        lookup_pr=lambda n: {"number": n, "user": {"login": "pihme"}},
+    )
+    assert blame.reviewer == "pihme"
+    assert blame.pr_number == 58938
+    assert blame.via == "backport-original"
+
+
+def test_non_backport_bot_leaves_reviewer_unset_but_keeps_author():
+    # Run 30109387051: renovate[bot], nothing to fall back to.
+    prs = [
+        {
+            "number": 56547,
+            "merge_commit_sha": "sha1",
+            "title": "deps: Update camunda-platform Helm Chart to v15.0.0-alpha3 (main)",
+            "user": {"login": "renovate[bot]"},
+        }
+    ]
+    blame = classify.resolve_blame(head_sha="sha1", prs=prs)
+    assert blame.reviewer is None
+    assert blame.author == "renovate[bot]"
+    assert blame.via == "bot-unresolved"
+
+
+def test_backport_chain_ending_in_a_bot_stays_unresolved():
+    prs = [
+        {
+            "number": 1,
+            "merge_commit_sha": "sha1",
+            "title": "[Backport stable/8.8] something (#2)",
+            "user": {"login": "monorepo-release[bot]"},
+        }
+    ]
+    blame = classify.resolve_blame(
+        head_sha="sha1",
+        prs=prs,
+        lookup_pr=lambda n: {"user": {"login": "renovate[bot]"}},
+    )
+    assert blame.reviewer is None
+    assert blame.via == "bot-unresolved"
+
+
+def test_no_prs_yields_no_blame():
+    blame = classify.resolve_blame(head_sha="sha1", prs=[])
+    assert blame.reviewer is None and blame.via == "no-pr"
+
+
+def test_is_bot():
+    assert classify.is_bot("renovate[bot]")
+    assert not classify.is_bot("slolatte")
+    assert not classify.is_bot(None)
