@@ -29,6 +29,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(ExportingController.class)
 public class ExportingControllerTest extends RestControllerTest {
@@ -201,7 +202,7 @@ public class ExportingControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json("{\"status\":\"SOFT_PAUSED\"}");
+        .json("{\"status\":\"SOFT_PAUSED\"}", JsonCompareMode.STRICT);
 
     // the unprefixed and the /physical-tenants/default/ routes both resolve to the default PT
     verify(serviceRegistry).exportingServices(DEFAULT_PHYSICAL_TENANT_ID);
