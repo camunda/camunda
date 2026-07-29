@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -75,8 +75,17 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
+<<<<<<< HEAD
     final var resultBuilder = new InputMappingResultBuilder();
     final var processor = expressionProcessor.withPrimaryContext(resultBuilder::getVariable);
+=======
+    final var resultBuilder = new MappingResultBuilder();
+    // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
+    // for input mappings, so a modeled reference survives evaluation instead of nulling
+    final var processor =
+        inputMappingExpressionProcessor.prependContext(
+            name -> Either.left(resultBuilder.getVariable(name)));
+>>>>>>> c4a2bf14 (refactor: rename InputMappingResultBuilder to MappingResultBuilder)
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
       final var result =
