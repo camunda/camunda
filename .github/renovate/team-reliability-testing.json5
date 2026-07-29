@@ -1,6 +1,13 @@
 {
   // This is the Renovate configuration specific to the Reliability Testing team / load test environment.
 
+  // Find updates from internal registries through the actual upstream registries.
+  registryAliases: {
+    "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub": "docker.io",
+    "europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio": "ghcr.io",
+    "europe-west1-docker.pkg.dev/camunda-benchmark/quayio": "quay.io",
+  },
+
   // Configure Renovate to find what to update in custom locations, not natively managed by Renovate.
   customManagers: [
     {
@@ -20,6 +27,14 @@
   ],
 
   packageRules: [
+    {
+      // Disable automerge for all the load test updates, by default.
+      // Automerge can be turned on, on a case by case basis, as needed, until
+      // the teams are more confident about the updates received.
+      matchFileNames: ["load-tests/**"],
+      automerge: false,
+    },
+
     {
       // Simplify the commit message when updating the Camunda Platform Helm Chart for load tests
       matchDepNames: [
@@ -70,7 +85,6 @@
       ],
       matchPackageNames: [
         "registry.camunda.cloud/team-zeebe",
-        "europe-west1-docker.pkg.dev/camunda-benchmark/*",
       ],
       enabled: false,
     },
@@ -86,6 +100,9 @@
     // load-tests setup directories.
     managerFilePatterns: [
       "load-tests/setup/*/values/*.y*ml",
+      // May contain references to other Helm Chart using the
+      // registry/repository/tag format understood by Renovate.
+      "load-tests/setup/charts/load-test-setup/values.yaml",
     ],
   },
 }
