@@ -31,6 +31,7 @@ import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.RaftThreadContextFactory;
+import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -1347,16 +1348,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionConfig.getMinStepDownFailureCount();
   }
 
-  public long getRebalanceReplicationLagThreshold() {
-    return partitionConfig.getRebalanceReplicationLagThreshold();
-  }
-
-  public Duration getRebalanceReplicationTimeout() {
-    return partitionConfig.getRebalanceReplicationTimeout();
-  }
-
-  public int getRebalanceMaxTransferAttempts() {
-    return partitionConfig.getRebalanceMaxTransferAttempts();
+  /**
+   * The settings bounding a coordinated leadership transfer as configured on this member. A
+   * coordinator may override them per transfer, so a transfer in flight uses whatever it resolved
+   * on acceptance rather than reading these again.
+   */
+  public RebalanceConfiguration getRebalanceConfiguration() {
+    return new RebalanceConfiguration(
+        partitionConfig.getRebalanceReplicationLagThreshold(),
+        partitionConfig.getRebalanceReplicationTimeout(),
+        partitionConfig.getRebalanceMaxTransferAttempts());
   }
 
   public Duration getMaxQuorumResponseTimeout() {

@@ -69,9 +69,13 @@ public final class LeadershipTransferRunner {
   public LeadershipTransferInitiateResponse handleInitiate(
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
+    final var configuration = raft.getRebalanceConfiguration();
     final var rejectionReason =
         admission.precheck(
-            request.desiredLeader(), request.coordinator(), request.coordinatorConfigIndex());
+            request.desiredLeader(),
+            request.coordinator(),
+            request.coordinatorConfigIndex(),
+            configuration);
     if (rejectionReason.isPresent()) {
       return LeadershipTransferInitiateResponse.builder()
           .withStatus(Status.OK)
@@ -79,7 +83,8 @@ public final class LeadershipTransferRunner {
           .build();
     }
     final var attempt =
-        new LeadershipTransferAttempt(raft, leader, request, () -> currentAttempt = null);
+        new LeadershipTransferAttempt(
+            raft, leader, request, configuration, () -> currentAttempt = null);
     currentAttempt = attempt;
     attempt.start();
     return LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
