@@ -10,6 +10,7 @@ package io.camunda.tasklist.qa.backup;
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.BACKUP_ID;
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.INDEX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -24,12 +25,14 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
+import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -177,27 +180,36 @@ public class TasklistAPICaller {
         .build();
   }
 
-  @Retryable(
-      retryFor = {AssertionError.class, HttpClientErrorException.NotFound.class},
-      maxAttempts = 100,
-      backoff = @Backoff(delay = 10)) // short delay to verify that INCOMPLETE state is not returned
   public void assertBackupState() {
-    try {
-      final var backupState = getBackupState(BACKUP_ID).getState();
-      switch (backupState) {
-        case COMPLETED:
-          LOGGER.info("Backup completed successfully.");
-          break;
-        case IN_PROGRESS:
-          LOGGER.info("Backup is still in progress, retrying...");
-          throw new AssertionError("Backup is still in progress"); // Triggers retry
-        default:
-          LOGGER.error("Unhealthy backup state: {}", backupState);
-          throw new IllegalStateException("Unhealthy backup state: " + backupState);
-      }
-    } catch (final HttpClientErrorException.NotFound er) {
-      LOGGER.warn("Error when checking backup state: {}", er.getMessage());
-      throw er;
-    }
+    // The timeout must cover the time a snapshot actually needs on a loaded CI agent. The poll
+    // interval is kept short because the assertion also guards against the backup reporting an
+    // unhealthy (e.g. INCOMPLETE) state on its way to COMPLETED.
+    await("Backup completed")
+        .atMost(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofMillis(250))
+        .untilAsserted(
+            () -> {
+              final BackupStateDto backupState;
+              try {
+                backupState = getBackupState(BACKUP_ID).getState();
+              } catch (final HttpClientErrorException.NotFound er) {
+                LOGGER.warn("Error when checking backup state: {}", er.getMessage());
+                // The backup may not be visible yet, keep polling.
+                throw new AssertionError("Backup not found yet", er);
+              }
+
+              switch (backupState) {
+                case COMPLETED:
+                  LOGGER.info("Backup completed successfully.");
+                  break;
+                case IN_PROGRESS:
+                  LOGGER.info("Backup is still in progress, retrying...");
+                  throw new AssertionError("Backup is still in progress");
+                default:
+                  LOGGER.error("Unhealthy backup state: {}", backupState);
+                  // Not an AssertionError, so this aborts the polling immediately.
+                  throw new IllegalStateException("Unhealthy backup state: " + backupState);
+              }
+            });
   }
 }
