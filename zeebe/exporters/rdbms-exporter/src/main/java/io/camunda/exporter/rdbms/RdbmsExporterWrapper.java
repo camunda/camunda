@@ -61,6 +61,8 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancella
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceResumptionBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceSuspensionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddUpdateHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.DelayReplicationControllerFactory;
@@ -367,6 +369,14 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceCancellationBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(), cacheRegistry.batchOperationCache()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new ProcessInstanceSuspensionBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(), cacheRegistry.batchOperationCache()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new ProcessInstanceResumptionBatchOperationExportHandler(
             rdbmsWriters.getBatchOperationWriter(), cacheRegistry.batchOperationCache()));
     builder.withHandler(
         ValueType.INCIDENT,
