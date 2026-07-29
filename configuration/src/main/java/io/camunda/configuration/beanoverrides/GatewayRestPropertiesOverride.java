@@ -42,8 +42,24 @@ public class GatewayRestPropertiesOverride {
   public GatewayRestProperties gatewayRestProperties() {
     final GatewayRestProperties override = new GatewayRestProperties();
     BeanUtils.copyProperties(legacyGatewayRestProperties, override);
+    copyReadOnlyNestedProperties(legacyGatewayRestProperties, override);
     new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
+  }
+
+  /**
+   * Copies nested configuration that {@link BeanUtils#copyProperties} cannot reach.
+   *
+   * <p>{@code copyProperties} only writes properties that are writable on the target. Nested
+   * configuration objects are exposed as read-only bean properties (a getter over a {@code final}
+   * field), so their values are silently dropped. Anything bound only under the legacy {@code
+   * camunda.rest} prefix — i.e. not re-applied by {@link Converter} from the unified configuration
+   * — must therefore be propagated explicitly here, or it would stay at its default in the {@link
+   * Primary} bean that consumers are injected with.
+   */
+  static void copyReadOnlyNestedProperties(
+      final GatewayRestConfiguration source, final GatewayRestConfiguration target) {
+    target.getUpdateMetadata().setEnabled(source.getUpdateMetadata().isEnabled());
   }
 
   /** Maps a {@link Camunda} configuration into a {@link GatewayRestConfiguration}. */
