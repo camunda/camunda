@@ -41,12 +41,29 @@ var conservativeJREModules = []string{
 }
 
 var runtimeProviderJREModules = []string{
-	// The connectors runtime is a Spring Boot fat JAR. Running jdeps on it is prohibitively slow,
-	// so keep provider modules that are commonly resolved indirectly at runtime explicit.
+	// The connectors runtime is a Spring Boot fat JAR. Running jdeps directly against it only sees
+	// the loader classes (everything else is nested under BOOT-INF), so its real module needs -
+	// verified by running jdeps against the exploded BOOT-INF/classes and BOOT-INF/lib - are kept
+	// explicit here instead. Without java.desktop in particular, the bundled runtime fails on any
+	// JDK version with NoClassDefFoundError: java/beans/PropertyEditorSupport while Spring Boot
+	// binds configuration properties.
+	"java.compiler",
+	"java.desktop",
+	"java.instrument",
+	"java.management",
 	"java.management.rmi",
+	"java.naming",
+	"java.net.http",
+	"java.prefs",
+	"java.scripting",
+	"java.security.jgss",
+	"java.sql",
 	"java.xml.crypto",
+	"jdk.jfr",
 	"jdk.management.agent",
 	"jdk.naming.dns",
+	"jdk.net",
+	"jdk.unsupported",
 }
 
 func Clean(camundaVersion, connectorJarToKeep string) {
