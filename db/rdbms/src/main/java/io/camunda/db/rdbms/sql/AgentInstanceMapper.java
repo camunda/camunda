@@ -24,4 +24,7 @@ public interface AgentInstanceMapper extends ProcessInstanceDependantMapper {
   Long count(AgentInstanceDbQuery query);
 
   List<AgentInstanceDbModel> search(AgentInstanceDbQuery query);
+
+  record AgentInstanceElementInstanceKeysDto(
+      long agentInstanceKey, List<Long> elementInstanceKeys) {}
 }
