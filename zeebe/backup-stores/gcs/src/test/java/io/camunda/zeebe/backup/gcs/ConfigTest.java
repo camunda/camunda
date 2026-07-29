@@ -7,9 +7,16 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.cloud.http.HttpTransportOptions;
+import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
+import java.io.IOException;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 final class ConfigTest {
@@ -105,6 +112,69 @@ final class ConfigTest {
 
     // then
     Assertions.assertThat(config.connection().auth()).isInstanceOf(Auto.class);
+  }
+
+  @Test
+  void shouldUseConfiguredReadTimeoutAsClientReadTimeout() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withoutAuthentication()
+            .withReadTimeout(Duration.ofSeconds(90))
+            .build();
+
+    // when
+    final var client = GcsBackupStore.buildClient(config);
+
+    // then
+    Assertions.assertThat(client.getOptions().getTransportOptions())
+        .asInstanceOf(InstanceOfAssertFactories.type(HttpTransportOptions.class))
+        .extracting(HttpTransportOptions::getReadTimeout)
+        .isEqualTo(90_000);
+  }
+
+  @Test
+  void shouldApplyConfiguredWriteTimeoutToRequests() throws IOException {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withoutAuthentication()
+            .withWriteTimeout(Duration.ofSeconds(120))
+            .build();
+    final var transportOptions = GcsBackupStore.transportOptions(config).orElseThrow();
+    final var request =
+        new NetHttpTransport()
+            .createRequestFactory()
+            .buildGetRequest(new GenericUrl("http://localhost"));
+
+    // when
+    // the write timeout is not part of HttpTransportOptions, it is applied per request
+    transportOptions
+        .getHttpRequestInitializer(StorageOptions.newBuilder().setProjectId("test").build())
+        .initialize(request);
+
+    // then
+    Assertions.assertThat(request.getWriteTimeout()).isEqualTo(120_000);
+  }
+
+  @Test
+  void shouldKeepClientDefaultsWhenNoTimeoutIsSet() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder().withBucketName("test").withoutAuthentication().build();
+
+    // when
+    final var client = GcsBackupStore.buildClient(config);
+
+    // then
+    // -1 means the client does not set a read timeout, leaving the google-http-client default
+    Assertions.assertThat(GcsBackupStore.transportOptions(config)).isEmpty();
+    Assertions.assertThat(client.getOptions().getTransportOptions())
+        .asInstanceOf(InstanceOfAssertFactories.type(HttpTransportOptions.class))
+        .extracting(HttpTransportOptions::getReadTimeout)
+        .isEqualTo(-1);
   }
 
   @Test
