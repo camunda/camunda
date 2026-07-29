@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -111,6 +112,57 @@ public class ExportingRequestBroadcasterTest {
     // then
     assertThatExceptionOfType(Throwable.class)
         .isThrownBy(() -> service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  @ParameterizedTest
+  @MethodSource("validTopologies")
+  void shouldReportSinglePhaseWhenAllReplicasAgree(final BrokerClusterState topology) {
+    // given
+    final var client = setupBrokerClient(topology);
+    final var service = new ExportingRequestBroadcaster(client);
+    when(client.sendRequest(any())).thenAnswer(invocation -> respondWithPhase("PAUSED"));
+
+    // when
+    final var status = service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(ExportingStatus.PAUSED);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validTopologies")
+  void shouldReportMixedWhenReplicasDisagree(final BrokerClusterState topology) {
+    // given a single replica that has not caught up with the pause yet
+    final var client = setupBrokerClient(topology);
+    final var service = new ExportingRequestBroadcaster(client);
+    when(client.sendRequest(any())).thenAnswer(invocation -> respondWithPhase("PAUSED"));
+    when(client.sendRequest(requestTo(1, topology.getLeaderForPartition(1))))
+        .thenAnswer(invocation -> respondWithPhase("EXPORTING"));
+
+    // when
+    final var status = service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(ExportingStatus.MIXED);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidTopologies")
+  void shouldFailToReportStatusOnIncompleteTopology(final BrokerClusterState topology) {
+    // given
+    final var client = setupBrokerClient(topology);
+    final var service = new ExportingRequestBroadcaster(client);
+
+    // then
+    assertThatExceptionOfType(IncompleteTopologyException.class)
+        .isThrownBy(() -> service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  private static CompletableFuture<BrokerResponse<AdminResponse>> respondWithPhase(
+      final String phase) {
+    final var response = mock(AdminResponse.class);
+    when(response.getPayload()).thenReturn(phase.getBytes(StandardCharsets.UTF_8));
+    return CompletableFuture.completedFuture(new BrokerResponse<>(response));
   }
 
   private BrokerClient setupBrokerClient(final BrokerClusterState topology) {

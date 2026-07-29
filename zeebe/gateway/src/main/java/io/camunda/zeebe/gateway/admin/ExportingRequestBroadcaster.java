@@ -11,9 +11,12 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +53,45 @@ public class ExportingRequestBroadcaster {
     return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::resumeExporting);
   }
 
+  /**
+   * Queries every replica of every partition of the physical tenant and aggregates the reported
+   * exporter phases into a single status. Every replica is queried, not just the leaders, because
+   * pause and resume are applied to all replicas: backup tooling needs to know that the pause took
+   * effect everywhere, not only where exporting currently runs.
+   */
+  public CompletableFuture<ExportingStatus> getExportingStatus(final String physicalTenantId) {
+    final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
+    validateTopology(topology);
+
+    final var responses =
+        topology.getPartitions().stream()
+            .flatMap(
+                partitionId ->
+                    membersOfPartition(topology, partitionId).stream()
+                        .map(
+                            brokerId -> {
+                              final var request = new BrokerAdminRequest();
+                              request.setPartitionGroup(physicalTenantId);
+                              request.setBrokerId(brokerId);
+                              request.setPartitionId(partitionId);
+                              request.getExportingState();
+                              return brokerClient
+                                  .sendRequest(request)
+                                  .thenApply(
+                                      response ->
+                                          new String(
+                                              response.getResponseOrThrow().getPayload(),
+                                              StandardCharsets.UTF_8));
+                            }))
+            .toList();
+
+    return CompletableFuture.allOf(responses.toArray(CompletableFuture<?>[]::new))
+        .thenApply(
+            ignored ->
+                ExportingStatus.aggregate(
+                    responses.stream().map(CompletableFuture::join).collect(Collectors.toSet())));
+  }
+
   private CompletableFuture<Void> broadcastOnTopology(
       final String physicalTenantId,
       final BrokerClusterState topology,
@@ -71,16 +113,7 @@ public class ExportingRequestBroadcaster {
       final Integer partitionId,
       final Consumer<BrokerAdminRequest> configureRequest) {
 
-    final var leader = topology.getLeaderForPartition(partitionId);
-    final var followers = topology.getFollowersForPartition(partitionId);
-    final var inactive = topology.getInactiveNodesForPartition(partitionId);
-
-    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
-    if (leader != null) {
-      members.add(leader);
-    }
-    members.addAll(followers);
-    members.addAll(inactive);
+    final var members = membersOfPartition(topology, partitionId);
 
     final var requests =
         members.stream()
@@ -97,6 +130,21 @@ public class ExportingRequestBroadcaster {
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
+  }
+
+  private Set<BrokerMemberId> membersOfPartition(
+      final BrokerClusterState topology, final Integer partitionId) {
+    final var leader = topology.getLeaderForPartition(partitionId);
+    final var followers = topology.getFollowersForPartition(partitionId);
+    final var inactive = topology.getInactiveNodesForPartition(partitionId);
+
+    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
+    if (leader != null) {
+      members.add(leader);
+    }
+    members.addAll(followers);
+    members.addAll(inactive);
+    return members;
   }
 
   private void validateTopology(final BrokerClusterState topology) {
