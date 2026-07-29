@@ -13,7 +13,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {findUserTask, expectProcessState} from '@requestHelpers';
+import {findUserTask} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
 import {defaultAssertionOptions} from 'utils/constants';
 
@@ -383,6 +383,12 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Department', 'Rome');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    // Wait for the toast to auto-dismiss before completing the second task;
+    // otherwise both "Task completed" toasts can be on screen at once and the
+    // banner locator matches two elements (strict-mode violation).
+    await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+      timeout: 15000,
+    });
 
     await taskPanelPage.filterBy('Unassigned');
     // The next task can take a moment to be indexed/rendered right after
@@ -619,6 +625,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     let processInstanceKey = '';
+    let activeKeys: string[] = [];
     await expect(async () => {
       const res = await request.post(buildUrl('/process-instances/search'), {
         headers: jsonHeaders(),
@@ -630,8 +637,14 @@ test.describe('task details page', () => {
         },
       });
       const body = await res.json();
-      expect(body.items.length).toBe(1);
-      processInstanceKey = body.items[0].processInstanceKey;
+      // beforeAll runs once per worker, so several active instances of this
+      // process can exist in parallel runs; operate on any one of them rather
+      // than assuming exactly one.
+      expect(body.items.length).toBeGreaterThanOrEqual(1);
+      activeKeys = body.items.map(
+        (i: {processInstanceKey: string}) => i.processInstanceKey,
+      );
+      processInstanceKey = activeKeys[0];
     }).toPass(defaultAssertionOptions);
 
     const userTaskKey = await findUserTask(
@@ -654,7 +667,23 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
-    await expectProcessState(request, processInstanceKey, 'COMPLETED');
+    // openTask completes whichever custom-headers task is first in the list,
+    // which may not be processInstanceKey when several are active; assert that
+    // one of the instances that was active has completed.
+    await expect
+      .poll(async () => {
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: {$in: activeKeys},
+              state: 'COMPLETED',
+            },
+          },
+        });
+        return (await res.json()).page?.totalItems ?? 0;
+      }, defaultAssertionOptions)
+      .toBeGreaterThanOrEqual(1);
   });
 
   test('show process model', async ({taskPanelPage, taskDetailsPage}) => {

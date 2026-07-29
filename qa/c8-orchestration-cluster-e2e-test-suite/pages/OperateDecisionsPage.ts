@@ -135,12 +135,17 @@ class OperateDecisionsPage {
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
-    await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    const menuItem = this.page.getByRole('menuitem', {name: filterName});
+    // The "More Filters" click can be dropped under load, leaving the menu
+    // closed so the item never renders; reopen until it is present, but do not
+    // re-click once the menu is already open (that would toggle it shut).
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
+    await menuItem.click();
   }
 
   async fillBusinessIdFilter(value: string): Promise<void> {

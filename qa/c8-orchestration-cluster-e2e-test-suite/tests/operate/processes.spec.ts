@@ -52,10 +52,14 @@ test.beforeAll(async () => {
     processInstanceKey: instanceWithAnIncidentResponse.processInstanceKey,
   };
 
-  await deploy(['./resources/process_to_test_delete_process_definition.bpmn']);
+  // Use a process definition dedicated to this suite. The previously shared
+  // "process_to_test_delete_process_definition" is deleted by the resource
+  // delete API test, which removed the definition mid-run and broke instance
+  // creation / version selection here.
+  await deploy(['./resources/process_to_cancel_operate_test.bpmn']);
 
   const instanceToCancelResponse = await createSingleInstance(
-    'process_to_test_delete_process_definition',
+    'process_to_cancel_operate_test',
     1,
   );
   instanceToCancel = {
@@ -306,7 +310,7 @@ test.describe('Processes', () => {
       );
 
       await operateFiltersPanelPage.selectProcess(
-        'Delete Process Definition API Test',
+        'Cancel Instance Operate Test',
       );
       await operateFiltersPanelPage.selectVersion('1');
 

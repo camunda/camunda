@@ -54,6 +54,33 @@ async function applyBusinessIdFilter(
   await operateDecisionsPage.fillBusinessIdFilter(value);
 }
 
+function businessIdRows(
+  operateDecisionsPage: OperateDecisionsPage,
+  businessId: string,
+) {
+  return operateDecisionsPage.decisionInstancesList
+    .getByRole('row')
+    .filter({hasText: businessId});
+}
+
+// A single decision evaluation produces one row per decision in the DRD, and
+// every row carries the same business ID, so filtering by business ID can match
+// more than one row. Assert at least one row is shown and that every matched
+// row reports the expected business ID (rather than assuming a single row).
+async function expectRowsForBusinessId(
+  operateDecisionsPage: OperateDecisionsPage,
+  businessId: string,
+) {
+  const rows = businessIdRows(operateDecisionsPage, businessId);
+  await expect(rows.first()).toBeVisible();
+  const cells = rows.getByTestId('cell-businessId');
+  const cellCount = await cells.count();
+  expect(cellCount).toBeGreaterThan(0);
+  for (let i = 0; i < cellCount; i++) {
+    await expect(cells.nth(i)).toHaveText(businessId);
+  }
+}
+
 test.beforeAll(async ({request}) => {
   await deploy([
     './resources/mammalAnimalProcess.bpmn',
@@ -104,17 +131,9 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify only the matching decision instance is shown', async () => {
       await waitForAssertion({
         assertion: async () => {
-          const rowA = operateDecisionsPage.decisionInstancesList
-            .getByRole('row')
-            .filter({hasText: BUSINESS_ID_A});
-          await expect(rowA).toBeVisible();
-          await expect(rowA.getByTestId('cell-businessId')).toHaveText(
-            BUSINESS_ID_A,
-          );
+          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_A);
           await expect(
-            operateDecisionsPage.decisionInstancesList
-              .getByRole('row')
-              .filter({hasText: BUSINESS_ID_B}),
+            businessIdRows(operateDecisionsPage, BUSINESS_ID_B),
           ).toHaveCount(0);
         },
         onFailure: async () => {
@@ -136,16 +155,8 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify both decision instances sharing the prefix are shown', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            operateDecisionsPage.decisionInstancesList
-              .getByRole('row')
-              .filter({hasText: BUSINESS_ID_A}),
-          ).toBeVisible();
-          await expect(
-            operateDecisionsPage.decisionInstancesList
-              .getByRole('row')
-              .filter({hasText: BUSINESS_ID_B}),
-          ).toBeVisible();
+          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_A);
+          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_B);
         },
         onFailure: async () => {
           await page.reload();
@@ -180,9 +191,11 @@ test.describe('Decision Instances - Business ID', () => {
     operateDecisionsPage,
     operateDecisionInstancePage,
   }) => {
+    // The DRD yields several rows for the same business ID; open the first one.
     const rowA = operateDecisionsPage.decisionInstancesList
       .getByRole('row')
-      .filter({hasText: BUSINESS_ID_A});
+      .filter({hasText: BUSINESS_ID_A})
+      .first();
 
     await test.step('Filter to the target decision instance by Business ID', async () => {
       await applyBusinessIdFilter(operateDecisionsPage, BUSINESS_ID_A);

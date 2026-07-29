@@ -6,13 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {APIRequestContext} from 'playwright-core';
+import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {validateResponse} from 'json-body-assertions';
 import {expectBatchState} from './batch-operation-requestHelpers';
+import {sleep} from '../sleep';
+
+// Starting many instances in parallel can make the gateway transiently shed a
+// request with a 5xx; retry only those (never a 4xx, which is a real error) so
+// a load blip does not fail the batch. Returns the first non-5xx response for
+// the caller to status-check as usual.
+async function startInstanceWithRetry(
+  request: APIRequestContext,
+  processDefinitionId: string,
+): Promise<APIResponse> {
+  const maxAttempts = 5;
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await request.post(buildUrl('/process-instances'), {
+      headers: jsonHeaders(),
+      data: {processDefinitionId},
+      timeout: 30_000,
+    });
+    if (res.status() < 500) {
+      return res;
+    }
+    lastStatus = res.status();
+    await sleep(500 * attempt);
+  }
+  throw new Error(
+    `Failed to start process instance '${processDefinitionId}' after ` +
+      `${maxAttempts} attempts (last status ${lastStatus})`,
+  );
+}
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -66,13 +95,7 @@ export async function createCancellationBatch(
     const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
     const waveResponses = await Promise.all(
       Array.from({length: waveCount}, () =>
-        request.post(buildUrl('/process-instances'), {
-          headers: jsonHeaders(),
-          data: {
-            processDefinitionId: processDefinitionId,
-          },
-          timeout: 30_000,
-        }),
+        startInstanceWithRetry(request, processDefinitionId),
       ),
     );
     for (const startRes of waveResponses) {

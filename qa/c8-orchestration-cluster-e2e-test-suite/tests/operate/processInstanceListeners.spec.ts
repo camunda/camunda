@@ -139,9 +139,17 @@ test.describe('Process Instance Listeners', () => {
 
     await test.step('Add a new flow node instance', async () => {
       await operateProcessInstancePage.startModificationFlow();
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
-      );
+      // Selecting the flow node opens its modification popup carrying the
+      // "Add single element instance" action; under load the popup can lag, so
+      // re-select the node until the action is present before clicking it.
+      await expect(async () => {
+        await operateProcessInstancePage.diagramHelper.clickFlowNode(
+          'Service Task B',
+        );
+        await expect(
+          operateProcessInstancePage.addSingleFlowNodeInstanceButton,
+        ).toBeVisible({timeout: 5000});
+      }).toPass({timeout: 30000});
       await operateProcessInstancePage.addSingleFlowNodeInstanceButton.click();
       await operateProcessInstancePage.applyModifications();
     });
