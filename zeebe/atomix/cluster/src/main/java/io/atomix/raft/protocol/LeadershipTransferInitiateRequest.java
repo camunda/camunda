@@ -30,7 +30,7 @@ import java.util.Objects;
  * immediately (returning a skip result in the {@link LeadershipTransferInitiateResponse}) or
  * accepts it and drives the transfer, reporting the terminal outcome asynchronously via a {@link
  * LeadershipTransferResultRequest} carrying the same {@code correlationId}. The {@code coordinator}
- * and {@code coordinatorConfigVersion} let the leader reject a request from a stale or
+ * and {@code coordinatorConfigIndex} let the leader reject a request from a stale or
  * non-coordinator node.
  *
  * <p>The two halves travel on separate subjects rather than as one request/response pair because a
@@ -42,17 +42,17 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
 
   private final MemberId desiredLeader;
   private final MemberId coordinator;
-  private final long coordinatorConfigVersion;
+  private final long coordinatorConfigIndex;
   private final long correlationId;
 
   private LeadershipTransferInitiateRequest(
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long coordinatorConfigVersion,
+      final long coordinatorConfigIndex,
       final long correlationId) {
     this.desiredLeader = desiredLeader;
     this.coordinator = coordinator;
-    this.coordinatorConfigVersion = coordinatorConfigVersion;
+    this.coordinatorConfigIndex = coordinatorConfigIndex;
     this.correlationId = correlationId;
   }
 
@@ -70,9 +70,9 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return coordinator;
   }
 
-  /** The configuration version the coordinator based its request on. */
-  public long coordinatorConfigVersion() {
-    return coordinatorConfigVersion;
+  /** The index of the Raft configuration the coordinator based its request on. */
+  public long coordinatorConfigIndex() {
+    return coordinatorConfigIndex;
   }
 
   /**
@@ -92,7 +92,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
   @Override
   public int hashCode() {
     return Objects.hash(
-        getClass(), desiredLeader, coordinator, coordinatorConfigVersion, correlationId);
+        getClass(), desiredLeader, coordinator, coordinatorConfigIndex, correlationId);
   }
 
   @Override
@@ -104,7 +104,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return false;
     }
     final LeadershipTransferInitiateRequest other = (LeadershipTransferInitiateRequest) object;
-    return coordinatorConfigVersion == other.coordinatorConfigVersion
+    return coordinatorConfigIndex == other.coordinatorConfigIndex
         && correlationId == other.correlationId
         && desiredLeader.equals(other.desiredLeader)
         && coordinator.equals(other.coordinator);
@@ -115,7 +115,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return toStringHelper(this)
         .add("desiredLeader", desiredLeader)
         .add("coordinator", coordinator)
-        .add("coordinatorConfigVersion", coordinatorConfigVersion)
+        .add("coordinatorConfigIndex", coordinatorConfigIndex)
         .add("correlationId", correlationId)
         .toString();
   }
@@ -126,7 +126,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
 
     private MemberId desiredLeader;
     private MemberId coordinator;
-    private long coordinatorConfigVersion;
+    private long coordinatorConfigIndex;
     private long correlationId;
 
     public Builder withDesiredLeader(final MemberId desiredLeader) {
@@ -139,8 +139,8 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return this;
     }
 
-    public Builder withCoordinatorConfigVersion(final long coordinatorConfigVersion) {
-      this.coordinatorConfigVersion = coordinatorConfigVersion;
+    public Builder withCoordinatorConfigIndex(final long coordinatorConfigIndex) {
+      this.coordinatorConfigIndex = coordinatorConfigIndex;
       return this;
     }
 
@@ -161,7 +161,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     public LeadershipTransferInitiateRequest build() {
       validate();
       return new LeadershipTransferInitiateRequest(
-          desiredLeader, coordinator, coordinatorConfigVersion, correlationId);
+          desiredLeader, coordinator, coordinatorConfigIndex, correlationId);
     }
   }
 }

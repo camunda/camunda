@@ -104,7 +104,7 @@ public class RaftCoordinatedLeadershipTransferTest {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(MemberId.from("2"))
             .withCoordinator(MemberId.from("1"))
-            .withCoordinatorConfigVersion(7);
+            .withCoordinatorConfigIndex(7);
     final var resultBuilder =
         LeadershipTransferResultRequest.builder()
             .withLeader(MemberId.from("3"))
@@ -128,12 +128,12 @@ public class RaftCoordinatedLeadershipTransferTest {
   private LeadershipTransferInitiateRequest initiate(
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long configVersion,
+      final long configIndex,
       final long correlationId) {
     return LeadershipTransferInitiateRequest.builder()
         .withDesiredLeader(desiredLeader)
         .withCoordinator(coordinator)
-        .withCoordinatorConfigVersion(configVersion)
+        .withCoordinatorConfigIndex(configIndex)
         .withCorrelationId(correlationId)
         .build();
   }

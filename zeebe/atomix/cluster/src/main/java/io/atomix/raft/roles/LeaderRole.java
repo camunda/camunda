@@ -530,12 +530,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    *
    * @param desiredLeader the desired leader
    * @param coordinator the node that requested the transfer
-   * @param coordinatorConfigVersion the configuration version the coordinator based its request on
+   * @param coordinatorConfigIndex the Raft configuration index the coordinator based its request on
    */
   public Optional<LeadershipTransferResult> precheckTransfer(
-      final MemberId desiredLeader,
-      final MemberId coordinator,
-      final long coordinatorConfigVersion) {
+      final MemberId desiredLeader, final MemberId coordinator, final long coordinatorConfigIndex) {
     raft.checkThread();
     final var localMember = raft.getCluster().getLocalMember().memberId();
 
@@ -545,7 +543,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (transferInProgress) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
-    if (!isCurrentCoordinator(coordinator, coordinatorConfigVersion)) {
+    if (!isCurrentCoordinator(coordinator, coordinatorConfigIndex)) {
       return Optional.of(LeadershipTransferResult.INVALID_COORDINATOR);
     }
     // A configuration entry would move the frozen log head the desired leader has to catch up to,
@@ -571,16 +569,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   /**
    * The coordinator is the lowest-id member of the leader's committed configuration. A request from
-   * any other member, or one carrying a configuration version older than the leader's, is rejected
-   * so a stale or non-coordinator node cannot request a transfer.
+   * any other member, or one carrying a Raft configuration index older than the leader's, is
+   * rejected so a stale or non-coordinator node cannot request a transfer.
    */
   private boolean isCurrentCoordinator(
-      final MemberId coordinator, final long coordinatorConfigVersion) {
+      final MemberId coordinator, final long coordinatorConfigIndex) {
     final var configuration = raft.getCluster().getConfiguration();
     if (configuration == null) {
       return false;
     }
-    if (coordinatorConfigVersion < configuration.index()) {
+    if (coordinatorConfigIndex < configuration.index()) {
       return false;
     }
     return configuration.newMembers().stream()

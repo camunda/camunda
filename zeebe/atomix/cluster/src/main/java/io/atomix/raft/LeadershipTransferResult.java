@@ -29,7 +29,7 @@ public enum LeadershipTransferResult {
   OFFLINE,
   /**
    * The request did not come from the current coordinator (the lowest-id member of the leader's
-   * committed configuration), or carried a stale configuration version.
+   * committed configuration), or carried a stale Raft configuration index.
    */
   INVALID_COORDINATOR,
   /** This leader is already running a transfer. */
