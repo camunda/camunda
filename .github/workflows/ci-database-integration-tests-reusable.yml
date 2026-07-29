@@ -95,6 +95,16 @@ on:
           elsewhere in the same run, instead of running a local build-zeebe reactor.
           Leave false if the calling run has no build-distball job, so the
           build-zeebe fallback runs. See #52693 and #56931.
+      build-tool:
+        required: false
+        type: string
+        default: maven
+        description: Build tool to use ('maven' or 'gradle').
+      gradle-test-task:
+        required: false
+        type: string
+        default: ""
+        description: Gradle test task to run for the acceptance-test module.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -145,11 +155,12 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          skip-maven-cache: ${{ inputs.build-tool == 'gradle' }}
       # Authenticate gcloud when consuming the shared distball (see restore step below).
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
       - name: Authenticate to GCS build-cache
-        if: ${{ inputs.use-shared-distball }}
+        if: ${{ inputs.use-shared-distball && inputs.build-tool == 'maven' }}
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
@@ -177,21 +188,28 @@ jobs:
       # on self-hosted runners. github.run_id is stable across nested workflow_call, so it
       # addresses the same run-scoped prefix build-distball wrote. See #52693 and #56931.
       # (gcloud is authenticated by the GCS build-cache auth step above.)
-      - if: ${{ inputs.use-shared-distball }}
+      # Gradle resolves its dependencies through the Gradle build cache, so the Maven
+      # distball restore and fallback build are only used in Maven mode.
+      - if: ${{ inputs.use-shared-distball && inputs.build-tool == 'maven' }}
         uses: ./.github/actions/restore-shared-m2
       # Fallback for standalone callers (zeebe-rdbms / zeebe-search) whose run has no
       # build-distball: build the platform locally, skipping frontend.
       - uses: ./.github/actions/build-zeebe
-        if: ${{ !inputs.use-shared-distball }}
+        if: ${{ !inputs.use-shared-distball && inputs.build-tool == 'maven' }}
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ inputs.build-tool == 'gradle' }}
+        with:
+          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # To communicate to the IT what database to expect and run against:
       # -Dcamunda.it.database.type=rdbms
       #
-      - name: Run database integration test with ${{ inputs.database-type }}
+      - name: Maven Run database integration test with ${{ inputs.database-type }}
+        if: ${{ inputs.build-tool == 'maven' }}
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=6
@@ -213,6 +231,37 @@ jobs:
       # as the action currently has an issue with large amounts of logs
       # from docker compose https://github.com/hoverkraft-tech/compose-action/issues/297
       # consider removing this step once the issue is resolved
+      - name: Gradle Run database integration test with ${{ inputs.database-type }}
+        if: ${{ inputs.build-tool == 'gradle' }}
+        run: |
+          if [[ -z "${{ inputs.gradle-test-task }}" ]]; then
+            echo "::error::gradle-test-task must be set when build-tool is gradle"
+            exit 1
+          fi
+
+          GRADLE_ARGS=(
+            --no-daemon
+            --console=plain
+            --max-workers=6
+            -Pskip.fe.build
+            -Pparallel.tests
+            -Pjunit.thread.count=2
+            -Ptest.max.forks=6
+            "-Dtest.integration.camunda.database.type=${{ inputs.it-database-type }}"
+            "-Dtest.integration.camunda.database.fast-init=true"
+            ":camunda-qa-acceptance-tests:${{ inputs.gradle-test-task }}"
+          )
+          if [[ -n "${{ inputs.physical-tenant }}" ]]; then
+            GRADLE_ARGS+=("-Dtest.integration.camunda.physical-tenant=${{ inputs.physical-tenant }}")
+          fi
+          if [[ -n "${{ inputs.physical-tenant-elasticsearch-url }}" ]]; then
+            GRADLE_ARGS+=("-Dtest.integration.camunda.physical-tenant.elasticsearch.url=${{ inputs.physical-tenant-elasticsearch-url }}")
+          fi
+          if [[ -n "${{ inputs.physical-tenant-opensearch-url }}" ]]; then
+            GRADLE_ARGS+=("-Dtest.integration.camunda.physical-tenant.opensearch.url=${{ inputs.physical-tenant-opensearch-url }}")
+          fi
+
+          ./gradlew "${GRADLE_ARGS[@]}" | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Stop Database service
         if: ${{ always() && inputs.database-type != 'h2' }}
         run: docker compose -f db/docker-compose.yml --project-name db down
