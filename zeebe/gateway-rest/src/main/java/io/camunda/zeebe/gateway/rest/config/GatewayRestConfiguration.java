@@ -147,7 +147,13 @@ public class GatewayRestConfiguration {
 
     private static final boolean DEFAULT_ENABLED = false;
 
-    /** Whether {@code updatedBy}/{@code updatedAt} are populated in REST responses. */
+    /**
+     * Whether {@code updatedBy}/{@code updatedAt} are populated in REST responses. Disabled by
+     * default: while disabled the properties are omitted from responses and no audit log is
+     * queried, so there is no effect on behaviour or latency. Enabling it adds one audit log query
+     * per returned item, so a search endpoint returning the default page of 100 items issues 100
+     * additional queries; treat it as opt-in and size the audit log accordingly.
+     */
     private boolean enabled = DEFAULT_ENABLED;
 
     public boolean isEnabled() {

@@ -88,6 +88,21 @@ public final class UpdateMetadataMapper {
         null);
   }
 
+  /**
+   * Resolves the metadata for a whole page of items.
+   *
+   * <p>KNOWN COST: this issues <em>one audit log query per item</em>, so a search endpoint
+   * returning the default page of 100 items performs 100 additional queries. Callers must therefore
+   * only invoke this while {@code camunda.rest.update-metadata.enabled} is set, which is off by
+   * default.
+   *
+   * <p>The queries are not batched even though {@code AuditLogFilter#entityKeys} accepts several
+   * keys, because selecting the <em>latest</em> entry per key relies on {@code sort(timestamp
+   * desc)} combined with {@code size(1)}. The audit log search exposes no per-group top-hits or
+   * aggregation, so a single bounded query cannot guarantee one row per key: an entity with many
+   * entries can crowd every other key out of the page. Batching correctly would mean paging until
+   * every key is resolved, which is deliberately left out of scope here.
+   */
   public static <T> void addUpdateMetadata(
       final Collection<T> items,
       final Function<T, String> entityKeyExtractor,
