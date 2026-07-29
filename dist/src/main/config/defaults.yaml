@@ -1409,11 +1409,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       max-unique-keys: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXUNIQUEKEYS
       max-worker-name-length: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXWORKERNAMELENGTH
     
-    update-metadata: # Type: io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration$UpdateMetadataConfiguration  
-      enabled: null # Type: Boolean, Env: CAMUNDA_REST_UPDATEMETADATA_ENABLED
-    
     max-cluster-variable-metadata-size: null # Type: Integer, Env: CAMUNDA_REST_MAXCLUSTERVARIABLEMETADATASIZE
     max-name-field-length: null # Type: Integer, Env: CAMUNDA_REST_MAXNAMEFIELDLENGTH
+    update-metadata: # Type: io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration$UpdateMetadataConfiguration  
+      enabled: null # Type: Boolean, Env: CAMUNDA_REST_UPDATEMETADATA_ENABLED
   
   secrets: # Type: io.camunda.configuration.Secrets  
     stores: # Type: io.camunda.configuration.Secrets$Stores  
