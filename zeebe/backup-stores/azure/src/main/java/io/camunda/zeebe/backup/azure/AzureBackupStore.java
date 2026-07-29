@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.core.http.HttpClient;
+import com.azure.core.util.HttpClientOptions;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,16 +68,18 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
+    final var builder = new BlobServiceClientBuilder();
+
+    httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
+
     // BlobServiceClientBuilder has their own validations, for building the client
     if (config.sasTokenConfig() != null) {
-      return new BlobServiceClientBuilder()
+      return builder
           .sasToken(config.sasTokenConfig().value())
           .endpoint(config.endpoint())
           .buildClient();
     } else if (config.connectionString() != null) {
-      return new BlobServiceClientBuilder()
-          .connectionString(config.connectionString())
-          .buildClient();
+      return builder.connectionString(config.connectionString()).buildClient();
     } else if (config.accountName() != null || config.accountKey() != null) {
       final var credential =
           new StorageSharedKeyCredential(
@@ -84,14 +89,11 @@ public final class AzureBackupStore implements BackupStore {
               Objects.requireNonNull(
                   config.accountKey(),
                   "Account name is specified but no account key was provided."));
-      return new BlobServiceClientBuilder()
-          .endpoint(config.endpoint())
-          .credential(credential)
-          .buildClient();
+      return builder.endpoint(config.endpoint()).credential(credential).buildClient();
     } else {
       LOG.info(
           "No connection string, sas token or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
-      return new BlobServiceClientBuilder()
+      return builder
           .endpoint(config.endpoint())
           .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
@@ -275,6 +277,19 @@ public final class AzureBackupStore implements BackupStore {
       }
     }
     return false;
+  }
+
+  static Optional<HttpClientOptions> httpClientOptions(final AzureBackupConfig config) {
+    if (config.readTimeout().isEmpty() && config.writeTimeout().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var options = new HttpClientOptions();
+    config
+        .readTimeout()
+        .ifPresent(timeout -> options.setResponseTimeout(timeout).setReadTimeout(timeout));
+    config.writeTimeout().ifPresent(options::setWriteTimeout);
+    return Optional.of(options);
   }
 
   public static BackupStore of(final AzureBackupConfig storeConfig) {
