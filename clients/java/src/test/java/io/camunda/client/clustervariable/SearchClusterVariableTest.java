@@ -303,6 +303,36 @@ public class SearchClusterVariableTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchClusterVariablesByMetadataNonEquality() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("env", m -> m.neq("prod")))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("env").get$Neq()).isEqualTo("prod");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMissingMetadataKey() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("env", m -> m.exists(false)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("env").get$Exists()).isFalse();
+  }
+
+  @Test
   void shouldSearchClusterVariablesByMetadataGte() {
     // when
     client

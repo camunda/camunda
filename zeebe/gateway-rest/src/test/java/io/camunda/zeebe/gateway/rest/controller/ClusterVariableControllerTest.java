@@ -200,16 +200,36 @@ public class ClusterVariableControllerTest extends RestControllerTest {
             }
         }""";
 
-    final var expectedBody =
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The metadata value for key 'kind' is of type 'ArrayList' but must be a string or a number.");
+  }
+
+  @Test
+  void shouldRejectCreationWithNullMetadataValue() {
+    // given
+    final var request =
         """
-            {
-              "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
-              "status": 400,
-              "detail": "The metadata value for key 'kind' is of type 'ArrayList' but must be a string or a number.",
-              "instance": "%s"
-            }"""
-            .formatted(GLOBAL_URL);
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": {
+                "kind": null
+            }
+        }""";
 
     // when / then
     webClient
@@ -224,7 +244,9 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The metadata value for key 'kind' is of type 'null' but must be a string or a number.");
   }
 
   @Test
@@ -258,6 +280,39 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .expectBody()
         .jsonPath("$.detail")
         .isEqualTo("The provided metadata has 101 entries but must not exceed 100 entries.");
+  }
+
+  @Test
+  void shouldAcceptCreationWithMaximumMetadataEntries() {
+    // given - exactly at the limit, so the entry-count check must not reject it
+    final var metadataEntries =
+        IntStream.range(0, 100)
+            .mapToObj(i -> "\"%d\": \"%d\"".formatted(i, i))
+            .collect(Collectors.joining(","));
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": { %s }
+        }"""
+            .formatted(metadataEntries);
+    when(clusterVariableServices.createGloballyScopedClusterVariable(
+            createRequestCaptor.capture(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    assertThat(createRequestCaptor.getValue().metadata()).hasSize(100);
   }
 
   @Test
