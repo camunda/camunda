@@ -57,9 +57,8 @@ paths:
           description: The default physical tenant is DOWN and does not have any partition with a healthy leader.
       x-added-in-version: "8.8"
 
-  # The only path in this specification that is not served under the document's `/v2` server base,
-  # hence the path-item `servers` override below. `/cluster/v2` is the cluster-wide namespace; every
-  # other operation in it requires cluster-admin authentication, this one deliberately does not.
+  # Not served under the document's `/v2` server base,
+  # hence the path-item `servers` override below
   /cluster/v2/status:
     servers:
       - url: "{schema}://{host}:{port}"
