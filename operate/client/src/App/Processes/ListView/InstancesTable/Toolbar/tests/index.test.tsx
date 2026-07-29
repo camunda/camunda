@@ -126,6 +126,30 @@ describe('<ProcessOperations />', () => {
     expect(screen.getByText('10 items selected')).toBeInTheDocument();
   });
 
+  it('should append "+" to the selected count label when truncated', async () => {
+    render(
+      <Toolbar selectedInstancesCount={10000} isSelectedCountTruncated />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByText('10000+ items selected')).toBeInTheDocument();
+  });
+
+  it('should append "+" to the count in the operation confirmation modal when truncated', async () => {
+    const {user} = render(
+      <Toolbar selectedInstancesCount={10000} isSelectedCountTruncated />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    await user.click(screen.getByTestId('cancel-batch-operation'));
+
+    expect(
+      screen.getByText(/10000\+ instances selected for cancel operation/i),
+    ).toBeInTheDocument();
+  });
+
   it('should disable cancel and retry in batch modification mode', async () => {
     const {user} = render(<Toolbar selectedInstancesCount={1} />, {
       wrapper: Wrapper,

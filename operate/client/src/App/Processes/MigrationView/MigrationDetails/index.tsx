@@ -16,6 +16,7 @@ const MigrationDetails: React.FC = observer(() => {
     sourceProcessDefinition,
     targetProcessDefinition,
     selectedInstancesCount,
+    isSelectedInstancesCountTruncated,
   } = processInstanceMigrationStore.state;
 
   const sourceVersion = sourceProcessDefinition?.version;
@@ -28,13 +29,15 @@ const MigrationDetails: React.FC = observer(() => {
     ? getProcessDefinitionName(targetProcessDefinition)
     : 'Process';
 
+  const selectedInstancesText = isSelectedInstancesCountTruncated
+    ? `${selectedInstancesCount}+ process instances`
+    : pluralSuffix(selectedInstancesCount, 'process instance');
+
   return (
     <p>
-      You are about to migrate{' '}
-      {pluralSuffix(selectedInstancesCount, 'process instance')} from the
-      process definition:{' '}
-      <strong>{`${sourceName} - version ${sourceVersion}`}</strong> to the
-      process definition:{' '}
+      You are about to migrate {selectedInstancesText} from the process
+      definition: <strong>{`${sourceName} - version ${sourceVersion}`}</strong>{' '}
+      to the process definition:{' '}
       <strong>{`${targetName} - version ${targetVersion}`}</strong>
     </p>
   );

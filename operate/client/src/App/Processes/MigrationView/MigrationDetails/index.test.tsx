@@ -73,4 +73,27 @@ describe('MigrationDetails', () => {
       screen.getByText(/Big variable process - version 1/i),
     ).toBeInTheDocument();
   });
+
+  it('should append "+" to the summary count when the selection is truncated', async () => {
+    const queryString =
+      '?active=true&incidents=true&processDefinitionId=demoProcess&processDefinitionVersion=3';
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: queryString,
+    });
+
+    processInstanceMigrationStore.setSelectedInstancesCount(10000, true);
+    processInstanceMigrationStore.setCurrentStep('summary');
+    processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
+    processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
+
+    render(<MigrationDetails />, {wrapper: createWrapper()});
+
+    expect(
+      screen.getByText(
+        /You are about to migrate 10000\+ process instances from the process definition:/i,
+      ),
+    ).toBeInTheDocument();
+  });
 });

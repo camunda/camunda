@@ -87,4 +87,61 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     const result = processInstancesSelectionStore.checkedProcessInstanceIds;
     expect(result).toEqual([]);
   });
+
+  it('should not hint truncated counts in INCLUDE mode even when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 3,
+      hasMoreTotalProcessInstances: true,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectProcessInstance('1');
+
+    expect(
+      processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated,
+    ).toBe(false);
+  });
+
+  it('should hint truncated counts in ALL mode when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 3,
+      hasMoreTotalProcessInstances: true,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAllProcessInstances();
+
+    expect(
+      processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated,
+    ).toBe(true);
+  });
+
+  it('should hint truncated counts in EXCLUDE mode when there are more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 3,
+      hasMoreTotalProcessInstances: true,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAllProcessInstances();
+    processInstancesSelectionStore.selectProcessInstance('1');
+
+    expect(
+      processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated,
+    ).toBe(true);
+  });
+
+  it('should not hint truncated counts in ALL mode when there are no more total items', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 3,
+      hasMoreTotalProcessInstances: false,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1', '2', '3'],
+    });
+    processInstancesSelectionStore.selectAllProcessInstances();
+
+    expect(
+      processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated,
+    ).toBe(false);
+  });
 });
