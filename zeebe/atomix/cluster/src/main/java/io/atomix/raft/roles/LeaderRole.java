@@ -549,7 +549,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return Optional.of(LeadershipTransferResult.INVALID_COORDINATOR);
     }
     // A configuration entry would move the frozen log head the desired leader has to catch up to,
-    // so a transfer cannot start while one is in flight. We also check this again once paused.
+    // and can drop the desired leader from the replica set altogether, so a transfer cannot start
+    // while one is in flight. We also check this again once paused.
     if (configuring() || jointConsensus()) {
       return Optional.of(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
     }
