@@ -221,6 +221,8 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
 
   # Exporting endpoints
+  /exporting:
+    $ref: 'exporting.yaml#/paths/~1exporting'
   /exporting/pause:
     $ref: 'exporting.yaml#/paths/~1exporting~1pause'
   /exporting/resume:

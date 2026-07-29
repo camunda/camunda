@@ -28,6 +28,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.gateway.admin.ExportingStatus;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.Collections;
 import java.util.Set;
@@ -104,6 +105,41 @@ public class ExportingServicesTest {
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
     verify(exportingRequestBroadcaster).resumeExporting(PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  public void shouldDelegateStatusQuery() {
+    // given
+    when(exportingRequestBroadcaster.getExportingStatus(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(ExportingStatus.SOFT_PAUSED));
+
+    // when
+    final var future = services.getExportingStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1)).isEqualTo(ExportingStatus.SOFT_PAUSED);
+    verify(exportingRequestBroadcaster).getExportingStatus(PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  public void shouldFailStatusQueryWithForbiddenWhenUserHasNoAuthorizations() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Collections.emptySet());
+
+    // when
+    final var future = services.getExportingStatus(authentication);
+
+    // then
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.FORBIDDEN);
+    verify(exportingRequestBroadcaster, never()).getExportingStatus(any());
   }
 
   @Test

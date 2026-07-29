@@ -18,6 +18,7 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.gateway.admin.ExportingStatus;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
@@ -76,6 +77,20 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
   }
 
   /**
+   * Returns the exporting status aggregated over all partitions of the physical tenant, so backup
+   * tooling can confirm a pause took effect instead of relying on its own bookkeeping.
+   *
+   * <p>Reading is gated on the same permission as pause/resume because {@code EXPORTER} only
+   * defines {@code PAUSE}: there is no separate read permission to grant.
+   */
+  public CompletableFuture<ExportingStatus> getExportingStatus(
+      final CamundaAuthentication authentication) {
+    return withExporterPausePermission(
+        authentication,
+        () -> exportingRequestBroadcaster.getExportingStatus(getPhysicalTenantId()));
+  }
+
+  /**
    * Runs {@code action} only if the caller holds the {@code EXPORTER/PAUSE} permission, mapping
    * failures from both the synchronous and asynchronous phases to {@link
    * io.camunda.service.exception.ServiceException} so they surface with the correct status. The
@@ -87,8 +102,8 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
    * PAUSE}, and a caller allowed to stop exporting must also be able to start it again — otherwise
    * they could leave the cluster in a paused state they cannot undo.
    */
-  private CompletableFuture<Void> withExporterPausePermission(
-      final CamundaAuthentication authentication, final Supplier<CompletableFuture<Void>> action) {
+  private <T> CompletableFuture<T> withExporterPausePermission(
+      final CamundaAuthentication authentication, final Supplier<CompletableFuture<T>> action) {
     if (!hasExporterPausePermission(authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(EXPORTER_PAUSE_AUTHORIZATION));
