@@ -45,6 +45,8 @@ public class PrimaryStorageBackup implements Cloneable {
   private String schedule;
   private Duration checkpointInterval;
   private long offset;
+  private Duration readTimeout;
+  private Duration writeTimeout;
 
   /** Configuration for backup store AWS S3 */
   @NestedConfigurationProperty private S3 s3 = new S3();
@@ -149,6 +151,22 @@ public class PrimaryStorageBackup implements Cloneable {
 
   public void setOffset(final long offset) {
     this.offset = offset;
+  }
+
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public Duration getWriteTimeout() {
+    return writeTimeout;
+  }
+
+  public void setWriteTimeout(final Duration writeTimeout) {
+    this.writeTimeout = writeTimeout;
   }
 
   @Override
