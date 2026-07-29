@@ -38,7 +38,7 @@ public enum LeadershipTransferResult {
    * committed configuration.
    */
   NOT_COORDINATOR,
-  /** The request carried a Raft configuration index older than the leader's. */
+  /** The request carried a cluster configuration version other than the leader's current one. */
   STALE_CONFIGURATION,
   /** This leader is already running a transfer. */
   TRANSFER_IN_PROGRESS,
