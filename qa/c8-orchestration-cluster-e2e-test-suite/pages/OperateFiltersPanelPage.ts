@@ -215,8 +215,16 @@ export class OperateFiltersPanelPage {
   }
 
   async selectFlowNode(option: string) {
-    await this.flowNodeFilter.click();
-    await this.getOptionByName(option, false).click();
+    // The flow-node dropdown can fail to open, or render before its options
+    // have loaded; retry opening it until the target option is present (same
+    // approach as selectVersion).
+    await expect(async () => {
+      await this.flowNodeFilter.click();
+      await expect(this.getOptionByName(option, false)).toBeVisible({
+        timeout: 5_000,
+      });
+    }).toPass({timeout: 30_000});
+    await this.getOptionByName(option, false).click({timeout: 30000});
   }
 
   async fillBusinessIdFilter(value: string) {
