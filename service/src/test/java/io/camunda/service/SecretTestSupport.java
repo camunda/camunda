@@ -54,6 +54,9 @@ final class SecretTestSupport {
     private final Map<String, String> values = new LinkedHashMap<>();
     private final Map<String, SecretResolutionResult.Failed> failures = new HashMap<>();
     private final List<Set<String>> resolveCalls = new ArrayList<>();
+    // names this store lists but holds no value for, so a test can list one the SPI's nullness
+    // contract forbids
+    private final List<String> additionalListedNames = new ArrayList<>();
     private int listCalls;
     private boolean unavailable;
     private boolean omitResults;
@@ -74,12 +77,21 @@ final class SecretTestSupport {
     public List<String> list() {
       listCalls++;
       failIfUnavailable();
-      return List.copyOf(values.keySet());
+      final List<String> names = new ArrayList<>(values.keySet());
+      names.addAll(additionalListedNames);
+      return names;
     }
 
     TestSecretStore holds(final String name, final String value) {
       values.put(name, value);
       return this;
+    }
+
+    /**
+     * Makes the store list the given name without holding a value for it, {@code null} included.
+     */
+    void alsoLists(final String name) {
+      additionalListedNames.add(name);
     }
 
     void failsResolving(

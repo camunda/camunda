@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -416,9 +417,14 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   /**
    * Whether a store's secret name can form a reference this service accepts, so that {@link #list}
    * only ever offers references {@link #resolve} takes.
+   *
+   * <p>A {@code null} name is one of those it cannot. The store SPI is {@code @NullMarked} and so
+   * promises not to list one, but a store is third-party code: a broken one should cost the caller
+   * that name, not the whole listing with an internal error.
    */
-  private static boolean isResolvableName(final String name) {
-    return REFERENCE_PREFIX.length() + name.length() <= MAX_REFERENCE_LENGTH
+  private static boolean isResolvableName(final @Nullable String name) {
+    return name != null
+        && REFERENCE_PREFIX.length() + name.length() <= MAX_REFERENCE_LENGTH
         && REFERENCE_NAME_PATTERN.matcher(name).matches();
   }
 

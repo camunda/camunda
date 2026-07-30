@@ -729,6 +729,22 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldOmitANullNameFromTheListingWithoutFailingIt() {
+    // given a store that lists a null name, which the store SPI's nullness contract forbids but a
+    // third-party store could still do
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.alsoLists(null);
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then the listing costs that one name rather than failing as an internal error
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
   void shouldOmitStoreNameThatWouldExceedTheReferenceLengthCap() {
     // given a name whose reference would be one character over the cap resolve() accepts
     authorizationsConfig.setEnabled(true);
