@@ -66,6 +66,22 @@ final class PhysicalTenantRestPathTest {
   }
 
   @Test
+  void shouldNotPrefixClusterStatusPathWithPhysicalTenant(final WireMockRuntimeInfo mockInfo) {
+    // given
+    try (final CamundaClient client = client(mockInfo, true)) {
+      // when
+      try {
+        client.newStatusRequest().send().join();
+      } catch (final Exception ignored) {
+        // only the outgoing request URL is under test; the (unstubbed) response is irrelevant
+      }
+    }
+
+    // then the cluster status reports on the whole cluster, so it is never tenant scoped
+    verify(getRequestedFor(urlEqualTo("/cluster/v2/status")));
+  }
+
+  @Test
   void shouldUseVerbatimRestBasePathWhenAppendDisabled(final WireMockRuntimeInfo mockInfo) {
     // given
     try (final CamundaClient client = client(mockInfo, false)) {

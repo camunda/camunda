@@ -275,8 +275,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   TopologyRequestStep1 newTopologyRequest();
 
   /**
-   * Request the current cluster status. Can be used to check if the cluster is healthy (has at
-   * least one partition with a healthy leader).
+   * Request the current cluster status. Can be used to check whether the cluster can process work,
+   * aggregated over all physical tenants.
    *
    * <pre>
    * boolean isHealthy = camundaClient

@@ -72,6 +72,9 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
+  /** The versioned base context path of the cluster-scoped REST API */
+  public static final String CLUSTER_API_PATH = "/cluster/v2";
+
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -93,12 +96,14 @@ public class HttpClientFactory {
             .setDefaultRequestConfig(defaultRequestConfig)
             .build();
     final URI gatewayAddress = buildGatewayAddress();
+    final URI clusterApiAddress = buildClusterApiAddress();
 
     return new HttpClient(
         client,
         connectionManager,
         JSON_MAPPER,
         gatewayAddress,
+        clusterApiAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
         TimeValue.ofSeconds(15),
@@ -132,16 +137,8 @@ public class HttpClientFactory {
   }
 
   private URI buildGatewayAddress() {
-    String basePath = config.getRestAddress().toString();
-
-    // we need to strip the last / otherwise we'll have an empty path segment which Spring
-    // interprets as a different route
-    if (basePath.endsWith("/")) {
-      basePath = basePath.substring(0, basePath.length() - 1);
-    }
-
     try {
-      final URIBuilder builder = new URIBuilder(basePath);
+      final URIBuilder builder = new URIBuilder(baseAddress());
       final String physicalTenantId = config.getPhysicalTenantId();
       if (config.prefixPhysicalTenantPath()
           && physicalTenantId != null
@@ -154,6 +151,26 @@ public class HttpClientFactory {
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * The cluster-scoped API is never physical-tenant scoped: it reports on the cluster as a whole,
+   * so it is served next to, not below, the per-tenant {@link #REST_API_PATH} base.
+   */
+  private URI buildClusterApiAddress() {
+    try {
+      return new URIBuilder(baseAddress()).appendPath(CLUSTER_API_PATH).build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String baseAddress() {
+    final String basePath = config.getRestAddress().toString();
+
+    // we need to strip the last / otherwise we'll have an empty path segment which Spring
+    // interprets as a different route
+    return basePath.endsWith("/") ? basePath.substring(0, basePath.length() - 1) : basePath;
   }
 
   private HttpAsyncClientBuilder defaultClientBuilder(

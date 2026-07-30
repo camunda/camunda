@@ -33,6 +33,7 @@ import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.client.protocol.rest.ClusterStatusResponse;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
@@ -582,15 +583,20 @@ public class RestGatewayService {
   }
 
   public void onStatusRequestHealthy() {
-    onStatusRequest(204);
+    onStatusRequest(200, ClusterStatusResponse.StatusEnum.HEALTHY);
+  }
+
+  public void onStatusRequestDegraded() {
+    onStatusRequest(200, ClusterStatusResponse.StatusEnum.DEGRADED);
   }
 
   public void onStatusRequestUnhealthy() {
-    onStatusRequest(503);
+    onStatusRequest(503, ClusterStatusResponse.StatusEnum.DOWN);
   }
 
   /**
-   * Register a status response with a custom HTTP status code.
+   * Register a status response with a custom HTTP status code and no body, as returned by error
+   * responses.
    *
    * @param statusCode the HTTP status code to return for status requests
    */
@@ -600,6 +606,19 @@ public class RestGatewayService {
         .register(
             WireMock.get(RestGatewayPaths.getStatusUrl())
                 .willReturn(WireMock.aResponse().withStatus(statusCode)));
+  }
+
+  private void onStatusRequest(
+      final int statusCode, final ClusterStatusResponse.StatusEnum status) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getStatusUrl())
+                .willReturn(
+                    WireMock.aResponse()
+                        .withStatus(statusCode)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\":\"" + status.getValue() + "\"}")));
   }
 
   public void onResourceGetRequest(final long resourceKey, final ResourceResult response) {
