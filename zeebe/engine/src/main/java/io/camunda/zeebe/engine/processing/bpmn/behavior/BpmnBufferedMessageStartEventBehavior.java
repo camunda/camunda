@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -150,6 +151,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     stateWriter.appendFollowUpEvent(
         processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);
     commandSender.sendCorrelationKeyLockRelease(requestKey, holder);
+    metrics.lockReleaseSent(ReleaseTrigger.PUSH);
   }
 
   /**

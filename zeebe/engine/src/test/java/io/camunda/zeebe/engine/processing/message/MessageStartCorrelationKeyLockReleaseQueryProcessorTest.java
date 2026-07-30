@@ -84,6 +84,17 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessorTest {
     assertThat(release.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertQueryPreserved(release.getValue(), ABSENT_HOLDER_KEY);
 
+    // and the reconciliation-triggered release is counted on this partition (M12)
+    assertThat(
+            engine
+                .getMeterRegistry(1)
+                .get("zeebe.message.start.cross.partition.lock.releases.sent.total")
+                .tag("trigger", "reconciliation")
+                .counter()
+                .count())
+        .as("M12: the pull-based query dispatches a reconciliation-triggered release")
+        .isEqualTo(1.0);
+
     // and no PUSHED cleanup is appended: this gone holder has no leftover holder-origin entry, so
     // the origin cleanup only fires for holders that actually left one behind (e.g. banned ones)
     assertThat(

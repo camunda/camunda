@@ -241,7 +241,8 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 messageState,
                 subscriptionCommandSender,
-                writers))
+                writers,
+                metrics))
         // Holder-completion release handler on P_K - on a RELEASE reply from P_B, releases the
         // correlation-key lock and picks up the next buffered message for that key.
         .onCommand(

@@ -201,6 +201,17 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
     assertThat(release.getPartitionId())
         .as("the RELEASE is routed to the lock partition P_K")
         .isEqualTo(partitionFor(CORRELATION_KEY));
+
+    // and the push-triggered release is counted on the holder partition P_B (M12)
+    assertThat(
+            engine
+                .getMeterRegistry(partitionFor(BUSINESS_ID))
+                .get("zeebe.message.start.cross.partition.lock.releases.sent.total")
+                .tag("trigger", "push")
+                .counter()
+                .count())
+        .as("M12: the holder completion pushes a release, counted on P_B with trigger=push")
+        .isEqualTo(1.0);
   }
 
   @Test
