@@ -153,6 +153,29 @@ class ProcessInstanceSuspensionOperationHandlerTest {
   }
 
   @Test
+  void shouldNotHandleResumeSuccessRecord() {
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            b ->
+                b.withIntent(ProcessInstanceIntent.RESUMED)
+                    .withBatchOperationReference(batchOperationKey));
+    assertThat(handler.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleResumeFailureRecord() {
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            b ->
+                b.withRejectionType(RejectionType.INVALID_STATE)
+                    .withIntent(ProcessInstanceIntent.RESUME)
+                    .withBatchOperationReference(batchOperationKey));
+    assertThat(handler.handlesRecord(record)).isFalse();
+  }
+
+  @Test
   void shouldUpdateEntityOnSuccess() {
     final var record = createSuccessRecord();
     final var entity = new OperationEntity();

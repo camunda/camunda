@@ -145,6 +145,29 @@ class ProcessInstanceSuspensionBatchOperationExportHandlerTest {
   }
 
   @Test
+  void shouldNotHandleResumeSuccessRecord() {
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            b ->
+                b.withIntent(ProcessInstanceIntent.RESUMED)
+                    .withBatchOperationReference(batchOperationKey));
+    assertThat(handler.canExport(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleResumeFailureRecord() {
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            b ->
+                b.withRejectionType(RejectionType.INVALID_STATE)
+                    .withIntent(ProcessInstanceIntent.RESUME)
+                    .withBatchOperationReference(batchOperationKey));
+    assertThat(handler.canExport(record)).isFalse();
+  }
+
+  @Test
   void shouldUpdateEntityOnSuccess() {
     handler.export(createSuccessRecord());
 
