@@ -31,8 +31,8 @@ public interface RebalanceRunner {
   ActorFuture<Void> run(RebalanceRun rebalance);
 
   /**
-   * A runner with no partitions to transfer, so every rebalance completes at once. Stands in until
-   * the sequencing loop exists, and lets a test exercise the coordinator without one.
+   * A runner with no partitions to transfer, so every rebalance completes at once. Lets a test
+   * exercise the coordinator without one.
    */
   static RebalanceRunner none() {
     return rebalance -> CompletableActorFuture.completed();

@@ -45,7 +45,11 @@ public final class RebalanceCoordinator
   private final RebalanceRunner runner;
   private final LongSupplier rebalanceIdGenerator;
 
-  private boolean coordinating;
+  /**
+   * The configuration this member coordinates under, or {@code null} while it does not coordinate.
+   */
+  private @Nullable ClusterConfiguration configuration;
+
   private @Nullable RebalanceRun running;
   private RebalanceStatus.@Nullable Completed lastCompleted;
 
@@ -70,7 +74,8 @@ public final class RebalanceCoordinator
     final ActorFuture<RebalanceStatus> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          final var coordinatedConfiguration = coordinatedConfiguration(result);
+          if (coordinatedConfiguration == null) {
             return;
           }
           final var inFlight = running;
@@ -82,13 +87,22 @@ public final class RebalanceCoordinator
           }
           final var rebalance =
               new RebalanceRun(
-                  rebalanceIdGenerator.getAsLong(), request.overrides(), request.dryRun());
+                  rebalanceIdGenerator.getAsLong(),
+                  request.overrides(),
+                  request.dryRun(),
+                  coordinatedConfiguration);
           running = rebalance;
           LOG.info("Starting {}rebalance {}", rebalance.dryRun() ? "dry-run " : "", rebalance.id());
-          // Answer before running so the operator sees the rebalance they started, whatever it goes
-          // on to do.
-          result.complete(status());
-          start(rebalance);
+          if (rebalance.dryRun()) {
+            // A dry run only reads the plan, so it is over within the request and answers with the
+            // plan itself rather than with a rebalance the operator would have to come back for.
+            start(rebalance, () -> result.complete(status()));
+          } else {
+            // Answer before running so the operator sees the rebalance they started, whatever it
+            // goes on to do.
+            result.complete(status());
+            start(rebalance, () -> {});
+          }
         });
     return result;
   }
@@ -98,7 +112,7 @@ public final class RebalanceCoordinator
     final ActorFuture<RebalanceStatus> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          if (coordinatedConfiguration(result) == null) {
             return;
           }
           result.complete(status());
@@ -111,7 +125,7 @@ public final class RebalanceCoordinator
     final ActorFuture<CancelRebalanceResponse> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          if (coordinatedConfiguration(result) == null) {
             return;
           }
           final var inFlight = running;
@@ -128,15 +142,21 @@ public final class RebalanceCoordinator
     return result;
   }
 
-  private void start(final RebalanceRun rebalance) {
+  private void start(final RebalanceRun rebalance, final Runnable whenFinished) {
     final ActorFuture<Void> run;
     try {
       run = runner.run(rebalance);
     } catch (final Exception e) {
       finish(rebalance, e);
+      whenFinished.run();
       return;
     }
-    executor.runOnCompletion(run, (ignored, error) -> finish(rebalance, error));
+    executor.runOnCompletion(
+        run,
+        (ignored, error) -> {
+          finish(rebalance, error);
+          whenFinished.run();
+        });
   }
 
   private void finish(final RebalanceRun rebalance, final @Nullable Throwable error) {
@@ -170,16 +190,17 @@ public final class RebalanceCoordinator
         ClusterConfigurationCoordinatorSupplier.ofMembers(clusterConfiguration.members().keySet())
             .getDefaultCoordinator();
     final var nowCoordinating = localMemberId.equals(coordinator);
-    if (nowCoordinating == coordinating) {
-      return;
+    if (nowCoordinating != (configuration != null)) {
+      if (nowCoordinating) {
+        LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
+      } else {
+        LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
+        discardState();
+      }
     }
-    coordinating = nowCoordinating;
-    if (nowCoordinating) {
-      LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
-    } else {
-      LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
-      discardState();
-    }
+    // Kept up to date so that the next rebalance is admitted under, and pins, the configuration
+    // this member coordinates under now rather than the one it took the role with.
+    configuration = nowCoordinating ? clusterConfiguration : null;
   }
 
   private void discardState() {
@@ -195,14 +216,18 @@ public final class RebalanceCoordinator
     lastCompleted = null;
   }
 
-  private boolean rejectIfNotCoordinating(final ActorFuture<?> result) {
-    if (coordinating) {
-      return false;
+  /**
+   * The configuration this member coordinates under, or {@code null} - having refused {@code
+   * result} - if it is not the coordinator.
+   */
+  private @Nullable ClusterConfiguration coordinatedConfiguration(final ActorFuture<?> result) {
+    final var current = configuration;
+    if (current == null) {
+      result.completeExceptionally(
+          new NotCoordinator(
+              "Member %s is not the rebalancing coordinator".formatted(localMemberId.id())));
     }
-    result.completeExceptionally(
-        new NotCoordinator(
-            "Member %s is not the rebalancing coordinator".formatted(localMemberId.id())));
-    return true;
+    return current;
   }
 
   private RebalanceStatus status() {

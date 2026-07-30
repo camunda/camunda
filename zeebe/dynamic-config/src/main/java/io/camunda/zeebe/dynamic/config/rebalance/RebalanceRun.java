@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.rebalance;
 
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -26,15 +27,21 @@ public final class RebalanceRun {
   private final long id;
   private final RebalanceOverrides overrides;
   private final boolean dryRun;
+  private final ClusterConfiguration configuration;
   private final List<PartitionRebalance> partitions = new ArrayList<>();
 
   private boolean cancelRequested;
   private boolean abandoned;
 
-  public RebalanceRun(final long id, final RebalanceOverrides overrides, final boolean dryRun) {
+  public RebalanceRun(
+      final long id,
+      final RebalanceOverrides overrides,
+      final boolean dryRun,
+      final ClusterConfiguration configuration) {
     this.id = id;
     this.overrides = overrides;
     this.dryRun = dryRun;
+    this.configuration = configuration;
   }
 
   public long id() {
@@ -49,6 +56,15 @@ public final class RebalanceRun {
   /** Report the plan without pausing any partition or transferring any leadership. */
   public boolean dryRun() {
     return dryRun;
+  }
+
+  /**
+   * The committed cluster configuration this rebalance was admitted under, pinned so that the
+   * desired leaders it works towards are decided once. A configuration change that lands while the
+   * rebalance runs is not picked up: whatever it changes is for the next rebalance to act on.
+   */
+  public ClusterConfiguration configuration() {
+    return configuration;
   }
 
   /**
