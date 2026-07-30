@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.impl;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -66,18 +67,16 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
    * when no leader is elected. Only requests understood by the recovery-mode API should use this.
    */
   static BrokerAddressProvider leaderOrAnyRecovery(
-      final BrokerTopologyManager topologyManager,
-      final String partitionGroup,
-      final int partitionId) {
+      final BrokerTopologyManager topologyManager, final PartitionId partitionId) {
     return new BrokerAddressProvider(
         topologyManager,
-        partitionGroup,
+        partitionId.group(),
         state -> {
-          final var leader = state.getLeaderForPartition(partitionId);
+          final var leader = state.getLeaderForPartition(partitionId.number());
           if (leader != null) {
             return leader;
           }
-          return findRecoveringNode(topologyManager, state, partitionId, partitionGroup);
+          return findRecoveringNode(topologyManager, state, partitionId);
         });
   }
 
@@ -100,14 +99,13 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
   private static @Nullable BrokerMemberId findRecoveringNode(
       final BrokerTopologyManager topologyManager,
       final BrokerClusterState topology,
-      final int partitionId,
-      final String partitionGroup) {
+      final PartitionId partitionId) {
     final var clusterConfiguration = topologyManager.getClusterConfiguration();
-    return topology.getInactiveNodesForPartition(partitionId).stream()
+    return topology.getInactiveNodesForPartition(partitionId.number()).stream()
         .filter(
             node -> {
               final var partitionGroupConfiguration =
-                  clusterConfiguration.partitionGroups().get(partitionGroup);
+                  clusterConfiguration.partitionGroups().get(partitionId.group());
               if (partitionGroupConfiguration == null) {
                 return false;
               }

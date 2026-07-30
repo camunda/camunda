@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -49,7 +50,9 @@ final class BrokerAddressProviderTest {
 
     // when -- tenant-b is queried, recovering in that group
     final var tenantBAddress =
-        BrokerAddressProvider.leaderOrAnyRecovery(topologyManager, TENANT_B, PARTITION_ID).get();
+        BrokerAddressProvider.leaderOrAnyRecovery(
+                topologyManager, new PartitionId(TENANT_B, PARTITION_ID))
+            .get();
 
     // then
     assertThat(tenantBAddress).isEqualTo("address-" + NODE.id());
@@ -57,7 +60,8 @@ final class BrokerAddressProviderTest {
     // when -- default is queried, only processing (not recovering) in that group
     final var defaultAddress =
         BrokerAddressProvider.leaderOrAnyRecovery(
-                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID)
+                topologyManager,
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID))
             .get();
 
     // then -- the node is not treated as recovering in the default group

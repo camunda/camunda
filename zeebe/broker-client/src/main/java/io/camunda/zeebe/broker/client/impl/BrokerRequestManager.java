@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -221,7 +222,7 @@ final class BrokerRequestManager extends Actor {
       throwIfPartitionInactive(partitionGroup, request.getPartitionId());
       if (request.shouldRouteToRecovery()) {
         return BrokerAddressProvider.leaderOrAnyRecovery(
-            topologyManager, partitionGroup, request.getPartitionId());
+            topologyManager, new PartitionId(partitionGroup, request.getPartitionId()));
       }
       return BrokerAddressProvider.leader(
           topologyManager, partitionGroup, request.getPartitionId());
