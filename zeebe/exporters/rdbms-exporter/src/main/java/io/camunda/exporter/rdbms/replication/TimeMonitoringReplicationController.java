@@ -25,10 +25,12 @@ import org.slf4j.LoggerFactory;
  * The TimeMonitoringReplicationController monitors the replication lag reported directly by the
  * database (in milliseconds) and applies backpressure whenever the lag exceeds a configured
  * threshold. Unlike {@link LsnReplicationController}, this controller does <em>not</em> track
- * log-sequence numbers, only a per-replica lag figure — trading the exact position-confirmation
- * guarantee of {@link LsnReplicationController} for a simpler, coarser lag check. This works for
- * any {@link io.camunda.db.rdbms.read.replication.ReplicationLagProvider}, including one derived
- * from an LSN-capable database via {@code LsnBackedReplicationLagProvider}.
+ * log-sequence numbers, only a per-replica lag figure. This works both for databases that have no
+ * LSN of their own (Azure SQL Database geo-replication, via {@code
+ * sys.dm_geo_replication_link_status}) and, via {@code LsnBackedReplicationLagProvider}, for any
+ * database that does expose an LSN but also reports a DB-measured lag alongside it (PostgreSQL,
+ * Aurora, on-prem/containerized SQL Server Always On) — trading the exact position-confirmation
+ * guarantee of {@link LsnReplicationController} for a simpler, coarser lag check.
  *
  * <p>Behaviour:
  *

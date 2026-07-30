@@ -15,8 +15,8 @@ import java.util.List;
  *
  * <p>PostgreSQL, Aurora, and on-prem/containerized SQL Server Always On all already report a
  * DB-measured replication lag alongside their LSN (see {@link ReplicationLsnStatus}), so this lets
- * {@code TimeMonitoringReplicationController} run against any of them via a simpler, coarser lag
- * check instead of exact LSN-based position confirmation.
+ * {@code TimeMonitoringReplicationController} run against any of them, not just Azure SQL Database,
+ * which has no LSN of its own.
  */
 public final class LsnBackedReplicationLagProvider implements ReplicationLagProvider {
 

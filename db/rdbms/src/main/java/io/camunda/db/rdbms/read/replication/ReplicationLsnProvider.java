@@ -10,14 +10,10 @@ package io.camunda.db.rdbms.read.replication;
 import java.util.List;
 
 /**
- * Provides replication log status for tracking async replication state. The primary's current
- * position is captured after each flush to know what has been committed. Replica statuses are
- * polled periodically to determine what each replica has applied, together with the DB-reported
- * replication lag per replica.
- *
- * <p>The position can represent different metrics depending on the database: a WAL LSN
- * (PostgreSQL), a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are
- * database-specific.
+ * Provides replication log-sequence-number (LSN) status for databases that expose one: a WAL LSN
+ * (PostgreSQL), a durable LSN (Aurora), or an Always On LSN (on-prem/containerized SQL Server). The
+ * primary's current position is captured after each flush to know what has been committed. Replica
+ * statuses are polled periodically to determine what each replica has applied.
  */
 public interface ReplicationLsnProvider {
 
@@ -25,9 +21,9 @@ public interface ReplicationLsnProvider {
   long getCurrent();
 
   /**
-   * Returns per-replica state: last replayed position/timestamp, a stable unique identifier, and
-   * the DB-reported replication lag in milliseconds. Returning one row per replica lets the caller
-   * apply quorum-aware aggregation instead of collapsing to a single worst-case value in SQL.
+   * Returns per-replica state: last replayed LSN, a stable unique identifier, and the DB-reported
+   * replication lag in milliseconds. Returning one row per replica lets the caller apply
+   * quorum-aware aggregation instead of collapsing to a single worst-case value in SQL.
    */
   List<ReplicationLsnStatus> getReplicationStatuses();
 }

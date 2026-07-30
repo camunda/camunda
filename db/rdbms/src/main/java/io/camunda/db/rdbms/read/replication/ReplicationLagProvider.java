@@ -11,10 +11,10 @@ import java.util.List;
 
 /**
  * Provides replication lag status: a stable per-replica identifier and the DB-reported elapsed
- * replication lag, without requiring a log-sequence number. Implemented by {@link
+ * replication lag, without requiring a log-sequence number. Implemented natively by databases that
+ * only expose a lag (e.g. Azure SQL Database geo-replication), and by {@link
  * LsnBackedReplicationLagProvider} for any database that supports {@link ReplicationLsnProvider}
- * and happens to report a lag alongside its LSN; databases that only expose a lag (no LSN at all)
- * can provide a dedicated implementation instead. Replica statuses are polled periodically to
+ * and happens to report a lag alongside its LSN. Replica statuses are polled periodically to
  * determine the current lag per replica.
  */
 public interface ReplicationLagProvider {
