@@ -279,7 +279,7 @@ public final class ClusterConfigurationManagerService
    * recover a broken file via sync, then wait on gossip from the coordinator; the coordinator-only
    * initializers below are still defined here (not skipped) because the actual coordinator, once
    * the configuration is initialized, might differ from what {@code staticConfiguration} assumes —
-   * see {@link PartitionDistributorInitializer.CoordinatorOnly}'s self-filtering.
+   * see {@link ClusterConfigurationModifier.CoordinatorOnly}'s self-filtering.
    */
   private ClusterConfigurationInitializer<CurrentClusterConfiguration>
       getCurrentClusterConfigurationNonCoordinatorInitializer(
