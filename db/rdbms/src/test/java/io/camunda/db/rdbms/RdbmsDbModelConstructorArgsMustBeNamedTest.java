@@ -63,22 +63,29 @@ class RdbmsDbModelConstructorArgsMustBeNamedTest {
 
     final var typeAliasRegistry = new Configuration().getTypeAliasRegistry();
     final var softly = new SoftAssertions();
+    final var documentBuilderFactory = DocumentBuilderFactory.newInstance();
+    // Mapper XMLs declare a DOCTYPE pointing at mybatis.org's DTD; without this, every parse
+    // fetches it over the network, making the test dependent on external connectivity.
+    documentBuilderFactory.setFeature(
+        "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 
     for (final File mapperFile : mapperFiles) {
       if (PENDING_PR_58969.contains(mapperFile.getName())) {
         continue;
       }
-      checkMapperFile(mapperFile, typeAliasRegistry, softly);
+      checkMapperFile(mapperFile, documentBuilderFactory, typeAliasRegistry, softly);
     }
 
     softly.assertAll();
   }
 
   private void checkMapperFile(
-      final File mapperFile, final TypeAliasRegistry typeAliasRegistry, final SoftAssertions softly)
+      final File mapperFile,
+      final DocumentBuilderFactory documentBuilderFactory,
+      final TypeAliasRegistry typeAliasRegistry,
+      final SoftAssertions softly)
       throws Exception {
-    final var document =
-        DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(mapperFile);
+    final var document = documentBuilderFactory.newDocumentBuilder().parse(mapperFile);
 
     final var resultMaps = document.getElementsByTagName("resultMap");
     for (int i = 0; i < resultMaps.getLength(); i++) {
