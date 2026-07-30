@@ -109,6 +109,9 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
     if (overrides.maxTransferAttempts() != null) {
       builder.setMaxTransferAttempts(overrides.maxTransferAttempts());
     }
+    if (overrides.leaderWaitTimeout() != null) {
+      builder.setLeaderWaitTimeoutMillis(overrides.leaderWaitTimeout().toMillis());
+    }
     return builder.build();
   }
 
@@ -120,7 +123,10 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         overrides.hasReplicationTimeoutMillis()
             ? Duration.ofMillis(overrides.getReplicationTimeoutMillis())
             : null,
-        overrides.hasMaxTransferAttempts() ? overrides.getMaxTransferAttempts() : null);
+        overrides.hasMaxTransferAttempts() ? overrides.getMaxTransferAttempts() : null,
+        overrides.hasLeaderWaitTimeoutMillis()
+            ? Duration.ofMillis(overrides.getLeaderWaitTimeoutMillis())
+            : null);
   }
 
   private Rebalance.RebalanceStatusResponse encodeStatus(final RebalanceStatus status) {

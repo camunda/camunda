@@ -8,12 +8,14 @@ message TriggerRebalanceRequest {
   bool dryRun = 2;
 }
 
-// Each override is absent unless the operator set it, in which case the leader of every partition
-// transferred by this rebalance uses it in place of its own configured setting.
+// Each override is absent unless the operator set it. The first three are applied by the leader of
+// every partition this rebalance transfers, in place of its own configured setting; the last is
+// applied by the coordinator, in place of its own default.
 message RebalanceOverrides {
   optional int64 replicationLagThresholdBytes = 1;
   optional int64 replicationTimeoutMillis = 2;
   optional int32 maxTransferAttempts = 3;
+  optional int64 leaderWaitTimeoutMillis = 4;
 }
 
 message RebalanceStatusResponse {

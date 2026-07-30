@@ -69,7 +69,7 @@ final class RebalanceCoordinatorTest {
   void shouldReportTheRebalanceItStarted() {
     // given
     final var coordinator = coordinatingWith(new BlockedRunner());
-    final var overrides = new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5);
+    final var overrides = new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5, null);
 
     // when
     final var triggered =

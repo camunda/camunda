@@ -101,7 +101,8 @@ final class RebalanceForwardingTest {
   void shouldForwardATriggerToTheCoordinator() {
     // given
     final var request =
-        new TriggerRebalanceRequest(new RebalanceOverrides(2048L, Duration.ofSeconds(20), 3), true);
+        new TriggerRebalanceRequest(
+            new RebalanceOverrides(2048L, Duration.ofSeconds(20), 3, Duration.ofMinutes(2)), true);
     COORDINATOR.status =
         new RebalanceStatus(
             new RebalanceStatus.Running(9, request.overrides(), true, false, List.of()), null);
