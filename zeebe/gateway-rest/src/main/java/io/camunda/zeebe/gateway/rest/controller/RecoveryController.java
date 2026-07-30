@@ -38,6 +38,7 @@ import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -244,7 +245,7 @@ public final class RecoveryController {
     };
   }
 
-  private static String toIso(final Instant instant) {
+  private static @Nullable String toIso(final @Nullable Instant instant) {
     return instant == null ? null : instant.toString();
   }
 }
