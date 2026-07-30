@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ final class RebalanceCoordinatorTest {
 
   private static final MemberId LOWEST_ID_MEMBER = MemberId.from("1");
   private static final MemberId OTHER_MEMBER = MemberId.from("2");
+  private static final PartitionRebalance PLAN =
+      new PartitionRebalance(
+          "default", 1, LOWEST_ID_MEMBER, OTHER_MEMBER, PartitionRebalanceState.PENDING);
 
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final AtomicLong nextRebalanceId = new AtomicLong(100);
@@ -110,7 +114,23 @@ final class RebalanceCoordinatorTest {
     assertThat(status.running()).isNotNull();
     assertThat(status.running().rebalanceId()).isEqualTo(101);
     assertThat(status.lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.COMPLETED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(100, RebalanceOutcome.COMPLETED, false, List.of(PLAN)));
+  }
+
+  @Test
+  void shouldReportWhereTheRebalanceHasGotToWithEachPartition() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    runner.rebalance.updatePartition(0, partition -> partition.transferred());
+
+    // then
+    assertThat(coordinator.getRebalanceStatus().join().running().partitions())
+        .containsExactly(PLAN.transferred());
   }
 
   @Test
@@ -127,7 +147,8 @@ final class RebalanceCoordinatorTest {
     // then
     assertThat(status.join().running()).isNull();
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.FAILED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(100, RebalanceOutcome.FAILED, false, List.of(PLAN)));
   }
 
   @Test
@@ -159,7 +180,8 @@ final class RebalanceCoordinatorTest {
 
     // then
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED, false, List.of(PLAN)));
   }
 
   @Test
@@ -242,6 +264,7 @@ final class RebalanceCoordinatorTest {
     @Override
     public ActorFuture<Void> run(final RebalanceRun rebalance) {
       this.rebalance = rebalance;
+      rebalance.plan(List.of(PLAN));
       return completion;
     }
 

@@ -28,11 +28,38 @@ message RunningRebalance {
   RebalanceOverrides overrides = 2;
   bool dryRun = 3;
   bool cancelRequested = 4;
+  // Empty until the rebalance has been planned.
+  repeated PartitionRebalance partitions = 5;
 }
 
 message CompletedRebalance {
   int64 rebalanceId = 1;
   RebalanceOutcome outcome = 2;
+  bool dryRun = 3;
+  repeated PartitionRebalance partitions = 4;
+}
+
+message PartitionRebalance {
+  // Nested so that its values do not collide with RebalanceOutcome's: proto enum values are
+  // scoped to the enclosing message, not to the enum.
+  enum State {
+    PENDING = 0;
+    TRANSFERRING = 1;
+    TRANSFERRED = 2;
+    SKIPPED = 3;
+    FAILED = 4;
+  }
+
+  // The partition group the partition belongs to; partition ids are unique only within a group.
+  string physicalTenantId = 1;
+  int32 partitionId = 2;
+  // Absent while the partition has no leader.
+  optional string currentLeader = 3;
+  // Absent if the configuration names no desired leader for the partition.
+  optional string desiredLeader = 4;
+  State state = 5;
+  // Why the partition ended in this state. Absent where the state speaks for itself.
+  optional string reason = 6;
 }
 
 message CancelRebalanceResponse {

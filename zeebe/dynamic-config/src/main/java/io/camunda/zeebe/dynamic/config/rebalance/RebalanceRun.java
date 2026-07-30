@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.rebalance;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.UnaryOperator;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -15,7 +18,7 @@ import org.jspecify.annotations.NullMarked;
  * is persisted, so a coordinator that restarts or moves has no rebalance to resume.
  *
  * <p>Confined to the coordinator's actor thread, which is also the thread the {@link
- * RebalanceRunner} driving it reads {@link #isCancelRequested()} from.
+ * RebalanceRunner} driving it plans its partitions and reads {@link #isCancelRequested()} on.
  */
 @NullMarked
 public final class RebalanceRun {
@@ -23,6 +26,7 @@ public final class RebalanceRun {
   private final long id;
   private final RebalanceOverrides overrides;
   private final boolean dryRun;
+  private final List<PartitionRebalance> partitions = new ArrayList<>();
 
   private boolean cancelRequested;
 
@@ -44,6 +48,33 @@ public final class RebalanceRun {
   /** Report the plan without pausing any partition or transferring any leadership. */
   public boolean dryRun() {
     return dryRun;
+  }
+
+  /**
+   * The partitions this rebalance covers, in the order it works through them, each with where the
+   * rebalance has got to with it. Empty until the runner has planned the rebalance.
+   */
+  public List<PartitionRebalance> partitions() {
+    return List.copyOf(partitions);
+  }
+
+  /** Fixes the partitions this rebalance covers, and the leaders it moves leadership between. */
+  public void plan(final List<PartitionRebalance> planned) {
+    partitions.clear();
+    partitions.addAll(planned);
+  }
+
+  public PartitionRebalance partition(final int index) {
+    return partitions.get(index);
+  }
+
+  public int partitionCount() {
+    return partitions.size();
+  }
+
+  /** Records what became of the partition at {@code index} as the rebalance works through it. */
+  public void updatePartition(final int index, final UnaryOperator<PartitionRebalance> updater) {
+    partitions.set(index, updater.apply(partitions.get(index)));
   }
 
   /**

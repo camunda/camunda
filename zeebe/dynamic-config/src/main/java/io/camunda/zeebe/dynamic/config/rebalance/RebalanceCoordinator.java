@@ -155,7 +155,9 @@ public final class RebalanceCoordinator
     } else {
       outcome = RebalanceOutcome.COMPLETED;
     }
-    lastCompleted = new RebalanceStatus.Completed(rebalance.id(), outcome);
+    lastCompleted =
+        new RebalanceStatus.Completed(
+            rebalance.id(), outcome, rebalance.dryRun(), rebalance.partitions());
     LOG.info("Rebalance {} finished as {}", rebalance.id(), outcome);
   }
 
@@ -211,7 +213,8 @@ public final class RebalanceCoordinator
                 inFlight.id(),
                 inFlight.overrides(),
                 inFlight.dryRun(),
-                inFlight.isCancelRequested());
+                inFlight.isCancelRequested(),
+                inFlight.partitions());
     return new RebalanceStatus(runningStatus, lastCompleted);
   }
 }
