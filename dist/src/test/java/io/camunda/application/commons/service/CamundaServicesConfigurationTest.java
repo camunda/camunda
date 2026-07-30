@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -381,8 +383,21 @@ class CamundaServicesConfigurationTest {
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),
+        readinessProvider(),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
         secretStoreRegistries);
+  }
+
+  /**
+   * The readiness bean is taken as an {@link ObjectProvider} so it is resolved only when the
+   * cluster-status predicate runs — injecting it eagerly would close a bean cycle through the
+   * search schema initializer.
+   */
+  @SuppressWarnings("unchecked")
+  private static ObjectProvider<SecondaryStorageReadiness> readinessProvider() {
+    final ObjectProvider<SecondaryStorageReadiness> provider = mock(ObjectProvider.class);
+    when(provider.getObject()).thenReturn(SecondaryStorageReadiness.ALWAYS_READY);
+    return provider;
   }
 
   /** A physical tenant config with {@code security.authorizations.enabled} set as given. */

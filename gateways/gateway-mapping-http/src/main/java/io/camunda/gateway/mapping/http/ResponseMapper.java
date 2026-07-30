@@ -26,6 +26,8 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClusterStatusResponse;
+import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
@@ -79,6 +81,7 @@ import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.service.ClusterStatusServices.AggregatedStatus;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -918,6 +921,17 @@ public final class ResponseMapper {
                     warning ->
                         ExpressionEvaluationWarningItem.Builder.create().message(warning).build())
                 .toList())
+        .build();
+  }
+
+  public static ClusterStatusResponse toClusterStatusResponse(final AggregatedStatus status) {
+    return ClusterStatusResponse.Builder.create()
+        .status(
+            switch (status) {
+              case HEALTHY -> StatusEnum.HEALTHY;
+              case DEGRADED -> StatusEnum.DEGRADED;
+              case DOWN -> StatusEnum.DOWN;
+            })
         .build();
   }
 

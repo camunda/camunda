@@ -442,9 +442,11 @@ paths:
   /signals/broadcast:
     $ref: 'signals.yaml#/paths/~1signals~1broadcast'
 
-  # Cluster endpoints
-  /status:
+  # Cluster status endpoints
+  /status: # Legacy `/status` endpoint that is deprecated and only works for the default physical tenant
     $ref: 'cluster.yaml#/paths/~1status'
+  /cluster/v2/status: # New /cluster/v2/status endpoint that works for all physical tenants.
+    $ref: 'cluster.yaml#/paths/~1cluster~1v2~1status'
 
   # System endpoints
   /system/usage-metrics:

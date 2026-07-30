@@ -96,19 +96,19 @@ public class ClusterAdminBasicAuthWebSecurityConfigTest extends AbstractWebSecur
 
   @Test
   public void shouldAllowPublicStatusEndpointWithoutCredentials() {
-    // when — the carved-out public status endpoint is hit with no credentials
+    // when — the public status endpoint is hit with no credentials
     final MvcTestResult result =
         mockMvcTester
             .get()
             .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
             .exchange();
 
-    // then — permitAll lets it through (dummy returns 200; the real endpoint returns 204)
+    // then — its own chain permits it (dummy returns 200; so does the real endpoint)
     assertThat(result).hasStatus2xxSuccessful();
   }
 
   @Test
-  public void shouldRejectWrongPasswordOnPublicStatusEndpoint() {
+  public void shouldAllowPublicStatusEndpointWithAWrongPassword() {
     // when — the public status endpoint is hit with a wrong password
     final MvcTestResult result =
         mockMvcTester
@@ -117,9 +117,9 @@ public class ClusterAdminBasicAuthWebSecurityConfigTest extends AbstractWebSecur
             .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
             .exchange();
 
-    // then — permitAll only waives a missing credential; a bad one is still rejected by the Basic
-    // auth filter before the authorization decision is reached
-    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+    // then — the status chain installs no Basic auth filter, so the credential is never verified. A
+    // health check must not start failing because the caller sent a stale password.
+    assertThat(result).hasStatus2xxSuccessful();
   }
 
   @Test
