@@ -76,23 +76,11 @@ public class ExportUtil {
   }
 
   /**
-   * Returns {@code null} when {@code value} is zero or negative, otherwise boxes and returns the
-   * value.
-   *
-   * <p>Use this when mapping optional integer fields from protocol records to DB models. Protocol
-   * {@code int} fields default to {@code 0} when not set by the sender, but nullable DB columns
-   * should store {@code null} to correctly represent "absent".
-   */
-  public static Integer positiveOrNull(final int value) {
-    return value > 0 ? value : null;
-  }
-
-  /**
    * Returns {@code null} when {@code value} is negative (i.e., the protocol sentinel for "not
    * set"), otherwise returns the boxed value.
    *
-   * <p>Unlike {@link #positiveOrNull}, this helper treats {@code 0} as a valid explicit value —
-   * callers that use it must not conflate zero with "absent".
+   * <p>Treats {@code 0} as a valid explicit value — callers that use it must not conflate zero with
+   * "absent".
    */
   public static Long nullIfNegative(final long value) {
     return value < 0 ? null : value;

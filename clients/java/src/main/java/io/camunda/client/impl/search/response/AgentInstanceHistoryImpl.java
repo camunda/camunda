@@ -48,7 +48,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
   private final long elementInstanceKey;
   private final long jobKey;
   private final String jobLease;
-  private final Integer loopIteration;
+  private final int loopIteration;
   private final AgentInstanceHistoryRole role;
   private final List<AgentInstanceHistoryContent> content;
   private final List<AgentInstanceHistoryToolCall> toolCalls;
@@ -108,7 +108,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
   }
 
   @Override
-  public Integer getLoopIteration() {
+  public int getLoopIteration() {
     return loopIteration;
   }
 

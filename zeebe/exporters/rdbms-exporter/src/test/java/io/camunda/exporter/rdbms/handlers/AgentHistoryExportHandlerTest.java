@@ -197,8 +197,10 @@ class AgentHistoryExportHandlerTest {
   }
 
   @Test
-  void shouldMapLoopIterationToNullWhenNotPositive() {
-    // given — zero and negative values
+  void shouldMapLoopIterationAsIs() {
+    // given — zero and negative values. The exporter mirrors whatever the record carries: it is
+    // not its place to "correct" an out-of-contract value, only the engine/connector side is
+    // expected to guarantee a positive loopIteration in practice.
     final var zeroLoopIteration =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildRecordValue())
@@ -227,11 +229,11 @@ class AgentHistoryExportHandlerTest {
     handler.export(zeroRecord);
     handler.export(negativeRecord);
 
-    // then — both should produce loopIteration=null
+    // then — both values are stored as provided, unchanged
     verify(writer, times(2)).create(modelCaptor.capture());
     assertThat(modelCaptor.getAllValues())
         .extracting(AgentHistoryDbModel::loopIteration)
-        .containsOnly((Integer) null);
+        .containsExactly(0, -1);
   }
 
   @Test
