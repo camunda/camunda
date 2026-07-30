@@ -185,11 +185,27 @@ test.describe('Process Instances - Business ID', () => {
     });
 
     await test.step('Open the matching instance detail', async () => {
-      await operateProcessesPage.processInstanceLinkByKey(instanceKeyA).click();
+      // Operate's process instances list auto-refreshes, so a click on the row
+      // link can be swallowed by a re-render and navigation never happens. Retry
+      // the click until the instance detail header renders.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessesPage
+            .processInstanceLinkByKey(instanceKeyA)
+            .click();
+          await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await applyBusinessIdFilter(operateFiltersPanelPage, BUSINESS_ID_A);
+          await expect(
+            OperateProcessesPage.getRowByProcessInstanceKey(page, instanceKeyA),
+          ).toBeVisible();
+        },
+      });
     });
 
     await test.step('Verify the detail header shows the Business ID', async () => {
-      await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(BUSINESS_ID_A),
       ).toBeVisible();
