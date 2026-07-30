@@ -7,6 +7,8 @@
  */
 package io.camunda.secretstore;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,6 +26,7 @@ public final class SecretStoreRegistry {
 
   private final Map<String, SecretStore> stores;
   private final Map<String, SecretCache> caches;
+  private final Map<String, SecretStore> cachingStores;
 
   public SecretStoreRegistry(final Map<String, SecretStore> stores) {
     this(stores, Map.of());
@@ -38,6 +41,7 @@ public final class SecretStoreRegistry {
       final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
     this.stores = stores;
     this.caches = withACachePerStore(stores, caches);
+    cachingStores = cachingStores(stores, this.caches);
   }
 
   /** Returns all configured secret stores, keyed by store ID. */
@@ -48,6 +52,28 @@ public final class SecretStoreRegistry {
   /** Returns one cache per configured store, keyed by store ID. */
   public Map<String, SecretCache> getCaches() {
     return caches;
+  }
+
+  /**
+   * Returns each configured store wrapped so that resolving goes through the store's cache, keyed
+   * by store ID. This is what a caller that only wants to resolve secrets uses, rather than pairing
+   * a store with its cache itself; {@link #getStores()} and {@link #getCaches()} stay for the
+   * callers that drive the two apart, such as the engine writing a value into the cache without
+   * revealing it.
+   */
+  public Map<String, SecretStore> getCachingStores() {
+    return cachingStores;
+  }
+
+  private static Map<String, SecretStore> cachingStores(
+      final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
+    final Map<String, SecretStore> caching = new LinkedHashMap<>();
+    stores.forEach(
+        (storeId, store) ->
+            // non-null by the one-cache-per-store invariant withACachePerStore establishes
+            caching.put(
+                storeId, new CachingSecretStore(store, requireNonNull(caches.get(storeId)))));
+    return Collections.unmodifiableMap(caching);
   }
 
   private static Map<String, SecretCache> withACachePerStore(

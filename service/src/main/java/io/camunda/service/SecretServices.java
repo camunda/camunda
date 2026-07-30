@@ -10,8 +10,8 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.SECRET_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.SECRET_REVEAL_AUTHORIZATION;
 
-import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreException;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -182,11 +182,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Reads the authorized references cache-first, adding each outcome to {@code resolved} or {@code
-   * errors}: a reference cached for a store is served from there, the remaining ones are read from
-   * that store in a single batched call, and every value read is cached. A reference no store could
-   * resolve is reported with the reason of the last store that failed on it, or {@code NOT_FOUND}
-   * if no store knew it at all.
+   * Asks each configured store for the authorized references, adding every outcome to {@code
+   * resolved} or {@code errors}. The stores are the registry's caching ones, so a reference already
+   * cached for a store never reaches it and every value it answers with is cached; this method only
+   * decides what each outcome means to the API. A reference no store could resolve is reported with
+   * the reason of the last store that failed on it, or {@code NOT_FOUND} if no store knew it at
+   * all.
    *
    * <p>A physical tenant is capped at one configured store in this release (enforced at startup by
    * {@code SecretStoreConfiguration}), so the loop below sees a single store today. The
@@ -205,40 +206,52 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     final Map<String, SecretErrorCode> failures = new HashMap<>();
 
     try {
-      final var caches = secretStoreRegistry.getCaches();
-      for (final var store : secretStoreRegistry.getStores().entrySet()) {
+      for (final var store : secretStoreRegistry.getCachingStores().entrySet()) {
         if (pending.isEmpty()) {
           break;
         }
-        final var storeId = store.getKey();
-        final SecretCache cache = caches.get(storeId);
+        readFromStore(
+            store.getKey(), store.getValue(), pending, failures, resolved, authentication);
+      }
+    } catch (final SecretStoreException e) {
+      // a store that cannot be read at all fails the whole request rather than reporting every
+      // reference as missing, which a caller could not tell apart from a genuinely empty store
+      LOG.warn("Failed to read a configured secret store while resolving secret references", e);
+      throw new ServiceException(
+          "Failed to read the configured secret store.", ServiceException.Status.UNAVAILABLE);
+    }
 
-        // the references this store still has to be asked for, keyed by their bare name. Iterates a
-        // snapshot, since a cache hit removes its reference from the pending ones.
-        final Map<String, String> misses = new LinkedHashMap<>();
-        for (final var reference : List.copyOf(pending)) {
-          final var name = bareNameOf(reference);
-          final var cached = cache == null ? null : cache.get(name).orElse(null);
-          if (cached == null) {
-            misses.put(name, reference);
-          } else {
-            reveal(reference, cached, resolved, authentication);
-            pending.remove(reference);
-          }
-        }
-        if (misses.isEmpty()) {
-          continue;
-        }
+    pending.forEach(
+        reference -> {
+          final var code = failures.getOrDefault(reference, SecretErrorCode.NOT_FOUND);
+          errors.add(new SecretResolutionError(reference, code, messageFor(code)));
+        });
+    return new SecretResolution(resolved, errors);
+  }
 
-        final var results = store.getValue().resolve(misses.keySet());
-        for (final var miss : misses.entrySet()) {
-          final var name = miss.getKey();
-          final var reference = miss.getValue();
+  /**
+   * Asks one store for every reference still {@code pending}, revealing the ones it resolves and
+   * taking those out of {@code pending}. A reference the store fails on is recorded in {@code
+   * failures} and left pending, so a later store can still resolve it; only if none does is the
+   * recorded reason reported.
+   */
+  private void readFromStore(
+      final String storeId,
+      final SecretStore store,
+      final Set<String> pending,
+      final Map<String, SecretErrorCode> failures,
+      final List<ResolvedSecret> resolved,
+      final CamundaAuthentication authentication) {
+    // the references to ask this store for, keyed by the bare name the stores are keyed by. A
+    // separate map, since resolving a reference takes it out of the pending ones.
+    final Map<String, String> requested = new LinkedHashMap<>();
+    pending.forEach(reference -> requested.put(bareNameOf(reference), reference));
+
+    final var results = store.resolve(requested.keySet());
+    requested.forEach(
+        (name, reference) -> {
           switch (results.get(name)) {
             case final SecretResolutionResult.Resolved value -> {
-              if (cache != null) {
-                cache.put(name, value.value());
-              }
               reveal(reference, value.value(), resolved, authentication);
               pending.remove(reference);
             }
@@ -255,22 +268,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
             // it, rather than dropping the reference from the response entirely
             case null -> failures.putIfAbsent(reference, SecretErrorCode.NOT_FOUND);
           }
-        }
-      }
-    } catch (final SecretStoreException e) {
-      // a store that cannot be read at all fails the whole request rather than reporting every
-      // reference as missing, which a caller could not tell apart from a genuinely empty store
-      LOG.warn("Failed to read a configured secret store while resolving secret references", e);
-      throw new ServiceException(
-          "Failed to read the configured secret store.", ServiceException.Status.UNAVAILABLE);
-    }
-
-    pending.forEach(
-        reference -> {
-          final var code = failures.getOrDefault(reference, SecretErrorCode.NOT_FOUND);
-          errors.add(new SecretResolutionError(reference, code, messageFor(code)));
         });
-    return new SecretResolution(resolved, errors);
   }
 
   private void reveal(
