@@ -9,7 +9,16 @@ package io.camunda.optimize.service.dashboard;
 
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.BUSINESS_VALUE_DASHBOARD_ID;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.BUSINESS_VALUE_DASHBOARD_NAME;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_ACTIVITY;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_AGENTIC_ADOPTION;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_CYCLE_TIME;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L1_SECTION_OVERVIEW;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L1_SECTION_UNGROUPED;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.TILE_CONFIG_L0_SECTION;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.TILE_CONFIG_L1_SECTION;
+import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -30,6 +39,7 @@ import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EntityConfiguration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +50,7 @@ public class BusinessValueDashboardServiceTest {
   private static final List<String> SEED_REPORT_IDS =
       List.of(
           BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID,
+          BusinessValueDashboardService.DURATION_AVG_TOTAL_REPORT_ID,
           BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID,
           BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
@@ -208,6 +219,92 @@ public class BusinessValueDashboardServiceTest {
     verifyNoInteractions(dashboardReader);
     verifyNoInteractions(dashboardWriter);
     verifyNoInteractions(reportWriter);
+  }
+
+  @Test
+  void shouldRenderEverySeededTileOnAtLeastOneLevel() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then a tile without any section key would be dropped by the frontend
+    assertThat(captureSavedDashboard().getTiles())
+        .allSatisfy(
+            tile ->
+                assertThat(
+                        sectionOf(tile, TILE_CONFIG_L0_SECTION) != null
+                            || sectionOf(tile, TILE_CONFIG_L1_SECTION) != null)
+                    .as("tile '%s' must declare an L0 and/or L1 section", tile.getId())
+                    .isTrue());
+  }
+
+  @Test
+  void shouldGroupTilesIntoTheExpectedL0Sections() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    assertThat(sectionsByReportId(TILE_CONFIG_L0_SECTION))
+        .containsOnly(
+            entry(BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID, L0_SECTION_ACTIVITY),
+            entry(BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID, L0_SECTION_ACTIVITY),
+            entry(BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID, L0_SECTION_ACTIVITY),
+            entry(
+                BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID, L0_SECTION_CYCLE_TIME),
+            entry(
+                BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
+                L0_SECTION_AGENTIC_ADOPTION));
+  }
+
+  @Test
+  void shouldGroupTilesIntoTheExpectedL1Sections() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    assertThat(sectionsByReportId(TILE_CONFIG_L1_SECTION))
+        .containsOnly(
+            entry(BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID, L1_SECTION_OVERVIEW),
+            entry(BusinessValueDashboardService.DURATION_AVG_TOTAL_REPORT_ID, L1_SECTION_OVERVIEW),
+            entry(BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED),
+            entry(
+                BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID, L1_SECTION_UNGROUPED),
+            entry(BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED));
+  }
+
+  @Test
+  void shouldNotPlaceTwoTilesAtTheSamePosition() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then no two tiles share an (x, y) origin, otherwise one would render on top of another
+    assertThat(
+            captureSavedDashboard().getTiles().stream()
+                .map(tile -> tile.getPosition().getX() + "," + tile.getPosition().getY())
+                .toList())
+        .doesNotHaveDuplicates();
+  }
+
+  private Map<String, String> sectionsByReportId(final String configKey) {
+    return captureSavedDashboard().getTiles().stream()
+        .filter(tile -> sectionOf(tile, configKey) != null)
+        .collect(toMap(DashboardReportTileDto::getId, tile -> sectionOf(tile, configKey)));
+  }
+
+  private static String sectionOf(final DashboardReportTileDto tile, final String configKey) {
+    assertThat(tile.getConfiguration()).isInstanceOf(Map.class);
+    return (String) ((Map<?, ?>) tile.getConfiguration()).get(configKey);
   }
 
   private DashboardDefinitionRestDto captureSavedDashboard() {
