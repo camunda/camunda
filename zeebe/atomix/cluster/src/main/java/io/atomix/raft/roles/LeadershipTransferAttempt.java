@@ -131,44 +131,34 @@ final class LeadershipTransferAttempt {
   private void finish(final LeadershipTransferResult result) {
     finishListener.run();
     observeDuration(result);
-    resume()
-        .whenComplete(
-            (ignored, resumeError) -> {
-              if (resumeError != null) {
-                // Cleanup failed: the partition may still be frozen. The pause watchdog is the
-                // safety net and steps the leader down once the resume deadline passes.
-                LOG.error(
-                    "Failed to resume partition after leadership transfer to {} (result {}); "
-                        + "relying on the pause watchdog to recover if still frozen",
-                    desiredLeader,
-                    result,
-                    resumeError);
-              }
-              final var notification =
-                  LeadershipTransferResultRequest.builder()
-                      .withLeader(raft.getCluster().getLocalMember().memberId())
-                      .withDesiredLeader(desiredLeader)
-                      .withResult(result)
-                      .withCorrelationId(correlationId)
-                      .build();
-              raft.getProtocol()
-                  .leadershipTransferResult(coordinator, notification)
-                  .whenComplete(
-                      (ack, notifyError) -> {
-                        if (notifyError != null) {
-                          LOG.debug(
-                              "Failed to notify coordinator {} of transfer result {}",
-                              coordinator,
-                              result,
-                              notifyError);
-                        }
-                      });
-            });
+    resume().whenComplete((ignored, resumeError) -> reportResult(result));
   }
 
   private void observeDuration(final LeadershipTransferResult result) {
     raft.getRebalanceMetrics()
         .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
+  }
+
+  private void reportResult(final LeadershipTransferResult result) {
+    final var notification =
+        LeadershipTransferResultRequest.builder()
+            .withLeader(raft.getCluster().getLocalMember().memberId())
+            .withDesiredLeader(desiredLeader)
+            .withResult(result)
+            .withCorrelationId(correlationId)
+            .build();
+    raft.getProtocol()
+        .leadershipTransferResult(coordinator, notification)
+        .whenComplete(
+            (ack, notifyError) -> {
+              if (notifyError != null) {
+                LOG.debug(
+                    "Failed to notify coordinator {} of transfer result {}",
+                    coordinator,
+                    result,
+                    notifyError);
+              }
+            });
   }
 
   private CompletableFuture<Long> pause(final Duration resumeTimeout) {
@@ -182,15 +172,32 @@ final class LeadershipTransferAttempt {
         leader.pauseForTransfer(resumeTimeout, System.currentTimeMillis()));
   }
 
+  /**
+   * Reopens the partition on every terminal path, whether the transfer failed or the desired leader
+   * caught up. A resume that fails can leave the partition frozen: the pause watchdog is the safety
+   * net and steps the leader down once the resume deadline passes.
+   */
   private CompletableFuture<Void> resume() {
     final var control = raft.getLeadershipTransferPauseControl();
+    final CompletableFuture<Void> resumed;
     if (control != null) {
-      return control.resumeFromTransfer();
+      resumed = control.resumeFromTransfer();
+    } else {
+      // e.g. Raft-only tests, where there are no writes to reopen
+      LOG.debug("No broker pause control registered, resuming the Raft side only");
+      leader.resumeFromTransfer();
+      resumed = CompletableFuture.completedFuture(null);
     }
-    // e.g. Raft-only tests, where there are no writes to reopen
-    LOG.debug("No broker pause control registered, resuming the Raft side only");
-    leader.resumeFromTransfer();
-    return CompletableFuture.completedFuture(null);
+    return resumed.whenComplete(
+        (ignored, error) -> {
+          if (error != null) {
+            LOG.error(
+                "Failed to resume partition after leadership transfer to {}; relying on the pause "
+                    + "watchdog to recover if still frozen",
+                desiredLeader,
+                error);
+          }
+        });
   }
 
   /**
