@@ -238,7 +238,9 @@ public final class ClusterConfigurationManagerService
         // configuration.
         // These initializers will be skipped if they are not running on the latest coordinator
         // based on the initialized configuration.
-        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
@@ -263,8 +265,40 @@ public final class ClusterConfigurationManagerService
                 true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only
-        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
+  }
+
+  /**
+   * New-model counterpart of {@link #getCoordinatorInitializer}/{@link
+   * #getNonCoordinatorInitializer}. Unlike those, this is a single chain shared by coordinator and
+   * non-coordinator alike: {@link PartitionDistributorInitializer} is {@code CoordinatorOnly} and
+   * self-filters based on the initialized configuration's membership, exactly as it does in the
+   * legacy chains, so no separate coordinator/non-coordinator variant is needed here for it. {@link
+   * PartitionGroupExporterStateInitializer} runs the same for both roles since its post-restore,
+   * coordinator-driven branch does not exist for the new model yet (see {@link
+   * PartitionGroupExporterStateInitializer}'s javadoc).
+   *
+   * <p>{@link GossipInitializer}/{@link SyncInitializer} recovery for the new model is not migrated
+   * yet — the sync RPC ({@link
+   * io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper#queryClusterConfiguration})
+   * only carries the legacy {@link ClusterConfiguration}. Until that is addressed, every member
+   * falls back to generating its own configuration from static configuration when the local file is
+   * empty.
+   */
+  private ClusterConfigurationInitializer<CurrentClusterConfiguration>
+      getCurrentClusterConfigurationInitializer(final StaticConfiguration staticConfiguration) {
+    return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
+        .orThen(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .andThen(
+            new PartitionGroupExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId()))
+        .andThen(
+            PartitionDistributorInitializer
+                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration));
   }
 
   private Supplier<List<MemberId>> initializationMembers(
@@ -320,17 +354,9 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationManager.registerGlobalChangeAppliers(
                     new GlobalConfigurationChangeAppliersImpl(
                         new NoopClusterMembershipChangeExecutor(), clusterChangeExecutor));
-                // Intermediate migration step: only the file and static initializer exists for the
-                // new model, used unconditionally for both coordinator and non-coordinator role.
-                // File/gossip/sync recovery and the coordinator/non-coordinator split are a
-                // follow-up.
-                final ClusterConfigurationInitializer<CurrentClusterConfiguration> initializer =
-                    FileInitializer.fromPersistedConfiguration(
-                            configurationFile, new ProtoBufSerializer())
-                        .orThen(
-                            new StaticInitializer<>(
-                                staticConfiguration::generateCurrentClusterConfiguration));
-                clusterConfigurationManager.start(initializer).onComplete(result);
+                clusterConfigurationManager
+                    .start(getCurrentClusterConfigurationInitializer(staticConfiguration))
+                    .onComplete(result);
               } else {
                 final var coordinatorMemberId =
                     ClusterConfigurationCoordinatorSupplier.ofMembers(
