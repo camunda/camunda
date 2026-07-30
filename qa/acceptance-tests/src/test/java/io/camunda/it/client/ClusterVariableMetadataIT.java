@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -19,7 +20,6 @@ import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -206,13 +206,18 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient.newGloballyScopedClusterVariableGetRequest().withName(name).send().join();
     assertThat(response.getMetadata()).isEmpty();
-    final var searchResponse =
-        camundaClient
-            .newClusterVariableSearchRequest()
-            .filter(f -> f.name(name).metadata("group", m -> m.eq(OTHER_GROUP)))
-            .send()
-            .join();
-    assertThat(searchResponse.items()).isEmpty();
+    Awaitility.await("cluster variable metadata removal is indexed")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newClusterVariableSearchRequest()
+                            .filter(f -> f.name(name).metadata("group", m -> m.eq(OTHER_GROUP)))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
   }
 
   @Test
@@ -250,7 +255,7 @@ public class ClusterVariableMetadataIT {
 
     // then - the variable and its metadata are fully removed
     Awaitility.await("cluster variable is removed")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThatThrownBy(
