@@ -32,7 +32,7 @@ public final class ReplicationLsnProviderFactory {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
-      case MSSQL_DATABASE_ID -> new DefaultReplicationLsnProvider(replicationStatusMapper);
+      case MSSQL_DATABASE_ID -> createMssqlProvider();
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLsnProvider for null database id");
@@ -45,7 +45,7 @@ public final class ReplicationLsnProviderFactory {
 
   private ReplicationLsnProvider createPostgresOrAuroraProvider() {
     if (!replicationStatusMapper.isAurora()) {
-      LOG.debug("Detected PostgreSQL LogStatusProvider");
+      LOG.debug("Detected PostgreSQL LsnProvider");
       return new DefaultReplicationLsnProvider(replicationStatusMapper);
     }
     return createAuroraGlobalProvider();
@@ -66,7 +66,18 @@ public final class ReplicationLsnProviderFactory {
           "Replication monitoring requires AWS Aurora Global Database. "
               + "Aurora is detected but Global Database is not configured on this instance.");
     }
-    LOG.debug("Detected Aurora Global LogStatusProvider");
+    LOG.debug("Detected Aurora Global LsnProvider");
     return new AuroraReplicationLsnProvider(replicationStatusMapper);
+  }
+
+  private ReplicationLsnProvider createMssqlProvider() {
+    if (replicationStatusMapper.isAzureSqlDatabase()) {
+      throw new IllegalStateException(
+          "LSN-based replication monitoring (asyncReplication.type=LOG_SEQ) is not supported on "
+              + "Azure SQL Database because it does not expose a log sequence number. Use "
+              + "asyncReplication.type=TIME_LAG instead.");
+    }
+    LOG.debug("Detected MSSQL LsnProvider");
+    return new DefaultReplicationLsnProvider(replicationStatusMapper);
   }
 }
