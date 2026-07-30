@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,11 +69,13 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public RdbmsDataSources rdbmsDataSources(final PhysicalTenantResolver physicalTenantResolver)
+  public RdbmsDataSources rdbmsDataSources(
+      final PhysicalTenantResolver physicalTenantResolver, final MeterRegistry meterRegistry)
       throws IOException {
     return RdbmsDataSources.of(
         physicalTenantResolver.mapValues(
-            camunda -> camunda.getData().getSecondaryStorage().getRdbms()));
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        meterRegistry);
   }
 
   @Bean

@@ -12,6 +12,10 @@ import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,49 +42,60 @@ public final class RdbmsDataSources implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsDataSources.class);
 
-  private final Map<String, HikariDataSource> dataSources;
-  private final Map<String, VendorDatabaseProperties> vendorProperties;
-  private final Map<String, DatabaseIdProvider> databaseIdProviders;
+  private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
+  private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
+  private final Map<String, DatabaseIdProvider> databaseIdProviders = new LinkedHashMap<>();
 
-  private RdbmsDataSources(
-      final Map<String, HikariDataSource> dataSources,
-      final Map<String, VendorDatabaseProperties> vendorProperties,
-      final Map<String, DatabaseIdProvider> databaseIdProviders) {
-    this.dataSources = dataSources;
-    this.vendorProperties = vendorProperties;
-    this.databaseIdProviders = databaseIdProviders;
-  }
+  private RdbmsDataSources() {}
 
-  public static RdbmsDataSources of(final Map<String, Rdbms> physicalTenantConfigs)
+  /**
+   * @param meterRegistry the cluster-wide registry each physical tenant's HikariCP metrics are
+   *     forwarded to. Each tenant gets its own {@link MicrometerUtil#wrap wrapped registry} tagging
+   *     metrics with {@link PartitionKeyNames#PHYSICAL_TENANT}, consistent with the other
+   *     physical-tenant-scoped RDBMS metrics (e.g. {@code
+   *     PhysicalTenantsRdbmsTableRowCountMetrics}).
+   */
+  public static RdbmsDataSources of(
+      final Map<String, Rdbms> physicalTenantConfigs, final MeterRegistry meterRegistry)
       throws IOException {
-    final var dataSources = new LinkedHashMap<String, HikariDataSource>();
-    final var vendorProperties = new LinkedHashMap<String, VendorDatabaseProperties>();
-    final var databaseIdProviders = new LinkedHashMap<String, DatabaseIdProvider>();
+    final var result = new RdbmsDataSources();
     for (final var entry : physicalTenantConfigs.entrySet()) {
       final var currentPhysicalTenantId = entry.getKey();
       final var rdbms = entry.getValue();
       try {
-        final var ds = buildDataSource(currentPhysicalTenantId, rdbms);
-        dataSources.put(currentPhysicalTenantId, ds);
+        final var tenantMeterRegistry =
+            result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
+        final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
+        result.dataSources.put(currentPhysicalTenantId, ds);
         final var databaseIdProvider = new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId());
-        databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
+        result.databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
         final var databaseId = databaseIdProvider.getDatabaseId(ds);
         LOGGER.info(
             "Detected databaseId '{}' for physical tenant '{}'",
             databaseId,
             currentPhysicalTenantId);
-        vendorProperties.put(
+        result.vendorProperties.put(
             currentPhysicalTenantId, VendorDatabasePropertiesLoader.load(databaseId));
       } catch (final IOException | RuntimeException e) {
         LOGGER.error(
             "Failed to initialize RDBMS datasource for physical tenant {}",
             currentPhysicalTenantId,
             e);
-        dataSources.values().forEach(RdbmsDataSources::closeQuietly);
+        result.close();
         throw e;
       }
     }
-    return new RdbmsDataSources(dataSources, vendorProperties, databaseIdProviders);
+    return result;
+  }
+
+  private MeterRegistry registerTenantMeterRegistry(
+      final String physicalTenantId, final MeterRegistry meterRegistry) {
+    final var tenantMeterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
+    tenantMeterRegistries.put(physicalTenantId, tenantMeterRegistry);
+    return tenantMeterRegistry;
   }
 
   public Set<String> physicalTenantIds() {
@@ -120,11 +135,16 @@ public final class RdbmsDataSources implements AutoCloseable {
 
   @Override
   public void close() {
-    dataSources.values().forEach(RdbmsDataSources::closeQuietly);
+    // close each tenant's pool together with its wrapped registry so neither is left dangling
+    dataSources.forEach(
+        (tenantId, ds) -> {
+          closeQuietly(ds);
+          MicrometerUtil.close(tenantMeterRegistries.get(tenantId));
+        });
   }
 
   private static HikariDataSource buildDataSource(
-      final String physicalTenantId, final Rdbms rdbms) {
+      final String physicalTenantId, final Rdbms rdbms, final MeterRegistry meterRegistry) {
     final var ds = new HikariDataSource();
     ds.setPoolName("camunda-rdbms-" + physicalTenantId);
     ds.setJdbcUrl(rdbms.getUrl());
@@ -143,6 +163,7 @@ public final class RdbmsDataSources implements AutoCloseable {
     ds.setLeakDetectionThreshold(pool.getLeakDetectionThreshold().toMillis());
     ds.setKeepaliveTime(pool.getKeepaliveTime().toMillis());
     ds.setValidationTimeout(pool.getValidationTimeout().toMillis());
+    ds.setMetricRegistry(meterRegistry);
     ds.setAutoCommit(false);
     return ds;
   }
