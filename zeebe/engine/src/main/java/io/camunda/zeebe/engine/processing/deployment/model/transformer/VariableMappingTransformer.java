@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariab
 import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariableReference.DetectedClusterVariable;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
@@ -30,58 +31,18 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * Transform variable mappings into an expression.
+ * Transforms variable mappings.
  *
- * <p>The resulting expression is a FEEL context that has a similar structure as a JSON document.
- * Each target of a mapping is a key in the context and the source of this mapping is the context
- * value. The source expression can be any FEEL expression. A nested target expression is
- * transformed into a nested context.
+ * <p>Neither input nor output mappings are combined into a single context expression. Each mapping
+ * is kept as its own parsed source expression plus its split target path (e.g. target {@code a.b.c}
+ * becomes {@code [a, b, c]}), so that mappings can be evaluated one by one in modeling order at
+ * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
+ * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
  *
- * <p>Variable mappings:
- *
- * <pre>
- *   source | target
- *   =======|=======
- *    x     | a
- *    y     | b.c
- *    z     | b.d
- * </pre>
- *
- * FEEL context expression:
- *
- * <pre>
- *   {
- *     a: x,
- *     b: {
- *       c: y,
- *       d: z
- *     }
- *   }
- * </pre>
- *
- * <p>Output variable mappings differ from input mappings that the result variables needs to be
- * merged with the existing variables if the variable is a JSON object. The merging is done by
- * calling the FEEL function 'context merge()' and referencing the variable.
- *
- * <pre>
- *   {
- *     a: x,
- *     b: if (b = null)
- *        then {
- *          c: y,
- *          d: z
- *        }
- *        else context merge(b, {
- *          c: y,
- *          d: z
- *       })
- *   }
- * </pre>
- *
- * <p><b>Input mappings</b> are not combined into a single context expression. Each mapping is kept
- * as its own parsed source expression plus its split target path, so that mappings can be evaluated
- * one by one in modeling order at runtime, with each mapping's result visible to subsequent
- * mappings (see {@link InputMapping} and {@code BpmnVariableMappingBehavior}).
+ * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
+ * result must be merged with the existing scope variable if that variable is a JSON object, at
+ * every nesting level. This merging is done by {@code MappingResultBuilder} while accumulating
+ * results.
  */
 public final class VariableMappingTransformer {
 
@@ -126,14 +87,19 @@ public final class VariableMappingTransformer {
     return source;
   }
 
-  public Expression transformOutputMappings(
+  /**
+   * Transforms the output mappings, keeping each mapping as its own source expression plus target
+   * path so they can be evaluated one by one in modeling order at runtime. A nested target merges
+   * with the existing scope value at every path level at runtime (see {@code
+   * MappingResultBuilder}).
+   */
+  public List<OutputMapping> transformOutputMappings(
       final Collection<? extends ZeebeMapping> outputMappings,
       final ExpressionLanguage expressionLanguage) {
 
-    final var mappings = toMappings(outputMappings, expressionLanguage);
-    final var context = asContext(mappings);
-    final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
-    return parseExpression(contextExpression, expressionLanguage);
+    return toMappings(outputMappings, expressionLanguage).stream()
+        .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
+        .toList();
   }
 
   /**
