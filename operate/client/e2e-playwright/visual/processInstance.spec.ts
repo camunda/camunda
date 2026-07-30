@@ -600,6 +600,10 @@ test.describe('process instance page', () => {
       }),
     ).toBeVisible();
     await processInstancePage.resetZoomButton.click();
+    // Match the settle the other screenshot tests here use: the timeout lets
+    // the bpmn-js SVG finish rendering, the overlay assertion proves it did.
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await expect(page).toHaveScreenshot();
   });
