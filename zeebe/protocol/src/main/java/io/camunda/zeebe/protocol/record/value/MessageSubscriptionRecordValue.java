@@ -39,6 +39,7 @@ public interface MessageSubscriptionRecordValue
   /**
    * @return the element instance key tied to the subscription
    */
+  @Override
   long getElementInstanceKey();
 
   /**

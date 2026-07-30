@@ -2659,6 +2659,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey":-1,
                   "processDefinitionKey":22334,
                   "rootProcessInstanceKey":-1,
+                  "storageOrdinalKey":0,
                   "bpmnProcessId": "process",
                   "tenantId": "acme"
                 }
@@ -2687,6 +2688,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey":-1,
                   "processDefinitionKey":22334,
                   "rootProcessInstanceKey":-1,
+                  "storageOrdinalKey":0,
                   "bpmnProcessId":"",
                   "tenantId": "<default>"
                 }
