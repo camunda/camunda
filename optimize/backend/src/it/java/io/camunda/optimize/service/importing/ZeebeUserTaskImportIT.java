@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing;
 
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.CLAIM_OPERATION_TYPE;
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.UNCLAIM_OPERATION_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
@@ -1023,11 +1022,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         .map(ZeebeUserTaskRecordDto::getKey)
         .map(String::valueOf)
         .orElseThrow(eventNotFoundExceptionSupplier);
-  }
-
-  private void removeAllZeebeExportRecordsExceptUserTaskRecords() {
-    databaseIntegrationTestExtension.deleteAllOtherZeebeRecordsWithPrefix(
-        zeebeExtension.getZeebeRecordPrefix(), ZEEBE_USER_TASK_INDEX_NAME);
   }
 
   private List<ZeebeUserTaskRecordDto> getZeebeExportedUserTaskEvents() {
