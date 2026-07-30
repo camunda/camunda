@@ -546,7 +546,10 @@ public final class ProtocolFactory {
         // as we have nested types in our protocol, let's give a generous depth here, but let's
         // still limit it to avoid errors/issues with nested collections
         .randomizationDepth(8)
-        .excludeField(excludedRecordFields);
+        .excludeField(excludedRecordFields)
+        // force the default ordinal so random records will always target the main index and
+        // not ordinal indexes (unless we need to verify that in tests)
+        .randomize(field -> field.getName().equals("storageOrdinalKey"), () -> 0);
   }
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(
