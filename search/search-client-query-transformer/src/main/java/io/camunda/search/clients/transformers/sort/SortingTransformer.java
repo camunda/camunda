@@ -43,7 +43,7 @@ public final class SortingTransformer
     if (orderings != null && !orderings.isEmpty()) {
       sorting =
           orderings.stream()
-              .map((f) -> toSearchSortOption(f, reverse))
+              .flatMap((f) -> toSearchSortOptions(f, reverse).stream())
               .collect(Collectors.toList());
     } else {
       sorting = new ArrayList<>();
@@ -51,14 +51,19 @@ public final class SortingTransformer
     return sorting;
   }
 
-  private SearchSortOptions toSearchSortOption(final FieldSorting value, final boolean reverse) {
-    final var field = fieldSortingTransformer.apply(value.field());
+  private List<SearchSortOptions> toSearchSortOptions(
+      final FieldSorting value, final boolean reverse) {
     final var order = value.order();
-    if (!reverse) {
-      return sortOptions(field, order, "_last");
-    } else {
-      return sortOptions(field, reverseOrder(order), "_first");
-    }
+    return fieldSortingTransformer.applyAll(value.field()).stream()
+        .map(field -> toSearchSortOption(field, order, reverse))
+        .toList();
+  }
+
+  private SearchSortOptions toSearchSortOption(
+      final String field, final SortOrder order, final boolean reverse) {
+    return !reverse
+        ? sortOptions(field, order, "_last")
+        : sortOptions(field, reverseOrder(order), "_first");
   }
 
   private SearchSortOptions getDefaultSearchSortOption(final boolean reverse) {
