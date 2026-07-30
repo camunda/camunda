@@ -639,7 +639,9 @@ final class ClusterConfigurationInitializerTest {
           getStaticConfiguration(MemberId.from("1"), Set.of(MemberId.from("1")));
       final var initializer =
           StaticInitializer.legacyStaticInitializer(updatedConfiguration)
-              .andThen(new PartitionDistributorInitializer(staticConfiguration));
+              .andThen(
+                  PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                      staticConfiguration));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -658,7 +660,9 @@ final class ClusterConfigurationInitializerTest {
               MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
       final var initializer =
           StaticInitializer.legacyStaticInitializer(staticConfiguration)
-              .andThen(new PartitionDistributorInitializer(staticConfiguration));
+              .andThen(
+                  PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                      staticConfiguration));
 
       // when
       final var initializeFuture = initializer.initialize();
