@@ -10,8 +10,6 @@ package io.camunda.zeebe.protocol.impl.encoding;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionGroupHeaderLength;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
@@ -84,9 +82,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
 
   private int nodeId;
-  private int partitionsCount;
   private int clusterSize;
-  private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
   private @Nullable String zone;
   private @Nullable String partitionGroup;
@@ -104,9 +100,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public BrokerInfo reset() {
     nodeId = nodeIdNullValue();
-    partitionsCount = partitionsCountNullValue();
     clusterSize = clusterSizeNullValue();
-    replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
     zone = null;
@@ -146,24 +140,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
-  @Deprecated
-  public int getPartitionsCount() {
-    if (partitionsCountNullValue() == partitionsCount) {
-      throw new IllegalStateException("partitionsCount is not set");
-    }
-    return partitionsCount;
-  }
-
-  @Deprecated
-  public BrokerInfo setPartitionsCount(final int partitionsCount) {
-    if (partitionsCount <= 0) {
-      throw new IllegalArgumentException(
-          "partitionsCount must be positive, was " + partitionsCount);
-    }
-    this.partitionsCount = partitionsCount;
-    return this;
-  }
-
   public int getClusterSize() {
     if (clusterSizeNullValue() == clusterSize) {
       throw new IllegalStateException("clusterSize is not set");
@@ -176,24 +152,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       throw new IllegalArgumentException("clusterSize must be positive, was " + clusterSize);
     }
     this.clusterSize = clusterSize;
-    return this;
-  }
-
-  @Deprecated
-  public int getReplicationFactor() {
-    if (replicationFactorNullValue() == replicationFactor) {
-      throw new IllegalStateException("replicationFactor is not set");
-    }
-    return replicationFactor;
-  }
-
-  @Deprecated
-  public BrokerInfo setReplicationFactor(final int replicationFactor) {
-    if (replicationFactor <= 0) {
-      throw new IllegalArgumentException(
-          "replicationFactor must be positive, was " + replicationFactor);
-    }
-    this.replicationFactor = replicationFactor;
     return this;
   }
 
@@ -322,9 +280,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
     nodeId = bodyDecoder.nodeId();
-    partitionsCount = bodyDecoder.partitionsCount();
     clusterSize = bodyDecoder.clusterSize();
-    replicationFactor = bodyDecoder.replicationFactor();
 
     final AddressesDecoder addressesDecoder = bodyDecoder.addresses();
     while (addressesDecoder.hasNext()) {
@@ -432,9 +388,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .nodeId(nodeId)
-        .partitionsCount(partitionsCount)
-        .clusterSize(clusterSize)
-        .replicationFactor(replicationFactor);
+        .clusterSize(clusterSize);
 
     final int addressesCount = addresses.size();
     final AddressesEncoder addressesEncoder = bodyEncoder.addressesCount(addressesCount);
@@ -577,9 +531,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     // (e.g. partitionsCount before it has been set) are preserved faithfully.
     copy.nodeId = nodeId;
     copy.zone = zone;
-    copy.partitionsCount = partitionsCount;
     copy.clusterSize = clusterSize;
-    copy.replicationFactor = replicationFactor;
     copy.version = BufferUtil.cloneBuffer(version);
     copy.partitionGroup = partitionGroup;
     addresses.forEach(copy::addAddress);
@@ -647,12 +599,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return "BrokerInfo{"
         + "nodeId="
         + nodeId
-        + ", partitionsCount="
-        + partitionsCount
         + ", clusterSize="
         + clusterSize
-        + ", replicationFactor="
-        + replicationFactor
         + ", partitionRoles="
         + partitionRoles
         + ", partitionLeaderTerms="

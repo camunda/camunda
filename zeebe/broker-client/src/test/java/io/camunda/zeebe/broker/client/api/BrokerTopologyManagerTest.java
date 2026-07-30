@@ -842,11 +842,7 @@ final class BrokerTopologyManagerTest {
 
   private BrokerInfo createBroker(final BrokerMemberId brokerId) {
     final BrokerInfo broker =
-        new BrokerInfo()
-            .setBrokerId(brokerId.nodeIdx(), brokerId.zone())
-            .setPartitionsCount(1)
-            .setClusterSize(3)
-            .setReplicationFactor(3);
+        new BrokerInfo().setBrokerId(brokerId.nodeIdx(), brokerId.zone()).setClusterSize(3);
     broker.setCommandApiAddress("localhost:1000");
     broker.setVersion("0.23.0-SNAPSHOT");
     return broker;
