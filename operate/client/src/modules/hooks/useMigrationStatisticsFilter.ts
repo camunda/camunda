@@ -17,8 +17,10 @@ import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKe
  * the instances a migration will actually affect.
  */
 function useMigrationStatisticsFilter(): GetProcessDefinitionStatisticsRequestBody {
-  const base = useProcessInstanceStatisticsFilters();
   const {batchOperationQuery} = processInstanceMigrationStore.state;
+  const base = useProcessInstanceStatisticsFilters(
+    batchOperationQuery?.conditions,
+  );
 
   const processInstanceKey = buildInstanceKeyCriterion(
     batchOperationQuery?.ids,
