@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
  * the outcome: pause, wait for the desired leader to catch up, then resume. A fresh attempt is
  * created per accepted transfer, so no state can leak from one transfer into the next.
  *
- * <p>Role and pause events are forwarded to the step currently in flight. Failures converge on
- * {@link #finish}, which reports them to the coordinator; the transfer is not executed yet, so a
- * desired leader that catches up simply ends the attempt.
+ * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
+ * currently in flight. Failures converge on {@link #finish}, which reports them to the coordinator;
+ * the transfer is not executed yet, so a desired leader that catches up simply ends the attempt.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -56,7 +56,7 @@ final class LeadershipTransferAttempt {
   private final Runnable finishListener;
   private long startMs;
   private boolean finished;
-  private @Nullable CatchUpWait activeCatchUp;
+  private @Nullable TransferPhase activePhase;
 
   LeadershipTransferAttempt(
       final RaftContext raft,
@@ -93,15 +93,15 @@ final class LeadershipTransferAttempt {
   }
 
   void onLeaderStopped() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onLeaderStopped();
+    if (activePhase != null) {
+      activePhase.onLeaderStopped();
     }
   }
 
   /** The freeze ended. */
   void onPauseCleared() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseCleared();
+    if (activePhase != null) {
+      activePhase.onPauseCleared();
     }
   }
 
@@ -130,12 +130,12 @@ final class LeadershipTransferAttempt {
             desiredLeader,
             targetIndex,
             startMs + raft.getRebalanceReplicationTimeout().toMillis());
-    activeCatchUp = catchUpWait;
+    activePhase = catchUpWait;
     catchUpWait
         .start()
         .whenComplete(
             (failureReason, ignored) -> {
-              activeCatchUp = null;
+              activePhase = null;
               failureReason.ifPresentOrElse(this::finish, () -> onCaughtUp(targetIndex));
             });
   }

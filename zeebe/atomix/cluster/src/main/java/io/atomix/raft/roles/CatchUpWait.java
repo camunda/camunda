@@ -31,13 +31,11 @@ import org.slf4j.LoggerFactory;
  * Waits until the desired leader's {@code matchIndex} reaches the frozen log head, polling on the
  * Raft thread each heartbeat interval until it catches up or {@code deadlineMs} passes.
  *
- * <p>Owns its poll timer and completes the future returned by {@link #start()} exactly once, either
- * with an empty {@link Optional} once the desired leader is fully caught up, or with a terminal
- * reason if there was a failure/timeout. Role and pause events are only delivered while the wait is
- * the transfer's active step.
+ * <p>The future returned by {@link #start()} completes with an empty {@link Optional} once the
+ * desired leader is fully caught up, or with a terminal reason if there was a failure/timeout.
  */
 @NullMarked
-final class CatchUpWait {
+final class CatchUpWait implements TransferPhase {
   private static final Logger LOG = LoggerFactory.getLogger(CatchUpWait.class);
 
   private final RaftContext raft;
@@ -73,8 +71,8 @@ final class CatchUpWait {
     return result;
   }
 
-  /** The leader role is stopping, e.g. because this node stepped down. */
-  void onLeaderStopped() {
+  @Override
+  public void onLeaderStopped() {
     if (result.isDone()) {
       return;
     }
@@ -83,7 +81,8 @@ final class CatchUpWait {
   }
 
   /** The freeze ended, so the desired leader can no longer catch up to a frozen log head. */
-  void onPauseCleared() {
+  @Override
+  public void onPauseCleared() {
     failWith(LeadershipTransferResult.PAUSE_FAILED);
   }
 
