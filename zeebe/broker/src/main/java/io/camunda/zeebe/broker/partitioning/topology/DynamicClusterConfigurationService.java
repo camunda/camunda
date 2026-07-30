@@ -268,7 +268,12 @@ public class DynamicClusterConfigurationService
         // step than this one: a bound method reference would read it while it is still null. Only a
         // rebalance draws an id from it, and by then the broker has finished starting.
         () -> brokerStartupContext.getRequestIdGenerator().nextId(),
-        new TopologyPartitionLeaders(brokerStartupContext.getBrokerClient().getTopologyManager()));
+        new TopologyPartitionLeaders(brokerStartupContext.getBrokerClient().getTopologyManager()),
+        brokerStartupContext
+            .getBrokerConfiguration()
+            .getExperimental()
+            .getRaft()
+            .getRequestTimeout());
   }
 
   @Override
