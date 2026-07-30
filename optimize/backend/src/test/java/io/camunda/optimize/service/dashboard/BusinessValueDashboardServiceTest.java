@@ -56,7 +56,9 @@ public class BusinessValueDashboardServiceTest {
           BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID,
           BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID,
-          BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID);
+          BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
+          BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+          BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID);
 
   private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
   private final DashboardReader dashboardReader = mock(DashboardReader.class);
