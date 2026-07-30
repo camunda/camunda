@@ -14,10 +14,10 @@
 
   <resultMap id="historyDeletionResultMap" type="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
     <constructor>
-      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
-      <arg column="RESOURCE_TYPE" javaType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel$HistoryDeletionTypeDbModel"/>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
-      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long" name="resourceKey"/>
+      <arg column="RESOURCE_TYPE" javaType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel$HistoryDeletionTypeDbModel" name="resourceType"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long" name="batchOperationKey"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer" name="partitionId"/>
     </constructor>
   </resultMap>
 
