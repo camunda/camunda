@@ -9,6 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
+import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
+import io.camunda.gateway.protocol.model.RestorePartitionStatus;
+import io.camunda.gateway.protocol.model.RestoreStatusResponse;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.spring.utils.DatabaseTypeUtils;
@@ -17,15 +20,22 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
+import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
+import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreStatus;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.util.Either;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -86,6 +96,19 @@ public final class RecoveryController {
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.ACCEPTED);
+  }
+
+  @CamundaGetMapping(path = "/restore")
+  public CompletableFuture<ResponseEntity<Object>> getRestoreStatus(
+      @PhysicalTenantId final String physicalTenantId) {
+    LOG.debug("Requested restore status for physical tenant {}", physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            clusterConfigurationRequestSender
+                .getTopology()
+                .thenApply(RecoveryController::unwrapTopologyOrThrow),
+        RecoveryController::toRestoreStatusResponse,
+        HttpStatus.OK);
   }
 
   private RestoreRequest toRestoreRequest(
@@ -154,5 +177,74 @@ public final class RecoveryController {
         .operation(operation.getClass().getSimpleName())
         .mode(mode)
         .build();
+  }
+
+  private static ClusterConfiguration unwrapTopologyOrThrow(
+      final Either<ErrorResponse, ClusterConfiguration> result) {
+    if (result.isRight()) {
+      return result.get();
+    }
+    final var error = result.getLeft();
+    throw new ServiceException(error.message(), mapErrorStatus(error.code()));
+  }
+
+  private static RestoreStatusResponse toRestoreStatusResponse(
+      final ClusterConfiguration configuration) {
+    return RestoreStatus.of(configuration)
+        .map(RecoveryController::mapRestoreStatus)
+        .orElseThrow(
+            () -> new ServiceException("No restore is currently in progress", Status.NOT_FOUND));
+  }
+
+  private static RestoreStatusResponse mapRestoreStatus(final RestoreStatus restore) {
+    return RestoreStatusResponse.Builder.create()
+        .status(mapStatusEnum(restore.status()))
+        .changeId(Long.toString(restore.changeId()))
+        .brokers(restore.brokers().stream().map(RecoveryController::mapRestoreBroker).toList())
+        .startedAt(toIso(restore.startedAt()))
+        .build();
+  }
+
+  private static RestoreBrokerStatus mapRestoreBroker(final BrokerRestoreStatus broker) {
+    return RestoreBrokerStatus.Builder.create()
+        .brokerId(broker.brokerId())
+        .partitionsRestored(broker.partitionsRestored())
+        .partitionsToRestore(broker.partitionsToRestore())
+        .partitions(
+            broker.partitions().stream().map(RecoveryController::mapRestorePartition).toList())
+        .build();
+  }
+
+  private static RestorePartitionStatus mapRestorePartition(
+      final PartitionRestoreStatus partition) {
+    return RestorePartitionStatus.Builder.create()
+        .partitionId(partition.partitionId())
+        .state(mapPartitionState(partition.state()))
+        .backupIds(partition.backupIds())
+        .completedAt(toIso(partition.completedAt()))
+        .build();
+  }
+
+  private static RestoreStatusResponse.StatusEnum mapStatusEnum(
+      final ClusterChangePlan.Status status) {
+    return switch (status) {
+      case IN_PROGRESS -> RestoreStatusResponse.StatusEnum.IN_PROGRESS;
+      case COMPLETED -> RestoreStatusResponse.StatusEnum.COMPLETED;
+      case FAILED -> RestoreStatusResponse.StatusEnum.FAILED;
+      case CANCELLED -> RestoreStatusResponse.StatusEnum.CANCELLED;
+    };
+  }
+
+  private static RestorePartitionStatus.StateEnum mapPartitionState(
+      final RestoreStatus.PartitionRestoreState state) {
+    return switch (state) {
+      case PENDING -> RestorePartitionStatus.StateEnum.PENDING;
+      case RESTORING -> RestorePartitionStatus.StateEnum.RESTORING;
+      case RESTORED -> RestorePartitionStatus.StateEnum.RESTORED;
+    };
+  }
+
+  private static String toIso(final Instant instant) {
+    return instant == null ? null : instant.toString();
   }
 }

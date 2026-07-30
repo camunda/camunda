@@ -177,6 +177,35 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: getRestoreStatus
+      x-required-permissions: []
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get the status of the restore that is currently in progress
+      description: >-
+        Returns the status of the restore that is currently in progress, reported per broker and
+        per partition. There is at most one restore in flight at any time. Once the restore has
+        finished this endpoint returns 404; the per-partition detail is not retained after
+        completion.
+      responses:
+        "200":
+          description: The status of the restore that is currently in progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreStatusResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: No restore is currently in progress.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
 
 ## Schema definitions
 
@@ -448,3 +477,102 @@ components:
             type: integer
             format: int64
           example: [100, 101]
+
+    RestoreStatusResponse:
+      description: The status of the restore that is currently in progress.
+      type: object
+      required:
+        - status
+        - changeId
+        - brokers
+      properties:
+        status:
+          description: The overall status of the restore.
+          type: string
+          enum:
+            - IN_PROGRESS
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+          example: IN_PROGRESS
+        changeId:
+          description: The ID of the cluster change that performs the restore.
+          type: string
+          example: "-2"
+        startedAt:
+          description: The time the restore started, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:00:00Z"
+        brokers:
+          description: The per-broker restore status.
+          type: array
+          items:
+            $ref: '#/components/schemas/RestoreBrokerStatus'
+
+    RestoreBrokerStatus:
+      description: The restore status of a single broker.
+      type: object
+      required:
+        - brokerId
+        - partitionsRestored
+        - partitionsToRestore
+        - partitions
+      properties:
+        brokerId:
+          description: The ID of the broker, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionsRestored:
+          description: The number of the broker's partitions that have been restored so far.
+          type: integer
+          format: int32
+          example: 1
+        partitionsToRestore:
+          description: The total number of the broker's partitions to restore.
+          type: integer
+          format: int32
+          example: 3
+        partitions:
+          description: The per-partition restore status for this broker.
+          type: array
+          items:
+            $ref: '#/components/schemas/RestorePartitionStatus'
+
+    RestorePartitionStatus:
+      description: The restore status of a single partition on a broker.
+      type: object
+      required:
+        - partitionId
+        - state
+        - backupIds
+      properties:
+        partitionId:
+          description: The ID of the partition.
+          type: integer
+          format: int32
+          example: 1
+        state:
+          description: The restore state of the partition.
+          type: string
+          enum:
+            - PENDING
+            - RESTORING
+            - RESTORED
+          example: RESTORING
+        backupIds:
+          description: The IDs of the backups this partition is restored from.
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [100, 101]
+        completedAt:
+          description: >-
+            The time the partition was restored, as an ISO 8601 timestamp; null unless the partition
+            state is `restored`.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:02:00Z"
