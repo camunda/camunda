@@ -13,7 +13,7 @@
     "test:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@camunda8/orchestration-cluster-api": "9.1.2",
+    "@camunda8/orchestration-cluster-api": "9.1.4",
     "@playwright/test": "1.61.1"
   },
   "devDependencies": {
