@@ -26,14 +26,15 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Enforces two invariants on every MyBatis {@code <constructor>} block whose enclosing {@code
- * resultMap type=} is a {@code io.camunda.db.rdbms.write.domain.*DbModel}:
+ * Enforces invariants on every MyBatis {@code <constructor>} block whose enclosing {@code resultMap
+ * type=} is a {@code io.camunda.db.rdbms.write.domain.*DbModel}:
  *
  * <ul>
- *   <li>every {@code <arg>}/{@code <idArg>} carries a {@code name=} attribute matching the target's
- *       real constructor/record-component name, so MyBatis's constructor-arg binding is
- *       order-independent instead of relying on column declaration order matching Java parameter
- *       order
+ *   <li>every {@code <arg>}/{@code <idArg>} carries a non-blank {@code name=} attribute, so
+ *       MyBatis's constructor-arg binding is order-independent instead of relying on column
+ *       declaration order matching Java parameter order
+ *   <li>for record targets, that {@code name=} must match an actual record component -- a typo
+ *       would otherwise only surface as a {@code BuilderException} at Spring-context-startup
  *   <li>for record targets, the {@code javaType} alias resolves (via MyBatis's own {@link
  *       Configuration#getTypeAliasRegistry()}) to exactly the declared type of the matching record
  *       component -- catching a primitive/wrapper alias mismatch (e.g. {@code javaType="long"},
@@ -156,14 +157,20 @@ class RdbmsDbModelConstructorArgsMustBeNamedTest {
         continue;
       }
 
-      final var javaType = arg.getAttribute("javaType");
-      if (javaType.isBlank()) {
+      final var component = recordComponentsByName.get(name);
+      softly
+          .assertThat(component)
+          .as(
+              "%s name=\"%s\" must match a component of record %s",
+              location, name, targetType.getSimpleName())
+          .isNotNull();
+
+      if (component == null) {
         continue;
       }
-      final var component = recordComponentsByName.get(name);
-      if (component == null) {
-        // name= doesn't match any record component -- a real bug, but a different one than
-        // this test targets; the missing-name assertion above already covers naming hygiene.
+
+      final var javaType = arg.getAttribute("javaType");
+      if (javaType.isBlank()) {
         continue;
       }
 
