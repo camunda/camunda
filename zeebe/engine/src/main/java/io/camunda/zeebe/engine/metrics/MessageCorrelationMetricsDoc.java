@@ -365,6 +365,36 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Tracks how many cross-partition message-start dedup entries are currently outstanding on {@code
+   * P_B = hash(businessId)}. Each entry records a uniqueness decision so a retried request from
+   * {@code P_K} is answered with the original result instead of starting a duplicate; it is removed
+   * once swept after its deadline. A level that only grows points at dedup rows that never expire —
+   * the sweep not keeping up — which both retains stale uniqueness decisions and grows {@code
+   * P_B}'s state unboundedly.
+   */
+  CROSS_PARTITION_DEDUP_ENTRIES {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.dedup.entries";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of outstanding cross-partition message-start dedup entries on the business-id partition (P_B).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   public enum MessageCorrelationKeyNames implements KeyName {
