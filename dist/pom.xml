@@ -793,12 +793,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-filesystem</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk18on</artifactId>
       <scope>runtime</scope>
@@ -1092,6 +1086,7 @@
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-search-domain</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-backup-store-filesystem</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1143,6 +1138,7 @@
           <ignoredUsedUndeclaredDependencies>
             <dep>org.springframework.security:spring-security-web</dep>
             <dep>org.springframework.security:spring-security-config</dep>
+            <dep>io.camunda:zeebe-backup-store-filesystem</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
