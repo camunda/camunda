@@ -16,12 +16,15 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EXECUTION_INDEX;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
+
+import java.util.List;
 
 public class DecisionInstanceFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -44,6 +47,14 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "decisionDefinitionType" -> DECISION_TYPE;
       case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
+    };
+  }
+
+  @Override
+  public List<String> applyAll(final String domainField) {
+    return switch (domainField) {
+      case "decisionInstanceId" -> List.of(KEY, EXECUTION_INDEX);
+      default -> FieldSortingTransformer.super.applyAll(domainField);
     };
   }
 
