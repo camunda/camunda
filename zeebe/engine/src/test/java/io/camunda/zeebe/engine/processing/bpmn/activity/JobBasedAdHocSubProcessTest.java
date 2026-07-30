@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
@@ -23,7 +24,9 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -38,6 +41,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -54,6 +58,11 @@ import org.junit.rules.TestWatcher;
 
 public class JobBasedAdHocSubProcessTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  @ClassRule
+  // executes follow up commands immediately
+  public static final EngineRule ENGINE_BATCH_COMMAND_1 =
+      EngineRule.singlePartition().maxCommandsInBatch(1);
 
   private static final String PROCESS_ID = "process";
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
@@ -491,7 +500,7 @@ public class JobBasedAdHocSubProcessTest {
                 .limit(r -> r.getIntent() == SignalIntent.BROADCASTED)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .filter(v -> !v.getValue().getName().equals("adHocSubProcessElements")))
+                .filter(v -> !v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS)))
         .extracting(
             r -> r.getValue().getName(),
             r -> r.getValue().getValue(),
@@ -917,6 +926,316 @@ public class JobBasedAdHocSubProcessTest {
         .hasErrorMessage("The output collection has the wrong type. Expected ARRAY but was NIL.");
   }
 
+  @Test
+  public void shouldTriggerNonInterruptingEventSubProcess() {
+    // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    completeJob(jobType, false, false, activateElement("A"));
+
+    // when
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("event_sub_process", "event_sub_start", "event_sub_end")
+                .limit("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsExactly(
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_start", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_end", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("event_sub_process", ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    completeJob(jobType, true, true);
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerNonInterruptingEventSubProcessMultipleTimes() {
+    // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.serviceTask("A").zeebeJobType("jobType");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    completeJob(jobType, false, false, activateElement("A"));
+
+    // when
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(correlationKey).publish();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2);
+
+    completeJob(jobType, true, true);
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldUpdateOutputCollectionOnEventSubProcessCompletion() {
+    // given
+    final var correlationKey = UUID.randomUUID().toString();
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            UUID.randomUUID().toString(),
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeOutputCollection("results")
+                  .zeebeOutputElementExpression("result");
+              adHocSubProcess.serviceTask("A").zeebeJobType(jobType);
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(
+                      m ->
+                          m.name("msg")
+                              .zeebeCorrelationKeyExpression("=\"%s\"".formatted(correlationKey)))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey(correlationKey)
+        .withVariables(Map.of("result", "foo"))
+        .publish();
+
+    // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .getFirst()
+                .getValue())
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .containsOnly("results", "[\"foo\"]", ahspKey);
+  }
+
+  @Test
+  public void shouldRecreateJobAfterEventSubProcessCompletion() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.intermediateCatchEvent("A").signal("signal");
+              adHocSubProcess.task("B");
+              adHocSubProcess
+                  .embeddedSubProcess()
+                  .eventSubProcess("event_sub_process")
+                  .startEvent("event_sub_start")
+                  .message(m -> m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\""))
+                  .interrupting(false)
+                  .endEvent("event_sub_end");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    completeJob(jobType, false, false, activateElement("A"), activateElement("B"));
+
+    // when
+    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("event_sub_process")
+                .exists())
+        .isTrue();
+    ENGINE.signal().withSignalName("signal").broadcast();
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(
+                    // Limit on signal to ensure we've reached the end of processing
+                    r ->
+                        r.getIntent() == SignalIntent.BROADCASTED
+                            && ((SignalRecord) r.getValue()).getSignalName().equals("signal"))
+                .jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(AHSP_ELEMENT_ID))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            JobIntent.CREATED, // Initial job
+            JobIntent.COMPLETED, // Activation of A and B
+            JobIntent.CREATED, // Completion of B
+            JobIntent.CANCELED, // Completion of event sub process
+            JobIntent.CREATED); // Completion of event sub process
+  }
+
+  @Test
+  public void shouldRejectWhenCompletionConditionIsFulfilledAndActivatingElements() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.userTask("B");
+              adHocSubProcess.userTask("C");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJob(jobType, true, false, activateElement("A"), activateElement("B"));
+
+    // then
+    final var ahspKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst()
+            .getKey();
+
+    Assertions.assertThat(RecordingExporter.jobRecords().onlyCommandRejections().getFirst())
+        .extracting(Record::getRejectionType, Record::getIntent, Record::getRejectionReason)
+        .containsOnly(
+            RejectionType.INVALID_ARGUMENT,
+            JobIntent.COMPLETE,
+            "No elements can be activated for ad-hoc sub-process with key '%s' because the completion condition is fulfilled."
+                .formatted(ahspKey));
+  }
+
+  @Test
+  public void shouldNotLeakInnerInstanceLocalVariablesWhenActivityHasOutputMapping() {
+    // given
+    final var ahspJobType = UUID.randomUUID().toString();
+    final var taskJobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            ahspJobType,
+            adHocSubProcess ->
+                adHocSubProcess
+                    .serviceTask("A", t -> t.zeebeJobType(taskJobType))
+                    .zeebeOutputExpression("=1", "outputResult"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - the ad-hoc job worker activates A and sets `toolCall` local on the inner instance
+    completeJob(ahspJobType, false, false, activateElement("A", Map.of("toolCall", "abc")));
+
+    // ... and the activated service task completes, triggering applyOutputMappings on A
+    final var taskJobKey =
+        ENGINE.jobs().withType(taskJobType).activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(taskJobKey).complete();
+
+    // then - wait for A's inner instance to complete (output mapping has run by then)
+    final var innerInstanceCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_INNER_ELEMENT_ID)
+            .getFirst();
+
+    // complete the ad-hoc sub-process
+    // guaranteed that all variable records of interest have been exported
+    completeJob(ahspJobType, true, false);
+    final var processCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(PROCESS_ID)
+            .getFirst();
+
+    // sanity check: the output mapping was actually applied
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("outputResult")
+                .exists())
+        .as("output mapping for service task A must have produced `outputResult`")
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= processCompleted.getPosition())
+                .variableRecords()
+                .withIntents(VariableIntent.CREATED, VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("toolCall"))
+        .extracting(r -> r.getValue().getScopeKey())
+        .containsOnly(innerInstanceCompleted.getKey());
+  }
+
   private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,
@@ -930,6 +1249,17 @@ public class JobBasedAdHocSubProcessTest {
             .setCompletionConditionFulfilled(completionConditionFulfilled)
             .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
+  private Record<JobRecordValue> completeJob(
+      final String jobType,
+      final boolean completionConditionFulfilled,
+      final Map<String, Object> variables) {
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult().setCompletionConditionFulfilled(completionConditionFulfilled);
+    return ENGINE.job().withKey(jobKey).withResult(jobResult).withVariables(variables).complete();
   }
 
   private JobResultActivateElement activateElement(final String elementId) {
@@ -964,5 +1294,67 @@ public class JobBasedAdHocSubProcessTest {
               adHocSubProcess.task("C");
             });
     ENGINE.deployment().withXmlResource(process).deploy();
+  }
+
+  @Test
+  public void shouldRejectAdHocJobCompletionWhenAdHocSubProcessNotActive() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            ahsp -> {
+              ahsp.serviceTask("task", t -> t.zeebeJobType(jobType));
+              ahsp.task("undefinedTask");
+            });
+    ENGINE_BATCH_COMMAND_1.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE_BATCH_COMMAND_1.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var ahspInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(AHSP_ELEMENT_ID)
+            .getFirst();
+
+    final var activatedJobs = ENGINE_BATCH_COMMAND_1.jobs().withType(jobType).activate().getValue();
+    final long jobKey = activatedJobs.getJobKeys().getFirst();
+
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("task")));
+    ENGINE_BATCH_COMMAND_1.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // when
+
+    // use max batch size 1 engine so that the commands are processed in order, because the
+    // activation command must be processed before the adhoc subprocess is completely terminated.
+    // Without this, the termination and it's follow-up commands would be processed completely
+    // before the activation command is processed. That would mean the ahsp would be completely
+    // terminated as well, and the rejection would be for a different reason (NOT_FOUND).
+    ENGINE_BATCH_COMMAND_1.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.TERMINATE_ELEMENT, ahspInstance.getValue())
+            .key(ahspInstance.getKey()),
+        RecordToWrite.command()
+            .adHocSubProcessInstruction(
+                AdHocSubProcessInstructionIntent.ACTIVATE,
+                new AdHocSubProcessInstructionRecord()
+                    .setAdHocSubProcessInstanceKey(ahspInstance.getKey()))
+            .key(ahspInstance.getKey()));
+
+    // then
+    RecordAssert.assertThat(
+            RecordingExporter.adHocSubProcessInstructionRecords()
+                .onlyCommandRejections()
+                .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
+                .getFirst())
+        .describedAs("Expected rejection because ad-hoc sub-process is not active.")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active."
+                .formatted(ahspInstance.getKey()));
   }
 }
