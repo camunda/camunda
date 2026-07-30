@@ -266,7 +266,8 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 scheduledTaskStateFactory.get().getMessageStartProcessInstanceAskState(),
                 routingInfo,
-                config::getMessageStartAskRetryInterval))
+                config::getMessageStartAskRetryInterval,
+                metrics))
         .withListener(
             new CrossPartitionMessageStartLockReleaseScheduler(
                 partitionId,
