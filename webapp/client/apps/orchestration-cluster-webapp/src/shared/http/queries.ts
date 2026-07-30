@@ -26,7 +26,7 @@ import type {
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
-	GetVariableResponseBody,
+	Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -218,7 +218,7 @@ const queries = {
 	getVariable: (variableKey: string) =>
 		queryOptions({
 			queryKey: queryKeys.variable(variableKey),
-			queryFn: async (): Promise<GetVariableResponseBody> => {
+			queryFn: async (): Promise<Variable> => {
 				const {response, error} = await request(endpoints.getVariable({variableKey}));
 				if (error !== null) {
 					throw error;
