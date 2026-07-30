@@ -27,7 +27,7 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
-import java.util.Comparator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -36,6 +36,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class RaftLeadershipTransferInitiateTest {
+
+  /**
+   * Raft takes the requester on trust unless a broker installs a check, so who the coordinator is
+   * and which configuration it acted on only matter to the check itself.
+   */
+  private static final MemberId COORDINATOR = MemberId.from("coordinator");
+
+  private static final long CONFIG_VERSION = 7;
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
@@ -47,7 +55,7 @@ public class RaftLeadershipTransferInitiateTest {
     final var leaderId = memberId(leader);
 
     // when
-    final var result = initiate(leader, leaderId, leaderId, index(leader));
+    final var result = initiate(leader, leaderId);
 
     // then
     assertThat(result).contains(LeadershipTransferResult.ALREADY_LEADER);
@@ -86,32 +94,40 @@ public class RaftLeadershipTransferInitiateTest {
   }
 
   @Test
-  public void shouldRejectTransferFromNonCoordinator() throws Exception {
+  public void shouldRejectTransferTheCoordinatorCheckRefuses() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
+    setCoordinatorCheck(
+        leader, (coordinator, version) -> Optional.of(LeadershipTransferResult.NOT_COORDINATOR));
 
     // when
-    final var result =
-        initiate(leader, memberId(target), MemberId.from("not-the-coordinator"), index(leader));
+    final var result = initiate(leader, memberId(target));
 
     // then
     assertThat(result).contains(LeadershipTransferResult.NOT_COORDINATOR);
   }
 
   @Test
-  public void shouldRejectTransferOnAStaleConfiguration() throws Exception {
+  public void shouldTellTheCoordinatorCheckWhoAskedAndOnWhichConfiguration() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
+    final var checked = new CompletableFuture<Map.Entry<MemberId, Long>>();
+    setCoordinatorCheck(
+        leader,
+        (coordinator, version) -> {
+          checked.complete(Map.entry(coordinator, version));
+          return Optional.empty();
+        });
 
     // when
-    final var result = initiate(leader, memberId(target), coordinator(leader), index(leader) - 1);
+    initiate(leader, memberId(target));
 
     // then
-    assertThat(result).contains(LeadershipTransferResult.STALE_CONFIGURATION);
+    assertThat(checked.get()).isEqualTo(Map.entry(COORDINATOR, CONFIG_VERSION));
   }
 
   @Test
@@ -294,30 +310,11 @@ public class RaftLeadershipTransferInitiateTest {
   private static Optional<LeadershipTransferResult> initiate(
       final RaftServer leader, final MemberId desiredLeader, final Runnable setUp)
       throws Exception {
-    return initiate(leader, desiredLeader, coordinator(leader), index(leader), setUp);
-  }
-
-  private static Optional<LeadershipTransferResult> initiate(
-      final RaftServer leader,
-      final MemberId desiredLeader,
-      final MemberId coordinator,
-      final long coordinatorConfigIndex)
-      throws Exception {
-    return initiate(leader, desiredLeader, coordinator, coordinatorConfigIndex, () -> {});
-  }
-
-  private static Optional<LeadershipTransferResult> initiate(
-      final RaftServer leader,
-      final MemberId desiredLeader,
-      final MemberId coordinator,
-      final long coordinatorConfigIndex,
-      final Runnable setUp)
-      throws Exception {
     final var request =
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(desiredLeader)
-            .withCoordinator(coordinator)
-            .withCoordinatorConfigIndex(coordinatorConfigIndex)
+            .withCoordinator(COORDINATOR)
+            .withCoordinatorConfigVersion(CONFIG_VERSION)
             .withCorrelationId(1)
             .build();
     return onRaftThread(
@@ -329,9 +326,7 @@ public class RaftLeadershipTransferInitiateTest {
         });
   }
 
-  /**
-   * Whether the leader has heard nothing from {@code member} for longer than an election timeout.
-   */
+  /** Whether the leader has heard nothing from {@code member} for over an election timeout. */
   private static boolean outOfContact(final RaftServer leader, final MemberId member) {
     final var context = leader.getContext().getCluster().getMemberContext(member);
     final var silenceMs = System.currentTimeMillis() - context.getResponseTime();
@@ -376,15 +371,14 @@ public class RaftLeadershipTransferInitiateTest {
     return server.getContext().getCluster().getLocalMember().memberId();
   }
 
-  private static long index(final RaftServer leader) {
-    return leader.getContext().getCluster().getConfiguration().index();
-  }
-
-  private static MemberId coordinator(final RaftServer leader) {
-    return leader.getContext().getCluster().getConfiguration().newMembers().stream()
-        .map(io.atomix.raft.cluster.RaftMember::memberId)
-        .min(Comparator.comparing(MemberId::id))
-        .orElseThrow();
+  private static void setCoordinatorCheck(
+      final RaftServer leader, final LeadershipTransferCoordinatorCheck check) throws Exception {
+    onRaftThread(
+        leader,
+        () -> {
+          leader.getContext().setLeadershipTransferCoordinatorCheck(check);
+          return null;
+        });
   }
 
   private static <T> T onRaftThread(final RaftServer leader, final Supplier<T> action)

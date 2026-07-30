@@ -33,6 +33,12 @@ import java.util.function.Consumer;
 /** Drives a coordinated leadership transfer the way a coordinator would. */
 final class CoordinatedTransferDriver {
 
+  /**
+   * The leader takes the requester on trust unless a broker installs a coordinator check, so any
+   * version does.
+   */
+  private static final long CONFIG_VERSION = 7;
+
   private final RaftRule raftRule;
   private final RaftServer leader;
   private final MemberId coordinatorId;
@@ -47,6 +53,9 @@ final class CoordinatedTransferDriver {
   CoordinatedTransferDriver(final RaftRule raftRule, final RaftServer leader) {
     this.raftRule = raftRule;
     this.leader = leader;
+    // A real coordinator is a cluster member that need not replicate the partition, but the test
+    // protocol can only deliver a result to a node in the Raft cluster, so we stand one of those
+    // in.
     coordinatorId =
         leader.getContext().getCluster().getConfiguration().newMembers().stream()
             .map(RaftMember::memberId)
@@ -92,7 +101,7 @@ final class CoordinatedTransferDriver {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(memberId(desiredLeader))
             .withCoordinator(coordinatorId)
-            .withCoordinatorConfigIndex(leader.getContext().getCluster().getConfiguration().index())
+            .withCoordinatorConfigVersion(CONFIG_VERSION)
             .withCorrelationId(nextCorrelationId++);
     overrides.accept(builder);
     return leader

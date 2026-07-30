@@ -78,7 +78,7 @@ public final class LeadershipTransferRunner {
         admission.precheck(
             request.desiredLeader(),
             request.coordinator(),
-            request.coordinatorConfigIndex(),
+            request.coordinatorConfigVersion(),
             configuration);
     if (rejectionReason.isPresent()) {
       return LeadershipTransferInitiateResponse.builder()

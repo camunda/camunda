@@ -99,7 +99,7 @@ final class LeadershipTransferInitiateRequestTest {
     return LeadershipTransferInitiateRequest.builder()
         .withDesiredLeader(MemberId.from("2"))
         .withCoordinator(MemberId.from("1"))
-        .withCoordinatorConfigIndex(4)
+        .withCoordinatorConfigVersion(4)
         .withCorrelationId(0x5eed_0b01L);
   }
 }

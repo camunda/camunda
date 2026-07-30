@@ -36,6 +36,12 @@ import org.junit.Test;
 
 public class LeadershipTransferAttemptTest {
 
+  /**
+   * The leader takes the requester on trust unless a broker installs a coordinator check, so any
+   * version does.
+   */
+  private static final long CONFIG_VERSION = 7;
+
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
   @Test
@@ -96,7 +102,7 @@ public class LeadershipTransferAttemptTest {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(memberId(target))
             .withCoordinator(coordinatorId())
-            .withCoordinatorConfigIndex(leader.getContext().getCluster().getConfiguration().index())
+            .withCoordinatorConfigVersion(CONFIG_VERSION)
             .withCorrelationId(0x5eed_0a01L)
             .build();
     final var attempt =

@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -157,6 +158,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private EntryValidator entryValidator;
   private LeadershipTransferWriteBarrier leadershipTransferWriteBarrier =
       LeadershipTransferWriteBarrier.NONE;
+  private LeadershipTransferCoordinatorCheck leadershipTransferCoordinatorCheck =
+      LeadershipTransferCoordinatorCheck.NONE;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -1062,6 +1065,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     leadershipTransferWriteBarrier = barrier;
+  }
+
+  /**
+   * The broker-supplied check deciding whether the node requesting a transfer is the cluster's
+   * rebalancing coordinator. Defaults to {@link LeadershipTransferCoordinatorCheck#NONE} when no
+   * broker is attached.
+   */
+  public LeadershipTransferCoordinatorCheck getLeadershipTransferCoordinatorCheck() {
+    return leadershipTransferCoordinatorCheck;
+  }
+
+  public void setLeadershipTransferCoordinatorCheck(
+      final LeadershipTransferCoordinatorCheck check) {
+    leadershipTransferCoordinatorCheck = check;
   }
 
   /**

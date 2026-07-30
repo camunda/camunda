@@ -325,7 +325,7 @@ public class RaftCoordinatedLeadershipTransferTest {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(MemberId.from("2"))
             .withCoordinator(MemberId.from("1"))
-            .withCoordinatorConfigIndex(7)
+            .withCoordinatorConfigVersion(7)
             .withCorrelationId(0x5eed_0005L)
             .withReplicationLagThreshold(4096)
             .withReplicationTimeout(Duration.ofSeconds(30))
@@ -414,7 +414,7 @@ public class RaftCoordinatedLeadershipTransferTest {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(MemberId.from("2"))
             .withCoordinator(MemberId.from("1"))
-            .withCoordinatorConfigIndex(7);
+            .withCoordinatorConfigVersion(7);
     final var resultBuilder =
         LeadershipTransferResultRequest.builder()
             .withLeader(MemberId.from("3"))
@@ -506,12 +506,12 @@ public class RaftCoordinatedLeadershipTransferTest {
   private LeadershipTransferInitiateRequest initiate(
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long configIndex,
+      final long configVersion,
       final long correlationId) {
     return LeadershipTransferInitiateRequest.builder()
         .withDesiredLeader(desiredLeader)
         .withCoordinator(coordinator)
-        .withCoordinatorConfigIndex(configIndex)
+        .withCoordinatorConfigVersion(configVersion)
         .withCorrelationId(correlationId)
         .build();
   }
