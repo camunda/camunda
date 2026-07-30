@@ -334,9 +334,39 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Tracks how many buffered messages on this partition carry a business id and are therefore
+   * indexed for the cross-partition message-start uniqueness handshake. A same-partition start that
+   * is skipped on uniqueness is re-found through this index once the holder frees the business id,
+   * so this is the subset of {@code zeebe.buffered.messages.count} that participates in the
+   * handshake. Watching it against the total buffer shows how much of the buffer the feature is
+   * responsible for, and a level that only grows points at business-id index rows that are never
+   * cleaned up.
+   */
+  CROSS_PARTITION_BUFFERED_MESSAGES {
+    @Override
+    public String getName() {
+      return "zeebe.buffered.messages.business.id.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of buffered messages indexed by business id on the message partition for the cross-partition message-start uniqueness handshake.";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
-  /** The tag keys used by the message-correlation meters. */
   public enum MessageCorrelationKeyNames implements KeyName {
     /** The outcome of a cross-partition request or reply. */
     OUTCOME {

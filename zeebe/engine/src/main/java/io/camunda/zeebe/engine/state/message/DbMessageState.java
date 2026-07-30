@@ -177,6 +177,7 @@ public final class DbMessageState implements MutableMessageState {
 
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
   private final StatefulGauge crossPartitionStartLocks;
+  private final StatefulGauge crossPartitionBufferedMessages;
 
   private Long localMessageDeadlineCount = 0L;
 
@@ -289,6 +290,12 @@ public final class DbMessageState implements MutableMessageState {
         StatefulGauge.builder(MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getName())
             .description(MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getDescription())
             .register(zeebeDb.getMeterRegistry());
+    crossPartitionBufferedMessages =
+        StatefulGauge.builder(
+                MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getName())
+            .description(
+                MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getDescription())
+            .register(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -302,6 +309,7 @@ public final class DbMessageState implements MutableMessageState {
     // Authoritatively re-seed the lock gauge from persisted state, discarding any level accumulated
     // by the +1/-1 mutations replayed before this hook runs.
     crossPartitionStartLocks.set(crossPartitionStartLockColumnFamily.count());
+    crossPartitionBufferedMessages.set(messageByBusinessIdColumnFamily.count());
   }
 
   @Override
@@ -335,6 +343,7 @@ public final class DbMessageState implements MutableMessageState {
     if (businessIdBuffer.capacity() > 0) {
       businessId.wrapBuffer(businessIdBuffer);
       messageByBusinessIdColumnFamily.insert(businessIdMessageKey, DbNil.INSTANCE);
+      crossPartitionBufferedMessages.increment();
     }
   }
 
@@ -532,7 +541,14 @@ public final class DbMessageState implements MutableMessageState {
       // deleteIfExists (not deleteExisting): the business-id index was added after buffered
       // messages already carried a business id, so a message published before the index existed
       // (upgraded RocksDB state) has no entry here. Removing it must not throw on the missing key.
+      // Decrement the gauge only when a row was actually present, so the upgraded-state case and
+      // any
+      // repeated removal cannot drive the level negative.
+      final boolean existed = messageByBusinessIdColumnFamily.exists(businessIdMessageKey);
       messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
+      if (existed) {
+        crossPartitionBufferedMessages.decrement();
+      }
     }
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());

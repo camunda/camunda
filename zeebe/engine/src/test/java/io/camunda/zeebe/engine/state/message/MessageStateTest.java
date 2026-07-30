@@ -34,6 +34,8 @@ public final class MessageStateTest {
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private static final String LOCKS_GAUGE =
       MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getName();
+  private static final String BUFFERED_BID_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getName();
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableMessageState messageState;
@@ -749,6 +751,57 @@ public final class MessageStateTest {
 
   private double locksGauge() {
     return zeebeDb.getMeterRegistry().get(LOCKS_GAUGE).gauge().value();
+  }
+
+  @Test
+  void shouldTrackBufferedBusinessIdMessagesGaugeAcrossPutAndRemove() {
+    // when two buffered messages carrying a business id are stored
+    messageState.put(1L, createMessageWithBusinessId("name", "correlationKey", "bid-1"));
+    messageState.put(2L, createMessageWithBusinessId("name", "correlationKey", "bid-2"));
+
+    // then the business-id buffer gauge reflects both
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(2.0);
+
+    // when one message is removed
+    messageState.remove(1L);
+
+    // then the gauge drops to one
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotCountBufferedMessagesWithoutBusinessId() {
+    // when a buffered message without a business id is stored
+    messageState.put(1L, createMessage("name", "correlationKey"));
+
+    // then the business-id buffer gauge stays at zero
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(0.0);
+
+    // and removing it does not drive the gauge negative
+    messageState.remove(1L);
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(0.0);
+  }
+
+  @Test
+  void shouldReseedBufferedBusinessIdMessagesGaugeFromStateOnRecovery() {
+    // given two persisted messages carrying a business id
+    messageState.put(1L, createMessageWithBusinessId("name", "correlationKey", "bid-1"));
+    messageState.put(2L, createMessageWithBusinessId("name", "correlationKey", "bid-2"));
+
+    // when the partition recovers
+    ((DbMessageState) messageState).onRecovered(null);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(2.0);
+  }
+
+  private double bufferedBusinessIdMessagesGauge() {
+    return zeebeDb.getMeterRegistry().get(BUFFERED_BID_GAUGE).gauge().value();
+  }
+
+  private MessageRecord createMessageWithBusinessId(
+      final String name, final String correlationKey, final String businessId) {
+    return createMessage(name, correlationKey).setBusinessId(businessId);
   }
 
   private MessageRecord createMessage(final String name, final String correlationKey) {
