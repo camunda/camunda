@@ -1,6 +1,8 @@
 syntax = 'proto3';
 package rebalance_requests;
 
+import "google/protobuf/timestamp.proto";
+
 option java_package = "io.camunda.zeebe.rebalance.protocol";
 
 message TriggerRebalanceRequest {
@@ -27,11 +29,62 @@ message RunningRebalance {
   RebalanceOverrides overrides = 2;
   bool dryRun = 3;
   bool cancelRequested = 4;
+  // Empty until the rebalance has been planned.
+  repeated PartitionRebalance partitions = 5;
 }
 
 message CompletedRebalance {
   uint64 rebalanceId = 1;
   RebalanceOutcome outcome = 2;
+  bool dryRun = 3;
+  repeated PartitionRebalance partitions = 4;
+  google.protobuf.Timestamp startedAt = 5;
+  google.protobuf.Timestamp finishedAt = 6;
+}
+
+message PartitionRebalance {
+  // Nested so that its values do not collide with RebalanceOutcome's: proto enum values are
+  // scoped to the enclosing message, not to the enum.
+  enum Progress {
+    PROGRESS_UNSPECIFIED = 0;
+    PENDING = 1;
+    TRANSFERRING = 2;
+    COMPLETED = 3;
+  }
+
+  // What became of the partition once Progress reaches COMPLETED. Deliberately separate from
+  // Progress: progress is where the rebalance has got to, outcome is what it did.
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    TRANSFERRED = 1;
+    ALREADY_LEADER = 2;
+    NOT_MEMBER = 3;
+    NOT_REPLICATING = 4;
+    UNREACHABLE = 5;
+    NOT_COORDINATOR = 6;
+    STALE_CONFIGURATION = 7;
+    TRANSFER_IN_PROGRESS = 8;
+    LAG_TOO_HIGH = 9;
+    LEADER_INITIALIZING = 10;
+    CONFIGURATION_CHANGE_IN_PROGRESS = 11;
+    PAUSE_FAILED = 12;
+    REPLICATION_TIMED_OUT = 13;
+    TIMEOUT_NOW_EXHAUSTED = 14;
+    LEADER_CHANGED = 15;
+    NO_LEADER = 16;
+    NO_RESPONSE = 17;
+    CANCELLED = 18;
+  }
+
+  // The partition group the partition belongs to; partition ids are unique only within a group.
+  string physicalTenantId = 1;
+  uint32 partitionId = 2;
+  // Absent while the partition has no leader.
+  optional string currentLeader = 3;
+  optional string desiredLeader = 4;
+  Progress progress = 5;
+  // Absent while progress is PENDING or TRANSFERRING; required once progress is COMPLETED.
+  optional Outcome outcome = 6;
 }
 
 message CancelRebalanceResponse {
@@ -62,4 +115,5 @@ enum RebalanceErrorCode {
   REBALANCE_ERROR_UNSPECIFIED = 0;
   REBALANCE_ERROR_IN_PROGRESS = 1;
   REBALANCE_ERROR_NOT_COORDINATOR = 2;
+  REBALANCE_ERROR_CONFIGURATION_CHANGE_IN_PROGRESS = 3;
 }

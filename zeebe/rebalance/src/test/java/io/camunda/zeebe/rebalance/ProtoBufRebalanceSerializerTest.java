@@ -10,15 +10,21 @@ package io.camunda.zeebe.rebalance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
 import io.camunda.zeebe.rebalance.protocol.Rebalance;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 final class ProtoBufRebalanceSerializerTest {
+
+  private static final Instant STARTED_AT = Instant.parse("2024-01-01T00:00:00Z");
+  private static final Instant FINISHED_AT = Instant.parse("2024-01-01T00:00:05Z");
 
   private final ProtoBufRebalanceSerializer serializer = new ProtoBufRebalanceSerializer();
 
@@ -83,8 +89,24 @@ final class ProtoBufRebalanceSerializerTest {
     final var status =
         new RebalanceStatus(
             new RebalanceStatus.Running(
-                42, new RebalanceOverrides(null, Duration.ofSeconds(15), null), true, true),
-            new RebalanceStatus.Completed(41, RebalanceOutcome.CANCELLED));
+                42,
+                new RebalanceOverrides(null, Duration.ofSeconds(15), null),
+                true,
+                true,
+                List.of(
+                    new PartitionRebalance(
+                        "default",
+                        1,
+                        MemberId.from("0"),
+                        MemberId.from("1"),
+                        PartitionRebalanceProgress.TRANSFERRING))),
+            new RebalanceStatus.Completed(
+                41,
+                RebalanceOutcome.CANCELLED,
+                false,
+                List.of(PartitionRebalance.alreadyLeader("tenant-a", 2, MemberId.from("2"))),
+                STARTED_AT,
+                FINISHED_AT));
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -97,7 +119,56 @@ final class ProtoBufRebalanceSerializerTest {
   @EnumSource(RebalanceOutcome.class)
   void shouldRoundTripEveryOutcome(final RebalanceOutcome outcome) {
     // given
-    final var status = new RebalanceStatus(null, new RebalanceStatus.Completed(7, outcome));
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(7, outcome, false, List.of(), STARTED_AT, FINISHED_AT));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get()).isEqualTo(status);
+  }
+
+  @ParameterizedTest
+  @EnumSource(PartitionRebalanceProgress.class)
+  void shouldRoundTripEveryPartitionProgress(final PartitionRebalanceProgress progress) {
+    // given
+    final var partition =
+        progress == PartitionRebalanceProgress.COMPLETED
+            ? PartitionRebalance.alreadyLeader("default", 3, MemberId.from("1"))
+            : new PartitionRebalance("default", 3, null, MemberId.from("1"), progress);
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get()).isEqualTo(status);
+  }
+
+  @ParameterizedTest
+  @EnumSource(PartitionRebalanceOutcome.class)
+  void shouldRoundTripEveryPartitionOutcome(final PartitionRebalanceOutcome outcome) {
+    // given
+    final var partition =
+        new PartitionRebalance(
+            "default",
+            3,
+            MemberId.from("1"),
+            MemberId.from("1"),
+            PartitionRebalanceProgress.COMPLETED,
+            outcome);
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT));
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -107,13 +178,178 @@ final class ProtoBufRebalanceSerializerTest {
   }
 
   @Test
-  void shouldRejectAnUnspecifiedOutcome() {
+  void shouldRoundTripAPartitionWithNoCurrentLeader() {
+    // given
+    final var partition =
+        new PartitionRebalance(
+            "default", 4, null, MemberId.from("1"), PartitionRebalanceProgress.PENDING);
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                7, RebalanceOutcome.COMPLETED, true, List.of(partition), STARTED_AT, FINISHED_AT));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get().lastCompleted().partitions()).containsExactly(partition);
+  }
+
+  @Test
+  void shouldRejectAPartitionWithNoDesiredLeader() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(4)
+                                    .setProgress(Rebalance.PartitionRebalance.Progress.PENDING))))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectAnUnspecifiedRebalanceOutcome() {
     // given
     final var encoded =
         Rebalance.Response.newBuilder()
             .setStatus(
                 Rebalance.RebalanceStatusResponse.newBuilder()
                     .setLastCompleted(Rebalance.CompletedRebalance.newBuilder().setRebalanceId(7)))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectAnUnspecifiedPartitionProgress() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(3))))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectAnUnrecognizedPartitionProgress() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(3)
+                                    .setProgressValue(999))))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectACompletedPartitionWithNoOutcome() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(3)
+                                    .setProgress(Rebalance.PartitionRebalance.Progress.COMPLETED))))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectACompletedPartitionWithAnUnspecifiedOutcome() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(3)
+                                    .setProgress(Rebalance.PartitionRebalance.Progress.COMPLETED)
+                                    .setOutcome(
+                                        Rebalance.PartitionRebalance.Outcome.OUTCOME_UNSPECIFIED))))
+            .build()
+            .toByteArray();
+
+    // when/then
+    assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
+  }
+
+  @Test
+  void shouldRejectACompletedPartitionWithAnUnrecognizedOutcome() {
+    // given
+    final var encoded =
+        Rebalance.Response.newBuilder()
+            .setStatus(
+                Rebalance.RebalanceStatusResponse.newBuilder()
+                    .setLastCompleted(
+                        Rebalance.CompletedRebalance.newBuilder()
+                            .setRebalanceId(7)
+                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .addPartitions(
+                                Rebalance.PartitionRebalance.newBuilder()
+                                    .setPhysicalTenantId("default")
+                                    .setPartitionId(3)
+                                    .setProgress(Rebalance.PartitionRebalance.Progress.COMPLETED)
+                                    .setOutcomeValue(999))))
             .build()
             .toByteArray();
 

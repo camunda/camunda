@@ -15,6 +15,11 @@ public record RebalanceErrorResponse(RebalanceErrorCode code, String message) {
     REBALANCE_IN_PROGRESS,
     /** The member that received the request is not the current coordinator. */
     NOT_COORDINATOR,
+    /**
+     * A cluster configuration change is pending, so the configuration to plan against is not
+     * settled.
+     */
+    CONFIGURATION_CHANGE_IN_PROGRESS,
     INTERNAL_ERROR
   }
 }

@@ -12,14 +12,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +42,13 @@ final class RebalanceCoordinatorTest {
 
   private static final MemberId LOWEST_ID_MEMBER = MemberId.from("1");
   private static final MemberId OTHER_MEMBER = MemberId.from("2");
+  private static final Instant FIXED_INSTANT = Instant.parse("2024-01-01T00:00:00Z");
+  private static final PartitionRebalance PLAN =
+      PartitionRebalance.pending("default", 1, LOWEST_ID_MEMBER, OTHER_MEMBER);
 
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final AtomicLong nextRebalanceId = new AtomicLong(100);
+  private final Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
 
   @Test
   void shouldRefuseRequestsBeforeAnyConfigurationArrives() {
@@ -72,14 +84,14 @@ final class RebalanceCoordinatorTest {
 
     // when
     final var triggered =
-        coordinator.triggerRebalance(new TriggerRebalanceRequest(overrides, true));
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(overrides, false));
 
     // then
     final var running = triggered.join().running();
     assertThat(running).isNotNull();
     assertThat(running.rebalanceId()).isEqualTo(100);
     assertThat(running.overrides()).isEqualTo(overrides);
-    assertThat(running.dryRun()).isTrue();
+    assertThat(running.dryRun()).isFalse();
     assertThat(running.cancelRequested()).isFalse();
     assertThat(triggered.join().lastCompleted()).isNull();
   }
@@ -117,7 +129,66 @@ final class RebalanceCoordinatorTest {
     assertThat(status.running()).isNotNull();
     assertThat(status.running().rebalanceId()).isEqualTo(101);
     assertThat(status.lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.COMPLETED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100,
+                RebalanceOutcome.COMPLETED,
+                false,
+                List.of(PLAN),
+                FIXED_INSTANT,
+                FIXED_INSTANT));
+  }
+
+  @Test
+  void shouldReportWhereTheRebalanceHasGotToWithEachPartition() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    runner.rebalance.updatePartition(0, partition -> partition.transferred());
+
+    // then
+    assertThat(coordinator.getRebalanceStatus().join().running().partitions())
+        .containsExactly(PLAN.transferred());
+  }
+
+  @Test
+  void shouldAnswerADryRunWithThePlanItWouldHaveCarriedOut() {
+    // given
+    final var coordinator = coordinatingWith(new PlanningRunner());
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true));
+
+    // then
+    final var status = triggered.join();
+    assertThat(status.running()).isNull();
+    assertThat(status.lastCompleted())
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100,
+                RebalanceOutcome.COMPLETED,
+                true,
+                List.of(PLAN),
+                FIXED_INSTANT,
+                FIXED_INSTANT));
+  }
+
+  @Test
+  void shouldRunARebalanceAgainstTheConfigurationItWasAdmittedUnder() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+
+    // when
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // then
+    assertThat(runner.rebalance.configuration().getMembers())
+        .containsExactlyInAnyOrder(LOWEST_ID_MEMBER, OTHER_MEMBER);
   }
 
   @Test
@@ -134,7 +205,9 @@ final class RebalanceCoordinatorTest {
     // then
     assertThat(status.join().running()).isNull();
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.FAILED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100, RebalanceOutcome.FAILED, false, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -166,7 +239,14 @@ final class RebalanceCoordinatorTest {
 
     // then
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100,
+                RebalanceOutcome.CANCELLED,
+                false,
+                List.of(PLAN),
+                FIXED_INSTANT,
+                FIXED_INSTANT));
   }
 
   @Test
@@ -185,7 +265,9 @@ final class RebalanceCoordinatorTest {
     // then
     final var status = coordinator.getRebalanceStatus();
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100, RebalanceOutcome.CANCELLED, false, List.of(), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -205,7 +287,9 @@ final class RebalanceCoordinatorTest {
     runner.deliver();
     final var status = coordinator.getRebalanceStatus();
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED));
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100, RebalanceOutcome.CANCELLED, false, List.of(), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -216,10 +300,7 @@ final class RebalanceCoordinatorTest {
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
 
     // when
-    coordinator.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+    configurationWithANewLowestIdMember(coordinator);
     final var cancelled = coordinator.cancelRebalance();
 
     // then
@@ -280,10 +361,7 @@ final class RebalanceCoordinatorTest {
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
 
     // when
-    coordinator.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+    configurationWithANewLowestIdMember(coordinator);
 
     // then
     final var status = coordinator.getRebalanceStatus();
@@ -298,10 +376,7 @@ final class RebalanceCoordinatorTest {
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
 
     // when
-    coordinator.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+    configurationWithANewLowestIdMember(coordinator);
 
     // then
     assertThat(runner.rebalance.isAbandoned()).isTrue();
@@ -313,10 +388,7 @@ final class RebalanceCoordinatorTest {
     final var runner = new BlockedRunner();
     final var coordinator = coordinatingWith(runner);
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
-    coordinator.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+    configurationWithANewLowestIdMember(coordinator);
 
     // when
     configurationWithBothMembers(coordinator);
@@ -325,6 +397,92 @@ final class RebalanceCoordinatorTest {
     // then
     final var status = coordinator.getRebalanceStatus();
     assertThat(status.join()).isEqualTo(RebalanceStatus.idle());
+  }
+
+  @Test
+  void shouldRecordDeterministicTimestampsUnderAFixedClock() {
+    // given
+    final var startedAt = Instant.parse("2024-01-01T00:00:00Z");
+    final var finishedAt = Instant.parse("2024-01-01T00:00:05Z");
+    final var stepClock = new StepClock(startedAt);
+    final var runner = new BlockedRunner();
+    final var coordinator =
+        new RebalanceCoordinator(
+            LOWEST_ID_MEMBER, executor, runner, nextRebalanceId::getAndIncrement, stepClock);
+    coordinator.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))));
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    stepClock.advanceTo(finishedAt);
+    runner.finish();
+
+    // then
+    final var status = coordinator.getRebalanceStatus();
+    assertThat(status.join().lastCompleted())
+        .isEqualTo(
+            new RebalanceStatus.Completed(
+                100, RebalanceOutcome.COMPLETED, false, List.of(PLAN), startedAt, finishedAt));
+  }
+
+  @Test
+  void shouldRefuseADryRunWhileAConfigurationChangeIsPending() {
+    // given
+    final var runner = new CountingRunner();
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithAPendingChange(coordinator);
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true));
+
+    // then
+    assertThatThrownBy(triggered::join)
+        .hasCauseInstanceOf(ConfigurationChangeInProgressException.class);
+    assertThat(runner.invocations).isZero();
+    final var status = coordinator.getRebalanceStatus().join();
+    assertThat(status.running()).isNull();
+    assertThat(status.lastCompleted()).isNull();
+  }
+
+  @Test
+  void shouldRefuseANonDryRunWhileAConfigurationChangeIsPending() {
+    // given
+    final var runner = new CountingRunner();
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithAPendingChange(coordinator);
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), false));
+
+    // then
+    assertThatThrownBy(triggered::join)
+        .hasCauseInstanceOf(ConfigurationChangeInProgressException.class);
+    assertThat(runner.invocations).isZero();
+    final var status = coordinator.getRebalanceStatus().join();
+    assertThat(status.running()).isNull();
+    assertThat(status.lastCompleted()).isNull();
+  }
+
+  @Test
+  void shouldAcceptARequestOnceTheConfigurationChangeHasCompleted() {
+    // given
+    final var runner = new CountingRunner();
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, runner);
+    configurationWithAPendingChange(coordinator);
+
+    // when
+    configurationWithBothMembers(coordinator);
+    final var triggered =
+        coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // then
+    assertThat(triggered.join().running().rebalanceId()).isEqualTo(100);
+    assertThat(runner.invocations).isEqualTo(1);
   }
 
   private RebalanceCoordinator coordinatingWith(final RebalanceRunner runner) {
@@ -336,14 +494,45 @@ final class RebalanceCoordinatorTest {
   private RebalanceCoordinator startCoordinator(
       final MemberId localMemberId, final RebalanceRunner runner) {
     return new RebalanceCoordinator(
-        localMemberId, executor, runner, nextRebalanceId::getAndIncrement);
+        localMemberId, executor, runner, nextRebalanceId::getAndIncrement, clock);
   }
 
   private void configurationWithBothMembers(final RebalanceCoordinator coordinator) {
     coordinator.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-            .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of())));
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))));
+  }
+
+  private void configurationWithAPendingChange(final RebalanceCoordinator coordinator) {
+    coordinator.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
+                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))
+                .startConfigurationChange(
+                    List.of(new PartitionLeaveOperation(OTHER_MEMBER, 1, 1)))));
+  }
+
+  private void configurationWithANewLowestIdMember(final RebalanceCoordinator coordinator) {
+    coordinator.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
+                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))));
+  }
+
+  private static final class CountingRunner implements RebalanceRunner {
+
+    private int invocations;
+
+    @Override
+    public ActorFuture<Void> run(final RebalanceRun rebalance) {
+      invocations++;
+      rebalance.plan(List.of(PLAN));
+      return CompletableActorFuture.completed();
+    }
   }
 
   private static final class BlockedRunner implements RebalanceRunner {
@@ -354,6 +543,7 @@ final class RebalanceCoordinatorTest {
     @Override
     public ActorFuture<Void> run(final RebalanceRun rebalance) {
       this.rebalance = rebalance;
+      rebalance.plan(List.of(PLAN));
       return completion;
     }
 
@@ -507,6 +697,43 @@ final class RebalanceCoordinatorTest {
     @Override
     public Void get(final long timeout, final TimeUnit unit) {
       throw new UnsupportedOperationException();
+    }
+  }
+
+  private static final class StepClock extends Clock {
+
+    private Instant now;
+
+    StepClock(final Instant now) {
+      this.now = now;
+    }
+
+    void advanceTo(final Instant instant) {
+      now = instant;
+    }
+
+    @Override
+    public ZoneId getZone() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Clock withZone(final ZoneId zone) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Instant instant() {
+      return now;
+    }
+  }
+
+  private static final class PlanningRunner implements RebalanceRunner {
+
+    @Override
+    public ActorFuture<Void> run(final RebalanceRun rebalance) {
+      rebalance.plan(List.of(PLAN));
+      return CompletableActorFuture.completed();
     }
   }
 }
