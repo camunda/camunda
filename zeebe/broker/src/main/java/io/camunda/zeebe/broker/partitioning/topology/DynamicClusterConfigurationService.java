@@ -267,7 +267,8 @@ public class DynamicClusterConfigurationService
         // Resolved on each call, because the request id generator is created by a later startup
         // step than this one: a bound method reference would read it while it is still null. Only a
         // rebalance draws an id from it, and by then the broker has finished starting.
-        () -> brokerStartupContext.getRequestIdGenerator().nextId());
+        () -> brokerStartupContext.getRequestIdGenerator().nextId(),
+        new TopologyPartitionLeaders(brokerStartupContext.getBrokerClient().getTopologyManager()));
   }
 
   @Override

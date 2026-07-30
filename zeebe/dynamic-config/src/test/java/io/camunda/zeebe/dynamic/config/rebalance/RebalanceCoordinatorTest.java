@@ -69,14 +69,14 @@ final class RebalanceCoordinatorTest {
 
     // when
     final var triggered =
-        coordinator.triggerRebalance(new TriggerRebalanceRequest(overrides, true));
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(overrides, false));
 
     // then
     final var running = triggered.join().running();
     assertThat(running).isNotNull();
     assertThat(running.rebalanceId()).isEqualTo(100);
     assertThat(running.overrides()).isEqualTo(overrides);
-    assertThat(running.dryRun()).isTrue();
+    assertThat(running.dryRun()).isFalse();
     assertThat(running.cancelRequested()).isFalse();
     assertThat(triggered.join().lastCompleted()).isNull();
   }
@@ -131,6 +131,37 @@ final class RebalanceCoordinatorTest {
     // then
     assertThat(coordinator.getRebalanceStatus().join().running().partitions())
         .containsExactly(PLAN.transferred());
+  }
+
+  @Test
+  void shouldAnswerADryRunWithThePlanItWouldHaveCarriedOut() {
+    // given
+    final var coordinator = coordinatingWith(new PlanningRunner());
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true));
+
+    // then
+    final var status = triggered.join();
+    assertThat(status.running()).isNull();
+    assertThat(status.lastCompleted())
+        .isEqualTo(
+            new RebalanceStatus.Completed(100, RebalanceOutcome.COMPLETED, true, List.of(PLAN)));
+  }
+
+  @Test
+  void shouldRunARebalanceAgainstTheConfigurationItWasAdmittedUnder() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+
+    // when
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // then
+    assertThat(runner.rebalance.configuration().members().keySet())
+        .containsExactlyInAnyOrder(LOWEST_ID_MEMBER, OTHER_MEMBER);
   }
 
   @Test
@@ -274,6 +305,16 @@ final class RebalanceCoordinatorTest {
 
     void fail(final Throwable error) {
       completion.completeExceptionally(error);
+    }
+  }
+
+  /** A rebalance that plans its partitions and is over by the time it returns, as a dry run is. */
+  private static final class PlanningRunner implements RebalanceRunner {
+
+    @Override
+    public ActorFuture<Void> run(final RebalanceRun rebalance) {
+      rebalance.plan(List.of(PLAN));
+      return CompletableActorFuture.completed();
     }
   }
 }

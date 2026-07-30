@@ -38,10 +38,11 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
+import io.camunda.zeebe.dynamic.config.rebalance.PartitionLeaders;
 import io.camunda.zeebe.dynamic.config.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestServer;
-import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRunner;
+import io.camunda.zeebe.dynamic.config.rebalance.SequentialRebalanceRunner;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -116,7 +117,8 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry,
-      final LongSupplier rebalanceIdGenerator) {
+      final LongSupplier rebalanceIdGenerator,
+      final PartitionLeaders partitionLeaders) {
     this(
         dataRootDirectory,
         communicationService,
@@ -125,6 +127,7 @@ public final class ClusterConfigurationManagerService
         clusterChangeExecutor,
         meterRegistry,
         rebalanceIdGenerator,
+        partitionLeaders,
         USE_NEW_CONFIG);
   }
 
@@ -142,6 +145,7 @@ public final class ClusterConfigurationManagerService
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry,
       final LongSupplier rebalanceIdGenerator,
+      final PartitionLeaders partitionLeaders,
       final boolean useNewConfig) {
     this.useNewConfig = useNewConfig;
     gossiperConfig = config;
@@ -204,7 +208,10 @@ public final class ClusterConfigurationManagerService
     // are forwarded to, so it shares this service's actor rather than running one of its own.
     rebalanceCoordinator =
         new RebalanceCoordinator(
-            localMemberId, managerActor, RebalanceRunner.none(), rebalanceIdGenerator);
+            localMemberId,
+            managerActor,
+            new SequentialRebalanceRunner(managerActor, partitionLeaders),
+            rebalanceIdGenerator);
     rebalanceRequestServer =
         new RebalanceRequestServer(
             communicationService, new ProtoBufRebalanceSerializer(), rebalanceCoordinator);
