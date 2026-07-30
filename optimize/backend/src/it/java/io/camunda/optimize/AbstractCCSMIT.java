@@ -54,12 +54,15 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ActiveProfiles;
 
 @Tag("ccsm-test")
@@ -70,8 +73,12 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   @Order(4)
   protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
 
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractCCSMIT.class);
   protected final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
       () -> new OptimizeIntegrationTestException("Cannot find exported event");
+
+  /** Set when a test drops Zeebe indices mid-run, which makes later records unobservable. */
+  private boolean zeebeIndicesDroppedMidTest;
 
   protected static boolean isZeebeVersionPre83() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
@@ -122,9 +129,25 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   @BeforeEach
   @Order(1)
   public void ensureCleanZeebeState() {
+    zeebeIndicesDroppedMidTest = false;
     // Safety net: records from the previous test may still be in the Zeebe exporter's write queue
     // when after() ran; they can arrive in the window between after() and this @BeforeEach.
     deleteZeebeRecordsAndAssertClean(zeebeExtension.getZeebeRecordPrefix());
+  }
+
+  /**
+   * Drops every Zeebe index for this class except the user-task one, so a test can exercise
+   * user-task import in isolation.
+   *
+   * <p>Dropping the indices is deliberate: the class-scoped exporter keeps writing, and merely
+   * deleting the documents would let later process-instance records land and be imported. The drop
+   * does mean the exporter may not recreate the index, so it also marks the test as no longer able
+   * to observe freshly-generated records — see {@link #after()}.
+   */
+  protected void removeAllZeebeExportRecordsExceptUserTaskRecords() {
+    zeebeIndicesDroppedMidTest = true;
+    databaseIntegrationTestExtension.deleteAllOtherZeebeRecordsWithPrefix(
+        zeebeExtension.getZeebeRecordPrefix(), DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME);
   }
 
   @BeforeEach
@@ -141,7 +164,12 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   @AfterEach
   public void after() {
     final Set<Long> cancelledKeys = zeebeExtension.cancelAllStartedInstances();
-    waitForCancelledInstancesToExport(cancelledKeys);
+    // Skip the wait when the test dropped the Zeebe indices: the exporter may never recreate
+    // them, so the terminal record we would wait for can never be observed. The retry loop in
+    // deleteZeebeRecordsAndAssertClean handles residual records without blocking.
+    if (!zeebeIndicesDroppedMidTest) {
+      waitForCancelledInstancesToExport(cancelledKeys);
+    }
     deleteZeebeRecordsAndAssertClean(zeebeExtension.getZeebeRecordPrefix());
     // Clean up Optimize's imported data to ensure complete test isolation
     databaseIntegrationTestExtension.deleteAllOptimizeData();
@@ -415,22 +443,59 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilMinimumDataExportedCount(
       final long minimumCount, final String indexName, final TermsQueryContainer queryContainer) {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
-    Awaitility.given()
-        .ignoreExceptions()
-        .timeout(60, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex))
-                    .isTrue());
-    Awaitility.given()
-        .ignoreExceptions()
-        .timeout(60, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        databaseIntegrationTestExtension.countRecordsByQuery(
-                            queryContainer, expectedIndex))
-                    .isGreaterThanOrEqualTo(minimumCount));
+    try {
+      Awaitility.given()
+          .ignoreExceptions()
+          .timeout(60, TimeUnit.SECONDS)
+          .untilAsserted(
+              () ->
+                  assertThat(countExportedRecordsOrZero(expectedIndex, queryContainer))
+                      .isGreaterThanOrEqualTo(minimumCount));
+    } catch (final ConditionTimeoutException e) {
+      logZeebeExportDiagnostics(expectedIndex, minimumCount, queryContainer);
+      throw e;
+    }
+  }
+
+  /** Counts matching records, reporting an absent index as zero instead of throwing. */
+  private long countExportedRecordsOrZero(
+      final String expectedIndex, final TermsQueryContainer queryContainer) {
+    if (!databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex)) {
+      return 0L;
+    }
+    return databaseIntegrationTestExtension.countRecordsByQuery(queryContainer, expectedIndex);
+  }
+
+  /** Logs why the export wait gave up, so the next CI occurrence is diagnosable from the log. */
+  private void logZeebeExportDiagnostics(
+      final String expectedIndex,
+      final long minimumCount,
+      final TermsQueryContainer queryContainer) {
+    Boolean indexExists = null;
+    Long totalDocs = null;
+    Long matchingDocs = null;
+    try {
+      indexExists = databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex);
+      if (indexExists) {
+        totalDocs =
+            databaseIntegrationTestExtension.countRecordsByQuery(
+                new TermsQueryContainer(), expectedIndex);
+        matchingDocs =
+            databaseIntegrationTestExtension.countRecordsByQuery(queryContainer, expectedIndex);
+      }
+    } catch (final Exception e) {
+      LOG.warn("Could not query diagnostics for index {}", expectedIndex, e);
+    }
+    LOG.error(
+        "Zeebe export wait timed out. Expected at least {} record(s) in '{}' (prefix '{}'). "
+            + "indexExists={}, totalDocs={}, docsMatchingWaitQuery={}. "
+            + "An absent index here means the exporter never recreated it.",
+        minimumCount,
+        expectedIndex,
+        zeebeExtension.getZeebeRecordPrefix(),
+        indexExists,
+        totalDocs,
+        matchingDocs);
   }
 
   protected Map<String, List<ZeebeUserTaskRecordDto>> getZeebeExportedUserTaskEventsByElementId() {
