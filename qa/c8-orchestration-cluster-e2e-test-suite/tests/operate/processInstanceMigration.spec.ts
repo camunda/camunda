@@ -15,6 +15,7 @@ import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {getNewOperationIds} from 'utils/getNewOperationIds';
 import {waitForProcessVersion} from 'utils/processDefinitions.helper';
+import {waitForFlowNodeIncidents} from 'utils/incidentsHelper';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -695,12 +696,14 @@ test.describe.serial('Process Instance Migration', () => {
 
   test('Migrated tasks', async ({
     page,
+    request,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
   }) => {
     const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
     const targetVersion = testProcesses.processV3.version.toString();
+    let processInstanceKey: string;
 
     await test.step('Navigate to first migrated process instance', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
@@ -717,6 +720,8 @@ test.describe.serial('Process Instance Migration', () => {
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
+      await expect(page).toHaveURL(/\/operate\/processes\/\d+/);
+      processInstanceKey = /\/operate\/processes\/(\d+)/.exec(page.url())![1];
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -734,13 +739,25 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      // This step is not sharing data with anything else and already retries
-      // with reload — it failed in CI anyway after 3, then 5 attempts (run
-      // 30438261914). Unlike the other fixes in this file, this isn't a
-      // data-uniqueness issue; it's backend contention from concurrently-running
-      // specs outlasting the retry budget. Bumping retries / adding a settle
-      // sleep is a stopgap, not a fix for that — the durable fix is reducing
-      // Operate import/backend contention under the concurrent E2E load.
+      // BusinessRuleTask2 calls decisionId "invalid2", which is deployed
+      // nowhere, so its incident is deterministic — but Operate indexes the
+      // migrated flow node before the incident lands on it, and under
+      // concurrent E2E load that gap outlasted a blind reload budget (runs
+      // 30438261914, 30503781330: the node showed active with no incident
+      // after 8 reloads over ~5 min). Reloading only re-reads the same
+      // not-yet-written data, so wait on the condition itself via the REST
+      // endpoint the UI reads, then assert the popover. If the incident never
+      // arrives this poll fails and names the backend, instead of surfacing as
+      // a missing popover heading.
+      await waitForFlowNodeIncidents(
+        request,
+        processInstanceKey,
+        'BusinessRuleTask2',
+        1,
+      );
+      await page.reload();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
