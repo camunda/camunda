@@ -306,6 +306,34 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Current number of held cross-partition message-start locks on {@code P_K} — correlation keys
+   * reserved by a started cross-partition instance that has not yet released them. A level that
+   * only grows points at releases that never arrive (lost push and lost reconciliation), which
+   * would block further starts on those keys.
+   */
+  CROSS_PARTITION_LOCKS {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.locks";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of held cross-partition message-start correlation-key locks on the correlation-key partition (P_K).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** The tag keys used by the message-correlation meters. */

@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
@@ -29,7 +32,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public final class MessageStateTest {
 
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private static final String LOCKS_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getName();
 
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableMessageState messageState;
   private MutableProcessingState processingState;
 
@@ -679,6 +685,70 @@ public final class MessageStateTest {
     final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
     assertThat(origin).isNotNull();
     assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldTrackCrossPartitionLocksGaugeAcrossPutAndRemove() {
+    // when two distinct correlation-key locks are held
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // then the lock gauge reflects both
+    assertThat(locksGauge()).isEqualTo(2.0);
+
+    // when one is released
+    messageState.removeCrossPartitionStartLock(wrapString("process-1"), wrapString("key-1"));
+
+    // then the gauge drops to one
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDoubleCountCrossPartitionLocksGaugeOnReAppliedReply() {
+    // given a held lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // when a retried STARTED reply writes the same holder again (put upserts)
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // then the gauge counts the lock only once
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDecrementCrossPartitionLocksGaugeWhenRemovingAbsentLock() {
+    // given one held lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // when removing a lock that was never held
+    messageState.removeCrossPartitionStartLock(wrapString("process-1"), wrapString("absent"));
+
+    // then the gauge is unaffected
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldReseedCrossPartitionLocksGaugeFromStateOnRecovery() {
+    // given two persisted locks
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // when the partition recovers
+    ((DbMessageState) messageState).onRecovered(null);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(locksGauge()).isEqualTo(2.0);
+  }
+
+  private double locksGauge() {
+    return zeebeDb.getMeterRegistry().get(LOCKS_GAUGE).gauge().value();
   }
 
   private MessageRecord createMessage(final String name, final String correlationKey) {
