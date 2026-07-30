@@ -626,17 +626,6 @@ public class TemplatedProcessReportDataBuilder {
                 .definitions(definitions)
                 .build();
         break;
-      case PROC_INST_AUTOMATION_RATE_GROUP_BY_END_DATE:
-        reportData =
-            new ProcessReportDataBuilderHelper()
-                .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
-                .viewProperty(ViewProperty.AUTOMATION_RATE)
-                .groupByType(ProcessGroupByType.END_DATE)
-                .groupByDateInterval(groupByDateInterval)
-                .distributedByType(DistributedByType.NONE)
-                .definitions(definitions)
-                .build();
-        break;
       case FLOW_NODE_DUR_GROUP_BY_FLOW_NODE:
         reportData =
             new ProcessReportDataBuilderHelper()

@@ -50,7 +50,6 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_START_DATE;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_END_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_END_DATE;
@@ -58,6 +57,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_END_DATE_BY_VARIABLE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_NONE_BY_PROCESS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_START_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_START_DATE_BY_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_START_DATE_BY_VARIABLE;
@@ -210,11 +210,11 @@ public interface GenericProcessExecutionPlanInterpreter extends ProcessExecution
         PROCESS_INSTANCE_FREQUENCY_GROUP_BY_VARIABLE_BY_PROCESS,
         PROCESS_INSTANCE_FREQUENCY_GROUP_BY_VARIABLE,
         PROCESS_INSTANCE_FREQUENCY_GROUP_BY_PROCESS_DEFINITION_KEY,
+        PROCESS_INSTANCE_DURATION_GROUP_BY_PROCESS_DEFINITION_KEY,
         PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION,
         PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_NONE,
         PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE,
         PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_PROCESS_DEFINITION_KEY,
-        PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_END_DATE,
         PROCESS_USER_TASK_DURATION_GROUP_BY_ASSIGNEE,
         PROCESS_USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_PROCESS,
         PROCESS_USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_TASK,
