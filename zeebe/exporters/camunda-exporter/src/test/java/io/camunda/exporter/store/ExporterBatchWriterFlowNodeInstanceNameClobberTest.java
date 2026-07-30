@@ -8,12 +8,16 @@
 package io.camunda.exporter.store;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceNameFromAdHocActivityHandler;
 import io.camunda.exporter.store.ExporterBatchWriter.Builder;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -79,9 +83,18 @@ public class ExporterBatchWriterFlowNodeInstanceNameClobberTest {
     writer.addRecord(entryElementActivatingRecord());
     // the inner instance's own completion, processed in the same batch, clobbers it back to null
     writer.addRecord(innerInstanceCompletedRecord());
+    final var batchRequest = mock(BatchRequest.class);
 
     // when - then
-    assertThatCode(() -> writer.flush(mock(BatchRequest.class))).doesNotThrowAnyException();
+    assertThatCode(() -> writer.flush(batchRequest)).doesNotThrowAnyException();
+    // the resolved name must reach the batch request, not just avoid the NPE
+    verify(batchRequest)
+        .upsertWithScript(
+            any(),
+            eq(String.valueOf(INNER_INSTANCE_KEY)),
+            any(),
+            eq(FlowNodeInstanceNameFromAdHocActivityHandler.SET_IF_NULL_NAME_SCRIPT),
+            eq(Map.of(FlowNodeInstanceTemplate.FLOW_NODE_NAME, "List users")));
   }
 
   private Record<ProcessInstanceRecordValue> entryElementActivatingRecord() {
