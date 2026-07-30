@@ -33,7 +33,7 @@ public final class ReplicationLogStatusProviderFactory {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
-      case MSSQL_DATABASE_ID -> new DefaultReplicationLogStatusProvider(replicationStatusMapper);
+      case MSSQL_DATABASE_ID -> createMssqlProvider();
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLogStatusProvider for null database id");
@@ -46,10 +46,26 @@ public final class ReplicationLogStatusProviderFactory {
 
   private ReplicationLogStatusProvider createPostgresOrAuroraProvider() {
     if (!replicationStatusMapper.isAurora()) {
+      validateRequiredPrivileges("'pg_monitor' role");
       LOG.debug("Detected PostgreSQL LogStatusProvider");
       return new DefaultReplicationLogStatusProvider(replicationStatusMapper);
     }
     return createAuroraGlobalProvider();
+  }
+
+  private ReplicationLogStatusProvider createMssqlProvider() {
+    validateRequiredPrivileges("'VIEW SERVER STATE' or 'VIEW SERVER PERFORMANCE STATE' permission");
+    LOG.debug("Detected MSSQL LogStatusProvider");
+    return new DefaultReplicationLogStatusProvider(replicationStatusMapper);
+  }
+
+  private void validateRequiredPrivileges(final String requiredPrivilege) {
+    if (!replicationStatusMapper.hasRequiredPrivileges()) {
+      throw new IllegalStateException(
+          "The database user does not have the "
+              + requiredPrivilege
+              + " required for LSN-based async replication monitoring.");
+    }
   }
 
   private ReplicationLogStatusProvider createMysqlAuroraProvider() {

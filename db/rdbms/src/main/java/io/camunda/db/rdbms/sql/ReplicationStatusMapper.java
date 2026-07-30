@@ -25,6 +25,12 @@ public interface ReplicationStatusMapper {
    */
   boolean isAuroraGlobalDatabase();
 
+  /**
+   * Returns {@code true} when the current database user has the privileges required for replication
+   * monitoring.
+   */
+  boolean hasRequiredPrivileges();
+
   /** Returns the primary's current durable LSN for Aurora Global Database. */
   long getAuroraCurrentLogStatus();
 

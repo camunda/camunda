@@ -25,6 +25,7 @@ class ReplicationLogStatusProviderFactoryTest {
     when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(false);
+    when(mapper.hasRequiredPrivileges()).thenReturn(true);
     final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
@@ -35,19 +36,52 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
+  void shouldFailForPostgresWhenRequiredPrivilegesAreMissing() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAurora()).thenReturn(false);
+    when(mapper.hasRequiredPrivileges()).thenReturn(false);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("pg_monitor")
+        .hasMessageContaining("GRANT pg_monitor TO");
+  }
+
+  @Test
   void shouldCreateMssqlReplicationLogStatusProvider() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
-    final var factory =
-        new ReplicationLogStatusProviderFactory(
-            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.hasRequiredPrivileges()).thenReturn(true);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
     final var provider = factory.create();
 
     // then
     assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
+  }
+
+  @Test
+  void shouldFailForMssqlWhenRequiredPrivilegesAreMissing() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.hasRequiredPrivileges()).thenReturn(false);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("VIEW SERVER STATE")
+        .hasMessageContaining("GRANT VIEW SERVER STATE TO");
   }
 
   @Test
