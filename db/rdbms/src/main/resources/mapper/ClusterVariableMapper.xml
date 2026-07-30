@@ -28,10 +28,10 @@
   <resultMap id="clusterVariableMetadataResultMap"
     type="io.camunda.db.rdbms.write.domain.ClusterVariableMetadataDbModel">
     <constructor>
-      <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String"/>
-      <arg column="METADATA_KEY" javaType="java.lang.String"/>
-      <arg column="METADATA_VALUE" javaType="java.lang.String"/>
-      <arg column="METADATA_VALUE_NUMBER" javaType="java.lang.Double"/>
+      <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String" name="clusterVariableId"/>
+      <arg column="METADATA_KEY" javaType="java.lang.String" name="key"/>
+      <arg column="METADATA_VALUE" javaType="java.lang.String" name="value"/>
+      <arg column="METADATA_VALUE_NUMBER" javaType="java.lang.Double" name="valueNumber"/>
     </constructor>
   </resultMap>
 
