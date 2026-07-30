@@ -233,21 +233,6 @@ class ExpressionProcessorTest {
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
-
-    @Test
-    void testVariableMappingExpression() {
-      final var processor =
-          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
-      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
-      assertThat(processor.evaluateVariableMappingExpression(parsedExpression, -1L))
-          .isLeft()
-          .extracting(r -> r.getLeft().getMessage())
-          .isEqualTo(
-              """
-              Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
-              The evaluation reported the following warnings:
-              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
-    }
   }
 
   @Nested
@@ -539,7 +524,7 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=\"abc\"");
 
       // when
-      final var result = processor.evaluateVariableMappingSourceExpression(expression, 1L);
+      final var result = processor.evaluateVariableMappingExpression(expression, 1L);
 
       // then
       assertThat(result).isRight();
@@ -552,7 +537,7 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("={y: x}");
 
       // when
-      final var result = processor.evaluateVariableMappingSourceExpression(expression, 1L);
+      final var result = processor.evaluateVariableMappingExpression(expression, 1L);
 
       // then
       assertThat(result).isRight();
@@ -565,7 +550,7 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=null");
 
       // when
-      final var result = processor.evaluateVariableMappingSourceExpression(expression, 1L);
+      final var result = processor.evaluateVariableMappingExpression(expression, 1L);
 
       // then
       assertThat(result).isRight();
@@ -581,7 +566,7 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=unknown_var");
 
       // when
-      final var result = processor.evaluateVariableMappingSourceExpression(expression, 1L);
+      final var result = processor.evaluateVariableMappingExpression(expression, 1L);
 
       // then
       assertThat(result).isRight();
@@ -594,7 +579,7 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
 
       // when
-      final var result = processor.evaluateVariableMappingSourceExpression(expression, 1L);
+      final var result = processor.evaluateVariableMappingExpression(expression, 1L);
 
       // then
       assertThat(result).isLeft();
