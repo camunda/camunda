@@ -120,7 +120,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     strategy:
       fail-fast: false
@@ -144,6 +144,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         name: Unit & Integration tests
         env:
@@ -173,7 +175,7 @@ jobs:
     needs: [fe-unit-tests]
     name: "Unit - Front End - Merge Reports"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -191,6 +193,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -205,7 +209,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -225,6 +229,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -242,7 +248,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -262,6 +268,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run lint:eslint
         name: ESLint
       - name: Observe build status
@@ -278,7 +286,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -298,6 +306,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run lint:prettier
         name: Prettier
       - name: Observe build status
@@ -315,7 +325,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -339,6 +349,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
@@ -363,7 +375,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit / Front End - Visual Regression [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     strategy:
       fail-fast: false
@@ -392,6 +404,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Visual regression tests
@@ -419,7 +433,7 @@ jobs:
     needs: [operate-fe-visual-regression-tests]
     name: "Unit / Front End - Visual Regression - Merge Reports"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
@@ -440,6 +454,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
