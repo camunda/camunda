@@ -84,7 +84,9 @@ class MyBatisConfigurationPerTenantIT {
     env.getPropertySources().addFirst(new MapPropertySource("test", props));
     final var resolver = PhysicalTenantResolver.of(env, new Camunda());
     final var dataSources =
-        RdbmsDataSources.of(resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()));
+        RdbmsDataSources.of(
+            resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()),
+            new SimpleMeterRegistry());
     final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver);
     final var bundles = MY_BATIS.rdbmsMapperBundles(factories, dataSources);
     return new TenantFixture(dataSources, factories, bundles);
