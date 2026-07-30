@@ -10,7 +10,7 @@ package io.camunda.exporter.rdbms;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -163,11 +163,11 @@ public class RdbmsExporterWrapper implements Exporter {
     } else {
       switch (config.getAsyncReplication().getType()) {
         case LOG_SEQ -> {
-          final ReplicationLogStatusProvider replicationLogStatusProvider =
-              rdbmsService.getReplicationLogStatusProvider();
+          final ReplicationLsnProvider replicationLsnProvider =
+              rdbmsService.getReplicationLsnProvider();
           builder.replicationControllerFactory(
               new LsnReplicationControllerFactory(
-                  replicationLogStatusProvider,
+                  replicationLsnProvider,
                   config.getAsyncReplication(),
                   partitionId,
                   context.clock(),

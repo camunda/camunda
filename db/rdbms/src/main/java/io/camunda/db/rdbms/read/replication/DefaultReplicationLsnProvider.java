@@ -23,11 +23,11 @@ import java.util.List;
  * needs the {@code pg_monitor} or {@code pg_read_all_stats} role to observe it; otherwise the lag
  * reads as 0.
  */
-public final class DefaultReplicationLogStatusProvider implements ReplicationLogStatusProvider {
+public final class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
 
   private final ReplicationStatusMapper mapper;
 
-  public DefaultReplicationLogStatusProvider(final ReplicationStatusMapper mapper) {
+  public DefaultReplicationLsnProvider(final ReplicationStatusMapper mapper) {
     this.mapper = mapper;
   }
 
@@ -37,7 +37,7 @@ public final class DefaultReplicationLogStatusProvider implements ReplicationLog
   }
 
   @Override
-  public List<ReplicationLogStatus> getReplicationStatuses() {
+  public List<ReplicationLsnStatus> getReplicationStatuses() {
     return mapper.getReplicationStatus();
   }
 }
