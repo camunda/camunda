@@ -42,8 +42,20 @@ final class SequentialRebalanceRunnerTest {
   private static final MemberId MEMBER_1 = MemberId.from("1");
   private static final MemberId MEMBER_2 = MemberId.from("2");
 
+  /**
+   * Short enough to reach by running the scheduled observation a handful of times. The runner
+   * accumulates one observation interval per observation, so the wait is measured in observations.
+   */
+  private static final long OBSERVATIONS_UNTIL_LEADER_WAIT_TIMEOUT = 3;
+
+  private static final Duration LEADER_WAIT_TIMEOUT =
+      SequentialRebalanceRunner.LEADERSHIP_OBSERVATION_INTERVAL.multipliedBy(
+          (int) OBSERVATIONS_UNTIL_LEADER_WAIT_TIMEOUT);
+
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
-  private final TestConcurrencyControl executor = new TestConcurrencyControl();
+  // Scheduled tasks are queued rather than run inline, so a test decides when the runner next looks
+  // at the topology.
+  private final TestConcurrencyControl executor = new TestConcurrencyControl(true);
   private final Map<Integer, MemberId> leaders = new HashMap<>();
   private final RecordingTransfers transfers = new RecordingTransfers();
   private final PartitionLeaders partitionLeaders =
@@ -306,6 +318,93 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldMoveOnWhenTheTopologyShowsLeadershipReachedTheDesiredLeader() {
+    // given
+    final var rebalance = start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    leaders.put(1, MEMBER_2);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.TRANSFERRED);
+    assertThat(transfers.lastInitiated().partitionId()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldKeepWaitingWhileTheTopologyStillShowsTheOldLeader() {
+    // given
+    final var rebalance = start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.TRANSFERRING);
+    assertThat(transfers.initiated).hasSize(1);
+    assertThat(executor.scheduledTasks()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldGiveUpOnAPartitionWhoseLeaderNeverResolvesTheTransfer() {
+    // given
+    final var rebalance = start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    observeUntilTheLeaderWaitTimeoutElapses();
+
+    // then
+    assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.FAILED);
+  }
+
+  @Test
+  void shouldTakeOnTheNextPartitionAfterGivingUpOnOne() {
+    // given
+    start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    observeUntilTheLeaderWaitTimeoutElapses();
+
+    // then
+    assertThat(transfers.lastInitiated().partitionId()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldKeepWaitingOnTheLeaderUntilTheLeaderWaitTimeoutElapses() {
+    // given
+    final var rebalance = start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    for (int observation = 1; observation < OBSERVATIONS_UNTIL_LEADER_WAIT_TIMEOUT; observation++) {
+      executor.runAll();
+    }
+
+    // then
+    assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.TRANSFERRING);
+    assertThat(executor.scheduledTasks()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldStopWatchingTheTopologyOnceTheLeaderHasReported() {
+    // given
+    start(configurationWithPartitions(1));
+    transfers.accept();
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+
+    // when
+    leaders.put(1, MEMBER_2);
+    executor.runAll();
+
+    // then
+    assertThat(executor.scheduledTasks()).isZero();
+  }
+
+  @Test
   void shouldStopBetweenPartitionsWhenTheRebalanceIsCancelled() {
     // given
     final var rebalance = start(configurationWithPartitions(2));
@@ -360,6 +459,18 @@ final class SequentialRebalanceRunnerTest {
     return rebalance;
   }
 
+  /**
+   * The runner accumulates one observation interval per observation of the leader, so the wait is
+   * reached by running the scheduled task once per interval the timeout covers.
+   */
+  private void observeUntilTheLeaderWaitTimeoutElapses() {
+    for (long observation = 0;
+        observation < OBSERVATIONS_UNTIL_LEADER_WAIT_TIMEOUT;
+        observation++) {
+      executor.runAll();
+    }
+  }
+
   private RebalanceRun start(final ClusterConfiguration configuration) {
     return start(new RebalanceRun(7, RebalanceOverrides.none(), false, configuration));
   }
@@ -370,7 +481,8 @@ final class SequentialRebalanceRunnerTest {
   }
 
   private ActorFuture<Void> run(final RebalanceRun rebalance) {
-    return new SequentialRebalanceRunner(COORDINATOR, executor, partitionLeaders, transfers)
+    return new SequentialRebalanceRunner(
+            COORDINATOR, executor, partitionLeaders, transfers, LEADER_WAIT_TIMEOUT)
         .run(rebalance);
   }
 

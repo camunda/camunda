@@ -433,6 +433,17 @@ public class Raft {
      */
     private int maxTransferAttempts = 3;
 
+    /**
+     * How long the coordinator waits for a transfer it handed to a partition's leader to resolve
+     * before giving up on that partition and moving on to the next. It is a backstop for a leader
+     * that goes silent without losing leadership, which reports no outcome and shows no change in
+     * the topology, so it must stay above the pause budget the leader gives itself - {@code
+     * replicationTimeout}, plus {@code maxTransferAttempts} heartbeat intervals for the promotion,
+     * plus the leader's own slack - because giving up early moves the rebalance on while the
+     * partition is still frozen.
+     */
+    private Duration leaderWaitTimeout = Duration.ofMinutes(1);
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -467,6 +478,19 @@ public class Raft {
             "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
       }
       this.maxTransferAttempts = maxTransferAttempts;
+    }
+
+    public Duration getLeaderWaitTimeout() {
+      return leaderWaitTimeout;
+    }
+
+    public void setLeaderWaitTimeout(final Duration leaderWaitTimeout) {
+      if (leaderWaitTimeout == null
+          || leaderWaitTimeout.isNegative()
+          || leaderWaitTimeout.isZero()) {
+        throw new IllegalArgumentException("leaderWaitTimeout must be positive");
+      }
+      this.leaderWaitTimeout = leaderWaitTimeout;
     }
   }
 }

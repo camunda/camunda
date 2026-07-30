@@ -349,7 +349,8 @@ class ClusterConfigurationManagementIntegrationTest {
             meterRegistry,
             rebalanceIds::incrementAndGet,
             (physicalTenantId, partitionId) -> Optional.empty(),
-            Duration.ofSeconds(5));
+            Duration.ofSeconds(5),
+            Duration.ofMinutes(1));
     return new TestNode(cluster, service);
   }
 
