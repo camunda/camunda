@@ -16,7 +16,7 @@ import java.time.InstantSource;
 public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
 
   private final int partitionId;
-  private final ReplicationLsnProvider replicationLagProvider;
+  private final ReplicationLsnProvider replicationLsnProvider;
   private final ReplicationConfiguration replicationConfiguration;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
@@ -27,7 +27,7 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
-    replicationLagProvider = lsnProvider;
+    replicationLsnProvider = lsnProvider;
     this.replicationConfiguration = replicationConfiguration;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -37,6 +37,6 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
     return new LsnReplicationController(
-        controller, replicationLagProvider, replicationConfiguration, partitionId, clock, metrics);
+        controller, replicationLsnProvider, replicationConfiguration, partitionId, clock, metrics);
   }
 }
