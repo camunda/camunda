@@ -39,4 +39,9 @@ ADR for that domain is written.
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `security/002-tenant-access-provider-ownership-and-seam.md` — CSL `core` owns
+  the concrete tenant-access provider and the `TenantOwnedEntity` contract; a
+  uniform `TenantAccessProvider` seam across the read (search) and write
+  (engine) paths, behavior-preserving, with the engine's anonymous/mt-off policy
+  in a thin engine-side decorator (camunda-security-library#582).
 
