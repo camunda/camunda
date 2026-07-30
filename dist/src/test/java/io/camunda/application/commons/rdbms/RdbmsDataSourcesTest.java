@@ -17,6 +17,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.RdbmsConnectionPool;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,7 +41,9 @@ class RdbmsDataSourcesTest {
   void shouldBuildDataSourceForSinglePhysicalTenant() throws Exception {
     final var rdbms = h2Rdbms();
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
 
       // then
       final var ds =
@@ -68,7 +71,9 @@ class RdbmsDataSourcesTest {
     rdbms.setConnectionPool(pool);
 
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
 
       final var ds =
           (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -90,7 +95,9 @@ class RdbmsDataSourcesTest {
     rdbms.setConnectionPool(new RdbmsConnectionPool());
 
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
 
       // then: keepalive stays disabled and validation timeout keeps the HikariCP default
       final var ds =
@@ -106,7 +113,7 @@ class RdbmsDataSourcesTest {
     configs.put("tenant-a", h2Rdbms());
     configs.put("tenant-b", h2Rdbms());
 
-    try (final var registry = RdbmsDataSources.of(configs)) {
+    try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
       assertThat(registry.dataSourceFor("tenant-a")).isNotNull();
       assertThat(registry.dataSourceFor("tenant-b")).isNotNull();
       assertThat(registry.vendorPropertiesFor("tenant-a")).isNotNull();
@@ -117,7 +124,9 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantDataSource() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
+            new SimpleMeterRegistry())) {
       assertThatThrownBy(() -> registry.dataSourceFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -127,7 +136,9 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantVendorProperties() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
+            new SimpleMeterRegistry())) {
       assertThatThrownBy(() -> registry.vendorPropertiesFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -142,7 +153,7 @@ class RdbmsDataSourcesTest {
 
     final HikariDataSource dsA;
     final HikariDataSource dsB;
-    try (final var registry = RdbmsDataSources.of(configs)) {
+    try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
       dsA = (HikariDataSource) registry.dataSourceFor("tenant-a");
       dsB = (HikariDataSource) registry.dataSourceFor("tenant-b");
       assertThat(dsA.isClosed()).isFalse();
@@ -167,7 +178,7 @@ class RdbmsDataSourcesTest {
       configs.put("tenant-b", tenantBRdbms);
 
       // when / then
-      assertThatThrownBy(() -> RdbmsDataSources.of(configs))
+      assertThatThrownBy(() -> RdbmsDataSources.of(configs, new SimpleMeterRegistry()))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("unsupported");
 
