@@ -226,6 +226,78 @@ public final class MappingIncidentTest {
   }
 
   @Test
+  public void shouldNotApplyAnyOutputMappingIfOneFails() {
+    // given: three output mappings where the second one fails
+    final var process =
+        Bpmn.createExecutableProcess("process-atomic-output")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeOutputExpression("1", "first")
+                        .zeebeOutputExpression("assert(missing, missing != null)", "second")
+                        .zeebeOutputExpression("2", "third"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-atomic-output").create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
+
+    // then: an incident is raised for the failing mapping and NO variable is created —
+    // neither 'first' (before the failing one) nor 'third' (after it)
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("first")
+                        .exists()))
+        .isFalse();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("third")
+                        .exists()))
+        .isFalse();
+
+    // when: the missing variable is provided and the incident is resolved
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("missing", 1)).update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then: all mappings are re-evaluated from the start and applied
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("first")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("second")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("third")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
   public void shouldResolveIncidentForInputMappingFailure() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
