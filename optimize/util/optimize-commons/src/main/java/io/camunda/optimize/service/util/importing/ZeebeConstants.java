@@ -35,8 +35,15 @@ public final class ZeebeConstants {
   public static final TenantDto ZEEBE_DEFAULT_TENANT =
       new TenantDto(ZEEBE_DEFAULT_TENANT_ID, ZEEBE_DEFAULT_TENANT_NAME, ZEEBE_DATA_SOURCE);
 
-  // flownode types
+  // flownode types — values mirror io.camunda.zeebe.protocol.record.value.BpmnElementType
+  // .getElementTypeName() for the corresponding BPMN element. Keep in sync when Zeebe adds
+  // or renames element types.
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
+  public static final String FLOW_NODE_TYPE_MANUAL_TASK = "manualTask";
+  public static final String FLOW_NODE_TYPE_SERVICE_TASK = "serviceTask";
+  public static final String FLOW_NODE_TYPE_BUSINESS_RULE_TASK = "businessRuleTask";
+  public static final String FLOW_NODE_TYPE_SCRIPT_TASK = "scriptTask";
+  public static final String FLOW_NODE_TYPE_SEND_TASK = "sendTask";
   public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
 
   private ZeebeConstants() {}
