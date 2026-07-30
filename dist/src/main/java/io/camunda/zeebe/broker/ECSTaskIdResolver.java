@@ -34,6 +34,14 @@ final class ECSTaskIdResolver {
 
   private ECSTaskIdResolver() {}
 
+  static Optional<String> resolve(final boolean resolveTaskId) {
+    return resolveTaskId ? resolve() : Optional.empty();
+  }
+
+  static Optional<String> resolve(final boolean resolveTaskId, final String metadataUri) {
+    return resolveTaskId ? resolve(metadataUri) : Optional.empty();
+  }
+
   static Optional<String> resolve() {
     final var metadataUri = System.getenv("ECS_CONTAINER_METADATA_URI_V4");
     if (metadataUri == null || metadataUri.isBlank()) {

@@ -145,6 +145,55 @@ final class ECSTaskIdResolverTest {
   }
 
   @Test
+  void shouldNotQueryMetadataWhenResolveDisabled() {
+    // given a metadata endpoint that would return a valid task id
+    final var attempts = new java.util.concurrent.atomic.AtomicInteger();
+    server.createContext(
+        "/task",
+        exchange -> {
+          attempts.incrementAndGet();
+          final var body =
+              """
+              {"TaskARN": "arn:aws:ecs:eu-central-1:123456789012:task/my-cluster/abcdef1234567890"}"""
+                  .getBytes(StandardCharsets.UTF_8);
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
+        });
+    final var metadataUri = "http://localhost:" + server.getAddress().getPort();
+
+    // when resolution is disabled
+    final var taskId = ECSTaskIdResolver.resolve(false, metadataUri);
+
+    // then it returns empty without contacting the endpoint
+    assertThat(taskId).isEmpty();
+    assertThat(attempts.get()).isZero();
+  }
+
+  @Test
+  void shouldQueryMetadataWhenResolveEnabled() {
+    // given
+    server.createContext(
+        "/task",
+        exchange -> {
+          final var body =
+              """
+              {"TaskARN": "arn:aws:ecs:eu-central-1:123456789012:task/my-cluster/abcdef1234567890"}"""
+                  .getBytes(StandardCharsets.UTF_8);
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
+        });
+    final var metadataUri = "http://localhost:" + server.getAddress().getPort();
+
+    // when resolution is enabled
+    final var taskId = ECSTaskIdResolver.resolve(true, metadataUri);
+
+    // then
+    assertThat(taskId).contains("abcdef1234567890");
+  }
+
+  @Test
   void shouldReturnEmptyWhenMetadataEndpointIsUnreachable() {
     // given
     server.stop(0);

@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
@@ -68,16 +69,7 @@ public class NodeIdProviderConfigurationUtils {
               throw new IllegalStateException(
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
             }
-            final var taskId =
-                config
-                    .getTaskId()
-                    .or(ECSTaskIdResolver::resolve)
-                    .orElseGet(
-                        () -> {
-                          LOG.info(
-                              "Generating taskId as none was configured and it could not be fetched from ECS metadata API");
-                          return UUID.randomUUID().toString();
-                        });
+            final var taskId = resolveTaskId(config);
             log.debug("Node configured with taskId {}", taskId);
             yield new RepositoryNodeIdProvider(
                 nodeIdRepository.get(),
@@ -108,6 +100,23 @@ public class NodeIdProviderConfigurationUtils {
     }
     nodeIdProvider.initialize(brokerCount).join();
     return nodeIdProvider;
+  }
+
+  static String resolveTaskId(final S3 config) {
+    return resolveTaskId(config, ECSTaskIdResolver::resolve);
+  }
+
+  static String resolveTaskId(
+      final S3 config, final Function<Boolean, Optional<String>> ecsResolver) {
+    return config
+        .getTaskId()
+        .or(() -> ecsResolver.apply(config.isResolveTaskId()))
+        .orElseGet(
+            () -> {
+              LOG.info(
+                  "Generating taskId as none was configured and it could not be fetched from ECS metadata API");
+              return UUID.randomUUID().toString();
+            });
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {
