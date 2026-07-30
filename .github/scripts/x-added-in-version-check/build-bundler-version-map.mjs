@@ -13,7 +13,7 @@
  */
 import 'dotenv/config';
 import { writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
-import { fetchAndBundle } from 'camunda-schema-bundler';
+import { fetchAndBundle, specDirForRef } from 'camunda-schema-bundler';
 import YAML from 'yaml';
 
 const yaml = { load: (source) => YAML.parse(source) };
@@ -22,12 +22,19 @@ const yaml = { load: (source) => YAML.parse(source) };
 //
 //   VERSIONS                Comma-separated list (default: 8.5,8.6,8.7,8.8,8.9,8.10)
 //   MAIN_BRANCH_VERSIONS    Versions that track the `main` branch instead of
-//                           a stable/<v> branch (default: 8.10)
+//                           a released version's `<v>.0` tag (default: 8.10)
 //   LATEST_BRANCH           Optional ref to try first for every
 //                           MAIN_BRANCH_VERSIONS entry. Falls back to `main`
 //                           if the fetch fails (e.g. branch doesn't exist).
-//                           Stable versions ignore this and always use
-//                           `stable/<version>`.
+//                           Stable versions ignore this and always use the
+//                           `<version>.0` release tag — NOT the stable/<v>
+//                           branch tip, which keeps moving after release via
+//                           patch backports. Pinning to the `.0` tag freezes
+//                           each released baseline at what actually shipped
+//                           in that minor, so a later patch backport can
+//                           never retroactively change a property's or
+//                           operation's computed introduction version. See
+//                           https://github.com/camunda/camunda/issues/58872.
 //   BUNDLER_SPECS_DIR       Where fetched/bundled specs are cached
 //                           (default: bundler-specs)
 //   OUTPUT_PATH             Output directory for generated artefacts
@@ -50,9 +57,11 @@ function parseBool(value) {
 const VERSIONS = parseCsv(process.env.VERSIONS, ['8.5', '8.6', '8.7', '8.8', '8.9', '8.10']);
 const MAIN_BRANCH_VERSIONS = parseCsv(process.env.MAIN_BRANCH_VERSIONS, ['8.10']);
 // 8.10 (or whatever MAIN_BRANCH_VERSIONS lists) tracks `main` until it cuts
-// its own release branch. Everything else has a stable/<version> branch on
-// camunda/camunda. When LATEST_BRANCH is set, it overrides `main` as the
-// preferred ref for MAIN_BRANCH_VERSIONS, with `main` as the fallback.
+// its own release branch. Everything else is pinned to its `<version>.0`
+// release tag on camunda/camunda — immutable once cut, unlike the
+// stable/<version> branch, which keeps moving via patch backports. When
+// LATEST_BRANCH is set, it overrides `main` as the preferred ref for
+// MAIN_BRANCH_VERSIONS, with `main` as the fallback.
 const LATEST_BRANCH = process.env.LATEST_BRANCH || null;
 const VERSION_REFS = Object.fromEntries(
   MAIN_BRANCH_VERSIONS.map((v) => [v, LATEST_BRANCH ?? 'main']),
@@ -438,7 +447,16 @@ async function main() {
   let previousProps = null;
 
   for (const version of VERSIONS) {
-    const ref = VERSION_REFS[version] ?? `stable/${version}`;
+    const ref = VERSION_REFS[version] ?? `${version}.0`;
+    // camunda-schema-bundler's specDirForRef(ref) only recognises the literal
+    // branch name pattern `stable/8.<minor>` to pick the pre-8.9 monolithic
+    // spec dir; any other ref pointing at the same content (a `<v>.0` tag, a
+    // SHA, ...) falls through to its v2-domain-split default and fails
+    // outright, since that path doesn't exist before 8.9. Call it with a
+    // synthetic `stable/<version>` string instead of the real ref, so the
+    // right spec dir is picked regardless of what ref is actually used to
+    // fetch this version.
+    const specDir = specDirForRef(`stable/${version}`);
     const outputDir = `${BUNDLER_SPECS_DIR}/${version}/upstream`;
     const outputSpec = `${BUNDLER_SPECS_DIR}/${version}/rest-api.bundle.json`;
     // `endpoint-map.json` was deprecated in camunda-schema-bundler 2.2.0 and is
@@ -479,6 +497,7 @@ async function main() {
       try {
         result = await fetchAndBundle({
           ref,
+          specDir,
           outputDir,
           outputSpec,
           outputMetadata,
@@ -503,6 +522,7 @@ async function main() {
           try {
             result = await fetchAndBundle({
               ref: 'main',
+              specDir,
               outputDir,
               outputSpec,
               outputMetadata,
