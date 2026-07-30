@@ -13,6 +13,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -21,6 +22,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -35,6 +37,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
 		}),
 	);
 });
@@ -54,6 +59,16 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 					businessId: 'ORDER-2024-0042',
 					dueDate: '2024-06-15T17:00:00.000Z',
 					creationDate: '2024-01-10T09:30:00.000Z',
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'orderTotal', value: '249.99'}),
+						createVariable({name: 'currency', value: '"EUR"', variableKey: '2251799813685284'}),
+					],
 				}),
 			),
 		}),

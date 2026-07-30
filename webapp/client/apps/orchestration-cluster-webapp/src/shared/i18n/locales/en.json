@@ -418,6 +418,7 @@
 			"variableEditorVariableValueLabel_ordinal_other": "{{count}}th variable value",
 			"variableEditorOpenJsonLabel": "Open JSON code editor",
 			"variableEditorNamePlaceholder": "Name",
+			"variablesFullValueFetchError": "The full variable value could not be loaded",
 			"processesLoadMore": "Load more",
 			"processesLoadingMore": "Loading...",
 			"deniedReason": "The task {{type}} was rejected by the system."

@@ -13,6 +13,7 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -20,6 +21,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 
 const currentUser = createCurrentUser();
 
@@ -65,6 +67,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockGetUserTaskEndpoint({
 			successResponse: HttpResponse.json(createUserTask()),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
 		}),
 	);
 });

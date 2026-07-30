@@ -26,6 +26,7 @@ import type {
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
+	GetVariableResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -41,6 +42,8 @@ const queryKeys = {
 	userTaskForm: (userTaskKey: string) => ['userTaskForm', userTaskKey] as const,
 	userTaskVariables: (userTaskKey: string, body: QueryVariablesByUserTaskRequestBody, truncateValues?: boolean) =>
 		['userTaskVariables', userTaskKey, body, truncateValues] as const,
+	allUserTaskVariables: (userTaskKey: string) => ['allUserTaskVariables', userTaskKey] as const,
+	variable: (variableKey: string) => ['variable', variableKey] as const,
 	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
 	userTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) =>
 		['userTaskAuditLogs', userTaskKey, body] as const,
@@ -187,6 +190,43 @@ const queries = {
 
 				return response.json();
 			},
+		}),
+
+	queryAllVariablesByUserTask: (userTaskKey: string) =>
+		infiniteQueryOptions({
+			queryKey: queryKeys.allUserTaskVariables(userTaskKey),
+			queryFn: async ({pageParam}): Promise<QueryVariablesByUserTaskResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariablesByUserTask({
+						userTaskKey,
+						page: {limit: DEFAULT_MAX_ITEM_PER_PAGE, from: pageParam},
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+
+				return response.json();
+			},
+			initialPageParam: 0,
+			getNextPageParam: (lastPage, _, lastPageParam) => {
+				const nextPage = lastPageParam + DEFAULT_MAX_ITEM_PER_PAGE;
+				return nextPage >= lastPage.page.totalItems ? undefined : nextPage;
+			},
+		}),
+
+	getVariable: (variableKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.variable(variableKey),
+			queryFn: async (): Promise<GetVariableResponseBody> => {
+				const {response, error} = await request(endpoints.getVariable({variableKey}));
+				if (error !== null) {
+					throw error;
+				}
+
+				return response.json();
+			},
+			retry: false,
 		}),
 
 	queryUserTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) => {

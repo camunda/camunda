@@ -406,6 +406,7 @@
 			"variableEditorVariableValueLabel_ordinal": "Valor de la {{count}}.ª variable",
 			"variableEditorOpenJsonLabel": "Abrir editor de código JSON",
 			"variableEditorNamePlaceholder": "Nombre",
+			"variablesFullValueFetchError": "No se pudo cargar el valor completo de la variable",
 			"processesLoadMore": "Cargar más",
 			"processesLoadingMore": "Cargando...",
 			"deniedReason": "La tarea {{type}} fue rechazada por el sistema."
