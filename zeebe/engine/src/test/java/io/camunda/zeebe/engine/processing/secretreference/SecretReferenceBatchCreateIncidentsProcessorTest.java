@@ -301,9 +301,19 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
   }
 
   @Test
-  void shouldAlwaysRaiseFirstIncidentEvenWhenBatchBudgetIsExhausted() {
-    // given - the result batch has no capacity at all; jobs 2 and 3 keep their waiting entries
-    //         (the batch event only removes the keys it carries)
+  void shouldRequestSeparateBatchForFollowUpCommands() {
+    // given - the budget check is only safe for the first incident if every follow-up command
+    //         starts its own record batch
+
+    // when / then
+    Assertions.assertThat(processor.shouldProcessResultsInSeparateBatches()).isTrue();
+  }
+
+  @Test
+  void shouldRaiseFirstIncidentEvenWhenReserveDoesNotFitEmptyBatch() {
+    // given - the budget rejects every incident, as it does when the reserve alone exceeds the
+    //         configured maximum fragment size; jobs 2 and 3 keep their waiting entries (the
+    //         batch event only removes the keys it carries)
     when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(false);
     createWaitingJob(1L, 11L);
     createWaitingJob(2L, 12L);
@@ -322,7 +332,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
     // when
     processor.processRecord(command(value));
 
-    // then - the first incident is written unconditionally to guarantee progress per cycle
+    // then - one incident is still written, so the chain cannot re-queue the same batch forever
     final var incidentCaptor = ArgumentCaptor.forClass(IncidentRecord.class);
     verify(stateWriter, times(1))
         .appendFollowUpEvent(eq(999L), eq(IncidentIntent.CREATED), incidentCaptor.capture());

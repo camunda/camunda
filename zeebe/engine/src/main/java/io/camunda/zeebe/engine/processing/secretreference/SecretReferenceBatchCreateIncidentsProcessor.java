@@ -76,7 +76,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
     // only processed jobs go into the batch event; jobs cut off by the record-batch budget keep
     // their waiting entries and are re-collected into the follow-up command below
     final var processedBatch = newBatch(storeId, secretReference);
-    var incidentRaised = false;
+    var incidentAppended = false;
 
     // capacity reserved for the two records written after the incidents: the batch result event
     // (its keys are a subset of the command's, so the command value bounds its size) and a
@@ -96,12 +96,11 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
         continue;
       }
       final var incidentEvent = buildIncident(jobKey, job, storeId, secretReference);
-      // the first incident skips the budget check: command batching can start this command on an
-      // already filled result batch, where checking would break with zero progress and re-queue
-      // the same command. Appending unconditionally either fits or raises
-      // ExceededBatchRecordSizeException, which makes the stream processor split the batch and
-      // re-run this command on an empty one.
-      if (incidentRaised
+      // the record batch is empty when this cycle starts, so the check normally passes for the
+      // first incident. It can still reject it when the reserve alone exceeds the maximum fragment
+      // size, and a cycle that appends nothing drains no entry and re-queues the same job keys, so
+      // the first incident is written regardless to keep the chain progressing.
+      if (incidentAppended
           && !stateWriter.canWriteEventOfLength(
               incidentEvent.getLength() + followUpRecordsReserve)) {
         break;
@@ -109,7 +108,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
       incidentMetrics.incidentCreated();
-      incidentRaised = true;
+      incidentAppended = true;
       processedBatch.addJobKey(jobKey);
     }
 
@@ -124,6 +123,18 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_CREATE_INCIDENTS, nextRecord);
     }
+  }
+
+  /**
+   * Each cycle of the chain starts its own record batch. Without this, the follow-up command would
+   * be processed in the current batch on the same, already filled result builder, so the budget
+   * check would reject incidents based on what earlier cycles wrote. Isolating the cycles keeps the
+   * batch bounded by one command's incidents instead of letting the whole chain accumulate into a
+   * single batch until it exceeds the log's maximum fragment size.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
   }
 
   private static SecretReferenceRecord newBatch(
