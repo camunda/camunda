@@ -7,4 +7,11 @@
  */
 package io.camunda.db.rdbms.read.replication;
 
-public record ReplicationLsnStatus(Long logStatus, String replicaId, Long replicationLagMs) {}
+/**
+ * Per-replica replication state reported by a {@link ReplicationLsnProvider}: the replica's last
+ * confirmed log-sequence number, its stable identifier, and the DB-reported replication lag in
+ * milliseconds (for observability only — position confirmation is based on {@code logStatus}, not
+ * this lag value).
+ */
+public record ReplicationLsnStatus(Long logStatus, String replicaId, Long replicationLagMs)
+    implements ReplicationStatus {}
