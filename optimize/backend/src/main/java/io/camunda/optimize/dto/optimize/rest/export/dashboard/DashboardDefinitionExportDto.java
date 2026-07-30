@@ -30,6 +30,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   private String collectionId;
   private boolean isInstantPreviewDashboard = false;
   private boolean isAgenticControlDashboard = false;
+  private boolean isBusinessValueDashboard = false;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {
     super(
@@ -101,6 +102,14 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     this.isAgenticControlDashboard = isAgenticControlDashboard;
   }
 
+  public boolean isBusinessValueDashboard() {
+    return isBusinessValueDashboard;
+  }
+
+  public void setBusinessValueDashboard(final boolean isBusinessValueDashboard) {
+    this.isBusinessValueDashboard = isBusinessValueDashboard;
+  }
+
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DashboardDefinitionExportDto;
@@ -114,7 +123,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         availableFilters,
         collectionId,
         isInstantPreviewDashboard,
-        isAgenticControlDashboard);
+        isAgenticControlDashboard,
+        isBusinessValueDashboard);
   }
 
   @Override
@@ -131,6 +141,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     final DashboardDefinitionExportDto that = (DashboardDefinitionExportDto) o;
     return isInstantPreviewDashboard == that.isInstantPreviewDashboard
         && isAgenticControlDashboard == that.isAgenticControlDashboard
+        && isBusinessValueDashboard == that.isBusinessValueDashboard
         && Objects.equals(tiles, that.tiles)
         && Objects.equals(availableFilters, that.availableFilters)
         && Objects.equals(collectionId, that.collectionId);
@@ -148,6 +159,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         + isInstantPreviewDashboard()
         + ", isAgenticControlDashboard="
         + isAgenticControlDashboard()
+        + ", isBusinessValueDashboard="
+        + isBusinessValueDashboard()
         + ")";
   }
 
