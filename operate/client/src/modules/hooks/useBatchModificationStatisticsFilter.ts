@@ -10,6 +10,7 @@ import type {GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-a
 import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 /**
  * Combines a process instances statistics filter with a process instances selection filter.
@@ -17,7 +18,9 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
  * instances selection as well.
  */
 function useBatchModificationStatisticsFilter(): GetProcessDefinitionStatisticsRequestBody {
-  const base = useProcessInstanceStatisticsFilters();
+  const base = useProcessInstanceStatisticsFilters(
+    variableFilterStore.variableWithValidatedValues,
+  );
   const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
     processInstancesSelectionStore;
 

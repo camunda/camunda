@@ -102,7 +102,7 @@ const DiagramPanel: React.FC = observer(() => {
   const {data: businessObjects} = useBusinessObjects();
 
   const baseFilters = useProcessInstanceStatisticsFilters(
-    variableFilterStore.variable,
+    variableFilterStore.variableWithValidatedValues,
   );
   const batchModificationStatisticsFilter =
     useBatchModificationStatisticsFilter();
