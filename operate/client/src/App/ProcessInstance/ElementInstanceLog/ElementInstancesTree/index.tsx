@@ -29,6 +29,7 @@ import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances
 import {notificationsStore} from 'modules/stores/notifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {buildElementInstanceSort} from '../buildElementInstanceSort';
+import {mergeStagedPlaceholders} from './mergeStagedPlaceholders';
 import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
@@ -538,6 +539,9 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           })
         : [];
 
+      const leadingPlaceholderCount =
+        sortOrder === 'desc' ? virtualChildren.length : 0;
+
       const handleSelect = async () => {
         if (isRoot) {
           clearSelection();
@@ -650,22 +654,35 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
               }
             }}
             onVerticalScrollStartReach={async (scrollDown) => {
+              const wasPagedPastStart =
+                elementInstancesTreeStore.hasPreviousPage(scopeKey);
               const newPageItemsCount =
                 await elementInstancesTreeStore.fetchPreviousPage(scopeKey);
               if (newPageItemsCount > 0) {
-                scrollDown(newPageItemsCount * TREE_NODE_HEIGHT);
+                // Arriving at the start of the list also brings back the staged
+                // placeholders latest-first renders above the items, so they
+                // push the viewport down alongside the new page.
+                const revealedPlaceholderCount =
+                  wasPagedPastStart &&
+                  !elementInstancesTreeStore.hasPreviousPage(scopeKey)
+                    ? leadingPlaceholderCount
+                    : 0;
+                scrollDown(
+                  (newPageItemsCount + revealedPlaceholderCount) *
+                    TREE_NODE_HEIGHT,
+                );
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
             scopeKeyHierarchy={scopeKeyHierarchy}
-            visibleChildren={
-              elementInstancesTreeStore.hasNextPage(scopeKey)
-                ? elementInstancesTreeStore.getItems(scopeKey)
-                : [
-                    ...elementInstancesTreeStore.getItems(scopeKey),
-                    ...virtualChildren,
-                  ]
-            }
+            visibleChildren={mergeStagedPlaceholders({
+              items: elementInstancesTreeStore.getItems(scopeKey),
+              stagedPlaceholders: virtualChildren,
+              sortOrder,
+              hasNextPage: elementInstancesTreeStore.hasNextPage(scopeKey),
+              hasPreviousPage:
+                elementInstancesTreeStore.hasPreviousPage(scopeKey),
+            })}
           />
         </TreeNode>
       );
@@ -828,17 +845,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       processInstance.state === 'ACTIVE' &&
       !modificationsStore.isModificationModeEnabled;
 
-    // Modification mode is pinned to ascending because `visibleChildren` below
-    // appends staged placeholders after the loaded window and hides them while
-    // the scope hasNextPage - an append-at-the-end merge that is only correct
-    // oldest-first. Do not simplify this to read the store directly: in
-    // latest-first a staged token would render where the oldest events sit, and
-    // the pagination gate could hide it outright. The sort control is hidden in
-    // this mode, so no visible control disagrees with what is rendered.
-    const sortOrder: QuerySortOrder =
-      modificationsStore.isModificationModeEnabled
-        ? 'asc'
-        : instanceHistorySortOrderStore.order;
+    const sortOrder = instanceHistorySortOrderStore.order;
 
     useEffect(() => {
       elementInstancesTreeStore.setRootNode(
