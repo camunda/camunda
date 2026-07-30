@@ -89,9 +89,13 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
 
     for (final long jobKey : value.getJobKeys()) {
       final JobRecord job = jobState.getJob(jobKey);
-      if (job == null || hasIncident(jobKey)) {
-        // gone while waiting (e.g. its process instance was cancelled), or another failed secret
-        // reference already raised an incident for it; the batch event still cleans up its entry
+      if (job == null
+          || hasIncident(jobKey)
+          || !secretReferenceState.isWaiting(storeId, secretReference, jobKey)) {
+        // The job is gone (e.g. its process instance was cancelled), or it already carries an
+        // incident from another failed reference, or a reactivation chain drained it before this
+        // command was processed. The key list was collected when the command was written, so it
+        // can be stale by now. The batch event still cleans up the entry either way.
         processedBatch.addJobKey(jobKey);
         continue;
       }

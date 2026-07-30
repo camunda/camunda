@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -85,6 +86,22 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
     when(keyGenerator.nextKey()).thenReturn(999L);
     when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
 
+    // the real state writer applies events eagerly, so mirror the BATCH_INCIDENTS_CREATED applier:
+    // the follow-up batch must be collected from the state the next command would actually see
+    doAnswer(
+            invocation -> {
+              final SecretReferenceRecord event = invocation.getArgument(2);
+              event
+                  .getJobKeys()
+                  .forEach(
+                      jobKey ->
+                          secretReferenceState.removeWaitingJob(
+                              event.getStoreId(), event.getSecretReference(), jobKey));
+              return null;
+            })
+        .when(stateWriter)
+        .appendFollowUpEvent(anyLong(), eq(SecretReferenceIntent.BATCH_INCIDENTS_CREATED), any());
+
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
     when(writers.command()).thenReturn(commandWriter);
@@ -99,6 +116,11 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
   }
 
   private void createWaitingJob(final long jobKey, final long elementInstanceKey) {
+    createWaitingJob(jobKey, elementInstanceKey, STORE_ID);
+  }
+
+  private void createWaitingJob(
+      final long jobKey, final long elementInstanceKey, final String storeId) {
     final var processInstanceRecord =
         new ProcessInstanceRecord()
             .setBpmnElementType(BpmnElementType.SERVICE_TASK)
@@ -122,12 +144,14 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
             .setElementInstanceKey(elementInstanceKey)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     jobState.create(jobKey, jobRecord);
+
+    secretReferenceState.addPendingSecretReference(storeId, SECRET_REF);
+    secretReferenceState.addWaitingJob(storeId, SECRET_REF, jobKey);
   }
 
   @Test
   void shouldWriteBatchIncidentsCreatedEventForCurrentBatch() {
-    // given - two jobs on the command; waiting entries not seeded in state (event application
-    //         removes them first)
+    // given - two jobs waiting on the secret reference, both carried by the command
     createWaitingJob(1L, 11L);
     createWaitingJob(2L, 12L);
     final var value =
@@ -198,7 +222,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
   @Test
   void shouldReferenceConfiguredStoreInIncidentMessageWhenStoreIdIsEmpty() {
     // given - camunda.secrets.<name> references carry no store id until store selection exists
-    createWaitingJob(1L, 11L);
+    createWaitingJob(1L, 11L, "");
     final var value = new SecretReferenceRecord().setSecretReference(SECRET_REF).addJobKey(1L);
 
     // when
@@ -272,12 +296,43 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
   }
 
   @Test
-  void shouldWriteFollowUpCommandWhenMoreJobsRemain() {
-    // given - job 3 is still waiting in state (jobs 1 and 2 were removed by event application
-    //         already); command carries jobs 1 and 2 as the current batch
+  void shouldSkipJobThatIsNoLongerWaitingOnTheSecretReference() {
+    // given - job 2 was drained by a reactivation chain that overtook this command, so it is no
+    //         longer waiting on the failed reference even though the command still carries it
     createWaitingJob(1L, 11L);
     createWaitingJob(2L, 12L);
-    secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
+    secretReferenceState.removeWaitingJob(STORE_ID, SECRET_REF, 2L);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L)
+            .addJobKey(2L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - only the job that is still waiting receives an incident
+    final var incidentCaptor = ArgumentCaptor.forClass(IncidentRecord.class);
+    verify(stateWriter, times(1))
+        .appendFollowUpEvent(eq(999L), eq(IncidentIntent.CREATED), incidentCaptor.capture());
+    Assertions.assertThat(incidentCaptor.getValue().getJobKey()).isEqualTo(1L);
+    verify(incidentMetrics, times(1)).incidentCreated();
+
+    // and - the batch event still carries both keys so the drain keeps making progress
+    final var eventCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(500L), eq(SecretReferenceIntent.BATCH_INCIDENTS_CREATED), eventCaptor.capture());
+    Assertions.assertThat(eventCaptor.getValue().getJobKeys()).containsExactly(1L, 2L);
+  }
+
+  @Test
+  void shouldWriteFollowUpCommandWhenMoreJobsRemain() {
+    // given - three jobs waiting; the command carries jobs 1 and 2 as the current batch, so job 3
+    //         is left over for the follow-up
+    createWaitingJob(1L, 11L);
+    createWaitingJob(2L, 12L);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 3L);
     final var value =
         new SecretReferenceRecord()
