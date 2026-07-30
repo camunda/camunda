@@ -280,6 +280,22 @@ public final class ClusterConfigurationGossiper
     return responseFuture;
   }
 
+  public ActorFuture<CurrentClusterConfiguration> queryCurrentClusterConfiguration(
+      final MemberId memberId) {
+    final ActorFuture<CurrentClusterConfiguration> responseFuture = executor.createFuture();
+    sendSyncRequest(memberId)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error == null) {
+                responseFuture.complete(response.getCurrentClusterConfiguration());
+              } else {
+                responseFuture.completeExceptionally(error);
+              }
+            },
+            executor::run);
+    return responseFuture;
+  }
+
   private CompletableFuture<ClusterConfigurationGossipState> sendSyncRequest(
       final MemberId memberId) {
     return communicationService.send(
