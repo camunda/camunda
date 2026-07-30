@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.AUTOMATION_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
@@ -35,6 +36,7 @@ public enum ProcessView {
       new ProcessViewDto(PROCESS_INSTANCE, DURATION), new ProcessPartDto()),
   PROCESS_VIEW_INSTANCE_FREQUENCY(new ProcessViewDto(PROCESS_INSTANCE, FREQUENCY)),
   PROCESS_VIEW_INSTANCE_PERCENTAGE(new ProcessViewDto(PROCESS_INSTANCE, PERCENTAGE)),
+  PROCESS_VIEW_INSTANCE_AUTOMATION_RATE(new ProcessViewDto(PROCESS_INSTANCE, AUTOMATION_RATE)),
   PROCESS_VIEW_RAW_DATA(new ProcessViewDto(ViewProperty.RAW_DATA)),
   PROCESS_VIEW_VARIABLE(
       new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.variable(null, null))),

@@ -51,6 +51,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PRO
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_TOOL_CALLS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_FREQUENCY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_AUTOMATION_RATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_DURATION_PROCESS_PART;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_FREQUENCY;
@@ -381,6 +382,22 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
 
   PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_NONE(
       PROCESS_VIEW_INSTANCE_PERCENTAGE, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE(
+      PROCESS_VIEW_INSTANCE_AUTOMATION_RATE,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_PROCESS_DEFINITION_KEY(
+      PROCESS_VIEW_INSTANCE_AUTOMATION_RATE,
+      PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_END_DATE(
+      PROCESS_VIEW_INSTANCE_AUTOMATION_RATE,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
 
   PROCESS_RAW_PROCESS_INSTANCE_DATA_GROUP_BY_NONE(
       PROCESS_VIEW_RAW_DATA, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, RAW_DATA),
