@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.Arrays;
 import java.util.Objects;
