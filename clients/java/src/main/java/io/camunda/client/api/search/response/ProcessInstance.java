@@ -52,6 +52,12 @@ public interface ProcessInstance {
 
   OffsetDateTime getEndDate();
 
+  /**
+   * @return the time this process instance most recently entered the {@code SUSPENDED} state, or
+   *     {@code null} if it is not currently suspended
+   */
+  OffsetDateTime getSuspendedDate();
+
   ProcessInstanceState getState();
 
   Boolean getHasIncident();

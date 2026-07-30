@@ -75,6 +75,12 @@ public interface ProcessDefinitionStatisticsFilterBase extends StatisticsRequest
   /** Filter by hasIncident */
   ProcessDefinitionStatisticsFilterBase hasIncident(final Boolean hasIncident);
 
+  /** Filter by suspendedDate */
+  ProcessDefinitionStatisticsFilterBase suspendedDate(final OffsetDateTime suspendedDate);
+
+  /** Filter by suspendedDate using {@link DateTimeProperty} consumer */
+  ProcessDefinitionStatisticsFilterBase suspendedDate(final Consumer<DateTimeProperty> fn);
+
   /** Filter by tenantId */
   ProcessDefinitionStatisticsFilterBase tenantId(final String tenantId);
 

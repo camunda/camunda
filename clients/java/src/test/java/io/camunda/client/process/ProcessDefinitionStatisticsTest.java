@@ -63,6 +63,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // when
     final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endDate = OffsetDateTime.now();
+    final OffsetDateTime suspendedDate = OffsetDateTime.now().minusHours(3);
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
@@ -83,6 +84,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .parentElementInstanceKey(30L)
                     .startDate(startDate)
                     .endDate(endDate)
+                    .suspendedDate(suspendedDate)
                     .state(ProcessInstanceState.ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
@@ -108,6 +110,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
+    assertThat(filter.getSuspendedDate().get$Eq()).isEqualTo(suspendedDate.toString());
     assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");

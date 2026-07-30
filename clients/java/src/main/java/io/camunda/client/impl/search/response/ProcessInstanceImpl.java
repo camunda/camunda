@@ -36,6 +36,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Long parentElementInstanceKey;
   private final OffsetDateTime startDate;
   private final OffsetDateTime endDate;
+  private final OffsetDateTime suspendedDate;
   private final ProcessInstanceState state;
   private final Boolean hasIncident;
   private final String tenantId;
@@ -54,6 +55,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     parentElementInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
+    suspendedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getSuspendedDate());
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
@@ -114,6 +116,11 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public OffsetDateTime getEndDate() {
     return endDate;
+  }
+
+  @Override
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
   }
 
   @Override
