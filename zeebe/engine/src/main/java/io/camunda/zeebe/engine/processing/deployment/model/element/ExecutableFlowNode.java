@@ -70,6 +70,15 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return inputMappings.map(InputMappings::secretReferences).orElse(Map.of());
   }
 
+  /**
+   * Cluster-variable references detected in this flow node's input mappings, keyed by the JSON
+   * pointer (RFC 6901) of the leaf each reference belongs to (e.g. {@code /tokens/token}). Empty
+   * when no input mapping references a cluster variable.
+   */
+  public Map<String, Set<ClusterVariableReference>> getClusterVariableReferences() {
+    return inputMappings.map(InputMappings::clusterVariableReferences).orElse(Map.of());
+  }
+
   public List<ExecutionListener> getBeforeAllExecutionListeners() {
     return executionListeners.stream()
         .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)

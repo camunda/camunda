@@ -17,7 +17,13 @@ import org.jspecify.annotations.NullMarked;
  * modeling order, plus the secret references detected in them, keyed by the JSON pointer (RFC 6901)
  * of the leaf each secret belongs to (e.g. {@code /tokens/token}). {@code secretReferences} is
  * empty when no input mapping references a secret.
+ *
+ * <p>{@code clusterVariableReferences} mirrors {@code secretReferences} for cluster-variable
+ * references ({@code camunda.vars.<scope>.<name>}) detected in the input mappings, keyed by the
+ * same RFC-6901 leaf JSON pointer; empty when no input mapping references a cluster variable.
  */
 @NullMarked
 public record InputMappings(
-    List<InputMapping> mappings, Map<String, Set<SecretReference>> secretReferences) {}
+    List<InputMapping> mappings,
+    Map<String, Set<SecretReference>> secretReferences,
+    Map<String, Set<ClusterVariableReference>> clusterVariableReferences) {}

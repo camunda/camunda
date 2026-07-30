@@ -11,6 +11,8 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariableReference;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariableReference.DetectedClusterVariable;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
@@ -105,7 +107,10 @@ public final class VariableMappingTransformer {
                         toInputSourceExpression(mapping.source, expressionLanguage),
                         splitPathExpression(mapping.target)))
             .toList();
-    return new InputMappings(transformedMappings, detectSecretReferences(context));
+    return new InputMappings(
+        transformedMappings,
+        detectSecretReferences(context),
+        detectClusterVariableReferences(context));
   }
 
   private static Expression toInputSourceExpression(
@@ -195,6 +200,66 @@ public final class VariableMappingTransformer {
     path.add(key);
     path.addAll(detected.path());
     return new DetectedSecret(path, detected.secret());
+  }
+
+  /**
+   * Detects the cluster variables referenced by the built mapping context, keyed by the JSON
+   * pointer (RFC 6901) of the leaf each reference belongs to — the leaf's target path plus the
+   * reference's FEEL context path. Mirrors {@link #detectSecretReferences} for cluster-variable
+   * references (see {@link ClusterVariableReference} for what counts).
+   */
+  private static Map<String, Set<ClusterVariableReference>> detectClusterVariableReferences(
+      final MappingContext context) {
+    final var clusterVariablesByPointer =
+        new LinkedHashMap<String, Set<ClusterVariableReference>>();
+    for (final var detected : context.visit(clusterVariableCollector())) {
+      clusterVariablesByPointer
+          .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
+          .add(detected.clusterVariable());
+    }
+    return clusterVariablesByPointer;
+  }
+
+  /**
+   * Visitor that collects the cluster-variable references of a mapping context as a flat list, each
+   * carrying the path segments of its leaf: the target path (built up from the context keys as the
+   * visit descends) plus the reference's FEEL context path within the source. A nested context is
+   * descended; a leaf holds the source expression to scan.
+   */
+  private static MappingContextVisitor<List<DetectedClusterVariable>> clusterVariableCollector() {
+    return new MappingContextVisitor<>() {
+      @Override
+      public List<DetectedClusterVariable> onEntry(
+          final String targetKey, final Expression source) {
+        return ClusterVariableReference.parse(source).stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedClusterVariable> onContext(
+          final List<List<DetectedClusterVariable>> entries) {
+        return entries.stream().flatMap(List::stream).collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedClusterVariable> onContextEntry(
+          final String targetKey,
+          final List<DetectedClusterVariable> contextValue,
+          final List<String> contextPath) {
+        return contextValue.stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+    };
+  }
+
+  private static DetectedClusterVariable prependKey(
+      final String key, final DetectedClusterVariable detected) {
+    final var path = new ArrayList<String>();
+    path.add(key);
+    path.addAll(detected.path());
+    return new DetectedClusterVariable(path, detected.clusterVariable());
   }
 
   /**
