@@ -202,21 +202,33 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.START,
             new MessageStartProcessInstanceRequestStartProcessor(
-                writers.state(), writers.response(), messageState, messageCorrelationState))
+                writers.state(),
+                writers.response(),
+                messageState,
+                messageCorrelationState,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
             new MessageStartProcessInstanceRequestRejectUniquenessProcessor(
-                writers.state(), writers.response(), messageCorrelationState, messageState))
+                writers.state(),
+                writers.response(),
+                messageCorrelationState,
+                messageState,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
             new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
-                writers.state(), writers.response(), messageCorrelationState, messageState))
+                writers.state(),
+                writers.response(),
+                messageCorrelationState,
+                messageState,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
-            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state(), metrics))
         // Holder-liveness release query handler on P_B - answers whether a cross-partition
         // message-start holder instance is still active, so P_K can release its correlation-key
         // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.

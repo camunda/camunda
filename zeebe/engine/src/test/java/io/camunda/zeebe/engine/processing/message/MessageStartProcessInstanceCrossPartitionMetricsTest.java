@@ -26,9 +26,10 @@ import org.junit.Test;
 
 /**
  * Multi-partition metric assertions for the cross-partition message-start handshake counters M1
- * (REQUEST outcomes on {@code P_B}) and M3 (asks dispatched from {@code P_K}). This class drives
- * the same scenarios as {@link MessageStartProcessInstanceCrossPartitionHandshakeTest} and only
- * asserts that the meters are recorded on the expected partition registries.
+ * (REQUEST outcomes on {@code P_B}), M2 (reply outcomes on {@code P_K}) and M3 (asks dispatched
+ * from {@code P_K}). This class drives the same scenarios as {@link
+ * MessageStartProcessInstanceCrossPartitionHandshakeTest} and only asserts that the meters are
+ * recorded on the expected partition registries.
  */
 public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
 
@@ -45,6 +46,7 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
 
   private static final String REQUESTS_METRIC =
       "zeebe.message.start.cross.partition.requests.total";
+  private static final String REPLIES_METRIC = "zeebe.message.start.cross.partition.replies.total";
   private static final String ASKS_METRIC = "zeebe.message.start.cross.partition.asks.total";
 
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
@@ -82,7 +84,7 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
   }
 
   @Test
-  public void shouldRecordAskAndRequestMetricsForCleanCrossPartitionStart() {
+  public void shouldRecordAskRequestAndReplyMetricsForCleanCrossPartitionStart() {
     // given
     deployAndAwaitStartEventSubscriptionsOnAllPartitions(MESSAGE_START_PROCESS);
 
@@ -94,7 +96,7 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
         .withBusinessId(BUSINESS_ID)
         .publish();
 
-    // and the handshake completes: the PI is started on P_B
+    // and the handshake completes: the PI is started on P_B and P_K processes the STARTED reply
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
         .withElementType(BpmnElementType.PROCESS)
         .withBpmnProcessId(PROCESS_ID)
@@ -103,7 +105,8 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
             MessageStartProcessInstanceRequestIntent.STARTED)
         .getFirst();
 
-    // then the ask is counted on P_K (M3) and the REQUEST is counted as started on P_B (M1)
+    // then the ask is counted on P_K (M3), the REQUEST is counted as started on P_B (M1), and the
+    // STARTED reply is counted on P_K (M2)
     final int pK = partitionFor(CORRELATION_KEY);
     final int pB = partitionFor(BUSINESS_ID);
     assertThat(counter(pK, ASKS_METRIC, null, null))
@@ -112,10 +115,13 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
     assertThat(counter(pB, REQUESTS_METRIC, "outcome", "started"))
         .as("M1: the REQUEST is decided as a clean start on P_B")
         .isEqualTo(1.0);
+    assertThat(counter(pK, REPLIES_METRIC, "outcome", "started"))
+        .as("M2: the STARTED reply is processed on P_K")
+        .isEqualTo(1.0);
   }
 
   @Test
-  public void shouldRecordUniquenessRejectionRequestMetric() {
+  public void shouldRecordUniquenessRejectionRequestAndReplyMetrics() {
     // given a holder PI already owns the businessId on P_B
     deployAndAwaitStartEventSubscriptionsOnAllPartitions(DUAL_START_PROCESS);
     final long holderKey =
@@ -143,11 +149,14 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
             MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
         .getFirst();
 
-    // then the uniqueness rejection is counted on the REQUEST side (M1) and an ask was sent (M3)
+    // then the uniqueness rejection is counted on both the REQUEST (M1) and reply (M2) sides
     final int pK = partitionFor(CORRELATION_KEY);
     final int pB = partitionFor(BUSINESS_ID);
     assertThat(counter(pB, REQUESTS_METRIC, "outcome", "rejected_uniqueness"))
         .as("M1: the REQUEST is rejected for businessId uniqueness on P_B")
+        .isGreaterThanOrEqualTo(1.0);
+    assertThat(counter(pK, REPLIES_METRIC, "outcome", "rejected_uniqueness"))
+        .as("M2: the uniqueness-rejection reply is processed on P_K")
         .isGreaterThanOrEqualTo(1.0);
     assertThat(counter(pK, ASKS_METRIC, null, null))
         .as("M3: at least one ask was dispatched from P_K")
