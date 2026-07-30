@@ -8,8 +8,10 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static io.camunda.optimize.rest.security.csl.OptimizeCslLoginSuccessListener.ORIGINAL_USER_ID_CLAIM;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -101,6 +103,31 @@ class OptimizeCslLoginSuccessListenerTest {
     listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID));
 
     verifyNoInteractions(userIdMigrationService);
+  }
+
+  @Test
+  void shouldNotPropagateWhenResolvingTheCslUserThrows() {
+    // given — the delegating converter throws when no converter matches the authentication, which
+    // must not surface as a failed login: the event fires before the success handler redirects
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenThrow(new IllegalStateException("no matching converter"));
+
+    // when - then
+    assertThatNoException()
+        .isThrownBy(
+            () -> listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID)));
+    verifyNoInteractions(userIdMigrationService);
+  }
+
+  @Test
+  void shouldNotPropagateWhenTheMigrationItselfThrows() {
+    doThrow(new IllegalStateException("boom"))
+        .when(userIdMigrationService)
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+
+    assertThatNoException()
+        .isThrownBy(
+            () -> listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID)));
   }
 
   @Test

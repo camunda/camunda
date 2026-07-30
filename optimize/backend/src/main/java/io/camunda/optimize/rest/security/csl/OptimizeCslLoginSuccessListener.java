@@ -67,6 +67,24 @@ public final class OptimizeCslLoginSuccessListener {
     }
     LOG.debug("CSL OIDC login success for subject [{}]", oidcUser.getSubject());
 
+    try {
+      migrateIfIdentityChanged(oidcUser);
+    } catch (final RuntimeException e) {
+      // Never let a migration problem fail the login. This event is published before the success
+      // handler redirects (AbstractAuthenticationProcessingFilter#successfulAuthentication), and
+      // Spring propagates listener exceptions to the publisher, so an escape would turn a
+      // successful login into an error page. Resolving the CSL authentication can throw, for
+      // example when no CamundaAuthenticationConverter matches or the claims mapping is empty.
+      // The migration is best effort: the user keeps their session and a later login retries.
+      LOG.warn(
+          "User-id migration failed for subject [{}]; the login itself is unaffected and entities"
+              + " owned by the previous identity stay with it until a later login retries.",
+          oidcUser.getSubject(),
+          e);
+    }
+  }
+
+  private void migrateIfIdentityChanged(final OidcUser oidcUser) {
     final String originalUserId = oidcUser.getClaimAsString(ORIGINAL_USER_ID_CLAIM);
     if (originalUserId == null || originalUserId.isBlank()) {
       return;

@@ -11,6 +11,7 @@ import static io.camunda.optimize.rest.security.csl.OptimizeCslLoginSuccessListe
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.security.UserIdMigrationService;
@@ -108,6 +109,26 @@ class OptimizeCslLoginSuccessEventTest {
         .describedAs("login must have succeeded for the success event to be published")
         .isNotNull();
     verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+  }
+
+  @Test
+  void shouldCompleteTheLoginEvenWhenTheMigrationHookFails() throws Exception {
+    // given — resolving the CSL user throws, as it does when no CamundaAuthenticationConverter
+    // matches. The event is published before the success handler runs, so a propagated exception
+    // would turn a successful login into an error.
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenThrow(new IllegalStateException("no matching converter"));
+
+    final MockHttpServletRequest request = callbackRequest();
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+
+    // when
+    loginFilter().doFilter(request, response, mock(FilterChain.class));
+
+    // then — the session is established and the success handler still redirected
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    assertThat(response.getStatus()).isEqualTo(302);
+    verifyNoInteractions(userIdMigrationService);
   }
 
   private OAuth2LoginAuthenticationFilter loginFilter() {
