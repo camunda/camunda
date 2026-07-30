@@ -10,18 +10,21 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.EvaluationContext;
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
+import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -159,8 +162,7 @@ public final class VariableOutputMappingTransformerTest {
         Map.of(),
         """
         Assertion failure on evaluate the expression \
-        '{a:if (a != null) then context merge(a,{b: assert(x, x != null)}) else {b: assert(x, x != null)}}': \
-        The condition is not fulfilled"""
+        ' assert(x, x != null)': The condition is not fulfilled"""
       }, // #9543
     };
   }
@@ -172,19 +174,37 @@ public final class VariableOutputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final String expectedOutput) {
     // given
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+    outputMappings.forEach(
+        mapping ->
+            assertThat(mapping.source().isValid())
+                .describedAs("Expected valid expression: %s", mapping.source().getFailureMessage())
+                .isTrue());
 
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    // when: evaluate the mappings one by one in modeling order, same as
+    // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
+    // shadow the scope variables, and nested targets merge with the scope value at every level
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      assertThat(result.isFailure())
+          .describedAs("Expected successful evaluation: %s", result.getFailureMessage())
+          .isFalse();
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-
-    MsgPackUtil.assertEquality(result.toBuffer(), expectedOutput);
+    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
   }
 
   @ParameterizedTest(name = "{index}: mapping {0} fails with: {2}")
@@ -194,19 +214,33 @@ public final class VariableOutputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final String failureMessage) {
     // given
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    // when: evaluate one by one, stopping at the first failure (mirrors runtime fail-fast)
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    EvaluationResult failure = null;
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      if (result.isFailure()) {
+        failure = result;
+        break;
+      }
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.isFailure()).isTrue();
-
-    Assertions.assertThat(result.getFailureMessage()).isEqualTo(failureMessage);
+    assertThat(failure).isNotNull();
+    assertThat(failure.getFailureMessage()).isEqualTo(failureMessage);
   }
 
   @Test
@@ -219,18 +253,27 @@ public final class VariableOutputMappingTransformerTest {
     // see c's just-assigned value
     final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
     final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1, 'd':1}, 'c':1}");
+    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1, 'd':1}, 'c':1}");
   }
 
   @Test
@@ -247,19 +290,29 @@ public final class VariableOutputMappingTransformerTest {
             mapping("\"abc\"", "notNested"),
             mapping("notNested", "nested.nested.property"),
             mapping("notNested", "notNestedAssigned"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
+    final Map<String, DirectBuffer> variables = Map.of();
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
     MsgPackUtil.assertEquality(
-        result.toBuffer(),
+        resultBuilder.toDocument(),
         "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
             + "'notNested':'abc', 'notNestedAssigned':'abc'}");
   }
@@ -274,18 +327,27 @@ public final class VariableOutputMappingTransformerTest {
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
     final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'b':1}}");
+    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'b':1}}");
   }
 
   @Test
@@ -298,18 +360,27 @@ public final class VariableOutputMappingTransformerTest {
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
     final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var resultBuilder =
+        new MappingResultBuilder(
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return accumulated != null ? accumulated : variables.get(name);
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
 
     // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'p':0}}");
+    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'p':0}}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
