@@ -725,6 +725,9 @@ public class ExporterConfiguration {
       if (type == ReplicationType.LOG_SEQ) {
         checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
         checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
+      } else if (type == ReplicationType.TIME_LAG) {
+        checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
+        checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
       } else if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
         checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
@@ -746,6 +749,7 @@ public class ExporterConfiguration {
 
     public enum ReplicationType {
       LOG_SEQ,
+      TIME_LAG,
       DELAY
     }
   }
