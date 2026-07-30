@@ -11,21 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public class DbMessageStartProcessInstanceAskStateTest {
+@ExtendWith(ProcessingStateExtension.class)
+final class DbMessageStartProcessInstanceAskStateTest {
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
+  private MutableProcessingState processingState;
 
   @Test
-  public void shouldPutAndGetPendingAsk() {
+  void shouldPutAndGetPendingAsk() {
     // given
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     final var record = createRecord(123L, 456L, "test-business-id", "test-process");
     final var ask = new MessageStartProcessInstanceAsk().wrap(record);
 
@@ -40,9 +42,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldRemovePendingAsk() {
+  void shouldRemovePendingAsk() {
     // given
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     final var record = createRecord(123L, 456L, "test-business-id", "test-process");
     final var ask = new MessageStartProcessInstanceAsk().wrap(record);
     state.put(ask);
@@ -55,10 +57,10 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldRemoveAllPendingAsksForGivenMessageKey() {
+  void shouldRemoveAllPendingAsksForGivenMessageKey() {
     // given two pending asks for the same messageKey targeting different process definitions, and
     // one pending ask for a different messageKey that must survive
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 100L, "b1", "p1")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 200L, "b2", "p2")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(8L, 300L, "b3", "p3")));
@@ -73,9 +75,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldVisitAllPendingAsks() {
+  void shouldVisitAllPendingAsks() {
     // given
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(3L, 30L, "b3", "p3")));
@@ -89,9 +91,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldVisitPendingAsksWithLastSentTime() {
+  void shouldVisitPendingAsksWithLastSentTime() {
     // given two pending asks; one already has a last-sent time recorded
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
     state.updateLastSentTime(2L, 20L, 5_000L);
@@ -108,7 +110,7 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldPopulateRecordFromAsk() {
+  void shouldPopulateRecordFromAsk() {
     // given
     final var originalRecord = createRecord(123L, 456L, "test-business-id", "test-process");
     originalRecord.setMessageName("test-message");
@@ -140,7 +142,7 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldDefaultRejectionCountToZeroForFreshAsk() {
+  void shouldDefaultRejectionCountToZeroForFreshAsk() {
     // given a fresh ask sourced from a request record (never rejected)
     final var ask = new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p"));
 
@@ -150,9 +152,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldPersistRejectionCount() {
+  void shouldPersistRejectionCount() {
     // given
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     final var ask =
         new MessageStartProcessInstanceAsk()
             .wrap(createRecord(123L, 456L, "b", "p"))
@@ -167,7 +169,7 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldPreserveRejectionCountOnCopy() {
+  void shouldPreserveRejectionCountOnCopy() {
     // given
     final var ask =
         new MessageStartProcessInstanceAsk()
@@ -182,9 +184,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldIncrementRejectionCountOnBackOff() {
+  void shouldIncrementRejectionCountOnBackOff() {
     // given a pending ask with no rejections yet
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
 
     // when backed off twice
@@ -196,9 +198,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldNotResetSendEligibilityOnBackOff() {
+  void shouldNotResetSendEligibilityOnBackOff() {
     // given a pending ask that has already been sent (transient last-sent advanced)
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
     state.updateLastSentTime(1L, 2L, 10_000L);
 
@@ -214,9 +216,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldBeNoOpWhenBackingOffMissingAsk() {
+  void shouldBeNoOpWhenBackingOffMissingAsk() {
     // given no pending ask for the key
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
 
     // when / then no exception and nothing is created
     state.backOff(7L, 8L);
@@ -224,9 +226,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldSeedRecoveryEligibilityByRejectionCount() {
+  void shouldSeedRecoveryEligibilityByRejectionCount() {
     // given a fresh ask (never rejected) and a backed-off ask
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
     state.backOff(2L, 20L);
@@ -250,9 +252,9 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldCapRejectionCount() {
+  void shouldCapRejectionCount() {
     // given a pending ask
-    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var state = processingState.getMessageStartProcessInstanceAskState();
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
 
     // when backed off far more often than the cap (30)
