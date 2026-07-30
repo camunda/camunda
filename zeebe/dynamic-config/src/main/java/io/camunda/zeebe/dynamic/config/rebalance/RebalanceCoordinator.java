@@ -214,6 +214,7 @@ public final class RebalanceCoordinator
   private void discardState() {
     final var inFlight = running;
     if (inFlight != null) {
+      inFlight.abandon();
       LOG.warn(
           "Abandoning rebalance {}; partitions already transferred keep their new leaders, the rest "
               + "keep their current ones, and the rebalance has to be triggered again",

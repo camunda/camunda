@@ -85,7 +85,9 @@ import org.slf4j.LoggerFactory;
  * checks the partition is still TRANSFERRING, and whichever arrives first is the one that resolves
  * it. Every resolution moves the rebalance on to the next PENDING partition; it finishes when there
  * is none left, or when the operator has asked it to stop, which leaves the partitions after the
- * current one PENDING for good. A dry run finishes at the plan, having asked nothing of any leader.
+ * current one PENDING for good. A rebalance the coordinator has abandoned stops where it is without
+ * finishing at all, there being nobody left to finish it for. A dry run finishes at the plan,
+ * having asked nothing of any leader.
  *
  * <p>Runs entirely on the coordinator's actor thread, which is also the thread the {@link
  * RebalanceRun} it is given is confined to.
@@ -211,7 +213,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private void transferFrom(
       final RebalanceRun rebalance, final int from, final ActorFuture<Void> completion) {
     for (int index = from; index < rebalance.partitionCount(); index++) {
-      if (rebalance.isCancelRequested()) {
+      if (rebalance.isCancelRequested() || rebalance.isAbandoned()) {
         break;
       }
       if (rebalance.partition(index).state() == PartitionRebalanceState.PENDING) {
@@ -314,7 +316,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     executor.schedule(
         LEADERSHIP_OBSERVATION_INTERVAL,
         () -> {
-          if (completion.isDone()
+          if (isOver(rebalance, completion)
               || rebalance.partition(index).state() != PartitionRebalanceState.TRANSFERRING) {
             return;
           }
@@ -324,7 +326,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                   .currentLeader(partition.physicalTenantId(), partition.partitionId())
                   .orElse(null);
           if (observed != null && Objects.equals(observed, partition.desiredLeader())) {
-            LOG.info(
+            LOG.warn(
                 "Rebalance {} sees {} led by {} without having heard back from the leader it asked",
                 rebalance.id(),
                 partition,
@@ -387,7 +389,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
       final @Nullable LeadershipTransferInitiateResponse response,
       final @Nullable Throwable error,
       final ActorFuture<Void> completion) {
-    if (completion.isDone()
+    if (isOver(rebalance, completion)
         || rebalance.partition(index).state() != PartitionRebalanceState.TRANSFERRING) {
       // The transfer resolved before its acknowledgement got back here, or the rebalance is over.
       return;
@@ -442,7 +444,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
       final int index,
       final LeadershipTransferResultRequest result,
       final ActorFuture<Void> completion) {
-    if (completion.isDone()
+    if (isOver(rebalance, completion)
         || result.correlationId() != rebalance.id()
         || rebalance.partition(index).state() != PartitionRebalanceState.TRANSFERRING) {
       // A result left over from an earlier rebalance, or one for a transfer already resolved.
@@ -568,6 +570,14 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                     "%s from %s to %s"
                         .formatted(partition, partition.currentLeader(), partition.desiredLeader()))
             .toList());
+  }
+
+  /**
+   * Whether there is any point carrying on with this rebalance: it is over once it has finished,
+   * and once the coordinator has abandoned it there is nothing left to finish for.
+   */
+  private static boolean isOver(final RebalanceRun rebalance, final ActorFuture<Void> completion) {
+    return completion.isDone() || rebalance.isAbandoned();
   }
 
   private static long count(

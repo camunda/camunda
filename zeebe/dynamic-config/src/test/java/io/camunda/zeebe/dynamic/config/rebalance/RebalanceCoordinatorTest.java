@@ -321,6 +321,23 @@ final class RebalanceCoordinatorTest {
   }
 
   @Test
+  void shouldAbandonTheRebalanceInFlightWhenItIsNoLongerTheCoordinator() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    coordinator.onClusterConfigurationUpdated(
+        ClusterConfiguration.init()
+            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
+            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+
+    // then
+    assertThat(runner.rebalance.isAbandoned()).isTrue();
+  }
+
+  @Test
   void shouldNotReportTheAbandonedRebalanceWhenItBecomesTheCoordinatorAgain() {
     // given
     final var runner = new BlockedRunner();

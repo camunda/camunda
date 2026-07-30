@@ -34,6 +34,7 @@ public final class RebalanceRun {
 
   private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
+  private boolean abandoned;
 
   public RebalanceRun(
       final long id,
@@ -124,5 +125,18 @@ public final class RebalanceRun {
 
   public boolean isCancelRequested() {
     return cancelRequested;
+  }
+
+  /**
+   * Gives up on the rebalance entirely, for a coordinator that has lost the role. Unlike a
+   * cancellation this is not an outcome anybody is waiting to hear: the state it would be reported
+   * from is already gone, and the runner's only remaining job is to stop working on it.
+   */
+  public void abandon() {
+    abandoned = true;
+  }
+
+  public boolean isAbandoned() {
+    return abandoned;
   }
 }
