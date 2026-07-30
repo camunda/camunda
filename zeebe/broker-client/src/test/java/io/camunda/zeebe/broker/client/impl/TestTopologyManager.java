@@ -13,10 +13,12 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +28,8 @@ import org.jspecify.annotations.Nullable;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final Map<String, TestBrokerClusterState> topologies = new HashMap<>();
-  private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
+  private CurrentClusterConfiguration clusterConfiguration =
+      CurrentClusterConfiguration.uninitialized();
 
   TestTopologyManager() {
     this(new TestBrokerClusterState());
@@ -55,7 +58,17 @@ final class TestTopologyManager implements BrokerTopologyManager {
     return this;
   }
 
-  TestTopologyManager withClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
+  TestTopologyManager addInactiveNode(
+      final String partitionGroup, final int partitionId, final BrokerMemberId nodeId) {
+    final var topology =
+        topologies.computeIfAbsent(partitionGroup, group -> new TestBrokerClusterState());
+    topology.addBrokerIfAbsent(nodeId);
+    topology.addInactiveNode(partitionId, nodeId);
+    return this;
+  }
+
+  TestTopologyManager withClusterConfiguration(
+      final CurrentClusterConfiguration clusterConfiguration) {
     this.clusterConfiguration = clusterConfiguration;
     return this;
   }
@@ -66,7 +79,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterConfiguration getClusterConfiguration() {
+  public CurrentClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 
@@ -91,6 +104,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
     private final List<BrokerMemberId> brokers = new ArrayList<>();
     private final Map<Integer, BrokerMemberId> partitionLeaders = new HashMap<>();
     private final List<Integer> partitions = new ArrayList<>();
+    private final Map<Integer, Set<BrokerMemberId>> inactiveNodesPerPartition = new HashMap<>();
 
     @Override
     public boolean isInitialized() {
@@ -124,7 +138,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     @Override
     public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
-      return Set.of();
+      return inactiveNodesPerPartition.getOrDefault(partition, Set.of());
     }
 
     @Override
@@ -144,7 +158,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     @Override
     public String getBrokerAddress(final BrokerMemberId brokerId) {
-      return "";
+      return "address-" + brokerId.id();
     }
 
     @Override
@@ -184,6 +198,10 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     public void addPartitionIfAbsent(final int id) {
       partitions.add(id);
+    }
+
+    public void addInactiveNode(final int partitionId, final BrokerMemberId nodeId) {
+      inactiveNodesPerPartition.computeIfAbsent(partitionId, id -> new HashSet<>()).add(nodeId);
     }
   }
 }

@@ -21,6 +21,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -405,5 +406,25 @@ public record PartitionGroupConfiguration(
             Comparator.comparingInt(
                 e -> Objects.requireNonNull(e.getValue().getPartition(partitionId)).priority()))
         .map(Entry::getKey);
+  }
+
+  public int minReplicationFactor() {
+    // return minimum replication factor. During a configuration change, replication factor might
+    // increase temporarily.
+    return members.values().stream()
+        .flatMap(m -> m.partitions().entrySet().stream())
+        .collect(Collectors.groupingBy(Entry::getKey, Collectors.counting()))
+        .values()
+        .stream()
+        .reduce(Math::min)
+        .map(Long::intValue)
+        .orElse(0);
+  }
+
+  public IntStream partitionIds() {
+    return members.values().stream()
+        .flatMapToInt(m -> m.partitions().keySet().stream().mapToInt(i -> i))
+        .sorted()
+        .distinct();
   }
 }

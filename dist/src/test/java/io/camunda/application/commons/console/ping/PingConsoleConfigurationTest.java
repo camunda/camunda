@@ -21,7 +21,7 @@ import io.camunda.application.commons.hub.ping.M2MTokenProvider;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.io.IOException;
 import java.net.URI;
@@ -49,8 +49,8 @@ class PingConsoleConfigurationTest {
   private static final ApplicationContext APPLICATION_CONTEXT = mock(ApplicationContext.class);
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
       mock(BrokerTopologyManager.class);
-  private static final ClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
-      mock(ClusterConfiguration.class);
+  private static final CurrentClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
+      mock(CurrentClusterConfiguration.class);
   private static final M2MCredentials VALID_CREDENTIALS =
       new M2MCredentials(
           URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret", null);

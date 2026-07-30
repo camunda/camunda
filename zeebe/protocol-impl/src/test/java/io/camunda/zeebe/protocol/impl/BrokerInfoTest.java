@@ -30,20 +30,10 @@ final class BrokerInfoTest {
   @Test
   void shouldReadBrokerInfoForSpecificPartitionGroup() {
     // given
-    final BrokerInfo defaultBroker =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1);
+    final BrokerInfo defaultBroker = new BrokerInfo().setBrokerId(1, null).setClusterSize(1);
 
     final BrokerInfo tenant1Broker =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setPartitionGroup("tenant1");
+        new BrokerInfo().setBrokerId(1, null).setClusterSize(1).setPartitionGroup("tenant1");
     tenant1Broker.setLeaderForPartition(1, 5L);
 
     final Properties props = new Properties();
@@ -67,19 +57,10 @@ final class BrokerInfoTest {
   @Test
   void shouldReadAllBrokerInfosFromProperties() {
     // given
-    final BrokerInfo defaultBroker =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1);
+    final BrokerInfo defaultBroker = new BrokerInfo().setBrokerId(1, null).setClusterSize(1);
+
     final BrokerInfo tenant1Broker =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setPartitionGroup("tenant1");
+        new BrokerInfo().setBrokerId(1, null).setClusterSize(1).setPartitionGroup("tenant1");
 
     final Properties props = new Properties();
     defaultBroker.writeIntoProperties(props);
@@ -123,9 +104,7 @@ final class BrokerInfoTest {
     final BrokerInfo original =
         new BrokerInfo()
             .setBrokerId(3, "us-east-1a")
-            .setPartitionsCount(3)
             .setClusterSize(3)
-            .setReplicationFactor(1)
             .setPartitionGroup(BrokerInfo.DEFAULT_PARTITION_GROUP);
     original.setVersion("8.10.0");
     original.setCommandApiAddress("10.0.0.1:26501");
@@ -137,9 +116,9 @@ final class BrokerInfoTest {
     // then -- broker-level fields are copied
     assertThat(copy.getNodeId()).isEqualTo(3);
     assertThat(copy.getZone()).isEqualTo("us-east-1a");
-    assertThat(copy.getPartitionsCount()).isEqualTo(3);
+
     assertThat(copy.getClusterSize()).isEqualTo(3);
-    assertThat(copy.getReplicationFactor()).isEqualTo(1);
+
     assertThat(copy.getVersion()).isEqualTo("8.10.0");
     assertThat(copy.getCommandApiAddress()).isEqualTo("10.0.0.1:26501");
     assertThat(copy.getPartitionGroup()).isEqualTo("tenant1");
@@ -155,12 +134,7 @@ final class BrokerInfoTest {
   void shouldWriteToNamespacedPropertyKeyForNonDefaultGroup() {
     // given
     final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setPartitionGroup("tenant1");
+        new BrokerInfo().setBrokerId(1, null).setClusterSize(1).setPartitionGroup("tenant1");
 
     // when
     final Properties props = new Properties();
@@ -174,12 +148,8 @@ final class BrokerInfoTest {
   @Test
   void shouldWriteToLegacyKeyForDefaultGroup() {
     // given
-    final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1);
+    final BrokerInfo brokerInfo = new BrokerInfo().setBrokerId(1, null).setClusterSize(1);
+
     // partitionGroup not set → defaults to "default"
 
     // when
@@ -195,12 +165,7 @@ final class BrokerInfoTest {
   void shouldEncodeDecodePartitionGroup() {
     // given
     final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(3)
-            .setClusterSize(3)
-            .setReplicationFactor(1)
-            .setPartitionGroup("tenant1");
+        new BrokerInfo().setBrokerId(1, null).setClusterSize(3).setPartitionGroup("tenant1");
 
     // when
     final var decoded = encodeDecode(brokerInfo);
@@ -212,12 +177,7 @@ final class BrokerInfoTest {
   @Test
   void shouldReturnDefaultPartitionGroupWhenNotSet() {
     // given
-    final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(1, null)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1);
+    final BrokerInfo brokerInfo = new BrokerInfo().setBrokerId(1, null).setClusterSize(1);
 
     // when
     final var decoded = encodeDecode(brokerInfo);
@@ -279,9 +239,7 @@ final class BrokerInfoTest {
   void shouldEncodeDecodeBrokerInfo() {
     // given
     final int nodeId = 123;
-    final int partitionsCount = 345;
     final int clusterSize = 567;
-    final int replicationFactor = 789;
     final Map<DirectBuffer, DirectBuffer> addresses = new HashMap<>();
     addresses.put(wrapString("foo"), wrapString("192.159.12.1:23"));
     addresses.put(wrapString("bar"), wrapString("zeebe-0.cluster.loc:12312"));
@@ -295,11 +253,7 @@ final class BrokerInfoTest {
     partitionHealthStatuses.put(123, PartitionHealthStatus.HEALTHY);
 
     final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(nodeId, "eu-west-1b")
-            .setPartitionsCount(partitionsCount)
-            .setClusterSize(clusterSize)
-            .setReplicationFactor(replicationFactor);
+        new BrokerInfo().setBrokerId(nodeId, "eu-west-1b").setClusterSize(clusterSize);
 
     addresses.forEach(brokerInfo::addAddress);
     partitionRoles.forEach(brokerInfo::addPartitionRole);
@@ -310,9 +264,7 @@ final class BrokerInfoTest {
 
     // then
     assertThat(decoded.getNodeId()).isEqualTo(nodeId);
-    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(decoded.getAddresses()).containsAllEntriesOf(addresses);
     assertThat(decoded.getPartitionRoles()).containsAllEntriesOf(partitionRoles);
     assertThat(decoded.getPartitionHealthStatuses()).containsAllEntriesOf(partitionHealthStatuses);
@@ -323,25 +275,17 @@ final class BrokerInfoTest {
   void shouldEncodeDecodeBrokerInfoWithEmptyMaps() {
     // given
     final int nodeId = 123;
-    final int partitionsCount = 345;
     final int clusterSize = 567;
-    final int replicationFactor = 789;
 
     final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setBrokerId(nodeId, null)
-            .setPartitionsCount(partitionsCount)
-            .setClusterSize(clusterSize)
-            .setReplicationFactor(replicationFactor);
+        new BrokerInfo().setBrokerId(nodeId, null).setClusterSize(clusterSize);
 
     // when
     final var decoded = encodeDecode(brokerInfo);
 
     // then
     assertThat(decoded.getNodeId()).isEqualTo(nodeId);
-    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
@@ -360,15 +304,11 @@ final class BrokerInfoTest {
     assertThatIllegalStateException()
         .isThrownBy(decoded::getNodeId)
         .withMessageContaining("nodeId");
-    assertThatIllegalStateException()
-        .isThrownBy(decoded::getPartitionsCount)
-        .withMessageContaining("partitionsCount");
+
     assertThatIllegalStateException()
         .isThrownBy(decoded::getClusterSize)
         .withMessageContaining("clusterSize");
-    assertThatIllegalStateException()
-        .isThrownBy(decoded::getReplicationFactor)
-        .withMessageContaining("replicationFactor");
+
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
@@ -425,9 +365,7 @@ final class BrokerInfoTest {
 
     // then -- all v7 fields decode correctly, zone is null
     assertThat(decoded.getNodeId()).isEqualTo(nodeId);
-    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(decoded.getVersion()).isEqualTo(versionStr);
     assertThat(decoded.getZone()).isNull();
   }
@@ -485,9 +423,7 @@ final class BrokerInfoTest {
 
     // then — all fields decode correctly, zone is null
     assertThat(decoded.getNodeId()).isEqualTo(nodeId);
-    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
     assertThat(decoded.getVersion()).isEqualTo(versionStr);
     assertThat(decoded.getZone()).isNull();
     assertThat(decoded.getAddresses()).isEmpty();

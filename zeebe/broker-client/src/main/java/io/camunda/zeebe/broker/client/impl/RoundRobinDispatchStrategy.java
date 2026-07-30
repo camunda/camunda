@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.Optional;
@@ -73,20 +73,18 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
    * span over all statically configured partitions when routing state is not available (i.e.
    * partition scaling is not enabled) or creates a new partition ring to span over the active
    * partitions from the latest routing state.
-   *
-   * <p>Routing state is only consulted for the default partition group: it is a single cluster-wide
-   * state that describes scaling of the default group, while all other groups have a static
-   * partition distribution.
    */
   private PartitionRing updatePartitionRing(
       final BrokerTopologyManager topologyManager,
       final String partitionGroup,
       final BrokerClusterState topology,
       final GroupState state) {
+    final PartitionGroupConfiguration partitionGroupConfiguration =
+        topologyManager.getClusterConfiguration().partitionGroup(partitionGroup);
     final var routingState =
-        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionGroup)
-            ? topologyManager.getClusterConfiguration().routingState()
-            : Optional.<RoutingState>empty();
+        partitionGroupConfiguration == null
+            ? Optional.<RoutingState>empty()
+            : partitionGroupConfiguration.routingState();
     final long expectedVersion =
         routingState.map(RoutingState::version).orElse(VersionedPartitionRing.NO_ROUTING_STATE);
 
@@ -115,21 +113,21 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     return newPartitionRing;
   }
 
-  private record GroupState(
-      AtomicLong offset, AtomicReference<VersionedPartitionRing> partitionRing) {
-    GroupState(final int initialOffset) {
-      this(
-          new AtomicLong(initialOffset),
-          new AtomicReference<>(VersionedPartitionRing.uninitialized()));
-    }
-  }
-
   record VersionedPartitionRing(long version, PartitionRing partitions) {
     static final long NOT_INITIALIZED = -2;
     static final long NO_ROUTING_STATE = -1;
 
     private static VersionedPartitionRing uninitialized() {
       return new VersionedPartitionRing(NOT_INITIALIZED, null);
+    }
+  }
+
+  private record GroupState(
+      AtomicLong offset, AtomicReference<VersionedPartitionRing> partitionRing) {
+    GroupState(final int initialOffset) {
+      this(
+          new AtomicLong(initialOffset),
+          new AtomicReference<>(VersionedPartitionRing.uninitialized()));
     }
   }
 

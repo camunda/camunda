@@ -78,6 +78,20 @@ public record CurrentClusterConfiguration(
     return globalConfiguration.members().keySet();
   }
 
+  public int getClusterSize() {
+    return (int)
+        globalConfiguration.members().values().stream()
+            .filter(
+                brokerState ->
+                    brokerState.state() != BrokerState.State.LEFT
+                        && brokerState.state() != BrokerState.State.UNINITIALIZED)
+            .count();
+  }
+
+  public Optional<String> clusterId() {
+    return globalConfiguration.clusterId();
+  }
+
   /**
    * Creates an empty configuration with an initial global configuration and no partition groups.
    */

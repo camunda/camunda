@@ -103,7 +103,8 @@ public class DynamicClusterServices {
       final BrokerTopologyManager brokerTopologyManager) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        ClusterConfigurationCoordinatorSupplier.of(brokerTopologyManager::getClusterConfiguration),
+        ClusterConfigurationCoordinatorSupplier.from(
+            brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
   }
 }

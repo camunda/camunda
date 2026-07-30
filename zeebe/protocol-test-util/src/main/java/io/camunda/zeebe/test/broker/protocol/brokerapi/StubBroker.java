@@ -65,8 +65,6 @@ public final class StubBroker implements AutoCloseable {
         new BrokerInfo()
             .setCommandApiAddress(Address.from("localhost", socketAddress.getPort()).toString())
             .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setPartitionsCount(1)
             .setBrokerId(nodeId, null)
             .setPartitionHealthy(1)
             .setLeaderForPartition(partitionId, 1);

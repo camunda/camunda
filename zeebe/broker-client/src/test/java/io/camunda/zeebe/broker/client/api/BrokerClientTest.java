@@ -24,7 +24,10 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -648,9 +651,17 @@ public final class BrokerClientTest {
         final var updatedClusterConfiguration =
             topologyManager
                 .getClusterConfiguration()
-                .addMember(
-                    otherBroker.member().id(),
-                    MemberState.initializeAsActive(Map.of(2, PartitionState.active(2, null))));
+                .updateGlobalConfiguration(
+                    globalConfig ->
+                        globalConfig.addMember(
+                            otherBroker.member().id(), BrokerState.initializeAsActive()))
+                .updatePartitionGroupConfig(
+                    CurrentClusterConfiguration.DEFAULT_GROUP,
+                    group ->
+                        group.addMember(
+                            otherBroker.member().id(),
+                            BrokerPartitionState.initialize(
+                                Map.of(2, PartitionState.active(2, null)))));
         topologyManager.onClusterConfigurationUpdated(updatedClusterConfiguration);
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -18,7 +19,7 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -221,7 +222,7 @@ final class BrokerRequestManager extends Actor {
       throwIfPartitionInactive(partitionGroup, request.getPartitionId());
       if (request.shouldRouteToRecovery()) {
         return BrokerAddressProvider.leaderOrAnyRecovery(
-            topologyManager, partitionGroup, request.getPartitionId());
+            topologyManager, new PartitionId(partitionGroup, request.getPartitionId()));
       }
       return BrokerAddressProvider.leader(
           topologyManager, partitionGroup, request.getPartitionId());
@@ -266,8 +267,13 @@ final class BrokerRequestManager extends Actor {
         inactiveNodes.stream()
             .anyMatch(
                 node -> {
-                  final var member = clusterConfiguration.getMember(node.memberId());
-                  return member != null && member.state() == State.RECOVERING;
+                  final var partitionGroupConfiguration =
+                      clusterConfiguration.partitionGroup(partitionGroup);
+                  if (partitionGroupConfiguration == null) {
+                    return false;
+                  }
+                  final var member = partitionGroupConfiguration.members().get(node.memberId());
+                  return member != null && member.mode() == Mode.RECOVERING;
                 });
 
     if (someNodesInactive && leaderNode == null && !nodeInRecovery) {

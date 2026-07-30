@@ -25,7 +25,7 @@ import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguratio
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
@@ -44,8 +44,8 @@ public class PingHubRunnerIT {
 
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
       mock(BrokerTopologyManager.class);
-  private static final ClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
-      mock(ClusterConfiguration.class);
+  private static final CurrentClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
+      mock(CurrentClusterConfiguration.class);
   private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;
   private ManagementServices managementServices;

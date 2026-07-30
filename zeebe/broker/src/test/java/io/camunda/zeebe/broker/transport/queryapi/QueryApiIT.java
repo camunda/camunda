@@ -44,7 +44,7 @@ public final class QueryApiIT {
   public final ActorSchedulerRule actor = new ActorSchedulerRule();
   public final EmbeddedBrokerRule broker =
       new EmbeddedBrokerRule(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
-  public final CommandApiRule command = new CommandApiRule(broker::getAtomixCluster);
+  public final CommandApiRule command = new CommandApiRule(1, broker::getAtomixCluster);
 
   @Rule
   public final RuleChain ruleChain = RuleChain.outerRule(broker).around(command).around(actor);
