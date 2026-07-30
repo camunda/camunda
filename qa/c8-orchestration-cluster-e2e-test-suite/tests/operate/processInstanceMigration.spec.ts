@@ -754,6 +754,7 @@ test.describe.serial('Process Instance Migration', () => {
         processInstanceKey,
         'BusinessRuleTask2',
         1,
+        300000,
       );
       await page.reload();
       await operateDiagramPage.resetDiagramZoomButton.click();
