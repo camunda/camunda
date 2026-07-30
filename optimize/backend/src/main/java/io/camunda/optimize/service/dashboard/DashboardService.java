@@ -370,6 +370,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
   }
 
+  public AuthorizedDashboardDefinitionResponseDto getBusinessValueDashboard() {
+    final DashboardDefinitionRestDto dashboard =
+        getDashboardDefinitionAsService(BusinessValueDashboardService.BUSINESS_VALUE_DASHBOARD_ID);
+    return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
+  }
+
   public void verifyUserHasAccessToDashboardCollection(
       final String userId, final DashboardDefinitionRestDto dashboard) {
     getUserRoleType(userId, dashboard);
