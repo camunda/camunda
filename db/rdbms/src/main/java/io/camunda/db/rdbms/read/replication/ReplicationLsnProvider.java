@@ -19,7 +19,7 @@ import java.util.List;
  * (PostgreSQL), a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are
  * database-specific.
  */
-public interface ReplicationLogStatusProvider {
+public interface ReplicationLsnProvider {
 
   /** Returns the primary's current replication position after the last commit. */
   long getCurrent();
@@ -29,5 +29,5 @@ public interface ReplicationLogStatusProvider {
    * the DB-reported replication lag in milliseconds. Returning one row per replica lets the caller
    * apply quorum-aware aggregation instead of collapsing to a single worst-case value in SQL.
    */
-  List<ReplicationLogStatus> getReplicationStatuses();
+  List<ReplicationLsnStatus> getReplicationStatuses();
 }

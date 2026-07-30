@@ -10,8 +10,8 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.ReplicationStatusMapper">
 
-  <resultMap id="replicationLogStatusResultMap"
-    type="io.camunda.db.rdbms.read.replication.ReplicationLogStatus">
+  <resultMap id="replicationLsnStatusResultMap"
+    type="io.camunda.db.rdbms.read.replication.ReplicationLsnStatus">
     <constructor>
       <arg column="logStatus" javaType="java.lang.Long"/>
       <arg column="replicaId" javaType="java.lang.String"/>
@@ -23,7 +23,7 @@
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
 
-  <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap"
+  <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint      AS logStatus,
            pid::text                                                    AS replicaId,
@@ -43,7 +43,7 @@
     WHERE is_local = 1
   </select>
 
-  <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="mssql">
+  <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
     SELECT CONVERT(bigint, ISNULL (last_commit_lsn, 0)) AS logStatus,
            CONVERT(nvarchar(36), replica_id)            AS replicaId, ISNULL
       (DATEDIFF(millisecond, last_redone_time, GETDATE()), 0)
@@ -124,7 +124,7 @@
     instance reports its durable_lsn (the LSN persisted to durable storage on that instance)
     together with the visibility_lag_in_msec for metrics.
   -->
-  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap"
+  <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(durable_lsn, 0)            AS logStatus,
            server_id                           AS replicaId,
@@ -138,7 +138,7 @@
     instance reports its DURABLE_LSN together with VISIBILITY_LAG_IN_MSEC for metrics. Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL).
   -->
-  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap"
+  <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">
     SELECT COALESCE(DURABLE_LSN, 0)            AS logStatus,
            SERVER_ID                           AS replicaId,

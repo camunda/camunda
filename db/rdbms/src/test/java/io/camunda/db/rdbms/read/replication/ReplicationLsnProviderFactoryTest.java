@@ -16,55 +16,55 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import org.junit.jupiter.api.Test;
 
-class ReplicationLogStatusProviderFactoryTest {
+class ReplicationLsnProviderFactoryTest {
 
   @Test
-  void shouldCreatePostgresReplicationLogStatusProvider() {
+  void shouldCreatePostgresReplicationLsnProvider() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(false);
-    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLsnProvider.class);
   }
 
   @Test
-  void shouldCreateMssqlReplicationLogStatusProvider() {
+  void shouldCreateMssqlReplicationLsnProvider() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
     final var factory =
-        new ReplicationLogStatusProviderFactory(
+        new ReplicationLsnProviderFactory(
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLsnProvider.class);
   }
 
   @Test
-  void shouldCreateAuroraReplicationLogStatusProviderWhenAuroraDetected() {
+  void shouldCreateAuroraReplicationLsnProviderWhenAuroraDetected() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(true);
     when(mapper.isAuroraGlobalDatabase()).thenReturn(true);
-    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(AuroraReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(AuroraReplicationLsnProvider.class);
   }
 
   @Test
@@ -75,7 +75,7 @@ class ReplicationLogStatusProviderFactoryTest {
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(true);
     when(mapper.isAuroraGlobalDatabase()).thenReturn(false);
-    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
     // when / then
     assertThatThrownBy(factory::create)
@@ -84,20 +84,20 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
-  void shouldCreateAuroraReplicationLogStatusProviderWhenMysqlAuroraDetected() {
+  void shouldCreateAuroraReplicationLsnProviderWhenMysqlAuroraDetected() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mysql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(true);
     when(mapper.isAuroraGlobalDatabase()).thenReturn(true);
-    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(AuroraReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(AuroraReplicationLsnProvider.class);
   }
 
   @Test
@@ -107,7 +107,7 @@ class ReplicationLogStatusProviderFactoryTest {
     when(vendorDatabaseProperties.databaseId()).thenReturn("mysql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(false);
-    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+    final var factory = new ReplicationLsnProviderFactory(vendorDatabaseProperties, mapper);
 
     // when / then
     assertThatThrownBy(factory::create)
@@ -116,32 +116,32 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
-  void shouldNotCreateReplicationLogStatusProviderForUnsupportedDatabase() {
+  void shouldNotCreateReplicationLsnProviderForUnsupportedDatabase() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
     final var factory =
-        new ReplicationLogStatusProviderFactory(
+        new ReplicationLsnProviderFactory(
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Cannot create ReplicationLogStatusProvider for unknown database id oracle");
+        .hasMessage("Cannot create ReplicationLsnProvider for unknown database id oracle");
   }
 
   @Test
-  void shouldNotCreateReplicationLogStatusProviderWhenDatabaseIdIsNull() {
+  void shouldNotCreateReplicationLsnProviderWhenDatabaseIdIsNull() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn(null);
     final var factory =
-        new ReplicationLogStatusProviderFactory(
+        new ReplicationLsnProviderFactory(
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Cannot create ReplicationLogStatusProvider for null database id");
+        .hasMessage("Cannot create ReplicationLsnProvider for null database id");
   }
 }

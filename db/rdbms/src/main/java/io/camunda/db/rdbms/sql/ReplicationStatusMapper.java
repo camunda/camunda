@@ -7,14 +7,14 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import java.util.List;
 
 public interface ReplicationStatusMapper {
 
   long getCurrentLogStatus();
 
-  List<ReplicationLogStatus> getReplicationStatus();
+  List<ReplicationLsnStatus> getReplicationStatus();
 
   /** Returns {@code true} when connected to AWS Aurora. */
   boolean isAurora();
@@ -29,5 +29,5 @@ public interface ReplicationStatusMapper {
   long getAuroraCurrentLogStatus();
 
   /** Returns per-replica replication status for Aurora Global Database. */
-  List<ReplicationLogStatus> getAuroraReplicationStatus();
+  List<ReplicationLsnStatus> getAuroraReplicationStatus();
 }

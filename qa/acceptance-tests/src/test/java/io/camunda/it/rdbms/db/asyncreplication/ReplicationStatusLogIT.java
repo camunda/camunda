@@ -29,7 +29,7 @@ public class ReplicationStatusLogIT {
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
+    final var replicationStatusProvider = rdbmsService.getReplicationLsnProvider();
 
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))
