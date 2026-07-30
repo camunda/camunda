@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "ad3b4bc073fa1267236bc50eb9d663d1e392a7a0",
-    "generatedAt": "2026-07-28T12:38:09.782Z",
+    "commit": "873ad88bb686a52dd88ec0d0b3805e2b3fcf55fa",
+    "generatedAt": "2026-07-30T12:35:46.828Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "0dc4fc953ebe6d71b9dd16131a6e0ddca57c56200d552976637a4d2db0f48a81"
+    "specSha256": "775ddd726f98d4aca1058c75fb629f7e34195a11051480b07d3937d08f8687e3"
   },
   "responses": [
     {
@@ -8386,6 +8386,44 @@
           {
             "name": "tenantId",
             "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "HEALTHY",
+              "DEGRADED",
+              "DOWN"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status",
+      "method": "GET",
+      "status": "503",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "HEALTHY",
+              "DEGRADED",
+              "DOWN"
+            ]
           }
         ],
         "optional": []
