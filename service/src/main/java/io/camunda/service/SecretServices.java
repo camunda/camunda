@@ -287,14 +287,16 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * cluster's own store credentials being rejected, not the caller lacking {@code SECRET:REVEAL},
    * so it must not surface as this API's {@code ACCESS_DENIED}, which always refers to the caller's
    * permission.
+   *
+   * <p>Deliberately without a {@code default} branch: the SPI and this gateway ship from the same
+   * repository in the same release, so a code added to the SPI has to be mapped here in that same
+   * change, and an unhandled one is a compile error rather than a silent {@code UNREADABLE}.
    */
   private static SecretErrorCode toApiErrorCode(final io.camunda.secretstore.SecretErrorCode code) {
     return switch (code) {
       case NOT_FOUND -> SecretErrorCode.NOT_FOUND;
       case INVALID_REF -> SecretErrorCode.INVALID_REFERENCE;
       case ACCESS_DENIED, UNREADABLE -> SecretErrorCode.UNREADABLE;
-      // the SPI may add codes in a minor version; an unknown one is still a value we cannot read
-      default -> SecretErrorCode.UNREADABLE;
     };
   }
 
