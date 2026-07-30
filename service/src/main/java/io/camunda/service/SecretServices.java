@@ -192,6 +192,11 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * SecretStoreConfiguration}), so the loop below sees a single store and there is no second store
    * to fall back to. Lifting that cap has to revisit this, since a store's {@code NOT_FOUND} counts
    * as an answer here and would have to become "ask the next store" instead.
+   *
+   * <p>It also has to revisit the sequential loop itself: every store read is blocking I/O (a file
+   * read, an AWS Secrets Manager call), so several stores have to be read concurrently rather than
+   * one after another, which costs the sum of their latencies. Sequential is only free while a
+   * single store is all there is.
    */
   private SecretResolution readFromStores(
       final List<String> references,
