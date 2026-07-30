@@ -25,25 +25,18 @@ public enum ExportingStatus {
   PAUSED,
   /** All replicas keep exporting but do not commit their position. */
   SOFT_PAUSED,
-  /**
-   * The tenant is in no single well-defined phase: either the replicas report different phases, or
-   * at least one of them reports a phase this gateway does not recognise.
-   */
+  /** Replicas report different phases, so the tenant is in no single well-defined phase. */
   MIXED;
 
   /**
-   * Aggregates the phases reported by the individual replicas: a single phase if they all agree on
-   * one this gateway recognises, {@link #MIXED} otherwise.
+   * Aggregates the phases reported by the individual replicas: a single phase if they all agree,
+   * {@link #MIXED} otherwise.
    *
-   * <p>An unrecognised phase yields {@link #MIXED} rather than a dedicated status because {@link
-   * #MIXED} already carries the only meaning a caller can safely act on -- "this is not a confirmed
-   * pause". Distinguishing it would oblige every caller to handle a second indistinguishable
-   * non-answer for no gain in what they can do about it. In practice the branch is unreachable: the
-   * phase is read from the replica's persisted partition state, which only ever holds {@code
-   * EXPORTING}, {@code PAUSED} or {@code SOFT_PAUSED} -- the broker's fourth {@code ExporterPhase},
-   * {@code CLOSED}, is held by the exporter director and never persisted. It is kept so a future
-   * phase added on the broker side degrades to a safe answer instead of being mistaken for a pause
-   * on an older gateway.
+   * <p>Throws on a phase this gateway does not know rather than folding it into {@link #MIXED}: a
+   * phase added to the broker's {@code ExporterPhase} would otherwise be reported as a benign
+   * "pause still in flight" forever, and the mismatch would never surface. Failing the request
+   * makes it a visible error instead. This gateway is not the only thing that would need updating
+   * anyway -- a new phase also needs a status to map onto in the REST response.
    */
   public static ExportingStatus aggregate(final Set<String> reportedPhases) {
     if (reportedPhases.size() != 1) {
@@ -55,7 +48,10 @@ public enum ExportingStatus {
       case "EXPORTING" -> EXPORTING;
       case "PAUSED" -> PAUSED;
       case "SOFT_PAUSED" -> SOFT_PAUSED;
-      default -> MIXED;
+      default ->
+          throw new IllegalArgumentException(
+              "Expected a broker replica to report a known exporter phase, but got '%s'"
+                  .formatted(phase));
     };
   }
 }

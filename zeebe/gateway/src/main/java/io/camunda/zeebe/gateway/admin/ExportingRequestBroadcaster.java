@@ -54,10 +54,10 @@ public class ExportingRequestBroadcaster {
   }
 
   /**
-   * Queries every replica of every partition of the physical tenant and aggregates the reported
-   * exporter phases into a single status. Every replica is queried, not just the leaders, because
-   * pause and resume are applied to all replicas: backup tooling needs to know that the pause took
-   * effect everywhere, not only where exporting currently runs.
+   * Queries the leader and every follower of every partition of the physical tenant and aggregates
+   * the reported exporter phases into a single status. Followers are queried too, not just the
+   * leaders, because pause and resume are applied to every active member: backup tooling needs to
+   * know the pause took effect everywhere, not only where exporting currently runs.
    */
   public CompletableFuture<ExportingStatus> getExportingStatus(final String physicalTenantId) {
     final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
@@ -114,6 +114,9 @@ public class ExportingRequestBroadcaster {
       final Consumer<BrokerAdminRequest> configureRequest) {
 
     final var members = membersOfPartition(topology, partitionId);
+    // pause and resume additionally target inactive members: they hold partition data, so they
+    // must not resume exporting on their own once they become active again
+    members.addAll(topology.getInactiveNodesForPartition(partitionId));
 
     final var requests =
         members.stream()
@@ -132,18 +135,17 @@ public class ExportingRequestBroadcaster {
     return CompletableFuture.allOf(requests);
   }
 
+  /** The active members of a partition, i.e. its leader and followers. */
   private Set<BrokerMemberId> membersOfPartition(
       final BrokerClusterState topology, final Integer partitionId) {
     final var leader = topology.getLeaderForPartition(partitionId);
     final var followers = topology.getFollowersForPartition(partitionId);
-    final var inactive = topology.getInactiveNodesForPartition(partitionId);
 
     final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
     if (leader != null) {
       members.add(leader);
     }
     members.addAll(followers);
-    members.addAll(inactive);
     return members;
   }
 

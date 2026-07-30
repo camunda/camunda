@@ -16,6 +16,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
@@ -148,9 +150,9 @@ public class ExportingRequestBroadcasterTest {
 
   @ParameterizedTest
   @MethodSource("validTopologies")
-  void shouldReportMixedWhenReplicasAgreeOnAnUnrecognisedPhase(final BrokerClusterState topology) {
+  void shouldFailWhenReplicasReportAnUnknownPhase(final BrokerClusterState topology) {
     // given every replica agrees, but on a phase this gateway does not know -- as would happen if
-    // a newer broker gained a phase; it must not be mistaken for a confirmed pause
+    // a phase were added to the broker without updating the aggregation
     final var client = setupBrokerClient(topology);
     final var service = new ExportingRequestBroadcaster(client);
     when(client.sendRequest(any())).thenAnswer(invocation -> respondWithPhase("SOME_FUTURE_PHASE"));
@@ -158,8 +160,33 @@ public class ExportingRequestBroadcasterTest {
     // when
     final var status = service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID);
 
-    // then
-    assertThat(status).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(ExportingStatus.MIXED);
+    // then it must not be silently reported as MIXED, which would read as a benign "in flight"
+    assertThat(status)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(IllegalArgumentException.class)
+        .withMessageContaining("SOME_FUTURE_PHASE");
+  }
+
+  @ParameterizedTest
+  @MethodSource("validTopologies")
+  void shouldNotQueryInactiveMembersForStatus(final BrokerClusterState topology) {
+    // given
+    final var client = setupBrokerClient(topology);
+    final var service = new ExportingRequestBroadcaster(client);
+    when(client.sendRequest(any())).thenAnswer(invocation -> respondWithPhase("PAUSED"));
+
+    // when
+    service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID).join();
+
+    // then only members that actually hold the partition are asked -- an inactive member has no
+    // exporter phase to report
+    for (final var partition : topology.getPartitions()) {
+      for (final var inactive : topology.getInactiveNodesForPartition(partition)) {
+        verify(client, never()).sendRequest(requestTo(partition, inactive));
+      }
+    }
   }
 
   @ParameterizedTest
