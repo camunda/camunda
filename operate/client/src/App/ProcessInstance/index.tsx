@@ -42,7 +42,6 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {INSTANCE_HISTORY_MIN_WIDTH} from 'modules/constants';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate, matchPath, type Location} from 'react-router-dom';
@@ -99,10 +98,7 @@ const BottomPanelContent: React.FC = () => {
           direction={SplitDirection.Horizontal}
           minWidths={
             panelMinWidth !== undefined
-              ? [
-                  Math.max(panelMinWidth, INSTANCE_HISTORY_MIN_WIDTH),
-                  panelMinWidth,
-                ]
+              ? [panelMinWidth, panelMinWidth]
               : undefined
           }
         >

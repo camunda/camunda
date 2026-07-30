@@ -29,25 +29,8 @@ const Container = styled.div`
   }
 `;
 
-// These rules let the title ellipsise and keep the toggles from being squashed
-// as the panel narrows. They are width-agnostic - no coupling to
-// INSTANCE_HISTORY_MIN_WIDTH - but the "instance history header stays readable
-// at the panel minimum width" Playwright guard asserts the result at that
-// width. Unrelated to the sort control, which lives in SearchRow, not here.
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
-  gap: var(--cds-spacing-03);
-
-  h2 {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .cds--stack-horizontal {
-    flex-shrink: 0;
-  }
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
