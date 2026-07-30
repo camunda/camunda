@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.dynamic.config.rebalance.ClusterConfigurationCoordinatorCheck;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -65,6 +66,9 @@ public final class ZeebePartition extends Actor
 
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
+
+  /** Tells the leader which node may ask it to transfer leadership. */
+  private final ClusterConfigurationCoordinatorCheck coordinatorCheck;
 
   /** Bridges the actor-scheduled write freeze to the {@link CompletableFuture}-based Raft hook. */
   private final LeadershipTransferWriteBarrier writeBarrier =
@@ -116,6 +120,19 @@ public final class ZeebePartition extends Actor
         new RoleMetrics(
             transitionContext.getPartitionStartupMeterRegistry(),
             transitionContext.getPartitionId());
+    // Resolved per request rather than now, so the check always reads the configuration this member
+    // currently holds rather than the service it was wired with at construction. Reduced to the
+    // legacy view the coordinator itself works from, so both sides apply the lowest-id rule over
+    // the same members and versions.
+    coordinatorCheck =
+        new ClusterConfigurationCoordinatorCheck(
+            () -> {
+              final var current =
+                  transitionContext
+                      .getClusterConfigurationService()
+                      .getCurrentClusterConfiguration();
+              return current == null ? null : current.toLegacyDefault();
+            });
   }
 
   public static String componentName(final PartitionId partitionId) {
@@ -162,6 +179,7 @@ public final class ZeebePartition extends Actor
     // components.
     context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
     context.getRaftPartition().getServer().setLeadershipTransferWriteBarrier(writeBarrier);
+    context.getRaftPartition().getServer().setLeadershipTransferCoordinatorCheck(coordinatorCheck);
   }
 
   @Override
