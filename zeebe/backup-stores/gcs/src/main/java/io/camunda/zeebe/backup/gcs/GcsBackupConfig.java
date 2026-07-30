@@ -12,19 +12,25 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
+import java.time.Duration;
+import java.util.Optional;
 
 public record GcsBackupConfig(
     String bucketName,
     String basePath,
     GcsConnectionConfig connection,
     int maxConcurrentTransfers,
-    int bufferSize) {
+    int bufferSize,
+    Optional<Duration> readTimeout,
+    Optional<Duration> writeTimeout) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
       final GcsConnectionConfig connection,
       final int maxConcurrentTransfers,
-      final int bufferSize) {
+      final int bufferSize,
+      final Optional<Duration> readTimeout,
+      final Optional<Duration> writeTimeout) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
@@ -33,6 +39,8 @@ public record GcsBackupConfig(
       throw new ConfigurationException("Expected bufferSize to be > 0, but got " + bufferSize);
     }
     this.bufferSize = bufferSize;
+    this.readTimeout = readTimeout;
+    this.writeTimeout = writeTimeout;
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -73,6 +81,8 @@ public record GcsBackupConfig(
     private String basePath;
     private String host;
     private GcsConnectionConfig.Authentication auth;
+    private Duration readTimeout;
+    private Duration writeTimeout;
     // 2MiB matches the default used by the GCS library's Path-based upload
     private int bufferSize = 2 * 1024 * 1024;
 
@@ -115,13 +125,25 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withReadTimeout(final Duration readTimeout) {
+      this.readTimeout = readTimeout;
+      return this;
+    }
+
+    public Builder withWriteTimeout(final Duration writeTimeout) {
+      this.writeTimeout = writeTimeout;
+      return this;
+    }
+
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
           bucketName,
           basePath,
           new GcsConnectionConfig(host, auth),
           maxConcurrentTransfers,
-          bufferSize);
+          bufferSize,
+          Optional.ofNullable(readTimeout),
+          Optional.ofNullable(writeTimeout));
     }
   }
 }

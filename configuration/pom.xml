@@ -197,6 +197,16 @@
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

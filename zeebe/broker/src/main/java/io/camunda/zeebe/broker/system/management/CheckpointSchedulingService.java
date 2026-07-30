@@ -212,17 +212,23 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   }
 
   private static BackupStore buildS3BackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
+    final var storeConfig =
+        S3BackupStoreConfig.toStoreConfig(
+            backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return S3BackupStore.of(storeConfig);
   }
 
   private static BackupStore buildGcsBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs());
+    final var storeConfig =
+        GcsBackupStoreConfig.toStoreConfig(
+            backupCfg.getGcs(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return GcsBackupStore.of(storeConfig);
   }
 
   private static BackupStore buildAzureBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure());
+    final var storeConfig =
+        AzureBackupStoreConfig.toStoreConfig(
+            backupCfg.getAzure(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout());
     return AzureBackupStore.of(storeConfig);
   }
 
