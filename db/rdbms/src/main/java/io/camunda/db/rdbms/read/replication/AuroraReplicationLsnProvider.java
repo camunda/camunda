@@ -19,14 +19,14 @@ import java.util.List;
  * visibility_lag_in_msec} column is surfaced as {@code replicationLagMs} for observability.
  *
  * <p>Aurora always presents itself as a PostgreSQL database to JDBC clients, so this provider is
- * selected at runtime by {@link ReplicationLogStatusProviderFactory} when the Aurora-specific
- * function is detected in {@code pg_proc}.
+ * selected at runtime by {@link ReplicationLsnProviderFactory} when the Aurora-specific function is
+ * detected in {@code pg_proc}.
  */
-public final class AuroraReplicationLogStatusProvider implements ReplicationLogStatusProvider {
+public final class AuroraReplicationLsnProvider implements ReplicationLsnProvider {
 
   private final ReplicationStatusMapper mapper;
 
-  public AuroraReplicationLogStatusProvider(final ReplicationStatusMapper mapper) {
+  public AuroraReplicationLsnProvider(final ReplicationStatusMapper mapper) {
     this.mapper = mapper;
   }
 
@@ -36,7 +36,7 @@ public final class AuroraReplicationLogStatusProvider implements ReplicationLogS
   }
 
   @Override
-  public List<ReplicationLogStatus> getReplicationStatuses() {
+  public List<ReplicationLsnStatus> getReplicationStatuses() {
     return mapper.getAuroraReplicationStatus();
   }
 }

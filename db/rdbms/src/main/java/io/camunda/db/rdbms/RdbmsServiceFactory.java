@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -50,11 +50,10 @@ public class RdbmsServiceFactory {
           "Missing RDBMS readers for physical tenant '%s'".formatted(physicalTenantId));
     }
     final var rdbmsWriterFactory = new RdbmsWriterFactory(rdbmsMapperBundle, meterRegistry);
-    final var replicationLogStatusProviderFactory =
-        new ReplicationLogStatusProviderFactory(
+    final var replicationLsnProviderFactory =
+        new ReplicationLsnProviderFactory(
             rdbmsMapperBundle.vendorDatabaseProperties(),
             rdbmsMapperBundle.replicationStatusMapper());
-    return new RdbmsService(
-        rdbmsWriterFactory, rdbmsTenantReader, replicationLogStatusProviderFactory);
+    return new RdbmsService(rdbmsWriterFactory, rdbmsTenantReader, replicationLsnProviderFactory);
   }
 }
