@@ -45,14 +45,9 @@ public record MessageSubscriptionDbModel(
 
   public MessageSubscriptionDbModel truncateToolFields(
       final int sizeLimit, final Integer byteLimit) {
-    final var truncatedToolName =
-        TruncateUtil.shouldTruncate(toolName, sizeLimit, byteLimit)
-            ? TruncateUtil.truncateValue(toolName, sizeLimit, byteLimit)
-            : toolName;
+    final var truncatedToolName = TruncateUtil.truncateValue(toolName, sizeLimit, byteLimit);
     final var truncatedInboundConnectorType =
-        TruncateUtil.shouldTruncate(inboundConnectorType, sizeLimit, byteLimit)
-            ? TruncateUtil.truncateValue(inboundConnectorType, sizeLimit, byteLimit)
-            : inboundConnectorType;
+        TruncateUtil.truncateValue(inboundConnectorType, sizeLimit, byteLimit);
     if (Objects.equals(truncatedToolName, toolName)
         && Objects.equals(truncatedInboundConnectorType, inboundConnectorType)) {
       return this;

@@ -125,14 +125,8 @@ public record AgentInstanceDbModel(
 
   public AgentInstanceDbModel truncateDefinitionFields(
       final int sizeLimit, final Integer byteLimit) {
-    final var truncatedModel =
-        TruncateUtil.shouldTruncate(model, sizeLimit, byteLimit)
-            ? TruncateUtil.truncateValue(model, sizeLimit, byteLimit)
-            : model;
-    final var truncatedProvider =
-        TruncateUtil.shouldTruncate(provider, sizeLimit, byteLimit)
-            ? TruncateUtil.truncateValue(provider, sizeLimit, byteLimit)
-            : provider;
+    final var truncatedModel = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+    final var truncatedProvider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
     if (Objects.equals(truncatedModel, model) && Objects.equals(truncatedProvider, provider)) {
       return this;
     }

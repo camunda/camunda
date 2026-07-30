@@ -20,6 +20,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,8 @@ public record AgentHistoryDbModel(
   }
 
   public AgentHistoryDbModel truncateJobLease(final int sizeLimit, final Integer byteLimit) {
-    if (!TruncateUtil.shouldTruncate(jobLease, sizeLimit, byteLimit)) {
+    final var truncatedJobLease = TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit);
+    if (Objects.equals(truncatedJobLease, jobLease)) {
       return this;
     }
 
@@ -74,7 +76,7 @@ public record AgentHistoryDbModel(
         tenantId,
         partitionId,
         jobKey,
-        TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit),
+        truncatedJobLease,
         loopIteration,
         role,
         commitStatus,
