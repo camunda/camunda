@@ -52,6 +52,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -115,6 +116,16 @@ public final class PrefixMigrationHelper {
               TasklistVariableIndex.class);
 
   /**
+   * Prefix literals reserved by other components (see
+   * https://docs.camunda.io/docs/self-managed/concepts/secondary-storage/managing-secondary-storage/).
+   * A target prefix exactly matching one of these would collide with a component-name segment in
+   * the resulting index names.
+   */
+  @VisibleForTesting
+  public static final Set<String> RESERVED_INDEX_PREFIX_LITERALS =
+      Set.of("camunda", "tasklist", "operate", "zeebe-record", "optimize");
+
+  /**
    * Conservative limit for the combined length of comma-separated index names in a single DELETE
    * request URL, to avoid exceeding http.max_initial_line_length (default: 4096 bytes). The
    * overhead for the HTTP request line (e.g. "DELETE / HTTP/1.1") is subtracted.
@@ -140,6 +151,10 @@ public final class PrefixMigrationHelper {
             ? tasklistProperties.elasticsearchIndexPrefix()
             : tasklistProperties.opensearchIndexPrefix();
     final var targetPrefix = connectConfiguration.getIndexPrefix();
+
+    if (!isValidTargetPrefix(targetPrefix, operatePrefix, tasklistPrefix)) {
+      return false;
+    }
 
     final var prefixMigrationClient = getPrefixMigrationClient(connectConfiguration);
     final var descriptors = new IndexDescriptors(targetPrefix, isElasticsearch);
@@ -222,6 +237,57 @@ public final class PrefixMigrationHelper {
     }
 
     return true;
+  }
+
+  /**
+   * Validates the target index prefix before any clone operation starts. Logs every violation found
+   * (rather than failing fast) so an operator sees all problems in a single run. See
+   * https://docs.camunda.io/docs/self-managed/concepts/secondary-storage/managing-secondary-storage/.
+   */
+  @VisibleForTesting
+  static boolean isValidTargetPrefix(
+      final String targetPrefix, final String operatePrefix, final String tasklistPrefix) {
+    if (!StringUtils.hasText(targetPrefix)) {
+      // a blank target prefix is a legitimate "no prefix" configuration
+      return true;
+    }
+
+    final var lowerTargetPrefix = targetPrefix.toLowerCase(Locale.ROOT);
+    var valid = true;
+
+    if (StringUtils.hasText(operatePrefix)
+        && startsWithEitherWay(lowerTargetPrefix, operatePrefix.toLowerCase(Locale.ROOT))) {
+      LOG.error(
+          "Target index prefix [{}] must not reuse or be a prefix of the old Operate index"
+              + " prefix [{}]",
+          targetPrefix,
+          operatePrefix);
+      valid = false;
+    }
+
+    if (StringUtils.hasText(tasklistPrefix)
+        && startsWithEitherWay(lowerTargetPrefix, tasklistPrefix.toLowerCase(Locale.ROOT))) {
+      LOG.error(
+          "Target index prefix [{}] must not reuse or be a prefix of the old Tasklist index"
+              + " prefix [{}]",
+          targetPrefix,
+          tasklistPrefix);
+      valid = false;
+    }
+
+    if (RESERVED_INDEX_PREFIX_LITERALS.contains(lowerTargetPrefix)) {
+      LOG.error(
+          "Target index prefix [{}] must not be one of the reserved names {}",
+          targetPrefix,
+          RESERVED_INDEX_PREFIX_LITERALS);
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  private static boolean startsWithEitherWay(final String a, final String b) {
+    return a.startsWith(b) || b.startsWith(a);
   }
 
   public static Supplier<CompletableFuture<List<CloneResult>>> migrate(

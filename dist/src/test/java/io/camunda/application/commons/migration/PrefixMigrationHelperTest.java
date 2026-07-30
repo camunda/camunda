@@ -132,6 +132,105 @@ class PrefixMigrationHelperTest {
   }
 
   @Test
+  void shouldAcceptBlankTargetPrefix() {
+    // when
+    final var valid = PrefixMigrationHelper.isValidTargetPrefix("", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixUnrelatedToOldPrefixesAndReservedNames() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("some-new-prefix", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixThatMerelyContainsAReservedName() {
+    // when - "my-env-camunda" contains "camunda" but is not equal to it
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("my-env-camunda", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixExactlyEqualToAReservedName() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("camunda", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixEqualToAReservedNameCaseInsensitively() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("CAMUNDA", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixThatStartsWithAnOldPrefix() {
+    // when - old operate prefix "operate", target "operate-dev-2" starts with it
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("operate-dev-2", "operate", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixThatIsAPrefixOfAnOldPrefix() {
+    // when - old operate prefix "operate-dev" starts with target "operate"
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("operate", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixThatOnlySharesCharactersWithOldPrefixWithoutStartsWithRelation() {
+    // when - "dev" is not a startsWith match in either direction against "operate-dev"
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("dev", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldSkipOldPrefixCheckWhenOldPrefixIsBlank() {
+    // when - operate isn't being migrated (blank prefix), so no collision with "operate"
+    final var valid = PrefixMigrationHelper.isValidTargetPrefix("operate", "", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse(); // still rejected - "operate" is a reserved literal
+  }
+
+  @Test
+  void shouldReportAllViolationsWithoutFailingFast() {
+    // given - "camunda" is both a reserved literal and, contrived here, the old operate prefix
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("camunda", "camunda", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
   void shouldReportAllCloneSucceededWhenNoFailures() {
     // given
     final var results =
