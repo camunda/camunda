@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -148,6 +150,51 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
 
     // but job is NOT made activatable — it still waits on secret2
     assertThat(jobState.getState(jobKey)).isNotEqualTo(State.ACTIVATABLE);
+  }
+
+  @Test
+  void shouldNotMakeJobActivatableWhenJobHasOpenIncident() {
+    // given - a parked job waiting on the secret reference, with an open incident raised for an
+    //         earlier failed secret reference of the same job
+    final long jobKey = 5L;
+    final var jobRecord =
+        new JobRecord()
+            .setType("test")
+            .setRetries(3)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    jobState.create(jobKey, jobRecord);
+    jobState.makeJobNotActivatable(jobKey, jobRecord);
+    processingState
+        .getIncidentState()
+        .createIncident(
+            55L,
+            new IncidentRecord()
+                .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+                .setJobKey(jobKey)
+                .setProcessInstanceKey(7L)
+                .setElementInstanceKey(11L));
+    secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
+    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(jobKey);
+
+    // when
+    applier.applyState(100L, value);
+
+    // then - the waiting entry is removed, but the job stays parked; resolving the incident is
+    //        the only path that reactivates it
+    final var activatableJobs = new ArrayList<Long>();
+    jobState.forEachActivatableJobs(
+        jobRecord.getTypeBuffer(),
+        List.of(jobRecord.getTenantId()),
+        (key, record) -> {
+          activatableJobs.add(key);
+          return true;
+        });
+    assertThat(activatableJobs).isEmpty();
   }
 
   @Test
