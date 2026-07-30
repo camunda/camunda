@@ -125,11 +125,19 @@ final class JobBatchCollector {
           final var secretCheckResult = jobSecretInjector.checkSecrets(jobRecord);
           if (!secretCheckResult.nonCachedSecrets().isEmpty()) {
             // Skip jobs with an uncached secret reference without consuming a batch slot, so the
-            // jobs behind them can still be activated
+            // jobs behind them can still be activated, and register them so the processor can
+            // request the background resolution of their non-cached references and park them
+            jobSecretInjector.registerForResolution(secretCheckResult, key);
             jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
             skippedUncachedSecretJobs.increment();
-            return skippedUncachedSecretJobs.value
-                < EngineConfiguration.MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION;
+            if (skippedUncachedSecretJobs.value
+                >= EngineConfiguration.MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION) {
+              // stop at the skip cap and mark the batch truncated, so the client re-polls right
+              // away for the jobs behind the cap instead of parking until the poll times out
+              value.setTruncated(true);
+              return false;
+            }
+            return true;
           }
 
           // fill in the job record properties first in order to accurately estimate its size before

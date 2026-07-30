@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.secretstore.InMemorySecretCache;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,8 +60,8 @@ final class JobSecretInjectorTest {
 
   /**
    * Mirrors the collector: checks each job, appends only the activatable ones to the batch (keys
-   * starting at 100, in the given order), and registers the appended jobs with secret references
-   * for the injection.
+   * starting at 100, in the given order), registers the appended jobs with secret references for
+   * the injection, and registers the skipped jobs with a non-cached reference for the resolution.
    */
   private static JobBatchRecord collect(final JobSecretInjector injector, final JobRecord... jobs) {
     final var batch = new JobBatchRecord().setType("task-type");
@@ -71,10 +74,24 @@ final class JobSecretInjectorTest {
         final JobRecord appendedJob = batch.jobs().add();
         appendedJob.copyFrom(job);
         injector.registerForInjection(check, batch.jobs().size() - 1, appendedJob);
+      } else {
+        injector.registerForResolution(check, key);
       }
       key++;
     }
     return batch;
+  }
+
+  private static Map<String, List<Long>> resolutionsByReferenceName(
+      final JobSecretInjector injector) {
+    return byReferenceName(injector.jobsWithNonCachedSecrets());
+  }
+
+  private static Map<String, List<Long>> byReferenceName(
+      final Map<SecretReference, List<Long>> jobsByReference) {
+    final Map<String, List<Long>> byName = new LinkedHashMap<>();
+    jobsByReference.forEach((reference, keys) -> byName.put(reference.name(), keys));
+    return byName;
   }
 
   private static JobBatchRecord copyOf(final JobBatchRecord batch) {
@@ -344,6 +361,110 @@ final class JobSecretInjectorTest {
       // then
       assertThat(jobKeysOf(batch)).containsExactly(100L, 101L);
       assertThat(injector.hasSecretsToInject()).isFalse();
+    }
+  }
+
+  @Nested
+  final class RegisterForResolution {
+
+    @Test
+    void shouldGroupWaitingJobsByNonCachedReference() {
+      // given - two jobs waiting on the same uncached reference, a third on another
+      final var injector = injector(Map.of());
+
+      // when
+      collect(
+          injector,
+          job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")),
+          job(Map.of("b", "camunda.secrets.token"), ref("token", "/b")),
+          job(Map.of("c", "camunda.secrets.other"), ref("other", "/c")));
+
+      // then - one entry per reference, with the keys of the jobs waiting on it in order
+      assertThat(resolutionsByReferenceName(injector))
+          .containsOnly(entry("token", List.of(100L, 101L)), entry("other", List.of(102L)));
+    }
+
+    @Test
+    void shouldRecordJobOncePerReferenceWhenReferenceRepeats() {
+      // given - one job referencing the same uncached secret at two paths
+      final var injector = injector(Map.of());
+
+      // when
+      collect(
+          injector,
+          job(
+              Map.of("a", "camunda.secrets.token", "b", "camunda.secrets.token"),
+              ref("token", "/a"),
+              ref("token", "/b")));
+
+      // then - the job is recorded once for the reference
+      assertThat(resolutionsByReferenceName(injector)).containsOnly(entry("token", List.of(100L)));
+    }
+
+    @Test
+    void shouldRegisterOnlyNonCachedReferencesOfASkippedJob() {
+      // given - a job with one cached and one non-cached reference
+      final var injector = injector(Map.of("token", "resolved"));
+
+      // when
+      collect(
+          injector,
+          job(
+              Map.of("a", "camunda.secrets.token", "b", "camunda.secrets.other"),
+              ref("token", "/a"),
+              ref("other", "/b")));
+
+      // then - only the non-cached reference is registered for resolution
+      assertThat(resolutionsByReferenceName(injector)).containsOnly(entry("other", List.of(100L)));
+    }
+
+    @Test
+    void shouldRegisterNothingWhenAllJobsAreActivatable() {
+      // given - a fully cached secret job and a job without references
+      final var injector = injector(Map.of("token", "resolved"));
+
+      // when
+      collect(
+          injector,
+          job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")),
+          job(Map.of("foo", "bar")));
+
+      // then
+      assertThat(injector.jobsWithNonCachedSecrets()).isEmpty();
+    }
+
+    @Test
+    void shouldClearRegisteredResolutionsOnReset() {
+      // given
+      final var injector = injector(Map.of());
+      collect(injector, job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")));
+      assertThat(injector.jobsWithNonCachedSecrets()).isNotEmpty();
+
+      // when
+      injector.reset();
+
+      // then
+      assertThat(injector.jobsWithNonCachedSecrets()).isEmpty();
+    }
+
+    @Test
+    void shouldReturnRegisteredResolutionsAsImmutableSnapshot() {
+      // given
+      final var injector = injector(Map.of());
+      collect(
+          injector,
+          job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")),
+          job(Map.of("b", "camunda.secrets.token"), ref("token", "/b")));
+      final var snapshot = injector.jobsWithNonCachedSecrets();
+
+      // when - the caller tries to change the snapshot, and the next command resets the injector
+      assertThatThrownBy(() -> snapshot.values().iterator().next().add(999L))
+          .isInstanceOf(UnsupportedOperationException.class);
+      assertThatThrownBy(snapshot::clear).isInstanceOf(UnsupportedOperationException.class);
+      injector.reset();
+
+      // then - the snapshot still holds the job keys registered when it was taken
+      assertThat(byReferenceName(snapshot)).containsOnly(entry("token", List.of(100L, 101L)));
     }
   }
 
