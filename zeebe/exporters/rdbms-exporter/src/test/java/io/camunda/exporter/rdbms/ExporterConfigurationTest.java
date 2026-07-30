@@ -513,6 +513,24 @@ class ExporterConfigurationTest {
   }
 
   @Test
+  public void shouldBeOkWithTimeLagReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.TIME_LAG);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMinSyncReplicas(1);
+    replication.setMaxLag(Duration.ofMinutes(5));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
   public void shouldBeOkWithDelayReplicationAndValidConfig() {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
@@ -605,6 +623,22 @@ class ExporterConfigurationTest {
                 r -> {
                   r.setEnabled(true);
                   r.setType(ReplicationType.LOG_SEQ);
+                  r.setMaxLag(Duration.ZERO);
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
+                  r.setPollingInterval(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
                   r.setMaxLag(Duration.ZERO);
                 },
             "asyncReplication.maxLag must be a positive duration"),
