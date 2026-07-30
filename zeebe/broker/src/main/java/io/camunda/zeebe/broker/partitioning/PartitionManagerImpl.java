@@ -303,10 +303,7 @@ public final class PartitionManagerImpl
     final var memberPartitions = localPartitions();
 
     healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
-
-    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      clusterConfigurationService.registerPartitionChangeExecutors(this, this);
-    }
+    clusterConfigurationService.registerPartitionChangeExecutors(partitionGroup, this, this);
 
     final var result = concurrencyControl.<Void>createFuture();
     final var started =
@@ -316,6 +313,7 @@ public final class PartitionManagerImpl
                   final var initialPartitionConfig =
                       clusterConfigurationService
                           .getInitialClusterConfiguration()
+                          .partitionGroup(partitionGroup)
                           .members()
                           .get(localMemberId)
                           .getPartition(partitionMetadata.id().number())
@@ -337,9 +335,7 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> stop() {
-    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      clusterConfigurationService.removePartitionChangeExecutor();
-    }
+    clusterConfigurationService.removePartitionChangeExecutor(partitionGroup);
 
     final var result = concurrencyControl.<Void>createFuture();
     final var stop =
@@ -737,8 +733,7 @@ public final class PartitionManagerImpl
     // config; other physical tenants derive their distribution by rewriting the group on every
     // PartitionId.
     return clusterConfigurationService
-        .getPartitionDistribution()
-        .withGroupName(partitionGroup)
+        .getPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

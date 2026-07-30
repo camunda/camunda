@@ -18,35 +18,43 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
-  PartitionDistribution getPartitionDistribution();
+
+  PartitionDistribution getPartitionDistribution(String physicalTenantId);
+
+  Map<String, PartitionDistribution> getPartitionDistribution();
 
   default void registerPartitionChangeExecutors(
+      final String physicalTenantId,
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     registerPartitionChangeExecutors(
+        physicalTenantId,
         partitionChangeExecutor,
         partitionScalingChangeExecutor,
         new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
   }
 
   void registerPartitionChangeExecutors(
+      final String physicalTenantId,
       PartitionChangeExecutor partitionChangeExecutor,
       PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       RestoreChangeExecutor restoreChangeExecutor);
 
-  void removePartitionChangeExecutor();
+  void removePartitionChangeExecutor(final String physicalTenantId);
 
-  void registerModeChangeExecutor(ModeChangeExecutor modeChangeExecutor);
+  void registerModeChangeExecutor(
+      final String physicalTenantId, ModeChangeExecutor modeChangeExecutor);
 
-  void removeModeChangeExecutor();
+  void removeModeChangeExecutor(final String physicalTenantId);
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 
@@ -65,7 +73,8 @@ public interface ClusterConfigurationService extends AsyncClosable {
     final var partitionDistribution = getPartitionDistribution();
 
     if (partitionDistribution != null) {
-      return partitionDistribution.partitions().stream()
+      return partitionDistribution.values().stream()
+          .flatMap(p -> p.partitions().stream())
           .filter(partition -> partition.members().contains(memberId))
           .toList();
     }
@@ -74,14 +83,14 @@ public interface ClusterConfigurationService extends AsyncClosable {
         "Cannot get member partitions before the topology manager is started");
   }
 
-  ClusterConfiguration getInitialClusterConfiguration();
+  CurrentClusterConfiguration getInitialClusterConfiguration();
 
   /**
    * Returns the current cluster configuration, including in-progress topology changes. Unlike
    * {@link #getInitialClusterConfiguration()}, this reflects updates that occurred after startup
    * (e.g., partitions in {@code JOINING} state during scale-up).
    */
-  ClusterConfiguration getCurrentClusterConfiguration();
+  CurrentClusterConfiguration getCurrentClusterConfiguration();
 
   /**
    * Returns the number of partitions assigned to the given member that are currently in the {@code
@@ -89,16 +98,19 @@ public interface ClusterConfigurationService extends AsyncClosable {
    */
   default int getJoiningMemberPartitionCount(final MemberId memberId) {
     final var config = getCurrentClusterConfiguration();
-    if (config == null || !config.hasMember(memberId)) {
+    if (config == null || !config.globalConfiguration().hasMember(memberId)) {
       return 0;
     }
     return (int)
-        config.getMember(memberId).partitions().values().stream()
+        config.partitionGroups().entrySet().stream()
+            .filter(group -> group.getValue().members().containsKey(memberId))
+            .flatMap(
+                group -> group.getValue().members().get(memberId).partitions().values().stream())
             .filter(p -> p.state() == State.JOINING)
             .count();
   }
 
   ClusterChangeExecutor getClusterChangeExecutor();
 
-  ActorFuture<ClusterConfiguration> getLatestClusterConfiguration();
+  ActorFuture<CurrentClusterConfiguration> getLatestClusterConfiguration();
 }

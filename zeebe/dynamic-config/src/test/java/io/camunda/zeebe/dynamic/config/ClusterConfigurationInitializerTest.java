@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
@@ -444,11 +445,11 @@ final class ClusterConfigurationInitializerTest {
 
   private StaticConfiguration getStaticConfiguration(
       final MemberId member, final Set<MemberId> members) {
-    final var partitionId = new PartitionId("test", 1);
+    final var partitionId = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
     final Set<PartitionMetadata> partitions =
         Set.of(
             new PartitionMetadata(
-                new PartitionId("test", 1),
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
                 members,
                 members.stream().collect(Collectors.toMap(Function.identity(), ignored -> 1)),
                 1,

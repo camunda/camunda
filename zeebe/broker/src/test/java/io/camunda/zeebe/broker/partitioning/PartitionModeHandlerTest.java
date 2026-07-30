@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -135,7 +136,7 @@ final class PartitionModeHandlerTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution())
+    when(clusterConfigurationService.getPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(metadata));
   }
 
@@ -205,7 +206,8 @@ final class PartitionModeHandlerTest {
       progress();
 
       // then
-      verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
+      verify(clusterConfigurationService, never())
+          .registerPartitionChangeExecutors(any(), any(), any());
     }
 
     @Test
@@ -304,7 +306,8 @@ final class PartitionModeHandlerTest {
       progress();
 
       // then
-      verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
+      verify(clusterConfigurationService, never())
+          .registerPartitionChangeExecutors(any(), any(), any());
     }
 
     @Test
@@ -503,17 +506,17 @@ final class PartitionModeHandlerTest {
       assertThat(result.isCompletedExceptionally()).isFalse();
       verify(recoveryManager).start();
       verify(brokerStartupContext).addPartitionManager(NON_DEFAULT_GROUP, recoveryManager);
-      // only the default tenant participates in cluster configuration changes
-      verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
+      verify(clusterConfigurationService, never())
+          .registerPartitionChangeExecutors(any(), any(), any());
     }
 
     @Test
-    void shouldNotRegisterModeExecutorOnRegister() {
+    void shouldRegisterModeExecutorOnRegister() {
       // when
       nonDefaultHandler.register();
 
       // then
-      verify(clusterConfigurationService, never()).registerModeChangeExecutor(any());
+      verify(clusterConfigurationService).registerModeChangeExecutor(eq(NON_DEFAULT_GROUP), any());
     }
   }
 
@@ -526,7 +529,7 @@ final class PartitionModeHandlerTest {
       handler.register();
 
       // then
-      verify(clusterConfigurationService).registerModeChangeExecutor(handler);
+      verify(clusterConfigurationService).registerModeChangeExecutor(GROUP, handler);
     }
 
     @Test
@@ -535,7 +538,8 @@ final class PartitionModeHandlerTest {
       handler.register();
 
       // then
-      verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
+      verify(clusterConfigurationService, never())
+          .registerPartitionChangeExecutors(any(), any(), any());
     }
   }
 
@@ -549,7 +553,7 @@ final class PartitionModeHandlerTest {
       progress();
 
       // then
-      verify(clusterConfigurationService).removeModeChangeExecutor();
+      verify(clusterConfigurationService).removeModeChangeExecutor(any());
     }
 
     @Test
@@ -559,7 +563,7 @@ final class PartitionModeHandlerTest {
       progress();
 
       // then
-      verify(clusterConfigurationService, never()).removePartitionChangeExecutor();
+      verify(clusterConfigurationService, never()).removePartitionChangeExecutor(any());
     }
   }
 }

@@ -187,4 +187,44 @@ public final class ConfigurationUtil {
         optionalPrimary.get().getValue(),
         optionalPrimary.get().getKey());
   }
+
+  public static Map<String, Set<PartitionMetadata>> getPartitionDistributionPerPhysicalTenant(
+      final CurrentClusterConfiguration configuration) {
+    final Map<String, Set<PartitionMetadata>> distributionPerTenant = new HashMap<>();
+    for (final var groupEntry : configuration.partitionGroups().entrySet()) {
+      final var groupId = groupEntry.getKey();
+      final var partitionGroupConfig = groupEntry.getValue();
+      final var partitionDistribution = getPartitionDistributionFrom(groupId, partitionGroupConfig);
+      distributionPerTenant.put(groupId, partitionDistribution);
+    }
+    return distributionPerTenant;
+  }
+
+  private static Set<PartitionMetadata> getPartitionDistributionFrom(
+      final String groupName, final PartitionGroupConfiguration partitionGroupConfig) {
+    final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
+    partitionGroupConfig
+        .members()
+        .forEach(
+            (memberId, brokerPartitionState) -> {
+              for (final Entry<Integer, PartitionState> entry :
+                  brokerPartitionState.partitions().entrySet()) {
+                final Integer partitionId = entry.getKey();
+                final PartitionState partitionState = entry.getValue();
+                if (partitionState.state().equals(State.ACTIVE)
+                    || partitionState.state().equals(State.LEAVING)
+                    || partitionState.state().equals(State.RECOVERING)) {
+                  // only add active, leaving, and recovering partitions because only those has to
+                  // be started
+                  memberPriorityByPartition
+                      .computeIfAbsent(partitionId, k -> new HashMap<>())
+                      .put(memberId, partitionState.priority());
+                }
+              }
+            });
+
+    return memberPriorityByPartition.entrySet().stream()
+        .map(e -> getPartitionMetadata(e, groupName))
+        .collect(Collectors.toSet());
+  }
 }

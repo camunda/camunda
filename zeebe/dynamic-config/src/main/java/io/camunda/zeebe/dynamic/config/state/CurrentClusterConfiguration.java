@@ -562,4 +562,13 @@ public record CurrentClusterConfiguration(
       case LEFT -> BrokerState.State.LEFT;
     };
   }
+
+  public int getPartitionCount(final String partitionGroup) {
+    final var group = partitionGroups.get(partitionGroup);
+    if (group == null) {
+      return 0;
+    } else {
+      return group.partitionCount();
+    }
+  }
 }

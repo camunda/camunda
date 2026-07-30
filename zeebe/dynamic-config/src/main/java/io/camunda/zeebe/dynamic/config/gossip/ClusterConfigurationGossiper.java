@@ -213,8 +213,13 @@ public final class ClusterConfigurationGossiper
     gossipState.setClusterConfiguration(legacyView);
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
-    notifyListeners(legacyView);
+    notifyListeners(updatedConfiguration);
     topologyMetrics.updateFromTopology(legacyView);
+  }
+
+  private void notifyListeners(final CurrentClusterConfiguration updatedConfiguration) {
+    configurationUpdateListeners.forEach(
+        listener -> listener.onClusterConfigurationUpdated(updatedConfiguration));
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {

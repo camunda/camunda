@@ -16,6 +16,7 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
@@ -339,13 +340,13 @@ class ClusterConfigurationManagementIntegrationTest {
   private Set<PartitionMetadata> getExpectedPartitionDistribution() {
     return Set.of(
         new PartitionMetadata(
-            new PartitionId("test", 1),
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
             Map.of(MemberId.from("0"), 1, MemberId.from("1"), 2, MemberId.from("2"), 3),
             3,
             MemberId.from("2")),
         new PartitionMetadata(
-            new PartitionId("test", 2),
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 2),
             Set.of(MemberId.from("2")),
             Map.of(MemberId.from("2"), 1),
             1,
@@ -383,9 +384,12 @@ class ClusterConfigurationManagementIntegrationTest {
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
-              service.registerModeChangeExecutor(new NoopModeChangeExecutor());
+              service.registerModeChangeExecutor(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, new NoopModeChangeExecutor());
               service.registerPartitionChangeExecutors(
-                  new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  new NoopPartitionChangeExecutor(),
+                  new NoopPartitionScalingChangeExecutor());
             }
           },
           Runnable::run);

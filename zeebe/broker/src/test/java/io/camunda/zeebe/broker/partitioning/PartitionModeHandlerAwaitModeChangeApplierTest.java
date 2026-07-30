@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -104,7 +105,7 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution())
+    when(clusterConfigurationService.getPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(metadata));
   }
 
