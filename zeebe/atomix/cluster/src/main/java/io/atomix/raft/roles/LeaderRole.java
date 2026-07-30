@@ -37,6 +37,8 @@ import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -78,6 +80,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private static final int MAX_APPEND_ATTEMPTS = 5;
   private final LeaderAppender appender;
+  private final LeadershipTransferRunner leadershipTransferRunner;
   private Scheduled appendTimer;
   private long configuring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
@@ -95,6 +98,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
+    leadershipTransferRunner = new LeadershipTransferRunner(context, this);
   }
 
   @Override
@@ -430,6 +434,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
+    leadershipTransferRunner.onLeaderStopped();
     // Paused mode always exits on a role transition (stop() runs when leadership is lost).
     clearTransferPause();
   }
@@ -502,6 +507,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return;
     }
     log.warn("Partition still paused after the resume deadline; stepping down to follower");
+    leadershipTransferRunner.onPauseDeadlineExpired();
     clearTransferPause();
     raft.transition(RaftServer.Role.FOLLOWER);
   }
@@ -518,6 +524,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .observePauseDuration(
               Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
+    leadershipTransferRunner.onPauseCleared();
   }
 
   /**
@@ -537,12 +544,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (desiredLeader.equals(localMember)) {
       return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
     }
-    if (pausedForTransfer) {
+    if (leadershipTransferRunner.isInProgress() || pausedForTransfer) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
     final var coordinatorRejection = validateCoordinator(coordinator, coordinatorConfigIndex);
     if (coordinatorRejection.isPresent()) {
       return coordinatorRejection;
+    }
+    // Until this term's initial entry is committed the pause refuses to freeze the log head, so
+    // accepting here would freeze the partition only to roll it back again.
+    if (initializing()) {
+      return Optional.of(LeadershipTransferResult.LEADER_INITIALIZING);
     }
     // A configuration entry would move the frozen log head the desired leader has to catch up to,
     // and can drop the desired leader from the replica set altogether, so a transfer cannot start
@@ -791,6 +803,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return future;
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    raft.checkThread();
+    logRequest(request);
+    return CompletableFuture.completedFuture(
+        logResponse(leadershipTransferRunner.handleInitiate(request)));
   }
 
   @Override

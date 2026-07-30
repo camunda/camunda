@@ -18,7 +18,12 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.ReconfigureRequest;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.VersionedAppendRequest;
+import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.Comparator;
@@ -268,6 +273,65 @@ public class RaftLeadershipTransferInitiateTest {
 
     // then
     assertThat(result).contains(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldRejectTransferWhileTheLeaderIsInitializing() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var oldLeader = raftRule.getLeader().orElseThrow();
+    final var newLeader = raftRule.getFollower().orElseThrow();
+
+    Awaitility.await("the new leader has the whole log")
+        .atMost(Duration.ofSeconds(15))
+        .until(
+            () ->
+                newLeader.getContext().getLog().getLastIndex()
+                    >= oldLeader.getContext().getLog().getLastIndex());
+
+    dropSends(newLeader, VersionedAppendRequest.class);
+    raftRule.getServers().stream()
+        .filter(server -> server != newLeader)
+        .forEach(
+            server -> {
+              dropSends(server, PollRequest.class);
+              dropSends(server, VoteRequest.class);
+            });
+    protocolOf(oldLeader)
+        .timeoutNow(
+            memberId(newLeader),
+            TimeoutNowRequest.builder()
+                .withTerm(oldLeader.getContext().getTerm())
+                .withLeader(memberId(oldLeader))
+                .build());
+    Awaitility.await("the new leader takes over")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> newLeader.getRole() == RaftServer.Role.LEADER);
+
+    // when
+    final var result =
+        onRaftThread(
+            newLeader,
+            () ->
+                leaderRole(newLeader)
+                    .precheckTransfer(
+                        memberId(oldLeader), coordinator(newLeader), index(newLeader)));
+
+    // then
+    assertThat(result).contains(LeadershipTransferResult.LEADER_INITIALIZING);
+  }
+
+  private static <T> void dropSends(final RaftServer server, final Class<T> requestType) {
+    protocolOf(server)
+        .interceptRequest(
+            requestType,
+            request -> {
+              return CompletableFuture.failedFuture(new RuntimeException("dropped in test"));
+            });
+  }
+
+  private static TestRaftServerProtocol protocolOf(final RaftServer server) {
+    return (TestRaftServerProtocol) server.getContext().getProtocol();
   }
 
   /** Builds a membership change that removes {@code follower}, so it is not a no-op. */

@@ -288,6 +288,11 @@ public final class RaftRule extends ExternalResource {
     return servers.get(id);
   }
 
+  /** The registry every server in the cluster reports its metrics to. */
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public void shutdownServer(final RaftServer raftServer) throws Exception {
     shutdownServer(raftServer.name());
   }
