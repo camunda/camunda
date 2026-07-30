@@ -279,11 +279,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * aggregated over all physical tenants.
    *
    * <pre>
-   * boolean isHealthy = camundaClient
+   * StatusResponse.Status status = camundaClient
    *  .newStatusRequest()
    *  .send()
    *  .join()
-   *  .isHealthy();
+   *  .getStatus();
    * </pre>
    *
    * @return the request where you must call {@code send()}

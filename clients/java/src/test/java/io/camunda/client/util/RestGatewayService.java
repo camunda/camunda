@@ -595,8 +595,8 @@ public class RestGatewayService {
   }
 
   /**
-   * Register a status response with a custom HTTP status code and no body, as returned by error
-   * responses.
+   * Register a bodyless status response with a custom HTTP status code, to exercise how the client
+   * maps a status code it does not expect from this endpoint.
    *
    * @param statusCode the HTTP status code to return for status requests
    */
