@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -68,6 +69,7 @@ import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.DelayReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
+import io.camunda.exporter.rdbms.replication.TimeMonitoringReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -169,6 +171,16 @@ public class RdbmsExporterWrapper implements Exporter {
                   config.getAsyncReplication(),
                   partitionId,
                   context.clock(),
+                  rdbmsWriters.getMetrics()));
+        }
+        case TIME_LAG -> {
+          final ReplicationLagProvider replicationLagProvider =
+              rdbmsService.getReplicationLagProvider();
+          builder.replicationControllerFactory(
+              new TimeMonitoringReplicationControllerFactory(
+                  replicationLagProvider,
+                  config.getAsyncReplication(),
+                  partitionId,
                   rdbmsWriters.getMetrics()));
         }
         case DELAY ->
