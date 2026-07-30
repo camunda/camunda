@@ -103,7 +103,8 @@ final class RebalanceForwardingTest {
     final var request =
         new TriggerRebalanceRequest(new RebalanceOverrides(2048L, Duration.ofSeconds(20), 3), true);
     COORDINATOR.status =
-        new RebalanceStatus(new RebalanceStatus.Running(9, request.overrides(), true, false), null);
+        new RebalanceStatus(
+            new RebalanceStatus.Running(9, request.overrides(), true, false, List.of()), null);
 
     // when
     final var response = sender.triggerRebalance(request).join();
@@ -117,7 +118,19 @@ final class RebalanceForwardingTest {
   void shouldForwardAStatusQuery() {
     // given
     COORDINATOR.status =
-        new RebalanceStatus(null, new RebalanceStatus.Completed(8, RebalanceOutcome.COMPLETED));
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                8,
+                RebalanceOutcome.COMPLETED,
+                false,
+                List.of(
+                    new PartitionRebalance(
+                        "default",
+                        1,
+                        MemberId.from("1"),
+                        MemberId.from("1"),
+                        PartitionRebalanceState.TRANSFERRED))));
 
     // when
     final var response = sender.getRebalanceStatus().join();

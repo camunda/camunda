@@ -10,10 +10,12 @@ package io.camunda.zeebe.dynamic.config.rebalance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
 import io.camunda.zeebe.dynamic.config.rebalance.protocol.Rebalance;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -83,8 +85,28 @@ final class ProtoBufRebalanceSerializerTest {
     final var status =
         new RebalanceStatus(
             new RebalanceStatus.Running(
-                42, new RebalanceOverrides(null, Duration.ofSeconds(15), null), true, true),
-            new RebalanceStatus.Completed(41, RebalanceOutcome.CANCELLED));
+                42,
+                new RebalanceOverrides(null, Duration.ofSeconds(15), null),
+                true,
+                true,
+                List.of(
+                    new PartitionRebalance(
+                        "default",
+                        1,
+                        MemberId.from("0"),
+                        MemberId.from("1"),
+                        PartitionRebalanceState.TRANSFERRING))),
+            new RebalanceStatus.Completed(
+                41,
+                RebalanceOutcome.CANCELLED,
+                false,
+                List.of(
+                    new PartitionRebalance(
+                        "tenant-a",
+                        2,
+                        MemberId.from("2"),
+                        MemberId.from("2"),
+                        PartitionRebalanceState.SKIPPED))));
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -97,13 +119,75 @@ final class ProtoBufRebalanceSerializerTest {
   @EnumSource(RebalanceOutcome.class)
   void shouldRoundTripEveryOutcome(final RebalanceOutcome outcome) {
     // given
-    final var status = new RebalanceStatus(null, new RebalanceStatus.Completed(7, outcome));
+    final var status =
+        new RebalanceStatus(null, new RebalanceStatus.Completed(7, outcome, false, List.of()));
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
 
     // then
     assertThat(decoded.get()).isEqualTo(status);
+  }
+
+  @ParameterizedTest
+  @EnumSource(PartitionRebalanceState.class)
+  void shouldRoundTripEveryPartitionState(final PartitionRebalanceState state) {
+    // given
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                7,
+                RebalanceOutcome.COMPLETED,
+                false,
+                List.of(new PartitionRebalance("default", 3, null, MemberId.from("1"), state))));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get()).isEqualTo(status);
+  }
+
+  @Test
+  void shouldRoundTripAPartitionWithNeitherACurrentNorADesiredLeader() {
+    // given
+    final var partition =
+        new PartitionRebalance("default", 4, null, null, PartitionRebalanceState.SKIPPED);
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(7, RebalanceOutcome.COMPLETED, true, List.of(partition)));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get().lastCompleted().partitions()).containsExactly(partition);
+  }
+
+  @Test
+  void shouldRoundTripTheReasonAPartitionEndedInItsState() {
+    // given
+    final var partition =
+        new PartitionRebalance(
+            "default",
+            5,
+            MemberId.from("1"),
+            MemberId.from("2"),
+            PartitionRebalanceState.FAILED,
+            "its leader declined the transfer: LAG_TOO_HIGH");
+    final var status =
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                9, RebalanceOutcome.COMPLETED, false, List.of(partition)));
+
+    // when
+    final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
+
+    // then
+    assertThat(decoded.get().lastCompleted().partitions()).containsExactly(partition);
   }
 
   @Test

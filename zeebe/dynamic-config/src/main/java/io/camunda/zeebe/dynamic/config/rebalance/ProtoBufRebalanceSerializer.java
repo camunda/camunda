@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.rebalance;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
 import io.camunda.zeebe.dynamic.config.rebalance.protocol.Rebalance;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
@@ -131,16 +132,72 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
               .setRebalanceId(running.rebalanceId())
               .setOverrides(encodeOverrides(running.overrides()))
               .setDryRun(running.dryRun())
-              .setCancelRequested(running.cancelRequested()));
+              .setCancelRequested(running.cancelRequested())
+              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList()));
     }
     final var lastCompleted = status.lastCompleted();
     if (lastCompleted != null) {
       builder.setLastCompleted(
           Rebalance.CompletedRebalance.newBuilder()
               .setRebalanceId(lastCompleted.rebalanceId())
-              .setOutcome(encodeOutcome(lastCompleted.outcome())));
+              .setOutcome(encodeOutcome(lastCompleted.outcome()))
+              .setDryRun(lastCompleted.dryRun())
+              .addAllPartitions(
+                  lastCompleted.partitions().stream().map(this::encodePartition).toList()));
     }
     return builder.build();
+  }
+
+  private Rebalance.PartitionRebalance encodePartition(final PartitionRebalance partition) {
+    final var builder =
+        Rebalance.PartitionRebalance.newBuilder()
+            .setPhysicalTenantId(partition.physicalTenantId())
+            .setPartitionId(partition.partitionId())
+            .setState(encodePartitionState(partition.state()));
+    if (partition.currentLeader() != null) {
+      builder.setCurrentLeader(partition.currentLeader().id());
+    }
+    if (partition.desiredLeader() != null) {
+      builder.setDesiredLeader(partition.desiredLeader().id());
+    }
+    if (partition.reason() != null) {
+      builder.setReason(partition.reason());
+    }
+    return builder.build();
+  }
+
+  private PartitionRebalance decodePartition(final Rebalance.PartitionRebalance partition) {
+    return new PartitionRebalance(
+        partition.getPhysicalTenantId(),
+        partition.getPartitionId(),
+        partition.hasCurrentLeader() ? MemberId.from(partition.getCurrentLeader()) : null,
+        partition.hasDesiredLeader() ? MemberId.from(partition.getDesiredLeader()) : null,
+        decodePartitionState(partition.getState()),
+        partition.hasReason() ? partition.getReason() : null);
+  }
+
+  private Rebalance.PartitionRebalance.State encodePartitionState(
+      final PartitionRebalanceState state) {
+    return switch (state) {
+      case PENDING -> Rebalance.PartitionRebalance.State.PENDING;
+      case TRANSFERRING -> Rebalance.PartitionRebalance.State.TRANSFERRING;
+      case TRANSFERRED -> Rebalance.PartitionRebalance.State.TRANSFERRED;
+      case SKIPPED -> Rebalance.PartitionRebalance.State.SKIPPED;
+      case FAILED -> Rebalance.PartitionRebalance.State.FAILED;
+      case CANCELLED -> Rebalance.PartitionRebalance.State.CANCELLED;
+    };
+  }
+
+  private PartitionRebalanceState decodePartitionState(
+      final Rebalance.PartitionRebalance.State state) {
+    return switch (state) {
+      case PENDING -> PartitionRebalanceState.PENDING;
+      case TRANSFERRING -> PartitionRebalanceState.TRANSFERRING;
+      case TRANSFERRED -> PartitionRebalanceState.TRANSFERRED;
+      case SKIPPED -> PartitionRebalanceState.SKIPPED;
+      case CANCELLED -> PartitionRebalanceState.CANCELLED;
+      case FAILED, UNRECOGNIZED -> PartitionRebalanceState.FAILED;
+    };
   }
 
   private RebalanceStatus decodeStatus(final Rebalance.RebalanceStatusResponse status) {
@@ -154,12 +211,16 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         running.getRebalanceId(),
         decodeOverrides(running.getOverrides()),
         running.getDryRun(),
-        running.getCancelRequested());
+        running.getCancelRequested(),
+        running.getPartitionsList().stream().map(this::decodePartition).toList());
   }
 
   private RebalanceStatus.Completed decodeCompleted(final Rebalance.CompletedRebalance completed) {
     return new RebalanceStatus.Completed(
-        completed.getRebalanceId(), decodeOutcome(completed.getOutcome()));
+        completed.getRebalanceId(),
+        decodeOutcome(completed.getOutcome()),
+        completed.getDryRun(),
+        completed.getPartitionsList().stream().map(this::decodePartition).toList());
   }
 
   private RebalanceErrorResponse decodeError(final Rebalance.RebalanceErrorResponse error) {
