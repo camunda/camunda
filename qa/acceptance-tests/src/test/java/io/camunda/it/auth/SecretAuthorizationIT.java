@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -24,8 +23,6 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -35,13 +32,10 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -64,20 +58,23 @@ class SecretAuthorizationIT {
   private static final String TOKEN_VALUE = "token-file-value";
   private static final String OTHER_VALUE = "a-file-value";
 
-  // Written before the broker starts, since the broker's store is configured to read this
-  // directory. Declared above BROKER so its initializer runs first.
-  private static final Path SECRETS_DIRECTORY = createSecretsDirectory();
-
+  /**
+   * The broker reads a real file-based store. {@code tls.crt} is deliberately among the secrets:
+   * the file store accepts that name but it cannot form a {@code camunda.secrets.<name>} reference,
+   * so the listing has to leave it out.
+   */
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withBasicAuth()
           .withAuthorizationsEnabled()
-          .withUnifiedConfig(
-              config -> {
-                final var store = new FileStore();
-                store.setPath(SECRETS_DIRECTORY.toString());
-                config.getSecrets().getStores().getFile().put("it", store);
+          .withFileBasedSecretStore(
+              directory -> {
+                Files.writeString(directory.resolve("token"), TOKEN_VALUE, StandardCharsets.UTF_8);
+                Files.writeString(directory.resolve("a"), OTHER_VALUE, StandardCharsets.UTF_8);
+                Files.writeString(directory.resolve("b"), "b-file-value", StandardCharsets.UTF_8);
+                Files.writeString(
+                    directory.resolve("tls.crt"), "certificate", StandardCharsets.UTF_8);
               });
 
   private static final ObjectMapper JSON =
@@ -141,39 +138,6 @@ class SecretAuthorizationIT {
           "password",
           // Granted READ on all references via the "*" wildcard.
           List.of(new Permissions(SECRET, READ, List.of("*"))));
-
-  /**
-   * Creates the store's directory and writes one file per secret. {@code tls.crt} is deliberately
-   * among them: the file store accepts that name but it cannot form a {@code
-   * camunda.secrets.<name>} reference, so the listing has to leave it out.
-   */
-  private static Path createSecretsDirectory() {
-    try {
-      final var directory = Files.createTempDirectory("secret-authorization-it-");
-      Files.writeString(directory.resolve("token"), TOKEN_VALUE, StandardCharsets.UTF_8);
-      Files.writeString(directory.resolve("a"), OTHER_VALUE, StandardCharsets.UTF_8);
-      Files.writeString(directory.resolve("b"), "b-file-value", StandardCharsets.UTF_8);
-      Files.writeString(directory.resolve("tls.crt"), "certificate", StandardCharsets.UTF_8);
-      return directory;
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to create the secrets directory", e);
-    }
-  }
-
-  @AfterAll
-  static void deleteSecretsDirectory() throws IOException {
-    try (final var entries = Files.walk(SECRETS_DIRECTORY)) {
-      entries.sorted(Comparator.reverseOrder()).forEach(SecretAuthorizationIT::delete);
-    }
-  }
-
-  private static void delete(final Path path) {
-    try {
-      Files.deleteIfExists(path);
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to delete " + path, e);
-    }
-  }
 
   @Test
   @DisabledIfSystemProperty(

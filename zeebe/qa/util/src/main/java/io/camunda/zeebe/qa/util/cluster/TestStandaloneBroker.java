@@ -14,6 +14,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
@@ -32,7 +33,12 @@ import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
@@ -51,8 +59,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
+
+  // a physical tenant is capped at one configured secret store, so the ID only has to be stable
+  private static final String SECRET_STORE_ID = "test";
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneBroker.class);
+
   private boolean isGatewayEnabled = true;
   private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
+  private Path secretStoreDirectory;
 
   public TestStandaloneBroker() {
     super(
@@ -235,6 +249,66 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+  }
+
+  /**
+   * Configures a file-based secret store on a temporary directory and lets {@code secrets} write
+   * the store's content into it, one file per secret named after the secret:
+   *
+   * <pre>{@code
+   * new TestStandaloneBroker()
+   *     .withFileBasedSecretStore(
+   *         directory -> Files.writeString(directory.resolve("token"), "token-value"));
+   * }</pre>
+   *
+   * <p>The directory is written now, so its secrets are in place before the broker starts, and
+   * deleted when this broker is closed. A test that has to reach it later gets it from {@link
+   * #getFileBasedSecretStoreDirectory()}.
+   *
+   * @param secrets writes the store's secrets into the directory it is handed
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withFileBasedSecretStore(final SecretsWriter secrets) {
+    try {
+      secretStoreDirectory = Files.createTempDirectory("secret-store-");
+      secrets.writeTo(secretStoreDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to write the file-based secret store", e);
+    }
+
+    final var store = new FileStore();
+    store.setPath(secretStoreDirectory.toString());
+    unifiedConfig.getSecrets().getStores().getFile().put(SECRET_STORE_ID, store);
+    return this;
+  }
+
+  /**
+   * Returns the directory backing the file-based secret store, or null if none was configured with
+   * {@link #withFileBasedSecretStore(SecretsWriter)}.
+   */
+  public Path getFileBasedSecretStoreDirectory() {
+    return secretStoreDirectory;
+  }
+
+  @Override
+  public void close() {
+    try {
+      super.close();
+    } finally {
+      deleteSecretStoreDirectory();
+    }
+  }
+
+  private void deleteSecretStoreDirectory() {
+    if (secretStoreDirectory == null) {
+      return;
+    }
+    try {
+      FileUtil.deleteFolderIfExists(secretStoreDirectory);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete the secret store directory {}", secretStoreDirectory, e);
+    }
+    secretStoreDirectory = null;
   }
 
   /**
@@ -528,5 +602,15 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
     return this;
+  }
+
+  /**
+   * Writes the content of a file-based secret store into the directory backing it. Declared with
+   * {@code throws IOException} so a test can call {@link Files} directly.
+   */
+  @FunctionalInterface
+  public interface SecretsWriter {
+
+    void writeTo(Path directory) throws IOException;
   }
 }
