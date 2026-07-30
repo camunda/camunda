@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.NotCoordinator;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.RebalanceInProgress;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,8 @@ final class RebalanceCoordinatorTest {
       new PartitionRebalance(
           "default", 1, LOWEST_ID_MEMBER, OTHER_MEMBER, PartitionRebalanceState.PENDING);
 
+  private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+  private final ClusterRebalanceMetrics metrics = new ClusterRebalanceMetrics(registry);
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final AtomicLong nextRebalanceId = new AtomicLong(100);
 
@@ -183,6 +187,77 @@ final class RebalanceCoordinatorTest {
   }
 
   @Test
+  void shouldReportHowLongARebalanceTookAndHowItEnded() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    runner.finish();
+
+    // then
+    assertThat(
+            registry
+                .get("zeebe.cluster.rebalance.elapsed")
+                .tag("result", RebalanceOutcome.COMPLETED.name())
+                .timer()
+                .count())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldStopReportingWhatARebalanceIsDoingOnceItHasFinished() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    metrics.setPartitionsPending("default", 1);
+
+    // when
+    runner.finish();
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.pending").gauge()).isNull();
+  }
+
+  @Test
+  void shouldStopReportingWhatARebalanceIsDoingWhenItIsNoLongerTheCoordinator() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    metrics.setPartitionsPending("default", 1);
+
+    // when
+    coordinator.onClusterConfigurationUpdated(
+        ClusterConfiguration.init()
+            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
+            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.pending").gauge()).isNull();
+  }
+
+  @Test
+  void shouldKeepAccountingForRebalancesItRanAfterTheCoordinatorMoves() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    runner.finish();
+
+    // when
+    coordinator.onClusterConfigurationUpdated(
+        ClusterConfiguration.init()
+            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
+            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+
+    // then
+    assertThat(registry.get("zeebe.cluster.rebalance.elapsed").timer().count()).isEqualTo(1);
+  }
+
+  @Test
   void shouldStopTheRunningRebalanceOnCancellation() {
     // given
     final var runner = new BlockedRunner();
@@ -274,7 +349,7 @@ final class RebalanceCoordinatorTest {
   private RebalanceCoordinator startCoordinator(
       final MemberId localMemberId, final RebalanceRunner runner) {
     return new RebalanceCoordinator(
-        localMemberId, executor, runner, nextRebalanceId::getAndIncrement);
+        localMemberId, executor, runner, nextRebalanceId::getAndIncrement, metrics);
   }
 
   private void configurationWithBothMembers(final RebalanceCoordinator coordinator) {

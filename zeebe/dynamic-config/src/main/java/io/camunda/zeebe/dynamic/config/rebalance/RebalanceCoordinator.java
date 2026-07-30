@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.rebalance;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.NotCoordinator;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.RebalanceInProgress;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -44,6 +45,7 @@ public final class RebalanceCoordinator
   private final ConcurrencyControl executor;
   private final RebalanceRunner runner;
   private final LongSupplier rebalanceIdGenerator;
+  private final ClusterRebalanceMetrics metrics;
 
   /**
    * The configuration this member coordinates under, or {@code null} while it does not coordinate.
@@ -57,11 +59,13 @@ public final class RebalanceCoordinator
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final RebalanceRunner runner,
-      final LongSupplier rebalanceIdGenerator) {
+      final LongSupplier rebalanceIdGenerator,
+      final ClusterRebalanceMetrics metrics) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.runner = runner;
     this.rebalanceIdGenerator = rebalanceIdGenerator;
+    this.metrics = metrics;
   }
 
   @Override
@@ -178,7 +182,11 @@ public final class RebalanceCoordinator
     lastCompleted =
         new RebalanceStatus.Completed(
             rebalance.id(), outcome, rebalance.dryRun(), rebalance.partitions());
-    LOG.info("Rebalance {} finished as {}", rebalance.id(), outcome);
+    metrics.observeElapsed(outcome, rebalance.elapsed());
+    // The gauges describe a rebalance in flight and there is no longer one, so they come down here
+    // rather than being left holding their last values until the next rebalance overwrites them.
+    metrics.clear();
+    LOG.info("Rebalance {} finished as {} after {}", rebalance.id(), outcome, rebalance.elapsed());
   }
 
   private void updateCoordinatorRole(final ClusterConfiguration clusterConfiguration) {
@@ -213,6 +221,7 @@ public final class RebalanceCoordinator
     }
     running = null;
     lastCompleted = null;
+    metrics.clear();
   }
 
   /**

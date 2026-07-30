@@ -37,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.rebalance.PartitionLeaders;
@@ -217,6 +218,7 @@ public final class ClusterConfigurationManagerService
     // are forwarded to, so it shares this service's actor rather than running one of its own.
     leadershipTransferClient =
         new LeadershipTransferClient(communicationService, transferRequestTimeout);
+    final var rebalanceMetrics = new ClusterRebalanceMetrics(meterRegistry);
     rebalanceCoordinator =
         new RebalanceCoordinator(
             localMemberId,
@@ -226,8 +228,10 @@ public final class ClusterConfigurationManagerService
                 managerActor,
                 partitionLeaders,
                 leadershipTransferClient,
+                rebalanceMetrics,
                 rebalanceLeaderWaitTimeout),
-            rebalanceIdGenerator);
+            rebalanceIdGenerator,
+            rebalanceMetrics);
     rebalanceRequestServer =
         new RebalanceRequestServer(
             communicationService, new ProtoBufRebalanceSerializer(), rebalanceCoordinator);
