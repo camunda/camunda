@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseResult;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -57,15 +59,18 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final MessageCorrelationMetrics metrics;
 
   public MessageStartCorrelationKeyLockReleaseReleaseProcessor(
       final MessageState messageState,
       final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final MessageCorrelationMetrics metrics) {
     this.messageState = messageState;
     this.bufferedMessageStartEventBehavior = bufferedMessageStartEventBehavior;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    this.metrics = metrics;
   }
 
   @Override
@@ -95,6 +100,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
       // successor's lock.
       rejectionWriter.appendRejection(
           record, RejectionType.INVALID_STATE, REDUNDANT_RELEASE_REJECTION_REASON);
+      metrics.lockReleased(ReleaseResult.REDUNDANT);
       return;
     }
 
@@ -106,6 +112,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
     // the lock removal above, so the pick-up sees the lock free and can trigger / re-route the next
     // buffered message through the normal correlation logic.
     for (final var holder : releasable.getHolders()) {
+      metrics.lockReleased(ReleaseResult.RELEASED);
       bufferedMessageStartEventBehavior.correlateNextBufferedMessage(
           BufferUtil.wrapString(holder.getBpmnProcessId()),
           BufferUtil.wrapString(holder.getCorrelationKey()),

@@ -249,7 +249,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
             MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
             new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
-                messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers))
+                messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers, metrics))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
