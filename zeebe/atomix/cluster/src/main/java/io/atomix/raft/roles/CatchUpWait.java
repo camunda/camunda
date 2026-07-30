@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Waits until the desired leader's {@code matchIndex} reaches the frozen log head, polling on the
- * Raft thread each heartbeat interval. The wait is bounded by the pause watchdog.
+ * Raft thread each heartbeat interval until it catches up or {@code deadlineMs} passes.
  *
  * <p>Owns its poll timer and completes the future returned by {@link #start()} exactly once, either
  * with an empty {@link Optional} once the desired leader is fully caught up, or with a terminal
@@ -44,6 +44,7 @@ final class CatchUpWait {
   private final BooleanSupplier leaderRunning;
   private final MemberId desiredLeader;
   private final long targetIndex;
+  private final long deadlineMs;
   private final CompletableFuture<Optional<LeadershipTransferResult>> result =
       new CompletableFuture<>();
   private @Nullable Scheduled pollTimer;
@@ -52,11 +53,13 @@ final class CatchUpWait {
       final RaftContext raft,
       final BooleanSupplier leaderRunning,
       final MemberId desiredLeader,
-      final long targetIndex) {
+      final long targetIndex,
+      final long deadlineMs) {
     this.raft = raft;
     this.leaderRunning = leaderRunning;
     this.desiredLeader = desiredLeader;
     this.targetIndex = targetIndex;
+    this.deadlineMs = deadlineMs;
   }
 
   CompletableFuture<Optional<LeadershipTransferResult>> start() {
@@ -84,11 +87,6 @@ final class CatchUpWait {
     failWith(LeadershipTransferResult.PAUSE_FAILED);
   }
 
-  /** The leader's freeze watchdog fired, so the desired leader is out of time to catch up. */
-  void onPauseDeadlineExpired() {
-    failWith(LeadershipTransferResult.REPLICATION_TIMED_OUT);
-  }
-
   private void poll() {
     if (result.isDone()) {
       return;
@@ -99,6 +97,12 @@ final class CatchUpWait {
       failWith(LeadershipTransferResult.NOT_MEMBER);
     } else if (isCaughtUp()) {
       succeed();
+    } else if (System.currentTimeMillis() >= deadlineMs) {
+      LOG.warn(
+          "Desired leader {} did not reach index {} in time; reporting REPLICATION_TIMED_OUT",
+          desiredLeader,
+          targetIndex);
+      failWith(LeadershipTransferResult.REPLICATION_TIMED_OUT);
     }
   }
 

@@ -41,6 +41,13 @@ import org.slf4j.LoggerFactory;
 final class LeadershipTransferAttempt {
   private static final Logger LOG = LoggerFactory.getLogger(LeadershipTransferAttempt.class);
 
+  /**
+   * Headroom on top of the steps' own budgets. The watchdog is a backstop against the attempt
+   * getting stuck, not a timeout anyone should hit, so this is sized to be unreachable on a healthy
+   * transfer rather than tight.
+   */
+  private static final Duration PAUSE_BUDGET_SLACK = Duration.ofSeconds(5);
+
   private final RaftContext raft;
   private final LeaderRole leader;
   private final MemberId desiredLeader;
@@ -48,6 +55,7 @@ final class LeadershipTransferAttempt {
   private final long correlationId;
   private final Runnable finishListener;
   private long startMs;
+  private boolean finished;
   private @Nullable CatchUpWait activeCatchUp;
 
   LeadershipTransferAttempt(
@@ -66,7 +74,7 @@ final class LeadershipTransferAttempt {
   void start() {
     raft.checkThread();
     startMs = System.currentTimeMillis();
-    pause(raft.getRebalanceReplicationTimeout())
+    pause(pauseBudget())
         .whenCompleteAsync(
             (targetIndex, error) -> {
               if (error != null) {
@@ -97,15 +105,31 @@ final class LeadershipTransferAttempt {
     }
   }
 
-  /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
+  /**
+   * The leader's freeze watchdog fired. Every step should be bounded well inside the pause budget,
+   * so this condition indicates unexpected behavior. Report it and leave recovery to the watchdog
+   * itself.
+   */
   void onPauseDeadlineExpired() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseDeadlineExpired();
+    if (finished) {
+      return;
     }
+    LOG.error(
+        "Leadership transfer to {} did not finish within its pause budget of {}; abandoning it and "
+            + "leaving recovery to the step-down",
+        desiredLeader,
+        pauseBudget());
+    abandon(LeadershipTransferResult.PAUSE_FAILED);
   }
 
   private void catchUp(final long targetIndex) {
-    final var catchUpWait = new CatchUpWait(raft, leader::isRunning, desiredLeader, targetIndex);
+    final var catchUpWait =
+        new CatchUpWait(
+            raft,
+            leader::isRunning,
+            desiredLeader,
+            targetIndex,
+            startMs + raft.getRebalanceReplicationTimeout().toMillis());
     activeCatchUp = catchUpWait;
     catchUpWait
         .start()
@@ -123,15 +147,35 @@ final class LeadershipTransferAttempt {
    */
   private void onCaughtUp(final long targetIndex) {
     LOG.info("Desired leader {} caught up to index {}", desiredLeader, targetIndex);
+    if (finished) {
+      return;
+    }
+    finished = true;
     finishListener.run();
     observeDuration(LeadershipTransferResult.TRANSFERRED);
     resume();
   }
 
   private void finish(final LeadershipTransferResult result) {
+    if (finished) {
+      return;
+    }
+    finished = true;
     finishListener.run();
     observeDuration(result);
     resume().whenComplete((ignored, resumeError) -> reportResult(result));
+  }
+
+  private void abandon(final LeadershipTransferResult result) {
+    finished = true;
+    finishListener.run();
+    observeDuration(result);
+    reportResult(result);
+  }
+
+  /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
+  private Duration pauseBudget() {
+    return raft.getRebalanceReplicationTimeout().plus(PAUSE_BUDGET_SLACK);
   }
 
   private void observeDuration(final LeadershipTransferResult result) {
@@ -174,8 +218,8 @@ final class LeadershipTransferAttempt {
 
   /**
    * Reopens the partition on every terminal path, whether the transfer failed or the desired leader
-   * caught up. A resume that fails can leave the partition frozen: the pause watchdog is the safety
-   * net and steps the leader down once the resume deadline passes.
+   * caught up. A resume that fails steps the leader down where it is detected, so the partition is
+   * rebuilt rather than left frozen.
    */
   private CompletableFuture<Void> resume() {
     final var control = raft.getLeadershipTransferPauseControl();

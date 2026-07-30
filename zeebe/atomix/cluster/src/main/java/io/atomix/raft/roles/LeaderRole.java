@@ -506,7 +506,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (!pausedForTransfer || !isRunning()) {
       return;
     }
-    log.warn("Partition still paused after the resume deadline; stepping down to follower");
+    log.error("Partition still paused after the resume deadline; stepping down to follower");
     leadershipTransferRunner.onPauseDeadlineExpired();
     clearTransferPause();
     raft.transition(RaftServer.Role.FOLLOWER);
