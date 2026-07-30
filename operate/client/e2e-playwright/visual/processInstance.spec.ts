@@ -559,11 +559,8 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  // The 420px minimum is a measured number, so a longer panel title or an extra
-  // header control outgrows it with nothing failing. Dragging the splitter all
-  // the way left pins the panel to that minimum, which is where such a
-  // regression first shows up - and where Linux font metrics, which differ from
-  // the macOS ones the number was measured against, are exercised too.
+  // Panel sizes are stored as percentages, so 10 pins the panel to its minimum
+  // - where a title or control that outgrows the measured 420px shows up first.
   test('instance history panel at its minimum width', async ({
     page,
     processInstancePage,
@@ -600,8 +597,6 @@ test.describe('process instance page', () => {
       }),
     ).toBeVisible();
     await processInstancePage.resetZoomButton.click();
-    // Match the settle the other screenshot tests here use: the timeout lets
-    // the bpmn-js SVG finish rendering, the overlay assertion proves it did.
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
