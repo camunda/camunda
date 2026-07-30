@@ -200,8 +200,8 @@ public final class RecoveryController {
     return RestoreStatusResponse.Builder.create()
         .status(mapStatusEnum(restore.status()))
         .changeId(Long.toString(restore.changeId()))
-        .brokers(restore.brokers().stream().map(RecoveryController::mapRestoreBroker).toList())
         .startedAt(toIso(restore.startedAt()))
+        .brokers(restore.brokers().stream().map(RecoveryController::mapRestoreBroker).toList())
         .build();
   }
 

@@ -484,6 +484,7 @@ components:
       required:
         - status
         - changeId
+        - startedAt
         - brokers
       properties:
         status:
@@ -547,6 +548,7 @@ components:
         - partitionId
         - state
         - backupIds
+        - completedAt
       properties:
         partitionId:
           description: The ID of the partition.
@@ -571,7 +573,7 @@ components:
         completedAt:
           description: >-
             The time the partition was restored, as an ISO 8601 timestamp; null unless the partition
-            state is `restored`.
+            state is `RESTORED`.
           type: string
           format: date-time
           nullable: true
