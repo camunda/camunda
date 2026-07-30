@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.function.Predicate;
@@ -156,11 +157,8 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          final var correlationKeyHeld = isCorrelationKeyHeld(messageData, subscriptionRecord);
-          // Short-circuit: the correlation key is the blocker whenever it is held, so the
-          // businessId
-          // gate is only probed when the key is free.
-          if (!correlationKeyHeld && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
+          final var correlation = evaluateStartEventCorrelation(messageData, subscriptionRecord);
+          if (correlation.isRight()) {
             final var processInstanceKey =
                 triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
             if (processInstanceKey > 0) {
@@ -179,13 +177,10 @@ public final class MessageCorrelateBehavior {
               delegatedCrossPartition.set(true);
             }
           } else {
-            // A live holder blocks this start, so the message stays buffered. Attribute the block
-            // to
-            // the gate that fired — the correlation key takes precedence. Recorded only on this
-            // real
+            // A live holder blocks this start, so the message stays buffered. The reason carries
+            // the gate that fired (correlation key takes precedence). Recorded only on this real
             // mutation path (never in the collect* dry-run mirrors, which would double-count).
-            metrics.messageStartBlocked(
-                correlationKeyHeld ? BlockReason.CORRELATION_KEY : BlockReason.BUSINESS_ID);
+            metrics.messageStartBlocked(correlation.getLeft());
             if (blockedProcessIds != null) {
               blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
             }
@@ -212,8 +207,9 @@ public final class MessageCorrelateBehavior {
           }
 
           // Mirror the same uniqueness gates as the real correlation path so authorization is only
-          // checked for subscriptions that would actually correlate.
-          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
+          // checked for subscriptions that would actually correlate. The block reason is irrelevant
+          // here — this dry run writes no state and records no metric.
+          if (evaluateStartEventCorrelation(messageData, subscriptionRecord).isRight()) {
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
@@ -313,16 +309,23 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * Returns {@code true} when this start-event subscription should correlate for the given message:
-   * only one instance per (process definition, correlation key) is created — an empty correlation
-   * key allows multiple instances — and, when the businessId uniqueness feature is enabled and the
-   * message carries a businessId, no active root PI on this partition may already hold that
-   * businessId for this process definition.
+   * Evaluates whether this start-event subscription may correlate for the given message. Returns
+   * {@link Either#right} when it may — only one instance per (process definition, correlation key)
+   * is created (an empty correlation key allows multiple instances) and, when the businessId
+   * uniqueness feature is enabled and the message carries a businessId, no active root PI on this
+   * partition already holds that businessId for this process definition. Otherwise returns {@link
+   * Either#left} with the {@link BlockReason} of the gate that fired: the correlation key takes
+   * precedence, so the businessId gate is only probed when the key is free.
    */
-  private boolean shouldCorrelateStartEvent(
+  private Either<BlockReason, Void> evaluateStartEventCorrelation(
       final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
-    return !isCorrelationKeyHeld(messageData, subscriptionRecord)
-        && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
+    if (isCorrelationKeyHeld(messageData, subscriptionRecord)) {
+      return Either.left(BlockReason.CORRELATION_KEY);
+    }
+    if (isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
+      return Either.left(BlockReason.BUSINESS_ID);
+    }
+    return Either.rightVoid();
   }
 
   /**
