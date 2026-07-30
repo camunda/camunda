@@ -395,6 +395,43 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Counts message-start correlations left buffered because an active holder blocks them on the
+   * message partition: a live publish/correlate finds either the correlation key already taken by
+   * an active instance or the business id already held for the process definition, so no new
+   * instance is started and the message stays buffered until the holder frees it. The {@code
+   * reason} tag attributes each block to the gate that fired — the correlation key takes precedence
+   * — so an operator can tell correlation-key contention apart from business-id uniqueness
+   * back-pressure. A sustained rate with no matching drain (started instances) points at holders
+   * that never release.
+   */
+  MESSAGE_START_BLOCKED {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.blocked.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Number of message-start correlations left buffered by an active holder on the message partition, tagged by the uniqueness gate that blocked.";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {MessageCorrelationKeyNames.REASON};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   public enum MessageCorrelationKeyNames implements KeyName {
@@ -419,6 +456,14 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "result";
+      }
+    },
+
+    /** Which uniqueness gate blocked a message-start correlation (correlation key, business id). */
+    REASON {
+      @Override
+      public String asString() {
+        return "reason";
       }
     };
   }
@@ -487,6 +532,22 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     private final String label;
 
     ReleaseResult(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
+    }
+  }
+
+  /** Which uniqueness gate blocked a message-start correlation ({@code reason} tag). */
+  public enum BlockReason {
+    CORRELATION_KEY("correlation_key"),
+    BUSINESS_ID("business_id");
+
+    private final String label;
+
+    BlockReason(final String label) {
       this.label = label;
     }
 

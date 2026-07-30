@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -155,7 +156,11 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
+          final var correlationKeyHeld = isCorrelationKeyHeld(messageData, subscriptionRecord);
+          // Short-circuit: the correlation key is the blocker whenever it is held, so the
+          // businessId
+          // gate is only probed when the key is free.
+          if (!correlationKeyHeld && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
             final var processInstanceKey =
                 triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
             if (processInstanceKey > 0) {
@@ -173,8 +178,17 @@ public final class MessageCorrelateBehavior {
               // through to the NOT_FOUND rejection so the correlate does not hang.
               delegatedCrossPartition.set(true);
             }
-          } else if (blockedProcessIds != null) {
-            blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
+          } else {
+            // A live holder blocks this start, so the message stays buffered. Attribute the block
+            // to
+            // the gate that fired — the correlation key takes precedence. Recorded only on this
+            // real
+            // mutation path (never in the collect* dry-run mirrors, which would double-count).
+            metrics.messageStartBlocked(
+                correlationKeyHeld ? BlockReason.CORRELATION_KEY : BlockReason.BUSINESS_ID);
+            if (blockedProcessIds != null) {
+              blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
+            }
           }
         });
     return delegatedCrossPartition.get();
@@ -307,13 +321,22 @@ public final class MessageCorrelateBehavior {
    */
   private boolean shouldCorrelateStartEvent(
       final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
-    final var correlationKeyFree =
-        messageData.correlationKey().capacity() == 0
-            || !messageState.existActiveProcessInstance(
-                messageData.tenantId(),
-                subscriptionRecord.getBpmnProcessIdBuffer(),
-                messageData.correlationKey());
-    return correlationKeyFree && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
+    return !isCorrelationKeyHeld(messageData, subscriptionRecord)
+        && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
+  }
+
+  /**
+   * Returns {@code true} when the message carries a non-empty correlation key that an active root
+   * PI already holds for this process definition on this partition — only one instance per (process
+   * definition, correlation key) is created, while an empty correlation key allows multiple.
+   */
+  private boolean isCorrelationKeyHeld(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    return messageData.correlationKey().capacity() != 0
+        && messageState.existActiveProcessInstance(
+            messageData.tenantId(),
+            subscriptionRecord.getBpmnProcessIdBuffer(),
+            messageData.correlationKey());
   }
 
   /**
