@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.RequestOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -99,6 +101,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
   private final boolean businessIdUniquenessEnabled;
+  private final MessageCorrelationMetrics metrics;
   private final MessageStartProcessInstanceRequestRecord startedEventBuffer =
       new MessageStartProcessInstanceRequestRecord();
 
@@ -115,7 +118,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final KeyGenerator keyGenerator,
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled,
-      final Writers writers) {
+      final Writers writers,
+      final MessageCorrelationMetrics metrics) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
@@ -125,6 +129,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     this.keyGenerator = keyGenerator;
     this.clock = clock;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    this.metrics = metrics;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -148,22 +153,26 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       // and start a duplicate. Reply like every other outcome; the EXPIRED_REJECTED applier on P_K
       // backs the pending ask off (removal stays owned by P_K's message-expiry path).
       commandSender.sendStartProcessInstanceExpiredRejected(request);
+      metrics.crossPartitionRequest(RequestOutcome.REJECTED_EXPIRED);
       return;
     }
 
     final var cachedPiKey = lookupValidDedupHit(request);
     if (cachedPiKey != null) {
       commandSender.sendStartProcessInstanceStarted(request, cachedPiKey);
+      metrics.crossPartitionRequest(RequestOutcome.DEDUP_HIT);
       return;
     }
 
     if (!localSubscriptionExists(request)) {
       commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
+      metrics.crossPartitionRequest(RequestOutcome.REJECTED_NO_SUBSCRIPTION);
       return;
     }
 
     if (businessIdUniquenessEnabled && isBusinessIdAlreadyHeld(request)) {
       commandSender.sendStartProcessInstanceUniquenessRejected(request);
+      metrics.crossPartitionRequest(RequestOutcome.REJECTED_UNIQUENESS);
       return;
     }
 
@@ -185,6 +194,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     if (!activated) {
       // Activation failed because the definition is draining/deleted on this partition.
       commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
+      metrics.crossPartitionRequest(RequestOutcome.REJECTED_NOT_ACTIVATABLE);
       return;
     }
 
@@ -198,6 +208,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
         record.getKey(), MessageStartProcessInstanceRequestIntent.STARTED, startedEventBuffer);
 
     commandSender.sendStartProcessInstanceStarted(request, processInstanceKey);
+    metrics.crossPartitionRequest(RequestOutcome.STARTED);
   }
 
   /**

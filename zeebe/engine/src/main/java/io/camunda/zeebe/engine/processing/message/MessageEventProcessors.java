@@ -186,7 +186,8 @@ public final class MessageEventProcessors {
                 keyGenerator,
                 clock,
                 businessIdUniquenessEnabled,
-                writers))
+                writers,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
