@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
@@ -76,7 +77,9 @@ final class ClusterEndpointTest {
   }
 
   private ClusterEndpoint createEndpoint() {
-    return new ClusterEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
+    return new ClusterEndpoint(
+        mock(ClusterConfigurationManagementRequestSender.class),
+        mock(RebalanceRequestSender.class));
   }
 
   @Nested
@@ -92,7 +95,7 @@ final class ClusterEndpointTest {
     void shouldSendPartitionDistributionRequestWhenConfigSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
+      final var endpoint = new ClusterEndpoint(sender, mock(RebalanceRequestSender.class));
       final var config = zoneAwareConfig();
       final var expected =
           new UpdatePartitionDistributorConfigRequest(
@@ -117,7 +120,7 @@ final class ClusterEndpointTest {
     void shouldSendZonePrioritiesRequestWhenZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
+      final var endpoint = new ClusterEndpoint(sender, mock(RebalanceRequestSender.class));
       final var zoneOrder = List.of("zone-b", "zone-a");
       final var expected = new UpdateZonePrioritiesRequest(zoneOrder, true);
       when(sender.updateZonePriorities(expected))
@@ -140,7 +143,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenBothConfigAndZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
+      final var endpoint = new ClusterEndpoint(sender, mock(RebalanceRequestSender.class));
 
       // when
       final var response =
@@ -159,7 +162,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenNeitherConfigNorZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender);
+      final var endpoint = new ClusterEndpoint(sender, mock(RebalanceRequestSender.class));
 
       // when
       final var response =
