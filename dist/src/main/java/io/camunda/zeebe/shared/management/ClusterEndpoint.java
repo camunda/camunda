@@ -26,6 +26,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestSender;
+import io.camunda.zeebe.dynamic.config.rebalance.TriggerRebalanceRequest;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -37,6 +39,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.RebalanceRequest;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -75,10 +78,14 @@ public class ClusterEndpoint {
       Set.of("dryRun", "force", "replicationFactor");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
+  private final RebalanceRequestSender rebalanceRequestSender;
 
   @Autowired
-  public ClusterEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
+  public ClusterEndpoint(
+      final ClusterConfigurationManagementRequestSender requestSender,
+      final RebalanceRequestSender rebalanceRequestSender) {
     this.requestSender = requestSender;
+    this.rebalanceRequestSender = rebalanceRequestSender;
   }
 
   @GetMapping(produces = "application/json")
@@ -88,6 +95,39 @@ public class ClusterEndpoint {
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
+  }
+
+  /**
+   * Starts a cluster-wide leadership rebalance. Answers as soon as the coordinator has accepted it,
+   * because a rebalance takes far longer than a request may wait: the operator follows it with
+   * {@link #rebalanceStatus()}.
+   */
+  @PostMapping(path = "/rebalance", produces = "application/json")
+  public CompletableFuture<ResponseEntity<?>> rebalance(
+      @RequestBody(required = false) final RebalanceRequest body) {
+    final TriggerRebalanceRequest request;
+    try {
+      request = RebalanceApiUtils.toTriggerRequest(body);
+    } catch (final IllegalArgumentException error) {
+      return CompletableFuture.completedFuture(invalidRequest(error.getMessage()));
+    }
+    return rebalanceRequestSender
+        .triggerRebalance(request)
+        .handle((response, error) -> RebalanceApiUtils.mapStatusResponse(response, error, 202));
+  }
+
+  @GetMapping(path = "/rebalance", produces = "application/json")
+  public CompletableFuture<ResponseEntity<?>> rebalanceStatus() {
+    return rebalanceRequestSender
+        .getRebalanceStatus()
+        .handle((response, error) -> RebalanceApiUtils.mapStatusResponse(response, error, 200));
+  }
+
+  @DeleteMapping(path = "/rebalance", produces = "application/json")
+  public CompletableFuture<ResponseEntity<?>> cancelRebalance() {
+    return rebalanceRequestSender
+        .cancelRebalance()
+        .handle(RebalanceApiUtils::mapCancellationResponse);
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {

@@ -104,7 +104,7 @@ final class ClusterApiUtils {
     throw new IllegalStateException("Utility class");
   }
 
-  private static BrokerId brokerIdValue(final MemberId memberId) {
+  static BrokerId brokerIdValue(final MemberId memberId) {
     return memberId.zone() != null
         ? new BrokerId.String(memberId.id())
         : new BrokerId.Integer(memberId.nodeIdx());

@@ -321,6 +321,93 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
       x-added-in-version: "8.10.0"
 
+  /rebalance:
+    post:
+      summary: Start a cluster-wide leadership rebalance
+      description:
+        Transfer leadership of every partition that is not led by its highest-priority replica
+        towards that replica, one partition at a time. Returns as soon as the rebalance has been
+        accepted; poll `GET /cluster/rebalance` to follow it. Only one rebalance runs at a time and
+        rebalances neither queue nor merge, because each pins its own view of the desired leaders.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RebalanceRequest"
+      responses:
+        '202':
+          description: The rebalance was accepted, and is reported as it starts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RebalanceStatusResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          description: A rebalance is already running.
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/Error"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '503':
+          $ref: '#/components/responses/CoordinatorUnavailable'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
+
+    get:
+      summary: Report the rebalance in flight, and the last one that finished
+      description:
+        Report where the running rebalance has got to with each partition it covers, and what became
+        of the last rebalance to finish. Both are held in memory by the coordinating broker, so a
+        coordinator that has restarted or moved reports an idle status with no history.
+      responses:
+        '200':
+          description: The current rebalance status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RebalanceStatusResponse"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '503':
+          $ref: '#/components/responses/CoordinatorUnavailable'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
+
+    delete:
+      summary: Stop the running rebalance
+      description:
+        Ask the running rebalance to stop once the transfer in flight has finished, so that no
+        partition is left part-way through a transfer. Partitions already transferred keep their new
+        leaders; those the rebalance had not reached keep their current ones. Cancelling is always
+        accepted, so `wasRunning` is how a cancellation that stopped a rebalance is told apart from
+        one that found nothing to stop.
+      responses:
+        '200':
+          description: The cancellation was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RebalanceCancellationResponse"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '503':
+          $ref: '#/components/responses/CoordinatorUnavailable'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
+
 components:
   parameters:
     BrokerId:
@@ -406,3 +493,180 @@ components:
         application/json:
           schema:
             $ref: "components.yaml#/schemas/GetTopologyResponse"
+
+    CoordinatorUnavailable:
+      description:
+        The broker coordinating rebalances could not be reached. It may have restarted or the
+        coordinating role may be moving between brokers; retry the request.
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/Error"
+
+  schemas:
+    RebalanceRequest:
+      title: RebalanceRequest
+      description: What to run one rebalance under, and whether to carry it out at all.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/RebalanceSettings"
+        - type: object
+          properties:
+            dryRun:
+              description:
+                If true, report the plan the rebalance would carry out without pausing any partition
+                or transferring any leadership.
+              type: boolean
+              default: false
+
+    RebalanceSettings:
+      title: RebalanceSettings
+      description:
+        Settings for one rebalance, each replacing the configured value for that rebalance only.
+        Every setting is optional, and whatever is left out keeps its configured value.
+      type: object
+      properties:
+        replicationLagThreshold:
+          description:
+            The most replication lag, in bytes, a desired leader may have for its transfer to be
+            accepted.
+          type: integer
+          format: int64
+          example: 8388608
+        replicationTimeout:
+          description:
+            How long a partition may stay frozen waiting for its desired leader to catch up, as an
+            ISO-8601 duration.
+          type: string
+          example: "PT10S"
+        maxTransferAttempts:
+          description:
+            How many times a leader may prompt its desired leader to campaign before giving up.
+          type: integer
+          format: int32
+          example: 3
+        leaderWaitTimeout:
+          description:
+            How long the coordinator waits for a transfer it handed to a leader to resolve before
+            giving up on that partition and moving on, as an ISO-8601 duration. This must stay above
+            everything the leader is itself allowed to spend on a transfer, since giving up early
+            moves the rebalance on while the partition is still frozen.
+          type: string
+          example: "PT1M"
+
+    RebalanceStatusResponse:
+      title: RebalanceStatusResponse
+      description: What the rebalance coordinator is doing, and what it last did.
+      type: object
+      properties:
+        status:
+          description: Whether a rebalance is running, and whether it has been asked to stop.
+          type: string
+          enum:
+            - IDLE
+            - RUNNING
+            - CANCELLING
+          example: "RUNNING"
+        rebalanceId:
+          description:
+            Identifies the running rebalance in the coordinator's logs and metrics. Absent while no
+            rebalance is running.
+          type: integer
+          format: int64
+          example: 7
+        dryRun:
+          description: Whether the running rebalance is reporting a plan rather than carrying it out.
+          type: boolean
+        settings:
+          $ref: "#/components/schemas/RebalanceSettings"
+        partitions:
+          description:
+            Every partition the running rebalance covers and where it has got to with each, in the
+            order it works through them. Empty while no rebalance is running, and while one is still
+            being planned.
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionRebalanceStatus"
+        lastCompletedRebalance:
+          $ref: "#/components/schemas/CompletedRebalance"
+
+    CompletedRebalance:
+      title: CompletedRebalance
+      description:
+        The last rebalance this coordinator finished. Absent before one has finished, including
+        after the coordinating role has moved to another broker.
+      type: object
+      properties:
+        rebalanceId:
+          description: Identifies the rebalance in the coordinator's logs and metrics.
+          type: integer
+          format: int64
+          example: 6
+        outcome:
+          description: How the rebalance ended.
+          type: string
+          enum:
+            - COMPLETED
+            - CANCELLED
+            - FAILED
+          example: "COMPLETED"
+        dryRun:
+          description: Whether the rebalance reported a plan rather than carrying it out.
+          type: boolean
+        partitions:
+          description:
+            Every partition the rebalance covered and what became of each. For a dry run, the plan
+            it would have carried out.
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionRebalanceStatus"
+
+    PartitionRebalanceStatus:
+      title: PartitionRebalanceStatus
+      description:
+        One partition's place in a rebalance - where its leadership is, where the rebalance wants
+        it, and how far the rebalance has got with moving it.
+      type: object
+      properties:
+        id:
+          $ref: "components.yaml#/schemas/PartitionId"
+        physicalTenantId:
+          description:
+            The partition group this partition belongs to. Partition ids are unique only within a
+            group, so this is needed to identify the partition.
+          type: string
+          example: "default"
+        currentLeader:
+          $ref: "components.yaml#/schemas/BrokerId"
+        desiredLeader:
+          $ref: "components.yaml#/schemas/BrokerId"
+        status:
+          description: >-
+            Where this partition stands in the rebalance. `SKIPPED` means the rebalance had no work
+            to do for it, whereas `FAILED` means it wanted to move this partition's leadership and
+            did not manage to - including a transfer the partition's leader declined, which never
+            froze the partition. Use `reason` to tell those apart.
+          type: string
+          enum:
+            - PENDING
+            - TRANSFERRING
+            - TRANSFERRED
+            - SKIPPED
+            - FAILED
+          example: "TRANSFERRED"
+        reason:
+          description:
+            Why this partition ended in this status, for a status that does not speak for itself.
+            Absent otherwise.
+          type: string
+          example: "its leader declined the transfer: NOT_REPLICATING"
+
+    RebalanceCancellationResponse:
+      title: RebalanceCancellationResponse
+      type: object
+      properties:
+        wasRunning:
+          description:
+            Whether there was a rebalance to stop. A cancellation is accepted either way.
+          type: boolean
+          example: true
