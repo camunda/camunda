@@ -12,7 +12,9 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Registers metrics for the number of rows in each RDBMS table, per physical tenant. Each physical
@@ -21,12 +23,13 @@ import java.util.Map;
  * metrics. The actual (cached) row counts are provided by a per-tenant {@link
  * RdbmsTableRowCountProvider}.
  */
-public class PhysicalTenantsRdbmsTableRowCountMetrics implements MeterBinder {
+public class PhysicalTenantsRdbmsTableRowCountMetrics implements MeterBinder, AutoCloseable {
 
   private static final String NAMESPACE = "zeebe.rdbms";
   private static final String METRIC_NAME = NAMESPACE + ".table.row.count";
 
   private final Map<String, RdbmsTableRowCountProvider> rowCountProviders;
+  private final List<ExecutorService> executors;
 
   /**
    * @param rowCountProviders the row count provider for each physical tenant, keyed by physical
@@ -34,7 +37,19 @@ public class PhysicalTenantsRdbmsTableRowCountMetrics implements MeterBinder {
    */
   public PhysicalTenantsRdbmsTableRowCountMetrics(
       final Map<String, RdbmsTableRowCountProvider> rowCountProviders) {
+    this(rowCountProviders, List.of());
+  }
+
+  /**
+   * @param rowCountProviders the row count provider for each physical tenant, keyed by physical
+   *     tenant id
+   * @param executors executors owned by these metrics and closed with the metrics bean
+   */
+  public PhysicalTenantsRdbmsTableRowCountMetrics(
+      final Map<String, RdbmsTableRowCountProvider> rowCountProviders,
+      final List<ExecutorService> executors) {
     this.rowCountProviders = Map.copyOf(rowCountProviders);
+    this.executors = List.copyOf(executors);
   }
 
   @Override
@@ -49,5 +64,10 @@ public class PhysicalTenantsRdbmsTableRowCountMetrics implements MeterBinder {
                 .register(registry);
           }
         });
+  }
+
+  @Override
+  public void close() {
+    executors.forEach(ExecutorService::shutdown);
   }
 }

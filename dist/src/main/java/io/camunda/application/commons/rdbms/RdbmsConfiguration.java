@@ -24,13 +24,17 @@ import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +52,20 @@ public class RdbmsConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
-  @Bean
+  private static ExecutorService rdbmsMetricsRefreshExecutor(final String physicalTenantId) {
+    final var threadFactory =
+        Thread.ofPlatform()
+            .name("rdbms-metrics-refresh-" + physicalTenantId + "-", 0)
+            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
+            .factory();
+    return Executors.newFixedThreadPool(1, threadFactory);
+  }
+
+  @Bean(destroyMethod = "close")
   public PhysicalTenantsRdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final PhysicalTenantResolver physicalTenantResolver) {
+    final var executors = new ArrayList<ExecutorService>();
     final var rowCountProviders =
         rdbmsMapperBundles.entrySet().stream()
             .collect(
@@ -66,10 +80,12 @@ public class RdbmsConfiguration {
                               .getRdbms()
                               .getMetrics()
                               .getTableRowCountCacheDuration();
+                      final var executor = rdbmsMetricsRefreshExecutor(e.getKey());
+                      executors.add(executor);
                       return new RdbmsTableRowCountProvider(
-                          e.getValue().tableMetricsMapper(), cacheDuration);
+                          e.getValue().tableMetricsMapper(), cacheDuration, executor);
                     }));
-    return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders);
+    return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders, executors);
   }
 
   @Bean

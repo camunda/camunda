@@ -18,7 +18,12 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +36,7 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
   private TableMetricsMapper mapperA;
   private TableMetricsMapper mapperB;
   private MeterRegistry meterRegistry;
+  private ExecutorService executor;
   private PhysicalTenantsRdbmsTableRowCountMetrics metrics;
 
   @BeforeEach
@@ -38,11 +44,23 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
     mapperA = mock(TableMetricsMapper.class);
     mapperB = mock(TableMetricsMapper.class);
     meterRegistry = new SimpleMeterRegistry();
+    // Single-threaded so a no-op task submitted after triggering a load can be used as a barrier:
+    // once that no-op task completes, the earlier (async) load is guaranteed to have finished too.
+    executor = Executors.newSingleThreadExecutor();
   }
 
-  private static RdbmsTableRowCountProvider provider(
+  @AfterEach
+  void tearDown() {
+    executor.shutdownNow();
+  }
+
+  private void awaitPendingLoads() throws Exception {
+    executor.submit(() -> {}).get(5, TimeUnit.SECONDS);
+  }
+
+  private RdbmsTableRowCountProvider provider(
       final TableMetricsMapper mapper, final Duration cacheDuration) {
-    return new RdbmsTableRowCountProvider(mapper, cacheDuration);
+    return new RdbmsTableRowCountProvider(mapper, cacheDuration, executor);
   }
 
   @Test
@@ -76,7 +94,7 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
   }
 
   @Test
-  void shouldReportRowCountsPerPhysicalTenantIndependently() {
+  void shouldReportRowCountsPerPhysicalTenantIndependently() throws Exception {
     // given
     when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
     when(mapperB.countTableRows("PROCESS_INSTANCE")).thenReturn(7L);
@@ -87,7 +105,7 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
                 TENANT_B, provider(mapperB, DEFAULT_CACHE_DURATION)));
     metrics.bindTo(meterRegistry);
 
-    // when
+    // when - the first read of each gauge only triggers the (async) load; wait for it to finish
     final Gauge gaugeA =
         meterRegistry
             .find("zeebe.rdbms.table.row.count")
@@ -100,9 +118,27 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
             .tag("physicalTenant", TENANT_B)
             .tag("table", "PROCESS_INSTANCE")
             .gauge();
+    gaugeA.value();
+    gaugeB.value();
+    awaitPendingLoads();
 
     // then
     assertThat(gaugeA.value()).isEqualTo(42.0);
     assertThat(gaugeB.value()).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldCloseOwnedExecutors() {
+    // given
+    final var executorA = Executors.newSingleThreadExecutor();
+    final var executorB = Executors.newSingleThreadExecutor();
+    metrics = new PhysicalTenantsRdbmsTableRowCountMetrics(Map.of(), List.of(executorA, executorB));
+
+    // when
+    metrics.close();
+
+    // then
+    assertThat(executorA.isShutdown()).isTrue();
+    assertThat(executorB.isShutdown()).isTrue();
   }
 }
