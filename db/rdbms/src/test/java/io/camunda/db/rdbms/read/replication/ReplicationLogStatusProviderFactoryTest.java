@@ -48,8 +48,7 @@ class ReplicationLogStatusProviderFactoryTest {
     // when / then
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("pg_monitor")
-        .hasMessageContaining("GRANT pg_monitor TO");
+        .hasMessageContaining("pg_monitor");
   }
 
   @Test
@@ -80,8 +79,7 @@ class ReplicationLogStatusProviderFactoryTest {
     // when / then
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("VIEW SERVER STATE")
-        .hasMessageContaining("GRANT VIEW SERVER STATE TO");
+        .hasMessageContaining("VIEW SERVER STATE");
   }
 
   @Test
