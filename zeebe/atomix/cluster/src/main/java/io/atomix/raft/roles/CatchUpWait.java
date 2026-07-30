@@ -62,7 +62,7 @@ final class CatchUpWait {
   CompletableFuture<Optional<LeadershipTransferResult>> start() {
     raft.checkThread();
     if (isCaughtUp()) {
-      complete(Optional.empty());
+      succeed();
       return result;
     }
     final var pollInterval = raft.getHeartbeatInterval();
@@ -76,17 +76,17 @@ final class CatchUpWait {
       return;
     }
     LOG.debug("Lost leadership while catching up the desired leader; reporting LEADER_CHANGED");
-    complete(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
+    failWith(LeadershipTransferResult.LEADER_CHANGED);
   }
 
   /** The freeze ended, so the desired leader can no longer catch up to a frozen log head. */
   void onPauseCleared() {
-    complete(Optional.of(LeadershipTransferResult.PAUSE_FAILED));
+    failWith(LeadershipTransferResult.PAUSE_FAILED);
   }
 
   /** The leader's freeze watchdog fired, so the desired leader is out of time to catch up. */
   void onPauseDeadlineExpired() {
-    complete(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
+    failWith(LeadershipTransferResult.REPLICATION_TIMED_OUT);
   }
 
   private void poll() {
@@ -94,11 +94,11 @@ final class CatchUpWait {
       return;
     }
     if (!leaderRunning.getAsBoolean()) {
-      complete(Optional.of(LeadershipTransferResult.LEADER_CHANGED));
+      failWith(LeadershipTransferResult.LEADER_CHANGED);
     } else if (raft.getCluster().getMemberContext(desiredLeader) == null) {
-      complete(Optional.of(LeadershipTransferResult.NOT_MEMBER));
+      failWith(LeadershipTransferResult.NOT_MEMBER);
     } else if (isCaughtUp()) {
-      complete(Optional.empty());
+      succeed();
     }
   }
 
@@ -107,11 +107,21 @@ final class CatchUpWait {
     return context != null && context.getMatchIndex() >= targetIndex;
   }
 
-  private void complete(final Optional<LeadershipTransferResult> outcome) {
+  /** The desired leader reached the frozen log head, so the transfer can carry on. */
+  private void succeed() {
+    complete(Optional.empty());
+  }
+
+  /** The desired leader will not catch up, so the transfer ends with {@code reason}. */
+  private void failWith(final LeadershipTransferResult reason) {
+    complete(Optional.of(reason));
+  }
+
+  private void complete(final Optional<LeadershipTransferResult> failureReason) {
     if (pollTimer != null) {
       pollTimer.cancel();
       pollTimer = null;
     }
-    result.complete(outcome);
+    result.complete(failureReason);
   }
 }

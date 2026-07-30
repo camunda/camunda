@@ -110,9 +110,9 @@ final class LeadershipTransferAttempt {
     catchUpWait
         .start()
         .whenComplete(
-            (outcome, ignored) -> {
+            (failureReason, ignored) -> {
               activeCatchUp = null;
-              outcome.ifPresentOrElse(this::finish, () -> onCaughtUp(targetIndex));
+              failureReason.ifPresentOrElse(this::finish, () -> onCaughtUp(targetIndex));
             });
   }
 
