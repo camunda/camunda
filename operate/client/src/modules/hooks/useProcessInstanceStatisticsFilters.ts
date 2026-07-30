@@ -13,8 +13,6 @@ import {
   type QueryProcessInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
 
 type ProcessInstancesSearchFilter = NonNullable<
   QueryProcessInstancesRequestBody['filter']
@@ -38,9 +36,10 @@ const getValidStatisticsFilters = (
   return statisticsFilter;
 };
 
-const useProcessInstanceStatisticsFilters = (
-  variable?: Variable,
-): GetProcessDefinitionStatisticsRequestBody => {
+const useProcessInstanceStatisticsFilters = (variable?: {
+  name: string;
+  values: string[];
+}): GetProcessDefinitionStatisticsRequestBody => {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
@@ -50,18 +49,14 @@ const useProcessInstanceStatisticsFilters = (
       return {filter: undefined};
     }
 
-    if (variable?.name && variable?.values) {
-      const parsed = (getValidVariableValues(variable.values) ?? []).map((v) =>
-        JSON.stringify(v),
-      );
-      if (parsed.length > 0) {
-        fullFilter.variables = [
-          {
-            name: variable?.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ];
-      }
+    if (variable?.name && variable.values.length > 0) {
+      const values = variable.values;
+      fullFilter.variables = [
+        {
+          name: variable.name,
+          value: values.length === 1 ? values[0]! : {$in: values},
+        },
+      ];
     }
 
     return {

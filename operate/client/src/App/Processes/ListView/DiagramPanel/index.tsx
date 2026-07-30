@@ -34,8 +34,8 @@ import {
   getProcessDefinitionName,
   useProcessDefinitionSelection,
 } from 'modules/hooks/processDefinitions';
-import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
+import {useBatchModificationStatisticsFilter} from 'modules/hooks/useBatchModificationStatisticsFilter';
 import {
   isStatisticsPayload,
   isModificationBadgePayload,
@@ -102,9 +102,10 @@ const DiagramPanel: React.FC = observer(() => {
   const {data: businessObjects} = useBusinessObjects();
 
   const baseFilters = useProcessInstanceStatisticsFilters(
-    variableFilterStore.variable,
+    variableFilterStore.variableWithValidatedValues,
   );
-  const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
+  const batchModificationStatisticsFilter =
+    useBatchModificationStatisticsFilter();
 
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
     baseFilters,
@@ -113,13 +114,7 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {selectedTargetElementId} = batchModificationStore.state;
   const {data: batchOverlayData} = useBatchModificationOverlayData(
-    {
-      ...baseFilters,
-      filter: {
-        ...baseFilters.filter,
-        processInstanceKey: processInstanceKeyFilter,
-      },
-    },
+    batchModificationStatisticsFilter,
     {
       sourceElementId: elementId,
       targetElementId: selectedTargetElementId ?? undefined,

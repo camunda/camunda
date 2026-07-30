@@ -8,7 +8,6 @@
 
 import {renderHook} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
-import type {Variable} from 'modules/stores/variableFilter';
 import {useProcessInstanceStatisticsFilters} from './useProcessInstanceStatisticsFilters';
 
 const getWrapper = (initialSearchParams?: Record<string, string>) => {
@@ -45,7 +44,7 @@ describe('useProcessInstanceStatisticsFilters', () => {
   });
 
   it('should not add variables when the variable has no valid values', () => {
-    const variable: Variable = {name: 'status', values: ''};
+    const variable = {name: 'status', values: []};
 
     const {result} = renderHook(
       () => useProcessInstanceStatisticsFilters(variable),
@@ -56,7 +55,7 @@ describe('useProcessInstanceStatisticsFilters', () => {
   });
 
   it('should map a single variable value into filter.variables', () => {
-    const variable: Variable = {name: 'status', values: '"active"'};
+    const variable = {name: 'status', values: ['"active"']};
 
     const {result} = renderHook(
       () => useProcessInstanceStatisticsFilters(variable),
@@ -69,7 +68,7 @@ describe('useProcessInstanceStatisticsFilters', () => {
   });
 
   it('should map multiple variable values with an $in operator', () => {
-    const variable: Variable = {name: 'status', values: '"active","inactive"'};
+    const variable = {name: 'status', values: ['"active"', '"inactive"']};
 
     const {result} = renderHook(
       () => useProcessInstanceStatisticsFilters(variable),
@@ -81,19 +80,8 @@ describe('useProcessInstanceStatisticsFilters', () => {
     ]);
   });
 
-  it('should not add variables when the values cannot be parsed', () => {
-    const variable: Variable = {name: 'broken', values: '"NEW'};
-
-    const {result} = renderHook(
-      () => useProcessInstanceStatisticsFilters(variable),
-      {wrapper: getWrapper({active: 'true'})},
-    );
-
-    expect(result.current.filter).not.toHaveProperty('variables');
-  });
-
   it('should strip process-definition fields while keeping variables', () => {
-    const variable: Variable = {name: 'status', values: '"active"'};
+    const variable = {name: 'status', values: ['"active"']};
 
     const {result} = renderHook(
       () => useProcessInstanceStatisticsFilters(variable),

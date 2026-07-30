@@ -18,7 +18,7 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {useProcessInstancesElementStates} from 'modules/queries/processInstancesStatistics/useElementStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
-import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
+import {useMigrationStatisticsFilter} from 'modules/hooks/useMigrationStatisticsFilter';
 
 const OVERLAY_TYPE = 'migrationTargetSummary';
 
@@ -40,12 +40,9 @@ const TargetDiagram: React.FC = observer(() => {
     processDefinitionId: targetProcessDefinition?.processDefinitionId,
   });
 
+  const statisticsFilter = useMigrationStatisticsFilter();
   const {data: elementData} = useProcessInstancesElementStates(
-    {
-      filter: {
-        processInstanceKey: getMigrationProcessInstancesFilter(),
-      },
-    },
+    statisticsFilter,
     sourceProcessDefinition?.processDefinitionKey,
     processInstanceMigrationStore.state.selectedInstancesCount > 0,
   );

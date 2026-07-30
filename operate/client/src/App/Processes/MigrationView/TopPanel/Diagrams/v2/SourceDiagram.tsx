@@ -15,7 +15,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
-import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
+import {useMigrationStatisticsFilter} from 'modules/hooks/useMigrationStatisticsFilter';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import type {ElementState} from 'modules/types/operate';
 import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
@@ -54,12 +54,9 @@ const SourceDiagram: React.FC = observer(() => {
     return 'content';
   };
 
+  const statisticsFilter = useMigrationStatisticsFilter();
   const {data: overlayData} = useProcessInstancesOverlayData(
-    {
-      filter: {
-        processInstanceKey: getMigrationProcessInstancesFilter(),
-      },
-    },
+    statisticsFilter,
     sourceProcessDefinition?.processDefinitionKey,
     processInstanceMigrationStore.state.selectedInstancesCount > 0,
   );
