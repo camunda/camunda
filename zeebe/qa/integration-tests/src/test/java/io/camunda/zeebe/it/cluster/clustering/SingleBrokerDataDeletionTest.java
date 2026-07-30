@@ -39,7 +39,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.util.unit.DataSize;
@@ -173,46 +172,6 @@ public class SingleBrokerDataDeletionTest {
     }
   }
 
-  @Ignore("until https://github.com/camunda/camunda/issues/35321")
-  @Test
-  public void shouldCompactWhenExporterHasBeenRemoved() {
-    // given - an exporter which updates its position and accepts all records
-    final int nodeId = 0;
-    LogStreamReader reader = clusteringRule.getLogStream(1).newLogStreamReader();
-    final Broker broker = clusteringRule.getBroker(nodeId);
-    ControllableExporter.updatePosition(true);
-
-    // when - filling the log with messages, and a single deployment command for which we will not
-    // update the position
-    publishEnoughMessagesForCompaction();
-    ControllableExporter.updatePosition(false);
-    deployDummyProcess();
-
-    // then - force compaction and ensure we compacted only things before our sentinel command
-    reader.seekToFirstEvent();
-    final long firstPositionPreCompaction = reader.getPosition();
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
-    awaitUntilCompaction(reader, firstPositionPreCompaction);
-    assertContainsDeploymentCommand(reader);
-
-    // when - restarting without the exporter
-    final var brokerCfg = clusteringRule.getBrokerCfg(nodeId);
-    brokerCfg.setExporters(Collections.emptyMap());
-    clusteringRule.stopBroker(nodeId);
-    clusteringRule.startBroker(nodeId);
-    publishEnoughMessagesForCompaction();
-
-    // then - force compaction, and expect the deployment command to have been removed
-    reader = clusteringRule.getLogStream(1).newLogStreamReader();
-    final long newFirstPositionPreCompaction = reader.getPosition();
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForNewSnapshotAtBroker(clusteringRule.getBroker(0), firstSnapshot);
-    assertThat(newFirstPositionPreCompaction).isGreaterThan(firstPositionPreCompaction);
-    awaitUntilCompaction(reader, newFirstPositionPreCompaction);
-    assertDoesNotContainDeploymentCommand(reader);
-  }
-
   @Test
   public void shouldNotCompactWhenExporterHasBeenRemovedFromConfig() {
     // given - an exporter which updates its position and accepts all records
@@ -300,15 +259,6 @@ public class SingleBrokerDataDeletionTest {
         Spliterators.spliteratorUnknownSize(reader, Spliterator.ORDERED);
     return StreamSupport.stream(spliterator, false)
         .map(event -> (CopiedRecord<?>) CopiedRecords.createCopiedRecord(1, event));
-  }
-
-  private void assertDoesNotContainDeploymentCommand(final LogStreamReader reader) {
-    assertThat(newRecordStream(reader))
-        .noneSatisfy(
-            r ->
-                RecordAssert.assertThat(r)
-                    .hasRecordType(RecordType.COMMAND)
-                    .hasValueType(ValueType.DEPLOYMENT));
   }
 
   private void assertContainsDeploymentCommand(final LogStreamReader reader) {
