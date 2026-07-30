@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -40,23 +41,27 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
   private final MessageStartProcessInstanceDedupState dedupState;
   private final int batchLimit;
   private final InstantSource clock;
+  private final MessageCorrelationMetrics metrics;
 
   public MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
       final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final MessageStartProcessInstanceDedupState dedupState,
       final int batchLimit,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.dedupState = dedupState;
     this.batchLimit = batchLimit;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var visited = new MutableLong(0);
+    final var deleted = new MutableLong(0);
     final var entry = new MessageStartProcessInstanceRequestRecord();
     final boolean hasMore =
         dedupState.visitExpiredEntries(
@@ -75,8 +80,13 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
                   record.getKey(),
                   MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
                   entry);
+              deleted.increment();
               return true;
             });
+
+    if (deleted.get() > 0) {
+      metrics.dedupSwept((int) deleted.get());
+    }
 
     if (hasMore) {
       // Past-deadline dedup entries remain beyond what fit in this batch. Schedule the next cycle

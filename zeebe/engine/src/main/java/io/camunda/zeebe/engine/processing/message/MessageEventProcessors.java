@@ -196,7 +196,8 @@ public final class MessageEventProcessors {
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
                 config.getMessageStartDedupExpirationSweepBatchLimit(),
-                clock))
+                clock,
+                metrics))
         // Reply command processors on P_K - these handle the cross-partition replies from P_B
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
