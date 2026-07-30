@@ -17,6 +17,7 @@ import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
@@ -1051,6 +1052,128 @@ public class AuditLogProcessOperationsIT {
     assertThat(batchAuditLogs).isNotEmpty();
     final var batchAuditLog = batchAuditLogs.stream().findFirst().orElseThrow();
     assertBatchAuditLog(batchAuditLog, AuditLogOperationTypeEnum.CREATE, batchOperationKey);
+  }
+
+  @Test
+  void shouldTrackBatchProcessInstanceSuspend(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    final var instance1 =
+        createProcessInstance(
+            client, SERVICE_TASKS_PROCESS_ID, Map.of("batchSuspendAll", "value1"));
+    final var instance2 =
+        createProcessInstance(
+            client, SERVICE_TASKS_PROCESS_ID, Map.of("batchSuspendAll", "value2"));
+    final long instance1Key = instance1.getProcessInstanceKey();
+    final long instance2Key = instance2.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance1Key).tenantId(TENANT_A), 1);
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance2Key).tenantId(TENANT_A), 1);
+
+    final var batchResult =
+        client
+            .newCreateBatchOperationCommand()
+            .processInstanceSuspend()
+            .filter(f -> f.processInstanceKey(k -> k.in(List.of(instance1Key, instance2Key))))
+            .send()
+            .join();
+
+    final var batchOperationKey = batchResult.getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(client, batchOperationKey, 2);
+    waitForBatchOperationCompleted(client, batchOperationKey, 2, 0);
+
+    final var batchAuditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.BATCH,
+            AuditLogOperationTypeEnum.CREATE,
+            batchOperationKey);
+    assertThat(batchAuditLogs).isNotEmpty();
+    assertBatchAuditLog(
+        batchAuditLogs.getFirst(), AuditLogOperationTypeEnum.CREATE, batchOperationKey);
+
+    for (final var instance : List.of(instance1, instance2)) {
+      final var suspendAuditLogs =
+          awaitAuditLogEntry(
+              client,
+              AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+              AuditLogOperationTypeEnum.SUSPEND,
+              String.valueOf(instance.getProcessInstanceKey()));
+      assertThat(suspendAuditLogs).hasSize(1);
+      final var suspendAuditLog = suspendAuditLogs.getFirst();
+      assertProcessInstanceAuditLog(
+          suspendAuditLog,
+          AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+          AuditLogOperationTypeEnum.SUSPEND,
+          instance.getProcessInstanceKey(),
+          instance.getProcessDefinitionKey(),
+          SERVICE_TASKS_PROCESS_ID);
+      assertThat(suspendAuditLog.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    }
+  }
+
+  @Test
+  void shouldTrackBatchProcessInstanceResume(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    final var instance1 =
+        createProcessInstance(client, SERVICE_TASKS_PROCESS_ID, Map.of("batchResumeAll", "value1"));
+    final var instance2 =
+        createProcessInstance(client, SERVICE_TASKS_PROCESS_ID, Map.of("batchResumeAll", "value2"));
+    final long instance1Key = instance1.getProcessInstanceKey();
+    final long instance2Key = instance2.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance1Key).tenantId(TENANT_A), 1);
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance2Key).tenantId(TENANT_A), 1);
+
+    client.newSuspendProcessInstanceCommand(instance1Key).send().join();
+    client.newSuspendProcessInstanceCommand(instance2Key).send().join();
+
+    waitForProcessInstancesToBeSuspended(
+        client, f -> f.processInstanceKey(k -> k.in(List.of(instance1Key, instance2Key))), 2);
+
+    final var batchResult =
+        client
+            .newCreateBatchOperationCommand()
+            .processInstanceResume()
+            .filter(f -> f.processInstanceKey(k -> k.in(List.of(instance1Key, instance2Key))))
+            .send()
+            .join();
+
+    final var batchOperationKey = batchResult.getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(client, batchOperationKey, 2);
+    waitForBatchOperationCompleted(client, batchOperationKey, 2, 0);
+
+    final var batchAuditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.BATCH,
+            AuditLogOperationTypeEnum.CREATE,
+            batchOperationKey);
+    assertThat(batchAuditLogs).isNotEmpty();
+    assertBatchAuditLog(
+        batchAuditLogs.getFirst(), AuditLogOperationTypeEnum.CREATE, batchOperationKey);
+
+    for (final var instance : List.of(instance1, instance2)) {
+      final var resumeAuditLogs =
+          awaitAuditLogEntry(
+              client,
+              AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+              AuditLogOperationTypeEnum.RESUME,
+              String.valueOf(instance.getProcessInstanceKey()));
+      assertThat(resumeAuditLogs).hasSize(1);
+      final var resumeAuditLog = resumeAuditLogs.getFirst();
+      assertProcessInstanceAuditLog(
+          resumeAuditLog,
+          AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+          AuditLogOperationTypeEnum.RESUME,
+          instance.getProcessInstanceKey(),
+          instance.getProcessDefinitionKey(),
+          SERVICE_TASKS_PROCESS_ID);
+      assertThat(resumeAuditLog.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    }
   }
 
   // ========================================================================================

@@ -88,6 +88,8 @@ import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOp
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceResumptionOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceSuspensionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.UpdateJobOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
@@ -377,6 +379,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ProcessInstanceModificationOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ProcessInstanceSuspensionOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ProcessInstanceResumptionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
