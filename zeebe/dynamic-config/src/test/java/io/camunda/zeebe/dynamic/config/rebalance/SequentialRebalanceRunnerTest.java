@@ -173,7 +173,8 @@ final class SequentialRebalanceRunnerTest {
   @Test
   void shouldApplyTheRebalancesOverridesToEachTransfer() {
     // given
-    final var overrides = new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5);
+    final var overrides =
+        new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5, Duration.ofMinutes(2));
 
     // when
     start(new RebalanceRun(7, overrides, false, configurationWithPartitions(1)));
@@ -358,6 +359,27 @@ final class SequentialRebalanceRunnerTest {
 
     // when
     observeUntilTheLeaderWaitTimeoutElapses();
+
+    // then
+    assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.FAILED);
+  }
+
+  @Test
+  void shouldGiveUpOnALeaderAfterTheTimeoutTheRebalanceOverrode() {
+    // given
+    final var overrides =
+        new RebalanceOverrides(
+            null,
+            null,
+            null,
+            SequentialRebalanceRunner.LEADERSHIP_OBSERVATION_INTERVAL.multipliedBy(2));
+    final var rebalance =
+        start(new RebalanceRun(7, overrides, false, configurationWithPartitions(2)));
+    transfers.accept();
+
+    // when
+    executor.runAll();
+    executor.runAll();
 
     // then
     assertThat(rebalance.partition(0).state()).isEqualTo(PartitionRebalanceState.FAILED);

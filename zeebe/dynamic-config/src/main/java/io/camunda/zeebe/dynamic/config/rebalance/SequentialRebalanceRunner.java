@@ -291,7 +291,8 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
 
   /**
    * Watches the topology for the transfer in flight taking effect, and moves the rebalance on if it
-   * has - or gives up on the partition once it has waited {@code leaderWaitTimeout} for it.
+   * has - or gives up on the partition once it has waited the rebalance's leader-wait timeout for
+   * it.
    *
    * <p>The leader's own report is the quicker signal and the only one that distinguishes a transfer
    * that failed from one still running, so this is a second way of noticing rather than the first:
@@ -335,25 +336,31 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             return;
           }
           final var waitedSoFar = waited.plus(LEADERSHIP_OBSERVATION_INTERVAL);
-          if (waitedSoFar.compareTo(leaderWaitTimeout) >= 0) {
+          final var timeout = leaderWaitTimeout(rebalance);
+          if (waitedSoFar.compareTo(timeout) >= 0) {
             LOG.warn(
                 "Rebalance {} gives up on {}: its leader neither reported an outcome nor gave up "
                     + "leadership within {}",
                 rebalance.id(),
                 partition,
-                leaderWaitTimeout);
+                timeout);
             resolve(
                 rebalance,
                 index,
                 PartitionRebalanceState.FAILED,
-                "its leader neither reported an outcome nor gave up leadership within "
-                    + leaderWaitTimeout,
+                "its leader neither reported an outcome nor gave up leadership within " + timeout,
                 PartitionRebalanceResult.LEADER_SILENT.name(),
                 completion);
             return;
           }
           observeLeadership(rebalance, index, waitedSoFar, completion);
         });
+  }
+
+  /** The rebalance's own leader-wait timeout, or the configured one where it overrides nothing. */
+  private Duration leaderWaitTimeout(final RebalanceRun rebalance) {
+    final var override = rebalance.overrides().leaderWaitTimeout();
+    return override != null ? override : leaderWaitTimeout;
   }
 
   private LeadershipTransferInitiateRequest initiateRequest(
