@@ -7,8 +7,11 @@
  */
 
 import {loader} from '@monaco-editor/react';
+// @ts-expect-error — monaco-editor ESM modules lack type declarations
 import 'monaco-editor/esm/vs/language/json/monaco.contribution.js';
+// @ts-expect-error — monaco-editor ESM modules lack type declarations
 import 'monaco-editor/esm/vs/editor/browser/coreCommands.js';
+// @ts-expect-error — monaco-editor ESM modules lack type declarations
 import 'monaco-editor/esm/vs/editor/contrib/find/browser/findController.js';
 import * as monaco from 'monaco-editor';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
