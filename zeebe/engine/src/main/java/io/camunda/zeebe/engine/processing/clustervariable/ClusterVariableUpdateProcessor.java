@@ -91,8 +91,7 @@ public class ClusterVariableUpdateProcessor
   public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
     final var commandRecord = command.getValue();
     clusterVariableRecordValidator
-        .loadExisting(commandRecord)
-        .map(stored -> applyUpdate(stored, commandRecord))
+        .validateExistence(commandRecord)
         .ifRightOrLeft(
             record ->
                 writers
@@ -104,35 +103,28 @@ public class ClusterVariableUpdateProcessor
   }
 
   /**
-   * For a SECRET_REFERENCE-stored variable, scans the command's value for secret references and
-   * sets them on the command record before applying the update; a non-SECRET_REFERENCE variable
-   * skips the scan. Kind is immutable-from-stored on update (the command may omit it), so scanning
-   * keys off the stored kind, not the (possibly absent) command kind. Only ever called on the
-   * origin partition ({@link #processNewCommand}), on the command record: the resulting refs then
-   * ride the distributed command, and the receiver's {@link #processDistributedCommand} copies them
-   * onto its stored record via {@link #applyUpdate} without re-scanning.
+   * Kind is immutable-from-stored on update (the command may omit or misreport it), so this pins
+   * the stored kind onto the command record first. For a SECRET_REFERENCE-stored variable, it then
+   * scans the command's (new) value for secret references and sets them on the command record; a
+   * non-SECRET_REFERENCE variable skips the scan. Only ever called on the origin partition ({@link
+   * #processNewCommand}): the command record already carries the new value/metadata, and now kind
+   * and secretReferences too, making it a complete stand-in for the merged record. That same
+   * command then rides the distribution, so the receiver's {@link #processDistributedCommand} only
+   * needs to confirm the variable still exists and can append the command record as-is.
    */
   private Either<Rejection, ClusterVariableRecord> applyUpdateWithSecretReferences(
       final ClusterVariableRecord stored, final ClusterVariableRecord command) {
+    command.setKind(stored.getKind());
     if (stored.getKind() != ClusterVariableKind.SECRET_REFERENCE) {
-      return Either.right(applyUpdate(stored, command));
+      return Either.right(command);
     }
     return secretReferenceScanner
         .scan(command.getValueBuffer())
         .map(
             references -> {
               references.forEach(ref -> command.addSecretReference("", ref.name(), ref.pointer()));
-              return applyUpdate(stored, command);
+              return command;
             });
-  }
-
-  private ClusterVariableRecord applyUpdate(
-      final ClusterVariableRecord stored, final ClusterVariableRecord command) {
-    stored.setValue(command.getValueBuffer());
-    stored.setMetadata(command.getMetadataBuffer());
-    // reset-then-add so a value updated from secrets to none ends up empty rather than appended
-    stored.copySecretReferencesFrom(command);
-    return stored;
   }
 
   private Either<Rejection, ClusterVariableRecord> isAuthorized(

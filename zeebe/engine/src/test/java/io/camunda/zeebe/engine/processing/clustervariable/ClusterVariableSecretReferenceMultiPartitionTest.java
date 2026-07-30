@@ -117,6 +117,7 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
         .containsExactly(tuple("", "rotated", "/auth"));
+    assertThat(updated.getValue().getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
 
     // and every distributed partition's UPDATED event carries the identical reference
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
@@ -133,6 +134,8 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
               ClusterVariableSecretReferenceValue::getSecretReference,
               ClusterVariableSecretReferenceValue::getPath)
           .containsExactly(tuple("", "rotated", "/auth"));
+      assertThat(updatedOnReceiver.getValue().getKind())
+          .isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
     }
   }
 }
