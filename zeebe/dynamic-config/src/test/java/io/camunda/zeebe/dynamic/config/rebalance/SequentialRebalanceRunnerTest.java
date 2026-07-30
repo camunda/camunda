@@ -408,6 +408,34 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldStopWatchingTheTopologyOnceTheRebalanceIsAbandoned() {
+    // given
+    final var rebalance = start(configurationWithPartitions(1));
+    transfers.accept();
+
+    // when
+    rebalance.abandon();
+    executor.runAll();
+
+    // then
+    assertThat(executor.scheduledTasks()).isZero();
+  }
+
+  @Test
+  void shouldTakeOnNoFurtherPartitionOnceTheRebalanceIsAbandoned() {
+    // given
+    final var rebalance = start(configurationWithPartitions(2));
+    transfers.accept();
+
+    // when
+    rebalance.abandon();
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(transfers.initiated).hasSize(1);
+  }
+
+  @Test
   void shouldStopBetweenPartitionsWhenTheRebalanceIsCancelled() {
     // given
     final var rebalance = start(configurationWithPartitions(2));
