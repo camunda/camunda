@@ -23,11 +23,11 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Encapsulates the tenant-membership checks used across engine command processors.
  *
- * <p>Most callers reach these methods via {@link
+ * <p>Most callers reach {@link #checkTenant} via {@link
  * CslAuthorizationCheck#checkAuthorizationAndTenant}, which runs {@link
- * CslAuthorizationCheck#check} first. Do not call {@link #checkTenant} or {@link
- * #checkTenantsRequiringPrincipal} directly without a preceding authorization check, and do not
- * remove the no-principal skip in either method without auditing every caller.
+ * CslAuthorizationCheck#check} first. Do not call {@link #checkTenant} directly without a preceding
+ * authorization check, and do not remove its no-principal skip without auditing every caller.
+ * {@link #checkTenantsRequiringPrincipal} has a different contract — see its own javadoc.
  */
 @NullMarked
 public final class CslTenantCheck {

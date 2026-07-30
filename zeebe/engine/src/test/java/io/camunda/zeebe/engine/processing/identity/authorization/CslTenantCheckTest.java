@@ -112,11 +112,9 @@ final class CslTenantCheckTest {
   @Test
   void shouldSkipTenantCheckWhenNoIdentityClaims() {
     // given — multi-tenancy on but the command carries neither a username nor a clientId claim;
-    // most callers reach checkTenant via checkAuthorizationAndTenant, which already runs `check`
-    // first and rejects a no-principal command when authorizations are enabled — so by the time
-    // checkTenant sees a no-principal command, either authorizations are disabled (and this skip
-    // is the established behavior many callers rely on) or the command was already rejected
-    // upstream
+    // checkTenant treats this as vacuously authorized regardless of authorizationsEnabled, which it
+    // never reads for this check — the skip is deliberate and load-bearing, see checkTenant's
+    // javadoc
     final var tenantCheck = tenantCheck(true);
     when(command.getAuthorizations()).thenReturn(Map.of());
     final var rejection = new Rejection(RejectionType.FORBIDDEN, "not assigned");
