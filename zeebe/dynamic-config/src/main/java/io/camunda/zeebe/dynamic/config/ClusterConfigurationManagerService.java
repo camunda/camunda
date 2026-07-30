@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.raft.partition.impl.LeadershipTransferClient;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
@@ -59,6 +60,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +99,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationRequestServer configurationRequestServer;
   private final RebalanceCoordinator rebalanceCoordinator;
   private final RebalanceRequestServer rebalanceRequestServer;
+  private final LeadershipTransferClient leadershipTransferClient;
   private final Actor gossipActor;
   private final Actor managerActor;
   private final ClusterConfigurationGossiperConfig gossiperConfig;
@@ -118,7 +121,8 @@ public final class ClusterConfigurationManagerService
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry,
       final LongSupplier rebalanceIdGenerator,
-      final PartitionLeaders partitionLeaders) {
+      final PartitionLeaders partitionLeaders,
+      final Duration transferRequestTimeout) {
     this(
         dataRootDirectory,
         communicationService,
@@ -128,6 +132,7 @@ public final class ClusterConfigurationManagerService
         meterRegistry,
         rebalanceIdGenerator,
         partitionLeaders,
+        transferRequestTimeout,
         USE_NEW_CONFIG);
   }
 
@@ -146,6 +151,7 @@ public final class ClusterConfigurationManagerService
       final MeterRegistry meterRegistry,
       final LongSupplier rebalanceIdGenerator,
       final PartitionLeaders partitionLeaders,
+      final Duration transferRequestTimeout,
       final boolean useNewConfig) {
     this.useNewConfig = useNewConfig;
     gossiperConfig = config;
@@ -206,11 +212,14 @@ public final class ClusterConfigurationManagerService
                 configurationChangeCoordinator, localMemberId, managerActor, validators));
     // The rebalancing coordinator answers to the same lowest-id member the configuration requests
     // are forwarded to, so it shares this service's actor rather than running one of its own.
+    leadershipTransferClient =
+        new LeadershipTransferClient(communicationService, transferRequestTimeout);
     rebalanceCoordinator =
         new RebalanceCoordinator(
             localMemberId,
             managerActor,
-            new SequentialRebalanceRunner(managerActor, partitionLeaders),
+            new SequentialRebalanceRunner(
+                localMemberId, managerActor, partitionLeaders, leadershipTransferClient),
             rebalanceIdGenerator);
     rebalanceRequestServer =
         new RebalanceRequestServer(
@@ -504,6 +513,7 @@ public final class ClusterConfigurationManagerService
       configurationRequestServer.close();
     }
     rebalanceRequestServer.close();
+    leadershipTransferClient.close();
     removeUpdateListener(rebalanceCoordinator);
     clusterConfigurationGossiper.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);

@@ -348,7 +348,8 @@ class ClusterConfigurationManagementIntegrationTest {
             new NoopClusterChangeExecutor(),
             meterRegistry,
             rebalanceIds::incrementAndGet,
-            (physicalTenantId, partitionId) -> Optional.empty());
+            (physicalTenantId, partitionId) -> Optional.empty(),
+            Duration.ofSeconds(5));
     return new TestNode(cluster, service);
   }
 
