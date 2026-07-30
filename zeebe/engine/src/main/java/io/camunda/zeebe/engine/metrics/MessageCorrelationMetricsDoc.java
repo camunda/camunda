@@ -278,6 +278,34 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Current number of pending cross-partition message-start asks awaiting a reply on {@code P_K}.
+   * Unlike the ask counters this is a live level, seeded from persisted state on recovery: a value
+   * that stays elevated points at asks that never get a terminal reply (the blocked-start symptom
+   * spike #58900 investigates).
+   */
+  CROSS_PARTITION_ASKS_PENDING {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.asks.pending";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of pending cross-partition message-start asks awaiting a reply on the correlation-key partition (P_K).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** The tag keys used by the message-correlation meters. */

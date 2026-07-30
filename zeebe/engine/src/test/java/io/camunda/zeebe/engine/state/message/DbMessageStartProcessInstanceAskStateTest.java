@@ -11,8 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -22,6 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 final class DbMessageStartProcessInstanceAskStateTest {
 
+  private static final String PENDING_ASKS_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_ASKS_PENDING.getName();
+
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableProcessingState processingState;
 
   @Test
@@ -265,6 +272,89 @@ final class DbMessageStartProcessInstanceAskStateTest {
     // then the persisted count saturates at the cap, so it never overflows when the scheduler
     // computes 2^rejectionCount
     assertThat(state.get(1L, 2L).getRejectionCount()).isEqualTo(30L);
+  }
+
+  @Test
+  void shouldTrackPendingAsksGaugeAcrossPutAndRemove() {
+    // given
+    final var state = processingState.getMessageStartProcessInstanceAskState();
+
+    // when two asks are registered
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
+
+    // then the pending-asks gauge reflects both
+    assertThat(pendingAsksGauge()).isEqualTo(2.0);
+
+    // when one is removed
+    state.remove(1L, 10L);
+
+    // then the gauge drops to one
+    assertThat(pendingAsksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDoubleCountPendingAsksGaugeWhenPuttingSameAskAgain() {
+    // given a registered ask
+    final var state = processingState.getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+
+    // when the same (messageKey, processDefinitionKey) is put again (put upserts)
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+
+    // then the gauge counts the ask only once
+    assertThat(pendingAsksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDecrementPendingAsksGaugeWhenRemovingMissingAsk() {
+    // given one registered ask
+    final var state = processingState.getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+
+    // when removing an ask that was never registered
+    state.remove(7L, 70L);
+
+    // then the gauge is unaffected
+    assertThat(pendingAsksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldDecrementPendingAsksGaugeForEachRemovedAskOnRemoveAll() {
+    // given two asks for the same messageKey and one for another
+    final var state = processingState.getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 100L, "b1", "p1")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 200L, "b2", "p2")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(8L, 300L, "b3", "p3")));
+    assertThat(pendingAsksGauge()).isEqualTo(3.0);
+
+    // when all asks for messageKey 7 are removed
+    state.removeAllByMessageKey(7L);
+
+    // then the gauge drops by exactly the two removed asks
+    assertThat(pendingAsksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldReseedPendingAsksGaugeFromStateOnRecovery() {
+    // given two persisted asks
+    final var state = processingState.getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
+
+    // when the partition recovers
+    final var context = mock(ReadonlyStreamProcessorContext.class);
+    final var clock = mock(StreamClock.class);
+    when(context.getClock()).thenReturn(clock);
+    when(clock.millis()).thenReturn(50_000L);
+    ((DbMessageStartProcessInstanceAskState) state).onRecovered(context);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(pendingAsksGauge()).isEqualTo(2.0);
+  }
+
+  private double pendingAsksGauge() {
+    return zeebeDb.getMeterRegistry().get(PENDING_ASKS_GAUGE).gauge().value();
   }
 
   private MessageStartProcessInstanceRequestRecord createRecord(
