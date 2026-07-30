@@ -475,7 +475,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: screenshot-update
@@ -497,6 +497,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build
       - name: Run Playwright
