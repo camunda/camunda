@@ -70,6 +70,28 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getByText('Operations Log')).toBeInTheDocument();
   });
 
+  it('should display "10000+ results" when there are more than 10000 results', async () => {
+    mockQueryAuditLogs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 10000,
+        hasMoreTotalItems: true,
+        startCursor: null,
+        endCursor: null,
+      },
+    });
+
+    render(<InstancesTable />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /Operations Log - 10000\+ results/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('should show loading state when data is being fetched', () => {
     mockQueryAuditLogs().withDelay(searchResult([]));
 
