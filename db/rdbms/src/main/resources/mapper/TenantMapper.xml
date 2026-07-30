@@ -143,9 +143,9 @@
 
   <resultMap id="tenantMemberResultMap" type="io.camunda.db.rdbms.write.domain.TenantMemberDbModel">
     <constructor>
-      <idArg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="ENTITY_ID" javaType="java.lang.String"/>
-      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+      <idArg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String" name="entityId"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String" name="entityType"/>
     </constructor>
   </resultMap>
 
