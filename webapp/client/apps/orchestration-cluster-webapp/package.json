@@ -50,7 +50,7 @@
 		"mixpanel-browser": "2.81.0",
 		"mobx": "6.16.1",
 		"mobx-react-lite": "4.1.1",
-		"monaco-editor": "0.55.1",
+		"monaco-editor": "0.56.0",
 		"react": "19.2.8",
 		"react-dom": "19.2.8",
 		"react-error-boundary": "6.1.2",
