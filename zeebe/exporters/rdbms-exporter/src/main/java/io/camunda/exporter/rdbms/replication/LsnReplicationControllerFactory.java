@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -16,13 +16,13 @@ import java.time.InstantSource;
 public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
 
   private final int partitionId;
-  private final ReplicationLogStatusProvider replicationLagProvider;
+  private final ReplicationLsnProvider replicationLagProvider;
   private final ReplicationConfiguration replicationConfiguration;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
   public LsnReplicationControllerFactory(
-      final ReplicationLogStatusProvider lsnProvider,
+      final ReplicationLsnProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId,
       final InstantSource clock,

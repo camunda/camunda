@@ -7,4 +7,4 @@
  */
 package io.camunda.db.rdbms.read.replication;
 
-public record ReplicationLogStatus(Long logStatus, String replicaId, Long replicationLagMs) {}
+public record ReplicationLsnStatus(Long logStatus, String replicaId, Long replicationLagMs) {}
