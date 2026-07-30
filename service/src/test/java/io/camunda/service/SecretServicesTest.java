@@ -36,6 +36,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -324,6 +325,58 @@ public class SecretServicesTest {
     assertThat(resolution.errors()).hasSize(1);
     assertThat(resolution.errors().get(0).reference()).isEqualTo("camunda.secrets.token");
     assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.UNREADABLE);
+  }
+
+  @Test
+  void shouldReportAStoreFailureWithoutAskingTheNextStore() {
+    // given two stores, the first failing on a reference the second holds. A physical tenant is
+    // capped at one configured store today, so this pins what the loop does rather than a case a
+    // deployment can reach.
+    authorizationsConfig.setEnabled(true);
+    grantRevealWildcard();
+    final var failing = new TestSecretStore();
+    failing.failsResolving(
+        "token", io.camunda.secretstore.SecretErrorCode.UNREADABLE, "cannot read the value");
+    final var holding = new TestSecretStore().holds("token", "second-store-value");
+    final var stores = new LinkedHashMap<String, SecretStore>();
+    stores.put("first", failing);
+    stores.put("second", holding);
+
+    // when
+    final var resolution =
+        newSecretServices(PHYSICAL_TENANT_ID, new SecretStoreRegistry(stores))
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+
+    // then the first store's failure is the answer, and the second is never asked
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors()).hasSize(1);
+    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.UNREADABLE);
+    assertThat(holding.resolveCalls()).isEmpty();
+  }
+
+  @Test
+  void shouldAskTheNextStoreForAReferenceTheFirstDidNotAnswerFor() {
+    // given two stores, the first answering without a result for the reference the second holds
+    authorizationsConfig.setEnabled(true);
+    grantRevealWildcard();
+    final var silent = new TestSecretStore();
+    silent.omitsResults();
+    final var holding = new TestSecretStore().holds("token", "second-store-value");
+    final var stores = new LinkedHashMap<String, SecretStore>();
+    stores.put("first", silent);
+    stores.put("second", holding);
+
+    // when
+    final var resolution =
+        newSecretServices(PHYSICAL_TENANT_ID, new SecretStoreRegistry(stores))
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+
+    // then the missing entry is not an answer, so the reference reaches the second store
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved()).hasSize(1);
+    assertThat(resolution.resolved().get(0).value()).isEqualTo("second-store-value");
   }
 
   @Test

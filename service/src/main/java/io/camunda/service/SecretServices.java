@@ -27,7 +27,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -185,15 +184,14 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * Asks each configured store for the authorized references, adding every outcome to {@code
    * resolved} or {@code errors}. The stores are the registry's caching ones, so a reference already
    * cached for a store never reaches it and every value it answers with is cached; this method only
-   * decides what each outcome means to the API. A reference no store could resolve is reported with
-   * the reason of the last store that failed on it, or {@code NOT_FOUND} if no store knew it at
-   * all.
+   * decides what each outcome means to the API. A reference nothing answered for is reported as
+   * {@code NOT_FOUND}.
    *
-   * <p>A physical tenant is capped at one configured store in this release (enforced at startup by
-   * {@code SecretStoreConfiguration}), so the loop below sees a single store today. The
-   * multiple-store wording above describes how it behaves once that cap is lifted: which store wins
-   * a reference both hold is then decided by iteration order, which the registry does not currently
-   * promise, so a precedence order has to be defined along with the cap.
+   * <p>The first store to answer for a reference decides it, a failure included. A physical tenant
+   * is capped at one configured store in this release (enforced at startup by {@code
+   * SecretStoreConfiguration}), so the loop below sees a single store and there is no second store
+   * to fall back to. Lifting that cap has to revisit this, since a store's {@code NOT_FOUND} counts
+   * as an answer here and would have to become "ask the next store" instead.
    */
   private SecretResolution readFromStores(
       final List<String> references,
@@ -203,15 +201,13 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     // the references still to be resolved, in a stable order so the outcomes do not come out in
     // whatever order a hash map happens to iterate in
     final Set<String> pending = new LinkedHashSet<>(references);
-    final Map<String, SecretErrorCode> failures = new HashMap<>();
 
     try {
       for (final var store : secretStoreRegistry.getCachingStores().entrySet()) {
         if (pending.isEmpty()) {
           break;
         }
-        readFromStore(
-            store.getKey(), store.getValue(), pending, failures, resolved, authentication);
+        readFromStore(store.getKey(), store.getValue(), pending, resolved, errors, authentication);
       }
     } catch (final SecretStoreException e) {
       // a store that cannot be read at all fails the whole request rather than reporting every
@@ -221,26 +217,23 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
           "Failed to read the configured secret store.", ServiceException.Status.UNAVAILABLE);
     }
 
-    pending.forEach(
-        reference -> {
-          final var code = failures.getOrDefault(reference, SecretErrorCode.NOT_FOUND);
-          errors.add(new SecretResolutionError(reference, code, messageFor(code)));
-        });
+    // nothing answered for these: either no store is configured, or a store left the name out of
+    // the results it answered with
+    pending.forEach(reference -> errors.add(errorFor(reference, SecretErrorCode.NOT_FOUND)));
     return new SecretResolution(resolved, errors);
   }
 
   /**
    * Asks one store for every reference still {@code pending}, revealing the ones it resolves and
-   * taking those out of {@code pending}. A reference the store fails on is recorded in {@code
-   * failures} and left pending, so a later store can still resolve it; only if none does is the
-   * recorded reason reported.
+   * reporting the ones it fails on, taking both out of {@code pending}. A reference the store
+   * answers without a result for stays pending, since an absent entry is not an answer.
    */
   private void readFromStore(
       final String storeId,
       final SecretStore store,
       final Set<String> pending,
-      final Map<String, SecretErrorCode> failures,
       final List<ResolvedSecret> resolved,
+      final List<SecretResolutionError> errors,
       final CamundaAuthentication authentication) {
     // the references to ask this store for, keyed by the bare name the stores are keyed by. A
     // separate map, since resolving a reference takes it out of the pending ones.
@@ -262,11 +255,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
                   reference,
                   failure.code(),
                   failure.message());
-              failures.put(reference, toApiErrorCode(failure.code()));
+              errors.add(errorFor(reference, toApiErrorCode(failure.code())));
+              pending.remove(reference);
             }
             // a store that answers without an entry for a requested name is treated as not knowing
             // it, rather than dropping the reference from the response entirely
-            case null -> failures.putIfAbsent(reference, SecretErrorCode.NOT_FOUND);
+            case null -> {}
           }
         });
   }
@@ -296,6 +290,11 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
       case INVALID_REF -> SecretErrorCode.INVALID_REFERENCE;
       case ACCESS_DENIED, UNREADABLE -> SecretErrorCode.UNREADABLE;
     };
+  }
+
+  private static SecretResolutionError errorFor(
+      final String reference, final SecretErrorCode code) {
+    return new SecretResolutionError(reference, code, messageFor(code));
   }
 
   /**
