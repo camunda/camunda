@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncIniti
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -134,11 +135,12 @@ final class ClusterConfigurationInitializerTest {
     final TestClusterConfigurationNotifier topologyNotifier =
         new TestClusterConfigurationNotifier();
     final var initializer =
-        new GossipInitializer(
+        new GossipInitializer<>(
             topologyNotifier,
-            persistedClusterConfiguration,
+            persistedClusterConfiguration::getConfiguration,
             ignore -> {},
-            new TestConcurrencyControl());
+            new TestConcurrencyControl(),
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -159,13 +161,14 @@ final class ClusterConfigurationInitializerTest {
     final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
         id -> syncResponseFuture;
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> knownMembers,
             new TestConcurrencyControl(true),
             syncRequester,
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -191,13 +194,14 @@ final class ClusterConfigurationInitializerTest {
         id -> syncResponseFuture;
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> knownMembers,
             concurrencyControl,
             syncRequester,
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -222,13 +226,14 @@ final class ClusterConfigurationInitializerTest {
     final var syncResponses =
         Map.of(uninitializedMember, uninitializedResponse, initializedMember, initializedResponse);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(uninitializedMember, initializedMember),
             new TestConcurrencyControl(true),
             syncResponses::get,
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -251,13 +256,14 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(1);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(1),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
             concurrencyControl,
             ignored -> new TestActorFuture<>(),
-            bootstrapTimeout);
+            bootstrapTimeout,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -289,13 +295,14 @@ final class ClusterConfigurationInitializerTest {
     final var uninitializedResponse = new TestActorFuture<ClusterConfiguration>();
     final var syncResponses = Map.of(unresponsiveMember, uninitializedResponse);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
             concurrencyControl,
             m -> syncResponses.getOrDefault(m, new TestActorFuture<>()),
-            Duration.ofSeconds(1));
+            Duration.ofSeconds(1),
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -329,13 +336,14 @@ final class ClusterConfigurationInitializerTest {
         };
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unreachableMember, recoveringMember),
             concurrencyControl,
             syncRequester,
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            ClusterConfiguration.uninitialized());
 
     // when - first round: one member fails, the other is uninitialized -> stays pending
     final var initializeFuture = initializer.initialize();
@@ -352,7 +360,7 @@ final class ClusterConfigurationInitializerTest {
   void shouldCompleteImmediatelyWithNoKnownMembersToSync() {
     // given - a single-node cluster: the coordinator has no other members to sync with
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             List::of,
@@ -360,7 +368,8 @@ final class ClusterConfigurationInitializerTest {
             id -> {
               throw new AssertionError("should not query any member when the cluster has none");
             },
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -379,13 +388,14 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(1);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofMillis(50),
             new TestClusterConfigurationNotifier(),
             () -> List.of(nullRespondingMember),
             concurrencyControl,
             ignored -> CompletableActorFuture.completed(null),
-            bootstrapTimeout);
+            bootstrapTimeout,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -420,13 +430,14 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(30);
     final var initializer =
-        new SyncInitializer(
+        new SyncInitializer<>(
             Duration.ofMillis(50),
             new TestClusterConfigurationNotifier(),
             () -> List.of(slowMember, fastMember),
             concurrencyControl,
             syncRequester,
-            bootstrapTimeout);
+            bootstrapTimeout,
+            ClusterConfiguration.uninitialized());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -482,6 +493,10 @@ final class ClusterConfigurationInitializerTest {
     void updateTopology(final ClusterConfiguration topology) {
       listener.onClusterConfigurationUpdated(topology);
     }
+
+    void updateCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
+      listener.onClusterConfigurationUpdated(configuration);
+    }
   }
 
   @Nested
@@ -492,11 +507,12 @@ final class ClusterConfigurationInitializerTest {
       final var fileInitializer =
           FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer(
+                  new GossipInitializer<>(
                       new TestClusterConfigurationNotifier(),
-                      persistedClusterConfiguration,
+                      persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(),
+                      ClusterConfiguration.uninitialized()));
       // write initial topology to the file
       persistedClusterConfiguration.update(initialClusterConfiguration);
       // when
@@ -515,11 +531,12 @@ final class ClusterConfigurationInitializerTest {
       final var initializer =
           FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer(
+                  new GossipInitializer<>(
                       topologyUpdateNotifier,
-                      persistedClusterConfiguration,
+                      persistedClusterConfiguration::getConfiguration,
                       gossipedTopology::set,
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(),
+                      ClusterConfiguration.uninitialized()));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -544,11 +561,12 @@ final class ClusterConfigurationInitializerTest {
       final var initializer =
           FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer(
+                  new GossipInitializer<>(
                       topologyUpdateNotifier,
-                      persistedClusterConfiguration,
+                      persistedClusterConfiguration::getConfiguration,
                       gossipedTopology::set,
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(),
+                      ClusterConfiguration.uninitialized()));
       // Corrupt file
       Files.write(
           topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
@@ -568,13 +586,14 @@ final class ClusterConfigurationInitializerTest {
       final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
           id -> syncResponseFuture;
       final var syncInitializer =
-          new SyncInitializer(
+          new SyncInitializer<>(
               Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               () -> knownMembers,
               new TestConcurrencyControl(true),
               syncRequester,
-              ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+              ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+              ClusterConfiguration.uninitialized());
 
       final var initializer =
           FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
@@ -600,13 +619,14 @@ final class ClusterConfigurationInitializerTest {
           id -> syncResponseFuture;
       final var concurrencyControl = new TestConcurrencyControl(true);
       final var syncInitializer =
-          new SyncInitializer(
+          new SyncInitializer<>(
               Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               () -> knownMembers,
               concurrencyControl,
               syncRequester,
-              ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
+              ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+              ClusterConfiguration.uninitialized());
 
       final var initializer =
           FileInitializer.legacyFileInitializer(topologyFile, new ProtoBufSerializer())
@@ -623,6 +643,112 @@ final class ClusterConfigurationInitializerTest {
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();
+    }
+  }
+
+  @Nested
+  class NewModelSyncAndGossipInitializerTest {
+
+    private final CurrentClusterConfiguration initialCurrentClusterConfiguration =
+        CurrentClusterConfiguration.init();
+
+    @Test
+    void shouldInitializeFromGossip() {
+      // given
+      final var topologyNotifier = new TestClusterConfigurationNotifier();
+      final var persistedCurrentClusterConfiguration =
+          PersistedCurrentClusterConfiguration.ofFile(topologyFile, new ProtoBufSerializer());
+      final var initializer =
+          new GossipInitializer<>(
+              topologyNotifier,
+              persistedCurrentClusterConfiguration::getConfiguration,
+              ignore -> {},
+              new TestConcurrencyControl(),
+              CurrentClusterConfiguration.uninitialized());
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isFalse();
+
+      // Simulate gossip received
+      topologyNotifier.updateCurrentClusterConfiguration(initialCurrentClusterConfiguration);
+
+      // then
+      assertThat(initializeFuture.join()).isEqualTo(initialCurrentClusterConfiguration);
+    }
+
+    @Test
+    void shouldIgnoreLegacyUpdatesWhileWaitingForNewModelGossip() {
+      // given
+      final var topologyNotifier = new TestClusterConfigurationNotifier();
+      final var persistedCurrentClusterConfiguration =
+          PersistedCurrentClusterConfiguration.ofFile(topologyFile, new ProtoBufSerializer());
+      final var initializer =
+          new GossipInitializer<>(
+              topologyNotifier,
+              persistedCurrentClusterConfiguration::getConfiguration,
+              ignore -> {},
+              new TestConcurrencyControl(),
+              CurrentClusterConfiguration.uninitialized());
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      topologyNotifier.updateTopology(initialClusterConfiguration);
+
+      // then — the legacy overload is ignored; only a CurrentClusterConfiguration completes it
+      assertThat(initializeFuture.isDone()).isFalse();
+    }
+
+    @Test
+    void shouldInitializeFromSync() {
+      // given
+      final var member = MemberId.from("1");
+      final ActorFuture<CurrentClusterConfiguration> syncResponseFuture = new TestActorFuture<>();
+      final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester =
+          id -> syncResponseFuture;
+      final var initializer =
+          new SyncInitializer<>(
+              Duration.ofSeconds(5),
+              new TestClusterConfigurationNotifier(),
+              () -> List.of(member),
+              new TestConcurrencyControl(true),
+              syncRequester,
+              ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+              CurrentClusterConfiguration.uninitialized());
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isFalse();
+      syncResponseFuture.complete(initialCurrentClusterConfiguration);
+
+      // then
+      assertThat(initializeFuture.join()).isEqualTo(initialCurrentClusterConfiguration);
+    }
+
+    @Test
+    void shouldCompleteAsUninitializedAfterBootstrapTimeout() {
+      // given - a member that always answers with null, e.g. a gateway member which is part of
+      // cluster membership but never gossips an explicit uninitialized configuration
+      final var nullRespondingMember = MemberId.from("gateway-0");
+      final var concurrencyControl = new TestConcurrencyControl(true);
+      final var bootstrapTimeout = Duration.ofSeconds(1);
+      final var initializer =
+          new SyncInitializer<>(
+              Duration.ofMillis(50),
+              new TestClusterConfigurationNotifier(),
+              () -> List.of(nullRespondingMember),
+              concurrencyControl,
+              ignored -> CompletableActorFuture.completed(null),
+              bootstrapTimeout,
+              CurrentClusterConfiguration.uninitialized());
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isFalse();
+      concurrencyControl.runAll();
+
+      // then - falls back to uninitialized instead of polling forever
+      assertThat(initializeFuture.join().isUninitialized()).isTrue();
     }
   }
 
