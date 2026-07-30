@@ -259,7 +259,9 @@ public record AgentInstanceDbModel(
 
     // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
     // toolValues() carries the original JSON through unparsed instead of round-tripping it
-    // through Jackson.
+    // through Jackson. Package-private, not a public setter: a second public setter aliasing the
+    // same field as toolValues(List) would let callers silently drop one write (e.g.
+    // builder.tools(x).toolValues(y) loses x).
     Builder(final String tools) {
       this.tools = tools;
     }

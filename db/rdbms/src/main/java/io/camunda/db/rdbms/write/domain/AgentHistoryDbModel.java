@@ -203,7 +203,9 @@ public record AgentHistoryDbModel(
 
     // Seeds the raw serialized column values for toBuilder()/copy(), so a copy that never
     // touches contentItems()/toolCallValues() carries the original JSON through unparsed instead
-    // of round-tripping it through Jackson.
+    // of round-tripping it through Jackson. Package-private, not a public setter: a second
+    // public setter aliasing the same fields as contentItems(List)/toolCallValues(List) would
+    // let callers silently drop a write (e.g. builder.content(x).contentItems(y) loses x).
     Builder(final String content, final String toolCalls) {
       this.content = content;
       this.toolCalls = toolCalls;

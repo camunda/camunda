@@ -130,7 +130,9 @@ public record MessageSubscriptionDbModel(
 
     // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
     // toolProperties() carries the original string through unparsed instead of round-tripping it
-    // through Jackson.
+    // through Jackson. Package-private, not a public setter: a second public setter aliasing the
+    // same field as toolProperties(Map) would let callers silently drop one write (e.g.
+    // builder.serializedToolProperties(x).toolProperties(y) loses x).
     Builder(final String serializedToolProperties) {
       this.serializedToolProperties = serializedToolProperties;
     }
