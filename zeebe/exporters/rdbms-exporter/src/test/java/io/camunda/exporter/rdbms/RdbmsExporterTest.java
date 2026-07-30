@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -623,7 +623,7 @@ class RdbmsExporterTest {
     final long rdbmsPosition = 150L;
     createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
 
-    final var lsnProvider = mock(ReplicationLogStatusProvider.class);
+    final var lsnProvider = mock(ReplicationLsnProvider.class);
     when(lsnProvider.getCurrent()).thenReturn(200L);
     when(lsnProvider.getReplicationStatuses()).thenReturn(List.of());
     final var replicationConfig = new ExporterConfiguration.ReplicationConfiguration();
