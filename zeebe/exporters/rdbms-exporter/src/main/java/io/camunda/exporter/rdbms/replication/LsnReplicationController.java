@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -50,7 +50,7 @@ public class LsnReplicationController implements ReplicationController {
 
   private static final Logger LOG = LoggerFactory.getLogger(LsnReplicationController.class);
 
-  private final ReplicationLogStatusProvider lsnProvider;
+  private final ReplicationLsnProvider lsnProvider;
   private final Controller controller;
   private final ReplicationConfiguration config;
   private final int partitionId;
@@ -67,7 +67,7 @@ public class LsnReplicationController implements ReplicationController {
 
   public LsnReplicationController(
       final Controller controller,
-      final ReplicationLogStatusProvider lsnProvider,
+      final ReplicationLsnProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId,
       final InstantSource clock,
@@ -274,7 +274,7 @@ public class LsnReplicationController implements ReplicationController {
    * @return the lowest LSN confirmed.
    */
   @VisibleForTesting
-  long computeConfirmedLsn(final List<ReplicationLogStatus> statuses) {
+  long computeConfirmedLsn(final List<ReplicationLsnStatus> statuses) {
     if (lsnProvider.getCurrent() < 0) {
       return Long.MIN_VALUE;
     }
@@ -284,7 +284,7 @@ public class LsnReplicationController implements ReplicationController {
     }
 
     return statuses.stream()
-        .map(ReplicationLogStatus::logStatus)
+        .map(ReplicationLsnStatus::logStatus)
         .sorted(Comparator.<Long>naturalOrder().reversed())
         .limit(config.getMinSyncReplicas())
         .min(Comparator.naturalOrder())

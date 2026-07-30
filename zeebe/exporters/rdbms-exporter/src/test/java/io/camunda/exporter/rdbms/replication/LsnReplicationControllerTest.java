@@ -18,8 +18,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -39,7 +39,7 @@ class LsnReplicationControllerTest {
   private static final int MIN_SYNC_REPLICAS = 1;
 
   private Controller controller;
-  private ReplicationLogStatusProvider lsnProvider;
+  private ReplicationLsnProvider lsnProvider;
   private ReplicationConfiguration replicationConfig;
   private InstantSource clock;
   private ScheduledTask scheduledTask;
@@ -48,7 +48,7 @@ class LsnReplicationControllerTest {
   @BeforeEach
   void setUp() {
     controller = mock(Controller.class);
-    lsnProvider = mock(ReplicationLogStatusProvider.class);
+    lsnProvider = mock(ReplicationLsnProvider.class);
     replicationConfig = new ReplicationConfiguration();
     replicationConfig.setPollingInterval(POLLING_INTERVAL);
     replicationConfig.setMaxLag(MAX_LAG);
@@ -97,7 +97,7 @@ class LsnReplicationControllerTest {
     // then – queue should contain the entry; verify by checking that a subsequent
     // checkReplication with confirmed LSN 42 updates the exported position
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(42L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(42L, "replica-1", 0L)));
     replicationController.checkReplication();
 
     verify(controller, atLeastOnce()).updateLastExportedRecordPosition(10L);
@@ -154,7 +154,7 @@ class LsnReplicationControllerTest {
 
     // replica has confirmed up to lsn=20 → first 2 entries should be removed
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(20L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(20L, "replica-1", 0L)));
 
     // when
     replicationController.checkReplication();
@@ -176,7 +176,7 @@ class LsnReplicationControllerTest {
     // current time is 0, so lag = 0
     when(clock.millis()).thenReturn(0L);
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(10L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(10L, "replica-1", 0L)));
 
     // when
     replicationController.checkReplication();
@@ -204,7 +204,7 @@ class LsnReplicationControllerTest {
     when(clock.millis()).thenReturn(MAX_LAG.toMillis() + 1_000L);
     // replica has NOT confirmed anything yet
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(0L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(0L, "replica-1", 0L)));
 
     // when
     replicationController.checkReplication();
@@ -226,13 +226,13 @@ class LsnReplicationControllerTest {
     // pause: advance clock past maxLag, replica not up-to-date
     when(clock.millis()).thenReturn(MAX_LAG.toMillis() + 1_000L);
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(0L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(0L, "replica-1", 0L)));
     replicationController.checkReplication();
     assertThat(replicationController.isReplicationInSync()).isFalse();
 
     // resume: replica catches up and clock is back within maxLag
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(50L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(50L, "replica-1", 0L)));
     replicationController.checkReplication();
 
     // then
@@ -244,7 +244,7 @@ class LsnReplicationControllerTest {
     // given – no entries enqueued at all
     final var replicationController = createController();
     when(lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(new ReplicationLogStatus(0L, "replica-1", 0L)));
+        .thenReturn(List.of(new ReplicationLsnStatus(0L, "replica-1", 0L)));
 
     // when
     replicationController.checkReplication();
@@ -296,7 +296,7 @@ class LsnReplicationControllerTest {
   void shouldRecordReplicationStatusMetricsOnCheck() {
     // given
     final var replicationController = createController();
-    final var statuses = List.of(new ReplicationLogStatus(50L, "replica-1", 100L));
+    final var statuses = List.of(new ReplicationLsnStatus(50L, "replica-1", 100L));
     when(lsnProvider.getReplicationStatuses()).thenReturn(statuses);
 
     // when
@@ -366,7 +366,7 @@ class LsnReplicationControllerTest {
       // when – only 1 replica but 2 required
       final long result =
           replicationController.computeConfirmedLsn(
-              List.of(new ReplicationLogStatus(100L, "replica-1", 0L)));
+              List.of(new ReplicationLsnStatus(100L, "replica-1", 0L)));
 
       // then
       assertThat(result).isEqualTo(-1L);
@@ -381,9 +381,9 @@ class LsnReplicationControllerTest {
 
       final var statuses =
           List.of(
-              new ReplicationLogStatus(10L, "replica-1", 0L),
-              new ReplicationLogStatus(30L, "replica-2", 0L),
-              new ReplicationLogStatus(50L, "replica-3", 0L));
+              new ReplicationLsnStatus(10L, "replica-1", 0L),
+              new ReplicationLsnStatus(30L, "replica-2", 0L),
+              new ReplicationLsnStatus(50L, "replica-3", 0L));
 
       // when
       final long result = replicationController.computeConfirmedLsn(statuses);
@@ -398,7 +398,7 @@ class LsnReplicationControllerTest {
       when(lsnProvider.getCurrent()).thenReturn(50L);
       final var replicationController = createController();
 
-      final var statuses = List.of(new ReplicationLogStatus(40L, "replica-1", 0L));
+      final var statuses = List.of(new ReplicationLsnStatus(40L, "replica-1", 0L));
 
       // when
       final long result = replicationController.computeConfirmedLsn(statuses);

@@ -12,51 +12,50 @@ import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ReplicationLogStatusProviderFactory {
+public final class ReplicationLsnProviderFactory {
 
   public static final String POSTGRESQL_DATABASE_ID = "postgresql";
   public static final String MSSQL_DATABASE_ID = "mssql";
   public static final String MYSQL_DATABASE_ID = "mysql";
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ReplicationLogStatusProviderFactory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ReplicationLsnProviderFactory.class);
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationStatusMapper replicationStatusMapper;
 
-  public ReplicationLogStatusProviderFactory(
+  public ReplicationLsnProviderFactory(
       final VendorDatabaseProperties vendorDatabaseProperties,
       final ReplicationStatusMapper replicationStatusMapper) {
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.replicationStatusMapper = replicationStatusMapper;
   }
 
-  public ReplicationLogStatusProvider create() {
+  public ReplicationLsnProvider create() {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
       case MSSQL_DATABASE_ID -> createMssqlProvider();
       case null ->
           throw new IllegalArgumentException(
-              "Cannot create ReplicationLogStatusProvider for null database id");
+              "Cannot create ReplicationLsnProvider for null database id");
       default ->
           throw new IllegalArgumentException(
-              "Cannot create ReplicationLogStatusProvider for unknown database id "
+              "Cannot create ReplicationLsnProvider for unknown database id "
                   + vendorDatabaseProperties.databaseId());
     };
   }
 
-  private ReplicationLogStatusProvider createPostgresOrAuroraProvider() {
+  private ReplicationLsnProvider createPostgresOrAuroraProvider() {
     if (!replicationStatusMapper.isAurora()) {
       validateRequiredPrivileges("'pg_monitor' role");
       LOG.debug("Detected PostgreSQL LogStatusProvider");
-      return new DefaultReplicationLogStatusProvider(replicationStatusMapper);
+      return new DefaultReplicationLsnProvider(replicationStatusMapper);
     }
     return createAuroraGlobalProvider();
   }
 
-  private ReplicationLogStatusProvider createMssqlProvider() {
+  private ReplicationLsnProvider createMssqlProvider() {
     validateRequiredPrivileges("'VIEW SERVER STATE' or 'VIEW SERVER PERFORMANCE STATE' permission");
     LOG.debug("Detected MSSQL LogStatusProvider");
-    return new DefaultReplicationLogStatusProvider(replicationStatusMapper);
+    return new DefaultReplicationLsnProvider(replicationStatusMapper);
   }
 
   private void validateRequiredPrivileges(final String requiredPrivilege) {
@@ -68,7 +67,7 @@ public final class ReplicationLogStatusProviderFactory {
     }
   }
 
-  private ReplicationLogStatusProvider createMysqlAuroraProvider() {
+  private ReplicationLsnProvider createMysqlAuroraProvider() {
     if (!replicationStatusMapper.isAurora()) {
       throw new IllegalStateException(
           "Replication monitoring requires AWS Aurora MySQL. "
@@ -77,13 +76,13 @@ public final class ReplicationLogStatusProviderFactory {
     return createAuroraGlobalProvider();
   }
 
-  private ReplicationLogStatusProvider createAuroraGlobalProvider() {
+  private ReplicationLsnProvider createAuroraGlobalProvider() {
     if (!replicationStatusMapper.isAuroraGlobalDatabase()) {
       throw new IllegalStateException(
           "Replication monitoring requires AWS Aurora Global Database. "
               + "Aurora is detected but Global Database is not configured on this instance.");
     }
     LOG.debug("Detected Aurora Global LogStatusProvider");
-    return new AuroraReplicationLogStatusProvider(replicationStatusMapper);
+    return new AuroraReplicationLsnProvider(replicationStatusMapper);
   }
 }
