@@ -194,8 +194,22 @@ curl -sS -o server.key https://local-ip.sh/server.key
 openssl x509 -in server.pem -noout -subject -enddate   # CN=*.local-ip.sh, still valid?
 ```
 
-The terminator accepts TLS on 443 and forwards to the OpenSearch container. This shim was used; it also
-prints each request's authentication scheme, which is where the findings below come from:
+#### What the TLS terminator does
+
+A reverse proxy sits on 443 holding the trusted certificate and relays to the plain-HTTP OpenSearch
+container. Camunda believes it is talking to an HTTPS endpoint on the standard port, which is the only shape
+the `aws-enabled` path can express.
+
+- Presents `server.pem`/`server.key` and terminates TLS on the port it is given.
+- Relays each request to the upstream unchanged except for the target host, stripping only hop-by-hop
+  headers, and copies the status, headers and body straight back — so what OpenSearch receives is what
+  Camunda sent, signature included.
+- Prints one line per request with the method, path, authentication scheme and SigV4 credential scope. That
+  line is the evidence behind the findings below: it is how the signature, its region and its service were
+  read off the wire.
+- Threads each connection and sets an explicit `Content-Length` on every response, so concurrent clients and
+  HTTP/1.1 keep-alive do not stall.
+
 
 ```python
 # tlsfront.py <listen_port> <upstream_host> <upstream_port> <certfile> <keyfile>
@@ -390,6 +404,25 @@ REVOKE ALL ON SCHEMA public FROM PUBLIC;
 
 Both database users share one password purely so a single substitution serves both; the tokens the driver
 generates stay per-user.
+
+#### What the pgwire shim does
+
+It speaks just enough of the PostgreSQL wire protocol to swap one field, letting an IAM connection complete
+against a database that knows nothing about IAM.
+
+- Accepts a client connection and opens one to PostgreSQL, then relays between them.
+- Handles the startup phase, which is untyped: a 4-byte length followed by the payload. If that payload is an
+  `SSLRequest` (code `80877103`) it answers `N` to decline encryption, so the exchange stays readable, then
+  forwards the real `StartupMessage`.
+- After startup every client message is typed — a 1-byte tag, a 4-byte length, then the body — and all are
+  forwarded untouched except `PasswordMessage` (`p`). For that one it prints the token the wrapper generated
+  and substitutes the real password before forwarding, so authentication succeeds.
+- Copies the server-to-client direction blindly on its own thread, and handles each connection on a thread of
+  its own.
+
+This works only because PostgreSQL is started with cleartext `password` authentication. Under the default
+scram the token would be hashed by the client, leaving nothing to read and nothing to substitute.
+
 
 ```python
 # pgshim.py <listen_port> <upstream_host> <upstream_port> <real_password>
