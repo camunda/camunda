@@ -388,6 +388,123 @@ public class ActivateAdHocSubProcessActivityTest {
             Assertions.tuple("c", "2", processInstanceKey, VariableIntent.CREATED)); // created
   }
 
+  @Test
+  public void shouldKeepActivationVariablesLocalToInnerInstance() {
+    // given
+    final var jobType = "tool-worker-activation-variables";
+    final var processId = "ahsp-activation-variables";
+
+    deployProcess(
+        processId,
+        adHocSubProcess -> adHocSubProcess.serviceTask("A", task -> task.zeebeJobType(jobType)));
+
+    final long instanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long ahspInstanceKey = getAdHocSubProcessInstanceKey(instanceKey);
+
+    // when the activity is activated with variables, as the AI Agent connector does for its
+    // `toolCall`/`toolCallResults` duplicate-call detection
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(ahspInstanceKey)
+        .withElementIdAndVariables("A", Map.of("toolCall", Map.of("id", "call-1")))
+        .activate();
+
+    final long innerInstanceKey = getInnerInstanceKey(instanceKey);
+
+    ENGINE.job().ofInstance(instanceKey).withType(jobType).complete();
+
+    // then
+    assertThat(toolCallScopeKeysUntilInnerInstanceCompleted(instanceKey))
+        .as(
+            "`toolCall` must stay on the inner instance and reach neither the ad-hoc sub-process"
+                + " scope (%d) nor the root process scope (%d)",
+            ahspInstanceKey, instanceKey)
+        .containsOnly(innerInstanceKey);
+  }
+
+  @Test
+  public void shouldKeepActivationVariablesLocalWhenActivatedActivityHasOutputMapping() {
+    // given
+    final var jobType = "tool-worker-output-mapping";
+    final var processId = "ahsp-activation-variables-output-mapping";
+
+    // an output mapping on the activated activity triggers a propagating merge at the inner
+    // instance scope when the activity completes
+    deployProcess(
+        processId,
+        adHocSubProcess ->
+            adHocSubProcess.serviceTask(
+                "A",
+                task -> task.zeebeJobType(jobType).zeebeOutputExpression("1", "outputResult")));
+
+    final long instanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long ahspInstanceKey = getAdHocSubProcessInstanceKey(instanceKey);
+
+    // when
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(ahspInstanceKey)
+        .withElementIdAndVariables("A", Map.of("toolCall", Map.of("id", "call-1")))
+        .activate();
+
+    final long innerInstanceKey = getInnerInstanceKey(instanceKey);
+
+    ENGINE.job().ofInstance(instanceKey).withType(jobType).complete();
+
+    // then the merge must not carry the activation variable out of the inner instance
+    assertThat(toolCallScopeKeysUntilInnerInstanceCompleted(instanceKey))
+        .as(
+            "`toolCall` must stay on the inner instance and reach neither the ad-hoc sub-process"
+                + " scope (%d) nor the root process scope (%d)",
+            ahspInstanceKey, instanceKey)
+        .containsOnly(innerInstanceKey);
+  }
+
+  @Test
+  /**
+   * Fails on this commit: the variable is created on the root process scope. This is the only
+   * scenario of the three that misbehaves, and it is the suspected bug behind
+   * https://github.com/camunda/camunda/issues/58990. The expectation asserted here is the one the
+   * AI Agent connector relies on; whether the engine must honour it for job-completion variables is
+   * pending the behavior clarification in https://github.com/camunda/camunda/issues/56387.
+   */
+  public void shouldKeepJobCompletionVariablesLocalToInnerInstance() {
+    // given
+    final var jobType = "tool-worker-job-completion";
+    final var processId = "ahsp-job-completion-variables";
+
+    deployProcess(
+        processId,
+        adHocSubProcess -> adHocSubProcess.serviceTask("A", task -> task.zeebeJobType(jobType)));
+
+    final long instanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long ahspInstanceKey = getAdHocSubProcessInstanceKey(instanceKey);
+
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(ahspInstanceKey)
+        .withElementIds("A")
+        .activate();
+
+    final long innerInstanceKey = getInnerInstanceKey(instanceKey);
+
+    // when the activated activity's own job completion sets the variable
+    ENGINE
+        .job()
+        .ofInstance(instanceKey)
+        .withType(jobType)
+        .withVariables(Map.of("toolCall", Map.of("id", "call-1")))
+        .complete();
+
+    // then
+    assertThat(toolCallScopeKeysUntilInnerInstanceCompleted(instanceKey))
+        .as(
+            "`toolCall` must stay on the inner instance and reach neither the ad-hoc sub-process"
+                + " scope (%d) nor the root process scope (%d)",
+            ahspInstanceKey, instanceKey)
+        .containsOnly(innerInstanceKey);
+  }
+
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
     return RecordingExporter.records()
         .limit(
@@ -417,6 +534,35 @@ public class ActivateAdHocSubProcessActivityTest {
         .ofBpmnProcessId(processId)
         .withVariables(Map.of(COMPLETION_CONDITION_VAR, true))
         .create();
+  }
+
+  private long getInnerInstanceKey(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+        .getFirst()
+        .getKey();
+  }
+
+  /**
+   * Collects the scopes `toolCall` was written to, up to the point where the inner instance
+   * completes. Limiting on the inner instance's completion guarantees that any propagating merge
+   * triggered by the activated activity has been exported.
+   */
+  private List<Long> toolCallScopeKeysUntilInnerInstanceCompleted(final long processInstanceKey) {
+    final var innerInstanceCompleted =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .getFirst();
+
+    return RecordingExporter.records()
+        .limit(r -> r.getPosition() >= innerInstanceCompleted.getPosition())
+        .variableRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("toolCall")
+        .map(r -> r.getValue().getScopeKey())
+        .toList();
   }
 
   private long getAdHocSubProcessInstanceKey(final long processInstanceKey) {
