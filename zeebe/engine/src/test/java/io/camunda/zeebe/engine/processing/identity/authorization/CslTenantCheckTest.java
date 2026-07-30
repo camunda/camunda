@@ -17,11 +17,11 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +140,7 @@ final class CslTenantCheckTest {
     final var result =
         tenantCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"),
-            new AuthenticatedAuthorizedTenants(List.of()),
+            TenantAccess.allowed(List.of()),
             "ok",
             () -> rejection);
 
@@ -153,8 +153,7 @@ final class CslTenantCheckTest {
   void shouldAllowWhenPrincipalIsAssignedToAllTenants() {
     // given — a principal pre-resolved as assigned to tenant-a and tenant-b
     final var tenantCheck = tenantCheck(true);
-    final var authorizedTenants =
-        new AuthenticatedAuthorizedTenants(List.of("tenant-a", "tenant-b"));
+    final var authorizedTenants = TenantAccess.allowed(List.of("tenant-a", "tenant-b"));
 
     // when
     final var result =
@@ -173,7 +172,7 @@ final class CslTenantCheckTest {
   void shouldRejectWhenPrincipalIsNotAssignedToAllTenants() {
     // given — a principal pre-resolved as assigned only to tenant-a
     final var tenantCheck = tenantCheck(true);
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of("tenant-a"));
+    final var authorizedTenants = TenantAccess.allowed(List.of("tenant-a"));
     final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized for tenant-b");
 
     // when — tenant-b is requested in addition to tenant-a
@@ -195,7 +194,7 @@ final class CslTenantCheckTest {
     final var result =
         tenantCheck.checkTenantsRequiringPrincipal(
             List.of("tenant-a", "tenant-b"),
-            AuthorizedTenants.ANONYMOUS,
+            TenantAccess.wildcard(List.of()),
             "ok",
             () -> new Rejection(RejectionType.UNAUTHORIZED, "denied"));
 
@@ -205,11 +204,11 @@ final class CslTenantCheckTest {
 
   @Test
   void shouldRejectWhenNoPrincipalAssignedToAnyTenants() {
-    // given — a pre-resolved empty-tenant set (what AuthorizedTenantsResolver returns for a
+    // given — a pre-resolved empty-tenant set (what resolveAuthorizedTenants returns for a
     // no-principal, non-anonymous command when multi-tenancy is enabled); the rejection supplier
     // must be safely callable here since the check failed for a non-anonymous result
     final var tenantCheck = tenantCheck(true);
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of());
+    final var authorizedTenants = TenantAccess.allowed(List.of());
     final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized");
 
     // when
@@ -220,6 +219,83 @@ final class CslTenantCheckTest {
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft()).isEqualTo(rejection);
+  }
+
+  @Test
+  void shouldResolveDefaultTenantWhenMultiTenancyDisabled() {
+    // given — multi-tenancy off, no principal
+    final var tenantCheck = tenantCheck(false);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(Map.of());
+
+    // then — the default tenant, not a wildcard; resolving the tenant ids must not throw
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldResolveDefaultTenantWhenMultiTenancyDisabledForPrincipal() {
+    // given — multi-tenancy off but a principal is present
+    final var tenantCheck = tenantCheck(false);
+
+    // when
+    final var access =
+        tenantCheck.resolveAuthorizedTenants(
+            Map.of(Authorization.AUTHORIZED_USERNAME, "demo-user"));
+
+    // then — tenant filtering still applies to the default tenant (matches pre-migration behavior)
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldResolveWildcardWhenAnonymousClaimIsSet() {
+    // given — multi-tenancy on but the request is anonymous
+    final var tenantCheck = tenantCheck(true);
+
+    // when
+    final var access =
+        tenantCheck.resolveAuthorizedTenants(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+
+    // then — anonymous access is a wildcard grant; no claims conversion needed
+    assertThat(access.wildcard()).isTrue();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldResolveEmptyWhenMultiTenancyEnabledButNoPrincipal() {
+    // given — multi-tenancy on but neither username nor client id present
+    final var tenantCheck = tenantCheck(true);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(Map.of());
+
+    // then — authorized for no tenant (not wildcard), so tenant-scoped lookups return NOT_FOUND
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).isEmpty();
+    assertThat(access.isAuthorizedForTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)).isFalse();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldResolveTenantsFromClaimsForClientIdPrincipal() {
+    // given — multi-tenancy on, principal is a client id
+    final var tenantCheck = tenantCheck(true);
+    final Map<String, Object> authorizations =
+        Map.of(Authorization.AUTHORIZED_CLIENT_ID, "client-1");
+    when(authentication.anonymousUser()).thenReturn(false);
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-1"));
+    when(claimsConverter.resolve(authorizations)).thenReturn(authentication);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(authorizations);
+
+    // then — resolved from the converted claims, not the empty no-principal fallback
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly("tenant-1");
   }
 
   private CslTenantCheck tenantCheck(final boolean multiTenancyChecksEnabled) {

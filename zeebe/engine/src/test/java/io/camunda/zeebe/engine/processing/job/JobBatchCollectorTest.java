@@ -21,10 +21,10 @@ import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -520,8 +520,8 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyC, tenantC);
 
     // when - user is authorized for tenantA and tenantB only
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of(tenantA, tenantB));
-    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+    final var authorizedTenants = TenantAccess.allowed(List.of(tenantA, tenantB));
+    collector.collectJobs(record, authorizedTenants.tenantIds());
 
     // then - only jobs from tenantA and tenantB should be collected
     final JobBatchRecord batchRecord = record.getValue();
@@ -555,8 +555,8 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyC, tenantC);
 
     // when - user is authorized for tenantA and tenantB, record specifies tenantC
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of(tenantA, tenantB));
-    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+    final var authorizedTenants = TenantAccess.allowed(List.of(tenantA, tenantB));
+    collector.collectJobs(record, authorizedTenants.tenantIds());
 
     // then - should use authorized tenants (A, B) and ignore provided tenant (C)
     final JobBatchRecord batchRecord = record.getValue();
@@ -589,8 +589,8 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyDefault, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // when - user is authorized for tenantA only, record has empty tenant IDs
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantA);
-    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+    final var authorizedTenants = TenantAccess.allowed(List.of(tenantA));
+    collector.collectJobs(record, authorizedTenants.tenantIds());
 
     // then - should use assigned tenants (A) and not default tenant
     final JobBatchRecord batchRecord = record.getValue();
@@ -616,8 +616,8 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyA, tenantA);
 
     // when - user is authorized for tenantB only, but job exists for tenantA
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantB);
-    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+    final var authorizedTenants = TenantAccess.allowed(List.of(tenantB));
+    collector.collectJobs(record, authorizedTenants.tenantIds());
 
     // then - no jobs should be collected
     final JobBatchRecord batchRecord = record.getValue();
@@ -646,7 +646,7 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyB, tenantB);
 
     // when - user is authorized for tenantB, but record specifies tenantA
-    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantB);
+    final var authorizedTenants = TenantAccess.allowed(List.of(tenantB));
     collector.collectJobs(record, List.of(tenantA));
 
     // then - should use provided tenant (A) from record

@@ -173,7 +173,7 @@ public class BpmnJobActivationBehavior {
           case ASSIGNED -> {
             final var authorizedTenants =
                 cslCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
-            yield !authorizedTenants.isAnonymous()
+            yield !authorizedTenants.wildcard()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
           case PROVIDED -> jobActivationProperties.tenantIds().contains(ownerTenantId);

@@ -12,11 +12,11 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -114,10 +114,10 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Resolves the {@link AuthorizedTenants} for a command from its authorization claims. Delegates
-   * to {@link CslTenantCheck#resolveAuthorizedTenants}.
+   * Resolves the {@link TenantAccess} for a command from its authorization claims. Delegates to
+   * {@link CslTenantCheck#resolveAuthorizedTenants}.
    */
-  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
     return tenantCheck.resolveAuthorizedTenants(authorizations);
   }
 
@@ -157,7 +157,7 @@ public final class CslAuthorizationCheck {
    */
   public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
       final List<String> tenantIds,
-      final AuthorizedTenants authorizedTenants,
+      final TenantAccess authorizedTenants,
       final T value,
       final Supplier<Rejection> notAssignedRejection) {
     return tenantCheck.checkTenantsRequiringPrincipal(

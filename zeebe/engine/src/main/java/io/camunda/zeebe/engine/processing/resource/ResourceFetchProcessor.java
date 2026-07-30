@@ -9,10 +9,8 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.auth.Authorization;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -33,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -108,7 +107,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private Optional<PersistedResource> findResource(
       final TypedRecord<ResourceRecord> command, final long resourceKey) {
     final var authorizedTenants = determineAuthorizedTenants(command);
-    return AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)
+    return authorizedTenants.wildcard()
         ? findResourceForAnonymouslyAuthorizedTenants(resourceKey)
         : findResourceForAuthenticatedAuthorizedTenants(resourceKey, authorizedTenants);
   }
@@ -121,8 +120,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   }
 
   private Optional<PersistedResource> findResourceForAuthenticatedAuthorizedTenants(
-      final long resourceKey, final AuthorizedTenants authorizedTenants) {
-    for (final var tenantId : authorizedTenants.getAuthorizedTenantIds()) {
+      final long resourceKey, final TenantAccess authorizedTenants) {
+    for (final var tenantId : authorizedTenants.tenantIds()) {
       final var optionalResource = resourceState.findResourceByKey(resourceKey, tenantId);
       if (optionalResource.isPresent()) {
         return optionalResource;
@@ -145,19 +144,24 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     return Optional.ofNullable(resource.get());
   }
 
-  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<?> command) {
+  private TenantAccess determineAuthorizedTenants(final TypedRecord<?> command) {
     final var authorizations = command.getAuthorizations();
     if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return AuthorizedTenants.ANONYMOUS;
+      return TenantAccess.wildcard(List.of());
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.DEFAULT_TENANTS;
+      return TenantAccess.allowed(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      return new AuthenticatedAuthorizedTenants(List.of());
+      return TenantAccess.allowed(List.of());
     }
-    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
+    final var authentication = claimsConverter.convert(authorizations);
+    final var tenantIds =
+        Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
+    return authentication.anonymousUser()
+        ? TenantAccess.wildcard(tenantIds)
+        : TenantAccess.allowed(tenantIds);
   }
 
   private void checkAuthorization(

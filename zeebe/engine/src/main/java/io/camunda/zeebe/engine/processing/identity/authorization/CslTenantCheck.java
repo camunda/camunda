@@ -9,14 +9,15 @@ package io.camunda.zeebe.engine.processing.identity.authorization;
 
 import io.camunda.security.api.context.TokenClaimsAuthenticationResolver;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsResolver;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
@@ -43,13 +44,33 @@ public final class CslTenantCheck {
   }
 
   /**
-   * Resolves the {@link AuthorizedTenants} for a command from its authorization claims, reusing
-   * this component's claims converter and security configuration. Centralizes the converter here so
+   * Resolves the {@link TenantAccess} for a command from its authorization claims, reusing this
+   * component's claims converter and security configuration. Centralizes the converter here so
    * command processors depend only on {@code CslTenantCheck} instead of threading the converter
    * through their construction chains.
+   *
+   * <p>Anonymous access is a wildcard grant; a multi-tenancy-disabled command resolves to the
+   * default tenant; a claims-free command resolves to an empty allowed grant (authorized for no
+   * tenant); otherwise the authorized tenant IDs come from the resolved {@link
+   * io.camunda.security.api.model.CamundaAuthentication}.
    */
-  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    return AuthorizedTenantsResolver.resolve(authorizations, securityConfig, claimsConverter);
+  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return TenantAccess.wildcard(List.of());
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return TenantAccess.allowed(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return TenantAccess.allowed(List.of());
+    }
+    final var authentication = claimsConverter.resolve(authorizations);
+    final var tenantIds =
+        Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
+    return authentication.anonymousUser()
+        ? TenantAccess.wildcard(tenantIds)
+        : TenantAccess.allowed(tenantIds);
   }
 
   public boolean isMultiTenancyChecksEnabled() {
@@ -125,14 +146,14 @@ public final class CslTenantCheck {
    * eagerly — callers that already resolved tenants for the same command don't pay to resolve
    * twice, and the rejection message is only built on the rejected path. The supplier is only
    * invoked on rejection, which never happens for an anonymous principal, so it's always safe to
-   * call {@code authorizedTenants.getAuthorizedTenantIds()} inside it.
+   * call {@code authorizedTenants.tenantIds()} inside it.
    *
    * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
    *     {@link #resolveAuthorizedTenants} from the same command's claims
    */
   public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
       final List<String> tenantIds,
-      final AuthorizedTenants authorizedTenants,
+      final TenantAccess authorizedTenants,
       final T value,
       final Supplier<Rejection> notAssignedRejection) {
     if (!securityConfig.isMultiTenancyChecksEnabled()) {

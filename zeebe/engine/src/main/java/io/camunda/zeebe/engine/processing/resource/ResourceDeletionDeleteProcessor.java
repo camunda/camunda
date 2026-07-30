@@ -14,13 +14,12 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
@@ -570,8 +569,7 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ResourceIntent.DELETED, resource);
   }
 
-  private AuthorizedTenants getAuthorizedTenants(
-      final TypedRecord<ResourceDeletionRecord> command) {
+  private TenantAccess getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
     final var userTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
@@ -580,7 +578,7 @@ public class ResourceDeletionDeleteProcessor
     if (!userTenants.isAuthorizedForTenantId(tenantId)) {
       throw new NoSuchResourceException(command.getValue().getResourceKey());
     }
-    return new AuthenticatedAuthorizedTenants(tenantId);
+    return TenantAccess.allowed(List.of(tenantId));
   }
 
   private boolean untilResourceDeleted(
@@ -588,12 +586,12 @@ public class ResourceDeletionDeleteProcessor
       final Function<String, Boolean> resourceDeletionCallback) {
     final var authorizedTenants = getAuthorizedTenants(command);
 
-    if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
+    if (authorizedTenants.wildcard()) {
       return Optional.of(tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback))
           .filter(Boolean::booleanValue)
           .orElseGet(() -> forEachTenantUntilResourceDeleted(resourceDeletionCallback));
     } else {
-      for (final var tenant : authorizedTenants.getAuthorizedTenantIds()) {
+      for (final var tenant : authorizedTenants.tenantIds()) {
         if (resourceDeletionCallback.apply(tenant)) {
           return true;
         }
