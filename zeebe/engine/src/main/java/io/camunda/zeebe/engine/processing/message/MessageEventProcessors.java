@@ -274,6 +274,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 scheduledTaskStateFactory.get().getMessageState(),
                 config::getMessageStartLockReleasePollInterval,
-                config::getMessageStartLockReleasePollBatchLimit));
+                config::getMessageStartLockReleasePollBatchLimit,
+                metrics));
   }
 }

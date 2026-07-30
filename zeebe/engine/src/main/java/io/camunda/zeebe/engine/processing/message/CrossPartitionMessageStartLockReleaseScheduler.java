@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import com.google.common.collect.Lists;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -62,18 +63,21 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
   private final MessageState messageState;
   private final Supplier<Duration> pollInterval;
   private final IntSupplier batchLimit;
+  private final MessageCorrelationMetrics metrics;
 
   public CrossPartitionMessageStartLockReleaseScheduler(
       final int partitionId,
       final SubscriptionCommandSender commandSender,
       final MessageState messageState,
       final Supplier<Duration> pollInterval,
-      final IntSupplier batchLimit) {
+      final IntSupplier batchLimit,
+      final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.commandSender = commandSender;
     this.messageState = messageState;
     this.pollInterval = pollInterval;
     this.batchLimit = batchLimit;
+    this.metrics = metrics;
   }
 
   @Override
@@ -148,6 +152,8 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
         targetPartition,
         chunk.size());
     commandSender.sendDirectCorrelationKeyLockReleaseQuery(targetPartition, query);
+    metrics.lockReleaseQuerySent();
+    metrics.lockReleaseQueryBatchSize(chunk.size());
   }
 
   private record Lock(

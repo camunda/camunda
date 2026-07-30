@@ -17,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.CrossPartitionStartLockVisitor;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +52,7 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
   private ReadonlyStreamProcessorContext mockContext;
   private int batchLimit;
   private final List<Lock> locks = new ArrayList<>();
+  private SimpleMeterRegistry meterRegistry;
 
   private CrossPartitionMessageStartLockReleaseScheduler scheduler;
 
@@ -79,13 +82,15 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
         .when(mockMessageState)
         .visitCrossPartitionStartLocks(any());
 
+    meterRegistry = new SimpleMeterRegistry();
     scheduler =
         new CrossPartitionMessageStartLockReleaseScheduler(
             LOCAL_PARTITION,
             mockCommandSender,
             mockMessageState,
             () -> POLL_INTERVAL,
-            () -> batchLimit);
+            () -> batchLimit,
+            new MessageCorrelationMetrics(meterRegistry));
     scheduler.onRecovered(mockContext);
   }
 
@@ -221,6 +226,32 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
 
     // then no query is dispatched to ourselves
     verify(mockCommandSender, never()).sendDirectCorrelationKeyLockReleaseQuery(anyInt(), any());
+  }
+
+  @Test
+  void shouldRecordQueryAndBatchSizeMetricsPerDispatchedQuery() {
+    // given two holders on partition 2 and one on partition 3
+    addLock("wf", "ck-a", holderKeyOnPartition(2, 1));
+    addLock("wf", "ck-b", holderKeyOnPartition(2, 2));
+    addLock("wf", "ck-c", holderKeyOnPartition(3, 1));
+
+    // when
+    scheduler.run();
+
+    // then one query is counted per dispatched query (M9), and the batch-size distribution (M10)
+    // records the holder count of each query
+    assertThat(
+            meterRegistry
+                .get("zeebe.message.start.cross.partition.lock.release.queries.total")
+                .counter()
+                .count())
+        .isEqualTo(2.0);
+    final var batchSize =
+        meterRegistry
+            .get("zeebe.message.start.cross.partition.lock.release.query.batch.size")
+            .summary();
+    assertThat(batchSize.count()).isEqualTo(2L);
+    assertThat(batchSize.totalAmount()).isEqualTo(3.0);
   }
 
   private void addLock(
