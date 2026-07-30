@@ -19,6 +19,7 @@ import static io.atomix.raft.partition.RaftPartition.PARTITION_NAME_FORMAT;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.raft.LeadershipTransferProtocol;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
@@ -45,7 +46,7 @@ import org.jspecify.annotations.NullMarked;
  * its own {@link RaftServerCommunicator} registered.
  */
 @NullMarked
-public final class LeadershipTransferClient implements AutoCloseable {
+public final class LeadershipTransferClient implements LeadershipTransferProtocol, AutoCloseable {
 
   private final ClusterCommunicationService communicationService;
   private final Duration requestTimeout;
@@ -58,11 +59,7 @@ public final class LeadershipTransferClient implements AutoCloseable {
     this.requestTimeout = requestTimeout;
   }
 
-  /**
-   * Asks {@code leader}, the current leader of the given partition, to transfer its leadership. The
-   * response only says whether the transfer was accepted or skipped; a transfer that starts reports
-   * its outcome later, through {@link #onResult}.
-   */
+  @Override
   public CompletableFuture<LeadershipTransferInitiateResponse> initiate(
       final MemberId leader,
       final String partitionGroup,
@@ -77,12 +74,7 @@ public final class LeadershipTransferClient implements AutoCloseable {
         requestTimeout);
   }
 
-  /**
-   * Handles the terminal outcome the given partition's leader reports back. A transfer outlives the
-   * request that started it, so the outcome arrives as its own request rather than as that
-   * request's response, and is correlated by {@link
-   * LeadershipTransferResultRequest#correlationId()}.
-   */
+  @Override
   public void onResult(
       final String partitionGroup,
       final int partitionId,
