@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -208,7 +209,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldNotUpsertNullFields() {
+  public void shouldOmitAbsentOptionalFieldsFromUpsert() {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("111")
@@ -218,6 +219,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
+            .setFlowNodeName("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
     final TargetIndex index = TargetIndex.mainIndex("test-index");
@@ -239,6 +241,77 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     // when
     underTest.flush(index, inputEntity, mockRequest);
     // then
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldUpsertNullFlowNodeNameForNormalElement() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.SERVICE_TASK)
+            .setState(FlowNodeState.ACTIVE)
+            .setFlowNodeId("flowNode1")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    // when
+    underTest.flush(index, inputEntity, mockRequest);
+    // then
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldOmitFlowNodeNameForInnerInstanceWhenNull() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .setState(FlowNodeState.COMPLETED)
+            .setFlowNodeId("adHocSubProcess#innerInstance")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    underTest.flush(index, inputEntity, mockRequest);
+
     verify(mockRequest, times(1))
         .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
@@ -416,6 +489,49 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
     assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
+  }
+
+  @Test
+  public void shouldRetainStaleNameWhenAdHocInnerInstanceIsMigrated() {
+    // given
+    final long targetProcessDefinitionKey = 222L;
+    processCache.put(
+        targetProcessDefinitionKey,
+        new CachedProcessEntity(
+            "targetProcess",
+            1,
+            null,
+            List.of(),
+            Map.of("targetAdHocSubProcess", "Target ad-hoc subprocess"),
+            false,
+            Map.of()));
+
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .withElementId("targetAdHocSubProcess#innerInstance")
+            .withProcessDefinitionKey(targetProcessDefinitionKey)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                    .withValue(processInstanceRecordValue));
+
+    final FlowNodeInstanceEntity flowNodeInstanceEntity =
+        new FlowNodeInstanceEntity().setFlowNodeName("List users");
+
+    // when
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getFlowNodeName())
+        .describedAs(
+            "pre-migration inner-instance name survives migration, unresolved against the "
+                + "target process definition")
+        .isEqualTo("List users");
   }
 
   @ParameterizedTest
