@@ -170,7 +170,8 @@ final class LeadershipTransferAttempt {
     if (control != null) {
       return control.pauseForTransfer(resumeTimeout);
     }
-    // No broker control registered (e.g. Raft-only tests with no writes to freeze).
+    // e.g. Raft-only tests, where there are no writes to freeze
+    LOG.debug("No broker pause control registered, pausing the Raft side only");
     return CompletableFuture.completedFuture(
         leader.pauseForTransfer(resumeTimeout, System.currentTimeMillis()));
   }
@@ -180,6 +181,8 @@ final class LeadershipTransferAttempt {
     if (control != null) {
       return control.resumeFromTransfer();
     }
+    // e.g. Raft-only tests, where there are no writes to reopen
+    LOG.debug("No broker pause control registered, resuming the Raft side only");
     leader.resumeFromTransfer();
     return CompletableFuture.completedFuture(null);
   }
