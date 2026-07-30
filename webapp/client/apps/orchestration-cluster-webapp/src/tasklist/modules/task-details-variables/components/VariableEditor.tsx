@@ -17,7 +17,6 @@ import {
 	StructuredListHead,
 	StructuredListRow,
 	StructuredListWrapper,
-	TextInput,
 } from '@carbon/react';
 import {Close, Maximize} from '@carbon/react/icons';
 import {useVirtualizer} from '@tanstack/react-virtual';
@@ -41,6 +40,7 @@ import {
 } from '#/tasklist/modules/task-details-variables/validators';
 import {DelayedErrorField} from './DelayedErrorField';
 import {LoadingTextarea} from './LoadingTextarea';
+import {TextInput} from './TextInput';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
 import styles from './VariableEditor.module.scss';
 
