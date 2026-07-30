@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
+import io.camunda.gateway.protocol.model.RestorePartitionStatus;
+import io.camunda.gateway.protocol.model.RestoreStatusResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -206,34 +211,42 @@ public class RecoveryControllerTest extends RestControllerTest {
                 new ModeChangeOperation(broker, Mode.PROCESSING)));
     stubTopology(Optional.empty(), Optional.of(plan));
 
-    // when / then
-    webClient
-        .get()
-        .uri("/v2/restore")
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .jsonPath("$.status")
-        .isEqualTo("IN_PROGRESS")
-        .jsonPath("$.changeId")
-        .isEqualTo("-2")
-        .jsonPath("$.startedAt")
-        .isEqualTo("2024-01-01T10:00:00Z")
-        .jsonPath("$.brokers[0].brokerId")
-        .isEqualTo("1")
-        .jsonPath("$.brokers[0].partitionsRestored")
-        .isEqualTo(1)
-        .jsonPath("$.brokers[0].partitionsToRestore")
-        .isEqualTo(1)
-        .jsonPath("$.brokers[0].partitions[0].partitionId")
-        .isEqualTo(1)
-        .jsonPath("$.brokers[0].partitions[0].state")
-        .isEqualTo("RESTORED")
-        .jsonPath("$.brokers[0].partitions[0].backupIds[0]")
-        .isEqualTo(10)
-        .jsonPath("$.brokers[0].partitions[0].completedAt")
-        .isEqualTo("2024-01-01T10:00:02Z");
+    // when
+    final var response =
+        webClient
+            .get()
+            .uri("/v2/restore")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(RestoreStatusResponse.class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    final var expected =
+        RestoreStatusResponse.Builder.create()
+            .status(RestoreStatusResponse.StatusEnum.IN_PROGRESS)
+            .changeId("-2")
+            .startedAt("2024-01-01T10:00:00Z")
+            .brokers(
+                List.of(
+                    RestoreBrokerStatus.Builder.create()
+                        .brokerId("1")
+                        .partitionsRestored(1)
+                        .partitionsToRestore(1)
+                        .partitions(
+                            List.of(
+                                RestorePartitionStatus.Builder.create()
+                                    .partitionId(1)
+                                    .state(RestorePartitionStatus.StateEnum.RESTORED)
+                                    .backupIds(List.of(10L, 11L))
+                                    .completedAt("2024-01-01T10:00:02Z")
+                                    .build()))
+                        .build()))
+            .build();
+
+    assertThat(response).isEqualTo(expected);
   }
 
   @Test
