@@ -30,6 +30,7 @@ const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 type ProcessInstancesHandle = {
   processInstances: ProcessInstance[];
   totalProcessInstancesCount: number;
+  hasMoreTotalItems: boolean;
   displayState: React.ComponentProps<typeof InstancesTable>['state'];
   handleScrollStartReach: React.ComponentProps<
     typeof InstancesTable
@@ -61,6 +62,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const {
     processInstances,
     totalProcessInstancesCount,
+    hasMoreTotalItems,
     displayState,
     handleScrollStartReach,
     handleScrollEndReach,
@@ -86,6 +88,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
       state={displayState}
       processInstances={processInstances}
       totalProcessInstancesCount={totalProcessInstancesCount}
+      hasMoreTotalItems={hasMoreTotalItems}
       onVerticalScrollStartReach={handleScrollStartReach}
       onVerticalScrollEndReach={handleScrollEndReach}
     />
@@ -100,6 +103,8 @@ function mapQueryResultToProcessInstancesHandle(
   const processInstances = result.data?.pages.flatMap((p) => p.items) ?? [];
   const totalProcessInstancesCount =
     result.data?.pages[0]?.page.totalItems ?? 0;
+  const hasMoreTotalItems =
+    result.data?.pages[0]?.page.hasMoreTotalItems ?? false;
   const displayState = computeDisplayStateFromQueryResult(
     result,
     totalProcessInstancesCount,
@@ -108,6 +113,7 @@ function mapQueryResultToProcessInstancesHandle(
   return {
     processInstances,
     totalProcessInstancesCount,
+    hasMoreTotalItems,
     displayState,
     handleScrollStartReach: async (scrollDown) => {
       if (result.hasPreviousPage && !result.isFetchingPreviousPage) {

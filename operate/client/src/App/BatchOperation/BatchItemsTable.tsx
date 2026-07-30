@@ -74,7 +74,9 @@ export const BatchItemsTable: React.FC<Props> = ({
     [data],
   );
 
-  const totalItems = data?.pages?.[0]?.page?.totalItems ?? 0;
+  const totalItems = data?.pages.at(0)?.page?.totalItems ?? 0;
+  const hasMoreTotalItems =
+    data?.pages?.at(0)?.page?.hasMoreTotalItems ?? false;
 
   const headerColumns = (() => {
     if (batchOperationType === 'DELETE_DECISION_INSTANCE') {
@@ -202,7 +204,11 @@ export const BatchItemsTable: React.FC<Props> = ({
 
   return (
     <TableContainer>
-      <BasePanelHeader count={totalItems} title="Items" />
+      <BasePanelHeader
+        count={totalItems}
+        title="Items"
+        hasMoreTotalItems={hasMoreTotalItems}
+      />
       <PaginatedSortableTable
         size="md"
         batchOperationId={batchOperationKey}
