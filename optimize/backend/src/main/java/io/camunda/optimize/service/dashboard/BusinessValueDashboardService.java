@@ -37,6 +37,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +51,10 @@ import org.springframework.stereotype.Component;
  * Seeds the Business Value Dashboard (BVD) and its backing reports on startup.
  *
  * <p>Mirrors {@link AgenticControlDashboardService}: deterministic UUIDs, idempotent reconcile,
- * upsert-on-startup. Ships the L0/L1 tile reports the Hub-side BVD (M3) and the target-driven
- * overview index (M2) will read from.
+ * upsert-on-startup. Ships the L0/L1 tile reports the Hub-side BVD reads from.
  *
- * <p>Note: the automation-rate tiles depend on the native {@code PROCESS_VIEW_AUTOMATION_RATE} view
- * landing in a follow-up (see docs/business-value/bvd-target-technical-design.md §3.3). Those
- * seeded reports are intentionally omitted here until that view exists.
+ * <p>A tile is rendered at a level only if it carries that level's section key, so the same report
+ * can appear at both levels under different headings.
  */
 @Component
 public class BusinessValueDashboardService {
@@ -76,6 +75,9 @@ public class BusinessValueDashboardService {
   public static final String KPI_CYCLE_TIME_BY_PROCESS_NAME = "Cycle time by process";
   public static final String KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION =
       "Average cycle time per process definition.";
+  public static final String KPI_CYCLE_TIME_AVG_NAME = "Cycle time";
+  public static final String KPI_CYCLE_TIME_AVG_DESCRIPTION =
+      "Average cycle time of completed instances.";
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_NAME = "Cycle time distribution";
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_DESCRIPTION =
       "Average, P50 and P95 cycle time of completed instances.";
@@ -87,6 +89,8 @@ public class BusinessValueDashboardService {
 
   public static final String WORK_HANDLED_TOTAL_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-work-handled-total".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String DURATION_AVG_TOTAL_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-duration-avg-total".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String COUNT_BY_PROCESS_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-count-by-process".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String COUNT_BY_DATE_REPORT_ID =
@@ -100,6 +104,19 @@ public class BusinessValueDashboardService {
   public static final String AGENT_PRESENCE_BY_PROCESS_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-agent-presence-by-process".getBytes(StandardCharsets.UTF_8))
           .toString();
+
+  // Tile configuration keys consumed by the Business Value Dashboard frontend. A tile renders at a
+  // level only if it carries that level's key.
+  public static final String TILE_CONFIG_L0_SECTION = "l0Section";
+  public static final String TILE_CONFIG_L1_SECTION = "l1Section";
+  // Section values that group tiles at the dashboard root (L0).
+  public static final String L0_SECTION_ACTIVITY = "activity";
+  public static final String L0_SECTION_CYCLE_TIME = "cycleTime";
+  public static final String L0_SECTION_AGENTIC_ADOPTION = "agenticAdoption";
+  // Section values that group tiles once a single process is selected (L1). Ungrouped tiles render
+  // without a heading.
+  public static final String L1_SECTION_OVERVIEW = "overview";
+  public static final String L1_SECTION_UNGROUPED = "ungrouped";
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(BusinessValueDashboardService.class);
@@ -131,13 +148,15 @@ public class BusinessValueDashboardService {
 
   public void reconcile() {
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
+
     tiles.add(buildWorkHandledTotalTile());
+    tiles.add(buildDurationAvgTotalTile());
     tiles.add(buildCountByProcessTile());
-    tiles.add(buildCountByDateTile());
     tiles.add(buildDurationByProcessTile());
+    tiles.add(buildCountByDateTile());
+    tiles.add(buildAgentPresenceByProcessTile());
     tiles.add(buildDurationPercentilesTile());
     tiles.add(buildDurationByDateTile());
-    tiles.add(buildAgentPresenceByProcessTile());
 
     final DashboardDefinitionRestDto dashboard = buildDashboard(tiles);
     if (dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID).isEmpty()) {
@@ -147,11 +166,8 @@ public class BusinessValueDashboardService {
     }
   }
 
-  // Work handled — total completed-instance count as a single NUMBER.
-  // Maps to PROCESS_INSTANCE_FREQUENCY_GROUP_BY_NONE (view=FREQUENCY, groupBy=NONE,
-  // distributedBy=NONE, result=NUMBER). Kept separate from the per-process BAR tile below
-  // because the (groupBy=NONE + distributedBy=PROCESS) combo returns HYPER_MAP, not NUMBER,
-  // and there is no FE aggregation over that result today.
+  // Total completed instances. Separate from the per-process tile because groupBy=NONE plus
+  // distributedBy=PROCESS returns HYPER_MAP rather than NUMBER.
   private DashboardReportTileDto buildWorkHandledTotalTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
@@ -170,10 +186,48 @@ public class BusinessValueDashboardService {
         KPI_WORK_HANDLED_NAME,
         KPI_WORK_HANDLED_DESCRIPTION,
         null);
-    return buildTile(WORK_HANDLED_TOTAL_REPORT_ID, new PositionDto(0, 0), new DimensionDto(9, 4));
+    return buildTile(
+        WORK_HANDLED_TOTAL_REPORT_ID,
+        new PositionDto(0, 0),
+        new DimensionDto(9, 2),
+        L0_SECTION_ACTIVITY,
+        L1_SECTION_OVERVIEW);
   }
 
-  // Top-5 processes by completed-instance count, per-process breakdown rendered as a BAR chart.
+  // Average cycle time as a single NUMBER, shown next to volume in the L1 overview.
+  private DashboardReportTileDto buildDurationAvgTotalTile() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
+                    .build())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+            .businessValueReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_AVG_TOTAL_REPORT_ID,
+        null,
+        reportData,
+        KPI_CYCLE_TIME_AVG_NAME,
+        KPI_CYCLE_TIME_AVG_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_AVG_TOTAL_REPORT_ID,
+        new PositionDto(9, 0),
+        new DimensionDto(9, 2),
+        null,
+        L1_SECTION_OVERVIEW);
+  }
+
+  // Top processes by completed-instance volume.
   private DashboardReportTileDto buildCountByProcessTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
@@ -192,10 +246,15 @@ public class BusinessValueDashboardService {
         KPI_WORK_HANDLED_NAME,
         KPI_WORK_HANDLED_DESCRIPTION,
         null);
-    return buildTile(COUNT_BY_PROCESS_REPORT_ID, new PositionDto(9, 0), new DimensionDto(9, 4));
+    return buildTile(
+        COUNT_BY_PROCESS_REPORT_ID,
+        new PositionDto(0, 2),
+        new DimensionDto(9, 4),
+        L0_SECTION_ACTIVITY,
+        null);
   }
 
-  // Momentum (volume trend over time) + L1 volume history.
+  // Weekly completed-instance trend: L0 activity, L1 ungrouped.
   private DashboardReportTileDto buildCountByDateTile() {
     final EndDateGroupByDto groupBy = new EndDateGroupByDto();
     groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
@@ -216,10 +275,15 @@ public class BusinessValueDashboardService {
         KPI_MOMENTUM_NAME,
         KPI_MOMENTUM_DESCRIPTION,
         null);
-    return buildTile(COUNT_BY_DATE_REPORT_ID, new PositionDto(9, 0), new DimensionDto(9, 4));
+    return buildTile(
+        COUNT_BY_DATE_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(9, 4),
+        L0_SECTION_ACTIVITY,
+        L1_SECTION_UNGROUPED);
   }
 
-  // Cycle time top-5 by process (average duration).
+  // Top processes by average cycle time.
   private DashboardReportTileDto buildDurationByProcessTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
@@ -244,10 +308,15 @@ public class BusinessValueDashboardService {
         KPI_CYCLE_TIME_BY_PROCESS_NAME,
         KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION,
         null);
-    return buildTile(DURATION_BY_PROCESS_REPORT_ID, new PositionDto(0, 4), new DimensionDto(9, 4));
+    return buildTile(
+        DURATION_BY_PROCESS_REPORT_ID,
+        new PositionDto(9, 2),
+        new DimensionDto(9, 4),
+        L0_SECTION_CYCLE_TIME,
+        null);
   }
 
-  // L1 cycle-time distribution — AVG + P50 + P95 in one report.
+  // Cycle time distribution: AVG, P50 and P95 in one report.
   private DashboardReportTileDto buildDurationPercentilesTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
@@ -275,10 +344,15 @@ public class BusinessValueDashboardService {
         KPI_CYCLE_TIME_DISTRIBUTION_NAME,
         KPI_CYCLE_TIME_DISTRIBUTION_DESCRIPTION,
         null);
-    return buildTile(DURATION_PERCENTILES_REPORT_ID, new PositionDto(9, 4), new DimensionDto(9, 4));
+    return buildTile(
+        DURATION_PERCENTILES_REPORT_ID,
+        new PositionDto(0, 10),
+        new DimensionDto(9, 4),
+        null,
+        L1_SECTION_UNGROUPED);
   }
 
-  // L1 cycle-time history (weekly).
+  // Weekly average cycle time trend.
   private DashboardReportTileDto buildDurationByDateTile() {
     final EndDateGroupByDto groupBy = new EndDateGroupByDto();
     groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
@@ -305,15 +379,16 @@ public class BusinessValueDashboardService {
         KPI_CYCLE_TIME_HISTORY_NAME,
         KPI_CYCLE_TIME_HISTORY_DESCRIPTION,
         null);
-    return buildTile(DURATION_BY_DATE_REPORT_ID, new PositionDto(0, 8), new DimensionDto(9, 4));
+    return buildTile(
+        DURATION_BY_DATE_REPORT_ID,
+        new PositionDto(9, 10),
+        new DimensionDto(9, 4),
+        null,
+        L1_SECTION_UNGROUPED);
   }
 
-  // Agentic presence: which processes run at least one agent. Uses AGENT_INSTANCE total tokens
-  // as a non-zero presence indicator, grouped by process definition. Only the
-  // (view, groupBy, distributedBy) combos registered in ProcessExecutionPlan are valid — for
-  // AGENT_TOTAL_TOKENS the per-process shape is GROUP_BY_PROCESS_DEFINITION_KEY +
-  // DISTRIBUTED_BY_NONE
-  // (see PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY). FE renders as a donut.
+  // Processes running at least one agent, using total tokens as the presence indicator. Rendered
+  // as a donut.
   private DashboardReportTileDto buildAgentPresenceByProcessTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
@@ -345,7 +420,11 @@ public class BusinessValueDashboardService {
         KPI_AGENTIC_PRESENCE_DESCRIPTION,
         null);
     return buildTile(
-        AGENT_PRESENCE_BY_PROCESS_REPORT_ID, new PositionDto(9, 8), new DimensionDto(9, 4));
+        AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
+        new PositionDto(9, 6),
+        new DimensionDto(9, 4),
+        L0_SECTION_AGENTIC_ADOPTION,
+        null);
   }
 
   // Distribute results by process definition so a single report can drive both aggregate
@@ -364,14 +443,26 @@ public class BusinessValueDashboardService {
     return dashboard;
   }
 
+  // A null section means the tile is not rendered at that level.
   private DashboardReportTileDto buildTile(
-      final String reportId, final PositionDto position, final DimensionDto dimensions) {
+      final String reportId,
+      final PositionDto position,
+      final DimensionDto dimensions,
+      final String l0Section,
+      final String l1Section) {
+    final Map<String, String> configuration = new LinkedHashMap<>();
+    if (l0Section != null) {
+      configuration.put(TILE_CONFIG_L0_SECTION, l0Section);
+    }
+    if (l1Section != null) {
+      configuration.put(TILE_CONFIG_L1_SECTION, l1Section);
+    }
     return DashboardReportTileDto.builder()
         .id(reportId)
         .type(DashboardTileType.OPTIMIZE_REPORT)
         .position(position)
         .dimensions(dimensions)
-        .configuration(Map.of())
+        .configuration(configuration)
         .build();
   }
 
