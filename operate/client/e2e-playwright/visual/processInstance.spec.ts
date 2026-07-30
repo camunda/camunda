@@ -558,4 +558,49 @@ test.describe('process instance page', () => {
 
     await expect(page).toHaveScreenshot();
   });
+
+  // The 420px minimum is a measured number, so a longer panel title or an extra
+  // header control outgrows it with nothing failing. Dragging the splitter all
+  // the way left pins the panel to that minimum, which is where such a
+  // regression first shows up - and where Linux font metrics, which differ from
+  // the macOS ones the number was measured against, are exercised too.
+  test('instance history panel at its minimum width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({'process-instance-bottom-panel': [10, 90]}),
+      );
+    });
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+        incidents: runningInstance.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+
+    await expect(processInstancePage.instanceHistory).toBeVisible();
+    await expect(
+      processInstancePage.instanceHistory.getByRole('heading', {
+        name: 'Instance History',
+      }),
+    ).toBeVisible();
+    await processInstancePage.resetZoomButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
 });

@@ -29,8 +29,23 @@ const Container = styled.div`
   }
 `;
 
+// Lets the title ellipsise and stops the header toggles being squashed as the
+// panel narrows. Width-agnostic - no coupling to INSTANCE_HISTORY_MIN_WIDTH,
+// which only decides how narrow the panel is allowed to get.
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
+  gap: var(--cds-spacing-03);
+
+  h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cds--stack-horizontal {
+    flex-shrink: 0;
+  }
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
