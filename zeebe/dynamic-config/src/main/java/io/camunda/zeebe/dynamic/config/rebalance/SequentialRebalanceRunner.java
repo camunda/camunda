@@ -15,13 +15,17 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
@@ -102,6 +106,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private final ConcurrencyControl executor;
   private final PartitionLeaders partitionLeaders;
   private final LeadershipTransferProtocol transfers;
+  private final ClusterRebalanceMetrics metrics;
   private final Duration leaderWaitTimeout;
 
   /**
@@ -116,11 +121,13 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
       final ConcurrencyControl executor,
       final PartitionLeaders partitionLeaders,
       final LeadershipTransferProtocol transfers,
+      final ClusterRebalanceMetrics metrics,
       final Duration leaderWaitTimeout) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.partitionLeaders = partitionLeaders;
     this.transfers = transfers;
+    this.metrics = metrics;
     this.leaderWaitTimeout = leaderWaitTimeout;
   }
 
@@ -128,15 +135,35 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   public ActorFuture<Void> run(final RebalanceRun rebalance) {
     rebalance.plan(plan(rebalance.configuration()));
     logPlan(rebalance);
+    publish(rebalance);
     final ActorFuture<Void> completion = executor.createFuture();
     if (rebalance.dryRun()) {
-      // A dry run answers with the plan and stops there: no partition is paused and no leadership
-      // moves.
+      // A dry run answers with the plan and stops there: no partition is paused, no leadership
+      // moves, and nothing is accounted for as having become of a partition.
       complete(completion);
     } else {
+      observePlanned(rebalance);
       transferFrom(rebalance, 0, completion);
     }
     return completion;
+  }
+
+  /**
+   * Accounts for the partitions the plan itself resolved. They cost the rebalance no time, but they
+   * are outcomes all the same, and leaving them out would make the outcomes of a rebalance add up
+   * to fewer partitions than it covered.
+   */
+  private void observePlanned(final RebalanceRun rebalance) {
+    for (final var partition : rebalance.partitions()) {
+      if (partition.state() == PartitionRebalanceState.SKIPPED) {
+        observe(
+            partition,
+            partition.isBalanced()
+                ? PartitionRebalanceResult.ALREADY_BALANCED
+                : PartitionRebalanceResult.NO_DESIRED_LEADER,
+            Duration.ZERO);
+      }
+    }
   }
 
   /**
@@ -200,6 +227,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     final var partition = rebalance.partition(index);
     final var leader = partition.currentLeader();
     final var desiredLeader = partition.desiredLeader();
+    rebalance.startPartition();
     if (desiredLeader == null) {
       LOG.warn(
           "Rebalance {} leaves {} alone: it has no desired leader to transfer to",
@@ -210,6 +238,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           index,
           PartitionRebalanceState.SKIPPED,
           "it has no desired leader to transfer to",
+          PartitionRebalanceResult.NO_DESIRED_LEADER.name(),
           completion);
       return;
     }
@@ -218,12 +247,18 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
       // rebalance wanted to move and could not - not one it had no work for.
       LOG.warn("Rebalance {} cannot move {}: it has no leader to ask", rebalance.id(), partition);
       resolve(
-          rebalance, index, PartitionRebalanceState.FAILED, "it has no leader to ask", completion);
+          rebalance,
+          index,
+          PartitionRebalanceState.FAILED,
+          "it has no leader to ask",
+          PartitionRebalanceResult.NO_LEADER.name(),
+          completion);
       return;
     }
 
     rebalance.updatePartition(
         index, pending -> pending.withState(PartitionRebalanceState.TRANSFERRING));
+    publish(rebalance);
     // Subscribed before asking, so that a leader that resolves the transfer straight away still
     // finds someone listening for the outcome.
     transfers.onResult(
@@ -294,8 +329,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 rebalance.id(),
                 partition,
                 observed);
-            rebalance.updatePartition(index, PartitionRebalance::transferred);
-            transferFrom(rebalance, index + 1, completion);
+            transferred(rebalance, index, completion);
             return;
           }
           final var waitedSoFar = waited.plus(LEADERSHIP_OBSERVATION_INTERVAL);
@@ -312,6 +346,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 PartitionRebalanceState.FAILED,
                 "its leader neither reported an outcome nor gave up leadership within "
                     + leaderWaitTimeout,
+                PartitionRebalanceResult.LEADER_SILENT.name(),
                 completion);
             return;
           }
@@ -369,15 +404,17 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           index,
           PartitionRebalanceState.FAILED,
           "its leader could not be asked to transfer leadership",
+          PartitionRebalanceResult.LEADER_UNREACHABLE.name(),
           completion);
       return;
     }
     if (response.accepted()) {
       return;
     }
+    final var rejectionReason = response.rejectionReason();
     final var declinedBecause =
-        response.rejectionReason() != null
-            ? String.valueOf(response.rejectionReason())
+        rejectionReason != null
+            ? String.valueOf(rejectionReason)
             : String.valueOf(response.error());
     LOG.warn(
         "Rebalance {} had its transfer of {} declined: {}",
@@ -386,12 +423,16 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         declinedBecause);
     // A declined transfer never froze the partition, so nothing was disrupted - but the rebalance
     // still wanted this partition moved and did not manage it, which is a failure to report rather
-    // than a partition to skip over quietly.
+    // than a partition to skip over quietly. The leader's own reason is the one worth counting: the
+    // pre-transfer checks - lag, reachability, membership - are visible nowhere else.
     resolve(
         rebalance,
         index,
         PartitionRebalanceState.FAILED,
         "its leader declined the transfer: " + declinedBecause,
+        rejectionReason != null
+            ? rejectionReason.name()
+            : PartitionRebalanceResult.LEADER_ERROR.name(),
         completion);
   }
 
@@ -414,8 +455,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           rebalance.id(),
           partition,
           result.desiredLeader());
-      rebalance.updatePartition(index, PartitionRebalance::transferred);
-      transferFrom(rebalance, index + 1, completion);
+      transferred(rebalance, index, completion);
       return;
     }
     LOG.warn(
@@ -428,17 +468,53 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         index,
         PartitionRebalanceState.FAILED,
         "its transfer ran and left leadership where it was: " + result.result(),
+        result.result().name(),
         completion);
   }
 
+  /**
+   * Settles a partition on how the rebalance left it, accounts for it, and moves on to the next.
+   *
+   * @param result what to account for the partition as, from whichever side of the transfer
+   *     protocol answered for it: a {@link LeadershipTransferResult} where the partition's leader
+   *     gave a reason, a {@link PartitionRebalanceResult} where the coordinator never got one
+   */
   private void resolve(
       final RebalanceRun rebalance,
       final int index,
       final PartitionRebalanceState state,
       final @Nullable String reason,
+      final String result,
       final ActorFuture<Void> completion) {
     rebalance.updatePartition(index, partition -> partition.withState(state, reason));
+    observe(rebalance.partition(index), result, rebalance.partitionElapsed());
+    publish(rebalance);
     transferFrom(rebalance, index + 1, completion);
+  }
+
+  /** Settles a partition on leadership having reached the leader the rebalance wanted for it. */
+  private void transferred(
+      final RebalanceRun rebalance, final int index, final ActorFuture<Void> completion) {
+    rebalance.updatePartition(index, PartitionRebalance::transferred);
+    observe(
+        rebalance.partition(index),
+        LeadershipTransferResult.TRANSFERRED.name(),
+        rebalance.partitionElapsed());
+    publish(rebalance);
+    transferFrom(rebalance, index + 1, completion);
+  }
+
+  private void observe(
+      final PartitionRebalance partition, final String result, final Duration took) {
+    metrics.observePartitionDuration(
+        new PartitionId(partition.physicalTenantId(), partition.partitionId()), result, took);
+  }
+
+  private void observe(
+      final PartitionRebalance partition,
+      final PartitionRebalanceResult result,
+      final Duration took) {
+    observe(partition, result.name(), took);
   }
 
   private void finish(final RebalanceRun rebalance, final ActorFuture<Void> completion) {
@@ -451,6 +527,20 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         count(partitions, PartitionRebalanceState.FAILED),
         count(partitions, PartitionRebalanceState.PENDING));
     complete(completion);
+  }
+
+  /**
+   * Reports where the rebalance stands with each partition. Published in one go after every change
+   * rather than piecemeal, so that every partition's state describes the same moment.
+   */
+  private void publish(final RebalanceRun rebalance) {
+    final Map<PartitionId, PartitionRebalanceState> states = new HashMap<>();
+    for (final var partition : rebalance.partitions()) {
+      states.put(
+          new PartitionId(partition.physicalTenantId(), partition.partitionId()),
+          partition.state());
+    }
+    metrics.setPartitionStates(states);
   }
 
   private void logPlan(final RebalanceRun rebalance) {

@@ -19,12 +19,14 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +54,7 @@ final class SequentialRebalanceRunnerTest {
       SequentialRebalanceRunner.LEADERSHIP_OBSERVATION_INTERVAL.multipliedBy(
           (int) OBSERVATIONS_UNTIL_LEADER_WAIT_TIMEOUT);
 
+  private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   // Scheduled tasks are queued rather than run inline, so a test decides when the runner next looks
   // at the topology.
@@ -453,6 +456,98 @@ final class SequentialRebalanceRunnerTest {
     assertThat(transfers.initiated).isEmpty();
   }
 
+  @Test
+  void shouldReportWhichStateEachPartitionIsIn() {
+    // when
+    start(configurationWithPartitions(2));
+
+    // then
+    assertThat(partitionStateGauge(1)).isEqualTo(2);
+    assertThat(partitionStateGauge(2)).isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccountForAPartitionByWhatItsLeaderReported() {
+    // given
+    start(configurationWithPartitions(1));
+    transfers.accept();
+
+    // when
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(partitionDurationCount(1, LeadershipTransferResult.TRANSFERRED.name())).isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccountForAPartitionWhoseLeaderDeclinedByTheReasonItGave() {
+    // given
+    start(configurationWithPartitions(1));
+
+    // when
+    transfers.decline(LeadershipTransferResult.LAG_TOO_HIGH);
+
+    // then
+    assertThat(partitionDurationCount(1, LeadershipTransferResult.LAG_TOO_HIGH.name()))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccountForAPartitionTheRebalanceHadNoWorkFor() {
+    // given
+    final var configuration = configurationWithPartitions(2);
+    leaders.put(2, MEMBER_2);
+
+    // when
+    start(configuration);
+
+    // then
+    assertThat(partitionDurationCount(2, PartitionRebalanceResult.ALREADY_BALANCED.name()))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccountForAPartitionWhoseLeaderNeverAnswered() {
+    // given
+    start(configurationWithPartitions(1));
+    transfers.accept();
+
+    // when
+    observeUntilTheLeaderWaitTimeoutElapses();
+
+    // then
+    assertThat(partitionDurationCount(1, PartitionRebalanceResult.LEADER_SILENT.name()))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccountForNoPartitionOfADryRun() {
+    // when
+    planOnly(configurationWithPartitions(2));
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.duration").timers()).isEmpty();
+  }
+
+  private double partitionStateGauge(final int partitionId) {
+    return registry
+        .get("zeebe.cluster.rebalance.partition.state")
+        .tag("partition", String.valueOf(partitionId))
+        .tag("physicalTenant", GROUP)
+        .gauge()
+        .value();
+  }
+
+  private long partitionDurationCount(final int partitionId, final String result) {
+    return registry
+        .get("zeebe.cluster.rebalance.partition.duration")
+        .tag("partition", String.valueOf(partitionId))
+        .tag("physicalTenant", GROUP)
+        .tag("result", result)
+        .timer()
+        .count();
+  }
+
   private RebalanceRun planOnly(final ClusterConfiguration configuration) {
     final var rebalance = new RebalanceRun(7, RebalanceOverrides.none(), true, configuration);
     run(rebalance).join();
@@ -482,7 +577,12 @@ final class SequentialRebalanceRunnerTest {
 
   private ActorFuture<Void> run(final RebalanceRun rebalance) {
     return new SequentialRebalanceRunner(
-            COORDINATOR, executor, partitionLeaders, transfers, LEADER_WAIT_TIMEOUT)
+            COORDINATOR,
+            executor,
+            partitionLeaders,
+            transfers,
+            new ClusterRebalanceMetrics(registry),
+            LEADER_WAIT_TIMEOUT)
         .run(rebalance);
   }
 
