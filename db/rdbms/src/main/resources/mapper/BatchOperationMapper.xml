@@ -18,9 +18,9 @@
       <arg name="actorType" column="ACTOR_TYPE"
         javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType"/>
       <arg name="actorId" column="ACTOR_ID" javaType="java.lang.String"/>
-      <arg name="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
-      <arg name="operationsFailedCount" column="OPERATIONS_FAILED_COUNT" javaType="int"/>
-      <arg name="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
+      <arg name="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT" javaType="java.lang.Integer"/>
+      <arg name="operationsFailedCount" column="OPERATIONS_FAILED_COUNT" javaType="java.lang.Integer"/>
+      <arg name="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT" javaType="java.lang.Integer"/>
     </constructor>
     <collection property="errors"
       ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel"
