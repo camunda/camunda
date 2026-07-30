@@ -19,6 +19,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverr
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.io.IOException;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -34,11 +35,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
       TasklistIndexPrefixPropertiesOverride.class,
       OperateIndexPrefixPropertiesOverride.class
     })
-public class StandalonePrefixMigration implements CommandLineRunner {
+public class StandalonePrefixMigration implements CommandLineRunner, ExitCodeGenerator {
 
   private final ConnectConfiguration connectConfiguration;
   private final TasklistIndexPrefixPropertiesOverride tasklistProperties;
   private final OperateIndexPrefixPropertiesOverride operateProperties;
+
+  private int exitCode;
 
   public StandalonePrefixMigration(
       final ConnectConfiguration connectConfiguration,
@@ -72,15 +75,20 @@ public class StandalonePrefixMigration implements CommandLineRunner {
             .addCommandLineProperties(true)
             .build(args);
 
-    application.run(args);
-
-    System.exit(0);
+    System.exit(SpringApplication.exit(application.run(args)));
   }
 
   @Override
   public void run(final String... args) throws Exception {
-    PrefixMigrationHelper.runPrefixMigration(
-        operateProperties, tasklistProperties, connectConfiguration);
+    final var success =
+        PrefixMigrationHelper.runPrefixMigration(
+            operateProperties, tasklistProperties, connectConfiguration);
+    exitCode = success ? 0 : 1;
+  }
+
+  @Override
+  public int getExitCode() {
+    return exitCode;
   }
 
   ///  Override {@link io.camunda.tasklist.property.TasklistProperties} bean which is validated
