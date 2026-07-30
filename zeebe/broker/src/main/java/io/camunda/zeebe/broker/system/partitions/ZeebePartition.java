@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.rebalance.ClusterConfigurationCoordinatorCheck;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -65,6 +66,9 @@ public final class ZeebePartition extends Actor
 
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
+
+  /** Tells the leader which node may ask it to transfer leadership. */
+  private final ClusterConfigurationCoordinatorCheck coordinatorCheck;
 
   /** Bridges the actor-scheduled write freeze to the {@link CompletableFuture}-based Raft hook. */
   private final LeadershipTransferWriteBarrier writeBarrier =
@@ -116,6 +120,15 @@ public final class ZeebePartition extends Actor
         new RoleMetrics(
             transitionContext.getPartitionStartupMeterRegistry(),
             transitionContext.getPartitionId());
+    coordinatorCheck =
+        new ClusterConfigurationCoordinatorCheck(
+            () -> {
+              final var current =
+                  transitionContext
+                      .getClusterConfigurationService()
+                      .getCurrentClusterConfiguration();
+              return current == null ? null : current.toLegacyDefault();
+            });
   }
 
   public static String componentName(final PartitionId partitionId) {
@@ -149,8 +162,31 @@ public final class ZeebePartition extends Actor
                   new PartitionConfigurationManager(
                       LOG, context, transitionContext.getExportedDescriptors(), actor);
 
-              registerListeners();
+              installLeadershipTransferHooks();
             });
+  }
+
+  /**
+   * Installs the leadership-transfer write barrier and coordinator check on the Raft thread before
+   * registering as a role-change listener, so a transfer request can never observe this partition
+   * without its coordinator check in place.
+   */
+  private void installLeadershipTransferHooks() {
+    final var server = context.getRaftPartition().getServer();
+    server.setLeadershipTransferWriteBarrier(writeBarrier);
+    server
+        .setLeadershipTransferCoordinatorCheck(coordinatorCheck)
+        .whenCompleteAsync(
+            (ignored, error) -> {
+              if (error != null) {
+                LOG.error("Failed to install leadership-transfer coordinator check", error);
+                handleUnrecoverableFailure(error);
+                close();
+                return;
+              }
+              registerListeners();
+            },
+            actor);
   }
 
   @Override
@@ -161,7 +197,6 @@ public final class ZeebePartition extends Actor
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
     context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
-    context.getRaftPartition().getServer().setLeadershipTransferWriteBarrier(writeBarrier);
   }
 
   @Override

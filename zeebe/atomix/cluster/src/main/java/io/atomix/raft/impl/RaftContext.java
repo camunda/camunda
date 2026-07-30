@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -157,6 +158,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private EntryValidator entryValidator;
   private LeadershipTransferWriteBarrier leadershipTransferWriteBarrier =
       LeadershipTransferWriteBarrier.NONE;
+  private LeadershipTransferCoordinatorCheck leadershipTransferCoordinatorCheck =
+      LeadershipTransferCoordinatorCheck.NONE;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -1066,6 +1069,31 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     threadContext.execute(() -> leadershipTransferWriteBarrier = barrier);
+  }
+
+  /**
+   * The broker-supplied check deciding whether the node requesting a transfer is the cluster's
+   * rebalancing coordinator. Defaults to {@link LeadershipTransferCoordinatorCheck#NONE} when no
+   * broker is attached. Must be read on the Raft thread.
+   */
+  public LeadershipTransferCoordinatorCheck getLeadershipTransferCoordinatorCheck() {
+    return leadershipTransferCoordinatorCheck;
+  }
+
+  /**
+   * Registers the check the broker attaches on its own thread. Applied on the Raft thread, so the
+   * registration only takes effect once the Raft thread picks it up; the returned future completes
+   * once it has, so callers that must not proceed until the check is live can await it.
+   */
+  public CompletableFuture<Void> setLeadershipTransferCoordinatorCheck(
+      final LeadershipTransferCoordinatorCheck check) {
+    final var applied = new CompletableFuture<Void>();
+    threadContext.execute(
+        () -> {
+          leadershipTransferCoordinatorCheck = check;
+          applied.complete(null);
+        });
+    return applied;
   }
 
   /**

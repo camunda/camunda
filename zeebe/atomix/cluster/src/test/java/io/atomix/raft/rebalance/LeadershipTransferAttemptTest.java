@@ -35,6 +35,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class LeadershipTransferAttemptTest {
+  /** For tests we don't install a real coordinator check, so any version will do. */
+  private static final long CONFIG_VERSION = 7;
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
@@ -96,7 +98,7 @@ public class LeadershipTransferAttemptTest {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(memberId(target))
             .withCoordinator(coordinatorId())
-            .withCoordinatorConfigIndex(leader.getContext().getCluster().getConfiguration().index())
+            .withCoordinatorConfigVersion(CONFIG_VERSION)
             .withCorrelationId(0x5eed_0a01L)
             .build();
     final var attempt =
