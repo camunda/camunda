@@ -23,6 +23,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -299,6 +300,15 @@ public class RaftPartitionServer implements HealthMonitorable {
    */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     server.getContext().setLeadershipTransferWriteBarrier(barrier);
+  }
+
+  /**
+   * Registers the broker-supplied check the leader uses to tell the cluster's rebalancing
+   * coordinator from any other node asking it to transfer leadership.
+   */
+  public void setLeadershipTransferCoordinatorCheck(
+      final LeadershipTransferCoordinatorCheck check) {
+    server.getContext().setLeadershipTransferCoordinatorCheck(check);
   }
 
   public Role getRole() {

@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
  * immediately (returning a skip result in the {@link LeadershipTransferInitiateResponse}) or
  * accepts it and drives the transfer, reporting the terminal outcome asynchronously via a {@link
  * LeadershipTransferResultRequest} carrying the same {@code correlationId}. The {@code coordinator}
- * and {@code coordinatorConfigIndex} let the leader reject a request from a stale or
+ * and {@code coordinatorConfigVersion} let the leader reject a request from a stale or
  * non-coordinator node.
  *
  * <p>The two halves travel on separate subjects rather than as one request/response pair because a
@@ -48,7 +48,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
 
   private final MemberId desiredLeader;
   private final MemberId coordinator;
-  private final long coordinatorConfigIndex;
+  private final long coordinatorConfigVersion;
   private final long correlationId;
   private final @Nullable Long replicationLagThreshold;
   private final @Nullable Duration replicationTimeout;
@@ -57,14 +57,14 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
   private LeadershipTransferInitiateRequest(
       final MemberId desiredLeader,
       final MemberId coordinator,
-      final long coordinatorConfigIndex,
+      final long coordinatorConfigVersion,
       final long correlationId,
       final @Nullable Long replicationLagThreshold,
       final @Nullable Duration replicationTimeout,
       final @Nullable Integer maxTransferAttempts) {
     this.desiredLeader = desiredLeader;
     this.coordinator = coordinator;
-    this.coordinatorConfigIndex = coordinatorConfigIndex;
+    this.coordinatorConfigVersion = coordinatorConfigVersion;
     this.correlationId = correlationId;
     this.replicationLagThreshold = replicationLagThreshold;
     this.replicationTimeout = replicationTimeout;
@@ -85,9 +85,13 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return coordinator;
   }
 
-  /** The index of the Raft configuration the coordinator based its request on. */
-  public long coordinatorConfigIndex() {
-    return coordinatorConfigIndex;
+  /**
+   * The version of the committed cluster configuration the coordinator based its request on. The
+   * leader refuses a coordinator whose view of the cluster is older than its own, since a
+   * coordinator that has missed a membership change may no longer be the coordinator at all.
+   */
+  public long coordinatorConfigVersion() {
+    return coordinatorConfigVersion;
   }
 
   /**
@@ -144,7 +148,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
         getClass(),
         desiredLeader,
         coordinator,
-        coordinatorConfigIndex,
+        coordinatorConfigVersion,
         correlationId,
         replicationLagThreshold,
         replicationTimeout,
@@ -160,7 +164,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return false;
     }
     final LeadershipTransferInitiateRequest other = (LeadershipTransferInitiateRequest) object;
-    return coordinatorConfigIndex == other.coordinatorConfigIndex
+    return coordinatorConfigVersion == other.coordinatorConfigVersion
         && correlationId == other.correlationId
         && desiredLeader.equals(other.desiredLeader)
         && coordinator.equals(other.coordinator)
@@ -174,7 +178,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
     return toStringHelper(this)
         .add("desiredLeader", desiredLeader)
         .add("coordinator", coordinator)
-        .add("coordinatorConfigIndex", coordinatorConfigIndex)
+        .add("coordinatorConfigVersion", coordinatorConfigVersion)
         .add("correlationId", correlationId)
         .add("replicationLagThreshold", replicationLagThreshold)
         .add("replicationTimeout", replicationTimeout)
@@ -188,7 +192,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
 
     private MemberId desiredLeader;
     private MemberId coordinator;
-    private long coordinatorConfigIndex;
+    private long coordinatorConfigVersion;
     private long correlationId;
     private @Nullable Long replicationLagThreshold;
     private @Nullable Duration replicationTimeout;
@@ -204,8 +208,8 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return this;
     }
 
-    public Builder withCoordinatorConfigIndex(final long coordinatorConfigIndex) {
-      this.coordinatorConfigIndex = coordinatorConfigIndex;
+    public Builder withCoordinatorConfigVersion(final long coordinatorConfigVersion) {
+      this.coordinatorConfigVersion = coordinatorConfigVersion;
       return this;
     }
 
@@ -256,7 +260,7 @@ public final class LeadershipTransferInitiateRequest extends AbstractRaftRequest
       return new LeadershipTransferInitiateRequest(
           desiredLeader,
           coordinator,
-          coordinatorConfigIndex,
+          coordinatorConfigVersion,
           correlationId,
           replicationLagThreshold,
           replicationTimeout,
