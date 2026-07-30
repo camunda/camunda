@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -124,5 +125,20 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
     // then
     assertThat(gaugeA.value()).isEqualTo(42.0);
     assertThat(gaugeB.value()).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldCloseOwnedExecutors() {
+    // given
+    final var executorA = Executors.newSingleThreadExecutor();
+    final var executorB = Executors.newSingleThreadExecutor();
+    metrics = new PhysicalTenantsRdbmsTableRowCountMetrics(Map.of(), List.of(executorA, executorB));
+
+    // when
+    metrics.close();
+
+    // then
+    assertThat(executorA.isShutdown()).isTrue();
+    assertThat(executorB.isShutdown()).isTrue();
   }
 }
