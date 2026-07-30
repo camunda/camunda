@@ -1050,6 +1050,11 @@
                  at runtime (see PR #52064). -->
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
+<<<<<<< HEAD
+=======
+            <ignoredNonTestScopedDependency>io.camunda:camunda-search-domain</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-backup-store-filesystem</ignoredNonTestScopedDependency>
+>>>>>>> f7a036ad (fix: transitive fs backups dependency for RestoreAppTest)
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1094,6 +1099,7 @@
           <ignoredUsedUndeclaredDependencies>
             <dep>org.springframework.security:spring-security-web</dep>
             <dep>org.springframework.security:spring-security-config</dep>
+            <dep>io.camunda:zeebe-backup-store-filesystem</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
