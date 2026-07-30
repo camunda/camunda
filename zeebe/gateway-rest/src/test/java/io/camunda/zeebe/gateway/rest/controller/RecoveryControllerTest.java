@@ -187,7 +187,7 @@ public class RecoveryControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
 
     // when / then
-    webClient.get().uri("/v2/restore").exchange().expectStatus().isNotFound();
+    expectNoRestoreInProgress();
   }
 
   @Test
@@ -258,7 +258,7 @@ public class RecoveryControllerTest extends RestControllerTest {
     stubTopology(Optional.of(lastChange), Optional.empty());
 
     // when / then
-    webClient.get().uri("/v2/restore").exchange().expectStatus().isNotFound();
+    expectNoRestoreInProgress();
   }
 
   @Test
@@ -277,7 +277,64 @@ public class RecoveryControllerTest extends RestControllerTest {
     stubTopology(Optional.empty(), Optional.of(plan));
 
     // when / then
-    webClient.get().uri("/v2/restore").exchange().expectStatus().isNotFound();
+    expectNoRestoreInProgress();
+  }
+
+  @Test
+  void shouldMapErrorResponseWhenTopologyQueryRejected() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(
+                    new ErrorResponse(ErrorCode.INTERNAL_ERROR, "topology is unavailable"))));
+
+    // when / then
+    expectRestoreStatusProblem(
+        HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL", "topology is unavailable");
+  }
+
+  @Test
+  void shouldMapFailedTopologyRequest() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("no coordinator")));
+
+    // when / then
+    expectRestoreStatusProblem(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        RuntimeException.class.getName(),
+        "Unexpected error occurred during the request processing: no coordinator");
+  }
+
+  private void expectNoRestoreInProgress() {
+    expectRestoreStatusProblem(
+        HttpStatus.NOT_FOUND, "NOT_FOUND", "No restore is currently in progress");
+  }
+
+  /** Asserts that {@code GET /v2/restore} answers with the given RFC 9457 problem detail. */
+  private void expectRestoreStatusProblem(
+      final HttpStatus status, final String title, final String detail) {
+    webClient
+        .get()
+        .uri("/v2/restore")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(status)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": %d,
+              "title": "%s",
+              "detail": "%s",
+              "instance": "/v2/restore"
+            }"""
+                .formatted(status.value(), title, detail),
+            JsonCompareMode.STRICT);
   }
 
   private void stubTopology(

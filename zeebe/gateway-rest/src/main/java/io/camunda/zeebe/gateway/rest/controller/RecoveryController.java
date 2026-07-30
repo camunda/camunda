@@ -107,8 +107,9 @@ public final class RecoveryController {
         () ->
             clusterConfigurationRequestSender
                 .getTopology()
-                .thenApply(RecoveryController::unwrapTopologyOrThrow),
-        RecoveryController::toRestoreStatusResponse,
+                .thenApply(RecoveryController::unwrapOrThrow)
+                .thenApply(RecoveryController::restoreStatus),
+        RecoveryController::mapRestoreStatus,
         HttpStatus.OK);
   }
 
@@ -135,8 +136,7 @@ public final class RecoveryController {
         dryRun);
   }
 
-  private static ClusterConfigurationChangeResponse unwrapOrThrow(
-      final Either<ErrorResponse, ClusterConfigurationChangeResponse> result) {
+  private static <T> T unwrapOrThrow(final Either<ErrorResponse, T> result) {
     if (result.isRight()) {
       return result.get();
     }
@@ -180,19 +180,8 @@ public final class RecoveryController {
         .build();
   }
 
-  private static ClusterConfiguration unwrapTopologyOrThrow(
-      final Either<ErrorResponse, ClusterConfiguration> result) {
-    if (result.isRight()) {
-      return result.get();
-    }
-    final var error = result.getLeft();
-    throw new ServiceException(error.message(), mapErrorStatus(error.code()));
-  }
-
-  private static RestoreStatusResponse toRestoreStatusResponse(
-      final ClusterConfiguration configuration) {
+  private static RestoreStatus restoreStatus(final ClusterConfiguration configuration) {
     return RestoreStatus.of(configuration)
-        .map(RecoveryController::mapRestoreStatus)
         .orElseThrow(
             () -> new ServiceException("No restore is currently in progress", Status.NOT_FOUND));
   }
