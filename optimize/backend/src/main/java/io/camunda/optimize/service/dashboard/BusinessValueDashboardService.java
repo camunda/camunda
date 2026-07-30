@@ -62,29 +62,28 @@ public class BusinessValueDashboardService {
 
   public static final String BUSINESS_VALUE_DASHBOARD_ID = "business-value-dashboard";
 
-  // Localization codes resolved under the "businessValue" category by DashboardRestMapper ->
-  // LocalizationService.
-  public static final String BUSINESS_VALUE_DASHBOARD_NAME = "businessValueDashboardName";
+  // Names and descriptions ship as plain English. Hub (the sole FE consumer)
+  // owns translation via its own i18next namespace and keys labels off the
+  // stable report UUID, not this field. Human-readable text keeps the endpoint
+  // sensible for curl / docs / debugging.
+  public static final String BUSINESS_VALUE_DASHBOARD_NAME = "Business Value Dashboard";
 
-  public static final String KPI_WORK_HANDLED_NAME = "businessValueKpiWorkHandledName";
+  public static final String KPI_WORK_HANDLED_NAME = "Work handled";
   public static final String KPI_WORK_HANDLED_DESCRIPTION =
-      "businessValueKpiWorkHandledDescription";
-  public static final String KPI_MOMENTUM_NAME = "businessValueKpiMomentumName";
-  public static final String KPI_MOMENTUM_DESCRIPTION = "businessValueKpiMomentumDescription";
-  public static final String KPI_CYCLE_TIME_BY_PROCESS_NAME =
-      "businessValueKpiCycleTimeByProcessName";
+      "Completed process instances in the selected period.";
+  public static final String KPI_MOMENTUM_NAME = "Momentum";
+  public static final String KPI_MOMENTUM_DESCRIPTION = "Weekly completed-instance volume trend.";
+  public static final String KPI_CYCLE_TIME_BY_PROCESS_NAME = "Cycle time by process";
   public static final String KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION =
-      "businessValueKpiCycleTimeByProcessDescription";
-  public static final String KPI_CYCLE_TIME_DISTRIBUTION_NAME =
-      "businessValueKpiCycleTimeDistributionName";
+      "Average cycle time per process definition.";
+  public static final String KPI_CYCLE_TIME_DISTRIBUTION_NAME = "Cycle time distribution";
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_DESCRIPTION =
-      "businessValueKpiCycleTimeDistributionDescription";
-  public static final String KPI_CYCLE_TIME_HISTORY_NAME = "businessValueKpiCycleTimeHistoryName";
-  public static final String KPI_CYCLE_TIME_HISTORY_DESCRIPTION =
-      "businessValueKpiCycleTimeHistoryDescription";
-  public static final String KPI_AGENTIC_PRESENCE_NAME = "businessValueKpiAgenticPresenceName";
+      "Average, P50 and P95 cycle time of completed instances.";
+  public static final String KPI_CYCLE_TIME_HISTORY_NAME = "Cycle time history";
+  public static final String KPI_CYCLE_TIME_HISTORY_DESCRIPTION = "Weekly average cycle time.";
+  public static final String KPI_AGENTIC_PRESENCE_NAME = "Agentic presence";
   public static final String KPI_AGENTIC_PRESENCE_DESCRIPTION =
-      "businessValueKpiAgenticPresenceDescription";
+      "Processes that ran at least one agent.";
 
   public static final String WORK_HANDLED_TOTAL_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-work-handled-total".getBytes(StandardCharsets.UTF_8)).toString();
