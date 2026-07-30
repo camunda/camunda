@@ -456,6 +456,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
       if (uninitialized instanceof ClusterConfiguration) {
         configurationUpdated((T) clusterConfiguration);
@@ -463,6 +464,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(
         final CurrentClusterConfiguration clusterConfiguration) {
       if (uninitialized instanceof CurrentClusterConfiguration) {
