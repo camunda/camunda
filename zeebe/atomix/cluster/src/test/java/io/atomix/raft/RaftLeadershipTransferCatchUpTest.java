@@ -48,6 +48,27 @@ public class RaftLeadershipTransferCatchUpTest {
           });
 
   @Test
+  public void shouldRecordTransferDurationWhenTheDesiredLeaderCatchesUp() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    Awaitility.await("the attempt is measured once the desired leader is caught up")
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () ->
+                assertThat(transferDurationCount(LeadershipTransferResult.TRANSFERRED))
+                    .isEqualTo(1));
+  }
+
+  @Test
   public void shouldReportLeaderChangedWhenLeadershipIsLostWhileCatchingUp() throws Exception {
     // given
     raftRule.appendEntries(5);
@@ -91,5 +112,15 @@ public class RaftLeadershipTransferCatchUpTest {
     Awaitility.await("the pause watchdog steps the leader down")
         .atMost(Duration.ofSeconds(15))
         .until(() -> leader.getRole() != Role.LEADER);
+  }
+
+  private long transferDurationCount(final LeadershipTransferResult result) {
+    final var timer =
+        raftRule
+            .getMeterRegistry()
+            .find("zeebe.cluster.rebalance.partition.duration")
+            .tag("result", result.name())
+            .timer();
+    return timer == null ? 0 : timer.count();
   }
 }

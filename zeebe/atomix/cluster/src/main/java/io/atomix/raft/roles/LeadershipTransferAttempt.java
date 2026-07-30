@@ -117,19 +117,20 @@ final class LeadershipTransferAttempt {
   }
 
   /**
-   * The desired leader is caught up. We don't yet implement the actual transfer, so just resume:
-   * there is no terminal result to report to the coordinator.
+   * The desired leader is caught up, which is as far as a transfer gets until the promotion step
+   * exists: the attempt is measured as a success and the partition resumed, but there is no
+   * leadership change to report to the coordinator yet.
    */
   private void onCaughtUp(final long targetIndex) {
     LOG.info("Desired leader {} caught up to index {}", desiredLeader, targetIndex);
     finishListener.run();
+    observeDuration(LeadershipTransferResult.TRANSFERRED);
     resume();
   }
 
   private void finish(final LeadershipTransferResult result) {
     finishListener.run();
-    raft.getRebalanceMetrics()
-        .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
+    observeDuration(result);
     resume()
         .whenComplete(
             (ignored, resumeError) -> {
@@ -163,6 +164,11 @@ final class LeadershipTransferAttempt {
                         }
                       });
             });
+  }
+
+  private void observeDuration(final LeadershipTransferResult result) {
+    raft.getRebalanceMetrics()
+        .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
   }
 
   private CompletableFuture<Long> pause(final Duration resumeTimeout) {
