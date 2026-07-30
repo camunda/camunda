@@ -516,6 +516,7 @@ public final class EngineProcessors {
         writers,
         keyGenerator,
         processingState,
+        incidentMetrics,
         scheduledTaskStateFactory,
         secretStoreRegistry,
         config);

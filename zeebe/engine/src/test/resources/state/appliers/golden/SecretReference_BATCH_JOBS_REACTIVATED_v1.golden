@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
@@ -22,10 +23,12 @@ public final class SecretReferenceBatchJobsReactivatedApplier
 
   private final MutableSecretReferenceState secretReferenceState;
   private final MutableJobState jobState;
+  private final IncidentState incidentState;
 
   SecretReferenceBatchJobsReactivatedApplier(final MutableProcessingState processingState) {
     secretReferenceState = processingState.getSecretReferenceState();
     jobState = processingState.getJobState();
+    incidentState = processingState.getIncidentState();
   }
 
   @Override
@@ -41,6 +44,12 @@ public final class SecretReferenceBatchJobsReactivatedApplier
   }
 
   private boolean isEligible(final long jobKey) {
+    if (incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT) {
+      // an incident was already raised for the job (e.g. another of its secret references failed
+      // permanently); the job must stay parked until the incident is resolved, which re-inserts it
+      // into the activatable index
+      return false;
+    }
     final List<Map.Entry<String, String>> refs = new ArrayList<>();
     secretReferenceState.visitSecretReferencesByJob(
         jobKey,

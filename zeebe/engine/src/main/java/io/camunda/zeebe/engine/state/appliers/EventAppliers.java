@@ -188,7 +188,9 @@ public final class EventAppliers implements EventApplier {
     register(
         SecretReferenceIntent.BATCH_JOBS_REACTIVATED,
         new SecretReferenceBatchJobsReactivatedApplier(state));
-    register(SecretReferenceIntent.BATCH_INCIDENTS_CREATED, NOOP_EVENT_APPLIER);
+    register(
+        SecretReferenceIntent.BATCH_INCIDENTS_CREATED,
+        new SecretReferenceBatchIncidentsCreatedApplier(state.getSecretReferenceState()));
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -27,6 +28,7 @@ public final class SecretReferenceProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
+      final IncidentMetrics incidentMetrics,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SecretStoreRegistry secretStoreRegistry,
       final EngineConfiguration config) {
@@ -47,7 +49,8 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,
-        new SecretReferenceBatchCreateIncidentsProcessor());
+        new SecretReferenceBatchCreateIncidentsProcessor(
+            writers, keyGenerator, processingState, incidentMetrics));
 
     final var scheduler =
         new SecretResolutionScheduler(scheduledTaskStateFactory, secretStoreRegistry, config);

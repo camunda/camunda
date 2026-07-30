@@ -48,23 +48,34 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
     if (value.getErrorType() == ErrorType.EXTRACT_VALUE_ERROR) {
       resetListenerIndices(value);
     }
-
-    final var jobKey = value.getJobKey();
-    final boolean isJobRelatedIncident = jobKey > 0;
-
-    if (isJobRelatedIncident) {
-      final var stateOfJob = jobState.getState(jobKey);
-      if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
-        final var job = jobState.getJob(jobKey);
-        resetElementId(job, value.getElementId());
-        jobState.updateJobRecord(jobKey, job);
-        jobState.updateJobState(jobKey, State.ACTIVATABLE);
-        jobState.removeJobDeadline(jobKey, job.getDeadline());
-        jobState.makeJobActivatableByPriority(
-            job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
-      }
-    }
+    reactivateJobIfNeeded(value);
     incidentState.deleteIncident(incidentKey);
+  }
+
+  private void reactivateJobIfNeeded(final IncidentRecord value) {
+    final var jobKey = value.getJobKey();
+    if (jobKey <= 0) {
+      return; // not a job-related incident
+    }
+    if (value.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR) {
+      // Only ACTIVATABLE jobs are parked for secret resolution (removed from the activatable index
+      // but keeping their state); re-inserting a job in any other state corrupts the index.
+      if (jobState.getState(jobKey) == State.ACTIVATABLE) {
+        jobState.makeActivatableAfterSecretResolution(jobKey);
+      }
+      return;
+    }
+    final var stateOfJob = jobState.getState(jobKey);
+    if (!RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
+      return;
+    }
+    final var job = jobState.getJob(jobKey);
+    resetElementId(job, value.getElementId());
+    jobState.updateJobRecord(jobKey, job);
+    jobState.updateJobState(jobKey, State.ACTIVATABLE);
+    jobState.removeJobDeadline(jobKey, job.getDeadline());
+    jobState.makeJobActivatableByPriority(
+        job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
   }
 
   private void resetListenerIndices(final IncidentRecord value) {
