@@ -122,7 +122,8 @@ public final class ClusterConfigurationManagerService
       final MeterRegistry meterRegistry,
       final LongSupplier rebalanceIdGenerator,
       final PartitionLeaders partitionLeaders,
-      final Duration transferRequestTimeout) {
+      final Duration transferRequestTimeout,
+      final Duration rebalanceLeaderWaitTimeout) {
     this(
         dataRootDirectory,
         communicationService,
@@ -133,6 +134,7 @@ public final class ClusterConfigurationManagerService
         rebalanceIdGenerator,
         partitionLeaders,
         transferRequestTimeout,
+        rebalanceLeaderWaitTimeout,
         USE_NEW_CONFIG);
   }
 
@@ -152,6 +154,7 @@ public final class ClusterConfigurationManagerService
       final LongSupplier rebalanceIdGenerator,
       final PartitionLeaders partitionLeaders,
       final Duration transferRequestTimeout,
+      final Duration rebalanceLeaderWaitTimeout,
       final boolean useNewConfig) {
     this.useNewConfig = useNewConfig;
     gossiperConfig = config;
@@ -219,7 +222,11 @@ public final class ClusterConfigurationManagerService
             localMemberId,
             managerActor,
             new SequentialRebalanceRunner(
-                localMemberId, managerActor, partitionLeaders, leadershipTransferClient),
+                localMemberId,
+                managerActor,
+                partitionLeaders,
+                leadershipTransferClient,
+                rebalanceLeaderWaitTimeout),
             rebalanceIdGenerator);
     rebalanceRequestServer =
         new RebalanceRequestServer(

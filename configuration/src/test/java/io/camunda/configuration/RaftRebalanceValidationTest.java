@@ -72,6 +72,26 @@ final class RaftRebalanceValidationTest {
   }
 
   @Test
+  void shouldRejectZeroLeaderWaitTimeout() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setLeaderWaitTimeout(Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectNegativeLeaderWaitTimeout() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setLeaderWaitTimeout(Duration.ofSeconds(-1)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldAcceptValidValues() {
     // given
     final var rebalance = new Rebalance();
@@ -82,6 +102,7 @@ final class RaftRebalanceValidationTest {
               rebalance.setReplicationLagThreshold(DataSize.ofMegabytes(16));
               rebalance.setReplicationTimeout(Duration.ofSeconds(30));
               rebalance.setMaxTransferAttempts(5);
+              rebalance.setLeaderWaitTimeout(Duration.ofMinutes(2));
             })
         .doesNotThrowAnyException();
   }

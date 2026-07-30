@@ -273,7 +273,12 @@ public class DynamicClusterConfigurationService
             .getBrokerConfiguration()
             .getExperimental()
             .getRaft()
-            .getRequestTimeout());
+            .getRequestTimeout(),
+        brokerStartupContext
+            .getBrokerConfiguration()
+            .getCluster()
+            .getRaft()
+            .getRebalanceLeaderWaitTimeout());
   }
 
   @Override

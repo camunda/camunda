@@ -19,7 +19,10 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -39,8 +42,8 @@ import org.slf4j.LoggerFactory;
  * through in order, and only one transfer is ever in flight, because a transfer freezes its
  * partition's writes and a rebalance that froze several at once would be an outage rather than a
  * rebalance. Each transfer is handed to the partition's current leader, which owns it from there:
- * the coordinator learns of the outcome when that leader reports it back, and moves on to the next
- * partition.
+ * the coordinator learns of the outcome when that leader reports it back, or - if that report never
+ * arrives - by seeing leadership move in the topology, and moves on to the next partition.
  *
  * <p>A partition the rebalance cannot move is never a reason to abandon the ones after it, so a
  * refusal, a failure, or a leader that cannot be reached is recorded against that partition alone.
@@ -53,20 +56,37 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(SequentialRebalanceRunner.class);
 
+  /**
+   * How often the topology is checked for the transfer in flight having taken effect. A transfer
+   * takes far longer than this, so the cost is negligible next to what it saves when a leader's
+   * report of the outcome is lost.
+   */
+  @VisibleForTesting static final Duration LEADERSHIP_OBSERVATION_INTERVAL = Duration.ofSeconds(1);
+
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
   private final PartitionLeaders partitionLeaders;
   private final LeadershipTransferProtocol transfers;
+  private final Duration leaderWaitTimeout;
 
+  /**
+   * @param leaderWaitTimeout how long to wait for a transfer handed to a leader to resolve before
+   *     giving up on that partition. It has to sit comfortably above everything the leader is
+   *     itself allowed to spend on a transfer - catching the desired leader up, then prompting it
+   *     to campaign - because giving up while the leader is still working would move the rebalance
+   *     on to the next partition while the previous one is still frozen.
+   */
   public SequentialRebalanceRunner(
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final PartitionLeaders partitionLeaders,
-      final LeadershipTransferProtocol transfers) {
+      final LeadershipTransferProtocol transfers,
+      final Duration leaderWaitTimeout) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.partitionLeaders = partitionLeaders;
     this.transfers = transfers;
+    this.leaderWaitTimeout = leaderWaitTimeout;
   }
 
   @Override
@@ -194,6 +214,74 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         .whenComplete(
             (response, error) ->
                 executor.run(() -> onInitiated(rebalance, index, response, error, completion)));
+    observeLeadership(rebalance, index, Duration.ZERO, completion);
+  }
+
+  /**
+   * Watches the topology for the transfer in flight taking effect, and moves the rebalance on if it
+   * has - or gives up on the partition once it has waited {@code leaderWaitTimeout} for it.
+   *
+   * <p>The leader's own report is the quicker signal and the only one that distinguishes a transfer
+   * that failed from one still running, so this is a second way of noticing rather than the first:
+   * the report is a message like any other and can be lost, and the leader that owed it may have
+   * stepped down on the way. Without this, one lost message would leave the rebalance waiting on a
+   * partition whose leadership has already moved.
+   *
+   * <p>Neither signal is guaranteed to arrive at all: a leader that goes silent without losing
+   * leadership never reports an outcome and never shows up as a change in the topology. So the wait
+   * is bounded, and a partition still unresolved at the end of it is failed so that the rebalance
+   * can carry on to the partitions after it.
+   *
+   * <p>{@code waited} accumulates one interval per observation rather than being read off a clock,
+   * so the bound is measured in observations and its resolution is {@link
+   * #LEADERSHIP_OBSERVATION_INTERVAL}.
+   */
+  private void observeLeadership(
+      final RebalanceRun rebalance,
+      final int index,
+      final Duration waited,
+      final ActorFuture<Void> completion) {
+    executor.schedule(
+        LEADERSHIP_OBSERVATION_INTERVAL,
+        () -> {
+          if (completion.isDone()
+              || rebalance.partition(index).state() != PartitionRebalanceState.TRANSFERRING) {
+            return;
+          }
+          final var partition = rebalance.partition(index);
+          final var observed =
+              partitionLeaders
+                  .currentLeader(partition.physicalTenantId(), partition.partitionId())
+                  .orElse(null);
+          if (observed != null && Objects.equals(observed, partition.desiredLeader())) {
+            LOG.info(
+                "Rebalance {} sees {} led by {} without having heard back from the leader it asked",
+                rebalance.id(),
+                partition,
+                observed);
+            rebalance.updatePartition(index, PartitionRebalance::transferred);
+            transferFrom(rebalance, index + 1, completion);
+            return;
+          }
+          final var waitedSoFar = waited.plus(LEADERSHIP_OBSERVATION_INTERVAL);
+          if (waitedSoFar.compareTo(leaderWaitTimeout) >= 0) {
+            LOG.warn(
+                "Rebalance {} gives up on {}: its leader neither reported an outcome nor gave up "
+                    + "leadership within {}",
+                rebalance.id(),
+                partition,
+                leaderWaitTimeout);
+            resolve(
+                rebalance,
+                index,
+                PartitionRebalanceState.FAILED,
+                "its leader neither reported an outcome nor gave up leadership within "
+                    + leaderWaitTimeout,
+                completion);
+            return;
+          }
+          observeLeadership(rebalance, index, waitedSoFar, completion);
+        });
   }
 
   private LeadershipTransferInitiateRequest initiateRequest(

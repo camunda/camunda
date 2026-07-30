@@ -50,7 +50,8 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.preallocate-segment-files=false",
         "camunda.cluster.raft.rebalance.replication-lag-threshold=16MB",
         "camunda.cluster.raft.rebalance.replication-timeout=30s",
-        "camunda.cluster.raft.rebalance.max-transfer-attempts=5"
+        "camunda.cluster.raft.rebalance.max-transfer-attempts=5",
+        "camunda.cluster.raft.rebalance.leader-wait-timeout=2m"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -110,7 +111,8 @@ public class ClusterRaftTest {
       assertThat(brokerCfg.getCluster().getRaft())
           .returns(DataSize.ofMegabytes(16), RaftCfg::getRebalanceReplicationLagThreshold)
           .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout)
-          .returns(5, RaftCfg::getRebalanceMaxTransferAttempts);
+          .returns(5, RaftCfg::getRebalanceMaxTransferAttempts)
+          .returns(Duration.ofMinutes(2), RaftCfg::getRebalanceLeaderWaitTimeout);
     }
   }
 
