@@ -16,6 +16,7 @@ import static io.camunda.optimize.service.db.schema.index.report.CombinedReportI
 import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
 import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.AGENTIC_CONTROL_REPORT;
+import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.BUSINESS_VALUE_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 
@@ -188,6 +189,7 @@ public class ReportReaderES implements ReportReader {
             b.mustNot(m -> m.term(t -> t.field(DATA + "." + MANAGEMENT_REPORT).value(true)))
                 .mustNot(m -> m.term(t -> t.field(DATA + "." + INSTANT_PREVIEW_REPORT).value(true)))
                 .mustNot(m -> m.term(t -> t.field(DATA + "." + AGENTIC_CONTROL_REPORT).value(true)))
+                .mustNot(m -> m.term(t -> t.field(DATA + "." + BUSINESS_VALUE_REPORT).value(true)))
                 .mustNot(m -> m.exists(e -> e.field(COLLECTION_ID))));
     final SearchResponse<ReportDefinitionDto> searchResponse =
         performGetReportRequestOmitXml(
@@ -261,6 +263,15 @@ public class ReportReaderES implements ReportReader {
                                                                   DATA
                                                                       + "."
                                                                       + AGENTIC_CONTROL_REPORT)
+                                                              .value(true)))
+                                          .mustNot(
+                                              m ->
+                                                  m.term(
+                                                      t ->
+                                                          t.field(
+                                                                  DATA
+                                                                      + "."
+                                                                      + BUSINESS_VALUE_REPORT)
                                                               .value(true))))));
     } else {
       countRequest =

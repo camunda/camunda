@@ -16,6 +16,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_RE
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.terms;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.AGENTIC_CONTROL_DASHBOARD;
+import static io.camunda.optimize.service.db.schema.index.DashboardIndex.BUSINESS_VALUE_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
@@ -107,6 +108,7 @@ public class EntitiesReaderOS implements EntitiesReader {
         new BoolQuery.Builder()
             .mustNot(QueryDSL.exists(COLLECTION_ID))
             .mustNot(term(AGENTIC_CONTROL_DASHBOARD, true))
+            .mustNot(term(BUSINESS_VALUE_DASHBOARD, true))
             .must(
                 new BoolQuery.Builder()
                     .minimumShouldMatch("1")
