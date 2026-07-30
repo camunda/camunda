@@ -62,6 +62,9 @@ class RdbmsDataSourcesTest {
     pool.setIdleTimeout(Duration.ofMillis(45_678));
     pool.setMaxLifetime(Duration.ofMillis(99_999));
     pool.setLeakDetectionThreshold(Duration.ofMillis(2_500));
+    // keepaliveTime must be >= 30s and < maxLifetime or HikariCP resets it to 0 on validation
+    pool.setKeepaliveTime(Duration.ofMillis(30_000));
+    pool.setValidationTimeout(Duration.ofMillis(3_000));
     rdbms.setConnectionPool(pool);
 
     try (final var registry =
@@ -75,6 +78,25 @@ class RdbmsDataSourcesTest {
       assertThat(ds.getIdleTimeout()).isEqualTo(45_678);
       assertThat(ds.getMaxLifetime()).isEqualTo(99_999);
       assertThat(ds.getLeakDetectionThreshold()).isEqualTo(2_500);
+      assertThat(ds.getKeepaliveTime()).isEqualTo(30_000);
+      assertThat(ds.getValidationTimeout()).isEqualTo(3_000);
+    }
+  }
+
+  @Test
+  void shouldApplyHikariDefaultsForKeepaliveAndValidationTimeoutWhenUnset() throws Exception {
+    // given: a pool with default keepalive (disabled) and validation timeout
+    final var rdbms = h2Rdbms();
+    rdbms.setConnectionPool(new RdbmsConnectionPool());
+
+    try (final var registry =
+        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+
+      // then: keepalive stays disabled and validation timeout keeps the HikariCP default
+      final var ds =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      assertThat(ds.getKeepaliveTime()).isZero();
+      assertThat(ds.getValidationTimeout()).isEqualTo(5_000);
     }
   }
 

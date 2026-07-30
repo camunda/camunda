@@ -141,6 +141,8 @@ public final class RdbmsDataSources implements AutoCloseable {
     ds.setIdleTimeout(pool.getIdleTimeout().toMillis());
     ds.setMaxLifetime(pool.getMaxLifetime().toMillis());
     ds.setLeakDetectionThreshold(pool.getLeakDetectionThreshold().toMillis());
+    ds.setKeepaliveTime(pool.getKeepaliveTime().toMillis());
+    ds.setValidationTimeout(pool.getValidationTimeout().toMillis());
     ds.setAutoCommit(false);
     return ds;
   }
