@@ -11,6 +11,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -54,7 +55,8 @@ public final class MessageEventProcessors {
       final RoutingInfo routingInfo,
       final AuthorizationCheckPort authCheckPort,
       final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final MessageCorrelationMetrics metrics) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -93,7 +95,8 @@ public final class MessageEventProcessors {
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
-                bpmnBehaviors.variableBehavior()))
+                bpmnBehaviors.variableBehavior(),
+                metrics))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -165,7 +168,8 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 routingInfo,
-                partitionId))
+                partitionId,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,

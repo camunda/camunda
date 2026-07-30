@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -88,6 +89,7 @@ public final class MessageCorrelateBehavior {
   private final SubscriptionCommandSender commandSender;
   private final RoutingInfo routingInfo;
   private final int partitionId;
+  private final MessageCorrelationMetrics metrics;
 
   private final MessageStartProcessInstanceRequestRecord askRecord =
       new MessageStartProcessInstanceRequestRecord();
@@ -103,7 +105,8 @@ public final class MessageCorrelateBehavior {
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final MessageCorrelationMetrics metrics) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
@@ -115,6 +118,7 @@ public final class MessageCorrelateBehavior {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.routingInfo = routingInfo;
     this.partitionId = partitionId;
+    this.metrics = metrics;
   }
 
   public void correlateToMessageStartEvents(
@@ -421,6 +425,8 @@ public final class MessageCorrelateBehavior {
 
     stateWriter.appendFollowUpEvent(
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);
+
+    metrics.crossPartitionAskSent();
 
     commandSender.sendStartProcessInstanceRequest(
         routingInfo.partitionForCorrelationKey(messageData.businessId()),
