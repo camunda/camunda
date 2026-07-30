@@ -27,14 +27,8 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -85,7 +79,8 @@ final class InProcessRestoreRetryOnCorruptionIT {
       takeBackup();
 
       // and - partition 2's backup snapshot is corrupted on disk, partition 1's is left intact
-      final var originalSnapshotFiles = corruptPartitionSnapshot(2);
+      final var originalSnapshotFiles =
+          InProcessRestoreTestUtil.corruptPartitionSnapshot(backupDir, BACKUP_ID, 0, 2);
 
       // when - the broker is put into RECOVERING mode and a restore is triggered
       final var clusterActuator = ClusterActuator.of(broker);
@@ -118,7 +113,7 @@ final class InProcessRestoreRetryOnCorruptionIT {
 
       // when - the corruption is fixed by restoring the original snapshot bytes, without ever
       // re-triggering restore over REST again
-      restoreOriginalSnapshotFiles(originalSnapshotFiles);
+      InProcessRestoreTestUtil.restoreOriginalSnapshotFiles(originalSnapshotFiles);
 
       // then - the SAME change, already pending since the first REST call, completes on its own
       Awaitility.await("restore change plan completes once the retry succeeds")
@@ -165,48 +160,6 @@ final class InProcessRestoreRetryOnCorruptionIT {
                   .extracting(BackupInfo::getBackupId, BackupInfo::getState)
                   .containsExactly(BACKUP_ID, StateCode.COMPLETED);
             });
-  }
-
-  /**
-   * Truncates every {@code .sst} file in the given partition's completed backup snapshot on disk,
-   * overwriting it with garbage bytes so a later restore's RocksDB sanity check fails with a
-   * checksum/corruption error. Returns the original file contents so they can be restored later.
-   */
-  private Map<Path, byte[]> corruptPartitionSnapshot(final int partitionId) throws IOException {
-    final var snapshotDir =
-        backupDir
-            .resolve("contents")
-            .resolve(String.valueOf(partitionId))
-            .resolve(String.valueOf(BACKUP_ID))
-            .resolve("0") // broker/node id, default for a single unconfigured broker
-            .resolve("snapshot");
-
-    final List<Path> sstFiles;
-    try (final var files = Files.list(snapshotDir)) {
-      sstFiles = files.filter(p -> p.toString().endsWith(".sst")).sorted().toList();
-    }
-    assertThat(sstFiles)
-        .describedAs(
-            "partition %d's backup snapshot directory %s must contain .sst files to corrupt",
-            partitionId, snapshotDir)
-        .isNotEmpty();
-
-    final var originalContents = new HashMap<Path, byte[]>();
-    for (final var sstFile : sstFiles) {
-      originalContents.put(sstFile, Files.readAllBytes(sstFile));
-      Files.write(
-          sstFile,
-          "<--corrupted-by-InProcessRestoreRetryOnCorruptionIT-->".getBytes(),
-          StandardOpenOption.TRUNCATE_EXISTING);
-    }
-    return originalContents;
-  }
-
-  private void restoreOriginalSnapshotFiles(final Map<Path, byte[]> originalContents)
-      throws IOException {
-    for (final var entry : originalContents.entrySet()) {
-      Files.write(entry.getKey(), entry.getValue(), StandardOpenOption.TRUNCATE_EXISTING);
-    }
   }
 
   /**
