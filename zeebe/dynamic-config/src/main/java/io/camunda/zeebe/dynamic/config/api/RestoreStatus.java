@@ -19,11 +19,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -90,48 +92,50 @@ public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> br
   }
 
   private static List<BrokerRestoreStatus> mapBrokers(final ClusterChangePlan plan) {
-    final var partitions = new TreeMap<PartitionKey, PartitionAccumulator>();
+    // Sorted by broker, then by partition, so the report has a stable order.
+    final SortedMap<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap =
+        new TreeMap<>();
+
     plan.completedOperations()
         .forEach(
-            completed -> accumulate(partitions, completed.operation(), completed.completedAt()));
-    plan.pendingOperations().forEach(pending -> accumulate(partitions, pending, null));
+            completed ->
+                accumulate(brokerPartitionMap, completed.operation(), completed.completedAt()));
+    plan.pendingOperations().forEach(pending -> accumulate(brokerPartitionMap, pending));
 
-    return partitions.entrySet().stream()
-        .collect(
-            Collectors.groupingBy(
-                entry -> entry.getKey().brokerId(),
-                TreeMap::new,
-                Collectors.mapping(
-                    entry -> entry.getValue().toStatus(entry.getKey().partitionId()),
-                    Collectors.toList())))
-        .entrySet()
-        .stream()
-        .map(entry -> toBrokerStatus(entry.getKey(), entry.getValue()))
-        .toList();
+    final var brokers = new ArrayList<BrokerRestoreStatus>();
+    brokerPartitionMap.forEach(
+        (brokerId, partitions) -> brokers.add(toBrokerStatus(brokerId, partitions)));
+    return List.copyOf(brokers);
   }
 
   private static BrokerRestoreStatus toBrokerStatus(
-      final String brokerId, final List<PartitionRestoreStatus> partitions) {
+      final String brokerId, final SortedMap<Integer, PartitionAccumulator> partitions) {
+    final var statuses = new ArrayList<PartitionRestoreStatus>();
+    partitions.forEach(
+        (partitionId, accumulator) -> statuses.add(accumulator.toStatus(partitionId)));
     final var restored =
-        partitions.stream().filter(p -> p.state() == PartitionRestoreState.RESTORED).count();
-    return new BrokerRestoreStatus(brokerId, (int) restored, partitions.size(), partitions);
+        statuses.stream().filter(p -> p.state() == PartitionRestoreState.RESTORED).count();
+
+    return new BrokerRestoreStatus(
+        brokerId, (int) restored, statuses.size(), List.copyOf(statuses));
   }
 
   private static void accumulate(
-      final TreeMap<PartitionKey, PartitionAccumulator> partitions,
+      final Map<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap,
       final ClusterConfigurationChangeOperation operation,
       final @Nullable Instant completedAt) {
     switch (operation) {
       case final PartitionPreRestoreOperation preRestore -> {
-        final var key = new PartitionKey(preRestore.memberId().id(), preRestore.partitionId());
         if (completedAt != null) {
-          partitions.computeIfAbsent(key, ignored -> new PartitionAccumulator()).preRestored = true;
+          final var accumulator =
+              accumulatorOf(
+                  brokerPartitionMap, preRestore.memberId().id(), preRestore.partitionId());
+          accumulator.preRestored = true;
         }
       }
       case final PartitionRestoreOperation restore -> {
-        final var key = new PartitionKey(restore.memberId().id(), restore.partitionId());
         final var accumulator =
-            partitions.computeIfAbsent(key, ignored -> new PartitionAccumulator());
+            accumulatorOf(brokerPartitionMap, restore.memberId().id(), restore.partitionId());
         accumulator.backupIds = restore.backupIds();
         if (completedAt != null) {
           accumulator.restoredAt = completedAt;
@@ -141,6 +145,21 @@ public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> br
         // Non-partition restore operations (mode change, incarnation number) are not reported.
       }
     }
+  }
+
+  private static void accumulate(
+      final Map<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap,
+      final ClusterConfigurationChangeOperation operation) {
+    accumulate(brokerPartitionMap, operation, null);
+  }
+
+  private static PartitionAccumulator accumulatorOf(
+      final Map<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap,
+      final String brokerId,
+      final int partitionId) {
+    return brokerPartitionMap
+        .computeIfAbsent(brokerId, ignored -> new TreeMap<>())
+        .computeIfAbsent(partitionId, ignored -> new PartitionAccumulator());
   }
 
   /** The restore status of a single broker. */
@@ -156,15 +175,6 @@ public record RestoreStatus(ClusterChangePlan plan, List<BrokerRestoreStatus> br
       PartitionRestoreState state,
       List<Long> backupIds,
       @Nullable Instant completedAt) {}
-
-  private record PartitionKey(String brokerId, int partitionId)
-      implements Comparable<PartitionKey> {
-    @Override
-    public int compareTo(final PartitionKey other) {
-      final var brokerCompare = brokerId.compareTo(other.brokerId);
-      return brokerCompare != 0 ? brokerCompare : Integer.compare(partitionId, other.partitionId);
-    }
-  }
 
   /** Mutable accumulator for a single partition's restore state while mapping a change plan. */
   private static final class PartitionAccumulator {
