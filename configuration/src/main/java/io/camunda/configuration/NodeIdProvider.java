@@ -121,6 +121,12 @@ public class NodeIdProvider {
     private Optional<String> taskId = Optional.empty();
 
     /**
+     * If no taskId is explicitly configured, resolve it from the ECS task metadata endpoint. When
+     * disabled, a random taskId is generated instead of querying ECS.
+     */
+    private boolean resolveTaskId = true;
+
+    /**
      * Configure URL endpoint for the store. If no endpoint is provided, it will be determined based
      * on the configured region.
      */
@@ -220,6 +226,8 @@ public class NodeIdProvider {
           + '\''
           + ", apiCallTimeout="
           + apiCallTimeout
+          + ", resolveTaskId="
+          + resolveTaskId
           + '}';
     }
 
@@ -237,6 +245,14 @@ public class NodeIdProvider {
 
     public void setTaskId(final String taskId) {
       this.taskId = Optional.ofNullable(taskId);
+    }
+
+    public boolean isResolveTaskId() {
+      return resolveTaskId;
+    }
+
+    public void setResolveTaskId(final boolean resolveTaskId) {
+      this.resolveTaskId = resolveTaskId;
     }
 
     public Duration getLeaseAcquireMaxDelay() {

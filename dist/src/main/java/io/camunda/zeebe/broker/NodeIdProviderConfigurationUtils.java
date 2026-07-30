@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -31,7 +33,9 @@ import software.amazon.awssdk.regions.Region;
  *
  * <p>Used by both the broker and the restore application.
  */
-public class NodeIProviderConfigurationUtils {
+public class NodeIdProviderConfigurationUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfigurationUtils.class);
+
   public static S3NodeIdRepository getS3NodeIdRepository(final Cluster cluster) {
     return switch (cluster.getNodeIdProvider().getType()) {
       case FIXED -> null;
@@ -65,7 +69,7 @@ public class NodeIProviderConfigurationUtils {
               throw new IllegalStateException(
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
             }
-            final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
+            final var taskId = resolveTaskId(config);
             log.debug("Node configured with taskId {}", taskId);
             yield new RepositoryNodeIdProvider(
                 nodeIdRepository.get(),
@@ -96,6 +100,23 @@ public class NodeIProviderConfigurationUtils {
     }
     nodeIdProvider.initialize(brokerCount).join();
     return nodeIdProvider;
+  }
+
+  static String resolveTaskId(final S3 config) {
+    return resolveTaskId(config, ECSTaskIdResolver::resolve);
+  }
+
+  static String resolveTaskId(
+      final S3 config, final Function<Boolean, Optional<String>> ecsResolver) {
+    return config
+        .getTaskId()
+        .or(() -> ecsResolver.apply(config.isResolveTaskId()))
+        .orElseGet(
+            () -> {
+              LOG.info(
+                  "Generating taskId as none was configured and it could not be fetched from ECS metadata API");
+              return UUID.randomUUID().toString();
+            });
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {
