@@ -21,6 +21,7 @@ import {getElementName} from 'modules/utils/elements';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+import {useBatchModificationStatisticsFilter} from 'modules/hooks/useBatchModificationStatisticsFilter';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {useSelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
 import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
@@ -52,8 +53,9 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       elementId: selectedTargetElementId ?? undefined,
     });
 
+    const statisticsFilter = useBatchModificationStatisticsFilter();
     const {data: instancesCount} = useInstancesCount(
-      {},
+      statisticsFilter,
       process?.processDefinitionKey,
       sourceElementId,
     );
