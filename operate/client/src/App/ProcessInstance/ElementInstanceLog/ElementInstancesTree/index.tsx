@@ -503,12 +503,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         latestMigrationDate,
         sortOrder,
       } = useElementInstanceHistoryTree();
-      // Anchors on the first child *as displayed*, so the element highlighted in
-      // the diagram matches the topmost child row under the node that was clicked.
-      // This deliberately follows sortOrder rather than being pinned to ascending:
-      // the expanded path below reads the loaded page window, which in descending
-      // order need not contain the chronologically first child at all, so a fixed
-      // ascending anchor here would disagree with it depending on expansion state.
       const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
         {
           filter: {elementInstanceScopeKey: scopeKey},

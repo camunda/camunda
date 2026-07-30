@@ -204,9 +204,7 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
-  // The search row is rendered from the same branch as the sort control, so a
-  // panel with no tree yet must show neither.
-  it('should not offer the sort order control while the panel is still loading', async () => {
+  it('should not display the sort order control while the panel is still loading', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchElementInstances().withSuccess(mockElementInstances);
     mockQueryBatchOperationItems().withSuccess({
@@ -224,7 +222,7 @@ describe('ElementInstanceLog', () => {
     // given the skeleton is still showing
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
-    // then neither the search box nor the sort control is offered
+    // then neither the search box nor the sort control is displayed
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /first$/}),
@@ -235,7 +233,7 @@ describe('ElementInstanceLog', () => {
     );
   });
 
-  it('should not offer the sort order control when the panel failed to load', async () => {
+  it('should not display the sort order control when the panel failed to load', async () => {
     mockFetchProcessDefinitionXml().withServerError();
     mockSearchElementInstances().withSuccess(mockElementInstances);
     mockQueryBatchOperationItems().withSuccess({

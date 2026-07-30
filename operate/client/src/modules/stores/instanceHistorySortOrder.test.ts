@@ -37,16 +37,23 @@ describe('stores/instanceHistorySortOrder', () => {
     expect(getStateLocally().instanceHistorySortOrder).toBe('desc');
   });
 
-  // reset() restores the order captured at import time (matching currentTheme),
-  // which is the persisted value when there is one - not DEFAULT_ORDER. It is
-  // the default here only because storage was empty when the module loaded.
-  it('should restore the initial order on reset', () => {
+  it('should restore the order captured at import time on reset', () => {
     instanceHistorySortOrderStore.toggle();
     expect(instanceHistorySortOrderStore.order).toBe('asc');
 
     instanceHistorySortOrderStore.reset();
 
     expect(instanceHistorySortOrderStore.order).toBe('desc');
+  });
+
+  it('should prefer a valid persisted order over the default', async () => {
+    storeStateLocally({instanceHistorySortOrder: 'asc'});
+
+    vi.resetModules();
+    const {instanceHistorySortOrderStore: freshStore} =
+      await import('./instanceHistorySortOrder');
+
+    expect(freshStore.order).toBe('asc');
   });
 
   it('should fall back to the default when the persisted value is invalid', async () => {

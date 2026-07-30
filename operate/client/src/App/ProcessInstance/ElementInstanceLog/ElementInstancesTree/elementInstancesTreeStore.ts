@@ -431,9 +431,11 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     return nodeData.items.some((item) => item.state === 'ACTIVE');
   };
 
-  // A scope's own state lives in its parent's item list, so this looks across
-  // all loaded nodes. An element instance appears under exactly one parent, so
-  // the first match is the only match.
+  // Polling has to keep covering scopes that are still ACTIVE, so children that
+  // start after the first load still show up. A scope's own state is not
+  // directly reachable by key: nodes are keyed by *parent* scope, so an element
+  // instance is only ever found inside its parent's item list - hence the scan.
+  // It appears under exactly one parent, so the first match is the only match.
   private isScopeActive = (scopeKey: string): boolean => {
     return Array.from(this.state.nodes.values()).some(({items}) =>
       items.some(

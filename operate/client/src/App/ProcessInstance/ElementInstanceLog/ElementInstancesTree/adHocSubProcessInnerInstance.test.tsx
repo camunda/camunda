@@ -247,13 +247,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   describe('anchor selection follows the displayed sort order', () => {
-    // The inner instance row has no element instance of its own, so clicking it
-    // anchors the diagram + Details tab on one of its children. The child picked
-    // is the first one *as displayed*, which means the anchor moves with the
-    // Instance History sort order. Two children with distinct element ids are
-    // needed here — with a single child the anchor is the same either way.
-    // The existing level2 fixture is the earlier of the two; the later one is
-    // the same shape with a different element so the anchor is distinguishable.
+    // Clicking the inner instance row anchors on its first child *as displayed*,
+    // so two children with distinct element ids are needed to tell the orders
+    // apart - the level2 fixture is the earlier one, the second is the later.
     const [earliestChild] =
       adHocSubProcessInnerInstanceElementInstances.level2.items;
     const innerChildren: ElementInstance[] = [
