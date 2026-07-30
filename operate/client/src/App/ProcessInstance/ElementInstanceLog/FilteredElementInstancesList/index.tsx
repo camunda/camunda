@@ -31,7 +31,7 @@ import {
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
-import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
+import {buildElementInstanceSort} from '../buildElementInstanceSort';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';

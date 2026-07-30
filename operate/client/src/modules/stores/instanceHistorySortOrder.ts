@@ -62,4 +62,4 @@ class InstanceHistorySortOrder {
 
 const instanceHistorySortOrderStore = new InstanceHistorySortOrder();
 
-export {instanceHistorySortOrderStore};
+export {instanceHistorySortOrderStore, DEFAULT_ORDER};

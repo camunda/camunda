@@ -28,7 +28,7 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
 import {notificationsStore} from 'modules/stores/notifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
+import {buildElementInstanceSort} from '../buildElementInstanceSort';
 import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,

@@ -49,7 +49,6 @@ const SearchRow = styled.div`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-03);
-  padding-right: var(--cds-spacing-03);
 
   .cds--search {
     flex: 1;

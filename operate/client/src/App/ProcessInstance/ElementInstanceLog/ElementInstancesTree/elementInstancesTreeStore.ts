@@ -16,11 +16,11 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
 import type {RequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
+import {buildElementInstanceSort} from '../buildElementInstanceSort';
+import {DEFAULT_ORDER} from 'modules/stores/instanceHistorySortOrder';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
-const DEFAULT_SORT_ORDER: QuerySortOrder = 'desc';
 
 type PageMetadata = {
   totalItems: number;
@@ -52,7 +52,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   isPollRequestRunning: boolean = false;
   intervalId: ReturnType<typeof setInterval> | null = null;
   pollAbortController: AbortController | null = null;
-  private sortOrder: QuerySortOrder = DEFAULT_SORT_ORDER;
+  private sortOrder: QuerySortOrder = DEFAULT_ORDER;
 
   constructor() {
     super();
@@ -115,11 +115,12 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       this.state.expandedNodes.add(processInstanceKey);
     }
 
-    const expandedScopeKeys = Array.from(this.state.expandedNodes);
     this.state.nodes.clear();
 
     await Promise.all(
-      expandedScopeKeys.map((scopeKey) => this.fetchFirstPage(scopeKey)),
+      Array.from(this.state.expandedNodes, (scopeKey) =>
+        this.fetchFirstPage(scopeKey),
+      ),
     );
 
     if (isPollingEnabled) {
@@ -418,7 +419,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
     this.isPollRequestRunning = false;
-    this.sortOrder = DEFAULT_SORT_ORDER;
+    this.sortOrder = DEFAULT_ORDER;
   }
 
   private hasRunningChildren = (scopeKey: string): boolean => {
