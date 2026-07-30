@@ -38,6 +38,7 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+buildSrc/.kotlin/
 .worktree
 work/
 tngp-data
@@ -103,3 +104,6 @@ load-tests/setup/c8-*
 
 # python caches from scripts in skills
 **/__pycache__/**
+# Gradle
+build/
+build-cache/

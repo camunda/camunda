@@ -47,6 +47,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-migrator`            | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp   |
 | `frontend-operate-migrator`    | Operate-specific overrides, migration loop protocol, and per-page context for OC webapp ports |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
+| `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps) |
 | `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                      |
 
