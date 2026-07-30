@@ -5,8 +5,9 @@
 **Status**: Proposed (8.10)
 
 **Purpose**: Establish CSL `core` as the owner of the concrete tenant-access provider and the
-`TenantOwnedEntity` contract, and adopt a single `TenantAccessProvider` seam across both the read
-(search) and write (engine) paths — without changing tenant-authorization behavior on either.
+`TenantOwnedEntity` contract, and unify the read (search) and write (engine) paths on the shared
+`TenantAccess` type and `TenantAccessProvider` interface — the concrete provider shared on the read
+path, the engine keeping its own resolver — without changing tenant-authorization behavior on either.
 
 **Audience**: Engineers and AI coding agents working on the Camunda Security Library, the Zeebe
 engine write-path authorization, and the search/query authorization stack.
@@ -52,30 +53,43 @@ security property of an entity (which tenant owns it), and the provider is the a
 component that reads it. `search-domain` already depends on CSL `core`, so no dependency cycle is
 introduced. The `ClaimsBasedTenantAccessProvider` stub is superseded and removed.
 
-The relocation is behavior-preserving. The monorepo cutover is **atomic** (delete the search
-`TenantOwnedEntity` + `DefaultTenantAccessProvider`, repoint all 21 entities and the read-path
-wiring in one commit) and guarded by a test asserting every tenant-scoped entity is `instanceof` the
-core `TenantOwnedEntity`. This guard is required because `hasTenantAccess(T)` **fails open** —
-returns `allowed` for any resource that is not `instanceof TenantOwnedEntity` — so a missed repoint
-would be a silent authorization bypass, not a compile error.
+The relocation is behavior-preserving and a **clean move**: `TenantOwnedEntity` is deleted from
+`io.camunda.search.entities` and each of its 20 implementers switches to
+`import io.camunda.security.core.authz.TenantOwnedEntity`. This makes the compiler enforce
+completeness — an implementer left behind references a symbol no longer in scope and fails to
+compile, rather than silently losing its tenant check. (`hasTenantAccess(T)` does return `allowed`
+for resources that are not `TenantOwnedEntity`, but that is a standing property about entities never
+marked tenant-owned; this move neither introduces nor removes it, so no runtime `instanceof` guard
+is load-bearing here.)
 
-**2. A uniform tenant-access provider seam across read and write paths.** The engine consumes the
-shared `TenantAccessProvider` through a thin engine-side decorator over the core claims provider:
-`anonymousUser → wildcard`, `mt-off → default tenant`, else delegate. This replaces
-`AuthorizedTenantsResolver`.
+**2. The engine keeps its own resolver on the shared `TenantAccess` type (write path stays Option
+C).** The substance of the unification is the shared **type**: the engine produces `TenantAccess`
+from `CslTenantCheck.resolveAuthorizedTenants(Map)`, and the `TenantAccessProvider` interface lives
+in core. Having the engine also *consume* the core `TenantAccessProvider` was evaluated and
+**rejected** on two independent grounds:
 
-The claim of this decision is precisely the **seam**, not elimination of engine code. The
-anonymous / mt-off policy is irreducibly engine-specific (it depends on engine config and on
-signals the read path handles by controller selection) and remains in a named engine class. The
-shared provider stays **anonymous-agnostic**, matching the read path, so no read-path behavior
-changes. Honoring `anonymousUser` inside the shared provider was rejected: it would be dead code on
-the read path and an unnecessary behavior-surface change.
+- **Signature.** `TenantAccessProvider.resolveTenantAccess(CamundaAuthentication)` cannot carry the
+  engine's inputs. The engine resolves from `(raw claims Map, EngineSecurityConfig)`, and its two
+  decisive inputs — the `AUTHORIZED_ANONYMOUS_USER` marker and `isMultiTenancyChecksEnabled` — are
+  not on `CamundaAuthentication`.
+- **Semantics.** The engine resolves empty tenants to `allowed(tenantIds)` and anonymous to
+  `wildcard`; the core provider resolves empty to `denied(null)` and is anonymous-agnostic. Engine
+  processors (`JobBatchActivateProcessor`, `ResourceDeletionDeleteProcessor`, `ResourceFetchProcessor`)
+  read `.tenantIds()` off the result, so the empty→`null` flip is caller-visible (an NPE risk), not
+  cosmetic.
+
+So the engine-specific policy (anonymous → wildcard, multi-tenancy off → default tenant, no principal
+→ denied) stays in the engine, and the shared provider stays **anonymous-agnostic**. The concrete
+provider is shared only on the read path (decision 1); the write path shares the `TenantAccess` type
+and the `TenantAccessProvider` interface, not the implementation.
 
 ## Alternatives considered
 
-- **Share only the interface + `TenantAccess` type; each side keeps its own impl** — the current
-  shape of engine PR camunda/camunda#59107. Lowest risk, but no shared seam: the engine stays on a
-  bespoke resolver.
+- **Engine adopts the core `TenantAccessProvider` (a decorator over `DefaultTenantAccessProvider`).**
+  The original plan (this was Option D). Rejected — see decision 2: the interface signature cannot
+  carry the engine's `(claims Map, config)` inputs, and the empty/anonymous semantics diverge in
+  caller-visible ways, so the decorator would have to override exactly the diverging cases and
+  delegate almost nothing — pure ceremony with behaviour risk.
 - **Push all policy into `CamundaAuthentication` construction so one dumb provider serves both
   paths.** Cleanest theoretical end state, but changes how both paths build authentication and must
   model mt-off/wildcard on the authentication — highest risk for modest gain. The pre-existing
@@ -85,12 +99,12 @@ the read path and an unnecessary behavior-surface change.
 
 - CSL `core` gains a security-owned entity contract (`TenantOwnedEntity`) and the canonical provider;
   its public API now carries both.
-- The two moves land on the **existing** PRs, not new ones. Relocation (decision 1) extends
+- The work lands on the **existing** PRs, not new ones. Relocation (decision 1) extends
   camunda-security-library#584 alongside the membership predicates, so that PR's alpha ships the
-  relocated provider and delivers camunda-security-library#582 AC1. The monorepo cutover and engine
-  adoption (decision 2) extend camunda/camunda#59107 alongside the `TenantAccess` migration already
-  there, consuming that alpha.
-- The two decisions stay logically distinct and separately reviewable, but decision 2 depends on the
-  alpha produced by decision 1. Engine adoption reworks the resolver on camunda/camunda#59107 as a
-  deliberate extension of that PR, not a prerequisite for the relocation.
+  relocated provider and delivers camunda-security-library#582 AC1. The monorepo relocation cutover
+  and the engine's migration to the shared `TenantAccess` type are camunda/camunda#59107, consuming
+  that alpha.
+- Read and write paths share the `TenantAccess` type and the `TenantAccessProvider` interface; they
+  share the concrete provider only on the read path. Because the engine's tenant policy stays
+  engine-side, a future change to it does not touch CSL or the search read path.
 
