@@ -206,13 +206,18 @@ public class ClusterVariableMetadataIT {
     final var response =
         camundaClient.newGloballyScopedClusterVariableGetRequest().withName(name).send().join();
     assertThat(response.getMetadata()).isEmpty();
-    final var searchResponse =
-        camundaClient
-            .newClusterVariableSearchRequest()
-            .filter(f -> f.name(name).metadata("group", m -> m.eq(OTHER_GROUP)))
-            .send()
-            .join();
-    assertThat(searchResponse.items()).isEmpty();
+    Awaitility.await("cluster variable metadata removal is indexed")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newClusterVariableSearchRequest()
+                            .filter(f -> f.name(name).metadata("group", m -> m.eq(OTHER_GROUP)))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
   }
 
   @Test
