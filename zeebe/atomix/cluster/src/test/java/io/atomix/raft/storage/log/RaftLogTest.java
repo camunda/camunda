@@ -219,6 +219,76 @@ class RaftLogTest {
   }
 
   @Test
+  void shouldNotDeleteEntriesAnnouncedAsCommitted() {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final ApplicationEntry secondApplicationEntry =
+        createApplicationEntryAfter(firstApplicationEntry);
+    final var deleteIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var announcedIndex =
+        raftlog
+            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .index();
+
+    // when - the leader announced the last entry as committed, but it is not durable yet, so the
+    // commit index does not cover it
+    raftlog.announceCommitIndex(announcedIndex);
+
+    // then
+    assertThat(raftlog.getCommitIndex()).isLessThan(announcedIndex);
+    assertThatThrownBy(() -> raftlog.deleteAfter(deleteIndex))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotResetBelowAnnouncedCommitIndex() {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final ApplicationEntry secondApplicationEntry =
+        createApplicationEntryAfter(firstApplicationEntry);
+    final var resetIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var announcedIndex =
+        raftlog
+            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .index();
+
+    // when - the leader announced the last entry as committed, but it is not durable yet, so the
+    // commit index does not cover it
+    raftlog.announceCommitIndex(announcedIndex);
+
+    // then
+    assertThatThrownBy(() -> raftlog.reset(resetIndex)).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldKeepHighestAnnouncedCommitIndex() {
+    // given
+    raftlog.announceCommitIndex(2);
+
+    // when - a lower commit index is announced afterwards, e.g. by an outdated request
+    raftlog.announceCommitIndex(1);
+
+    // then - the announced index never decreases, so it keeps protecting the entries
+    assertThat(raftlog.getAnnouncedCommitIndex()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldIncreaseTruncationGenerationOnEveryTruncation() throws CheckedJournalException {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final var initialGeneration = raftlog.getTruncationGeneration();
+
+    // when
+    raftlog.deleteAfter(1);
+    final var generationAfterDelete = raftlog.getTruncationGeneration();
+    raftlog.reset(5);
+
+    // then - every truncation is detectable by operations which completed asynchronously
+    assertThat(generationAfterDelete).isGreaterThan(initialGeneration);
+    assertThat(raftlog.getTruncationGeneration()).isGreaterThan(generationAfterDelete);
+  }
+
+  @Test
   void shouldReset() {
     // given
     raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
