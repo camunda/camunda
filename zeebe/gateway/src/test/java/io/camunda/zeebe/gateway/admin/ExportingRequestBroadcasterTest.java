@@ -16,7 +16,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -171,7 +170,7 @@ public class ExportingRequestBroadcasterTest {
 
   @ParameterizedTest
   @MethodSource("validTopologies")
-  void shouldNotQueryInactiveMembersForStatus(final BrokerClusterState topology) {
+  void shouldQueryInactiveMembersForStatus(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
     final var service = new ExportingRequestBroadcaster(client);
@@ -180,11 +179,11 @@ public class ExportingRequestBroadcasterTest {
     // when
     service.getExportingStatus(DEFAULT_PHYSICAL_TENANT_ID).join();
 
-    // then only members that actually hold the partition are asked -- an inactive member has no
-    // exporter phase to report
+    // then inactive members are asked too: they are only temporarily unhealthy and keep their
+    // partition data, so a pause that did not reach them is not a complete pause
     for (final var partition : topology.getPartitions()) {
       for (final var inactive : topology.getInactiveNodesForPartition(partition)) {
-        verify(client, never()).sendRequest(requestTo(partition, inactive));
+        verify(client).sendRequest(requestTo(partition, inactive));
       }
     }
   }

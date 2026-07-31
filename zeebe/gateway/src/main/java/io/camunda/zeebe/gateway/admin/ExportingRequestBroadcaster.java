@@ -54,10 +54,10 @@ public class ExportingRequestBroadcaster {
   }
 
   /**
-   * Queries the leader and every follower of every partition of the physical tenant and aggregates
-   * the reported exporter phases into a single status. Followers are queried too, not just the
-   * leaders, because pause and resume are applied to every active member: backup tooling needs to
-   * know the pause took effect everywhere, not only where exporting currently runs.
+   * Queries every member of every partition of the physical tenant and aggregates the reported
+   * exporter phases into a single status. Every member is queried, not just the leaders, because
+   * pause and resume are applied to all of them: backup tooling needs to know the pause took effect
+   * everywhere, not only where exporting currently runs.
    */
   public CompletableFuture<ExportingStatus> getExportingStatus(final String physicalTenantId) {
     final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
@@ -114,9 +114,6 @@ public class ExportingRequestBroadcaster {
       final Consumer<BrokerAdminRequest> configureRequest) {
 
     final var members = membersOfPartition(topology, partitionId);
-    // pause and resume additionally target inactive members: they hold partition data, so they
-    // must not resume exporting on their own once they become active again
-    members.addAll(topology.getInactiveNodesForPartition(partitionId));
 
     final var requests =
         members.stream()
@@ -135,17 +132,24 @@ public class ExportingRequestBroadcaster {
     return CompletableFuture.allOf(requests);
   }
 
-  /** The active members of a partition, i.e. its leader and followers. */
+  /**
+   * Every member holding a copy of the partition: its leader, its followers and its inactive
+   * members. Inactive members are included because they are only temporarily unhealthy -- they keep
+   * their partition data and become active again after recovering, so their exporter phase is as
+   * relevant as any other replica's, both when pausing and when reporting the status.
+   */
   private Set<BrokerMemberId> membersOfPartition(
       final BrokerClusterState topology, final Integer partitionId) {
     final var leader = topology.getLeaderForPartition(partitionId);
     final var followers = topology.getFollowersForPartition(partitionId);
+    final var inactive = topology.getInactiveNodesForPartition(partitionId);
 
     final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
     if (leader != null) {
       members.add(leader);
     }
     members.addAll(followers);
+    members.addAll(inactive);
     return members;
   }
 
