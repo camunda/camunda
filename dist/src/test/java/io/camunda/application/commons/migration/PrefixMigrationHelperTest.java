@@ -8,6 +8,7 @@
 package io.camunda.application.commons.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
@@ -334,6 +335,69 @@ class PrefixMigrationHelperTest {
     } finally {
       executor.close();
     }
+  }
+
+  @Test
+  void shouldRenameHistoricIndexWhenOldPrefixRecursInBaseIndexName() {
+    // given
+    // old prefix "instance" recurs inside the base index name "flownode-instance"
+    final var srcIndex = "instance-flownode-instance-8.3.0_2024-11-03";
+    final var oldPrefix = "instance";
+    final var newPrefixAndComponent = "new-prefix";
+
+    // when
+    final var destIndex =
+        PrefixMigrationHelper.renameHistoricIndexPrefix(srcIndex, oldPrefix, newPrefixAndComponent);
+
+    // then
+    assertThat(destIndex).isEqualTo("new-prefix-flownode-instance-8.3.0_2024-11-03");
+  }
+
+  @Test
+  void shouldRenameHistoricIndexWhenOldPrefixDoesNotRecur() {
+    // given
+    final var srcIndex = "old-prefix-decision-8.3.0_2024-11-03";
+    final var oldPrefix = "old-prefix";
+    final var newPrefixAndComponent = "new-prefix";
+
+    // when
+    final var destIndex =
+        PrefixMigrationHelper.renameHistoricIndexPrefix(srcIndex, oldPrefix, newPrefixAndComponent);
+
+    // then
+    assertThat(destIndex).isEqualTo("new-prefix-decision-8.3.0_2024-11-03");
+  }
+
+  @Test
+  void shouldRenameHistoricIndexWhenNewPrefixIsEmpty() {
+    // given
+    final var srcIndex = "old-prefix-decision-8.3.0_2024-11-03";
+    final var oldPrefix = "old-prefix";
+    final var newPrefixAndComponent = "";
+
+    // when
+    final var destIndex =
+        PrefixMigrationHelper.renameHistoricIndexPrefix(srcIndex, oldPrefix, newPrefixAndComponent);
+
+    // then
+    assertThat(destIndex).isEqualTo("-decision-8.3.0_2024-11-03");
+  }
+
+  @Test
+  void shouldThrowWhenSrcIndexDoesNotStartWithOldPrefix() {
+    // given
+    final var srcIndex = "unrelated-index-name-8.3.0_2024-11-03";
+    final var oldPrefix = "old-prefix";
+    final var newPrefixAndComponent = "new-prefix";
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                PrefixMigrationHelper.renameHistoricIndexPrefix(
+                    srcIndex, oldPrefix, newPrefixAndComponent))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(srcIndex)
+        .hasMessageContaining(oldPrefix);
   }
 
   /**
