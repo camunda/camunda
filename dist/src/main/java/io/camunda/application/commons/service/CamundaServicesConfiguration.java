@@ -51,6 +51,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.RecoveryServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RuntimeBackupServices;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -133,6 +135,7 @@ public class CamundaServicesConfiguration {
       final AuthorizationCheckerProvider authorizationCheckerProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
+      final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
@@ -431,6 +434,17 @@ public class CamundaServicesConfiguration {
                           converter))
                   .processDefinitionServices(tenantId, processDefinition)
                   .processInstanceServices(tenantId, processInstance)
+                  .recoveryServices(
+                      tenantId,
+                      new RecoveryServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          clusterConfigurationRequestSender,
+                          authorizationChecker,
+                          tenantSecurity.getAuthorizations(),
+                          executor,
+                          converter))
                   .resourceServices(
                       tenantId,
                       new ResourceServices(

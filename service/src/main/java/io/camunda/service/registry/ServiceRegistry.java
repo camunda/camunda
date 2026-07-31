@@ -35,6 +35,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.RecoveryServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RuntimeBackupServices;
@@ -111,6 +112,8 @@ public interface ServiceRegistry {
   ProcessDefinitionServices processDefinitionServices(String physicalTenantId);
 
   ProcessInstanceServices processInstanceServices(String physicalTenantId);
+
+  RecoveryServices recoveryServices(String physicalTenantId);
 
   ResourceServices resourceServices(String physicalTenantId);
 
