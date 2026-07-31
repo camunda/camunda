@@ -75,7 +75,10 @@ final class SideEffectRunner implements CommitListener {
       final Runnable completionCallback) {
     sideEffects.add(
         new SideEffects(
-            position, responses, new AggregatePostCommitTask(postCommitTasks), completionCallback));
+            position,
+            responses,
+            new AggregatePostCommitTask(position, postCommitTasks),
+            completionCallback));
     executeNextSideEffects();
   }
 
@@ -92,31 +95,18 @@ final class SideEffectRunner implements CommitListener {
   }
 
   private void executeSideEffects(final SideEffects sideEffects) {
-    try {
-      sendResponses(sideEffects.responses());
-      try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
-        // The flush result is intentionally ignored: side effects are executed exactly once and
-        // cannot be retried, as a retry could duplicate effects that already partially succeeded.
-        sideEffects.postCommitTask().flush();
-      }
-    } catch (final Exception exception) {
-      LOG.error(
-          "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
-          sideEffects.position(),
-          exception);
-    } finally {
-      completeSideEffects(sideEffects);
+    sendResponses(sideEffects.responses());
+    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+      sideEffects.postCommitTask().flush();
     }
+    completeSideEffects(sideEffects);
   }
 
   private void completeSideEffects(final SideEffects completedSideEffects) {
     sideEffects.remove();
     executingSideEffects = false;
-    try {
-      completedSideEffects.completionCallback().run();
-    } finally {
-      executeNextSideEffects();
-    }
+    completedSideEffects.completionCallback().run();
+    executeNextSideEffects();
   }
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {
@@ -149,17 +139,27 @@ final class SideEffectRunner implements CommitListener {
    *     allows early garbage collection of the written records. The task list is an immutable
    *     snapshot taken by the processing result when it is built.
    */
-  private static class AggregatePostCommitTask implements PostCommitTask {
+  private static final class AggregatePostCommitTask implements PostCommitTask {
+    private final long position;
     private final List<PostCommitTask> postCommitTasks;
 
-    private AggregatePostCommitTask(final List<PostCommitTask> postCommitTasks) {
+    private AggregatePostCommitTask(
+        final long position, final List<PostCommitTask> postCommitTasks) {
+      this.position = position;
       this.postCommitTasks = postCommitTasks;
     }
 
     @Override
     public void flush() {
       for (final PostCommitTask task : postCommitTasks) {
-        task.flush();
+        try {
+          task.flush();
+        } catch (final Exception e) {
+          LOG.error(
+              "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
+              position,
+              e);
+        }
       }
     }
   }

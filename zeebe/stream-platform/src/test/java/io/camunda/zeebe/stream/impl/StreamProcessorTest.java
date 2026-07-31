@@ -750,7 +750,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotRepeatPostCommitOnException() throws Exception {
+  public void shouldLogAndContinueWhenPostCommitTaskThrows() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
@@ -772,6 +772,8 @@ public final class StreamProcessorTest {
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
     verify(mockPostCommitTask, TIMEOUT.times(1)).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(anyLong());
   }
 
   @Test
@@ -788,9 +790,7 @@ public final class StreamProcessorTest {
         };
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult =
-        new BufferedProcessingResultBuilder((c, s) -> true)
-            .appendPostCommitTask(() -> {})
-            .build();
+        new BufferedProcessingResultBuilder((c, s) -> true).appendPostCommitTask(() -> {}).build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
         .when(testProcessor)
