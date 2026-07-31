@@ -58,7 +58,6 @@ final class CslTenantCheckTest {
     // given — multi-tenancy on and a principal assigned to tenant-a
     final var tenantCheck = tenantCheck(true);
     when(command.getAuthorizations()).thenReturn(Map.of(Authorization.AUTHORIZED_USERNAME, "user"));
-    when(authentication.anonymousUser()).thenReturn(false);
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
     when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
         .thenReturn(authentication);
@@ -78,7 +77,6 @@ final class CslTenantCheckTest {
     // given — multi-tenancy on and a principal assigned only to tenant-a
     final var tenantCheck = tenantCheck(true);
     when(command.getAuthorizations()).thenReturn(Map.of(Authorization.AUTHORIZED_USERNAME, "user"));
-    when(authentication.anonymousUser()).thenReturn(false);
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
     when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
         .thenReturn(authentication);
@@ -286,7 +284,6 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(true);
     final Map<String, Object> authorizations =
         Map.of(Authorization.AUTHORIZED_CLIENT_ID, "client-1");
-    when(authentication.anonymousUser()).thenReturn(false);
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-1"));
     when(claimsConverter.resolve(authorizations)).thenReturn(authentication);
 

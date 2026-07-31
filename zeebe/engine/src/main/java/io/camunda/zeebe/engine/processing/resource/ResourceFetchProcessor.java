@@ -159,9 +159,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     final var authentication = claimsConverter.convert(authorizations);
     final var tenantIds =
         Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
-    return authentication.anonymousUser()
-        ? TenantAccess.wildcard(tenantIds)
-        : TenantAccess.allowed(tenantIds);
+    return TenantAccess.allowed(tenantIds);
   }
 
   private void checkAuthorization(

@@ -68,9 +68,7 @@ public final class CslTenantCheck {
     final var authentication = claimsConverter.resolve(authorizations);
     final var tenantIds =
         Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
-    return authentication.anonymousUser()
-        ? TenantAccess.wildcard(tenantIds)
-        : TenantAccess.allowed(tenantIds);
+    return TenantAccess.allowed(tenantIds);
   }
 
   public boolean isMultiTenancyChecksEnabled() {
