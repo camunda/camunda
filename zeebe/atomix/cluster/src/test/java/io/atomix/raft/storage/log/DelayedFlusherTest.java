@@ -8,10 +8,12 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -141,6 +143,42 @@ final class DelayedFlusherTest {
 
     // then
     Mockito.verify(journal, Mockito.times(2)).flush();
+  }
+
+  @Test
+  void shouldRescheduleOnJournalFlushError() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.doThrow(new FlushException(new IOException("No space left on device")))
+        .when(journal)
+        .flush();
+
+    // when
+    flusher.flush(journal, 1);
+    scheduler.runNext();
+    Mockito.doNothing().when(journal).flush();
+    scheduler.runNext();
+
+    // then
+    Mockito.verify(journal, Mockito.times(2)).flush();
+  }
+
+  @Test
+  void shouldPropagateUnexpectedFlushError() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.doThrow(new IllegalStateException("Metastore is in an unexpected state"))
+        .when(journal)
+        .flush();
+
+    // when
+    flusher.flush(journal, 1);
+
+    // then - unexpected failures are most likely permanent, so instead of retrying them forever
+    // they escape to the thread context's uncaught exception handler, which marks the partition
+    // unhealthy
+    assertThatThrownBy(scheduler::runNext).isInstanceOf(IllegalStateException.class);
+    assertThat(scheduler.operations).isEmpty();
   }
 
   @Test
