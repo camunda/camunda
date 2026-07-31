@@ -24,37 +24,39 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
- * Reproduces the production bug (#58803): if two exporter handlers touch the same cached entity
- * within one flush batch — {@code FlowNodeInstanceNameFromAdHocActivityHandler}, which resolves an
- * ad-hoc inner instance's name, and {@code FlowNodeInstanceFromProcessInstanceHandler}, which
- * always nulls that field back out for the inner instance's own lifecycle records — the second
- * handler's null-write can clobber the first handler's resolved name right before its {@code
- * flush()} runs, throwing a {@code NullPointerException}. See {@code
- * ExporterBatchWriterFlowNodeInstanceNameClobberTest} (camunda-exporter module) for this mechanism
- * pinned in isolation; this test additionally proves the fix survives the real broker -&gt;
- * exporter -&gt; search-index path.
+ * Pins that an ad-hoc sub-process inner instance keeps the name resolved from its entry element
+ * even when the entry element's activation and the inner instance's completion are written by the
+ * same exporter flush batch.
  *
- * <p>{@code @MultiDbTest}'s managed default ({@code bulk.size=1}) flushes after every record, so
- * two records can never share a batch. This test instead runs its own {@link TestStandaloneBroker}
- * with {@code bulk.size=5000}/{@code bulk.delay=5s} so the entry child's activation and the inner
- * instance's completion have room to land in the same flush batch — the condition this bug
- * requires, and which the sibling {@code AdHocSubProcessInnerInstanceNameIT} structurally cannot
- * reach.
+ * <p>On Elasticsearch/OpenSearch this reproduces the production bug (#58803): if two exporter
+ * handlers touch the same cached entity within one flush batch — {@code
+ * FlowNodeInstanceNameFromAdHocActivityHandler}, which resolves an ad-hoc inner instance's name,
+ * and {@code FlowNodeInstanceFromProcessInstanceHandler}, which always nulls that field back out
+ * for the inner instance's own lifecycle records — the second handler's null-write can clobber the
+ * first handler's resolved name right before its {@code flush()} runs, throwing a {@code
+ * NullPointerException}. See {@code ExporterBatchWriterFlowNodeInstanceNameClobberTest}
+ * (camunda-exporter module) for this mechanism pinned in isolation; this test additionally proves
+ * the fix survives the real broker -&gt; exporter -&gt; search-index path.
  *
- * <p>Disabled on RDBMS: the naming lives only in the camunda-exporter (Elasticsearch/OpenSearch).
- * The RDBMS exporter has no equivalent handler, so the inner instance name stays null there and
- * this test's await would time out for an unrelated reason.
+ * <p>On RDBMS the write path has no equivalent clobber: the name write merges into the inner
+ * instance's still-queued insert, and where it cannot merge, the flush orders the set-if-null
+ * {@code updateNameIfNull} statement after every other statement of the batch that writes {@code
+ * FLOW_NODE_NAME} — {@code insert} (all inserts precede all updates) and the full-row {@code
+ * update}. Only {@code updateStateAndEndDate} sorts after it, and it writes disjoint columns. There
+ * the test is a parity regression pin over the same condition rather than a reproduction — it is
+ * expected to pass on arrival and to fail only if the RDBMS write path starts dropping an
+ * already-resolved name.
+ *
+ * <p>{@code @MultiDbTest}'s managed defaults flush after every record ({@code bulk.size=1} on
+ * ES/OS, a zero flush interval on RDBMS), so two records can never share a batch. This test instead
+ * runs its own {@link TestStandaloneBroker} configured to batch generously on whichever secondary
+ * storage is active, so the entry child's activation and the inner instance's completion have room
+ * to land in the same flush batch — the condition this bug requires, and which the sibling {@code
+ * AdHocSubProcessInnerInstanceNameIT} structurally cannot reach.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason =
-        "Inner-instance naming is implemented only in the camunda-exporter (ES/OS); "
-            + "the RDBMS exporter has no equivalent, so the name stays null on RDBMS.")
 public class AdHocSubProcessInnerInstanceNameSameBatchIT {
 
   @MultiDbTestApplication(managedLifecycle = false)
@@ -64,10 +66,21 @@ public class AdHocSubProcessInnerInstanceNameSameBatchIT {
   static void setUp() {
     STANDALONE_CAMUNDA.withUnifiedConfig(
         c -> {
-          // See class javadoc for why these specific values reproduce the bug.
-          final var bulk = c.getData().getSecondaryStorage().getDocumentBasedDatabase().getBulk();
-          bulk.setSize(5000);
-          bulk.setDelay(Duration.ofSeconds(5));
+          // See class javadoc for why batching is what makes this test meaningful. The knobs are
+          // per-storage: getDocumentBasedDatabase() returns null on RDBMS, and each storage
+          // has its own "flush after every record" default that has to be lifted.
+          final var secondaryStorage = c.getData().getSecondaryStorage();
+          if (secondaryStorage.getType().isRdbms()) {
+            final var rdbms = secondaryStorage.getRdbms();
+            // Both matter: the exporter flushes per record if either the interval is zero or the
+            // queue size is non-positive.
+            rdbms.setQueueSize(5000);
+            rdbms.setFlushInterval(Duration.ofSeconds(5));
+          } else {
+            final var bulk = secondaryStorage.getDocumentBasedDatabase().getBulk();
+            bulk.setSize(5000);
+            bulk.setDelay(Duration.ofSeconds(5));
+          }
         });
 
     STANDALONE_CAMUNDA.start();
