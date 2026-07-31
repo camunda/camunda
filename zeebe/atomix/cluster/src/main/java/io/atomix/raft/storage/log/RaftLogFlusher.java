@@ -71,6 +71,25 @@ public interface RaftLogFlusher extends CloseableSilently {
    */
   void onLogTruncation(long newLastIndex);
 
+  /**
+   * Returns true if {@link #flush(Journal, long)} flushes synchronously and immediately, i.e.
+   * everything written before the call is already on disk when the call returns. Callers can use
+   * this to skip flushes which would be redundant, e.g. a forced flush before taking a snapshot.
+   */
+  default boolean flushesDirectly() {
+    return false;
+  }
+
+  /**
+   * Returns true if this flusher ever flushes the journal itself, either synchronously in {@link
+   * #flush(Journal, long)} or at a later point. This is false only for the {@link NoopFlusher},
+   * which never flushes: with it, the write path deliberately performs no journal I/O at all, so
+   * callers must not flush on its behalf either.
+   */
+  default boolean flushesEventually() {
+    return true;
+  }
+
   @Override
   default void close() {}
 
@@ -88,6 +107,11 @@ public interface RaftLogFlusher extends CloseableSilently {
     @Override
     public void onLogTruncation(final long newLastIndex) {
       // nothing to do - flush results complete immediately, so there are never pending results
+    }
+
+    @Override
+    public boolean flushesEventually() {
+      return false;
     }
   }
 
@@ -113,6 +137,11 @@ public interface RaftLogFlusher extends CloseableSilently {
     @Override
     public void onLogTruncation(final long newLastIndex) {
       // nothing to do - flushes are synchronous, so there are never pending flush results
+    }
+
+    @Override
+    public boolean flushesDirectly() {
+      return true;
     }
   }
 
