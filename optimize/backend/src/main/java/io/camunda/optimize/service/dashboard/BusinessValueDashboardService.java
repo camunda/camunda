@@ -21,8 +21,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -30,6 +28,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Proces
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -61,6 +61,12 @@ public class BusinessValueDashboardService {
 
   public static final String BUSINESS_VALUE_DASHBOARD_ID = "business-value-dashboard";
 
+  // Top-N limit hint for per-process breakdown tiles. Backend sorts DESC and returns the full
+  // result set; Hub reads TILE_CONFIG_TOP_N from the tile configuration and slices client-side,
+  // matching the pattern used by AgenticControlDashboardService.
+  public static final int PER_PROCESS_TOP_N = 5;
+  public static final String TILE_CONFIG_TOP_N = "topN";
+
   // Names and descriptions ship as plain English. Hub (the sole FE consumer)
   // owns translation via its own i18next namespace and keys labels off the
   // stable report UUID, not this field. Human-readable text keeps the endpoint
@@ -71,7 +77,8 @@ public class BusinessValueDashboardService {
   public static final String KPI_WORK_HANDLED_DESCRIPTION =
       "Completed process instances in the selected period.";
   public static final String KPI_MOMENTUM_NAME = "Momentum";
-  public static final String KPI_MOMENTUM_DESCRIPTION = "Weekly completed-instance volume trend.";
+  public static final String KPI_MOMENTUM_DESCRIPTION =
+      "Completed-instance volume trend over the selected period.";
   public static final String KPI_CYCLE_TIME_BY_PROCESS_NAME = "Cycle time by process";
   public static final String KPI_CYCLE_TIME_BY_PROCESS_DESCRIPTION =
       "Average cycle time per process definition.";
@@ -82,10 +89,17 @@ public class BusinessValueDashboardService {
   public static final String KPI_CYCLE_TIME_DISTRIBUTION_DESCRIPTION =
       "Average, P50 and P95 cycle time of completed instances.";
   public static final String KPI_CYCLE_TIME_HISTORY_NAME = "Cycle time history";
-  public static final String KPI_CYCLE_TIME_HISTORY_DESCRIPTION = "Weekly average cycle time.";
+  public static final String KPI_CYCLE_TIME_HISTORY_DESCRIPTION =
+      "Average cycle time over the selected period.";
   public static final String KPI_AGENTIC_PRESENCE_NAME = "Agentic presence";
   public static final String KPI_AGENTIC_PRESENCE_DESCRIPTION =
       "Processes that ran at least one agent.";
+  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_NAME = "Automation rate by process";
+  public static final String KPI_AUTOMATION_RATE_BY_PROCESS_DESCRIPTION =
+      "Percentage of automated tasks per process definition.";
+  public static final String KPI_AUTOMATION_RATE_AGGREGATE_NAME = "Aggregated automation rate";
+  public static final String KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION =
+      "Percentage of automated tasks across all completed process instances.";
 
   public static final String WORK_HANDLED_TOTAL_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-work-handled-total".getBytes(StandardCharsets.UTF_8)).toString();
@@ -104,6 +118,12 @@ public class BusinessValueDashboardService {
   public static final String AGENT_PRESENCE_BY_PROCESS_REPORT_ID =
       UUID.nameUUIDFromBytes("bv-agent-presence-by-process".getBytes(StandardCharsets.UTF_8))
           .toString();
+  public static final String AUTOMATION_RATE_BY_PROCESS_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-automation-rate-by-process".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AUTOMATION_RATE_AGGREGATE_REPORT_ID =
+      UUID.nameUUIDFromBytes("bv-automation-rate-aggregate".getBytes(StandardCharsets.UTF_8))
+          .toString();
 
   // Tile configuration keys consumed by the Business Value Dashboard frontend. A tile renders at a
   // level only if it carries that level's key.
@@ -113,6 +133,7 @@ public class BusinessValueDashboardService {
   public static final String L0_SECTION_ACTIVITY = "activity";
   public static final String L0_SECTION_CYCLE_TIME = "cycleTime";
   public static final String L0_SECTION_AGENTIC_ADOPTION = "agenticAdoption";
+  public static final String L0_SECTION_AUTOMATION = "automation";
   // Section values that group tiles once a single process is selected (L1). Ungrouped tiles render
   // without a heading.
   public static final String L1_SECTION_OVERVIEW = "overview";
@@ -157,6 +178,8 @@ public class BusinessValueDashboardService {
     tiles.add(buildAgentPresenceByProcessTile());
     tiles.add(buildDurationPercentilesTile());
     tiles.add(buildDurationByDateTile());
+    tiles.add(buildAutomationRateAggregateTile());
+    tiles.add(buildAutomationRateByProcessTile());
 
     final DashboardDefinitionRestDto dashboard = buildDashboard(tiles);
     if (dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID).isEmpty()) {
@@ -227,15 +250,21 @@ public class BusinessValueDashboardService {
         L1_SECTION_OVERVIEW);
   }
 
-  // Top processes by completed-instance volume.
+  // Top-N processes by completed-instance volume, sorted DESC. Hub reads TILE_CONFIG_TOP_N and
+  // slices client-side (see camunda-hub#26997 for the follow-up moving the slice server-side).
   private DashboardReportTileDto buildCountByProcessTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
             .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
-            .groupBy(new NoneGroupByDto())
-            .distributedBy(processDistributedBy())
+            .groupBy(new ProcessDefinitionKeyGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.BAR)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .horizontalBar(true)
+                    .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
+                    .build())
             .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .businessValueReport(true)
             .build();
@@ -251,13 +280,16 @@ public class BusinessValueDashboardService {
         new PositionDto(0, 2),
         new DimensionDto(9, 4),
         L0_SECTION_ACTIVITY,
-        null);
+        null,
+        PER_PROCESS_TOP_N);
   }
 
-  // Weekly completed-instance trend: L0 activity, L1 ungrouped.
+  // Completed-instance trend over the selected period. AUTOMATIC bucket unit — Optimize picks
+  // hour/day/week/month so the x-axis stays readable across every filter preset. L0 activity,
+  // L1 ungrouped.
   private DashboardReportTileDto buildCountByDateTile() {
     final EndDateGroupByDto groupBy = new EndDateGroupByDto();
-    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.AUTOMATIC));
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -283,20 +315,22 @@ public class BusinessValueDashboardService {
         L1_SECTION_UNGROUPED);
   }
 
-  // Top processes by average cycle time.
+  // Top-N processes by average cycle time, sorted DESC. Horizontal BAR.
   private DashboardReportTileDto buildDurationByProcessTile() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
             .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
-            .groupBy(new NoneGroupByDto())
-            .distributedBy(processDistributedBy())
+            .groupBy(new ProcessDefinitionKeyGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.BAR)
             .configuration(
                 SingleReportConfigurationDto.builder()
                     .aggregationTypes(
                         new LinkedHashSet<>(
                             Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
+                    .horizontalBar(true)
+                    .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
                     .build())
             .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .businessValueReport(true)
@@ -313,7 +347,8 @@ public class BusinessValueDashboardService {
         new PositionDto(9, 2),
         new DimensionDto(9, 4),
         L0_SECTION_CYCLE_TIME,
-        null);
+        null,
+        PER_PROCESS_TOP_N);
   }
 
   // Cycle time distribution: AVG, P50 and P95 in one report.
@@ -352,10 +387,10 @@ public class BusinessValueDashboardService {
         L1_SECTION_UNGROUPED);
   }
 
-  // Weekly average cycle time trend.
+  // Cycle-time history. AUTOMATIC bucket unit — see buildCountByDateTile.
   private DashboardReportTileDto buildDurationByDateTile() {
     final EndDateGroupByDto groupBy = new EndDateGroupByDto();
-    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.AUTOMATIC));
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -427,10 +462,70 @@ public class BusinessValueDashboardService {
         null);
   }
 
-  // Distribute results by process definition so a single report can drive both aggregate
-  // and per-process (top-5) tiles in the FE.
-  private ProcessReportDistributedByDto<?> processDistributedBy() {
-    return new ProcessDistributedByDto();
+  // Aggregate automation rate across all processes. Maps to
+  // PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE (NUMBER). Rendered as a single value.
+  private DashboardReportTileDto buildAutomationRateAggregateTile() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(
+                new ProcessViewDto(
+                    ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.AUTOMATION_RATE))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+            .businessValueReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+        null,
+        reportData,
+        KPI_AUTOMATION_RATE_AGGREGATE_NAME,
+        KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION,
+        null);
+    return buildTile(
+        AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+        new PositionDto(0, 14),
+        new DimensionDto(9, 2),
+        L0_SECTION_AUTOMATION,
+        L1_SECTION_OVERVIEW);
+  }
+
+  // Top-N processes by automation rate, sorted descending. Maps to
+  // PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_PROCESS_DEFINITION_KEY (MAP). Horizontal BAR.
+  private DashboardReportTileDto buildAutomationRateByProcessTile() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(
+                new ProcessViewDto(
+                    ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.AUTOMATION_RATE))
+            .groupBy(new ProcessDefinitionKeyGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.BAR)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .horizontalBar(true)
+                    .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
+                    .build())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+            .businessValueReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
+        null,
+        reportData,
+        KPI_AUTOMATION_RATE_BY_PROCESS_NAME,
+        KPI_AUTOMATION_RATE_BY_PROCESS_DESCRIPTION,
+        null);
+    return buildTile(
+        AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
+        new PositionDto(0, 16),
+        new DimensionDto(9, 4),
+        L0_SECTION_AUTOMATION,
+        null,
+        PER_PROCESS_TOP_N);
   }
 
   private DashboardDefinitionRestDto buildDashboard(final List<DashboardReportTileDto> tiles) {
@@ -443,19 +538,33 @@ public class BusinessValueDashboardService {
     return dashboard;
   }
 
-  // A null section means the tile is not rendered at that level.
+  // A null section means the tile is not rendered at that level. A non-null topN embeds the
+  // client-side slicing hint under TILE_CONFIG_TOP_N; Hub reads it after evaluate.
   private DashboardReportTileDto buildTile(
       final String reportId,
       final PositionDto position,
       final DimensionDto dimensions,
       final String l0Section,
       final String l1Section) {
+    return buildTile(reportId, position, dimensions, l0Section, l1Section, null);
+  }
+
+  private DashboardReportTileDto buildTile(
+      final String reportId,
+      final PositionDto position,
+      final DimensionDto dimensions,
+      final String l0Section,
+      final String l1Section,
+      final Integer topN) {
     final Map<String, String> configuration = new LinkedHashMap<>();
     if (l0Section != null) {
       configuration.put(TILE_CONFIG_L0_SECTION, l0Section);
     }
     if (l1Section != null) {
       configuration.put(TILE_CONFIG_L1_SECTION, l1Section);
+    }
+    if (topN != null) {
+      configuration.put(TILE_CONFIG_TOP_N, String.valueOf(topN));
     }
     return DashboardReportTileDto.builder()
         .id(reportId)

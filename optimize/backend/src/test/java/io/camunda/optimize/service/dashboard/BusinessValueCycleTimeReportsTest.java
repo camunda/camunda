@@ -24,7 +24,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -59,11 +58,12 @@ public class BusinessValueCycleTimeReportsTest {
   }
 
   @Test
-  void shouldSeedDurationByProcessAsAverageBar() {
+  void shouldSeedDurationByProcessAsTopNHorizontalBar() {
     // when
     underTest.reconcile();
 
-    // then per-process average cycle time is a BAR chart with AVG aggregation
+    // then per-process average cycle time is a horizontal BAR sorted DESC so slowest processes
+    // surface first, with AVG aggregation
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
@@ -72,11 +72,18 @@ public class BusinessValueCycleTimeReportsTest {
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
-    assertThat(data.getGroupBy()).isInstanceOf(NoneGroupByDto.class);
-    assertThat(data.getDistributedBy()).isInstanceOf(ProcessDistributedByDto.class);
+    assertThat(data.getGroupBy())
+        .isInstanceOf(
+            io.camunda.optimize.dto.optimize.query.report.single.process.group
+                .ProcessDefinitionKeyGroupByDto.class);
+    assertThat(data.getDistributedBy()).isInstanceOf(NoneDistributedByDto.class);
     assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.BAR);
     assertThat(data.getConfiguration().getAggregationTypes())
         .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertThat(data.getConfiguration().getHorizontalBar()).isTrue();
+    assertThat(data.getConfiguration().getSorting()).isPresent();
+    assertThat(data.getConfiguration().getSorting().get().getOrder())
+        .contains(io.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC);
     assertThat(data.getFilter()).hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
     assertThat(data.isBusinessValueReport()).isTrue();
   }
@@ -113,11 +120,12 @@ public class BusinessValueCycleTimeReportsTest {
   }
 
   @Test
-  void shouldSeedDurationByDateAsWeeklyAverageLine() {
+  void shouldSeedDurationByDateAsAutomaticBucketAverageLine() {
     // when
     underTest.reconcile();
 
-    // then weekly average cycle-time trend is grouped by end-date and rendered as a line
+    // then cycle-time trend uses AUTOMATIC bucket unit so the x-axis granularity follows the
+    // caller's date range at evaluate time
     final ProcessReportDataDto data =
         captureReportData(
             BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID,
@@ -128,7 +136,7 @@ public class BusinessValueCycleTimeReportsTest {
     assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(data.getGroupBy()).isInstanceOf(EndDateGroupByDto.class);
     assertThat(((EndDateGroupByDto) data.getGroupBy()).getValue().getUnit())
-        .isEqualTo(AggregateByDateUnit.WEEK);
+        .isEqualTo(AggregateByDateUnit.AUTOMATIC);
     assertThat(data.getDistributedBy()).isInstanceOf(NoneDistributedByDto.class);
     assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.LINE);
     assertThat(data.getConfiguration().getAggregationTypes())

@@ -18,14 +18,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class BusinessValueVolumeReportsTest {
+public class BusinessValueAutomationRateReportsTest {
 
   private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
   private final DashboardReader dashboardReader = mock(DashboardReader.class);
@@ -55,20 +55,19 @@ public class BusinessValueVolumeReportsTest {
   }
 
   @Test
-  void shouldSeedWorkHandledTotalAsAggregateNumber() {
+  void shouldSeedAggregateAutomationRateAsSingleNumber() {
     // when
     underTest.reconcile();
 
-    // then a single-number aggregate report is seeded with process-instance frequency,
-    // no groupBy, no distributedBy — mapping to PROCESS_INSTANCE_FREQUENCY_GROUP_BY_NONE
+    // then the aggregate tile maps to PROCESS_INSTANCE_AUTOMATION_RATE_GROUP_BY_NONE (NUMBER)
     final ProcessReportDataDto data =
         captureReportData(
-            BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_NAME,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_DESCRIPTION);
+            BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_AGGREGATE_NAME,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_AGGREGATE_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.AUTOMATION_RATE);
     assertThat(data.getGroupBy()).isInstanceOf(NoneGroupByDto.class);
     assertThat(data.getDistributedBy()).isInstanceOf(NoneDistributedByDto.class);
     assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.NUMBER);
@@ -77,66 +76,36 @@ public class BusinessValueVolumeReportsTest {
   }
 
   @Test
-  void shouldSeedCountByProcessAsTopNHorizontalBar() {
+  void shouldSeedAutomationRateByProcessAsTopNHorizontalBar() {
     // when
     underTest.reconcile();
 
-    // then the per-process breakdown maps to
-    // PROCESS_INSTANCE_FREQUENCY_GROUP_BY_PROCESS_DEFINITION_KEY
-    // (MAP) rendered as horizontal BAR sorted DESC — highest-volume processes surface first
+    // then per-process tile is a horizontal BAR sorted DESC so top-N processes surface first
     final ProcessReportDataDto data =
         captureReportData(
-            BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_NAME,
-            BusinessValueDashboardService.KPI_WORK_HANDLED_DESCRIPTION);
+            BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_BY_PROCESS_NAME,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_BY_PROCESS_DESCRIPTION);
 
     assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
-    assertThat(data.getGroupBy())
-        .isInstanceOf(
-            io.camunda.optimize.dto.optimize.query.report.single.process.group
-                .ProcessDefinitionKeyGroupByDto.class);
+    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.AUTOMATION_RATE);
+    assertThat(data.getGroupBy()).isInstanceOf(ProcessDefinitionKeyGroupByDto.class);
     assertThat(data.getDistributedBy()).isInstanceOf(NoneDistributedByDto.class);
     assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.BAR);
     assertThat(data.getConfiguration().getHorizontalBar()).isTrue();
     assertThat(data.getConfiguration().getSorting()).isPresent();
-    assertThat(data.getConfiguration().getSorting().get().getOrder())
-        .contains(io.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC);
-    assertThat(data.getFilter()).hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
-    assertThat(data.isBusinessValueReport()).isTrue();
-  }
-
-  @Test
-  void shouldSeedCountByDateAsAutomaticBucketLineTrend() {
-    // when
-    underTest.reconcile();
-
-    // then completed-instance volume trend uses AUTOMATIC bucket unit so the x-axis granularity
-    // follows the caller's date range at evaluate time
-    final ProcessReportDataDto data =
-        captureReportData(
-            BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID,
-            BusinessValueDashboardService.KPI_MOMENTUM_NAME,
-            BusinessValueDashboardService.KPI_MOMENTUM_DESCRIPTION);
-
-    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
-    assertThat(data.getGroupBy()).isInstanceOf(EndDateGroupByDto.class);
-    assertThat(((EndDateGroupByDto) data.getGroupBy()).getValue().getUnit())
-        .isEqualTo(AggregateByDateUnit.AUTOMATIC);
-    assertThat(data.getDistributedBy()).isInstanceOf(NoneDistributedByDto.class);
-    assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.LINE);
+    assertThat(data.getConfiguration().getSorting().get().getOrder()).contains(SortOrder.DESC);
     assertThat(data.getFilter()).hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
     assertThat(data.isBusinessValueReport()).isTrue();
   }
 
   private ProcessReportDataDto captureReportData(
-      final String reportId, final String nameKey, final String descriptionKey) {
+      final String reportId, final String name, final String description) {
     final ArgumentCaptor<ProcessReportDataDto> captor =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            eq(reportId), isNull(), captor.capture(), eq(nameKey), eq(descriptionKey), isNull());
+            eq(reportId), isNull(), captor.capture(), eq(name), eq(description), isNull());
     return captor.getValue();
   }
 }

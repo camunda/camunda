@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.dashboard.BusinessValueDashboardServic
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.BUSINESS_VALUE_DASHBOARD_NAME;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_ACTIVITY;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_AGENTIC_ADOPTION;
+import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_AUTOMATION;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L0_SECTION_CYCLE_TIME;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L1_SECTION_OVERVIEW;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L1_SECTION_UNGROUPED;
@@ -56,7 +57,9 @@ public class BusinessValueDashboardServiceTest {
           BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID,
           BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID,
-          BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID);
+          BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
+          BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+          BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID);
 
   private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
   private final DashboardReader dashboardReader = mock(DashboardReader.class);
@@ -258,7 +261,13 @@ public class BusinessValueDashboardServiceTest {
                 BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID, L0_SECTION_CYCLE_TIME),
             entry(
                 BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
-                L0_SECTION_AGENTIC_ADOPTION));
+                L0_SECTION_AGENTIC_ADOPTION),
+            entry(
+                BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+                L0_SECTION_AUTOMATION),
+            entry(
+                BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
+                L0_SECTION_AUTOMATION));
   }
 
   @Test
@@ -277,7 +286,10 @@ public class BusinessValueDashboardServiceTest {
             entry(BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED),
             entry(
                 BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID, L1_SECTION_UNGROUPED),
-            entry(BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED));
+            entry(BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED),
+            entry(
+                BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+                L1_SECTION_OVERVIEW));
   }
 
   @Test
