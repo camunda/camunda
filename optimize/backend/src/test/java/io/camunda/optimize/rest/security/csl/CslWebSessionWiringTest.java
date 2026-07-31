@@ -17,6 +17,7 @@ import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.session.WebSessionRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
@@ -60,5 +61,23 @@ class CslWebSessionWiringTest {
           assertThat(context).hasNotFailed();
           assertThat(context).doesNotHaveBean(WebSessionRepository.class);
         });
+  }
+
+  @Test
+  void shouldFailToStartWhenPersistenceIsEnabledWithoutAStore() {
+    // given the wiring of a database Optimize has no session store for, such as OpenSearch
+    new ApplicationContextRunner()
+        .withPropertyValues(
+            "optimize.security.csl.enabled=true",
+            SessionConfiguration.PERSISTENT_ENABLED_PROPERTY + "=true")
+        .withBean(HttpServletRequest.class, () -> mock(HttpServletRequest.class))
+        .withUserConfiguration(WebSessionConfiguration.class)
+        .run(
+            context ->
+                // then the context cannot be built, which is why the post processor only sets the
+                // property for a database that has a store
+                assertThat(context)
+                    .getFailure()
+                    .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class));
   }
 }
