@@ -32,23 +32,16 @@ import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentI
 
 function mapIntoLoopIterationChunks(
   pages: InfiniteData<QueryAgentInstanceHistoryResponseBody>,
-): [number, AgentInstanceHistoryItem[]][] {
+): Map<number, AgentInstanceHistoryItem[]> {
   const history = flattenPaginatedPages(pages).items;
   const loopIterationMap = new Map<number, AgentInstanceHistoryItem[]>();
 
   for (const item of history) {
-    const iteration = item.loopIteration;
-    if (iteration === null) {
-      // The connector never set's null and actively guards against it.
-      // Properly grouping those messages is non trivial. To avoid accidental
-      // complexity, this theoretical case is dropped.
-      continue;
-    }
-    const bucket = loopIterationMap.get(iteration) ?? [];
+    const bucket = loopIterationMap.get(item.loopIteration) ?? [];
     bucket.push(item);
-    loopIterationMap.set(iteration, bucket);
+    loopIterationMap.set(item.loopIteration, bucket);
   }
-  return Array.from(loopIterationMap);
+  return loopIterationMap;
 }
 
 type ConversationHistoryProps = {
@@ -125,14 +118,14 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         onToggleScope={() => setIsScoped((prev) => !prev)}
       />
       <Messages data-dimmed={isPlaceholderData}>
-        {data.length === 0 ? (
+        {data.size === 0 ? (
           <StatusHint>
             {canBeScoped && isScoped
               ? 'No scoped conversation with the agent instance found.'
               : 'No conversation with this agent instance found.'}
           </StatusHint>
         ) : (
-          data.map(([iteration, items]) => {
+          Array.from(data, ([iteration, items]) => {
             const loopIterationNode = (
               <LoopIterationMarker>
                 {iteration}.&nbsp;loop&nbsp;iteration
