@@ -18,6 +18,9 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
@@ -170,5 +173,19 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
     this.jobKey.wrapLong(jobKey);
     waitingJobsByJobKeyColumnFamily.deleteIfExists(jobKeyAndSecretRef);
     waitingJobsBySecretRefColumnFamily.deleteIfExists(secretRefAndJobKey);
+  }
+
+  @Override
+  public void removeAllSecretReferencesByJobKey(final long jobKey) {
+    final List<Map.Entry<String, String>> refs = new ArrayList<>();
+    visitSecretReferencesByJob(
+        jobKey,
+        (store, ref) -> {
+          refs.add(Map.entry(store, ref));
+          return true;
+        });
+    for (final Map.Entry<String, String> entry : refs) {
+      removeWaitingJob(entry.getKey(), entry.getValue(), jobKey);
+    }
   }
 }

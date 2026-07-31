@@ -326,4 +326,61 @@ public final class DbSecretReferenceStateTest {
         });
     assertThat(visitedByJob1).isEmpty();
   }
+
+  @Test
+  public void shouldRemoveAllSecretReferencesByJobKey() {
+    // given — one job waiting on two secret references
+    final String storeId = "storeA";
+    final String secretRef1 = "secret1";
+    final String secretRef2 = "secret2";
+    final long jobKey = 42L;
+    final long otherJobKey = 99L;
+    state.addPendingSecretReference(storeId, secretRef1);
+    state.addPendingSecretReference(storeId, secretRef2);
+    state.addWaitingJob(storeId, secretRef1, jobKey);
+    state.addWaitingJob(storeId, secretRef2, jobKey);
+    state.addWaitingJob(storeId, secretRef1, otherJobKey);
+
+    // when
+    state.removeAllSecretReferencesByJobKey(jobKey);
+
+    // then — no secret references remain for the removed job
+    final List<String> visitedByJob = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        jobKey,
+        (sid, sref) -> {
+          visitedByJob.add(sref);
+          return true;
+        });
+    assertThat(visitedByJob).isEmpty();
+
+    // and — the by-secret-reference index no longer contains the removed job
+    final List<Long> visitedBySecret1 = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef1,
+        key -> {
+          visitedBySecret1.add(key);
+          return true;
+        });
+    assertThat(visitedBySecret1).containsExactly(otherJobKey);
+
+    final List<Long> visitedBySecret2 = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef2,
+        key -> {
+          visitedBySecret2.add(key);
+          return true;
+        });
+    assertThat(visitedBySecret2).isEmpty();
+  }
+
+  @Test
+  public void shouldHandleRemoveAllSecretReferencesByJobKeyWhenNoEntriesExist() {
+    // given — no waiting jobs
+
+    // when / then — should not throw
+    state.removeAllSecretReferencesByJobKey(999L);
+  }
 }
