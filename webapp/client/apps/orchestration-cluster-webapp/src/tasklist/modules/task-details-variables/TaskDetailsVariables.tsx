@@ -125,18 +125,18 @@ const TaskDetailsVariables: React.FC<Props> = ({
 			keepDirtyOnReinitialize
 			onSubmit={(values, form) => {
 				const {dirtyFields = {}, initialValues = {}} = form.getState();
-				const existingVariables = intersection(Object.keys(initialValues), Object.keys(dirtyFields)).reduce(
-					(acc, name) => ({
-						...acc,
-						[getVariableFieldName(name)]: typeof values[name] === 'string' ? tryParseJSON(values[name]) : values[name],
-					}),
-					{},
-				);
-				const newVariables = (get(values, 'newVariables') || []).reduce(
-					(acc, {name, value}) => ({
-						...acc,
-						[name]: tryParseJSON(value),
-					}),
+				const existingVariables = intersection(Object.keys(initialValues), Object.keys(dirtyFields)).reduce<
+					Record<string, unknown>
+				>((acc, name) => {
+					acc[getVariableFieldName(name)] =
+						typeof values[name] === 'string' ? tryParseJSON(values[name]) : values[name];
+					return acc;
+				}, {});
+				const newVariables = (get(values, 'newVariables') || []).reduce<Record<string, unknown>>(
+					(acc, {name, value}) => {
+						acc[name] = tryParseJSON(value);
+						return acc;
+					},
 					{},
 				);
 
