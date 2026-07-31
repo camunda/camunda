@@ -150,7 +150,8 @@ paths:
       tags:
         - Recovery
       operationId: restore
-      x-required-permissions: []
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: RESTORE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -177,6 +178,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "409":
           description: The cluster is not in recovery mode, so the restore cannot be accepted.
         "500":
@@ -187,7 +190,8 @@ paths:
       tags:
         - Recovery
       operationId: getRestoreStatus
-      x-required-permissions: []
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: RESTORE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -206,6 +210,8 @@ paths:
                 $ref: '#/components/schemas/RestoreStatusResponse'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: No restore is currently in progress.
         "500":
