@@ -998,13 +998,15 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository(clientSpy);
 
     // when - first time setting policy for indexName2 it should make the put settings for
-    // indexName2
-    repository.setIndexLifeCycle(indexName2);
+    // indexName2. Wait for the future to complete rather than only for the interaction: the
+    // applied-policy cache is populated when the request completes, so resetting the spy or
+    // issuing the second round any earlier would race with the cache update.
+    repository.setIndexLifeCycle(indexName2).join();
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
-    Awaitility.await().untilAsserted(() -> verify(indicesClientSpy).putSettings(captor.capture()));
+    verify(indicesClientSpy).putSettings(captor.capture());
 
     final var putIndicesSettingsRequest = captor.getValue();
     assertThat(putIndicesSettingsRequest.index()).containsExactly(indexName2);
@@ -1014,14 +1016,13 @@ final class ElasticsearchArchiverRepositoryIT {
     // setting policy first time for indexName1 but second time for indexName2, it
     // should have cached the fact that indexName2 already has a policy and not be included in
     // the request.
-    repository.setIndexLifeCycle(indexName1);
-    repository.setIndexLifeCycle(indexName2);
+    repository.setIndexLifeCycle(indexName1).join();
+    repository.setIndexLifeCycle(indexName2).join();
 
     // then
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
-    Awaitility.await()
-        .untilAsserted(() -> verify(indicesClientSpy, times(1)).putSettings(captor2.capture()));
+    verify(indicesClientSpy, times(1)).putSettings(captor2.capture());
 
     final var putIndicesSettingsRequest2 = captor2.getValue();
     assertThat(putIndicesSettingsRequest2.index()).containsExactly(indexName1);
