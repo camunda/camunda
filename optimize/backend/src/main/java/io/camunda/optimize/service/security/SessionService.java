@@ -97,8 +97,8 @@ public class SessionService implements ConfigurationReloadable {
    * Resolves the authenticated user ID from the current request, regardless of whether the request
    * was authenticated via an Identity session cookie or a bearer JWT token.
    *
-   * <p>A CSL login session is resolved on its own: when CSL is active and the request carries one,
-   * the user is whatever CSL authenticated (see {@link #cslAuthenticatedUsername(
+   * <p>A CSL-authenticated request is resolved on its own: when CSL is active and the request
+   * carries one, the user is whatever CSL authenticated (see {@link #cslAuthenticatedUsername(
    * CamundaAuthenticationProvider)}) or nothing at all. It never falls back to the branches below,
    * because the cookie branch reads its subject from an unverified token: under CSL no filter
    * validates the Optimize auth cookie, so a stale or injected one could otherwise attribute the
@@ -119,12 +119,12 @@ public class SessionService implements ConfigurationReloadable {
    */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
     final CamundaAuthenticationProvider cslProvider = cslAuthenticationProvider();
-    if (cslProvider != null && isCslLoginSession()) {
+    if (cslProvider != null && isCslAuthenticatedRequest()) {
       return cslAuthenticatedUsername(cslProvider)
           .orElseThrow(
               () ->
                   new NotAuthorizedException(
-                      "Could not extract request user from the CSL login session!"));
+                      "Could not extract request user from the CSL authentication!"));
     }
     return subjectFromSecurityContext()
         .or(
@@ -141,10 +141,16 @@ public class SessionService implements ConfigurationReloadable {
         : camundaAuthenticationProviderProvider.getIfAvailable();
   }
 
-  /** True when the current request was authenticated by CSL's {@code oauth2Login} chain. */
-  private static boolean isCslLoginSession() {
-    return SecurityContextHolder.getContext().getAuthentication()
-        instanceof OAuth2AuthenticationToken;
+  /**
+   * True when CSL authenticated the current request: an {@link OAuth2AuthenticationToken} from the
+   * {@code oauth2Login} webapp chain, or a {@link JwtAuthenticationToken} from the bearer API
+   * chain. CSL supplies a converter for both, so its authenticated username is authoritative for
+   * either and the legacy branches below are not consulted.
+   */
+  private static boolean isCslAuthenticatedRequest() {
+    final var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication instanceof OAuth2AuthenticationToken
+        || authentication instanceof JwtAuthenticationToken;
   }
 
   /**

@@ -18,9 +18,12 @@ import java.util.Set;
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  *
  * <ul>
- *   <li>{@link #apiPaths()} = the bearer-only public API surface. Only these are claimed by the CSL
- *       OIDC API chain (bearer JWT). Everything else under {@code /api} is served by the catch-all
- *       webapp chain and authenticated from the session.
+ *   <li>{@link #apiPaths()} = the API surface claimed by the CSL OIDC API chain, which accepts
+ *       either a bearer JWT or the webapp session (the chain installs the session filter and uses
+ *       {@code SessionCreationPolicy.NEVER}, so an existing session is restored but never created).
+ *       {@code /api/authentication/**} is deliberately absent: on CCSM the OIDC callback lives at
+ *       {@code /api/authentication/callback}, and the API chain disables {@code oauth2Login}, so
+ *       claiming it here would stop the callback ever reaching the webapp chain and break login.
  *   <li>{@link #unprotectedApiPaths()} = the public subset of {@link #apiPaths()} (the subset
  *       contract is kept). Empty for Optimize: the public API and ingestion endpoints are all
  *       protected.
@@ -34,9 +37,37 @@ import java.util.Set;
  */
 public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
 
+  /**
+   * Enumerated rather than {@code /api/**} so {@code /api/authentication/**} stays on the webapp
+   * chain; see the class javadoc. The public endpoints under {@code /api} are not listed either,
+   * because {@link #unprotectedPaths()} claims them on the order-0 chain.
+   */
   @Override
   public Set<String> apiPaths() {
-    return Set.of("/api/public/**", "/api/ingestion/variable");
+    return Set.of(
+        // Bearer-only surface, unchanged.
+        "/api/public/**",
+        "/api/ingestion/variable",
+        // Internal API, reachable with a bearer token as well as the session.
+        "/api/alert/**",
+        "/api/analysis/**",
+        "/api/assignee/**",
+        "/api/candidateGroup/**",
+        "/api/collection/**",
+        "/api/dashboard/**",
+        "/api/decision-variables/**",
+        "/api/definition/**",
+        "/api/entities/**",
+        "/api/export/**",
+        "/api/flow-node/**",
+        "/api/identity/**",
+        "/api/import/**",
+        "/api/process/**",
+        "/api/report/**",
+        "/api/settings/**",
+        "/api/share/**",
+        "/api/token/**",
+        "/api/variables/**");
   }
 
   @Override

@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
@@ -171,20 +170,32 @@ class SessionServiceTest {
   }
 
   @Test
-  void shouldNotConsultCslForABearerAuthenticatedRequest() {
-    // given — CSL present, but the context holds a bearer JWT rather than an oauth2 session, so the
-    // bearer subject must win and CSL must not be asked
-    when(apiConfiguration.isJwtAuthForApiEnabled()).thenReturn(true);
+  void shouldResolveABearerAuthenticatedRequestThroughCsl() {
+    // given — CSL present and the context holds a bearer JWT from the CSL API chain. CSL has a
+    // converter for that token type, and its username follows the configured username-claim, so it
+    // is authoritative over the raw sub and over the legacy jwtAuthForApiEnabled flag.
     sessionService = sessionServiceWith(camundaAuthenticationProviderOf(CSL_USERNAME));
     SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(buildJwt()));
 
-    // when — the bearer subject resolves first, so the cookie path is never reached
+    // when
     final String user =
         sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class));
 
     // then
+    assertThat(user).isEqualTo(CSL_USERNAME);
+  }
+
+  @Test
+  void shouldStillUseTheBearerSubjectWhenCslIsAbsent() {
+    // given — legacy setup: no CamundaAuthenticationProvider bean, so the pre-CSL behaviour of
+    // taking the subject from the bearer token must be preserved
+    when(apiConfiguration.isJwtAuthForApiEnabled()).thenReturn(true);
+    SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(buildJwt()));
+
+    final String user =
+        sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class));
+
     assertThat(user).isEqualTo(USER_SUBJECT);
-    verifyNoInteractions(camundaAuthenticationProvider);
   }
 
   private ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderOf(
