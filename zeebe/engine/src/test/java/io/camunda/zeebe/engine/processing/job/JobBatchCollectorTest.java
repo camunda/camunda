@@ -646,7 +646,6 @@ final class JobBatchCollectorTest {
     createJob(scopeKeyB, tenantB);
 
     // when - user is authorized for tenantB, but record specifies tenantA
-    final var authorizedTenants = TenantAccess.allowed(List.of(tenantB));
     collector.collectJobs(record, List.of(tenantA));
 
     // then - should use provided tenant (A) from record

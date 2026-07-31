@@ -234,6 +234,29 @@ public class JobBatchActivateAuthorizationTest {
   }
 
   @Test
+  public void shouldActivateEmptyBatchForAnonymousCallerWithAssignedTenantFilter() {
+    // given — a wildcard (anonymous) grant resolves to an empty tenant-ID list, and ASSIGNED skips
+    // the tenant-authorization check entirely; this must silently collect zero jobs rather than
+    // fail, even though matching jobs exist on the default tenant
+    final var processId = Strings.newRandomValidBpmnId();
+    createJobs(processId);
+    final var authInfo =
+        AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+
+    // when
+    final var response =
+        engine
+            .jobs()
+            .withType(JOB_TYPE)
+            .withMaxJobsToActivate(2)
+            .withTenantFilter(TenantFilter.ASSIGNED)
+            .activate(authInfo);
+
+    // then
+    assertThat(response.getValue().getJobs()).isEmpty();
+  }
+
+  @Test
   public void shouldRejectWhenNoPrincipalClaimAndMultiTenancyEnabled() {
     // given — a command carrying no username/clientId claim at all (not anonymous either); this is
     // the shape an unauthenticated gateway deployment would produce, and must be rejected rather
