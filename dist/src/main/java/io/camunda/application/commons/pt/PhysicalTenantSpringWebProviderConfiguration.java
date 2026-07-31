@@ -17,9 +17,9 @@ import java.util.Set;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.SpringWebProvider;
 import org.springdoc.webmvc.core.providers.SpringWebMvcProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.accept.ApiVersionStrategy;
 import org.springframework.web.method.HandlerMethod;
@@ -33,13 +33,10 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
  */
 @Configuration
 @ConditionalOnRestGatewayEnabled
-@ConditionalOnProperty(
-    name = "camunda.rest.swagger.enabled",
-    havingValue = "true",
-    matchIfMissing = true)
 class PhysicalTenantSpringWebProviderConfiguration {
 
   @Bean
+  @Lazy(false)
   SpringWebProvider springWebProvider(
       final Optional<ApiVersionStrategy> apiVersionStrategyOptional) {
     return new PhysicalTenantAwareSpringWebMvcProvider(apiVersionStrategyOptional);
