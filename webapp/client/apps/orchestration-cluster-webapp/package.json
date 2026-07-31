@@ -34,7 +34,7 @@
 		"@tanstack/react-query-devtools": "5.101.4",
 		"@tanstack/react-router": "1.170.18",
 		"@tanstack/react-router-devtools": "1.167.0",
-		"@tanstack/react-virtual": "3.14.8",
+		"@tanstack/react-virtual": "3.14.9",
 		"@tanstack/router-plugin": "1.168.23",
 		"@uidotdev/usehooks": "2.4.1",
 		"@xstate/react": "6.1.0",
