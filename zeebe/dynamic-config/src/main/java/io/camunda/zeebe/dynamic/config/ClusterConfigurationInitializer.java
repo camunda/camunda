@@ -224,47 +224,67 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * any member. The future returned by initialize is never completed until a valid configuration is
    * received.
    */
-  class GossipInitializer
-      implements ClusterConfigurationInitializer<ClusterConfiguration>,
-          ClusterConfigurationUpdateListener {
+  class GossipInitializer<T extends InitializableClusterConfiguration>
+      implements ClusterConfigurationInitializer<T>, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
-    private final PersistedClusterConfiguration persistedClusterConfiguration;
-    private final Consumer<ClusterConfiguration> configurationGossiper;
-    private final ActorFuture<ClusterConfiguration> initialized;
-
+    private final Supplier<T> persistedConfigurationSupplier;
+    private final Consumer<T> configurationGossiper;
+    private final ActorFuture<T> initialized;
     private final ConcurrencyControl executor;
+    // Used only to discriminate, at runtime, which of the two onClusterConfigurationUpdated
+    // overloads carries a T (see SyncInitializer for the same pattern).
+    private final T uninitialized;
 
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
-        final PersistedClusterConfiguration persistedClusterConfiguration,
-        final Consumer<ClusterConfiguration> configurationGossiper,
-        final ConcurrencyControl executor) {
+        final Supplier<T> persistedConfigurationSupplier,
+        final Consumer<T> configurationGossiper,
+        final ConcurrencyControl executor,
+        final T uninitialized) {
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
-      this.persistedClusterConfiguration = persistedClusterConfiguration;
+      this.persistedConfigurationSupplier = persistedConfigurationSupplier;
       this.configurationGossiper = configurationGossiper;
       this.executor = executor;
+      this.uninitialized = uninitialized;
       initialized = new CompletableActorFuture<>();
     }
 
     @Override
-    public ActorFuture<ClusterConfiguration> initialize() {
+    public ActorFuture<T> initialize() {
       LOGGER.debug("Waiting for initial cluster configuration via gossip.");
       clusterConfigurationUpdateNotifier.addUpdateListener(this);
-      if (persistedClusterConfiguration.isUninitialized()) {
+      final var persistedConfiguration = persistedConfigurationSupplier.get();
+      if (persistedConfiguration.isUninitialized()) {
         // When uninitialized, the member should gossip uninitialized configuration so that the
         // coordinator is not waiting in SyncInitializer forever.
 
         // Check persisted cluster configuration directly, so as not to overwrite and concurrently
         // received gossip
-        configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
+        configurationGossiper.accept(persistedConfiguration);
       }
       return initialized;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+      if (uninitialized instanceof ClusterConfiguration) {
+        configurationUpdated((T) clusterConfiguration);
+      }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void onClusterConfigurationUpdated(
+        final CurrentClusterConfiguration clusterConfiguration) {
+      if (uninitialized instanceof CurrentClusterConfiguration) {
+        configurationUpdated((T) clusterConfiguration);
+      }
+    }
+
+    private void configurationUpdated(final T clusterConfiguration) {
       executor.run(
           () -> {
             if (initialized.isDone()) {
@@ -285,14 +305,13 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * until the bootstrap timeout, after which this initializer completes with an uninitialized
    * configuration, letting the caller's initializer chain decide how to proceed.
    */
-  class SyncInitializer
-      implements ClusterConfigurationInitializer<ClusterConfiguration>,
-          ClusterConfigurationUpdateListener {
+  class SyncInitializer<T extends InitializableClusterConfiguration>
+      implements ClusterConfigurationInitializer<T>, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
     private final Duration syncDelay;
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
-    private final ActorFuture<ClusterConfiguration> initialized;
+    private final ActorFuture<T> initialized;
     private final Supplier<List<MemberId>> knownMembersToSync;
     private final Duration bootstrapTimeout;
     private final Set<MemberId> uninitializedMembers = new HashSet<>();
@@ -300,26 +319,29 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private boolean retryScheduled;
     private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
-    private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
+    private final Function<MemberId, ActorFuture<T>> syncRequester;
+    private final T uninitialized;
 
     SyncInitializer(
         final Duration syncDelay,
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final Supplier<List<MemberId>> knownMembersToSync,
         final ConcurrencyControl executor,
-        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester,
-        final Duration bootstrapTimeout) {
+        final Function<MemberId, ActorFuture<T>> syncRequester,
+        final Duration bootstrapTimeout,
+        final T uninitialized) {
       this.syncDelay = syncDelay;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
       this.executor = executor;
       this.syncRequester = syncRequester;
       this.bootstrapTimeout = bootstrapTimeout;
+      this.uninitialized = uninitialized;
       initialized = new CompletableActorFuture<>();
     }
 
     @Override
-    public ActorFuture<ClusterConfiguration> initialize() {
+    public ActorFuture<T> initialize() {
       if (knownMembersToSync.get().isEmpty()) {
         completeAsUninitialized("no known members to sync");
       } else {
@@ -353,7 +375,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     }
 
     private void handleSyncResponse(
-        final MemberId memberId, final ClusterConfiguration configuration, final Throwable error) {
+        final MemberId memberId, final T configuration, final Throwable error) {
       requestsInFlight.remove(memberId);
       if (initialized.isDone()) {
         return;
@@ -384,7 +406,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         }
       } else {
         LOGGER.debug("Received cluster configuration {} from {}", configuration, memberId);
-        onClusterConfigurationUpdated(configuration);
+        configurationUpdated(configuration);
       }
     }
 
@@ -407,7 +429,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
             "No initialized cluster configuration found: {}. Completing as uninitialized; "
                 + "the initializer chain will decide how to proceed.",
             cause);
-        initialized.complete(ClusterConfiguration.uninitialized());
+        initialized.complete(uninitialized);
         cancelBootstrapTimeout();
         clusterConfigurationUpdateNotifier.removeUpdateListener(this);
       }
@@ -429,12 +451,28 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
       }
     }
 
-    private ActorFuture<ClusterConfiguration> requestSync(final MemberId memberId) {
+    private ActorFuture<T> requestSync(final MemberId memberId) {
       return syncRequester.apply(memberId);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+      if (uninitialized instanceof ClusterConfiguration) {
+        configurationUpdated((T) clusterConfiguration);
+      }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void onClusterConfigurationUpdated(
+        final CurrentClusterConfiguration clusterConfiguration) {
+      if (uninitialized instanceof CurrentClusterConfiguration) {
+        configurationUpdated((T) clusterConfiguration);
+      }
+    }
+
+    private void configurationUpdated(final T clusterConfiguration) {
       executor.run(
           () -> {
             if (initialized.isDone()) {

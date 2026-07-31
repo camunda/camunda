@@ -84,7 +84,8 @@ public class ExporterStateInitializer
     MemberState updatedMemberState = memberState;
     for (final var p : memberState.partitions().keySet()) {
       final PartitionState currentPartitionState = memberState.partitions().get(p);
-      final var updatedPartitionState = updateExporterStateInPartition(currentPartitionState);
+      final var updatedPartitionState =
+          updateExporterStateInPartition(currentPartitionState, configuredExporters);
       // Do not update the member state if the partition state is not changed, otherwise the
       // version will be updated during every restart and this could interfere with other
       // concurrent configuration changes.
@@ -96,7 +97,14 @@ public class ExporterStateInitializer
     return updatedMemberState;
   }
 
-  private PartitionState updateExporterStateInPartition(final PartitionState partitionState) {
+  /**
+   * Reconciles a single partition's exporter state against {@code configuredExporters}. Pure
+   * function of the partition state and the configured exporters — shared with {@link
+   * PartitionGroupExporterStateInitializer}, which applies the same reconciliation per partition
+   * group instead of per cluster-wide member.
+   */
+  static PartitionState updateExporterStateInPartition(
+      final PartitionState partitionState, final Set<String> configuredExporters) {
     final var initializedPartitionState =
         partitionState.config().isInitialized()
             ? partitionState
@@ -133,7 +141,7 @@ public class ExporterStateInitializer
         .updateConfig(c -> c.updateExporting(e -> e.addExporters(newlyAddedExporters)));
   }
 
-  private ExportingConfig reEnableExporters(
+  static ExportingConfig reEnableExporters(
       final ExportingConfig exportingConfig,
       final List<Entry<String, ExporterState>> configReaddedExporters) {
 

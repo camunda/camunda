@@ -212,19 +212,21 @@ public final class ClusterConfigurationManagerService
         // of a serialization bug.
         .recover(
             PersistedConfigurationIsBroken.class,
-            new SyncInitializer(
+            new SyncInitializer<>(
                 gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration,
-                gossiperConfig.bootstrapTimeout()))
+                gossiperConfig.bootstrapTimeout(),
+                ClusterConfiguration.uninitialized()))
         .orThen(
-            new GossipInitializer(
+            new GossipInitializer<>(
                 clusterConfigurationGossiper,
-                persistedClusterConfiguration,
+                persistedClusterConfiguration::getConfiguration,
                 clusterConfigurationGossiper::updateClusterConfiguration,
-                managerActor))
+                managerActor,
+                ClusterConfiguration.uninitialized()))
         .andThen(
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
@@ -238,7 +240,9 @@ public final class ClusterConfigurationManagerService
         // configuration.
         // These initializers will be skipped if they are not running on the latest coordinator
         // based on the initialized configuration.
-        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
@@ -247,13 +251,14 @@ public final class ClusterConfigurationManagerService
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
-            new SyncInitializer(
+            new SyncInitializer<>(
                 gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration,
-                gossiperConfig.bootstrapTimeout()))
+                gossiperConfig.bootstrapTimeout(),
+                ClusterConfiguration.uninitialized()))
         .orThen(new StaticInitializer<>(staticConfiguration::generateTopology))
         .andThen(
             new ExporterStateInitializer(
@@ -263,8 +268,77 @@ public final class ClusterConfigurationManagerService
                 true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only
-        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+                staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
+  }
+
+  /**
+   * New-model counterpart of {@link #getNonCoordinatorInitializer}. Mirrors its shape exactly:
+   * recover a broken file via sync, then wait on gossip from the coordinator; the coordinator-only
+   * initializers below are still defined here (not skipped) because the actual coordinator, once
+   * the configuration is initialized, might differ from what {@code staticConfiguration} assumes —
+   * see {@link ClusterConfigurationModifier.CoordinatorOnly}'s self-filtering.
+   */
+  private ClusterConfigurationInitializer<CurrentClusterConfiguration>
+      getCurrentClusterConfigurationNonCoordinatorInitializer(
+          final StaticConfiguration staticConfiguration) {
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
+    return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
+        .recover(
+            PersistedConfigurationIsBroken.class,
+            new SyncInitializer<>(
+                gossiperConfig.syncInitializerDelay(),
+                clusterConfigurationGossiper,
+                otherKnownMembers,
+                managerActor,
+                clusterConfigurationGossiper::queryCurrentClusterConfiguration,
+                gossiperConfig.bootstrapTimeout(),
+                CurrentClusterConfiguration.uninitialized()))
+        .orThen(
+            new GossipInitializer<>(
+                clusterConfigurationGossiper,
+                persistedCurrentClusterConfiguration::getConfiguration,
+                clusterConfigurationGossiper::updateCurrentClusterConfiguration,
+                managerActor,
+                CurrentClusterConfiguration.uninitialized()))
+        .andThen(
+            new PartitionGroupExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId()))
+        .andThen(
+            PartitionDistributorInitializer
+                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration));
+  }
+
+  /**
+   * New-model counterpart of {@link #getCoordinatorInitializer}. Mirrors its shape exactly: sync
+   * from other members, and — unlike the non-coordinator chain — self-generate from static
+   * configuration as a last resort if sync times out uninitialized.
+   */
+  private ClusterConfigurationInitializer<CurrentClusterConfiguration>
+      getCurrentClusterConfigurationCoordinatorInitializer(
+          final StaticConfiguration staticConfiguration) {
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
+    return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
+        .orThen(
+            new SyncInitializer<>(
+                gossiperConfig.syncInitializerDelay(),
+                clusterConfigurationGossiper,
+                otherKnownMembers,
+                managerActor,
+                clusterConfigurationGossiper::queryCurrentClusterConfiguration,
+                gossiperConfig.bootstrapTimeout(),
+                CurrentClusterConfiguration.uninitialized()))
+        .orThen(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .andThen(
+            new PartitionGroupExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId()))
+        .andThen(
+            PartitionDistributorInitializer
+                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration));
   }
 
   private Supplier<List<MemberId>> initializationMembers(
@@ -320,17 +394,21 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationManager.registerGlobalChangeAppliers(
                     new GlobalConfigurationChangeAppliersImpl(
                         new NoopClusterMembershipChangeExecutor(), clusterChangeExecutor));
-                // Intermediate migration step: only the file and static initializer exists for the
-                // new model, used unconditionally for both coordinator and non-coordinator role.
-                // File/gossip/sync recovery and the coordinator/non-coordinator split are a
-                // follow-up.
-                final ClusterConfigurationInitializer<CurrentClusterConfiguration> initializer =
-                    FileInitializer.fromPersistedConfiguration(
-                            configurationFile, new ProtoBufSerializer())
-                        .orThen(
-                            new StaticInitializer<>(
-                                staticConfiguration::generateCurrentClusterConfiguration));
-                clusterConfigurationManager.start(initializer).onComplete(result);
+                final var coordinatorMemberId =
+                    ClusterConfigurationCoordinatorSupplier.ofMembers(
+                            staticConfiguration.clusterMembers())
+                        .getDefaultCoordinator();
+                final var isCoordinator = coordinatorMemberId.equals(localMemberId);
+                final ClusterConfigurationInitializer<CurrentClusterConfiguration>
+                    currentClusterConfigurationInitializer =
+                        isCoordinator
+                            ? getCurrentClusterConfigurationCoordinatorInitializer(
+                                staticConfiguration)
+                            : getCurrentClusterConfigurationNonCoordinatorInitializer(
+                                staticConfiguration);
+                clusterConfigurationManager
+                    .start(currentClusterConfigurationInitializer)
+                    .onComplete(result);
               } else {
                 final var coordinatorMemberId =
                     ClusterConfigurationCoordinatorSupplier.ofMembers(
