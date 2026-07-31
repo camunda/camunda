@@ -40,7 +40,8 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 class PhysicalTenantSpringWebProviderConfiguration {
 
   @Bean
-  SpringWebProvider springWebProvider(final Optional<ApiVersionStrategy> apiVersionStrategyOptional) {
+  SpringWebProvider springWebProvider(
+      final Optional<ApiVersionStrategy> apiVersionStrategyOptional) {
     return new PhysicalTenantAwareSpringWebMvcProvider(apiVersionStrategyOptional);
   }
 
@@ -54,7 +55,7 @@ class PhysicalTenantSpringWebProviderConfiguration {
    * and self-referential server URLs, and can crash {@code OpenApiWebMvcResource#getServerUrl}.
    * Skipping PT-prefixed candidates here makes the result deterministic.
    */
-  private static final class PhysicalTenantAwareSpringWebMvcProvider extends SpringWebMvcProvider {
+  static final class PhysicalTenantAwareSpringWebMvcProvider extends SpringWebMvcProvider {
 
     PhysicalTenantAwareSpringWebMvcProvider(
         final Optional<ApiVersionStrategy> apiVersionStrategyOptional) {
