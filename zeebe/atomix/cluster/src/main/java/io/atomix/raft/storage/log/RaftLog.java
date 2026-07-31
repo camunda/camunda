@@ -45,6 +45,16 @@ public final class RaftLog implements Closeable {
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
+  // The highest commit index a leader announced to this member, which can be ahead of
+  // commitIndex: a follower only advances its commit index once the records it acknowledges are
+  // durable, but it must never delete records which the leader already declared committed, not even
+  // while the flush covering them is still in progress. Only used to guard truncations;
+  // commitIndex keeps its stricter meaning of "committed and durable" for committed readers.
+  private long announcedCommitIndex;
+
+  // Counts how often records were removed from this log, see #getTruncationGeneration().
+  private long truncationGeneration;
+
   RaftLog(final Journal journal, final RaftLogFlusher flusher) {
     this.journal = journal;
     this.flusher = flusher;
@@ -111,6 +121,31 @@ public final class RaftLog implements Closeable {
     commitIndex = index;
   }
 
+  /**
+   * Announces that a leader considers all entries up to the given index committed. Unlike {@link
+   * #setCommitIndex(long)}, this may be called before those entries are durable, and it does not
+   * make them visible to committed readers. It only ensures that {@link #reset(long)} and {@link
+   * #deleteAfter(long)} keep refusing to delete entries which a leader already declared committed,
+   * even while the flush covering them is still in progress. The announced index never decreases.
+   *
+   * <p>Only called on the thread which appends to and truncates the log, i.e. the Raft thread.
+   *
+   * @param index the highest index a leader declared committed
+   */
+  public void announceCommitIndex(final long index) {
+    announcedCommitIndex = Math.max(announcedCommitIndex, index);
+  }
+
+  /**
+   * Returns the highest commit index announced by a leader. This can be ahead of {@link
+   * #getCommitIndex()}, which only covers entries which are also durable.
+   *
+   * @see #announceCommitIndex(long)
+   */
+  public long getAnnouncedCommitIndex() {
+    return announcedCommitIndex;
+  }
+
   public long getFirstIndex() {
     return journal.getFirstIndex();
   }
@@ -174,8 +209,23 @@ public final class RaftLog implements Closeable {
     return lastAppendedEntry;
   }
 
+  /**
+   * Returns how often records were removed from this log, i.e. how often {@link #reset(long)} or
+   * {@link #deleteAfter(long)} was called. Operations which cover specific records but complete
+   * asynchronously can capture this before they start and compare it afterwards, to detect that the
+   * records they cover may have ceased to exist. Comparing indexes instead is not enough: a
+   * truncation followed by new appends can restore the same last index with different records.
+   *
+   * <p>Only read and updated on the thread which appends to and truncates the log, i.e. the Raft
+   * thread.
+   */
+  public long getTruncationGeneration() {
+    return truncationGeneration;
+  }
+
   public void reset(final long index) {
-    if (index < commitIndex) {
+    final long committedIndex = Math.max(commitIndex, announcedCommitIndex);
+    if (index < committedIndex) {
       throw new IllegalStateException(
           String.format(
               """
@@ -183,16 +233,18 @@ public final class RaftLog implements Closeable {
                Deleting committed entries can lead to inconsistencies and is prohibited.\
                This can happen if a quorum of nodes has experienced data loss and became leader.\
                This situation probably requires manual intervention to resume operations""",
-              index, commitIndex));
+              index, committedIndex));
     }
     // pending flush results for the deleted records must fail, they can never become durable
     flusher.onLogTruncation(index - 1);
+    truncationGeneration++;
     journal.reset(index);
     lastAppendedEntry = null;
   }
 
   public void deleteAfter(final long index) throws FlushException {
-    if (index < commitIndex) {
+    final long committedIndex = Math.max(commitIndex, announcedCommitIndex);
+    if (index < committedIndex) {
       throw new IllegalStateException(
           String.format(
               """
@@ -200,10 +252,11 @@ public final class RaftLog implements Closeable {
                  Deleting committed entries can lead to inconsistencies and is prohibited.\
                This can happen if a quorum of nodes has experienced data loss and became leader.\
                This situation probably requires manual intervention to resume operations""",
-              index, commitIndex));
+              index, committedIndex));
     }
     // pending flush results for the deleted records must fail, they can never become durable
     flusher.onLogTruncation(index);
+    truncationGeneration++;
     journal.deleteAfter(index);
     lastAppendedEntry = null;
 

@@ -278,6 +278,52 @@ public class PassiveRoleTest {
   }
 
   @Test
+  public void shouldFailAppendWhenLogIsTruncatedBeforeFlushCompletes() {
+    // given - entries were appended, but the flush covering them is still in progress
+    final var flushFuture = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushFuture);
+    when(log.getTruncationGeneration()).thenReturn(7L);
+    runThreadContextInline();
+
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 1, entries);
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // when - the log is truncated before the flush completes, e.g. by a conflicting append
+    when(log.getTruncationGeneration()).thenReturn(8L);
+    flushFuture.complete(null);
+
+    // then - the append is rejected instead of acknowledging entries which may no longer exist
+    assertThat(responseFuture).isCompleted();
+    assertThat(responseFuture.join().succeeded()).isFalse();
+    verify(ctx, never()).setCommitIndex(anyLong());
+  }
+
+  @Test
+  public void shouldAnnounceCommitIndexBeforeItIsDurable() {
+    // given - a flush which does not complete immediately
+    final var flushFuture = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushFuture);
+    runThreadContextInline();
+
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request = appendRequest(1, 0, 0, 1, entries);
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    final var responseFuture = role.handleAppend(ProtocolVersionHandler.transform(request));
+
+    // then - the log knows about the announced commit index right away, so that it keeps refusing
+    // to delete the committed entry, while the commit index itself is only advanced once durable
+    verify(log).announceCommitIndex(1);
+    verify(ctx, never()).setCommitIndex(anyLong());
+    assertThat(responseFuture).isNotCompleted();
+  }
+
+  @Test
   public void shouldNotAckEmptyAppendWhileEarlierRecordsAreNotDurable() {
     // given - records up to index 2 are appended but only flushed up to index 1, e.g. because the
     // flush of a previous append request is still in progress
