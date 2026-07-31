@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,8 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.utils.concurrent.Scheduler;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
@@ -46,6 +49,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -403,10 +407,10 @@ class RaftLogTest {
     }
 
     @Test
-    void shouldFlushDirectlyOnDeleteAfterRegardlessOfFlusher() throws CheckedJournalException {
-      // given - a flusher which never flushes on its own
+    void shouldFlushTruncationImmediatelyWithDelayedFlusher() throws CheckedJournalException {
+      // given - a flusher which flushes eventually, but not when requested to
       final var journal = mock(Journal.class);
-      final var flusher = spy(new NoopFlusher());
+      final var flusher = spy(new DelayedFlusher(mock(Scheduler.class), Duration.ofSeconds(5)));
       final var log = new RaftLog(journal, flusher);
 
       // when
@@ -416,6 +420,42 @@ class RaftLogTest {
       verify(flusher, times(1)).onLogTruncation(2);
       verify(journal, times(1)).deleteAfter(2);
       verify(journal, times(1)).flush();
+    }
+
+    @Test
+    void shouldNotFlushTruncationWhenFlushingIsDisabled() throws CheckedJournalException {
+      // given - a flusher which never flushes, i.e. flushing is disabled
+      final var journal = mock(Journal.class);
+      final var flusher = spy(new NoopFlusher());
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.deleteAfter(2);
+
+      // then - no i/o is done on the write path, so a transient flush error cannot reject the
+      // truncation
+      verify(flusher, times(1)).onLogTruncation(2);
+      verify(journal, times(1)).deleteAfter(2);
+      verify(journal, never()).flush();
+    }
+
+    @Test
+    void shouldOnlyReportDirectFlushingForTheDirectFlusher() {
+      // given
+      final var journal = mock(Journal.class);
+
+      // when - then - only the direct flusher guarantees durability synchronously, so only for it
+      // callers may skip flushing, e.g. before taking a snapshot
+      assertThat(new RaftLog(journal, new DirectFlusher()).flushesDirectly()).isTrue();
+      assertThat(new RaftLog(journal, new NoopFlusher()).flushesDirectly()).isFalse();
+      assertThat(
+              new RaftLog(journal, new DelayedFlusher(mock(Scheduler.class), Duration.ofSeconds(5)))
+                  .flushesDirectly())
+          .isFalse();
+      assertThat(
+              new RaftLog(journal, new CoalescedFlusher(mock(ThreadContext.class)))
+                  .flushesDirectly())
+          .isFalse();
     }
 
     @Test

@@ -678,14 +678,23 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Ensures everything written to the log until this point is flushed to disk, regardless of the
+   * Ensures everything written to the log until this point is flushed to disk, bypassing the
    * configured flush strategy. This is mainly used to guarantee that the log is durable before a
    * snapshot is persisted and the log is compacted: for flush strategies which acknowledge before
    * durability, this bounds the data loss on a crash to records written after the snapshot.
    *
-   * @return a future to be completed once the log is actually flushed to disk
+   * <p>With a strategy which flushes directly, everything written is already flushed synchronously
+   * on the Raft thread before it is acknowledged or committed, so there is nothing left to flush.
+   * Nothing is done then, as an optimization to ensure we are not unnecessarily blocking the Raft
+   * thread to do an i/o.
+   *
+   * @return a future to be completed once the log is durable
    */
   public CompletableFuture<Void> flushLog() {
+    if (raftLog.flushesDirectly()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
     return CompletableFuture.runAsync(
         CheckedRunnable.toUnchecked(raftLog::forceFlush), threadContext);
   }

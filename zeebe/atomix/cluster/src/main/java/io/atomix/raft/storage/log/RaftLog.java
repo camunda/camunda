@@ -146,6 +146,15 @@ public final class RaftLog implements Closeable {
     return announcedCommitIndex;
   }
 
+  /**
+   * Returns true if the configured flusher flushes synchronously and immediately, i.e. everything
+   * requested to be flushed is on disk once {@link #flush(long)} returns. See {@link
+   * RaftLogFlusher#flushesDirectly()}.
+   */
+  public boolean flushesDirectly() {
+    return flusher.flushesDirectly();
+  }
+
   public long getFirstIndex() {
     return journal.getFirstIndex();
   }
@@ -263,8 +272,12 @@ public final class RaftLog implements Closeable {
     // we have to flush right away, bypassing the configured flush strategy, to ensure the
     // truncation itself is durable: the journal already lowered its flush watermark, so records
     // beyond it would otherwise be treated as valid partial writes on restart even though they
-    // were already acknowledged based on an earlier flush
-    forceFlush();
+    // were already acknowledged based on an earlier flush. Deployments which disabled flushing
+    // entirely opted out of durability on the write path, so we don't flush - and possibly fail the
+    // truncation because of an I/O error - on their behalf.
+    if (flusher.flushesEventually()) {
+      forceFlush();
+    }
   }
 
   /**
