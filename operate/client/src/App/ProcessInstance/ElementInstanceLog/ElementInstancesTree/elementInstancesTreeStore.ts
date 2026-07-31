@@ -6,13 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ElementInstance,
+  QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {makeObservable, observable, action, override} from 'mobx';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
 import type {RequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {buildElementInstanceSort} from '../buildElementInstanceSort';
+import {DEFAULT_ORDER} from 'modules/stores/instanceHistorySortOrder';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
@@ -47,6 +52,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   isPollRequestRunning: boolean = false;
   intervalId: ReturnType<typeof setInterval> | null = null;
   pollAbortController: AbortController | null = null;
+  private sortOrder: QuerySortOrder = DEFAULT_ORDER;
 
   constructor() {
     super();
@@ -77,12 +83,15 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     processInstanceKey: string,
     config?: {
       enablePolling?: boolean;
+      sortOrder?: QuerySortOrder;
     },
   ) => {
     const isNewRoot = this.state.rootScopeKey !== processInstanceKey;
     const isPollingEnabled = config?.enablePolling ?? false;
+    const nextSortOrder = config?.sortOrder ?? this.sortOrder;
+    const isSortOrderChanged = this.sortOrder !== nextSortOrder;
 
-    if (!isNewRoot) {
+    if (!isNewRoot && !isSortOrderChanged) {
       if (isPollingEnabled && this.intervalId === null) {
         this.startPolling();
       } else if (!isPollingEnabled && this.intervalId !== null) {
@@ -98,13 +107,21 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     });
     this.state.abortControllers.clear();
 
+    this.sortOrder = nextSortOrder;
+
+    if (isNewRoot) {
+      this.state.expandedNodes.clear();
+      this.state.rootScopeKey = processInstanceKey;
+      this.state.expandedNodes.add(processInstanceKey);
+    }
+
     this.state.nodes.clear();
-    this.state.expandedNodes.clear();
-    this.state.rootScopeKey = processInstanceKey;
 
-    this.state.expandedNodes.add(processInstanceKey);
-
-    await this.fetchFirstPage(processInstanceKey);
+    await Promise.all(
+      Array.from(this.state.expandedNodes, (scopeKey) =>
+        this.fetchFirstPage(scopeKey),
+      ),
+    );
 
     if (isPollingEnabled) {
       this.startPolling();
@@ -132,7 +149,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: 0},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -240,7 +257,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -295,7 +312,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -402,6 +419,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
     this.isPollRequestRunning = false;
+    this.sortOrder = DEFAULT_ORDER;
   }
 
   private hasRunningChildren = (scopeKey: string): boolean => {
@@ -411,6 +429,20 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     }
 
     return nodeData.items.some((item) => item.state === 'ACTIVE');
+  };
+
+  // Polling has to keep covering scopes that are still ACTIVE, so children that
+  // start after the first load still show up. A scope's own state is not
+  // directly reachable by key: nodes are keyed by *parent* scope, so an element
+  // instance is only ever found inside its parent's item list - hence the scan.
+  // It appears under exactly one parent, so the first match is the only match.
+  private isScopeActive = (scopeKey: string): boolean => {
+    return Array.from(this.state.nodes.values()).some(({items}) =>
+      items.some(
+        (item) =>
+          item.elementInstanceKey === scopeKey && item.state === 'ACTIVE',
+      ),
+    );
   };
 
   pollExpandedNodes = async () => {
@@ -433,7 +465,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       if (scopeKey === this.state.rootScopeKey) {
         return true;
       }
-      return this.hasRunningChildren(scopeKey);
+      return this.isScopeActive(scopeKey) || this.hasRunningChildren(scopeKey);
     });
 
     try {
@@ -453,7 +485,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
                 limit: PAGE_SIZE * 2,
                 from: requestedWindowStart,
               },
-              sort: [{field: 'startDate', order: 'asc'}],
+              sort: buildElementInstanceSort(this.sortOrder),
             },
             signal,
           );

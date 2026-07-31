@@ -164,6 +164,10 @@ type Events =
       eventName: 'instance-history-end-time-toggled';
     }
   | {
+      eventName: 'instance-history-sort-order-toggled';
+      toggledTo: 'asc' | 'desc';
+    }
+  | {
       eventName: 'instance-history-item-clicked';
     }
   | {

@@ -19,6 +19,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
@@ -45,6 +46,7 @@ function resetAllStores() {
     incidentsPanelFiltersStore.reset();
     elementTimeStampStore.reset();
     executionCountToggleStore.reset();
+    instanceHistorySortOrderStore.reset();
     dateRangePopoverStore.reset();
     variableFilterStore.reset();
     decisionDefinitionStore.reset();

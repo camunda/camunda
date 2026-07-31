@@ -45,4 +45,15 @@ const PanelBody = styled.div`
   position: relative;
 `;
 
-export {PanelHeader, Container, ErrorMessage, PanelBody};
+const SearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+
+  .cds--search {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+export {PanelHeader, Container, ErrorMessage, PanelBody, SearchRow};

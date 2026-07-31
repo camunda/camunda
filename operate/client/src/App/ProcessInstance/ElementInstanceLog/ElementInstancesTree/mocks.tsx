@@ -19,9 +19,37 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
+  type ElementInstance,
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+
+const MOCK_PROCESS_INSTANCE_KEY = '2251799813685625';
+
+/**
+ * Builds an ElementInstance with sensible defaults so the store tests only have
+ * to spell out the fields they actually assert on. Keeps the generated
+ * ElementInstance shape in one place per directory.
+ */
+const createMockElementInstance = (
+  overrides: Partial<ElementInstance> = {},
+): ElementInstance => ({
+  elementInstanceKey: '2251799813685630',
+  elementId: 'task_1',
+  elementName: 'Task 1',
+  type: 'SERVICE_TASK',
+  state: 'ACTIVE',
+  startDate: '2023-01-01T10:00:00.000Z',
+  processDefinitionKey: '2251799813685623',
+  processDefinitionId: 'test-process',
+  processInstanceKey: MOCK_PROCESS_INSTANCE_KEY,
+  hasIncident: false,
+  tenantId: '<default>',
+  endDate: null,
+  rootProcessInstanceKey: null,
+  incidentKey: null,
+  ...overrides,
+});
 
 const mockMultiInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
@@ -1258,6 +1286,8 @@ async function parseBusinessObjects(xml: string) {
 }
 
 export {
+  createMockElementInstance,
+  MOCK_PROCESS_INSTANCE_KEY,
   mockEventSubprocessInstance,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessesInstance,
