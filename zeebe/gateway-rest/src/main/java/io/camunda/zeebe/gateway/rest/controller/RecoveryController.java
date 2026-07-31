@@ -12,11 +12,12 @@ import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
 import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
 import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
@@ -57,12 +58,18 @@ public final class RecoveryController {
       "camunda.data.primary-storage.backup.continuous";
 
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
+  private final ServiceRegistry serviceRegistry;
+  private final CamundaAuthenticationProvider authenticationProvider;
   private final Environment environment;
 
   public RecoveryController(
       final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider,
       final Environment environment) {
     this.clusterConfigurationRequestSender = clusterConfigurationRequestSender;
+    this.serviceRegistry = serviceRegistry;
+    this.authenticationProvider = authenticationProvider;
     this.environment = environment;
   }
 
@@ -74,10 +81,12 @@ public final class RecoveryController {
       @RequestParam final Mode mode,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
     LOG.debug("Requested cluster mode change to {} for physical tenant {}", mode, physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            clusterConfigurationRequestSender
-                .modeChange(new ModeChangeRequest(physicalTenantId, mode, dryRun))
+            serviceRegistry
+                .recoveryServices(physicalTenantId)
+                .changeMode(mode, dryRun, authentication)
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.OK);

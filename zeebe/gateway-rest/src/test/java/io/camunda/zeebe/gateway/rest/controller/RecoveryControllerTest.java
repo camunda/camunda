@@ -14,8 +14,11 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
 import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.RecoveryServices;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
@@ -38,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +58,16 @@ import org.springframework.test.json.JsonCompareMode;
 public class RecoveryControllerTest extends RestControllerTest {
 
   @MockitoBean ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
+  @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean RecoveryServices recoveryServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+
+  @BeforeEach
+  void setUpRecoveryServices() {
+    Mockito.when(serviceRegistry.recoveryServices(Mockito.any())).thenReturn(recoveryServices);
+    Mockito.when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
 
   private void stubValidationSuccess() {
     Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
@@ -74,8 +88,8 @@ public class RecoveryControllerTest extends RestControllerTest {
             Map.of(),
             List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     Mockito.when(
-            clusterConfigurationRequestSender.modeChange(
-                new ModeChangeRequest("default", Mode.RECOVERING, false)))
+            recoveryServices.changeMode(
+                Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
 
     final var expectedResponse =
@@ -107,8 +121,8 @@ public class RecoveryControllerTest extends RestControllerTest {
   void shouldMapErrorResponseWhenModeChangeRejected(final String baseUrl) {
     // given
     Mockito.when(
-            clusterConfigurationRequestSender.modeChange(
-                new ModeChangeRequest("default", Mode.RECOVERING, false)))
+            recoveryServices.changeMode(
+                Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(
@@ -121,6 +135,20 @@ public class RecoveryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .is4xxClientError();
+  }
+
+  @Test
+  void shouldRejectModeChangeWhenCallerIsNotAuthorized() {
+    // given
+    Mockito.when(recoveryServices.changeMode(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(
+                    "Unauthorized to perform operation 'UPDATE' on resource 'SYSTEM'",
+                    ServiceException.Status.FORBIDDEN)));
+
+    // when / then
+    webClient.patch().uri("/v2/mode?mode=RECOVERING").exchange().expectStatus().isForbidden();
   }
 
   @Test
