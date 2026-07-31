@@ -21,6 +21,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.search.schema.opensearch.OpensearchPrefixMigrationClient;
+import io.camunda.search.schema.utils.CloneResult;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -114,6 +116,16 @@ public final class PrefixMigrationHelper {
               TasklistVariableIndex.class);
 
   /**
+   * Prefix literals reserved by other components (see
+   * https://docs.camunda.io/docs/self-managed/concepts/secondary-storage/managing-secondary-storage/).
+   * A target prefix exactly matching one of these would collide with a component-name segment in
+   * the resulting index names.
+   */
+  @VisibleForTesting
+  public static final Set<String> RESERVED_INDEX_PREFIX_LITERALS =
+      Set.of("camunda", "tasklist", "operate", "zeebe-record", "optimize");
+
+  /**
    * Conservative limit for the combined length of comma-separated index names in a single DELETE
    * request URL, to avoid exceeding http.max_initial_line_length (default: 4096 bytes). The
    * overhead for the HTTP request line (e.g. "DELETE / HTTP/1.1") is subtracted.
@@ -124,7 +136,7 @@ public final class PrefixMigrationHelper {
 
   private PrefixMigrationHelper() {}
 
-  public static void runPrefixMigration(
+  public static boolean runPrefixMigration(
       final OperateIndexPrefixPropertiesOverride operateProperties,
       final TasklistIndexPrefixPropertiesOverride tasklistProperties,
       final ConnectConfiguration connectConfiguration) {
@@ -138,53 +150,147 @@ public final class PrefixMigrationHelper {
         isElasticsearch
             ? tasklistProperties.elasticsearchIndexPrefix()
             : tasklistProperties.opensearchIndexPrefix();
+    final var targetPrefix = connectConfiguration.getIndexPrefix();
+
+    if (!isValidTargetPrefix(targetPrefix, operatePrefix, tasklistPrefix)) {
+      return false;
+    }
 
     final var prefixMigrationClient = getPrefixMigrationClient(connectConfiguration);
-    final var targetPrefix = connectConfiguration.getIndexPrefix();
     final var descriptors = new IndexDescriptors(targetPrefix, isElasticsearch);
     final var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-    final var migrateFutures =
-        PrefixMigrationHelper.migrate(
-            operatePrefix,
-            tasklistPrefix,
-            targetPrefix,
-            isElasticsearch,
-            descriptors,
-            prefixMigrationClient,
-            executor);
+    try {
+      final var migrateFutures =
+          PrefixMigrationHelper.migrate(
+              operatePrefix,
+              tasklistPrefix,
+              targetPrefix,
+              isElasticsearch,
+              descriptors,
+              prefixMigrationClient,
+              executor);
 
-    final var deleteFutures =
-        PrefixMigrationHelper.deleteDeprecatedIndices(
-            operatePrefix, tasklistPrefix, isElasticsearch, prefixMigrationClient, descriptors);
+      final var cloneResults = migrateFutures.get().join();
+      if (!logResultsAndCheckAllSucceeded(cloneResults)) {
+        return false;
+      }
 
-    final var deleteIndexTemplateFutures =
-        PrefixMigrationHelper.deleteIndexTemplates(
-            operatePrefix,
-            tasklistPrefix,
-            isElasticsearch,
-            prefixMigrationClient,
-            descriptors,
-            executor);
+      final var deleteFutures =
+          PrefixMigrationHelper.deleteDeprecatedIndices(
+              operatePrefix, tasklistPrefix, isElasticsearch, prefixMigrationClient, descriptors);
 
-    final var deleteComponentTemplateFutures =
-        PrefixMigrationHelper.deleteComponentTemplates(
-            operatePrefix, tasklistPrefix, prefixMigrationClient);
+      final var deleteIndexTemplateFutures =
+          PrefixMigrationHelper.deleteIndexTemplates(
+              operatePrefix,
+              tasklistPrefix,
+              isElasticsearch,
+              prefixMigrationClient,
+              descriptors,
+              executor);
 
-    CompletableFuture.allOf(migrateFutures.get())
-        .thenRun(() -> LOG.info("Migration of indices completed."))
-        .thenCompose(v -> CompletableFuture.allOf(deleteFutures.get()))
-        .thenRun(() -> LOG.info("Deletion of indices completed."))
-        .thenCompose(v -> CompletableFuture.allOf(deleteIndexTemplateFutures.get()))
-        .thenRun(() -> LOG.info("Deletion of index templates completed."))
-        .thenCompose(v -> CompletableFuture.allOf(deleteComponentTemplateFutures.get()))
-        .thenRun(() -> LOG.info("Deletion of component templates completed."))
-        .join();
+      final var deleteComponentTemplateFutures =
+          PrefixMigrationHelper.deleteComponentTemplates(
+              operatePrefix, tasklistPrefix, prefixMigrationClient);
 
-    executor.close();
+      CompletableFuture.allOf(deleteFutures.get())
+          .thenRun(() -> LOG.info("Deletion of indices completed."))
+          .thenCompose(v -> CompletableFuture.allOf(deleteIndexTemplateFutures.get()))
+          .thenRun(() -> LOG.info("Deletion of index templates completed."))
+          .thenCompose(v -> CompletableFuture.allOf(deleteComponentTemplateFutures.get()))
+          .thenRun(() -> LOG.info("Deletion of component templates completed."))
+          .join();
+
+      return true;
+    } catch (final Exception e) {
+      LOG.error("Prefix migration failed", e);
+      return false;
+    } finally {
+      executor.close();
+    }
   }
 
-  public static Supplier<CompletableFuture[]> migrate(
+  /**
+   * Logs an overall summary and reports whether every clone succeeded. Each failed clone is already
+   * logged with its cause at the point of failure (see {@code handleMigrationFailure} in the
+   * elasticsearch/opensearch {@code PrefixMigrationClient} implementations), so only the summary is
+   * logged here to avoid duplicate log lines. Deprecated-index/template deletion must only proceed
+   * when this returns {@code true} - deleting an old index whose clone failed would destroy the
+   * only remaining copy of that data.
+   */
+  @VisibleForTesting
+  static boolean logResultsAndCheckAllSucceeded(final List<CloneResult> cloneResults) {
+    final var failedResults = cloneResults.stream().filter(result -> !result.successful()).toList();
+
+    LOG.info(
+        "Migrated {}/{} indices, {} failed",
+        cloneResults.size() - failedResults.size(),
+        cloneResults.size(),
+        failedResults.size());
+
+    if (!failedResults.isEmpty()) {
+      LOG.error(
+          "Skipping deletion of deprecated indices, index templates, and component templates"
+              + " because {} index clone(s) failed.",
+          failedResults.size());
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates the target index prefix before any clone operation starts. Logs every violation found
+   * (rather than failing fast) so an operator sees all problems in a single run. See
+   * https://docs.camunda.io/docs/self-managed/concepts/secondary-storage/managing-secondary-storage/.
+   */
+  @VisibleForTesting
+  static boolean isValidTargetPrefix(
+      final String targetPrefix, final String operatePrefix, final String tasklistPrefix) {
+    if (!StringUtils.hasText(targetPrefix)) {
+      // a blank target prefix is a legitimate "no prefix" configuration
+      return true;
+    }
+
+    final var lowerTargetPrefix = targetPrefix.toLowerCase(Locale.ROOT);
+    var valid = true;
+
+    if (StringUtils.hasText(operatePrefix)
+        && startsWithEitherWay(lowerTargetPrefix, operatePrefix.toLowerCase(Locale.ROOT))) {
+      LOG.error(
+          "Target index prefix [{}] must not reuse or be a prefix of the old Operate index"
+              + " prefix [{}]",
+          targetPrefix,
+          operatePrefix);
+      valid = false;
+    }
+
+    if (StringUtils.hasText(tasklistPrefix)
+        && startsWithEitherWay(lowerTargetPrefix, tasklistPrefix.toLowerCase(Locale.ROOT))) {
+      LOG.error(
+          "Target index prefix [{}] must not reuse or be a prefix of the old Tasklist index"
+              + " prefix [{}]",
+          targetPrefix,
+          tasklistPrefix);
+      valid = false;
+    }
+
+    if (RESERVED_INDEX_PREFIX_LITERALS.contains(lowerTargetPrefix)) {
+      LOG.error(
+          "Target index prefix [{}] must not be one of the reserved names {}",
+          targetPrefix,
+          RESERVED_INDEX_PREFIX_LITERALS);
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  private static boolean startsWithEitherWay(final String a, final String b) {
+    return a.startsWith(b) || b.startsWith(a);
+  }
+
+  public static Supplier<CompletableFuture<List<CloneResult>>> migrate(
       final String operatePrefix,
       final String tasklistPrefix,
       final String targetPrefix,
@@ -221,28 +327,36 @@ public final class PrefixMigrationHelper {
                   .map(cloneOperations::add));
     }
 
-    return () ->
-        cloneOperations.stream()
-            .parallel()
-            .map(
-                entry ->
-                    CompletableFuture.supplyAsync(
-                        () -> {
-                          final var innerFutures =
-                              entry.indices().stream()
-                                  .parallel()
-                                  .map(
-                                      idx ->
-                                          prefixMigrationClient.cloneAndDeleteIndex(
-                                              idx.getLeft(),
-                                              entry.srcAlias,
-                                              idx.getRight(),
-                                              entry.destAlias))
-                                  .toArray(CompletableFuture[]::new);
-                          return CompletableFuture.allOf(innerFutures).join();
-                        },
-                        executor))
-            .toArray(CompletableFuture[]::new);
+    return () -> {
+      final var entryFutures =
+          cloneOperations.stream()
+              .parallel()
+              .map(
+                  entry ->
+                      CompletableFuture.supplyAsync(
+                          () -> {
+                            // Materialize every clone future for this alias group before
+                            // blocking, so all clones are in flight concurrently instead of
+                            // being started and joined one at a time.
+                            final var innerFutures =
+                                entry.indices().stream()
+                                    .map(
+                                        idx ->
+                                            prefixMigrationClient.cloneAndDeleteIndex(
+                                                idx.getLeft(),
+                                                entry.srcAlias,
+                                                idx.getRight(),
+                                                entry.destAlias))
+                                    .toList();
+                            return innerFutures.stream().map(CompletableFuture::join).toList();
+                          },
+                          executor))
+              .toList();
+
+      return CompletableFuture.allOf(entryFutures.toArray(CompletableFuture[]::new))
+          .thenApply(
+              ignored -> entryFutures.stream().flatMap(future -> future.join().stream()).toList());
+    };
   }
 
   private static Supplier<CompletableFuture> deleteDeprecatedIndices(

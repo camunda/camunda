@@ -9,8 +9,14 @@ package io.camunda.application.commons.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.schema.PrefixMigrationClient;
+import io.camunda.search.schema.utils.CloneResult;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -123,5 +129,258 @@ class PrefixMigrationHelperTest {
     // then
     assertThat(batches).hasSize(1);
     assertThat(batches.getFirst()).containsExactly(index);
+  }
+
+  @Test
+  void shouldAcceptBlankTargetPrefix() {
+    // when
+    final var valid = PrefixMigrationHelper.isValidTargetPrefix("", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixUnrelatedToOldPrefixesAndReservedNames() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("some-new-prefix", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixThatMerelyContainsAReservedName() {
+    // when - "my-env-camunda" contains "camunda" but is not equal to it
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("my-env-camunda", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixExactlyEqualToAReservedName() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("camunda", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixEqualToAReservedNameCaseInsensitively() {
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("CAMUNDA", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixThatStartsWithAnOldPrefix() {
+    // when - old operate prefix "operate", target "operate-dev-2" starts with it
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("operate-dev-2", "operate", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldRejectTargetPrefixThatIsAPrefixOfAnOldPrefix() {
+    // when - old operate prefix "operate-dev" starts with target "operate"
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("operate", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldAcceptTargetPrefixThatOnlySharesCharactersWithOldPrefixWithoutStartsWithRelation() {
+    // when - "dev" is not a startsWith match in either direction against "operate-dev"
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("dev", "operate-dev", "tasklist-dev");
+
+    // then
+    assertThat(valid).isTrue();
+  }
+
+  @Test
+  void shouldSkipOldPrefixCheckWhenOldPrefixIsBlank() {
+    // when - operate isn't being migrated (blank prefix), so no collision with "operate"
+    final var valid = PrefixMigrationHelper.isValidTargetPrefix("operate", "", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse(); // still rejected - "operate" is a reserved literal
+  }
+
+  @Test
+  void shouldReportAllViolationsWithoutFailingFast() {
+    // given - "camunda" is both a reserved literal and, contrived here, the old operate prefix
+    // when
+    final var valid =
+        PrefixMigrationHelper.isValidTargetPrefix("camunda", "camunda", "tasklist-dev");
+
+    // then
+    assertThat(valid).isFalse();
+  }
+
+  @Test
+  void shouldReportAllCloneSucceededWhenNoFailures() {
+    // given
+    final var results =
+        List.of(
+            new CloneResult(true, "source-a", "dest-a", null),
+            new CloneResult(true, "source-b", "dest-b", null));
+
+    // when
+    final var allSucceeded = PrefixMigrationHelper.logResultsAndCheckAllSucceeded(results);
+
+    // then
+    assertThat(allSucceeded).isTrue();
+  }
+
+  @Test
+  void shouldReportCloneFailureWhenAnyResultFailed() {
+    // given
+    final var results =
+        List.of(
+            new CloneResult(true, "source-a", "dest-a", null),
+            new CloneResult(false, "source-b", "dest-b", new RuntimeException("clone failed")));
+
+    // when
+    final var allSucceeded = PrefixMigrationHelper.logResultsAndCheckAllSucceeded(results);
+
+    // then
+    assertThat(allSucceeded).isFalse();
+  }
+
+  @Test
+  void shouldReportFailureWhenAllClonesFailed() {
+    // given
+    final var results =
+        List.of(
+            new CloneResult(false, "source-a", "dest-a", new RuntimeException("boom")),
+            new CloneResult(false, "source-b", "dest-b", new RuntimeException("boom")));
+
+    // when
+    final var allSucceeded = PrefixMigrationHelper.logResultsAndCheckAllSucceeded(results);
+
+    // then
+    assertThat(allSucceeded).isFalse();
+  }
+
+  @Test
+  void shouldReportSuccessForEmptyResults() {
+    // when
+    final var allSucceeded = PrefixMigrationHelper.logResultsAndCheckAllSucceeded(List.of());
+
+    // then
+    assertThat(allSucceeded).isTrue();
+  }
+
+  @Test
+  void shouldFlattenCloneResultsAcrossAllAliasGroups() {
+    // given
+    final var expectedTotal =
+        PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.size()
+            + PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.size();
+    final var descriptors = new IndexDescriptors("camunda", true);
+    final var client = new FakePrefixMigrationClient(Set.of());
+    final var executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    try {
+      // when
+      final var results =
+          PrefixMigrationHelper.migrate(
+                  "operate-dev", "tasklist-dev", "camunda", true, descriptors, client, executor)
+              .get()
+              .join();
+
+      // then
+      assertThat(results).hasSize(expectedTotal);
+      assertThat(results).allMatch(CloneResult::successful);
+    } finally {
+      executor.close();
+    }
+  }
+
+  @Test
+  void shouldFlattenMixedSuccessAndFailureCloneResultsAcrossAliasGroups() {
+    // given - only the ProcessIndex alias group is made to fail
+    final var expectedTotal =
+        PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.size()
+            + PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.size();
+    final var descriptors = new IndexDescriptors("camunda", true);
+    final var client = new FakePrefixMigrationClient(Set.of("process"));
+    final var executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    try {
+      // when
+      final var results =
+          PrefixMigrationHelper.migrate(
+                  "operate-dev", "tasklist-dev", "camunda", true, descriptors, client, executor)
+              .get()
+              .join();
+
+      // then
+      assertThat(results).hasSize(expectedTotal);
+      assertThat(results.stream().filter(result -> !result.successful())).hasSize(1);
+    } finally {
+      executor.close();
+    }
+  }
+
+  /**
+   * Fake {@link PrefixMigrationClient} that reports exactly one index per queried alias and
+   * completes {@code cloneAndDeleteIndex} synchronously, failing only for aliases containing one of
+   * the given substrings - used to exercise {@link PrefixMigrationHelper#migrate} without a real
+   * Elasticsearch/OpenSearch client.
+   */
+  private static final class FakePrefixMigrationClient implements PrefixMigrationClient {
+    private final Set<String> failingAliasSubstrings;
+
+    private FakePrefixMigrationClient(final Set<String> failingAliasSubstrings) {
+      this.failingAliasSubstrings = failingAliasSubstrings;
+    }
+
+    @Override
+    public List<String> getIndicesInAlias(final String alias) {
+      return List.of(alias.replace("_alias", "_index"));
+    }
+
+    @Override
+    public CompletableFuture<CloneResult> cloneAndDeleteIndex(
+        final String source,
+        final String sourceAlias,
+        final String destination,
+        final String destinationAlias) {
+      final var shouldFail = failingAliasSubstrings.stream().anyMatch(sourceAlias::contains);
+      return CompletableFuture.completedFuture(
+          shouldFail
+              ? new CloneResult(
+                  false, source, destination, new RuntimeException("simulated failure"))
+              : new CloneResult(true, source, destination, null));
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteIndex(final String... indexName) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteComponentTemplate(final String componentTemplateName) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteIndexTemplate(final String indexTemplateName) {
+      return CompletableFuture.completedFuture(null);
+    }
   }
 }
