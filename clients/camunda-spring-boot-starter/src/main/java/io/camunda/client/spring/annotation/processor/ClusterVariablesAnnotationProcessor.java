@@ -122,7 +122,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
       }
       variables.forEach(
           entry -> {
-            if (tenantIdOf(entry) != null) {
+            if (entry.getTenantId() != null) {
               throw new IllegalArgumentException(
                   "Cluster variable '"
                       + entry.getName()

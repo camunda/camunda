@@ -30,7 +30,8 @@ public class CamundaClientClusterVariablesProperties {
   /**
    * Indicates if cluster variable processing is enabled. When {@code true}, variables configured
    * via <code>@ClusterVariables</code> annotations and via the {@code variables} property are
-   * applied at startup. When {@code false}, all cluster variable processing is skipped.
+   * applied at startup. The deprecated {@code global} and {@code tenant} properties are also
+   * applied for compatibility. When {@code false}, all cluster variable processing is skipped.
    */
   private boolean enabled = true;
 
@@ -101,13 +102,13 @@ public class CamundaClientClusterVariablesProperties {
           "The property 'camunda.client.cluster-variables.tenant' is deprecated, "
               + "use 'camunda.client.cluster-variables.variables' instead");
       tenant.forEach(
-          (tenantId, variables) -> {
+          (tenantId, tenantVariables) -> {
             if (tenantId == null || tenantId.isBlank()) {
               throw new IllegalArgumentException(
                   "Invalid tenant ID in 'camunda.client.cluster-variables.tenant': tenant ID must not be null or blank");
             }
-            if (variables != null) {
-              variables.forEach((name, value) -> resolved.add(entry(name, value, tenantId)));
+            if (tenantVariables != null) {
+              tenantVariables.forEach((name, value) -> resolved.add(entry(name, value, tenantId)));
             }
           });
     }

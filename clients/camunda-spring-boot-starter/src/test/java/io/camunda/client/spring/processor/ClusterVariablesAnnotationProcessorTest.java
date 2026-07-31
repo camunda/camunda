@@ -294,6 +294,26 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
+  void shouldRejectBlankEntryLevelTenantIdFromResource() throws IOException {
+    // given
+    final Resource resource =
+        mockJsonResource(
+            """
+            [{"name": "var", "value": "v", "tenantId": ""}]""");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+
+    // when / then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            })
+        .withMessageContaining("must not define a tenantId");
+  }
+
+  @Test
   void shouldCreateVariablesFromPojoMethod() {
     // given
     mockGlobalCreateCommand();
@@ -454,8 +474,9 @@ public class ClusterVariablesAnnotationProcessorTest {
     // given
     final Resource resource =
         mockJsonResource(
-            "[{\"name\": \"region\", \"value\": \"eu-1\", \"metadata\": {\"owner\": \"platform\"}}, "
-                + "{\"name\": \"retries\", \"value\": 3}]");
+            """
+                [{"name": "region", "value": "eu-1", "metadata": {"owner": "platform"}}, \
+                {"name": "retries", "value": 3}]""");
     when(resourcePatternResolver.getResources("classpath:variables.json"))
         .thenReturn(new Resource[] {resource});
     mockGlobalCreateCommand();
