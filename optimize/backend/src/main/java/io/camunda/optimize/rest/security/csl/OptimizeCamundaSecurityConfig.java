@@ -17,6 +17,7 @@ import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -45,6 +47,12 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
  * {@link SecurityPathPort#webappPaths()}: the stock webapp chain becomes the catch-all that sorts
  * below the bearer API chain. No custom webapp chain bean is needed.
  *
+ * <p>{@link WebSessionConfiguration} is imported explicitly because the umbrella does not include
+ * it: it carries the session lifecycle beans (repository, mapper, attribute converter, expiry
+ * sweep) that persist through {@link OptimizeSessionStoreAdapter}. It self-activates on {@code
+ * camunda.security.session.persistent.enabled}, so without that property CSL keeps its in-memory
+ * sessions and nothing here changes.
+ *
  * <p>Required application config:
  *
  * <ul>
@@ -57,6 +65,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 @Configuration
 @ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
+@Import(WebSessionConfiguration.class)
 public class OptimizeCamundaSecurityConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeCamundaSecurityConfig.class);

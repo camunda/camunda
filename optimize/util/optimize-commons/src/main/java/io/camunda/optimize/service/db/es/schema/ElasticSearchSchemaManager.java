@@ -38,6 +38,7 @@ import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
+import io.camunda.optimize.service.db.es.schema.index.WebSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
@@ -388,6 +389,7 @@ public class ElasticSearchSchemaManager
         new SettingsIndexES(),
         new TenantIndexES(),
         new TerminatedUserSessionIndexES(),
+        new WebSessionIndexES(),
         new TimestampBasedImportIndexES(),
         new PositionBasedImportIndexES(),
         new CombinedReportIndexES(),
