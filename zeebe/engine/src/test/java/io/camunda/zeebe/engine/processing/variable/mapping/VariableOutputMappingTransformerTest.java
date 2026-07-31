@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -89,6 +91,16 @@ public final class VariableOutputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':{'d':2}, 'e':3}")),
         "{'a':{'b':{'c':1, 'd':2}, 'e':3}}"
       },
+      // sibling preservation at BOTH nesting levels at once
+      {
+        List.of(mapping("x", "a.b.new")),
+        Map.of("x", asMsgPack("9"), "a", asMsgPack("{'b':{'keep':1}, 'top':2}")),
+        "{'a':{'b':{'keep':1, 'new':9}, 'top':2}}"
+      },
+      // a null merge base takes the "replace", not "merge", branch
+      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
+      // `context merge` on a non-context value silently nulls the variable instead of failing
+      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
       // override nested property
       {
         List.of(mapping("x", "a.b")),
@@ -116,6 +128,12 @@ public final class VariableOutputMappingTransformerTest {
         List.of(mapping("x", "a"), mapping("y", "a.b")),
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':{'b':2}}"
+      },
+      // same overlap, opposite declaration order: now "a.b" is dropped instead
+      {
+        List.of(mapping("y", "a.b"), mapping("x", "a")),
+        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+        "{'a':1}"
       },
       // source FEEL expression
       {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
@@ -192,6 +210,112 @@ public final class VariableOutputMappingTransformerTest {
     assertThat(result.isFailure()).isTrue();
 
     Assertions.assertThat(result.getFailureMessage()).isEqualTo(failureMessage);
+  }
+
+  @Test
+  @Disabled(
+      "Output-mapping target-regrouping still breaks declaration order - #58801 fixed "
+          + "this for input mappings only. Tracked under #56387 (mapping ordering). — once fixed, move into "
+          + "parametersSuccessfulEvaluationToObject.")
+  void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
+    // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
+    // see c's just-assigned value
+    final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
+    final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1, 'd':1}, 'c':1}");
+  }
+
+  @Test
+  @Disabled(
+      "Same regrouping bug as shouldPreserveDeclarationOrderAcrossRegroupedTargets, reproducing "
+          + "#11789 (originally input mappings) for output mappings. Tracked under #56387 — once "
+          + "fixed, move into parametersSuccessfulEvaluationToObject.")
+  void shouldPreserveDeclarationOrderForRegroupedNestedTargets() {
+    // given: same mapping shape as issue #11789's "breaks" scriptTask, translated to output
+    // mappings - notNested is declared BETWEEN the two "nested.*" entries
+    final var mappings =
+        List.of(
+            mapping("\"some text\"", "nested.property"),
+            mapping("\"abc\"", "notNested"),
+            mapping("notNested", "nested.nested.property"),
+            mapping("notNested", "notNestedAssigned"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(
+        result.toBuffer(),
+        "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
+            + "'notNested':'abc', 'notNestedAssigned':'abc'}");
+  }
+
+  @Test
+  @Disabled(
+      "context merge() with the current scope leaks an untouched sibling ('p') into the merge "
+          + "target and a later back-reference to it, instead of building a mapping-only result "
+          + "(input mappings already do this post-#58801). Tracked under "
+          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
+          + "parametersSuccessfulEvaluationToObject.")
+  void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
+    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'b':1}}");
+  }
+
+  @Test
+  @Disabled(
+      "Same leak as shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference, opposite "
+          + "mapping order: the back-reference runs before 'a' is ever written, so it correctly "
+          + "keeps 'p'; only the later merge target should drop it. Tracked under "
+          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
+          + "parametersSuccessfulEvaluationToObject.")
+  void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
+    final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
+    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'p':0}}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
