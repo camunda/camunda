@@ -291,6 +291,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     // are inconsequential since no further tests will read these indices.
     databaseIntegrationTestExtension.deleteAllZeebeIndicesForPrefix(
         zeebeExtension.getZeebeRecordPrefix());
+    // The secondary storage uses its own prefix, so it is not covered by the call above.
+    databaseIntegrationTestExtension.deleteAllZeebeIndicesForPrefix(
+        zeebeExtension.getSecondaryStoragePrefix());
   }
 
   @Override
