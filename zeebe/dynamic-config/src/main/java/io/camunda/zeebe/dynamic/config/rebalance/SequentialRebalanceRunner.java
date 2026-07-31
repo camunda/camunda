@@ -48,6 +48,41 @@ import org.slf4j.LoggerFactory;
  * <p>A partition the rebalance cannot move is never a reason to abandon the ones after it, so a
  * refusal, a failure, or a leader that cannot be reached is recorded against that partition alone.
  *
+ * <pre>
+ *   run()
+ *     |
+ *     | plan(): each partition gets the desired leader its pinned configuration
+ *     |         names, and the leader the topology currently shows
+ *     v
+ *   PENDING ------------------------.
+ *     |                             |
+ *     |                             v
+ *     |                           SKIPPED  (no member eligible to lead it)
+ *     |                           SKIPPED  (already led by the desired leader)
+ *     |                           FAILED   (no leader to ask)
+ *     |
+ *     | its turn comes - one partition in flight at a time, in order
+ *     v
+ *   TRANSFERRING -------------------.
+ *     |                             |
+ *     |                             v
+ *     |                           FAILED   (its leader could not be asked)
+ *     |                           FAILED   (its leader declined it)
+ *     |                           FAILED   (its leader reported anything but TRANSFERRED)
+ *     |                           FAILED   (leader-wait timeout: no report, no move)
+ *     |
+ *     | its leader reports TRANSFERRED, or the topology shows leadership moved
+ *     v
+ *   TRANSFERRED
+ * </pre>
+ *
+ * <p>The exits from TRANSFERRING race each other - the leader's acknowledgement of the request, the
+ * outcome it later reports, and the topology poll all arrive independently - so each one first
+ * checks the partition is still TRANSFERRING, and whichever arrives first is the one that resolves
+ * it. Every resolution moves the rebalance on to the next PENDING partition; it finishes when there
+ * is none left, or when the operator has asked it to stop, which leaves the partitions after the
+ * current one PENDING for good. A dry run finishes at the plan, having asked nothing of any leader.
+ *
  * <p>Runs entirely on the coordinator's actor thread, which is also the thread the {@link
  * RebalanceRun} it is given is confined to.
  */
