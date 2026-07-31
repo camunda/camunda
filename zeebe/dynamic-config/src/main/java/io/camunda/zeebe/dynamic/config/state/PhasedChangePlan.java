@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
@@ -25,6 +26,17 @@ import org.jspecify.annotations.NullMarked;
  * <p>Merge rule (gossip convergence): if plan IDs are equal, the higher {@code currentPhaseIndex}
  * wins. If plan IDs differ, the higher plan ID always wins — plan IDs are monotonically increasing,
  * so the higher ID is always the newer plan.
+ *
+ * <p>One legitimate source of same-ID plans with unequal phases: {@link
+ * CurrentClusterConfiguration#fromLegacy} re-derives a plan's phases from a legacy {@code
+ * ClusterChangePlan}'s <em>remaining</em> operations every time it is called, so a plan
+ * reconstructed this way after some operations already completed carries fewer operations in its
+ * current phase than the same plan tracked natively (where the phase list stays fixed and progress
+ * is tracked separately). When one side's phases are otherwise identical to the other's except for
+ * such a trailing-operations shrink within the current phase, that side is recognized as a stale,
+ * lossily-reconstructed view of the same phase and the more complete side wins; any other kind of
+ * mismatch (different phase kinds/counts, or operations that aren't a trailing subset) still
+ * throws.
  */
 @NullMarked
 public record PhasedChangePlan(
@@ -74,13 +86,96 @@ public record PhasedChangePlan(
   public PhasedChangePlan merge(final PhasedChangePlan other) {
     if (id == other.id) {
       if (!phases.equals(other.phases())) {
-        throw new IllegalStateException(
-            "Cannot merge plans with the same ID but different phases: %s vs %s"
-                .formatted(phases, other.phases()));
+        final var morePhases = moreCompletePhases(phases, other.phases());
+        if (morePhases.isEmpty()) {
+          throw new IllegalStateException(
+              "Cannot merge plans with the same ID but different phases: %s vs %s"
+                  .formatted(phases, other.phases()));
+        }
+        return new PhasedChangePlan(
+            id, Math.max(currentPhaseIndex, other.currentPhaseIndex), morePhases.get(), startedAt);
       }
       return currentPhaseIndex >= other.currentPhaseIndex ? this : other;
     }
     return id > other.id ? this : other;
+  }
+
+  /**
+   * If {@code a} and {@code b} differ only in that the current phase's operations on one side are a
+   * trailing subset of the operations on the other (see the class-level javadoc for why this
+   * happens), returns the side with the fuller operations list. Otherwise returns empty, meaning
+   * the mismatch is a genuine conflict.
+   */
+  private static Optional<List<Phase>> moreCompletePhases(
+      final List<Phase> a, final List<Phase> b) {
+    if (a.size() != b.size()) {
+      return Optional.empty();
+    }
+    List<Phase> fuller = null;
+    for (int i = 0; i < a.size(); i++) {
+      final var phaseA = a.get(i);
+      final var phaseB = b.get(i);
+      if (phaseA.equals(phaseB)) {
+        continue;
+      }
+      final var fullerPhase = fullerPhase(phaseA, phaseB);
+      if (fullerPhase.isEmpty() || fuller != null) {
+        // either a genuine mismatch, or a second phase already differed - not the single-phase
+        // trailing-shrink case this method recognizes
+        return Optional.empty();
+      }
+      fuller = fullerPhase.get() == phaseA ? a : b;
+    }
+    return Optional.ofNullable(fuller);
+  }
+
+  private static Optional<Phase> fullerPhase(final Phase a, final Phase b) {
+    if (a instanceof GlobalPhase globalA && b instanceof GlobalPhase globalB) {
+      // a is the trailing subset of b => b is fuller, and vice versa
+      return isTrailingSubset(globalA.operations(), globalB.operations())
+          ? Optional.of(b)
+          : isTrailingSubset(globalB.operations(), globalA.operations())
+              ? Optional.of(a)
+              : Optional.empty();
+    }
+    if (a instanceof PartitionGroupParallelPhase partitionA
+        && b instanceof PartitionGroupParallelPhase partitionB) {
+      if (!partitionA.groupOperations().keySet().equals(partitionB.groupOperations().keySet())) {
+        return Optional.empty();
+      }
+      boolean aIsFuller = false;
+      boolean bIsFuller = false;
+      for (final var entry : partitionA.groupOperations().entrySet()) {
+        final var opsA = entry.getValue();
+        // keySets were checked equal above, so this is always present
+        final var opsB = Objects.requireNonNull(partitionB.groupOperations().get(entry.getKey()));
+        if (opsA.equals(opsB)) {
+          continue;
+        }
+        // opsA is the trailing subset of opsB => b is fuller for this group, and vice versa
+        if (isTrailingSubset(opsA, opsB)) {
+          bIsFuller = true;
+        } else if (isTrailingSubset(opsB, opsA)) {
+          aIsFuller = true;
+        } else {
+          return Optional.empty();
+        }
+      }
+      if (aIsFuller == bIsFuller) {
+        // either no group differed after all, or groups disagree on which side is fuller
+        return Optional.empty();
+      }
+      return Optional.of(aIsFuller ? a : b);
+    }
+    return Optional.empty();
+  }
+
+  /** Returns {@code true} if {@code shorter} equals the trailing elements of {@code longer}. */
+  private static <T> boolean isTrailingSubset(final List<T> shorter, final List<T> longer) {
+    if (shorter.size() >= longer.size()) {
+      return false;
+    }
+    return longer.subList(longer.size() - shorter.size(), longer.size()).equals(shorter);
   }
 
   /**
