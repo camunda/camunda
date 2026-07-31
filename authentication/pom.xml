@@ -99,10 +99,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-reader</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-cluster</artifactId>
     </dependency>
     <dependency>
