@@ -14,9 +14,14 @@ import static org.mockito.Mockito.when;
 import io.camunda.application.commons.pt.PhysicalTenantSpringWebProviderConfiguration.PhysicalTenantAwareSpringWebMvcProvider;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.method.HandlerMethod;
@@ -31,10 +36,17 @@ class PhysicalTenantSpringWebProviderConfigurationTest {
   private static final String PHYSICAL_TENANT_PATTERN =
       "/physical-tenants/{physicalTenantId}/v3/api-docs";
 
-  @Test
-  void shouldResolveEmptyPrefixWhenBarePatternRegisteredFirst() {
+  static Stream<Arguments> registrationOrders() {
+    return Stream.of(
+        Arguments.of(List.of(BARE_PATTERN, PHYSICAL_TENANT_PATTERN)),
+        Arguments.of(List.of(PHYSICAL_TENANT_PATTERN, BARE_PATTERN)));
+  }
+
+  @ParameterizedTest(name = "[{index}] registration order: {0}")
+  @MethodSource("registrationOrders")
+  void shouldResolveEmptyPrefixRegardlessOfRegistrationOrder(final List<String> patterns) {
     // given
-    final var provider = providerWith(BARE_PATTERN, PHYSICAL_TENANT_PATTERN);
+    final var provider = providerWith(patterns.toArray(String[]::new));
 
     // when
     final String prefix = provider.findPathPrefix(apiDocsConfig());
@@ -44,15 +56,19 @@ class PhysicalTenantSpringWebProviderConfigurationTest {
   }
 
   @Test
-  void shouldResolveEmptyPrefixWhenPhysicalTenantPatternRegisteredFirst() {
+  void shouldResolveGenuineNonEmptyPrefixForCustomBasePath() {
+    // Guards the inherited (non-PT) behaviour springdoc's original findPathPrefix provides: a
+    // real custom base path in front of the api-docs mapping must still resolve, not just the
+    // PT-prefixed case this override specifically targets.
+
     // given
-    final var provider = providerWith(PHYSICAL_TENANT_PATTERN, BARE_PATTERN);
+    final var provider = providerWith("/api" + BARE_PATTERN);
 
     // when
     final String prefix = provider.findPathPrefix(apiDocsConfig());
 
     // then
-    assertThat(prefix).isEmpty();
+    assertThat(prefix).isEqualTo("/api");
   }
 
   /**
