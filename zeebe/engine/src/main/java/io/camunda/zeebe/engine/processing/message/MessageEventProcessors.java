@@ -109,7 +109,9 @@ public final class MessageEventProcessors {
                 clock,
                 metrics))
         .onCommand(
-            ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
+            ValueType.MESSAGE,
+            MessageIntent.EXPIRE,
+            new MessageExpireProcessor(writers.state(), metrics))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CREATE,

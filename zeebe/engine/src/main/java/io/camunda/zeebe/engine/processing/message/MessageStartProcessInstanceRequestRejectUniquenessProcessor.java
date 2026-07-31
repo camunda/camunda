@@ -63,7 +63,7 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
     this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
-            stateWriter, responseWriter, messageCorrelationState, messageState);
+            stateWriter, responseWriter, messageCorrelationState, messageState, metrics);
   }
 
   @Override

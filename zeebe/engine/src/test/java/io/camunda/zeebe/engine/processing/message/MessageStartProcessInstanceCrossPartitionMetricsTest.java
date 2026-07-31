@@ -41,6 +41,9 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
   // Same stable routing constants as the handshake test: hash("ck-1") and hash("biz-1") land on
   // different partitions so the cross-partition arm is exercised (re-asserted at @Before).
   private static final String CORRELATION_KEY = "ck-1";
+  // A second correlation key that hashes to a partition other than P_B and other than P_K, so a
+  // duplicate-businessId correlate from it is delegated to P_B and rejected on its own P_K.
+  private static final String SECOND_CORRELATION_KEY = "ck-2";
   private static final String BUSINESS_ID = "biz-1";
 
   private static final String PROCESS_ID = "wf-cross";
@@ -88,6 +91,14 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
                 + " cross-partition arm is actually exercised",
             CORRELATION_KEY, BUSINESS_ID)
         .isNotEqualTo(partitionFor(BUSINESS_ID));
+    assertThat(partitionFor(SECOND_CORRELATION_KEY))
+        .as(
+            "SECOND_CORRELATION_KEY (%s) must hash to a partition other than P_B (%s) and other than"
+                + " CORRELATION_KEY (%s), so the second correlate is delegated to P_B and rejected on"
+                + " its own P_K",
+            SECOND_CORRELATION_KEY, BUSINESS_ID, CORRELATION_KEY)
+        .isNotEqualTo(partitionFor(BUSINESS_ID))
+        .isNotEqualTo(partitionFor(CORRELATION_KEY));
   }
 
   @Test
@@ -241,6 +252,48 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
         .isGreaterThanOrEqualTo(1L);
     assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "started"))
         .as("M7: a message that never starts records no started sample")
+        .isZero();
+  }
+
+  @Test
+  public void shouldRecordAskDurationAsExpiredWhenCrossPartitionCorrelateIsRejected() {
+    // given a first synchronous correlate started a holder PI on P_B that owns the businessId
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(MESSAGE_START_PROCESS);
+    engine
+        .messageCorrelation()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .correlate();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.PROCESS)
+        .withBpmnProcessId(PROCESS_ID)
+        .await();
+
+    // when a second synchronous correlate reuses the same businessId from a different P_K: it is
+    // delegated to P_B, rejected on uniqueness, and its buffered correlate message is expired on
+    // the second P_K by the deferred-response path — not by the TTL sweeper
+    final var notCorrelated =
+        engine
+            .messageCorrelation()
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(SECOND_CORRELATION_KEY)
+            .withBusinessId(BUSINESS_ID)
+            .expectNotCorrelated()
+            .correlate();
+    RecordingExporter.messageRecords(MessageIntent.EXPIRED)
+        .withPartitionId(partitionFor(SECOND_CORRELATION_KEY))
+        .withRecordKey(notCorrelated.getKey())
+        .getFirst();
+
+    // then the ask dispatched from the second P_K terminates as expired via the deferred-response
+    // expiry path (M7), never as started
+    final int secondPk = partitionFor(SECOND_CORRELATION_KEY);
+    assertThat(timerCount(secondPk, ASK_DURATION_METRIC, "outcome", "expired"))
+        .as("M7: a rejected synchronous correlate records the ask duration as expired on its P_K")
+        .isGreaterThanOrEqualTo(1L);
+    assertThat(timerCount(secondPk, ASK_DURATION_METRIC, "outcome", "started"))
+        .as("M7: the rejected correlate never records a started sample on its P_K")
         .isZero();
   }
 

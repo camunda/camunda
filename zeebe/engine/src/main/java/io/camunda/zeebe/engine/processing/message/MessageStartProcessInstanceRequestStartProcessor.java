@@ -92,7 +92,7 @@ public final class MessageStartProcessInstanceRequestStartProcessor
     this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
-            stateWriter, responseWriter, messageCorrelationState, messageState);
+            stateWriter, responseWriter, messageCorrelationState, messageState, metrics);
   }
 
   @Override
@@ -153,6 +153,7 @@ public final class MessageStartProcessInstanceRequestStartProcessor
       expiredMessageRecord.wrap(storedMessage.getMessage());
       stateWriter.appendFollowUpEvent(
           reply.getMessageKey(), MessageIntent.EXPIRED, expiredMessageRecord);
+      metrics.expireCrossPartitionAsks(reply.getMessageKey());
     }
 
     // (iv) If the cross-partition start was triggered by a synchronous correlate command (rather

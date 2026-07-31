@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -18,14 +19,18 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public final class MessageExpireProcessor implements TypedRecordProcessor<MessageRecord> {
 
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
 
-  public MessageExpireProcessor(final StateWriter stateWriter) {
+  public MessageExpireProcessor(
+      final StateWriter stateWriter, final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
+    this.metrics = metrics;
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> record) {
 
     stateWriter.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
+    metrics.expireCrossPartitionAsks(record.getKey());
   }
 }
