@@ -23,10 +23,10 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChange
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -54,9 +54,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * Exercises {@link ClusterConfigurationManagerService} end-to-end against the new
+ * multi-partition-group model ({@code USE_NEW_CONFIG = true}). Assertions read the {@link
+ * CurrentClusterConfiguration} directly (via {@link
+ * ClusterConfigurationManagerService#getClusterConfiguration()}) rather than the legacy compat
+ * projection ({@code getClusterTopology()}/{@code toLegacyDefault()}), since that projection cannot
+ * distinguish "uninitialized" from "initialized but empty" for the new model.
+ */
 class ClusterConfigurationManagementIntegrationTest {
 
   private static final Duration INITIALIZATION_TIMEOUT = Duration.ofSeconds(30);
+  private static final MemberId MEMBER_0 = MemberId.from("0");
+  private static final MemberId MEMBER_1 = MemberId.from("1");
+  private static final MemberId MEMBER_2 = MemberId.from("2");
 
   @TempDir Path rootDir;
 
@@ -112,14 +123,9 @@ class ClusterConfigurationManagementIntegrationTest {
                     .timeout(INITIALIZATION_TIMEOUT)
                     .untilAsserted(
                         () ->
-                            assertThat(node.service().getClusterTopology())
+                            assertThat(node.service().getClusterConfiguration())
                                 .succeedsWithin(INITIALIZATION_TIMEOUT)
-                                .satisfies(
-                                    configuration ->
-                                        ClusterConfigurationAssert.assertThatClusterTopology(
-                                                configuration)
-                                            .isInitialized()
-                                            .hasOnlyMembers(Set.of(0, 1, 2)))));
+                                .satisfies(this::assertInitializedWithAllMembers)));
   }
 
   @Test
@@ -146,10 +152,8 @@ class ClusterConfigurationManagementIntegrationTest {
                     .timeout(INITIALIZATION_TIMEOUT)
                     .untilAsserted(
                         () ->
-                            ClusterConfigurationAssert.assertThatClusterTopology(
-                                    node.service().getClusterTopology().join())
-                                .isInitialized()
-                                .hasOnlyMembers(Set.of(0, 1, 2))));
+                            assertInitializedWithAllMembers(
+                                node.service().getClusterConfiguration().join())));
   }
 
   @Test
@@ -180,10 +184,8 @@ class ClusterConfigurationManagementIntegrationTest {
                     .timeout(INITIALIZATION_TIMEOUT)
                     .untilAsserted(
                         () ->
-                            ClusterConfigurationAssert.assertThatClusterTopology(
-                                    node.service().getClusterTopology().join())
-                                .isInitialized()
-                                .hasOnlyMembers(Set.of(0, 1, 2))));
+                            assertInitializedWithAllMembers(
+                                node.service().getClusterConfiguration().join())));
   }
 
   @Test
@@ -201,21 +203,20 @@ class ClusterConfigurationManagementIntegrationTest {
             ignore ->
                 Either.right(
                     List.of(
-                        new PartitionJoinOperation(MemberId.from("0"), 2, 1),
-                        new PartitionLeaveOperation(MemberId.from("1"), 1, 1))))
+                        new PartitionJoinOperation(MEMBER_0, 2, 1),
+                        new PartitionLeaveOperation(MEMBER_1, 1, 1))))
         .join();
 
     // then
     Awaitility.await("The topology change should complete.")
-        .untilAsserted(
-            () ->
-                ClusterConfigurationAssert.assertThatClusterTopology(
-                        service.getClusterTopology().join())
-                    .hasPendingOperationsWithSize(0));
-    ClusterConfigurationAssert.assertThatClusterTopology(service.getClusterTopology().join())
-        .describedAs("The cluster must have the expected topology after change.")
-        .hasMemberWithPartitions(0, Set.of(1, 2))
-        .hasMemberWithPartitions(1, Set.of());
+        .untilAsserted(() -> assertThat(defaultGroupOf(service).hasPendingChanges()).isFalse());
+    final var defaultGroup = defaultGroupOf(service);
+    assertThat(defaultGroup.getMember(MEMBER_0).partitions().keySet())
+        .describedAs("Member 0 must replicate both partitions after the change.")
+        .containsExactlyInAnyOrder(1, 2);
+    assertThat(defaultGroup.hasMember(MEMBER_1))
+        .describedAs("Member 1 replicates no partitions of the group anymore, so it is removed.")
+        .isFalse();
   }
 
   @Test
@@ -234,22 +235,18 @@ class ClusterConfigurationManagementIntegrationTest {
             ignore ->
                 Either.right(
                     List.of(
-                        new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING),
-                        new ModeChangeOperation(MemberId.from("1"), Mode.RECOVERING),
-                        new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING))))
+                        new ModeChangeOperation(MEMBER_0, Mode.RECOVERING),
+                        new ModeChangeOperation(MEMBER_1, Mode.RECOVERING),
+                        new ModeChangeOperation(MEMBER_2, Mode.RECOVERING))))
         .join();
 
     // then
     Awaitility.await("The enter-recovery operation should complete.")
-        .untilAsserted(
-            () ->
-                ClusterConfigurationAssert.assertThatClusterTopology(
-                        service.getClusterTopology().join())
-                    .hasPendingOperationsWithSize(0));
-    ClusterConfigurationAssert.assertThatClusterTopology(service.getClusterTopology().join())
-        .hasMemberWithState(0, State.RECOVERING)
-        .hasMemberWithState(1, State.RECOVERING)
-        .hasMemberWithState(2, State.RECOVERING);
+        .untilAsserted(() -> assertThat(defaultGroupOf(service).hasPendingChanges()).isFalse());
+    final var defaultGroup = defaultGroupOf(service);
+    assertThat(defaultGroup.getMember(MEMBER_0).mode()).isEqualTo(Mode.RECOVERING);
+    assertThat(defaultGroup.getMember(MEMBER_1).mode()).isEqualTo(Mode.RECOVERING);
+    assertThat(defaultGroup.getMember(MEMBER_2).mode()).isEqualTo(Mode.RECOVERING);
   }
 
   @Test
@@ -267,22 +264,43 @@ class ClusterConfigurationManagementIntegrationTest {
             ignore ->
                 Either.right(
                     List.of(
-                        new PartitionJoinOperation(MemberId.from("0"), 2, 1),
-                        new PartitionLeaveOperation(MemberId.from("1"), 1, 1),
-                        new PartitionJoinOperation(MemberId.from("1"), 1, 1))))
+                        new PartitionJoinOperation(MEMBER_0, 2, 1),
+                        new PartitionLeaveOperation(MEMBER_1, 1, 1),
+                        new PartitionJoinOperation(MEMBER_1, 1, 1))))
         .join();
 
     // then
     Awaitility.await("The topology change should complete.")
-        .untilAsserted(
-            () ->
-                ClusterConfigurationAssert.assertThatClusterTopology(
-                        service.getClusterTopology().join())
-                    .hasPendingOperationsWithSize(0));
-    ClusterConfigurationAssert.assertThatClusterTopology(service.getClusterTopology().join())
-        .describedAs("The cluster must have the expected topology after change.")
-        .hasMemberWithPartitions(0, Set.of(1, 2))
-        .hasMemberWithPartitions(1, Set.of(1));
+        .untilAsserted(() -> assertThat(defaultGroupOf(service).hasPendingChanges()).isFalse());
+    final var defaultGroup = defaultGroupOf(service);
+    assertThat(defaultGroup.getMember(MEMBER_0).partitions().keySet())
+        .describedAs("Member 0 must replicate both partitions after the change.")
+        .containsExactlyInAnyOrder(1, 2);
+    assertThat(defaultGroup.getMember(MEMBER_1).partitions().keySet())
+        .describedAs("Member 1 left and rejoined partition 1.")
+        .containsExactlyInAnyOrder(1);
+  }
+
+  /**
+   * Asserts that the configuration is initialized and every static cluster member is visible in
+   * {@link CurrentClusterConfiguration#globalConfiguration()}. Checking {@code
+   * globalConfiguration().members()} directly (rather than the legacy {@code toLegacyDefault()}
+   * projection) is required because that projection's derived {@code version} can never equal the
+   * legacy uninitialized sentinel, so {@code isUninitialized()} on the projection is always {@code
+   * false} — it cannot be used to detect that initialization hasn't happened yet.
+   */
+  private void assertInitializedWithAllMembers(final CurrentClusterConfiguration configuration) {
+    assertThat(configuration.isUninitialized()).isFalse();
+    assertThat(configuration.globalConfiguration().members().keySet())
+        .containsExactlyInAnyOrderElementsOf(clusterMemberIds);
+  }
+
+  private PartitionGroupConfiguration defaultGroupOf(
+      final ClusterConfigurationManagerService service) {
+    return service
+        .getClusterConfiguration()
+        .join()
+        .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private void awaitAllInitialized() {
@@ -293,9 +311,9 @@ class ClusterConfigurationManagementIntegrationTest {
                 assertThat(nodes.values())
                     .allSatisfy(
                         node ->
-                            assertThat(node.service().getClusterTopology())
+                            assertThat(node.service().getClusterConfiguration())
                                 .succeedsWithin(INITIALIZATION_TIMEOUT)
-                                .returns(false, ClusterConfiguration::isUninitialized)));
+                                .returns(false, CurrentClusterConfiguration::isUninitialized)));
   }
 
   private Node createNode(final String id) {
