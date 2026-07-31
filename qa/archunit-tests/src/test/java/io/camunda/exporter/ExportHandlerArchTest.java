@@ -25,6 +25,7 @@ import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.operation.AbstractOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
@@ -111,13 +112,13 @@ public class ExportHandlerArchTest {
               DescribedPredicate.or(
                   // audit log handlers have custom handling
                   Predicates.assignableTo(AuditLogHandler.class),
-                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
+                  Predicates.assignableTo(AuditLogCleanupHandler.class),
+                  // operation handler needs to be excluded as it needs slight custom handling
+                  Predicates.assignableTo(AbstractOperationHandler.class)))
           .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
-          .resideOutsideOfPackages(
-              "io.camunda.exporter.handlers.batchoperation..",
-              "io.camunda.exporter.handlers.operation..")
+          .resideOutsideOfPackages("io.camunda.exporter.handlers.batchoperation..")
           .should()
           .beAssignableTo(
               DescribedPredicate.or(

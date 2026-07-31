@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
@@ -33,5 +35,13 @@ public class OperationFromHistoryDeletionHandler
   public boolean handlesRecord(final Record<HistoryDeletionRecordValue> record) {
     return HistoryDeletionIntent.DELETED.equals(record.getIntent())
         && HANDLED_RESOURCE_TYPES.contains(record.getValue().getResourceType());
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<HistoryDeletionRecordValue> record) {
+    // TODO: This is a temporary solution until we decide how to handle ordinals for history
+    // deletion records with operations
+    return indexLocator.locateMainIndex(getIndexName());
   }
 }

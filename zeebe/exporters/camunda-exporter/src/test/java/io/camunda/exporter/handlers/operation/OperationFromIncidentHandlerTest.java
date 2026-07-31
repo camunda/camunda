@@ -8,7 +8,13 @@
 package io.camunda.exporter.handlers.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -37,5 +43,12 @@ class OperationFromIncidentHandlerTest extends AbstractOperationHandlerTest<Inci
         .filter(intent -> intent != IncidentIntent.RESOLVED)
         .map(this::generateRecord)
         .forEach(record -> assertThat(underTest.handlesRecord(record)).isFalse());
+  }
+
+  @Override
+  TargetIndexLocator setupMockIndexLocator(final TargetIndex index) {
+    final var indexLocator = mock(TargetIndexLocator.class);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+    return indexLocator;
   }
 }
