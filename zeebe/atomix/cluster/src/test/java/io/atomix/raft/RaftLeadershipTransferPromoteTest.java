@@ -23,11 +23,13 @@ import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.VoteRequest;
+import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -111,6 +113,68 @@ public class RaftLeadershipTransferPromoteTest {
         .succeedsWithin(Duration.ofSeconds(15))
         .extracting(LeadershipTransferResultRequest::result)
         .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+  }
+
+  @Test
+  public void shouldNotReopenThePartitionOnceLeadershipHasMoved() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var reopens = new LongAdder();
+    leader.getContext().setLeadershipTransferPauseControl(recordingPauseControl(leader, reopens));
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(reopens.sum())
+        .as("the step-down onto the new leader already lifted the freeze")
+        .isZero();
+  }
+
+  /** Freezes the Raft side the way the broker's control does, and counts the reopens. */
+  private static LeadershipTransferPauseControl recordingPauseControl(
+      final RaftServer leader, final LongAdder reopens) {
+    return new LeadershipTransferPauseControl() {
+      @Override
+      public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+        return onLeaderRole(
+            leaderRole -> leaderRole.pauseForTransfer(resumeTimeout, System.currentTimeMillis()));
+      }
+
+      @Override
+      public CompletableFuture<Void> resumeFromTransfer() {
+        reopens.increment();
+        return onLeaderRole(
+            leaderRole -> {
+              leaderRole.resumeFromTransfer();
+              return null;
+            });
+      }
+
+      private <T> CompletableFuture<T> onLeaderRole(final Function<LeaderRole, T> action) {
+        final var done = new CompletableFuture<T>();
+        leader
+            .getContext()
+            .getThreadContext()
+            .execute(
+                () -> {
+                  if (leader.getContext().getRaftRole() instanceof final LeaderRole leaderRole) {
+                    done.complete(action.apply(leaderRole));
+                  } else {
+                    done.completeExceptionally(new IllegalStateException("no longer the leader"));
+                  }
+                });
+        return done;
+      }
+    };
   }
 
   private static AtomicBoolean gateTimeoutNow(final RaftServer leader) {

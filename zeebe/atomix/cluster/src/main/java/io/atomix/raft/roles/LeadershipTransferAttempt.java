@@ -72,10 +72,9 @@ import org.slf4j.LoggerFactory;
  * </pre>
  *
  * <p>Every outcome above lands in {@link #finish}, which reopens the partition before reporting to
- * the coordinator. That reopening only has work to do on the outcomes where this node is still the
- * leader: once leadership has moved, the role transition has already lifted the freeze. {@link
- * #onPauseDeadlineExpired} skips the reopening altogether, leaving it to the step-down behind the
- * watchdog.
+ * the coordinator (but only while this node is still the leader) - once leadership has moved, the
+ * step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves reopening to
+ * the step-down for the same reason.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -193,12 +192,18 @@ final class LeadershipTransferAttempt {
   }
 
   private void finish(final LeadershipTransferResult result) {
+    raft.checkThread();
     if (finished) {
       return;
     }
     finished = true;
     finishListener.run();
     observeDuration(result);
+    if (!leader.isRunning()) {
+      // the step-down that ended this leader already lifted the freeze
+      reportResult(result);
+      return;
+    }
     resume().whenComplete((ignored, resumeError) -> reportResult(result));
   }
 
@@ -258,9 +263,8 @@ final class LeadershipTransferAttempt {
   }
 
   /**
-   * Reopens the partition on every terminal path, whether the transfer failed or the desired leader
-   * caught up. A resume that fails steps the leader down where it is detected, so the partition is
-   * rebuilt rather than left frozen.
+   * Reopens the partition on the terminal paths this leader survives. A resume that fails steps the
+   * leader down where it is detected, so the partition is rebuilt rather than left frozen.
    */
   private CompletableFuture<Void> resume() {
     final var control = raft.getLeadershipTransferPauseControl();
