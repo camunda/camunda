@@ -55,6 +55,16 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
 
   private String zeebeRecordPrefix;
 
+  /**
+   * Index prefix for the broker's secondary storage (CamundaExporter, Operate, Tasklist).
+   *
+   * <p>Deliberately not a prefix-match of {@link #zeebeRecordPrefix}. Tests clean up Zeebe records
+   * with wildcards over {@code <zeebeRecordPrefix>*}; when both shared one prefix those wildcards
+   * dropped CamundaExporter's own state indices, and the exporter then failed every bulk flush,
+   * stalling the whole exporter pipeline and starving the records Optimize reads. See #58881.
+   */
+  private String secondaryStoragePrefix;
+
   /** Keys of all process instances started during the current test. */
   private final Set<Long> startedInstanceKeys = ConcurrentHashMap.newKeySet();
 
@@ -65,6 +75,7 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     zeebeRecordPrefix = ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX + "-" + IdGenerator.getNextId();
+    secondaryStoragePrefix = "camunda-secondary-" + IdGenerator.getNextId();
     final var dbType = IntegrationTestConfigurationUtil.getDatabaseType();
     Testcontainers.exposeHostPorts(9200);
     buildAndStartBroker(dbType);
@@ -108,7 +119,7 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
                 cfg.getData()
                     .getSecondaryStorage()
                     .getOpensearch()
-                    .setIndexPrefix(zeebeRecordPrefix);
+                    .setIndexPrefix(secondaryStoragePrefix);
               } else {
                 cfg.getData()
                     .getSecondaryStorage()
@@ -117,7 +128,7 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
                 cfg.getData()
                     .getSecondaryStorage()
                     .getElasticsearch()
-                    .setIndexPrefix(zeebeRecordPrefix);
+                    .setIndexPrefix(secondaryStoragePrefix);
               }
             })
         .withExporter(
@@ -373,6 +384,10 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
 
   public void resolveIncident(final Long incidentKey) {
     camundaClient.newResolveIncidentCommand(incidentKey).send().join();
+  }
+
+  public String getSecondaryStoragePrefix() {
+    return secondaryStoragePrefix;
   }
 
   public String getZeebeRecordPrefix() {
