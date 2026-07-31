@@ -2290,8 +2290,6 @@ jobs:
   #   # annotation. The verifier exits non-zero on findings, and
   #   # PR authors get early feedback via
   #   # inline annotations.
-  #   # KNOWN LIMITATION: this check does not run on fork PRs, as it requires
-  #   # the ability to clone cross-repo in the Camunda org.
   #   if: |
   #     needs.detect-changes.outputs.openapi-changes == 'true'
   #     && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
@@ -2311,21 +2309,6 @@ jobs:
   #       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
   #       with:
   #         node-version: '24'
-  #     - name: Configure git auth for transitive clones
-  #       # The build:version-map script spawns its own `git clone` of
-  #       # camunda/return-of-api-added-in-analysis from inside Node, which
-  #       # doesn't inherit the auth header that actions/checkout sets on the
-  #       # host repo. Rewrite all github.com URLs globally so any anonymous
-  #       # clone in this job is transparently authenticated.
-  #       env:
-  #         CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: |
-  #         TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
-  #         git config --global \
-  #           url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
-  #           "https://github.com/"
-  #         echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
   #     - name: Install verifier dependencies
   #       uses: ./.github/actions/npm-ci-with-retry
   #       with:
@@ -2350,7 +2333,6 @@ jobs:
   #         # always covers the same tree that gets verified. (The scheduled
   #         # workflow instead tracks a branch name for the rolling latest.)
   #         LATEST_BRANCH: ${{ github.sha }}
-  #         RETURN_OF_API_REF: v0.1.1
   #       run: npm run build:artefacts
   #     - name: Run PR verifier
   #       # Verifier exits non-zero on findings, which fails the job and
