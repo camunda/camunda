@@ -1,27 +1,23 @@
 #!/usr/bin/env node
 /**
- * Generates both version-map.json and endpoint-map.json by cloning the
- * return-of-api-added-in-analysis repo at a configurable git ref into a
- * temporary directory, running `npm ci --omit=dev && npm run build:bundler`
- * inside it, and copying the produced `output/bundler-version-map.json` and
- * `output/endpoint-map.json` to the configured paths.
+ * Generates both version-map.json and endpoint-map.json by running
+ * build-bundler-version-map.mjs (vendored from camunda/return-of-api-added-
+ * in-analysis) directly in this directory, and copying the produced
+ * `output/bundler-version-map.json` and `output/endpoint-map.json` to the
+ * configured paths.
  *
  * Bundled OpenAPI specs are cached on disk in `bundler-specs/` (next to this
  * script by default) and shared across runs.
  *
- * The git-clone strategy mirrors the depth-1 / SHA-aware logic from
- * camunda-schema-bundler/src/fetch.ts so this script understands branches,
- * tags, and raw commit SHAs uniformly.
- *
  * Env:
- *   RETURN_OF_API_REF         Git ref to clone (default: "main")
- *   RETURN_OF_API_REPO_URL    Git repo URL
- *                             (default: https://github.com/camunda/return-of-api-added-in-analysis.git)
- *   VERSION_MAP_PATH          Output path (default: ./artefacts/version-map.json)
- *   ENDPOINT_MAP_PATH         Output path (default: ./artefacts/endpoint-map.json)
- *   BUNDLER_SPECS_DIR         Persistent cache for fetched/bundled specs
- *                             (default: ./artefacts/bundler-specs, resolved
- *                             relative to this script's directory)
+ *   VERSION_MAP_PATH   Output path (default: ./artefacts/version-map.json)
+ *   ENDPOINT_MAP_PATH  Output path (default: ./artefacts/endpoint-map.json)
+ *   BUNDLER_SPECS_DIR  Persistent cache for fetched/bundled specs
+ *                      (default: ./artefacts/bundler-specs, resolved
+ *                      relative to this script's directory)
+ *   (see build-bundler-version-map.mjs's own header for the rest —
+ *   VERSIONS, MAIN_BRANCH_VERSIONS, LATEST_BRANCH, etc. — all forwarded
+ *   through unchanged.)
  *
  * Usage:
  *   node build-artefacts.mjs
@@ -42,6 +38,9 @@ const endpointMapPath = resolve(
 const bundlerSpecsDir = resolve(
   process.env.BUNDLER_SPECS_DIR ?? join(scriptDir, "artefacts", "bundler-specs"),
 );
+// Scratch output dir for the vendored script's own OUTPUT_PATH, separate from
+// the persistent bundler-specs cache above. Wiped before every run so a
+// failed previous run's stale files can never be mistaken for fresh output.
 const outputDir = join(scriptDir, "artefacts", ".bundler-output");
 
 function run(args, options = {}) {
