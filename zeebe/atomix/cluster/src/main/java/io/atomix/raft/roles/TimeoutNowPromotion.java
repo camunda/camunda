@@ -134,19 +134,42 @@ final class TimeoutNowPromotion implements TransferPhase {
   private void onLeaderObserved(final RaftMember newLeader) {
     raft.checkThread();
     if (result.isDone()) {
+      LOG.trace(
+          "Observed leader {} after the transfer to {} already settled, ignoring it",
+          newLeader.memberId(),
+          target);
       return;
     }
     final var localMember = raft.getCluster().getLocalMember().memberId();
     if (newLeader.memberId().equals(localMember)) {
       if (steppedDown) {
+        LOG.info(
+            "Regained leadership after stepping down during the transfer to {}, reporting a "
+                + "leader change",
+            target);
         complete(LeadershipTransferResult.LEADER_CHANGED);
+      } else {
+        LOG.debug(
+            "Still leader after {} TimeoutNow attempts to {}, waiting for leadership to move",
+            attempts,
+            target);
       }
       return;
     }
-    complete(
-        newLeader.memberId().equals(target)
-            ? LeadershipTransferResult.TRANSFERRED
-            : LeadershipTransferResult.LEADER_CHANGED);
+    if (newLeader.memberId().equals(target)) {
+      LOG.info(
+          "Leadership moved to the desired leader {} after {} TimeoutNow attempts",
+          target,
+          attempts);
+      complete(LeadershipTransferResult.TRANSFERRED);
+    } else {
+      LOG.info(
+          "Leadership moved to {} instead of the desired leader {} after {} TimeoutNow attempts",
+          newLeader.memberId(),
+          target,
+          attempts);
+      complete(LeadershipTransferResult.LEADER_CHANGED);
+    }
   }
 
   private void complete(final LeadershipTransferResult outcome) {
