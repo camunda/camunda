@@ -82,6 +82,30 @@ final class PhysicalTenantRestPathTest {
   }
 
   @Test
+  void shouldDropPhysicalTenantFromPreprefixedRestAddressForClusterStatus(
+      final WireMockRuntimeInfo mockInfo) {
+    // given a REST address that already routes to a physical tenant, so auto-prefixing is off
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(true)
+            .restAddress(URI.create(mockInfo.getHttpBaseUrl() + "/physical-tenants/riskproduction"))
+            .physicalTenantId("riskproduction")
+            .prefixPhysicalTenantPath(false)
+            .build()) {
+      // when
+      try {
+        client.newStatusRequest().send().join();
+      } catch (final Exception ignored) {
+        // only the outgoing request URL is under test; the (unstubbed) response is irrelevant
+      }
+    }
+
+    // then the gateway serves the cluster status outside the per-tenant path, so keeping the
+    // prefix would produce an unroutable URL
+    verify(getRequestedFor(urlEqualTo("/cluster/v2/status")));
+  }
+
+  @Test
   void shouldUseVerbatimRestBasePathWhenAppendDisabled(final WireMockRuntimeInfo mockInfo) {
     // given
     try (final CamundaClient client = client(mockInfo, false)) {
