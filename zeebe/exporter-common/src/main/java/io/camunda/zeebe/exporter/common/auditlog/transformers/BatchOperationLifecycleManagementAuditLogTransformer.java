@@ -20,6 +20,11 @@ public class BatchOperationLifecycleManagementAuditLogTransformer
   }
 
   @Override
+  public Class<BatchOperationLifecycleManagementRecordValue> getRecordValueType() {
+    return BatchOperationLifecycleManagementRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<BatchOperationLifecycleManagementRecordValue> record, final AuditLogEntry log) {
     // Since RESUME, CANCEL and SUSPEND logs use a different key, we override the entity key

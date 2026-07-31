@@ -22,6 +22,11 @@ public class HistoryDeletionAuditLogTransformer
   }
 
   @Override
+  public Class<HistoryDeletionRecordValue> getRecordValueType() {
+    return HistoryDeletionRecordValue.class;
+  }
+
+  @Override
   public boolean supports(final Record<HistoryDeletionRecordValue> record) {
     if (!config().supports(record)) {
       return false;

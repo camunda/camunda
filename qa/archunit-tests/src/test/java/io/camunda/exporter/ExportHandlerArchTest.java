@@ -23,6 +23,8 @@ import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import java.util.List;
@@ -94,10 +96,15 @@ public class ExportHandlerArchTest {
           .and()
           .doNotHaveModifier(JavaModifier.ABSTRACT)
           .and()
-          // TODO remove this exclusion once we have refactored the handlers to implement the
+          .areNotAssignableTo(
+              DescribedPredicate.or(
+                  // audit log handlers have custom handling
+                  Predicates.assignableTo(AuditLogHandler.class),
+                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
+          .and()
+          // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
           .resideOutsideOfPackages(
-              "io.camunda.exporter.handlers.auditlog..",
               "io.camunda.exporter.handlers.batchoperation..",
               "io.camunda.exporter.handlers.operation..",
               "io.camunda.exporter.handlers.waitstate..")

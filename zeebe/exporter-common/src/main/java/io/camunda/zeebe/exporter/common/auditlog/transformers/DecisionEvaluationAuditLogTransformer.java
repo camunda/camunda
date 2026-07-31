@@ -21,6 +21,11 @@ public class DecisionEvaluationAuditLogTransformer
   }
 
   @Override
+  public Class<DecisionEvaluationRecordValue> getRecordValueType() {
+    return DecisionEvaluationRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<DecisionEvaluationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();

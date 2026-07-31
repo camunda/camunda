@@ -18,4 +18,9 @@ public class ProcessInstanceCancelAuditLogTransformer
   public TransformerConfig config() {
     return PROCESS_INSTANCE_CANCEL_CONFIG;
   }
+
+  @Override
+  public Class<ProcessInstanceRecordValue> getRecordValueType() {
+    return ProcessInstanceRecordValue.class;
+  }
 }
