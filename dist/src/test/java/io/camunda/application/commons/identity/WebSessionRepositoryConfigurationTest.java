@@ -10,6 +10,8 @@ package io.camunda.application.commons.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -22,6 +24,8 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.security.core.port.out.SessionStorePort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -133,6 +137,7 @@ class WebSessionRepositoryConfigurationTest {
             Map.class,
             () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, descriptors))
         .withBean(PhysicalTenantIds.class, () -> PhysicalTenantIds.DEFAULT)
+        .withBean(SchemaManagerContainer.class, () -> mock(SchemaManagerContainer.class))
         .withUserConfiguration(WebSessionRepositoryConfiguration.class)
         .withPropertyValues(
             "camunda.data.secondary-storage.type=elasticsearch",
@@ -150,6 +155,51 @@ class WebSessionRepositoryConfigurationTest {
                   .isNotNull();
               assertThatThrownBy(() -> provider.withPhysicalTenant("unknown-pt"))
                   .isInstanceOf(IllegalStateException.class);
+            });
+  }
+
+  @Test
+  void shouldGateWriteWhenSchemaManagerContainerBeanReportsTenantNotInitialized() {
+    // given — a SchemaManagerContainer bean is present and reports the tenant as not initialized
+    final var searchClient =
+        mock(
+            DocumentBasedSearchClient.class,
+            withSettings().extraInterfaces(DocumentBasedWriteClient.class));
+    final var descriptors = new IndexDescriptors("test", /* isElasticsearch= */ true);
+    final var schemaManagerContainer = mock(SchemaManagerContainer.class);
+    when(schemaManagerContainer.isInitialized(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(false);
+
+    new WebApplicationContextRunner()
+        .withBean(ConnectConfiguration.class, ConnectConfiguration::new)
+        .withBean(
+            "physicalTenantDocumentSearchClients",
+            Map.class,
+            () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, searchClient))
+        .withBean(
+            "physicalTenantScopedIndexDescriptors",
+            Map.class,
+            () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, descriptors))
+        .withBean(PhysicalTenantIds.class, () -> PhysicalTenantIds.DEFAULT)
+        .withBean(SchemaManagerContainer.class, () -> schemaManagerContainer)
+        .withUserConfiguration(WebSessionRepositoryConfiguration.class)
+        .withPropertyValues(
+            "camunda.data.secondary-storage.type=elasticsearch",
+            "camunda.security.session.persistent.enabled=true")
+        .run(
+            ctx -> {
+              final var provider =
+                  ctx.getBean(PhysicalTenantScopedPersistentWebSessionClient.class);
+              final var client =
+                  provider.withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+
+              // when
+              client.upsertPersistentWebSession(
+                  new PersistentWebSessionEntity("session-1", 1L, 1L, 1800L, Map.of()));
+
+              // then — the write never reached the underlying write client
+              verify((DocumentBasedWriteClient) searchClient, never())
+                  .index(org.mockito.ArgumentMatchers.any());
             });
   }
 }

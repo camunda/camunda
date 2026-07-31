@@ -10,6 +10,8 @@ package io.camunda.application.commons.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -18,6 +20,8 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
+import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -60,7 +64,9 @@ class PhysicalTenantScopedPersistentWebSessionClientFactoryTest {
     // when
     final PhysicalTenantScopedPersistentWebSessionClient provider =
         PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
-            Map.of("t1", searchClient), Map.of("t1", descriptors));
+            Map.of("t1", searchClient),
+            Map.of("t1", descriptors),
+            mock(SchemaManagerContainer.class));
 
     // then
     assertThat(provider.withPhysicalTenant("t1")).isNotNull();
@@ -78,7 +84,9 @@ class PhysicalTenantScopedPersistentWebSessionClientFactoryTest {
     assertThatThrownBy(
             () ->
                 PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
-                    Map.of("missing-pt", searchClient), Map.of()))
+                    Map.of("missing-pt", searchClient),
+                    Map.of(),
+                    mock(SchemaManagerContainer.class)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("missing-pt");
   }
@@ -93,9 +101,44 @@ class PhysicalTenantScopedPersistentWebSessionClientFactoryTest {
     assertThatThrownBy(
             () ->
                 PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
-                    Map.of("t1", readOnlyClient), Map.of("t1", descriptors)))
+                    Map.of("t1", readOnlyClient),
+                    Map.of("t1", descriptors),
+                    mock(SchemaManagerContainer.class)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("t1")
         .hasMessageContaining("DocumentBasedWriteClient");
+  }
+
+  @Test
+  void shouldSkipWriteForTenantWhoseSchemaIsNotInitialized() {
+    // given — t1 ready, t2 not; the guard must consult isInitialized per-tenant, not globally
+    final var readyClient =
+        mock(
+            DocumentBasedSearchClient.class,
+            withSettings().extraInterfaces(DocumentBasedWriteClient.class));
+    final var notReadyClient =
+        mock(
+            DocumentBasedSearchClient.class,
+            withSettings().extraInterfaces(DocumentBasedWriteClient.class));
+    final var descriptors = new IndexDescriptors("test", /* isElasticsearch= */ true);
+    final var schemaManagerContainer = mock(SchemaManagerContainer.class);
+    when(schemaManagerContainer.isInitialized("t1")).thenReturn(true);
+    when(schemaManagerContainer.isInitialized("t2")).thenReturn(false);
+
+    final var provider =
+        PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
+            Map.of("t1", readyClient, "t2", notReadyClient),
+            Map.of("t1", descriptors, "t2", descriptors),
+            schemaManagerContainer);
+    final var session = new PersistentWebSessionEntity("session-1", 1L, 1L, 1800L, Map.of());
+
+    // when
+    provider.withPhysicalTenant("t1").upsertPersistentWebSession(session);
+    provider.withPhysicalTenant("t2").upsertPersistentWebSession(session);
+
+    // then
+    verify((DocumentBasedWriteClient) readyClient).index(org.mockito.ArgumentMatchers.any());
+    verify((DocumentBasedWriteClient) notReadyClient, never())
+        .index(org.mockito.ArgumentMatchers.any());
   }
 }
