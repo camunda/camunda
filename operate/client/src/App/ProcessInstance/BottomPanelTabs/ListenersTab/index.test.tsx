@@ -48,8 +48,14 @@ function mockValidatedSearchJobs(
   );
 }
 
-function buildExpectedPayload(kind: z.ZodType) {
+function buildExpectedPayload(
+  kind: z.ZodType,
+  sort: z.ZodType = z.tuple([
+    z.strictObject({field: z.literal('jobKey'), order: z.literal('desc')}),
+  ]),
+) {
   return z.strictObject({
+    sort,
     filter: z.strictObject({
       processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
       elementId: z.literal('Task_1'),
@@ -489,5 +495,73 @@ describe('<ListenersTab />', () => {
 
     expect(await screen.findByText('Task listener')).toBeInTheDocument();
     expect(screen.getByText('Execution listener')).toBeInTheDocument();
+  });
+
+  it('should request listeners sorted by the sort search param', async () => {
+    mockValidatedSearchJobs(
+      buildExpectedPayload(
+        z.strictObject({
+          $in: z.tuple([
+            z.literal('EXECUTION_LISTENER'),
+            z.literal('TASK_LISTENER'),
+          ]),
+        }),
+        z.tuple([
+          z.strictObject({
+            field: z.literal('endTime'),
+            order: z.literal('asc'),
+          }),
+        ]),
+      ),
+      searchResult([mockExecutionListenerJob]),
+    );
+
+    render(<ListenersTab />, {
+      wrapper: getWrapper(
+        'elementId=Task_1&elementInstanceKey=123456789&sort=endTime%2Basc',
+      ),
+    });
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+  });
+
+  it('should sort listeners when a column header is clicked', async () => {
+    mockValidatedSearchJobs(
+      buildExpectedPayload(
+        z.strictObject({
+          $in: z.tuple([
+            z.literal('EXECUTION_LISTENER'),
+            z.literal('TASK_LISTENER'),
+          ]),
+        }),
+      ),
+      searchResult([mockExecutionListenerJob, mockTaskListenerJob]),
+    );
+
+    const {user} = render(<ListenersTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Execution listener')).toBeInTheDocument();
+
+    mockValidatedSearchJobs(
+      buildExpectedPayload(
+        z.strictObject({
+          $in: z.tuple([
+            z.literal('EXECUTION_LISTENER'),
+            z.literal('TASK_LISTENER'),
+          ]),
+        }),
+        z.tuple([
+          z.strictObject({field: z.literal('state'), order: z.literal('desc')}),
+        ]),
+      ),
+      searchResult([mockTaskListenerJob]),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Sort by State'}));
+
+    expect(await screen.findByText('Task listener')).toBeInTheDocument();
+    expect(screen.queryByText('Execution listener')).not.toBeInTheDocument();
   });
 });
