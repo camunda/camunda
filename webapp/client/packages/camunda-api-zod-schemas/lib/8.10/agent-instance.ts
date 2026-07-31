@@ -176,7 +176,7 @@ const agentInstanceHistoryItemSchema = z.object({
 	elementInstanceKey: z.string(),
 	jobKey: z.string(),
 	jobLease: z.string(),
-	loopIteration: z.number().int().nullable(),
+	loopIteration: z.number().int(),
 	role: agentInstanceHistoryRoleSchema,
 	content: z.array(agentInstanceMessageContentSchema),
 	toolCalls: z.array(agentInstanceToolCallSchema),
