@@ -94,6 +94,11 @@ public class GatewayAuthenticationNoneIT {
           .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
           .withEnv("KEYCLOAK_INIT_ORCHESTRATION_SECRET", ORCHESTRATION_CLIENT_SECRET)
           .withEnv("KEYCLOAK_INIT_ORCHESTRATION_ROOT_URL", "http://localhost:8080")
+          // Identity's orchestration preset grants its client permissions on the Web Modeler
+          // public API, but that resource server is only created when the webmodeler component
+          // is initialized as well. Without this, Identity aborts its startup with HTTP 404
+          // while assigning those permissions.
+          .withEnv("KEYCLOAK_INIT_WEBMODELER_ROOT_URL", "http://localhost:8070")
           .withEnv("KEYCLOAK_CLIENTS_0_NAME", ORCHESTRATION_CLIENT_NAME)
           .withEnv("KEYCLOAK_CLIENTS_0_ID", ORCHESTRATION_CLIENT_ID)
           .withEnv("KEYCLOAK_CLIENTS_0_SECRET", ORCHESTRATION_CLIENT_SECRET)
@@ -105,12 +110,6 @@ public class GatewayAuthenticationNoneIT {
           .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
           .withNetwork(NETWORK)
           .withExposedPorts(8080, 8082)
-          // Identity's realm bootstrap can fail on its first attempt: Keycloak reports ready
-          // before its admin/realm authorization layer is fully consistent, so disabling the
-          // system clients returns HTTP 403 and the container exits. A fresh start succeeds
-          // because the realm the failed attempt already created now exists in the (still
-          // running) Keycloak, so retry the container start instead of failing the whole test.
-          .withStartupAttempts(3)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
