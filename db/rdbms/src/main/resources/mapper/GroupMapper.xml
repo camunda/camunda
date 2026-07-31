@@ -159,18 +159,18 @@ SELECT
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
       javaType="java.util.List">
       <constructor>
-        <idArg column="MEMBER_GROUP_ID" javaType="java.lang.String"/>
-        <idArg column="MEMBER_ENTITY_ID" javaType="java.lang.String"/>
-        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
+        <idArg column="MEMBER_GROUP_ID" javaType="java.lang.String" name="groupId"/>
+        <idArg column="MEMBER_ENTITY_ID" javaType="java.lang.String" name="entityId"/>
+        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String" name="entityType"/>
       </constructor>
     </collection>
   </resultMap>
 
   <resultMap id="groupMemberResultMap" type="io.camunda.db.rdbms.write.domain.GroupMemberDbModel">
     <constructor>
-      <idArg column="GROUP_ID" javaType="java.lang.String"/>
-      <arg column="ENTITY_ID" javaType="java.lang.String"/>
-      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+      <idArg column="GROUP_ID" javaType="java.lang.String" name="groupId"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String" name="entityId"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String" name="entityType"/>
     </constructor>
   </resultMap>
 

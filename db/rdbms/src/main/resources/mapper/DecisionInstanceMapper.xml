@@ -313,10 +313,10 @@
   <resultMap id="evaluatedInputResultMap"
     type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedInput">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <idArg column="INPUT_ID" javaType="java.lang.String"/>
-      <arg column="INPUT_NAME" javaType="java.lang.String"/>
-      <arg column="INPUT_VALUE" javaType="java.lang.String"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <idArg column="INPUT_ID" javaType="java.lang.String" name="id"/>
+      <arg column="INPUT_NAME" javaType="java.lang.String" name="name"/>
+      <arg column="INPUT_VALUE" javaType="java.lang.String" name="value"/>
     </constructor>
   </resultMap>
 
@@ -361,12 +361,12 @@
   <resultMap id="evaluatedOutputResultMap"
     type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedOutput">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <idArg column="OUTPUT_ID" javaType="java.lang.String"/>
-      <arg column="OUTPUT_NAME" javaType="java.lang.String"/>
-      <arg column="OUTPUT_VALUE" javaType="java.lang.String"/>
-      <arg column="RULE_ID" javaType="java.lang.String"/>
-      <arg column="RULE_INDEX" javaType="java.lang.Integer"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <idArg column="OUTPUT_ID" javaType="java.lang.String" name="id"/>
+      <arg column="OUTPUT_NAME" javaType="java.lang.String" name="name"/>
+      <arg column="OUTPUT_VALUE" javaType="java.lang.String" name="value"/>
+      <arg column="RULE_ID" javaType="java.lang.String" name="ruleId"/>
+      <arg column="RULE_INDEX" javaType="java.lang.Integer" name="ruleIndex"/>
     </constructor>
   </resultMap>
 
