@@ -9,7 +9,10 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -99,7 +102,12 @@ public final class DelayedFlusher implements RaftLogFlusher {
 
     try {
       journal.flush();
-    } catch (final Exception e) {
+    } catch (final CheckedJournalException | JournalException | UncheckedIOException e) {
+      // only retry the failures which are plausibly transient I/O errors; any other failure is
+      // unexpected and most likely permanent, so it must escape to the thread context's uncaught
+      // exception handler, which marks the partition unhealthy. Retrying it forever would leave
+      // the log unflushed indefinitely while appends keep being acknowledged before they are
+      // durable, reported as nothing but a repeating warning.
       LOGGER.warn("Failed to flush journal, operation will be retried after {}", delayTime, e);
       scheduleFlush(journal);
     }
