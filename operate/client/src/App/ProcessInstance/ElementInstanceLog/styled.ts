@@ -29,13 +29,12 @@ const Container = styled.div`
   }
 `;
 
-// Lets the title ellipsise and stops the header toggles being squashed as the
-// panel narrows. Width-agnostic - no coupling to INSTANCE_HISTORY_MIN_WIDTH,
-// which only decides how narrow the panel is allowed to get.
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
   gap: var(--cds-spacing-03);
 
+  /* Improves responsiveness for smaller screen sizes by shrinking the title into an ellipse.
+  Important for the ElementInstanceLog where space can be very limited when the user shrinks it. */
   h2 {
     min-width: 0;
     overflow: hidden;

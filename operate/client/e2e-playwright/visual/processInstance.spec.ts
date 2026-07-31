@@ -559,8 +559,6 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  // Panel sizes are stored as percentages, so 10 pins the panel to its minimum
-  // - where a title or control that outgrows the measured 420px shows up first.
   test('instance history panel at its minimum width', async ({
     page,
     processInstancePage,
@@ -568,6 +566,7 @@ test.describe('process instance page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',
+        // 10% is smaller than the configured minimum width, which will override it.
         JSON.stringify({'process-instance-bottom-panel': [10, 90]}),
       );
     });
