@@ -146,10 +146,11 @@ public final class RaftPartitionFactory {
       final Duration delayTime = config.delayTime();
       if (config.coalesced()) {
         if (!delayTime.isZero()) {
+          // this combination is already rejected when the configuration is read, see
+          // io.camunda.configuration.Raft; guards against a programmatically built config
           throw new IllegalArgumentException(
-              ("Expected either a coalesced or a delayed Raft flush strategy, but both coalesced "
-                      + "flushing and a flush delay of %s are configured; configure only one of "
-                      + "them.")
+              ("Expected either coalesced flushing or a flush delay, but both are configured "
+                      + "(flush delay: %s).")
                   .formatted(delayTime));
         }
 

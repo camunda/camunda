@@ -284,13 +284,27 @@ public class Raft {
     this.flushDelay = flushDelay;
   }
 
+  /**
+   * @throws UnifiedConfigurationException if coalesced flushing is combined with a flush delay
+   */
   public boolean isFlushCoalesced() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".flush-coalesced",
-        flushCoalesced,
-        Boolean.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_FLUSH_COALESCED));
+    final boolean coalesced =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            PREFIX + ".flush-coalesced",
+            flushCoalesced,
+            Boolean.class,
+            UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+            Set.of(LEGACY_FLUSH_COALESCED));
+    final Duration delay = getFlushDelay();
+    if (coalesced && delay != null && !delay.isZero()) {
+      throw new UnifiedConfigurationException(
+          ("%1$s.flush-coalesced and %1$s.flush-delay are mutually exclusive, but "
+                  + "coalesced flushing is enabled together with a flush delay of %2$s. "
+                  + "Remove one of them: flush-coalesced reduces flush overhead without giving up "
+                  + "durability, flush-delay trades durability for performance.")
+              .formatted(PREFIX, delay));
+    }
+    return coalesced;
   }
 
   public void setFlushCoalesced(final boolean flushCoalesced) {
