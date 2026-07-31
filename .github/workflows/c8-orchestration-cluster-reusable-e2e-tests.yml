@@ -126,7 +126,8 @@ jobs:
             DATABASE=elasticsearch docker compose up -d optimize
           }
 
-          attempts=3
+          attempts=5
+          delay=15
           for attempt in $(seq 1 "$attempts"); do
             if start_optimize; then
               echo "Optimize started on attempt ${attempt}."
@@ -134,8 +135,9 @@ jobs:
             fi
             echo "Attempt ${attempt}/${attempts} to start Optimize failed."
             if [[ "$attempt" -lt "$attempts" ]]; then
-              echo "Retrying in 15s..."
-              sleep 15
+              echo "Retrying in ${delay}s (exponential backoff)..."
+              sleep "$delay"
+              delay=$(( delay * 2 ))
             fi
           done
 
