@@ -8,6 +8,7 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -20,6 +21,7 @@ import io.atomix.raft.DeterministicSingleThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
+import java.io.IOError;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -226,6 +228,33 @@ final class CoalescedFlusherTest {
 
     // then - the pending result fails instead of hanging, and the flusher stays usable
     assertThat(failed).isCompletedExceptionally();
+    final var retried = flusher.flush(journal, 6);
+    scheduler.runUntilIdle();
+    assertThat(retried).isCompleted();
+  }
+
+  @Test
+  void shouldFailPendingWhenFlushThrowsError() throws CheckedJournalException {
+    // given - a flush failing with an error instead of an exception, e.g. an IOError from the
+    // memory mapped segment buffer
+    lastIndex.set(6);
+    final var error = new IOError(new IOException("failed to sync"));
+    doThrow(error)
+        .doAnswer(
+            invocation -> {
+              lastFlushedIndex.set(lastIndex.get());
+              return null;
+            })
+        .when(journal)
+        .flush();
+    final var failed = flusher.flush(journal, 6);
+
+    // when - the error is not swallowed, it still escapes to the flush thread
+    assertThatThrownBy(scheduler::runUntilIdle).isSameAs(error);
+
+    // then - the pending result fails instead of hanging, and the flusher stays usable
+    assertThat(failed).isCompletedExceptionally();
+    assertThatThrownBy(failed::join).hasCauseInstanceOf(FlushException.class);
     final var retried = flusher.flush(journal, 6);
     scheduler.runUntilIdle();
     assertThat(retried).isCompleted();

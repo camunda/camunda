@@ -148,7 +148,17 @@ public final class CoalescedFlusher implements RaftLogFlusher {
   private void flushNext(final Journal journal) {
     // must not hold the monitor while flushing, otherwise the Raft thread would block on new
     // flush requests for the whole flush duration
-    completeRequests(journal, tryFlush(journal));
+    try {
+      completeRequests(journal, tryFlush(journal));
+    } catch (final Throwable t) {
+      // an Error, which tryFlush does not return, must not skip completing the pending results
+      // either, as that would leave them - and all future requests - pending forever. It is not
+      // swallowed: once the results are failed, it is rethrown so that the flush thread's uncaught
+      // exception handler still sees it, e.g. to shut the JVM down on a VirtualMachineError.
+      completeRequests(
+          journal, new FlushException("Failed to flush journal, cannot guarantee durability", t));
+      throw t;
+    }
   }
 
   private synchronized void completeRequests(final Journal journal, final Exception failure) {
@@ -189,9 +199,10 @@ public final class CoalescedFlusher implements RaftLogFlusher {
       journal.flush();
       return null;
     } catch (final Exception e) {
-      // any failure must be caught here, not just the expected journal exceptions: an escaping
+      // any exception must be caught here, not just the expected journal exceptions: an escaping
       // exception would skip completing the pending results, leaving them - and all future
-      // requests - pending forever
+      // requests - pending forever. Errors are handled by the caller, which fails the pending
+      // results before rethrowing them.
       return e;
     }
   }
