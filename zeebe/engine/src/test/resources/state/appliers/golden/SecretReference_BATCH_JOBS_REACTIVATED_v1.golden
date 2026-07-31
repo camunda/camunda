@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public final class SecretReferenceBatchJobsReactivatedApplier
@@ -50,14 +48,8 @@ public final class SecretReferenceBatchJobsReactivatedApplier
       // into the activatable index
       return false;
     }
-    final List<Map.Entry<String, String>> refs = new ArrayList<>();
-    secretReferenceState.visitSecretReferencesByJob(
-        jobKey,
-        (storeId, secretRef) -> {
-          refs.add(Map.entry(storeId, secretRef));
-          return true;
-        });
-    for (final Map.Entry<String, String> ref : refs) {
+    for (final Map.Entry<String, String> ref :
+        secretReferenceState.collectSecretReferencesByJob(jobKey)) {
       if (secretReferenceState.isPending(ref.getKey(), ref.getValue())) {
         return false;
       }

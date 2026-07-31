@@ -20,4 +20,7 @@ public interface MutableSecretReferenceState extends SecretReferenceState {
 
   /** Removes from both waiting-job indexes. Always removes both together. */
   void removeWaitingJob(String storeId, String secretReference, long jobKey);
+
+  /** Removes all secret reference entries for the given job key from both waiting-job indexes. */
+  void removeAllSecretReferencesByJobKey(long jobKey);
 }
