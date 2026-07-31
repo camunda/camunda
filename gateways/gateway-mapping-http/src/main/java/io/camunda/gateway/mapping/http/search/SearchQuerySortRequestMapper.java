@@ -460,6 +460,7 @@ public class SearchQuerySortRequestMapper {
         case KIND -> builder.jobKind();
         case LISTENER_EVENT_TYPE -> builder.listenerEventType();
         case END_TIME -> builder.endTime();
+        case CREATION_TIME -> builder.creationTime();
         case TENANT_ID -> builder.tenantId();
         case RETRIES -> builder.retries();
         case PRIORITY -> builder.priority();

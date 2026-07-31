@@ -671,6 +671,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - creationTime
             - deadline
             - deniedReason
             - elementId
