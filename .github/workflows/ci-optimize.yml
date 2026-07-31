@@ -148,7 +148,7 @@ jobs:
         with:
           name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
           path: |
-            **/failsafe-reports/**/*.xml
+            **/failsafe-reports/**
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -239,7 +239,7 @@ jobs:
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
-            **/failsafe-reports/**/*.xml
+            **/failsafe-reports/**
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
