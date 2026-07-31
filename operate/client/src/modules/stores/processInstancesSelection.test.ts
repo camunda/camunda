@@ -87,8 +87,14 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     const result = processInstancesSelectionStore.checkedProcessInstanceIds;
     expect(result).toEqual([]);
   });
+});
 
-  it('should not hint truncated counts in INCLUDE mode even when there are more total items', () => {
+describe('ProcessInstancesSelection - isSelectedProcessInstanceCountTruncated', () => {
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should be false in INCLUDE mode even when there are more total items', () => {
     processInstancesSelectionStore.setRuntime({
       totalProcessInstancesCount: 3,
       hasMoreTotalProcessInstances: true,
@@ -102,7 +108,7 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     ).toBe(false);
   });
 
-  it('should hint truncated counts in ALL mode when there are more total items', () => {
+  it('should be true in ALL mode when there are more total items', () => {
     processInstancesSelectionStore.setRuntime({
       totalProcessInstancesCount: 3,
       hasMoreTotalProcessInstances: true,
@@ -116,7 +122,7 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     ).toBe(true);
   });
 
-  it('should hint truncated counts in EXCLUDE mode when there are more total items', () => {
+  it('should be true in EXCLUDE mode when there are more total items', () => {
     processInstancesSelectionStore.setRuntime({
       totalProcessInstancesCount: 3,
       hasMoreTotalProcessInstances: true,
@@ -131,7 +137,7 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     ).toBe(true);
   });
 
-  it('should not hint truncated counts in ALL mode when there are no more total items', () => {
+  it('should be false in ALL mode when there are no more total items', () => {
     processInstancesSelectionStore.setRuntime({
       totalProcessInstancesCount: 3,
       hasMoreTotalProcessInstances: false,
