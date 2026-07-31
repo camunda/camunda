@@ -121,6 +121,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         />
         <Toolbar
           selectedInstancesCount={processInstancesSelectionStore.selectedCount}
+          isSelectedCountTruncated={
+            processInstancesSelectionStore.isSelectedCountTruncated
+          }
         />
         <SortableTable
           state={state}

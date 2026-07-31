@@ -16,6 +16,7 @@ import {
 
 type Runtime = {
   totalCount: number;
+  hasMoreTotalItems?: boolean;
   visibleIds: string[];
   visibleRunningIds?: string[];
   visibleFinishedIds?: string[];
@@ -37,6 +38,7 @@ class InstancesSelection {
   state: State = {...DEFAULT_STATE};
   runtime: Runtime = {
     totalCount: 0,
+    hasMoreTotalItems: false,
     visibleIds: [],
     visibleRunningIds: [],
     visibleFinishedIds: [],
@@ -70,6 +72,7 @@ class InstancesSelection {
 
     if (
       prev.totalCount === next.totalCount &&
+      !!prev.hasMoreTotalItems === !!next.hasMoreTotalItems &&
       isEqual(prev.visibleIds, next.visibleIds) &&
       isEqual(prev.visibleRunningIds ?? [], next.visibleRunningIds ?? []) &&
       isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? []) &&
@@ -161,6 +164,12 @@ class InstancesSelection {
 
   get isAllChecked(): boolean {
     return this.state.selectionMode === 'ALL';
+  }
+
+  get isSelectedCountTruncated(): boolean {
+    return (
+      !!this.runtime.hasMoreTotalItems && this.state.selectionMode !== 'INCLUDE'
+    );
   }
 
   get hasSelectedRunningInstances() {
@@ -267,6 +276,7 @@ class InstancesSelection {
     this.resetState();
     this.runtime = {
       totalCount: 0,
+      hasMoreTotalItems: false,
       visibleIds: [],
       visibleRunningIds: [],
       visibleFinishedIds: [],
