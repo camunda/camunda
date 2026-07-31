@@ -24,12 +24,23 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AnalyzeClasses(packages = "io.camunda.exporter", importOptions = DoNotIncludeTestsOrTestJars.class)
 public class ExportHandlerArchTest {
+  static final Set<Class<?>> RAW_TYPES_THAT_NEED_ORDINAL_HANDLING =
+      Set.of(StorageOrdinalKeyRelated.class, OperationEntity.class);
+  static final DescribedPredicate<? super JavaClass>
+      RAW_TYPES_THAT_NEED_ORDINAL_HANDLING_PREDICATE =
+          DescribedPredicate.or(
+              RAW_TYPES_THAT_NEED_ORDINAL_HANDLING.stream()
+                  .map(Predicates::assignableTo)
+                  .toArray(DescribedPredicate[]::new));
 
   @ArchTest
   static final ArchRule EXPORT_HANDLERS_SHOULD_ONLY_WRITE_TO_ONE_INDEX =
@@ -109,7 +120,7 @@ public class ExportHandlerArchTest {
 
   @ArchTest
   static final ArchRule
-      EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_FOR_STORAGE_ORDINAL_KEY_RELATED_RECORDS =
+      EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_FOR_STORAGE_ORDINAL_KEY_RELATED_RECORDS_AND_ENTITIES =
           ArchRuleDefinition.classes()
               .that()
               .areAssignableTo(MainIndexExporterHandler.class)
@@ -117,28 +128,33 @@ public class ExportHandlerArchTest {
               .doNotHaveModifier(JavaModifier.ABSTRACT)
               .should(
                   new ArchCondition<>(
-                      StorageOrdinalKeyRelated.class.getSimpleName()
-                          + " records should not target main indexes") {
+                      "not target main indexes when using raw types: "
+                          + RAW_TYPES_THAT_NEED_ORDINAL_HANDLING) {
                     @Override
                     public void check(final JavaClass item, final ConditionEvents events) {
+                      final var violatingRawTypes = new LinkedHashSet<JavaClass>();
                       for (final var clazz : item.getClassHierarchy()) {
                         for (final var interf : clazz.getInterfaces()) {
                           for (final var rawType : interf.getAllInvolvedRawTypes()) {
-                            if (rawType.isAssignableTo(StorageOrdinalKeyRelated.class)) {
-                              events.add(
-                                  SimpleConditionEvent.violated(
-                                      item,
-                                      "Class "
-                                          + item.getName()
-                                          + " implements "
-                                          + MainIndexExporterHandler.class.getSimpleName()
-                                          + " but handles a record type ("
-                                          + rawType.getName()
-                                          + ") that implements "
-                                          + StorageOrdinalKeyRelated.class.getSimpleName()));
+                            if (rawType.isAssignableTo(
+                                RAW_TYPES_THAT_NEED_ORDINAL_HANDLING_PREDICATE)) {
+                              violatingRawTypes.add(rawType);
                             }
                           }
                         }
+                      }
+                      for (final var rawType : violatingRawTypes) {
+                        events.add(
+                            SimpleConditionEvent.violated(
+                                item,
+                                "Class "
+                                    + item.getName()
+                                    + " implements "
+                                    + MainIndexExporterHandler.class.getSimpleName()
+                                    + " but uses raw type ("
+                                    + rawType.getName()
+                                    + ") that implements one of:"
+                                    + RAW_TYPES_THAT_NEED_ORDINAL_HANDLING));
                       }
                     }
                   });
