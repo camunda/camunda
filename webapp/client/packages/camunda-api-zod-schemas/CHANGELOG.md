@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.85
+
+### 🚀 Enhancements
+
+- Add `creationTime` as a sortable field to the 8.10 jobs search schema, enabling jobs (including execution/task listeners) to be sorted by their creation time ([#58500](https://github.com/camunda/camunda/issues/58500))
+
+### ❤️ Contributors
+
+- [@aleksander-dytko](https://github.com/aleksander-dytko)
+
 ## v0.0.84
 
 ### 🚀 Enhancements
