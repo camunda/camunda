@@ -189,6 +189,9 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       close(): void;
       isOpen(): boolean;
     };
+    get(module: 'outline'): {
+      createOutline(element: BpmnElement): SVGElement;
+    };
 
     on: EventCallback;
     off: EventCallback;
