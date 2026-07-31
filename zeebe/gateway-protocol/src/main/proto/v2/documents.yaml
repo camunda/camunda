@@ -392,6 +392,11 @@ components:
               description: Documents that failed creation.
               items:
                 $ref: '#/components/schemas/DocumentReference'
+          x-properties-added-in-version:
+            - propertyName: "createdDocuments"
+              addedInVersion: "8.8"
+            - propertyName: "failedDocuments"
+              addedInVersion: "8.8"
 
     DocumentMetadata:
       description: Information about the document.

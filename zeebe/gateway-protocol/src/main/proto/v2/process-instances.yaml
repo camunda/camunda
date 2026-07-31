@@ -1568,7 +1568,7 @@ components:
         - propertyName: batchOperationId
           addedInVersion: "8.6"
         - propertyName: batchOperationKey
-          addedInVersion: "8.8"
+          addedInVersion: "8.9"
         - propertyName: errorMessage
           addedInVersion: "8.6"
         - propertyName: hasRetriesLeft

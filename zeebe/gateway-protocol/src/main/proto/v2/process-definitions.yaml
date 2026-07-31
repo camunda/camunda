@@ -477,6 +477,9 @@ components:
           enum:
             - ACTIVE
             - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -540,6 +543,9 @@ components:
           enum:
             - ACTIVE
             - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
