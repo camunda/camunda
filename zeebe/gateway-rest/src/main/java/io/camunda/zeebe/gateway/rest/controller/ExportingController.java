@@ -9,11 +9,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
+import io.camunda.zeebe.gateway.rest.mapper.ExportingResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,6 +34,17 @@ public final class ExportingController {
       final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+  }
+
+  @CamundaGetMapping
+  public CompletableFuture<ResponseEntity<Object>> getExportingStatus(
+      @PhysicalTenantId final String physicalTenantId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            serviceRegistry.exportingServices(physicalTenantId).getExportingStatus(authentication),
+        ExportingResponseMapper::toExportingStatusResponse,
+        HttpStatus.OK);
   }
 
   @CamundaPostMapping(

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -98,5 +99,10 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingStateSupplier.get().resumeExporting();
+  }
+
+  @Override
+  public ExporterPhase getExporterPhase() {
+    return partitionProcessingStateSupplier.get().getExporterPhase();
   }
 }

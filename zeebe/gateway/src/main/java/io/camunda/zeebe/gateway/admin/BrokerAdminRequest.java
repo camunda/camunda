@@ -45,6 +45,10 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
     request.setType(AdminRequestType.RESUME_EXPORTING);
   }
 
+  public void getExportingState() {
+    request.setType(AdminRequestType.GET_EXPORTING_STATE);
+  }
+
   public void getFLowControlConfiguration() {
     request.setType(AdminRequestType.GET_FLOW_CONTROL);
   }

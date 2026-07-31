@@ -131,6 +131,7 @@ class BackupExportingAuthorizationIT {
   private static final Endpoint DELETE_STATE = new Endpoint("DELETE", "v2/backups/runtime/state");
   private static final Endpoint PAUSE_EXPORTING = new Endpoint("POST", "v2/exporting/pause");
   private static final Endpoint RESUME_EXPORTING = new Endpoint("POST", "v2/exporting/resume");
+  private static final Endpoint GET_EXPORTING_STATUS = new Endpoint("GET", "v2/exporting");
 
   private static final List<Endpoint> BACKUP_ENDPOINTS =
       List.of(
@@ -143,7 +144,7 @@ class BackupExportingAuthorizationIT {
           DELETE_STATE);
 
   private static final List<Endpoint> EXPORTING_ENDPOINTS =
-      List.of(PAUSE_EXPORTING, RESUME_EXPORTING);
+      List.of(PAUSE_EXPORTING, RESUME_EXPORTING, GET_EXPORTING_STATUS);
 
   @AfterAll
   static void deleteBackupDirectory() throws IOException {
@@ -332,6 +333,17 @@ class BackupExportingAuthorizationIT {
       // other test in this class reads its authorizations from
       send(client, RESUME_EXPORTING, EXPORTER_PAUSE_USER);
     }
+  }
+
+  @Test
+  void shouldAllowReadingExportingStatusWithPauseGrant(
+      @Authenticated(EXPORTER_PAUSE_USER) final CamundaClient client) throws Exception {
+    // when a user granted EXPORTER:PAUSE reads the exporting status
+    final var response = send(client, GET_EXPORTING_STATUS, EXPORTER_PAUSE_USER);
+
+    // then it succeeds: EXPORTER only defines PAUSE, so the same grant gates the read
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains("EXPORTING");
   }
 
   /**

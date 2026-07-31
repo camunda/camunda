@@ -19,6 +19,7 @@ import io.camunda.service.ExportingServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.admin.ExportingStatus;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,10 +29,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(ExportingController.class)
 public class ExportingControllerTest extends RestControllerTest {
 
+  private static final String STATUS_PATH = "/exporting";
   private static final String PAUSE_PATH = "/exporting/pause";
   private static final String RESUME_PATH = "/exporting/resume";
 
@@ -177,6 +180,67 @@ public class ExportingControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(baseUrl + RESUME_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isForbidden();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2", "/physical-tenants/default/v2"})
+  void getExportingStatusShouldReturnStatusAndTargetDefaultTenant(final String baseUrl) {
+    // given
+    when(exportingServices.getExportingStatus(any()))
+        .thenReturn(CompletableFuture.completedFuture(ExportingStatus.SOFT_PAUSED));
+
+    // when - then
+    webClient
+        .get()
+        .uri(baseUrl + STATUS_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json("{\"status\":\"SOFT_PAUSED\"}", JsonCompareMode.STRICT);
+
+    // the unprefixed and the /physical-tenants/default/ routes both resolve to the default PT
+    verify(serviceRegistry).exportingServices(DEFAULT_PHYSICAL_TENANT_ID);
+    verify(exportingServices).getExportingStatus(any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2", "/physical-tenants/default/v2"})
+  void getExportingStatusShouldReturnServiceUnavailableOnIncompleteTopology(final String baseUrl) {
+    // given
+    when(exportingServices.getExportingStatus(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("Topology is incomplete", Status.UNAVAILABLE)));
+
+    // when - then
+    webClient
+        .get()
+        .uri(baseUrl + STATUS_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2", "/physical-tenants/default/v2"})
+  void getExportingStatusShouldReturnForbiddenWhenUnauthorized(final String baseUrl) {
+    // given
+    when(exportingServices.getExportingStatus(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("Unauthorized to perform operation", Status.FORBIDDEN)));
+
+    // when - then
+    webClient
+        .get()
+        .uri(baseUrl + STATUS_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()

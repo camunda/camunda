@@ -1,6 +1,43 @@
 ## Endpoint definitions
 
 paths:
+  /exporting:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: getExportingStatus
+      x-required-permissions:
+        - { resourceType: EXPORTER, permissionType: PAUSE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get exporting status
+      description: |
+        Returns the exporting status of the physical tenant, aggregated over every replica of
+        every one of its partitions.
+
+        Because pause and resume are applied to all replicas, the status is only a single phase
+        if every replica reports that phase; otherwise it is `MIXED`, which means a pause or
+        resume is still in flight or was only partially applied. Backup tooling should treat
+        only `PAUSED` and `SOFT_PAUSED` as confirmation that exporting is paused.
+      responses:
+        "200":
+          description: The current exporting status of the physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportingStatusResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
   /exporting/pause:
     post:
       x-eventually-consistent: false
@@ -8,7 +45,7 @@ paths:
         - Exporting
       operationId: pauseExporting
       x-required-permissions:
-        - { resourceType: SYSTEM, permissionType: UPDATE }
+        - { resourceType: EXPORTER, permissionType: PAUSE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -49,7 +86,7 @@ paths:
         - Exporting
       operationId: resumeExporting
       x-required-permissions:
-        - { resourceType: SYSTEM, permissionType: UPDATE }
+        - { resourceType: EXPORTER, permissionType: PAUSE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -68,3 +105,35 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+
+components:
+  schemas:
+    ExportingStatusCode:
+      title: Exporting Status Code
+      description: |
+        The exporting status of a physical tenant, aggregated over every replica of every one of
+        its partitions:
+        - `EXPORTING`: all replicas are exporting and committing their position.
+        - `PAUSED`: all replicas are paused, nothing is being exported.
+        - `SOFT_PAUSED`: all replicas keep exporting but do not commit their position.
+        - `MIXED`: replicas report different phases, so the tenant is in no single phase.
+      type: string
+      enum:
+        - EXPORTING
+        - PAUSED
+        - SOFT_PAUSED
+        - MIXED
+      example: PAUSED
+
+    ExportingStatusResponse:
+      title: ExportingStatusResponse
+      description: Response body for the exporting status of a physical tenant.
+      type: object
+      properties:
+        status:
+          description: The aggregated exporting status of the physical tenant.
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/ExportingStatusCode'
+      required:
+        - status
