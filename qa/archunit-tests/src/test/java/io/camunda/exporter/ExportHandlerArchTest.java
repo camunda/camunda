@@ -23,6 +23,7 @@ import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
+import io.camunda.exporter.handlers.operation.AbstractOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
@@ -105,12 +106,14 @@ public class ExportHandlerArchTest {
           .and()
           .doNotHaveModifier(JavaModifier.ABSTRACT)
           .and()
-          // TODO remove this exclusion once we have refactored the handlers to implement the
+          // operation handler needs to be excluded as it needs slight custom handling
+          .areNotAssignableTo(AbstractOperationHandler.class)
+          .and()
+          // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
           .resideOutsideOfPackages(
               "io.camunda.exporter.handlers.auditlog..",
               "io.camunda.exporter.handlers.batchoperation..",
-              "io.camunda.exporter.handlers.operation..",
               "io.camunda.exporter.handlers.waitstate..")
           .should()
           .beAssignableTo(

@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.operation;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -36,12 +37,21 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
   }
 
   @Override
-  public List<String> generateIds(final Record<R> record) {
+  public List<IdAndIndex> extractIdAndIndexes(
+      final TargetIndexLocator indexLocator, final Record<R> record) {
     final long operationReference = record.getOperationReference();
     if (operationReference > 0) {
-      return List.of(String.valueOf(operationReference));
+      final var index = locateTargetIndex(indexLocator, record);
+      return List.of(new IdAndIndex(String.valueOf(operationReference), index));
     }
     return List.of();
+  }
+
+  @Override
+  public List<String> generateIds(final Record<R> record) {
+    throw new UnsupportedOperationException(
+        getClass().getSimpleName()
+            + " does not support generating IDs from records - use extractIdAndIndexes instead.");
   }
 
   @Override
@@ -75,4 +85,7 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
   public String getIndexName() {
     return indexName;
   }
+
+  abstract TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<R> record);
 }
