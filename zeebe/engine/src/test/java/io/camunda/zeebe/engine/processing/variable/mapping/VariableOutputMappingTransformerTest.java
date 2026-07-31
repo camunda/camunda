@@ -137,6 +137,23 @@ public final class VariableOutputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':1}"
       },
+      // declaration order preserved across regrouped nested targets (#11789 / #56387): an entry
+      // declared BETWEEN two entries of the same parent target sees the in-between assignment
+      {
+        List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d")),
+        Map.of("x", asMsgPack("1")),
+        "{'a':{'b':1, 'd':1}, 'c':1}"
+      },
+      {
+        List.of(
+            mapping("\"some text\"", "nested.property"),
+            mapping("\"abc\"", "notNested"),
+            mapping("notNested", "nested.nested.property"),
+            mapping("notNested", "notNestedAssigned")),
+        Map.of(),
+        "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
+            + "'notNested':'abc', 'notNestedAssigned':'abc'}"
+      },
       // source FEEL expression
       {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
       {List.of(mapping("\"foo\"", "a")), Map.of(), "{'a':'foo'}"},
@@ -245,85 +262,13 @@ public final class VariableOutputMappingTransformerTest {
 
   @Test
   @Disabled(
-      "Output-mapping target-regrouping still breaks declaration order - #58801 fixed "
-          + "this for input mappings only. Tracked under #56387 (mapping ordering). — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
-  void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
-    // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
-    // see c's just-assigned value
-    final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
-    final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
-    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-
-    // when
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
-    for (final var mapping : outputMappings) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return accumulated != null ? accumulated : variables.get(name);
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1, 'd':1}, 'c':1}");
-  }
-
-  @Test
-  @Disabled(
-      "Same regrouping bug as shouldPreserveDeclarationOrderAcrossRegroupedTargets, reproducing "
-          + "#11789 (originally input mappings) for output mappings. Tracked under #56387 — once "
-          + "fixed, move into parametersSuccessfulEvaluationToObject.")
-  void shouldPreserveDeclarationOrderForRegroupedNestedTargets() {
-    // given: same mapping shape as issue #11789's "breaks" scriptTask, translated to output
-    // mappings - notNested is declared BETWEEN the two "nested.*" entries
-    final var mappings =
-        List.of(
-            mapping("\"some text\"", "nested.property"),
-            mapping("\"abc\"", "notNested"),
-            mapping("notNested", "nested.nested.property"),
-            mapping("notNested", "notNestedAssigned"));
-    final Map<String, DirectBuffer> variables = Map.of();
-    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-
-    // when
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
-    for (final var mapping : outputMappings) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return accumulated != null ? accumulated : variables.get(name);
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-
-    // then
-    MsgPackUtil.assertEquality(
-        resultBuilder.toDocument(),
-        "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
-            + "'notNested':'abc', 'notNestedAssigned':'abc'}");
-  }
-
-  @Test
-  @Disabled(
       "context merge() with the current scope leaks an untouched sibling ('p') into the merge "
           + "target and a later back-reference to it, instead of building a mapping-only result "
-          + "(input mappings already do this post-#58801). Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
+          + "(input mappings already do this post-#58801). Cannot be enabled without the #35251 "
+          + "fix: the desired drop-the-sibling result conflicts with the pinned 'merge target "
+          + "with variable' case, which requires the sibling to be kept — both go through the "
+          + "same seed-from-scope path. Tracked under "
+          + "https://github.com/camunda/camunda/issues/35251.")
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
     final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
@@ -354,9 +299,9 @@ public final class VariableOutputMappingTransformerTest {
   @Disabled(
       "Same leak as shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference, opposite "
           + "mapping order: the back-reference runs before 'a' is ever written, so it correctly "
-          + "keeps 'p'; only the later merge target should drop it. Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
+          + "keeps 'p'; only the later merge target should drop it. Cannot be enabled without "
+          + "the #35251 fix (see the sibling case). Tracked under "
+          + "https://github.com/camunda/camunda/issues/35251.")
   void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
     final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
     final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
