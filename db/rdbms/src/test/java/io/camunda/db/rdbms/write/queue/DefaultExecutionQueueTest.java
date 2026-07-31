@@ -552,6 +552,9 @@ class DefaultExecutionQueueTest {
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
     "io.camunda.db.rdbms.sql.BatchOperationMapper.activate,true",
+    // set-if-null: affects no rows whenever the name is already resolved, which is the normal
+    // outcome of a second ad-hoc entry activation on the same inner instance
+    "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull,true",
     "some.other.Statement,false"
   })
   void shouldIgnoreWhenNoRowsAffectedMatchesPatterns(
