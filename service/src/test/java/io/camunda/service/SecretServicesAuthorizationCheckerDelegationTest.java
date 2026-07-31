@@ -23,6 +23,7 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.SecretServices.ResolvedSecret;
 import io.camunda.service.SecretServices.SecretErrorCode;
 import io.camunda.service.SecretServices.SecretResolutionError;
+import io.camunda.service.SecretTestSupport.TestSecretStore;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
@@ -98,14 +99,17 @@ class SecretServicesAuthorizationCheckerDelegationTest {
       final String physicalTenantId,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig) {
+    // a store holding the reference, so an authorized reveal shows up as a resolved value rather
+    // than as NOT_FOUND
+    final var store = new TestSecretStore().holds("token", "token-value");
     return new SecretServices(
         physicalTenantId,
         mock(BrokerClient.class),
         mock(SecurityContextProvider.class),
         authorizationChecker,
         authorizationsConfig,
-        new SecretStoreRegistry(Map.of()),
-        mock(ApiServicesExecutorProvider.class),
+        new SecretStoreRegistry(Map.of("main", store)),
+        SecretTestSupport.sameThreadExecutorProvider(),
         null);
   }
 }

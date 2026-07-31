@@ -210,8 +210,8 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
-  void shouldNotCompleteWhenResolvedButStoreHasNoCache() throws Exception {
-    // given — store is configured but has no associated cache in the registry
+  void shouldCacheTheValueOfAStoreTheRegistryWasGivenNoCacheFor() throws Exception {
+    // given a registry built without a cache for the configured store
     final var registry = new SecretStoreRegistry(Map.of("my-store", secretStore), Map.of());
     final var localScheduler =
         new SecretResolutionScheduler(
@@ -224,8 +224,10 @@ final class SecretResolutionSchedulerTest {
     // when
     localScheduler.resolveSecrets(resultBuilder);
 
-    // then
-    verify(resultBuilder, never()).appendCommandRecord(any(), any());
+    // then the registry's own cache took the value and the reference completes: a configured store
+    // always has a cache, so resolving cannot strand a job by completing it uncached
+    assertThat(registry.getCaches().get("my-store").get("db-password")).contains("v");
+    verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
   }
 
   @Test

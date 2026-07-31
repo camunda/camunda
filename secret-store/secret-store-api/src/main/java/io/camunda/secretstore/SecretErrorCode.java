@@ -10,9 +10,10 @@ package io.camunda.secretstore;
 /**
  * Typed error categories for {@link SecretResolutionResult.Failed}.
  *
- * <p>New codes may be added in future minor versions as additional store implementations are
- * introduced. Callers performing exhaustive switches should include a {@code default} branch to
- * handle unrecognized codes gracefully.
+ * <p>New codes may be added as additional store implementations are introduced. Callers switch over
+ * them exhaustively and without a {@code default} branch: every store and every caller ships from
+ * this repository in the same release, so a code added here has to be mapped at every caller in the
+ * same change, and the compiler is what enforces that.
  */
 public enum SecretErrorCode {
   NOT_FOUND,

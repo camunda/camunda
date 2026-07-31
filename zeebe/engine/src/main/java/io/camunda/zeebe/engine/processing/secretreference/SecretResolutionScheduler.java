@@ -231,20 +231,8 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
           (ref, result) -> {
             switch (result) {
               case SecretResolutionResult.Resolved(final String value) -> {
-                if (cache == null) {
-                  // The registry guarantees a cache per store, so this is a broken invariant. Do
-                  // NOT write RESOLUTION_COMPLETE: completing without a cached value reactivates
-                  // the job, misses the cache on activation, and re-parks it in a loop. Fail
-                  // loudly, leave pending.
-                  LOG.error(
-                      "Secret store '{}' resolved '{}' but has no associated cache; leaving it"
-                          + " pending",
-                      storeId,
-                      ref);
-                } else {
-                  cache.put(ref, value);
-                  appendResolutionComplete(resultBuilder, storeId, ref);
-                }
+                cache.put(ref, value);
+                appendResolutionComplete(resultBuilder, storeId, ref);
               }
               case SecretResolutionResult.Failed(
                       final var code,
