@@ -408,8 +408,16 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     return AuthorizedScopes.only(authorizedResourceIds);
   }
 
+  /**
+   * Whether the caller's reference is one this service accepts.
+   *
+   * <p>The length is bounded before {@link #bareNameOf} takes the name out, so an over-long
+   * reference is rejected without copying it. Bounding the whole reference is the same test {@link
+   * #isResolvableName} applies to the name, since a reference that reached it carries the prefix.
+   */
   private static boolean isValidReference(final String reference) {
     return reference != null
+        && reference.length() <= MAX_REFERENCE_LENGTH
         && reference.startsWith(REFERENCE_PREFIX)
         && isResolvableName(bareNameOf(reference));
   }
