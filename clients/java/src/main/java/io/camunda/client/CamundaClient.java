@@ -275,16 +275,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   TopologyRequestStep1 newTopologyRequest();
 
   /**
-   * Request the current cluster status. Can be used to check if the cluster is healthy (has at
-   * least one partition with a healthy leader).
+   * Request the current cluster status. Can be used to check whether the cluster can process work,
+   * aggregated over all physical tenants.
    *
    * <pre>
-   * boolean isHealthy = camundaClient
+   * StatusResponse.Status status = camundaClient
    *  .newStatusRequest()
    *  .send()
    *  .join()
-   *  .isHealthy();
+   *  .getStatus();
    * </pre>
+   *
+   * <p>Being cluster-wide, the status is served outside the per-physical-tenant path. The request
+   * therefore fails against a REST address that is a proxy for a tenant-prefixed URL, unless that
+   * proxy also forwards the cluster-scoped paths — see {@link
+   * CamundaClientBuilder#prefixPhysicalTenantPath(boolean)}.
    *
    * @return the request where you must call {@code send()}
    */

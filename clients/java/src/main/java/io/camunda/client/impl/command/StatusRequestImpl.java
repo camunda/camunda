@@ -22,6 +22,7 @@ import io.camunda.client.api.response.StatusResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.StatusResponseImpl;
+import io.camunda.client.protocol.rest.ClusterStatusResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -49,12 +50,14 @@ public final class StatusRequestImpl implements StatusRequestStep1 {
   public CamundaFuture<StatusResponse> send() {
     final HttpCamundaFuture<StatusResponse> result = new HttpCamundaFuture<>();
 
-    final Predicate<Integer> successPredicate = status -> status == 204 || status == 503;
-    httpClient.get(
+    // DOWN is reported as 503, every other aggregated status as 200 — both carry a body
+    final Predicate<Integer> successPredicate = status -> status == 200 || status == 503;
+    httpClient.getClusterApi(
         "/status",
         httpRequestConfig
             .setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
             .build(),
+        ClusterStatusResponse.class,
         successPredicate,
         StatusResponseImpl::new,
         result);

@@ -92,6 +92,10 @@ public interface CamundaClientBuilder {
    * custom path layout already routes to the physical tenant. Has no effect on the gRPC {@code
    * Camunda-Physical-Tenant} header, which is always sent when a physical tenant id is set.
    *
+   * <p>Cluster-scoped endpoints such as the {@link CamundaClient#newStatusRequest() cluster status}
+   * report on the whole cluster and are served outside the per-tenant path, so a proxy fronting a
+   * physical tenant must pass them through unprefixed.
+   *
    * @param prefixPhysicalTenantPath whether to auto-prefix the REST base path per physical tenant
    */
   CamundaClientBuilder prefixPhysicalTenantPath(boolean prefixPhysicalTenantPath);
