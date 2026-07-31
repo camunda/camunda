@@ -13,6 +13,7 @@ import {
 	mockGetAuditLogEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
 	mockQueryUserTaskAuditLogsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -22,6 +23,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createAuditLog, createQueryUserTaskAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 
 const USER_TASK_KEY = '2251799813685281';
 const task = createUserTask({
@@ -70,6 +72,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockGetUserTaskEndpoint({
 			successResponse: HttpResponse.json(task),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
 		}),
 	);
 });

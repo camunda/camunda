@@ -32,7 +32,7 @@ type Props = {
 	status: CompletionStatus;
 	isDisabled: boolean;
 	isHidden: boolean;
-	onClick: () => void;
+	onClick?: () => void;
 };
 
 const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onClick}) => {
@@ -49,7 +49,7 @@ const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onCl
 		() =>
 			({
 				size: 'md',
-				type: 'button',
+				type: 'submit',
 				disabled: status === 'active' || isDisabled,
 				onClick,
 				title: isDisabled ? t('tasklist.taskDetailsDisabledCompleteButtonTitle') : undefined,

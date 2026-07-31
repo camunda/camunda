@@ -1,0 +1,73 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+
+.form {
+	width: 100%;
+	height: 100%;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	min-height: layout.to-rem(32px);
+	padding: 0 var(--cds-spacing-05);
+}
+
+.separator {
+	width: 100%;
+	max-height: 1px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.scrollContainer {
+	flex: 1;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	overflow: auto;
+	scroll-behavior: smooth;
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: space-between;
+	height: 100%;
+}
+
+.layerContainer {
+	width: 100%;
+	padding-bottom: var(--cds-spacing-05);
+
+	&.gutter {
+		padding-right: var(--cds-spacing-05);
+		padding-left: var(--cds-spacing-05);
+	}
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	width: 100%;
+	padding: var(--cds-spacing-04) var(--cds-spacing-05);
+	background: var(--cds-background);
+}
+
+.warning {
+	margin-right: var(--cds-spacing-01);
+}

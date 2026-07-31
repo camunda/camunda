@@ -7,15 +7,7 @@
  */
 
 import {z} from 'zod';
-
-function isValidJSON(value: string) {
-	try {
-		JSON.parse(value);
-		return true;
-	} catch {
-		return false;
-	}
-}
+import {isValidJSON} from '#/tasklist/modules/json/isValidJSON';
 
 const customFiltersSchema = z.object({
 	assignee: z.enum(['all', 'unassigned', 'me', 'user-and-group']).default('all'),

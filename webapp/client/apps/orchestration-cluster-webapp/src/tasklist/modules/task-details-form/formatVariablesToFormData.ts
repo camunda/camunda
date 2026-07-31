@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {tryParseJSON} from './tryParseJSON';
+import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 
 type Variable = {
 	name: string;

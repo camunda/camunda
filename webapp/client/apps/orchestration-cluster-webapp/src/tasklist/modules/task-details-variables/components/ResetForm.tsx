@@ -6,12 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-function tryParseJSON(value: string) {
-	try {
-		return JSON.parse(value);
-	} catch {
-		return value;
-	}
-}
+import {useEffect} from 'react';
+import {useForm} from 'react-final-form';
 
-export {tryParseJSON};
+type Props = {
+	isAssigned: boolean;
+};
+
+const ResetForm: React.FC<Props> = ({isAssigned}) => {
+	const form = useForm();
+
+	useEffect(() => {
+		if (!form.getState().submitting) {
+			form.reset();
+		}
+	}, [isAssigned, form]);
+
+	return null;
+};
+
+export {ResetForm};
