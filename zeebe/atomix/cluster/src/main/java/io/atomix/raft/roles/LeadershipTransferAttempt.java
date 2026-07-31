@@ -36,6 +36,46 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
  * currently in flight, and every terminal outcome converges on {@link #finish}.
+ *
+ * <pre>
+ *   start()
+ *     |
+ *     v
+ *   PAUSE --------------------------.
+ *     |                             |
+ *     |                             v
+ *     |                           PAUSE_FAILED
+ *     |                           CONFIGURATION_CHANGE_IN_PROGRESS
+ *     |
+ *     | frozen at the target index
+ *     v
+ *   CATCH UP (CatchUpWait) ---------.
+ *     |                             |
+ *     |                             v
+ *     |                           LEADER_CHANGED         (lost leadership)
+ *     |                           PAUSE_FAILED           (freeze ended early)
+ *     |                           NOT_MEMBER             (left the cluster)
+ *     |                           REPLICATION_TIMED_OUT
+ *     |
+ *     | desired leader reached the frozen log head
+ *     v
+ *   PROMOTE (TimeoutNowPromotion) --.
+ *     |                             |
+ *     |                             v
+ *     |                           NOT_MEMBER             (never a member)
+ *     |                           LEADER_CHANGED         (someone else won)
+ *     |                           TIMEOUT_NOW_EXHAUSTED
+ *     |
+ *     | desired leader observed as leader
+ *     v
+ *   TRANSFERRED
+ * </pre>
+ *
+ * <p>Every outcome above lands in {@link #finish}, which reopens the partition before reporting to
+ * the coordinator. That reopening only has work to do on the outcomes where this node is still the
+ * leader: once leadership has moved, the role transition has already lifted the freeze. {@link
+ * #onPauseDeadlineExpired} skips the reopening altogether, leaving it to the step-down behind the
+ * watchdog.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
