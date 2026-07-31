@@ -14,11 +14,16 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -30,6 +35,8 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -206,6 +213,73 @@ final class ClusterConfigurationGossiperTest {
                     .isEqualTo(node1Configuration.toLegacyDefault()));
   }
 
+  @Test
+  void shouldBackfillNewListenerWithNewModelConfigurationNotLegacyProjection() {
+    // given — two upgraded brokers; node1 gossips a new-model configuration with a non-default
+    // physical tenant group ("tenanta"), which node2 receives and converges on
+    final var config =
+        new ClusterConfigurationGossiperConfig(
+            Duration.ofMillis(100),
+            Duration.ofSeconds(1),
+            0,
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1));
+    node1 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
+    node2 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
+    node1.start();
+    node2.start();
+
+    final var tenantGroup =
+        new PartitionGroupConfiguration(
+            PartitionGroupConfiguration.INITIAL_VERSION,
+            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+            Map.of(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var node1Configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init().addMember(node1.id(), BrokerState.initializeAsActive()),
+            Map.of("tenanta", tenantGroup),
+            PhasedChangeState.empty());
+    node1.setCurrentClusterConfiguration(node1Configuration);
+    Awaitility.await("Node 2 has received the new-model configuration via gossip")
+        .untilAsserted(
+            () -> assertThat(node2.currentClusterConfiguration).isEqualTo(node1Configuration));
+
+    // when — a new listener registers on node2 only now, simulating a broker whose
+    // BrokerTopologyManagerImpl (re)registers after the gossip state is already populated (e.g.
+    // right after a restart)
+    final var backfilled = new AtomicReference<CurrentClusterConfiguration>();
+    node2.addUpdateListener(
+        new ClusterConfigurationUpdateListener() {
+          @Override
+          public void onClusterConfigurationUpdated(
+              final ClusterConfiguration clusterConfiguration) {
+            // should not be reached: the new-model field is populated, so it must be preferred
+            throw new IllegalStateException(
+                "Legacy listener should not be called when new-model field is populated");
+          }
+
+          @Override
+          public void onClusterConfigurationUpdated(
+              final CurrentClusterConfiguration clusterConfiguration) {
+            backfilled.set(clusterConfiguration);
+          }
+        });
+
+    // then — the backfill call carries the full new-model configuration, including "tenanta",
+    // not the legacy single-group projection (which would have silently dropped it)
+    Awaitility.await("The new listener was backfilled with the new-model configuration")
+        .untilAsserted(() -> assertThat(backfilled.get()).isEqualTo(node1Configuration));
+    assertThat(backfilled.get().hasPartitionGroup("tenanta")).isTrue();
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
@@ -276,10 +350,19 @@ final class ClusterConfigurationGossiperTest {
           currentClusterConfiguration == null
               ? received
               : currentClusterConfiguration.merge(received);
+      // Mirrors ClusterConfigurationManagerImpl#updateLocalCurrentConfiguration, which feeds the
+      // merged result back into the gossiper so this node's own gossip state (and therefore
+      // addUpdateListener's backfill) reflects what was actually merged, not just what was
+      // received on the wire.
+      gossiper.updateCurrentClusterConfiguration(currentClusterConfiguration);
     }
 
     public MemberId id() {
       return atomixCluster.getMembershipService().getLocalMember().id();
+    }
+
+    void addUpdateListener(final ClusterConfigurationUpdateListener listener) {
+      gossiper.addUpdateListener(listener);
     }
   }
 }
