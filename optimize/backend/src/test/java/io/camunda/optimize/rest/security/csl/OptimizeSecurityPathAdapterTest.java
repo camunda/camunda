@@ -27,6 +27,34 @@ class OptimizeSecurityPathAdapterTest {
   }
 
   @Test
+  void shouldNotClaimTheAuthenticationPathsForTheApiChain() {
+    // The CCSM OIDC callback is /api/authentication/callback and the API chain disables
+    // oauth2Login, so claiming it here would stop the callback reaching the webapp chain and break
+    // login. Guards against anyone widening this to /api/**.
+    assertThat(pathAdapter.apiPaths())
+        .noneSatisfy(path -> assertThat(path).startsWith("/api/authentication"))
+        .doesNotContain("/api/**");
+  }
+
+  @Test
+  void shouldClaimTheInternalApiSoBearerTokensWorkAlongsideTheSession() {
+    assertThat(pathAdapter.apiPaths())
+        .contains("/api/public/**", "/api/ingestion/variable")
+        .contains("/api/dashboard/**", "/api/report/**", "/api/collection/**", "/api/entities/**");
+  }
+
+  @Test
+  void shouldLeaveThePublicEndpointsToTheUnprotectedChain() {
+    // These are matched by the order-0 unprotected chain, so listing them as API paths as well
+    // would be misleading and would change which chain reports on them.
+    assertThat(pathAdapter.apiPaths())
+        .doesNotContain(
+            "/api/readyz", "/api/ui-configuration", "/api/localization", "/api/external/**");
+    assertThat(pathAdapter.unprotectedPaths())
+        .contains("/api/readyz", "/api/ui-configuration", "/api/localization", "/api/external/**");
+  }
+
+  @Test
   void shouldUnprotectActuatorAtDefaultBasePath() {
     OptimizeResourceConstants.ACTUATOR_ENDPOINT = "/actuator";
     assertThat(pathAdapter.unprotectedPaths()).contains("/actuator/**");
