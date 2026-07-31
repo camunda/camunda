@@ -211,8 +211,19 @@ public record CurrentClusterConfiguration(
    * {@code lastChange} is derived from the {@link PhasedChangeState}. Cross-sub-config change
    * details cannot be represented losslessly in the flat legacy plan, so this projection is
    * intended for display and equivalence checks, not for driving legacy change execution.
+   *
+   * <p>Uninitialized is projected explicitly: {@link #isUninitialized()} is driven by {@code
+   * globalConfiguration}'s own uninitialized sentinel version, which is {@code 0} — distinct from
+   * the legacy {@link ClusterConfiguration}'s sentinel version of {@code -1}. Deriving the legacy
+   * version as {@code Math.max(globalConfiguration.version(), defaultGroup.version())} would
+   * therefore never equal the legacy sentinel, so callers of {@code
+   * ClusterConfiguration#isUninitialized()} on the projection could never observe {@code true}.
    */
   public ClusterConfiguration toLegacyDefault() {
+    if (isUninitialized()) {
+      return ClusterConfiguration.uninitialized();
+    }
+
     final PartitionGroupConfiguration defaultGroup =
         partitionGroups.getOrDefault(DEFAULT_GROUP, PartitionGroupConfiguration.empty(version));
 

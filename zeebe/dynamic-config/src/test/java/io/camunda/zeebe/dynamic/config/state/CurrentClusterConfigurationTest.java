@@ -902,6 +902,21 @@ class CurrentClusterConfigurationTest {
       assertThat(projected.members()).isEmpty();
       assertThat(projected.hasPendingChanges()).isFalse();
     }
+
+    @Test
+    void shouldProjectUninitializedAsUninitialized() {
+      // given — a wrapper that has never been initialized (distinct from
+      // CurrentClusterConfiguration.init())
+      final var config = CurrentClusterConfiguration.uninitialized();
+
+      // when
+      final var projected = config.toLegacyDefault();
+
+      // then — the projection must report uninitialized too; deriving the legacy version from the
+      // sub-configs' own (0) uninitialized sentinel could never equal the legacy sentinel (-1),
+      // so this must be handled explicitly rather than falling through to the generic projection
+      assertThat(projected.isUninitialized()).isTrue();
+    }
   }
 
   @Nested
