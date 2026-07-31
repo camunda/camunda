@@ -42,6 +42,7 @@ ADR for that domain is written.
 - `security/002-tenant-access-provider-ownership-and-seam.md` — CSL `core` owns
   the concrete tenant-access provider and the `TenantOwnedEntity` contract; a
   uniform `TenantAccessProvider` seam across the read (search) and write
-  (engine) paths, behavior-preserving, with the engine's anonymous/mt-off policy
-  in a thin engine-side decorator (camunda-security-library#582).
+  (engine) paths, behavior-preserving, with the engine keeping its own
+  anonymous/mt-off resolver rather than a decorator over the core provider
+  (camunda-security-library#582).
 

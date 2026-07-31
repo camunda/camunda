@@ -35,7 +35,7 @@ Two forces meet here:
 
 The engine's tenant policy is genuinely richer than plain claims-reading
 (`AuthorizedTenantsResolver`): `anonymous → wildcard`, `multi-tenancy off → default tenant`,
-`no username & no client-id → denied`, else `claims-resolved tenants`. Every input except
+`no username & no client-id → allowed([])`, else `claims-resolved tenants`. Every input except
 `EngineSecurityConfig.isMultiTenancyChecksEnabled()` is derivable from a `CamundaAuthentication`,
 which the engine can obtain at the call site (`claimsConverter.resolve(...)`).
 
@@ -79,7 +79,7 @@ in core. Having the engine also *consume* the core `TenantAccessProvider` was ev
   cosmetic.
 
 So the engine-specific policy (anonymous → wildcard, multi-tenancy off → default tenant, no principal
-→ denied) stays in the engine, and the shared provider stays **anonymous-agnostic**. The concrete
+→ allowed([])) stays in the engine, and the shared provider stays **anonymous-agnostic**. The concrete
 provider is shared only on the read path (decision 1); the write path shares the `TenantAccess` type
 and the `TenantAccessProvider` interface, not the implementation.
 
