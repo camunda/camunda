@@ -138,6 +138,30 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-common</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-mcp</artifactId>
     </dependency>

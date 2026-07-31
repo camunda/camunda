@@ -2186,6 +2186,12 @@
 
       <dependency>
         <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+        <version>${version.springdoc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
         <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         <version>${version.springdoc}</version>
       </dependency>
