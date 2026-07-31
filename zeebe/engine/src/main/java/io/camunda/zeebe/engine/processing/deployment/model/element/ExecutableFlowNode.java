@@ -19,7 +19,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   private final List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private final List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
 
-  private Optional<Expression> inputMappings = Optional.empty();
+  private Optional<InputMappings> inputMappings = Optional.empty();
   private Optional<Expression> outputMappings = Optional.empty();
 
   private final List<ExecutionListener> executionListeners = new ArrayList<>();
@@ -44,11 +44,11 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     incoming.add(flow);
   }
 
-  public Optional<Expression> getInputMappings() {
+  public Optional<InputMappings> getInputMappings() {
     return inputMappings;
   }
 
-  public void setInputMappings(final Expression inputMappings) {
+  public void setInputMappings(final InputMappings inputMappings) {
     this.inputMappings = Optional.of(inputMappings);
   }
 
