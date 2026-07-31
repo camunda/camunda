@@ -21,11 +21,12 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
 
@@ -72,6 +73,26 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
 
     return clusterConfigurationRequestSender.modeChange(
         new ModeChangeRequest(getPhysicalTenantId(), mode, dryRun));
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(
+      final RestoreRequest restoreRequest, final CamundaAuthentication authentication) {
+    if (missingPermission(BACKUP_RESTORE_AUTHORIZATION, authentication)) {
+      return CompletableFuture.failedFuture(
+          ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION));
+    }
+
+    return clusterConfigurationRequestSender.restore(restoreRequest);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> restoreStatus(
+      final CamundaAuthentication authentication) {
+    if (missingPermission(BACKUP_RESTORE_AUTHORIZATION, authentication)) {
+      return CompletableFuture.failedFuture(
+          ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION));
+    }
+
+    return clusterConfigurationRequestSender.getTopology();
   }
 
   private boolean hasPermission(
