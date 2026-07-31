@@ -113,12 +113,12 @@ function mockResponses({
         .match(/\/v2\/agent-instances\/\d+\/history\/search/)
     ) {
       const requestBody = route.request().postDataJSON() ?? {};
-      const roleFilter: string | undefined = requestBody?.filter?.role;
+      const roleFilter: string | object | undefined = requestBody?.filter?.role;
       const elementInstanceKeyFilter: string | undefined =
         requestBody?.filter?.elementInstanceKey;
 
       let items = agentInstanceHistory?.items ?? [];
-      if (roleFilter) {
+      if (typeof roleFilter === 'string') {
         items = items.filter((item) => item.role === roleFilter);
       }
       if (elementInstanceKeyFilter) {
