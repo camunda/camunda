@@ -62,7 +62,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -572,6 +571,7 @@ public final class RaftRule extends ExternalResource {
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
+    configurator.flusherFactory(memberId).ifPresent(builder::withFlusherFactory);
 
     return builder.build();
   }
@@ -789,18 +789,12 @@ public final class RaftRule extends ExternalResource {
     default void configure(final TestSnapshotStore snapshotStore) {}
 
     /**
-     * Rebuilds the builder's storage with the given flusher factory, keeping the directory and
-     * snapshot store.
+     * Returns the flusher factory to use for the given member's log, or {@link Optional#empty()} to
+     * keep the storage default. It is applied to the storage the rule builds, so that all other
+     * storage settings the rule configures are preserved.
      */
-    static void replaceFlusherFactory(
-        final RaftServer.Builder builder, final RaftLogFlusher.Factory flusherFactory) {
-      final var storage = Objects.requireNonNull(builder.storage);
-      builder.withStorage(
-          RaftStorage.builder(builder.meterRegistry)
-              .withDirectory(storage.directory())
-              .withSnapshotStore(storage.getPersistedSnapshotStore())
-              .withFlusherFactory(flusherFactory)
-              .build());
+    default Optional<RaftLogFlusher.Factory> flusherFactory(final MemberId id) {
+      return Optional.empty();
     }
   }
 }
