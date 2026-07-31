@@ -10,6 +10,71 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.AuditLogMapper">
 
+  <resultMap id="auditLogResultMap" type="io.camunda.db.rdbms.write.domain.AuditLogDbModel">
+    <constructor>
+      <idArg column="AUDIT_LOG_KEY" javaType="java.lang.String" name="auditLogKey"/>
+      <arg column="ENTITY_KEY" javaType="java.lang.String" name="entityKey"/>
+      <arg column="ENTITY_TYPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogEntityType" name="entityType"/>
+      <arg column="OPERATION_TYPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogOperationType"
+        name="operationType"/>
+      <arg column="ENTITY_VERSION" javaType="java.lang.Integer" name="entityVersion"/>
+      <arg column="ENTITY_VALUE_TYPE" javaType="java.lang.Short" name="entityValueType"/>
+      <arg column="ENTITY_OPERATION_INTENT" javaType="java.lang.Short"
+        name="entityOperationIntent"/>
+      <arg column="BATCH_OPERATION_KEY" javaType="java.lang.Long" name="batchOperationKey"/>
+      <arg column="BATCH_OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"
+        name="batchOperationType"/>
+      <arg column="TIMESTAMP" javaType="java.time.OffsetDateTime" name="timestamp"/>
+      <arg column="ACTOR_TYPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType" name="actorType"/>
+      <arg column="ACTOR_ID" javaType="java.lang.String" name="actorId"/>
+      <arg column="AGENT_ELEMENT_ID" javaType="java.lang.String" name="agentElementId"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="TENANT_SCOPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogTenantScope"
+        name="tenantScope"/>
+      <arg column="RESULT"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogOperationResult" name="result"/>
+      <arg column="CATEGORY"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory"
+        name="category"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"
+        name="decisionRequirementsId"/>
+      <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
+        name="decisionDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long" name="elementInstanceKey"/>
+      <arg column="JOB_KEY" javaType="java.lang.Long" name="jobKey"/>
+      <arg column="USER_TASK_KEY" javaType="java.lang.Long" name="userTaskKey"/>
+      <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"
+        name="decisionRequirementsKey"/>
+      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="decisionDefinitionKey"/>
+      <arg column="DECISION_EVALUATION_KEY" javaType="java.lang.Long"
+        name="decisionEvaluationKey"/>
+      <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long" name="deploymentKey"/>
+      <arg column="FORM_KEY" javaType="java.lang.Long" name="formKey"/>
+      <arg column="RESOURCE_KEY" javaType="java.lang.Long" name="resourceKey"/>
+      <arg column="RELATED_ENTITY_TYPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogEntityType"
+        name="relatedEntityType"/>
+      <arg column="RELATED_ENTITY_KEY" javaType="java.lang.String" name="relatedEntityKey"/>
+      <arg column="ENTITY_DESCRIPTION" javaType="java.lang.String" name="entityDescription"/>
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
+      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"
+        name="historyCleanupDate"/>
+      <arg column="INBOUND_CHANNEL_TYPE" javaType="java.lang.String" name="inboundChannelType"/>
+      <arg column="INBOUND_CHANNEL_TOOL_NAME" javaType="java.lang.String"
+        name="inboundChannelToolName"/>
+    </constructor>
+  </resultMap>
+
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*) FROM (
       SELECT 1 as col
@@ -21,7 +86,7 @@
 
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.AuditLogDbQuery"
-    resultType="io.camunda.db.rdbms.write.domain.AuditLogDbModel"
+    resultMap="auditLogResultMap"
     statementType="PREPARED">
     SELECT * FROM (
       SELECT
