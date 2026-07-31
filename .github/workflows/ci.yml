@@ -2386,8 +2386,16 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      - run: |
-          npx --yes --package "renovate@latest" -c "renovate-config-validator"
+      # Retry to absorb transient npm-registry resolution failures when npx resolves
+      # renovate@latest and its transitive deps on a fresh run (see INC-6869).
+      - name: Validate Renovate config
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          command: npx --yes --package "renovate@latest" -c "renovate-config-validator"
       - name: Observe build status
         if: always()
         continue-on-error: true
