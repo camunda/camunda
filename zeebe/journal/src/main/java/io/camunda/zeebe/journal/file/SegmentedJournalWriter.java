@@ -54,6 +54,16 @@ final class SegmentedJournalWriter {
     lastFlushedIndex = metaStore.loadLastFlushedIndex();
     currentSegment = requireNonNull(segments.getLastSegment(), "journal not open");
     currentWriter = currentSegment.writer();
+
+    // An empty journal has no record left to flush, so everything below its first index is
+    // durable: those records are either covered by a snapshot the log was reset for, or were
+    // compacted. The stored index cannot tell us this, as resetting the segments nulls it (see
+    // SegmentsManager#resetSegments) and only the next flush stores it again - which never happens
+    // on an idle, empty journal.
+    final var firstSegment = segments.getFirstSegment();
+    if (firstSegment != null && currentWriter.getNextIndex() == firstSegment.index()) {
+      lastFlushedIndex = Math.max(lastFlushedIndex, firstSegment.index() - 1);
+    }
   }
 
   long getLastIndex() {
@@ -110,8 +120,11 @@ final class SegmentedJournalWriter {
   }
 
   void reset(final long index) {
+    // the log is empty afterwards, and everything below the reset index is covered by the snapshot
+    // this reset is for, so there is nothing left to flush below it. The stored index is
+    // deliberately not updated here: resetSegments nulls it to detect a crash in the middle of the
+    // reset, and it is derived again when opening an empty journal (see the constructor)
     lastFlushedIndex = index - 1;
-    metaStore.storeLastFlushedIndex(index - 1);
     currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
   }
@@ -128,10 +141,13 @@ final class SegmentedJournalWriter {
    *     that was overwritten while it was reading.
    */
   void deleteAfter(final long index, final boolean preserveDeletedRecords) {
-    // reset the last flushed index first to avoid corruption on restart in case of partial
-    // truncation (e.g. the node crashed while deleting segments)
-    lastFlushedIndex = index;
-    metaStore.storeLastFlushedIndex(index);
+    // lower the last flushed index first to avoid corruption on restart in case of partial
+    // truncation (e.g. the node crashed while deleting segments). It is only ever lowered here:
+    // deleting records flushes nothing, so truncating above the flushed index must not raise it,
+    // otherwise records which were never fsynced would be reported as durable
+    final long truncatedFlushedIndex = Math.min(lastFlushedIndex, index);
+    lastFlushedIndex = truncatedFlushedIndex;
+    metaStore.storeLastFlushedIndex(truncatedFlushedIndex);
 
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
@@ -196,6 +212,9 @@ final class SegmentedJournalWriter {
 
     try {
       for (final var segment : dirtySegments) {
+        // read the last index before flushing, as records may be appended concurrently; reading it
+        // acquires everything the appending thread published with it (see SegmentWriter#lastEntry),
+        // so the flush below is guaranteed to cover all bytes of the records up to that index
         final long lastSegmentIndex = segment.lastIndex();
         segment.flush(); // throws FlushException
         flushedIndex = lastSegmentIndex;
