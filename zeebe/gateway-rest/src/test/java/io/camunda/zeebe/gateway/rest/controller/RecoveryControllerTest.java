@@ -205,6 +205,27 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectRestoreWhenCallerIsNotAuthorized() {
+    // given
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(
+                    "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
+                    ServiceException.Status.FORBIDDEN)));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isForbidden();
+  }
+
+  @Test
   void shouldMapInvalidRequestErrorFromCoordinator() {
     // given
     Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
