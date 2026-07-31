@@ -42,6 +42,13 @@ test.describe('Element Instance Update API', () => {
     request,
   }) => {
     await test.step('Find element instance key of active element', async () => {
+      // Wait for the user task to reach CREATED before updating its variables.
+      // element-instances/search reports the user task element as ACTIVE as soon
+      // as it is activated, but the engine only accepts a variable update once
+      // the user task itself has transitioned CREATING -> CREATED (a separate
+      // processing cycle). On slower backends that window is wide enough that
+      // updating immediately is rejected with 409 INVALID_STATE.
+      await findUserTask(request, state.processInstanceKey, 'CREATED');
       state.elementInstanceKey = await searchActiveElementInstance(
         request,
         state.processInstanceKey,
@@ -60,6 +67,9 @@ test.describe('Element Instance Update API', () => {
               should_do_extra_work: false,
             },
           },
+          // Match completeUserTask's timeout: the default 10s action timeout is
+          // exceeded by the slower RDBMS backends on this endpoint.
+          timeout: 60_000,
         },
       );
 
