@@ -2,5 +2,6 @@ zeebe:
   broker:
     processing:
       maxCommandsInBatch: 125
+      maxBatchProcessingTime: 500ms
       maxRecoverableRetries: 200
       skipPositions: 1, 2, 3

@@ -127,6 +127,28 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * Number of follow-up commands deferred to their own batch because the maximum batch processing
+   * time was exhausted
+   */
+  BATCH_PROCESSING_DEFERRED_COMMANDS {
+    @Override
+    public String getDescription() {
+      return "Number of follow-up commands deferred to their own batch because the maximum batch"
+          + " processing time was exhausted";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.batch.processing.deferred.commands";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
    * The current phase of error handling the processor is in; see {@link
    * io.camunda.zeebe.stream.impl.ProcessingStateMachine.ErrorHandlingPhase} for possible values.
    */

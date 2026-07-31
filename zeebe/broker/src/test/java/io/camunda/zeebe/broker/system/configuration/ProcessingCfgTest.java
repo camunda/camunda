@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,70 @@ final class ProcessingCfgTest {
 
     // then
     assertThat(limit).isEqualTo(75);
+  }
+
+  @Test
+  void shouldUseDefaultMaxBatchProcessingTime() {
+    // given
+    final var cfg = new ProcessingCfg();
+
+    // when
+    final var limit = cfg.getMaxBatchProcessingTime();
+
+    // then
+    assertThat(limit).isEqualTo(Duration.ofMillis(75));
+  }
+
+  @Test
+  void shouldSetMaxBatchProcessingTime() {
+    // given
+    final var cfg = new ProcessingCfg();
+    cfg.setMaxBatchProcessingTime(Duration.ofMillis(250));
+
+    // when
+    final var limit = cfg.getMaxBatchProcessingTime();
+
+    // then
+    assertThat(limit).isEqualTo(Duration.ofMillis(250));
+  }
+
+  @Test
+  void shouldSetMaxBatchProcessingTimeFromConfig() {
+    // given
+    final var cfg =
+        TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
+
+    // when
+    final var limit = cfg.getMaxBatchProcessingTime();
+
+    // then
+    assertThat(limit).isEqualTo(Duration.ofMillis(500));
+  }
+
+  @Test
+  void shouldSetMaxBatchProcessingTimeFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxBatchProcessingTime", "100ms");
+    final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
+
+    // when
+    final var limit = cfg.getMaxBatchProcessingTime();
+
+    // then
+    assertThat(limit).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldRejectInvalidMaxBatchProcessingTime() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxBatchProcessingTime", "-1s");
+
+    // then
+    assertThatThrownBy(() -> TestConfigReader.readConfig("processing-cfg", environment))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxBatchProcessingTime must be positive");
   }
 
   @Test
