@@ -116,6 +116,8 @@ public final class RaftPartitionFactory {
         brokerCfg.getCluster().getRaft().getRebalanceReplicationLagThreshold().toBytes());
     partitionConfig.setRebalanceReplicationTimeout(
         brokerCfg.getCluster().getRaft().getRebalanceReplicationTimeout());
+    partitionConfig.setRebalanceMaxTransferAttempts(
+        brokerCfg.getCluster().getRaft().getRebalanceMaxTransferAttempts());
 
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());

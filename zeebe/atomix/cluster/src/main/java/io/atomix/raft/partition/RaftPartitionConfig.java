@@ -35,6 +35,7 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
   private static final long DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD = 8L * 1024 * 1024;
   private static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
+  private static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -48,6 +49,7 @@ public class RaftPartitionConfig {
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
   private long rebalanceReplicationLagThreshold = DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD;
   private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
+  private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
@@ -227,6 +229,19 @@ public class RaftPartitionConfig {
     this.rebalanceReplicationTimeout = rebalanceReplicationTimeout;
   }
 
+  /**
+   * The maximum number of TimeoutNow requests the current leader sends (including the initial
+   * request) before reporting {@code TIMEOUT_NOW_EXHAUSTED} during a leadership transfer. Maps to
+   * {@code camunda.cluster.raft.rebalance.maxTransferAttempts}.
+   */
+  public int getRebalanceMaxTransferAttempts() {
+    return rebalanceMaxTransferAttempts;
+  }
+
+  public void setRebalanceMaxTransferAttempts(final int rebalanceMaxTransferAttempts) {
+    this.rebalanceMaxTransferAttempts = rebalanceMaxTransferAttempts;
+  }
+
   public RaftStorageConfig getStorageConfig() {
     return storageConfig;
   }
@@ -278,6 +293,12 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
+        + ", rebalanceReplicationLagThreshold="
+        + rebalanceReplicationLagThreshold
+        + ", rebalanceReplicationTimeout="
+        + rebalanceReplicationTimeout
+        + ", rebalanceMaxTransferAttempts="
+        + rebalanceMaxTransferAttempts
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
         + '}';

@@ -30,16 +30,62 @@ import org.slf4j.LoggerFactory;
 
 /**
  * One accepted coordinated leadership transfer, sequenced from freezing the partition to reporting
- * the outcome: pause, wait for the desired leader to catch up, then resume. A fresh attempt is
- * created per accepted transfer, so no state can leak from one transfer into the next.
+ * the result to the coordinator: pause, wait for the desired leader to catch up, promote it, then
+ * resume and report. A fresh attempt is created per accepted transfer, so no state can leak from
+ * one transfer into the next.
  *
- * <p>Role and pause events are forwarded to the step currently in flight. Failures converge on
- * {@link #finish}, which reports them to the coordinator; the transfer is not executed yet, so a
- * desired leader that catches up simply ends the attempt.
+ * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
+ * currently in flight, and every terminal outcome converges on {@link #finish}.
+ *
+ * <pre>
+ *   start()
+ *     |
+ *     v
+ *   PAUSE --------------------------.
+ *     |                             |
+ *     |                             v
+ *     |                           PAUSE_FAILED
+ *     |                           CONFIGURATION_CHANGE_IN_PROGRESS
+ *     |
+ *     | frozen at the target index
+ *     v
+ *   CATCH UP (CatchUpWait) ---------.
+ *     |                             |
+ *     |                             v
+ *     |                           LEADER_CHANGED         (lost leadership)
+ *     |                           PAUSE_FAILED           (freeze ended early)
+ *     |                           NOT_MEMBER             (left the cluster)
+ *     |                           REPLICATION_TIMED_OUT
+ *     |
+ *     | desired leader reached the frozen log head
+ *     v
+ *   PROMOTE (TimeoutNowPromotion) --.
+ *     |                             |
+ *     |                             v
+ *     |                           NOT_MEMBER             (never a member)
+ *     |                           LEADER_CHANGED         (someone else won)
+ *     |                           TIMEOUT_NOW_EXHAUSTED
+ *     |
+ *     | desired leader observed as leader
+ *     v
+ *   TRANSFERRED
+ * </pre>
+ *
+ * <p>Every outcome above lands in {@link #finish}, which reopens the partition before reporting to
+ * the coordinator (but only while this node is still the leader) - once leadership has moved, the
+ * step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves reopening to
+ * the step-down for the same reason.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
   private static final Logger LOG = LoggerFactory.getLogger(LeadershipTransferAttempt.class);
+
+  /**
+   * Headroom on top of the steps' own budgets. The watchdog is a backstop against the attempt
+   * getting stuck, not a timeout anyone should hit, so this is sized to be unreachable on a healthy
+   * transfer rather than tight.
+   */
+  private static final Duration PAUSE_BUDGET_SLACK = Duration.ofSeconds(5);
 
   private final RaftContext raft;
   private final LeaderRole leader;
@@ -48,7 +94,8 @@ final class LeadershipTransferAttempt {
   private final long correlationId;
   private final Runnable finishListener;
   private long startMs;
-  private @Nullable CatchUpWait activeCatchUp;
+  private boolean finished;
+  private @Nullable TransferPhase activePhase;
 
   LeadershipTransferAttempt(
       final RaftContext raft,
@@ -66,7 +113,7 @@ final class LeadershipTransferAttempt {
   void start() {
     raft.checkThread();
     startMs = System.currentTimeMillis();
-    pause(raft.getRebalanceReplicationTimeout())
+    pause(pauseBudget())
         .whenCompleteAsync(
             (targetIndex, error) -> {
               if (error != null) {
@@ -85,53 +132,96 @@ final class LeadershipTransferAttempt {
   }
 
   void onLeaderStopped() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onLeaderStopped();
+    if (activePhase != null) {
+      activePhase.onLeaderStopped();
     }
   }
 
   /** The freeze ended. */
   void onPauseCleared() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseCleared();
+    if (activePhase != null) {
+      activePhase.onPauseCleared();
     }
   }
 
-  /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
+  /**
+   * The leader's freeze watchdog fired. Every step should be bounded well inside the pause budget,
+   * so this condition indicates unexpected behavior. Report it and leave recovery to the watchdog
+   * itself.
+   */
   void onPauseDeadlineExpired() {
-    if (activeCatchUp != null) {
-      activeCatchUp.onPauseDeadlineExpired();
+    if (finished) {
+      return;
     }
+    LOG.error(
+        "Leadership transfer to {} did not finish within its pause budget of {}; abandoning it and "
+            + "leaving recovery to the step-down",
+        desiredLeader,
+        pauseBudget());
+    abandon(LeadershipTransferResult.PAUSE_FAILED);
   }
 
   private void catchUp(final long targetIndex) {
-    final var catchUpWait = new CatchUpWait(raft, leader::isRunning, desiredLeader, targetIndex);
-    activeCatchUp = catchUpWait;
+    final var catchUpWait =
+        new CatchUpWait(
+            raft,
+            leader::isRunning,
+            desiredLeader,
+            targetIndex,
+            startMs + raft.getRebalanceReplicationTimeout().toMillis());
+    activePhase = catchUpWait;
     catchUpWait
         .start()
         .whenComplete(
             (failureReason, ignored) -> {
-              activeCatchUp = null;
-              failureReason.ifPresentOrElse(this::finish, () -> onCaughtUp(targetIndex));
+              activePhase = null;
+              failureReason.ifPresentOrElse(this::finish, this::promote);
             });
   }
 
-  /**
-   * The desired leader is caught up, which is as far as a transfer gets until the promotion step
-   * exists: the attempt is measured as a success and the partition resumed, but there is no
-   * leadership change to report to the coordinator yet.
-   */
-  private void onCaughtUp(final long targetIndex) {
-    LOG.info("Desired leader {} caught up to index {}", desiredLeader, targetIndex);
-    finishListener.run();
-    observeDuration(LeadershipTransferResult.TRANSFERRED);
-    resume();
+  private void promote() {
+    final var promotion = new TimeoutNowPromotion(raft, leader::isRunning, desiredLeader);
+    activePhase = promotion;
+    promotion
+        .start()
+        .whenComplete(
+            (result, ignored) -> {
+              activePhase = null;
+              finish(result);
+            });
   }
 
   private void finish(final LeadershipTransferResult result) {
+    raft.checkThread();
+    if (finished) {
+      return;
+    }
+    finished = true;
     finishListener.run();
     observeDuration(result);
+    if (!leader.isRunning()) {
+      // the step-down that ended this leader already lifted the freeze
+      reportResult(result);
+      return;
+    }
     resume().whenComplete((ignored, resumeError) -> reportResult(result));
+  }
+
+  private void abandon(final LeadershipTransferResult result) {
+    finished = true;
+    finishListener.run();
+    observeDuration(result);
+    reportResult(result);
+  }
+
+  /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
+  private Duration pauseBudget() {
+    return raft.getRebalanceReplicationTimeout().plus(promotionBudget()).plus(PAUSE_BUDGET_SLACK);
+  }
+
+  /** The wall time {@link TimeoutNowPromotion} can spend spacing out its attempts. */
+  private Duration promotionBudget() {
+    return raft.getHeartbeatInterval().multipliedBy(raft.getRebalanceMaxTransferAttempts());
   }
 
   private void observeDuration(final LeadershipTransferResult result) {
@@ -173,9 +263,8 @@ final class LeadershipTransferAttempt {
   }
 
   /**
-   * Reopens the partition on every terminal path, whether the transfer failed or the desired leader
-   * caught up. A resume that fails can leave the partition frozen: the pause watchdog is the safety
-   * net and steps the leader down once the resume deadline passes.
+   * Reopens the partition on the terminal paths this leader survives. A resume that fails steps the
+   * leader down where it is detected, so the partition is rebuilt rather than left frozen.
    */
   private CompletableFuture<Void> resume() {
     final var control = raft.getLeadershipTransferPauseControl();

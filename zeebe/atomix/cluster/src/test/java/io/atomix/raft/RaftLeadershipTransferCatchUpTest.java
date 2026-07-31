@@ -16,6 +16,7 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
@@ -48,7 +49,7 @@ public class RaftLeadershipTransferCatchUpTest {
           });
 
   @Test
-  public void shouldRecordTransferDurationWhenTheDesiredLeaderCatchesUp() throws Exception {
+  public void shouldRecordTransferDurationWhenTheTransferSucceeds() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -60,7 +61,7 @@ public class RaftLeadershipTransferCatchUpTest {
 
     // then
     assertThat(ack.accepted()).isTrue();
-    Awaitility.await("the attempt is measured once the desired leader is caught up")
+    Awaitility.await("the attempt is measured once the transfer succeeds")
         .atMost(Duration.ofSeconds(15))
         .untilAsserted(
             () ->
@@ -91,7 +92,7 @@ public class RaftLeadershipTransferCatchUpTest {
   }
 
   @Test
-  public void shouldStepDownAndReportTimedOutWhenTheFreezeOutlivesItsDeadline() throws Exception {
+  public void shouldKeepLeadershipWhenTheDesiredLeaderNeverCatchesUp() throws Exception {
     // given
     raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
@@ -109,9 +110,27 @@ public class RaftLeadershipTransferCatchUpTest {
         .succeedsWithin(REPLICATION_TIMEOUT.plusSeconds(15))
         .extracting(LeadershipTransferResultRequest::result)
         .isEqualTo(LeadershipTransferResult.REPLICATION_TIMED_OUT);
-    Awaitility.await("the pause watchdog steps the leader down")
-        .atMost(Duration.ofSeconds(15))
-        .until(() -> leader.getRole() != Role.LEADER);
+    assertThat(leader.getRole()).isEqualTo(Role.LEADER);
+  }
+
+  @Test
+  public void shouldResumeWritesWhenTheDesiredLeaderNeverCatchesUp() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    raftRule.partition(target);
+    raftRule.appendEntries(5);
+
+    // when
+    final var ack = driver.initiate(target);
+    assertThat(ack.accepted()).isTrue();
+    // the result is only reported once the partition has been resumed
+    assertThat(driver.reportedResult()).succeedsWithin(REPLICATION_TIMEOUT.plusSeconds(15));
+
+    // then
+    assertThatNoException().isThrownBy(raftRule::appendEntry);
   }
 
   private long transferDurationCount(final LeadershipTransferResult result) {

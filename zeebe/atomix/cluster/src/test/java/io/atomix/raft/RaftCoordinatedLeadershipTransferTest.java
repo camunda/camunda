@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
@@ -34,12 +35,56 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class RaftCoordinatedLeadershipTransferTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
+
+  @Test
+  public void shouldDriveTransferOnInitiateAndNotifyCoordinator() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = memberId(target);
+    final var coordinatorId = coordinator(leader);
+
+    final CompletableFuture<LeadershipTransferResultRequest> reported = new CompletableFuture<>();
+    protocolOf(coordinatorId)
+        .registerLeadershipTransferResultHandler(
+            request -> {
+              reported.complete(request);
+              return CompletableFuture.completedFuture(
+                  LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
+            });
+
+    // when
+    final var ack =
+        leader
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader),
+                initiate(targetId, coordinatorId, configIndex(leader), 0x5eed_000aL))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(ack.accepted()).as("leader accepts the transfer").isTrue();
+    Awaitility.await("target becomes leader")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> target.getRole() == Role.LEADER);
+    Awaitility.await("the previous leader gives up leadership")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> leader.getRole() != Role.LEADER);
+    final var notification = reported.get(10, TimeUnit.SECONDS);
+    assertThat(notification.result()).isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(notification.correlationId())
+        .as("the success notification echoes the initiate request's correlation id")
+        .isEqualTo(0x5eed_000aL);
+  }
 
   @Test
   public void shouldAcceptInitiateForCaughtUpFollower() throws Exception {

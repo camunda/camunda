@@ -60,6 +60,18 @@ final class RaftRebalanceValidationTest {
   }
 
   @Test
+  void shouldRejectNonPositiveMaxTransferAttempts() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setMaxTransferAttempts(0))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> rebalance.setMaxTransferAttempts(-3))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldAcceptValidValues() {
     // given
     final var rebalance = new Rebalance();
@@ -69,6 +81,7 @@ final class RaftRebalanceValidationTest {
             () -> {
               rebalance.setReplicationLagThreshold(DataSize.ofMegabytes(16));
               rebalance.setReplicationTimeout(Duration.ofSeconds(30));
+              rebalance.setMaxTransferAttempts(5);
             })
         .doesNotThrowAnyException();
   }

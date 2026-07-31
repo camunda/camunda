@@ -30,6 +30,9 @@ import org.junit.Test;
 
 public class CatchUpWaitTest {
 
+  /** Ample budget, so a wait ends for the reason under test rather than for lack of time. */
+  private static final Duration CATCH_UP_BUDGET = Duration.ofMinutes(1);
+
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
   @Test
@@ -40,7 +43,7 @@ public class CatchUpWaitTest {
     final var targetId = memberId(raftRule.getFollower().orElseThrow());
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 5);
+    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 5, CATCH_UP_BUDGET);
     raftRule.appendEntries(5);
 
     // then
@@ -55,7 +58,8 @@ public class CatchUpWaitTest {
     final var target = raftRule.getFollower().orElseThrow();
 
     // when
-    final var caughtUp = awaitCaughtUp(leader, memberId(target), committed + 1_000);
+    final var caughtUp =
+        awaitCaughtUp(leader, memberId(target), committed + 1_000, CATCH_UP_BUDGET);
     target.leave().get(30, TimeUnit.SECONDS);
 
     // then
@@ -64,8 +68,28 @@ public class CatchUpWaitTest {
         .isEqualTo(Optional.of(LeadershipTransferResult.NOT_MEMBER));
   }
 
+  @Test
+  public void shouldReportReplicationTimedOutWhenTheBudgetRunsOut() throws Exception {
+    // given
+    final long committed = raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var targetId = memberId(raftRule.getFollower().orElseThrow());
+
+    // when
+    final var caughtUp = awaitCaughtUp(leader, targetId, committed + 1_000, Duration.ofSeconds(1));
+
+    // then
+    assertThat(caughtUp)
+        .succeedsWithin(Duration.ofSeconds(15))
+        .isEqualTo(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
+  }
+
   private static CompletableFuture<Optional<LeadershipTransferResult>> awaitCaughtUp(
-      final RaftServer leader, final MemberId desiredLeader, final long targetIndex) {
+      final RaftServer leader,
+      final MemberId desiredLeader,
+      final long targetIndex,
+      final Duration catchUpBudget) {
+    final var deadlineMs = System.currentTimeMillis() + catchUpBudget.toMillis();
     final var caughtUp = new CompletableFuture<Optional<LeadershipTransferResult>>();
     leader
         .getContext()
@@ -76,7 +100,8 @@ public class CatchUpWaitTest {
                         leader.getContext(),
                         leaderRole(leader)::isRunning,
                         desiredLeader,
-                        targetIndex)
+                        targetIndex,
+                        deadlineMs)
                     .start()
                     .whenComplete(
                         (result, error) -> {
