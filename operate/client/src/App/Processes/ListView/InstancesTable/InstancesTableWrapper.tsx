@@ -78,10 +78,11 @@ const InstancesTableWrapper: React.FC = observer(() => {
 
     processInstancesSelectionStore.setRuntime({
       totalProcessInstancesCount,
+      hasMoreTotalProcessInstances: hasMoreTotalItems,
       visibleIds,
       visibleRunningIds,
     });
-  }, [processInstances, totalProcessInstancesCount]);
+  }, [processInstances, totalProcessInstancesCount, hasMoreTotalItems]);
 
   return (
     <InstancesTable

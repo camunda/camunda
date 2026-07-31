@@ -283,6 +283,47 @@ describe('<MigrateAction />', () => {
     trackSpy.mockRestore();
   });
 
+  it('should capture the truncated selection count when entering migration mode', async () => {
+    // given a "select all" selection with more instances than the API reports
+    const visibleRunningIds = mockProcessInstancesV2
+      .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
+      .map((instance) => instance.processInstanceKey);
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 10000,
+      hasMoreTotalProcessInstances: true,
+
+      visibleIds: mockProcessInstancesV2.map(
+        (instance) => instance.processInstanceKey,
+      ),
+      visibleRunningIds,
+    });
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: createWrapper({
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
+        withTestButtons: true,
+      }),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
+
+    expect(
+      processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated,
+    ).toBe(true);
+
+    await user.click(screen.getByRole('button', {name: /migrate/i}));
+    await user.click(screen.getByRole('button', {name: /continue/i}));
+
+    expect(processInstanceMigrationStore.state.selectedInstancesCount).toBe(
+      10000,
+    );
+    expect(
+      processInstanceMigrationStore.state.isSelectedInstancesCountTruncated,
+    ).toBe(true);
+  });
+
   it('should disable migrate action in batch modification mode', async () => {
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({

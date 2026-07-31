@@ -17,6 +17,7 @@ import {
 
 type SelectionRuntime = {
   totalProcessInstancesCount: number;
+  hasMoreTotalProcessInstances?: boolean;
   visibleIds: string[];
   visibleRunningIds: string[];
 };
@@ -38,6 +39,7 @@ class ProcessInstancesSelection {
     totalProcessInstancesCount: 0,
     visibleIds: [],
     visibleRunningIds: [],
+    hasMoreTotalProcessInstances: false,
   };
   autorunDisposer: null | IReactionDisposer = null;
   observeDisposer: null | Lambda = null;
@@ -69,6 +71,8 @@ class ProcessInstancesSelection {
 
     if (
       prev.totalProcessInstancesCount === next.totalProcessInstancesCount &&
+      !!prev.hasMoreTotalProcessInstances ===
+        !!next.hasMoreTotalProcessInstances &&
       isEqual(prev.visibleIds, next.visibleIds) &&
       isEqual(prev.visibleRunningIds, next.visibleRunningIds)
     ) {
@@ -169,6 +173,13 @@ class ProcessInstancesSelection {
 
   get isAllChecked(): boolean {
     return this.state.selectionMode === 'ALL';
+  }
+
+  get isSelectedProcessInstanceCountTruncated(): boolean {
+    return (
+      !!this.runtime.hasMoreTotalProcessInstances &&
+      this.state.selectionMode !== 'INCLUDE'
+    );
   }
 
   get hasSelectedRunningInstances() {

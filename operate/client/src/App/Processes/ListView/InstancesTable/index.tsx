@@ -119,6 +119,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           selectedInstancesCount={
             processInstancesSelectionStore.selectedProcessInstanceCount
           }
+          isSelectedCountTruncated={
+            processInstancesSelectionStore.isSelectedProcessInstanceCountTruncated
+          }
         />
         <SortableTable
           state={state}
