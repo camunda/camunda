@@ -150,7 +150,7 @@ const VariableEditor: React.FC<Props> = ({
 										<div className={styles.singleLineValue}>{variable.value}</div>
 									</StructuredListCell>
 									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
-										<div className={cn(styles.controls, styles.readOnlyControls)}>
+										<div className={styles.controls}>
 											<IconButton
 												label={t('tasklist.variableEditorOpenJsonLabel')}
 												onClick={() => {
@@ -209,7 +209,7 @@ const VariableEditor: React.FC<Props> = ({
 										</Field>
 									</StructuredListCell>
 									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
-										<div className={cn(styles.controls, styles.readOnlyControls)}>
+										<div className={styles.controls}>
 											<IconButton
 												label={t('tasklist.variableEditorOpenJsonLabel')}
 												onClick={() => {
