@@ -2136,7 +2136,9 @@ jobs:
           max_attempts: 3
           retry_on: error
           retry_wait_seconds: 15
-          timeout_minutes: 5
+          # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
+          # 10-min job timeout; validation normally completes in well under a minute.
+          timeout_minutes: 2
           command: npx --yes --package "renovate@latest" -c "renovate-config-validator"
       - name: Observe build status
         if: always()
