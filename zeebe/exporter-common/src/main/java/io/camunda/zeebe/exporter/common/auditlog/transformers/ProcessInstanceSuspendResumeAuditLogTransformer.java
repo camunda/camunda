@@ -18,4 +18,9 @@ public class ProcessInstanceSuspendResumeAuditLogTransformer
   public TransformerConfig config() {
     return PROCESS_INSTANCE_SUSPEND_RESUME_CONFIG;
   }
+
+  @Override
+  public Class<ProcessInstanceRecordValue> getRecordValueType() {
+    return ProcessInstanceRecordValue.class;
+  }
 }

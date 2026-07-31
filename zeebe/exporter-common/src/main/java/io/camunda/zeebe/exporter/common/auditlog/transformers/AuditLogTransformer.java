@@ -32,6 +32,8 @@ public interface AuditLogTransformer<R extends RecordValue> {
 
   TransformerConfig config();
 
+  Class<R> getRecordValueType();
+
   default AuditLogEntry create(final Record<R> record) {
     final AuditLogEntry log = AuditLogEntry.of(record);
 

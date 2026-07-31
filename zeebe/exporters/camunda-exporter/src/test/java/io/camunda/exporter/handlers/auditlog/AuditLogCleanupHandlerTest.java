@@ -16,7 +16,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
@@ -129,11 +131,16 @@ public class AuditLogCleanupHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
-    final var idList = handler.generateIds(record);
+  void shouldExtractIdAndIndexes() {
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.mainIndex("test-index");
+    when(indexLocator.locate(INDEX_NAME)).thenReturn(index);
 
-    assertThat(idList).hasSize(1);
-    assertThat(idList.getFirst()).isEqualTo(record.getPartitionId() + "-" + record.getPosition());
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
+
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(record.getPartitionId() + "-" + record.getPosition(), index));
   }
 
   @Test

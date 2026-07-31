@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.auditlog;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
@@ -52,8 +53,17 @@ abstract class AbstractAuditLogHandler<T extends ExporterEntity<T>, R extends Re
   }
 
   @Override
+  public List<IdAndIndex> extractIdAndIndexes(
+      final TargetIndexLocator indexLocator, final Record<R> record) {
+    final var id = record.getPartitionId() + "-" + record.getPosition();
+    final var index = locateTargetIndex(indexLocator, record);
+    return List.of(new IdAndIndex(id, index));
+  }
+
+  @Override
   public List<String> generateIds(final Record<R> record) {
-    return List.of(record.getPartitionId() + "-" + record.getPosition());
+    throw new UnsupportedOperationException(
+        "generateIds is not supported for audit log handlers. Use extractIdAndIndexes instead.");
   }
 
   @Override
@@ -66,6 +76,9 @@ abstract class AbstractAuditLogHandler<T extends ExporterEntity<T>, R extends Re
   public String getIndexName() {
     return indexName;
   }
+
+  abstract TargetIndex locateTargetIndex(
+      final TargetIndexLocator indexLocator, final Record<R> record);
 
   protected AuditLogEntityType mapEntityType(
       final io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType) {
