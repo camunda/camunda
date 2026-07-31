@@ -15,6 +15,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -57,18 +58,30 @@ public record FaultyFlusherConfigurator(
   }
 
   @Override
+  public Optional<RaftLogFlusher.Factory> flusherFactory(final MemberId id) {
+    if (isFaulty(id)) {
+      LOG.trace("failing flusher for member {}", id);
+      return Optional.of(faultyFlusher(faultyWhen, notifyFaultyFlush));
+    }
+
+    LOG.trace("not failing flusher for member {} ", id);
+    return Optional.empty();
+  }
+
+  @Override
   public void configure(final MemberId id, final Builder builder) {
     final var numericId = Integer.parseInt(id.id());
     // Node priority is used to avoid the faulty nodes to become leaders
     final int nodePriority;
-    if (numericId <= faultyFlusherNumber) {
-      LOG.trace("failing flusher for member {}", id);
-      Configurator.replaceFlusherFactory(builder, faultyFlusher(faultyWhen, notifyFaultyFlush));
+    if (isFaulty(id)) {
       nodePriority = leaderFaulty ? Math.max(5 - numericId, 2) : numericId;
     } else {
-      LOG.trace("not failing flusher for member {} ", id);
       nodePriority = leaderFaulty ? numericId : Math.max(5 - numericId, 2);
     }
     builder.withElectionConfig(RaftElectionConfig.ofPriorityElection(5, nodePriority));
+  }
+
+  private boolean isFaulty(final MemberId id) {
+    return Integer.parseInt(id.id()) <= faultyFlusherNumber;
   }
 }
