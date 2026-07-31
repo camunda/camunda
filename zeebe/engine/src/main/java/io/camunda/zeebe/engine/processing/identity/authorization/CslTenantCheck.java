@@ -134,19 +134,19 @@ public final class CslTenantCheck {
    * multi-tenancy-disabled and anonymous-caller skips still apply, same as {@link #checkTenant}.)
    * Use it only for command sites that call the tenant check directly, with no preceding {@link
    * CslAuthorizationCheck#check}, and that verify membership across a list of tenant IDs at once,
-   * using {@link AuthorizedTenants#isAuthorizedForTenantIds}.
+   * using {@link TenantAccess#isAuthorizedForTenantIds}.
    *
    * <p>Without a preceding {@link CslAuthorizationCheck#check} to reject a claims-free command
    * first, sharing {@link #checkTenant}'s no-principal skip here would silently authorize a
    * claims-free caller for every tenant it names instead of rejecting it — hence the guarantee is
    * deliberate, not an oversight.
    *
-   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link AuthorizedTenants} and a
-   * lazy {@code Supplier<Rejection>} rather than resolving internally and building the rejection
-   * eagerly — callers that already resolved tenants for the same command don't pay to resolve
-   * twice, and the rejection message is only built on the rejected path. The supplier is only
-   * invoked on rejection, which never happens for an anonymous principal, so it's always safe to
-   * call {@code authorizedTenants.tenantIds()} inside it.
+   * <p>Also unlike {@link #checkTenant}, takes an already-resolved {@link TenantAccess} and a lazy
+   * {@code Supplier<Rejection>} rather than resolving internally and building the rejection eagerly
+   * — callers that already resolved tenants for the same command don't pay to resolve twice, and
+   * the rejection message is only built on the rejected path. The supplier is only invoked on
+   * rejection, which never happens for an anonymous principal, so it's always safe to call {@code
+   * authorizedTenants.tenantIds()} inside it.
    *
    * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
    *     {@link #resolveAuthorizedTenants} from the same command's claims
