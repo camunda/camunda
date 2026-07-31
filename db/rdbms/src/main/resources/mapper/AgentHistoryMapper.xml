@@ -87,28 +87,32 @@
     them lazily on first access.
   -->
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
-    <id property="agentHistoryKey" column="AGENT_HISTORY_KEY" javaType="long"/>
-    <result property="agentInstanceKey" column="AGENT_INSTANCE_KEY" javaType="long"/>
-    <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="long"/>
-    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="long"/>
-    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="long"/>
-    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="long"/>
-    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
-    <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
-    <result property="jobKey" column="JOB_KEY" javaType="long"/>
-    <result property="jobLease" column="JOB_LEASE" javaType="java.lang.String"/>
-    <result property="loopIteration" column="LOOP_ITERATION" javaType="int"/>
-    <result property="role" column="ROLE"
-      javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"/>
-    <result property="commitStatus" column="COMMIT_STATUS"
-      javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryCommitStatus"/>
-    <result property="producedAt" column="PRODUCED_AT" javaType="java.time.OffsetDateTime"/>
-    <result property="inputTokens" column="INPUT_TOKENS" javaType="java.lang.Long"/>
-    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="java.lang.Long"/>
-    <result property="durationMs" column="DURATION_MS" javaType="java.lang.Long"/>
-    <result property="content" column="CONTENT" javaType="java.lang.String"/>
-    <result property="toolCalls" column="TOOL_CALLS" javaType="java.lang.String"/>
+    <constructor>
+      <idArg column="AGENT_HISTORY_KEY" javaType="_long" name="agentHistoryKey"/>
+      <arg column="AGENT_INSTANCE_KEY" javaType="_long" name="agentInstanceKey"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="_long" name="elementInstanceKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="_long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="_long" name="rootProcessInstanceKey"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="_long" name="processDefinitionKey"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
+      <arg column="JOB_KEY" javaType="_long" name="jobKey"/>
+      <arg column="JOB_LEASE" javaType="java.lang.String" name="jobLease"/>
+      <arg column="LOOP_ITERATION" javaType="_int" name="loopIteration"/>
+      <arg column="ROLE"
+        javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"
+        name="role"/>
+      <arg column="COMMIT_STATUS"
+        javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryCommitStatus"
+        name="commitStatus"/>
+      <arg column="PRODUCED_AT" javaType="java.time.OffsetDateTime" name="producedAt"/>
+      <arg column="INPUT_TOKENS" javaType="java.lang.Long" name="inputTokens"/>
+      <arg column="OUTPUT_TOKENS" javaType="java.lang.Long" name="outputTokens"/>
+      <arg column="DURATION_MS" javaType="java.lang.Long" name="durationMs"/>
+      <arg column="CONTENT" javaType="java.lang.String" name="content"/>
+      <arg column="TOOL_CALLS" javaType="java.lang.String" name="toolCalls"/>
+    </constructor>
   </resultMap>
 
   <select id="search"

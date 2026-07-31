@@ -33,29 +33,31 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
   }
 
   public void create(final MessageSubscriptionDbModel messageSubscription) {
-    messageSubscription.truncateToolFields(
-        vendorDatabaseProperties.userCharColumnSize(),
-        vendorDatabaseProperties.charColumnMaxBytes());
+    final var truncated =
+        messageSubscription.truncateToolFields(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MESSAGE_SUBSCRIPTION,
             WriteStatementType.INSERT,
-            messageSubscription.messageSubscriptionKey(),
+            truncated.messageSubscriptionKey(),
             "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.insert",
-            messageSubscription));
+            truncated));
   }
 
   public void update(final MessageSubscriptionDbModel messageSubscription) {
-    messageSubscription.truncateToolFields(
-        vendorDatabaseProperties.userCharColumnSize(),
-        vendorDatabaseProperties.charColumnMaxBytes());
+    final var truncated =
+        messageSubscription.truncateToolFields(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MESSAGE_SUBSCRIPTION,
             WriteStatementType.UPDATE,
-            messageSubscription.messageSubscriptionKey(),
+            truncated.messageSubscriptionKey(),
             "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.update",
-            messageSubscription));
+            truncated));
   }
 
   public int deleteStartEventSubscriptionsByProcessDefinitionKeys(

@@ -27,29 +27,31 @@ class AgentHistoryEntityMapperTest {
   void shouldMapAllFields() {
     final var producedAt = OffsetDateTime.parse("2024-06-01T12:00:00Z");
 
-    final var dbModel = new AgentHistoryDbModel();
-    dbModel.agentHistoryKey(100L);
-    dbModel.agentInstanceKey(200L);
-    dbModel.elementInstanceKey(300L);
-    dbModel.processInstanceKey(400L);
-    dbModel.rootProcessInstanceKey(500L);
-    dbModel.processDefinitionKey(600L);
-    dbModel.processDefinitionId("myProcess");
-    dbModel.tenantId("<default>");
-    dbModel.partitionId(1);
-    dbModel.jobKey(700L);
-    dbModel.jobLease("lease-abc");
-    dbModel.loopIteration(3);
-    dbModel.role(AgentInstanceHistoryRole.ASSISTANT);
-    dbModel.commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED);
-    dbModel.producedAt(producedAt);
-    dbModel.inputTokens(150L);
-    dbModel.outputTokens(75L);
-    dbModel.durationMs(300L);
-    dbModel.contentItems(
-        List.of(new ContentItem(ContentType.TEXT, "Hello from assistant", null, null)));
-    dbModel.toolCallValues(
-        List.of(new ToolCall("tc-1", "myTool", "Task_1", Map.of("key", "value"))));
+    final var dbModel =
+        new AgentHistoryDbModel.Builder()
+            .agentHistoryKey(100L)
+            .agentInstanceKey(200L)
+            .elementInstanceKey(300L)
+            .processInstanceKey(400L)
+            .rootProcessInstanceKey(500L)
+            .processDefinitionKey(600L)
+            .processDefinitionId("myProcess")
+            .tenantId("<default>")
+            .partitionId(1)
+            .jobKey(700L)
+            .jobLease("lease-abc")
+            .loopIteration(3)
+            .role(AgentInstanceHistoryRole.ASSISTANT)
+            .commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED)
+            .producedAt(producedAt)
+            .inputTokens(150L)
+            .outputTokens(75L)
+            .durationMs(300L)
+            .contentItems(
+                List.of(new ContentItem(ContentType.TEXT, "Hello from assistant", null, null)))
+            .toolCallValues(
+                List.of(new ToolCall("tc-1", "myTool", "Task_1", Map.of("key", "value"))))
+            .build();
 
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
 
@@ -79,9 +81,7 @@ class AgentHistoryEntityMapperTest {
 
   @Test
   void shouldMapNullContentAndToolCallsToEmptyLists() {
-    final var dbModel = minimalDbModel(42L);
-    dbModel.contentItems(null);
-    dbModel.toolCallValues(null);
+    final var dbModel = minimalDbModel(42L).contentItems(null).toolCallValues(null).build();
 
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
 
@@ -97,10 +97,8 @@ class AgentHistoryEntityMapperTest {
   @Test
   void shouldMapAllNullMetricsToNullMetrics() {
     // given — all three null means metrics were never provided
-    final var dbModel = minimalDbModel(43L);
-    dbModel.inputTokens(null);
-    dbModel.outputTokens(null);
-    dbModel.durationMs(null);
+    final var dbModel =
+        minimalDbModel(43L).inputTokens(null).outputTokens(null).durationMs(null).build();
 
     // when
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
@@ -112,10 +110,8 @@ class AgentHistoryEntityMapperTest {
   @Test
   void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
     // given — inputTokens and outputTokens set, durationMs absent
-    final var dbModel = minimalDbModel(44L);
-    dbModel.inputTokens(100L);
-    dbModel.outputTokens(200L);
-    dbModel.durationMs(null);
+    final var dbModel =
+        minimalDbModel(44L).inputTokens(100L).outputTokens(200L).durationMs(null).build();
 
     // when
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
@@ -127,28 +123,27 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.metrics().durationMs()).isNull();
   }
 
-  private AgentHistoryDbModel minimalDbModel(final long key) {
-    final var model = new AgentHistoryDbModel();
-    model.agentHistoryKey(key);
-    model.agentInstanceKey(1L);
-    model.elementInstanceKey(2L);
-    model.processInstanceKey(3L);
-    model.rootProcessInstanceKey(4L);
-    model.processDefinitionKey(5L);
-    model.processDefinitionId("process");
-    model.tenantId("<default>");
-    model.partitionId(1);
-    model.jobKey(6L);
-    model.jobLease("lease");
-    model.loopIteration(1);
-    model.role(AgentInstanceHistoryRole.USER);
-    model.commitStatus(AgentInstanceHistoryCommitStatus.PENDING);
-    model.producedAt(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
-    model.inputTokens(0L);
-    model.outputTokens(0L);
-    model.durationMs(0L);
-    model.contentItems(List.of());
-    model.toolCallValues(List.of());
-    return model;
+  private AgentHistoryDbModel.Builder minimalDbModel(final long key) {
+    return new AgentHistoryDbModel.Builder()
+        .agentHistoryKey(key)
+        .agentInstanceKey(1L)
+        .elementInstanceKey(2L)
+        .processInstanceKey(3L)
+        .rootProcessInstanceKey(4L)
+        .processDefinitionKey(5L)
+        .processDefinitionId("process")
+        .tenantId("<default>")
+        .partitionId(1)
+        .jobKey(6L)
+        .jobLease("lease")
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.USER)
+        .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)
+        .producedAt(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
+        .inputTokens(0L)
+        .outputTokens(0L)
+        .durationMs(0L)
+        .contentItems(List.of())
+        .toolCallValues(List.of());
   }
 }

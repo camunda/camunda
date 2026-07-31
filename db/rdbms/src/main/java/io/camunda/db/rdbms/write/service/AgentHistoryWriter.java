@@ -30,16 +30,17 @@ public class AgentHistoryWriter extends ProcessInstanceDependant implements Rdbm
   }
 
   public void create(final AgentHistoryDbModel model) {
-    model.truncateJobLease(
-        vendorDatabaseProperties.userCharColumnSize(),
-        vendorDatabaseProperties.charColumnMaxBytes());
+    final var truncated =
+        model.truncateJobLease(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.AGENT_HISTORY,
             WriteStatementType.INSERT,
-            model.agentHistoryKey(),
+            truncated.agentHistoryKey(),
             "io.camunda.db.rdbms.sql.AgentHistoryMapper.insert",
-            model));
+            truncated));
   }
 
   public void updateCommitStatus(final AgentHistoryDbModel model) {

@@ -14,46 +14,107 @@ import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
+public record AgentInstanceDbModel(
+    long agentInstanceKey,
+    String elementId,
+    long processInstanceKey,
+    long rootProcessInstanceKey,
+    String processDefinitionId,
+    long processDefinitionKey,
+    int processDefinitionVersion,
+    String versionTag,
+    String tenantId,
+    int partitionId,
+    AgentInstanceStatus status,
+    String model,
+    String provider,
+    String systemPrompt,
+    long maxTokens,
+    int maxModelCalls,
+    int maxToolCalls,
+    long inputTokens,
+    long outputTokens,
+    int modelCalls,
+    int toolCalls,
+    String tools,
+    OffsetDateTime creationDate,
+    OffsetDateTime lastUpdatedDate,
+    OffsetDateTime completionDate,
+    List<Long> elementInstanceKeys)
+    implements Copyable<AgentInstanceDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentInstanceDbModel.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private long agentInstanceKey;
-  private String elementId;
-  private long processInstanceKey;
-  private long rootProcessInstanceKey;
-  private String processDefinitionId;
-  private long processDefinitionKey;
-  private int processDefinitionVersion;
-  private String versionTag;
-  private String tenantId;
-  private int partitionId;
-  private AgentInstanceStatus status;
-  private String model;
-  private String provider;
-  private String systemPrompt;
-  private long maxTokens;
-  private int maxModelCalls;
-  private int maxToolCalls;
-  private long inputTokens;
-  private long outputTokens;
-  private int modelCalls;
-  private int toolCalls;
-  private String tools;
-  private List<AgentInstanceToolDbValue> toolValues;
-  private OffsetDateTime creationDate;
-  private OffsetDateTime lastUpdatedDate;
-  private OffsetDateTime completionDate;
-  private List<Long> elementInstanceKeys;
+  public AgentInstanceDbModel {
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
+    elementInstanceKeys = Objects.requireNonNullElse(elementInstanceKeys, new ArrayList<>());
+  }
 
-  public AgentInstanceDbModel() {}
+  // Matches searchResultMap's <constructor>, which omits elementInstanceKeys -- populated
+  // separately via the sibling <collection> element.
+  public AgentInstanceDbModel(
+      final long agentInstanceKey,
+      final String elementId,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final String processDefinitionId,
+      final long processDefinitionKey,
+      final int processDefinitionVersion,
+      final String versionTag,
+      final String tenantId,
+      final int partitionId,
+      final AgentInstanceStatus status,
+      final String model,
+      final String provider,
+      final String systemPrompt,
+      final long maxTokens,
+      final int maxModelCalls,
+      final int maxToolCalls,
+      final long inputTokens,
+      final long outputTokens,
+      final int modelCalls,
+      final int toolCalls,
+      final String tools,
+      final OffsetDateTime creationDate,
+      final OffsetDateTime lastUpdatedDate,
+      final OffsetDateTime completionDate) {
+    this(
+        agentInstanceKey,
+        elementId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionKey,
+        processDefinitionVersion,
+        versionTag,
+        tenantId,
+        partitionId,
+        status,
+        model,
+        provider,
+        systemPrompt,
+        maxTokens,
+        maxModelCalls,
+        maxToolCalls,
+        inputTokens,
+        outputTokens,
+        modelCalls,
+        toolCalls,
+        tools,
+        creationDate,
+        lastUpdatedDate,
+        completionDate,
+        null);
+  }
 
   @Override
   public AgentInstanceDbModel copy(
@@ -62,255 +123,59 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     return copyFunction.apply(toBuilder()).build();
   }
 
-  public ObjectBuilder<AgentInstanceDbModel> toBuilder() {
-    return new Builder()
-        .agentInstanceKey(agentInstanceKey)
-        .elementId(elementId)
-        .processInstanceKey(processInstanceKey)
-        .rootProcessInstanceKey(rootProcessInstanceKey)
-        .processDefinitionId(processDefinitionId)
-        .processDefinitionKey(processDefinitionKey)
-        .processDefinitionVersion(processDefinitionVersion)
-        .versionTag(versionTag)
-        .tenantId(tenantId)
-        .partitionId(partitionId)
-        .status(status)
-        .model(model)
-        .provider(provider)
-        .systemPrompt(systemPrompt)
-        .maxTokens(maxTokens)
-        .maxModelCalls(maxModelCalls)
-        .maxToolCalls(maxToolCalls)
-        .inputTokens(inputTokens)
-        .outputTokens(outputTokens)
-        .modelCalls(modelCalls)
-        .toolCalls(toolCalls)
-        // route through the getter so DB-hydrated models (only `tools` JSON populated)
-        // are lazily deserialized and the structured form is preserved on the copy
-        .toolValues(toolValues())
-        .creationDate(creationDate)
-        .lastUpdatedDate(lastUpdatedDate)
-        .completionDate(completionDate)
-        .elementInstanceKeys(elementInstanceKeys);
-  }
-
-  public long agentInstanceKey() {
-    return agentInstanceKey;
-  }
-
-  public void agentInstanceKey(final long agentInstanceKey) {
-    this.agentInstanceKey = agentInstanceKey;
-  }
-
-  public String elementId() {
-    return elementId;
-  }
-
-  public void elementId(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  public long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void processInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void processDefinitionKey(final long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public int processDefinitionVersion() {
-    return processDefinitionVersion;
-  }
-
-  public void processDefinitionVersion(final int processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public String versionTag() {
-    return versionTag;
-  }
-
-  public void versionTag(final String versionTag) {
-    this.versionTag = versionTag;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public int partitionId() {
-    return partitionId;
-  }
-
-  public void partitionId(final int partitionId) {
-    this.partitionId = partitionId;
-  }
-
-  public AgentInstanceStatus status() {
-    return status;
-  }
-
-  public void status(final AgentInstanceStatus status) {
-    this.status = status;
-  }
-
-  public String model() {
-    return model;
-  }
-
-  public void model(final String model) {
-    this.model = model;
-  }
-
-  public String provider() {
-    return provider;
-  }
-
-  public void provider(final String provider) {
-    this.provider = provider;
-  }
-
-  public void truncateDefinitionFields(final int sizeLimit, final Integer byteLimit) {
-    if (TruncateUtil.shouldTruncate(model, sizeLimit, byteLimit)) {
-      model = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+  public AgentInstanceDbModel truncateDefinitionFields(
+      final int sizeLimit, final Integer byteLimit) {
+    final var truncatedModel = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+    final var truncatedProvider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
+    if (Objects.equals(truncatedModel, model) && Objects.equals(truncatedProvider, provider)) {
+      return this;
     }
-    if (TruncateUtil.shouldTruncate(provider, sizeLimit, byteLimit)) {
-      provider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
-    }
-  }
 
-  public String systemPrompt() {
-    return systemPrompt;
-  }
-
-  public void systemPrompt(final String systemPrompt) {
-    this.systemPrompt = systemPrompt;
-  }
-
-  public long maxTokens() {
-    return maxTokens;
-  }
-
-  public void maxTokens(final long maxTokens) {
-    this.maxTokens = maxTokens;
-  }
-
-  public int maxModelCalls() {
-    return maxModelCalls;
-  }
-
-  public void maxModelCalls(final int maxModelCalls) {
-    this.maxModelCalls = maxModelCalls;
-  }
-
-  public int maxToolCalls() {
-    return maxToolCalls;
-  }
-
-  public void maxToolCalls(final int maxToolCalls) {
-    this.maxToolCalls = maxToolCalls;
-  }
-
-  public long inputTokens() {
-    return inputTokens;
-  }
-
-  public void inputTokens(final long inputTokens) {
-    this.inputTokens = inputTokens;
-  }
-
-  public long outputTokens() {
-    return outputTokens;
-  }
-
-  public void outputTokens(final long outputTokens) {
-    this.outputTokens = outputTokens;
-  }
-
-  public int modelCalls() {
-    return modelCalls;
-  }
-
-  public void modelCalls(final int modelCalls) {
-    this.modelCalls = modelCalls;
-  }
-
-  public int toolCalls() {
-    return toolCalls;
-  }
-
-  public void toolCalls(final int toolCalls) {
-    this.toolCalls = toolCalls;
-  }
-
-  public String tools() {
-    return tools;
+    return new AgentInstanceDbModel(
+        agentInstanceKey,
+        elementId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionKey,
+        processDefinitionVersion,
+        versionTag,
+        tenantId,
+        partitionId,
+        status,
+        truncatedModel,
+        truncatedProvider,
+        systemPrompt,
+        maxTokens,
+        maxModelCalls,
+        maxToolCalls,
+        inputTokens,
+        outputTokens,
+        modelCalls,
+        toolCalls,
+        tools,
+        creationDate,
+        lastUpdatedDate,
+        completionDate,
+        elementInstanceKeys);
   }
 
   /**
-   * Setter used by MyBatis when hydrating this model from the DB. Stores the raw JSON and
-   * invalidates the cached structured form so the next {@link #toolValues()} call re-derives from
-   * the new JSON (otherwise readers see stale data).
-   */
-  public void tools(final String tools) {
-    this.tools = tools;
-    toolValues = null;
-  }
-
-  /**
-   * Returns the structured tool list. If only the JSON form (set via {@link #tools(String)}, e.g.
-   * when the model is hydrated from the DB) is present, the JSON is deserialized lazily and cached
-   * on the model.
+   * Returns the structured tool list, deserializing the JSON form on every call. Returns null, not
+   * an empty list, when no JSON is stored -- covers both the never-set and the explicit-empty-list
+   * case (an empty list also serializes to a null {@code tools}), as well as the Oracle
+   * empty-string-treated-as-null edge case. Unlike the pre-record class, this implementation cannot
+   * distinguish "never set" from "explicitly set to an empty list", since both collapse to the same
+   * null string; no current caller depends on that distinction.
    */
   public List<AgentInstanceToolDbValue> toolValues() {
-    if (toolValues == null && tools != null && !tools.isEmpty()) {
-      toolValues = deserializeTools(tools);
+    if (tools == null || tools.isEmpty()) {
+      return null;
     }
-    return toolValues;
-  }
-
-  /**
-   * Sets the structured tool list and derives the JSON form from it. The JSON is what MyBatis
-   * writes to the {@code AGENT_INSTANCE.TOOLS} CLOB column.
-   */
-  public void toolValues(final List<AgentInstanceToolDbValue> toolValues) {
-    this.toolValues = toolValues;
-    tools = serializeTools(toolValues);
+    return deserializeTools(tools);
   }
 
   private static List<AgentInstanceToolDbValue> deserializeTools(final String tools) {
-    if (tools == null || tools.isEmpty()) {
-      return Collections.emptyList();
-    }
-
     try {
       return MAPPER.readValue(tools, new TypeReference<>() {});
     } catch (final JsonProcessingException e) {
@@ -332,36 +197,33 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     }
   }
 
-  public OffsetDateTime creationDate() {
-    return creationDate;
-  }
-
-  public void creationDate(final OffsetDateTime creationDate) {
-    this.creationDate = creationDate;
-  }
-
-  public OffsetDateTime lastUpdatedDate() {
-    return lastUpdatedDate;
-  }
-
-  public void lastUpdatedDate(final OffsetDateTime lastUpdatedDate) {
-    this.lastUpdatedDate = lastUpdatedDate;
-  }
-
-  public OffsetDateTime completionDate() {
-    return completionDate;
-  }
-
-  public void completionDate(final OffsetDateTime completionDate) {
-    this.completionDate = completionDate;
-  }
-
-  public List<Long> elementInstanceKeys() {
-    return elementInstanceKeys;
-  }
-
-  public void elementInstanceKeys(final List<Long> elementInstanceKeys) {
-    this.elementInstanceKeys = elementInstanceKeys;
+  public Builder toBuilder() {
+    return new Builder(tools)
+        .agentInstanceKey(agentInstanceKey)
+        .elementId(elementId)
+        .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
+        .processDefinitionId(processDefinitionId)
+        .processDefinitionKey(processDefinitionKey)
+        .processDefinitionVersion(processDefinitionVersion)
+        .versionTag(versionTag)
+        .tenantId(tenantId)
+        .partitionId(partitionId)
+        .status(status)
+        .model(model)
+        .provider(provider)
+        .systemPrompt(systemPrompt)
+        .maxTokens(maxTokens)
+        .maxModelCalls(maxModelCalls)
+        .maxToolCalls(maxToolCalls)
+        .inputTokens(inputTokens)
+        .outputTokens(outputTokens)
+        .modelCalls(modelCalls)
+        .toolCalls(toolCalls)
+        .creationDate(creationDate)
+        .lastUpdatedDate(lastUpdatedDate)
+        .completionDate(completionDate)
+        .elementInstanceKeys(elementInstanceKeys);
   }
 
   public static class Builder implements ObjectBuilder<AgentInstanceDbModel> {
@@ -387,11 +249,22 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     private long outputTokens;
     private int modelCalls;
     private int toolCalls;
-    private List<AgentInstanceToolDbValue> toolValues;
+    private String tools;
     private OffsetDateTime creationDate;
     private OffsetDateTime lastUpdatedDate;
     private OffsetDateTime completionDate;
     private List<Long> elementInstanceKeys;
+
+    public Builder() {}
+
+    // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
+    // toolValues() carries the original JSON through unparsed instead of round-tripping it
+    // through Jackson. Package-private, not a public setter: a second public setter aliasing the
+    // same field as toolValues(List) would let callers silently drop one write (e.g.
+    // builder.tools(x).toolValues(y) loses x).
+    Builder(final String tools) {
+      this.tools = tools;
+    }
 
     public Builder agentInstanceKey(final long agentInstanceKey) {
       this.agentInstanceKey = agentInstanceKey;
@@ -498,8 +371,8 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       return this;
     }
 
-    public Builder toolValues(final List<AgentInstanceToolDbValue> tools) {
-      toolValues = tools;
+    public Builder toolValues(final List<AgentInstanceToolDbValue> toolValues) {
+      tools = serializeTools(toolValues);
       return this;
     }
 
@@ -525,34 +398,33 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
 
     @Override
     public AgentInstanceDbModel build() {
-      final var result = new AgentInstanceDbModel();
-      result.agentInstanceKey(agentInstanceKey);
-      result.elementId(elementId);
-      result.processInstanceKey(processInstanceKey);
-      result.rootProcessInstanceKey(rootProcessInstanceKey);
-      result.processDefinitionId(processDefinitionId);
-      result.processDefinitionKey(processDefinitionKey);
-      result.processDefinitionVersion(processDefinitionVersion);
-      result.versionTag(versionTag);
-      result.tenantId(tenantId);
-      result.partitionId(partitionId);
-      result.status(status);
-      result.model(model);
-      result.provider(provider);
-      result.systemPrompt(systemPrompt);
-      result.maxTokens(maxTokens);
-      result.maxModelCalls(maxModelCalls);
-      result.maxToolCalls(maxToolCalls);
-      result.inputTokens(inputTokens);
-      result.outputTokens(outputTokens);
-      result.modelCalls(modelCalls);
-      result.toolCalls(toolCalls);
-      result.toolValues(toolValues);
-      result.creationDate(creationDate);
-      result.lastUpdatedDate(lastUpdatedDate);
-      result.completionDate(completionDate);
-      result.elementInstanceKeys(elementInstanceKeys);
-      return result;
+      return new AgentInstanceDbModel(
+          agentInstanceKey,
+          elementId,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          processDefinitionId,
+          processDefinitionKey,
+          processDefinitionVersion,
+          versionTag,
+          tenantId,
+          partitionId,
+          status,
+          model,
+          provider,
+          systemPrompt,
+          maxTokens,
+          maxModelCalls,
+          maxToolCalls,
+          inputTokens,
+          outputTokens,
+          modelCalls,
+          toolCalls,
+          tools,
+          creationDate,
+          lastUpdatedDate,
+          completionDate,
+          elementInstanceKeys);
     }
   }
 

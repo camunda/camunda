@@ -79,33 +79,28 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     <constructor>
-      <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
+      <idArg column="USER_TASK_KEY" javaType="java.lang.Long" name="userTaskKey"/>
+      <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
+      <arg column="NAME" javaType="java.lang.String" name="name"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" name="creationDate"/>
+      <arg column="COMPLETION_DATE" javaType="java.time.OffsetDateTime" name="completionDate"/>
+      <arg column="ASSIGNEE" javaType="java.lang.String" name="assignee"/>
+      <arg column="STATE" javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState" name="state"/>
+      <arg column="FORM_KEY" javaType="java.lang.Long" name="formKey"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long" name="elementInstanceKey"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="DUE_DATE" javaType="java.time.OffsetDateTime" name="dueDate"/>
+      <arg column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime" name="followUpDate"/>
+      <arg column="EXTERNAL_FORM_REFERENCE" javaType="java.lang.String" name="externalFormReference"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer" name="processDefinitionVersion"/>
+      <arg column="CUSTOM_HEADERS" javaType="java.lang.String" name="serializedCustomHeaders"/>
+      <arg column="PRIORITY" javaType="java.lang.Integer" name="priority"/>
     </constructor>
-    <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
-    <result property="name" column="NAME" javaType="java.lang.String"/>
-    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
-      javaType="java.lang.String"/>
-    <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="completionDate" column="COMPLETION_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="assignee" column="ASSIGNEE" javaType="java.lang.String"/>
-    <result property="state" column="STATE"
-      javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
-    <result property="formKey" column="FORM_KEY" javaType="java.lang.Long"/>
-    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"
-      javaType="java.lang.Long"/>
-    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="businessId" column="BUSINESS_ID" javaType="java.lang.String"/>
-    <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
-    <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="followUpDate" column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="externalFormReference" column="EXTERNAL_FORM_REFERENCE"
-      javaType="java.lang.String"/>
-    <result property="processDefinitionVersion" column="PROCESS_DEFINITION_VERSION"
-      javaType="java.lang.Integer"/>
-    <result property="serializedCustomHeaders" column="CUSTOM_HEADERS" javaType="java.lang.String"/>
-    <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
     <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_GROUP"/>
     </collection>

@@ -9,11 +9,13 @@ package io.camunda.it.rdbms.db.agentinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.AgentInstanceFixtures.createAndSaveRandomAgentInstance;
 import static io.camunda.it.rdbms.db.fixtures.AgentInstanceFixtures.createAndSaveRandomAgentInstances;
+import static io.camunda.it.rdbms.db.fixtures.AgentInstanceFixtures.createRandomAgentInstance;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AgentInstanceEntity;
@@ -23,6 +25,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,6 +79,58 @@ public class AgentInstanceIT {
     assertThat(entity.processDefinitionVersion()).isEqualTo(migrated.processDefinitionVersion());
     assertThat(entity.versionTag()).isEqualTo("v2");
     assertThat(entity.elementId()).isEqualTo("migrated-element");
+  }
+
+  @TestTemplate
+  public void shouldCoalescePendingCreateAndUpdateBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given — a create() queued but not yet flushed
+    final RdbmsWriters rdbmsWriters = testApplication.getRdbmsService().createWriter(0);
+    final var initialTools =
+        List.of(new AgentInstanceToolDbValue("search", "search the web", "el-1"));
+    final var created =
+        createRandomAgentInstance(
+            b ->
+                b.status(AgentInstanceStatus.IDLE)
+                    .toolValues(initialTools)
+                    // Empty on purpose: a non-empty list makes create() queue a second QueueItem
+                    // (insertElementInstanceKeys) whose parameter is also an AgentInstanceDbModel,
+                    // which UpsertMerger.canBeMerged() can't tell apart from the row-INSERT item
+                    // by id+contextType+type alone -- a separate, pre-existing bug (tracked
+                    // separately, out of scope here) that would make the update() below merge
+                    // into the wrong queued item.
+                    .elementInstanceKeys(List.of()));
+    rdbmsWriters.getAgentInstanceWriter().create(created);
+
+    // when — a second write to the same row is queued before the first is flushed, so it must
+    // coalesce into the still-pending INSERT via UpsertMerger/Copyable.copy() instead of issuing
+    // a separate UPDATE
+    final var updatedTools =
+        List.of(new AgentInstanceToolDbValue("calculator", "does math", "el-2"));
+    final var updated =
+        created.copy(
+            b ->
+                ((AgentInstanceDbModel.Builder) b)
+                    .status(AgentInstanceStatus.THINKING)
+                    .toolValues(updatedTools));
+    rdbmsWriters.getAgentInstanceWriter().update(updated);
+    rdbmsWriters.flush();
+
+    // then — only the merged, final state was ever persisted; fields the update never touched
+    // (model/provider/systemPrompt/tenantId) survive from the original create() untouched
+    final var entity =
+        testApplication
+            .getRdbmsService()
+            .getAgentInstanceDbReader()
+            .getByKey(created.agentInstanceKey(), ResourceAccessChecks.disabled());
+
+    assertThat(entity).isNotNull();
+    assertThat(entity.status()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(entity.tools()).hasSize(1);
+    assertThat(entity.tools().getFirst().name()).isEqualTo("calculator");
+    assertThat(entity.definition().model()).isEqualTo(created.model());
+    assertThat(entity.definition().provider()).isEqualTo(created.provider());
+    assertThat(entity.tenantId()).isEqualTo(created.tenantId());
   }
 
   @TestTemplate

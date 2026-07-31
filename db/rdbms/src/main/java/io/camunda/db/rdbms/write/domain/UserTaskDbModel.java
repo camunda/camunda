@@ -10,44 +10,53 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
+public record UserTaskDbModel(
+    Long userTaskKey,
+    String elementId,
+    String name,
+    String processDefinitionId,
+    OffsetDateTime creationDate,
+    OffsetDateTime completionDate,
+    String assignee,
+    UserTaskState state,
+    Long formKey,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    Long rootProcessInstanceKey,
+    String businessId,
+    Long elementInstanceKey,
+    String tenantId,
+    OffsetDateTime dueDate,
+    OffsetDateTime followUpDate,
+    List<String> candidateGroups,
+    List<String> candidateUsers,
+    String externalFormReference,
+    Integer processDefinitionVersion,
+    String serializedCustomHeaders,
+    Integer priority,
+    Set<String> tags,
+    int partitionId)
+    implements Copyable<UserTaskDbModel> {
 
-  private Long userTaskKey;
-  private String elementId;
-  private String name;
-  private String processDefinitionId;
-  private OffsetDateTime creationDate;
-  private OffsetDateTime completionDate;
-  private String assignee;
-  private UserTaskState state;
-  private Long formKey;
-  private Long processDefinitionKey;
-  private Long processInstanceKey;
-  private Long rootProcessInstanceKey;
-  private String businessId;
-  private Long elementInstanceKey;
-  private String tenantId;
-  private OffsetDateTime dueDate;
-  private OffsetDateTime followUpDate;
-  private List<String> candidateGroups;
-  private List<String> candidateUsers;
-  private String externalFormReference;
-  private Integer processDefinitionVersion;
-  private String serializedCustomHeaders;
-  private Map<String, String> customHeaders;
-  private Integer priority;
-  private Set<String> tags;
-  private int partitionId;
-
-  public UserTaskDbModel(final Long userTaskKey) {
-    this.userTaskKey = userTaskKey;
+  public UserTaskDbModel {
+    // Must stay mutable: MyBatis appends to these via <collection> after construction.
+    candidateGroups = Objects.requireNonNullElse(candidateGroups, new ArrayList<>());
+    candidateUsers = Objects.requireNonNullElse(candidateUsers, new ArrayList<>());
+    tags = Objects.requireNonNullElse(tags, new HashSet<>());
   }
 
+  // Matches searchResultMap's <constructor>, which omits candidateGroups/candidateUsers/tags --
+  // populated separately via the sibling <collection> elements -- and partitionId, which the
+  // search query never selects (matching the pre-record behavior of always defaulting to 0 for
+  // search-hydrated instances).
   public UserTaskDbModel(
       final Long userTaskKey,
       final String elementId,
@@ -68,34 +77,34 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final OffsetDateTime followUpDate,
       final String externalFormReference,
       final Integer processDefinitionVersion,
-      final Map<String, String> customHeaders,
-      final Integer priority,
-      final Set<String> tags,
-      final int partitionId) {
-    this.userTaskKey = userTaskKey;
-    this.elementId = elementId;
-    this.name = name;
-    this.processDefinitionId = processDefinitionId;
-    this.creationDate = creationDate;
-    this.completionDate = completionDate;
-    this.assignee = assignee;
-    this.state = state;
-    this.formKey = formKey;
-    this.processDefinitionKey = processDefinitionKey;
-    this.processInstanceKey = processInstanceKey;
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    this.businessId = businessId;
-    this.elementInstanceKey = elementInstanceKey;
-    this.tenantId = tenantId;
-    this.dueDate = dueDate;
-    this.followUpDate = followUpDate;
-    this.externalFormReference = externalFormReference;
-    this.processDefinitionVersion = processDefinitionVersion;
-    this.customHeaders = customHeaders;
-    serializedCustomHeaders = MapSerializer.serialize(customHeaders);
-    this.priority = priority;
-    this.tags = tags;
-    this.partitionId = partitionId;
+      final String serializedCustomHeaders,
+      final Integer priority) {
+    this(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        businessId,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        null,
+        null,
+        externalFormReference,
+        processDefinitionVersion,
+        serializedCustomHeaders,
+        priority,
+        null,
+        0);
   }
 
   @Override
@@ -104,215 +113,12 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     return copyFunction.apply(toBuilder()).build();
   }
 
-  // Methods without get/set prefix
-
-  public Long userTaskKey() {
-    return userTaskKey;
-  }
-
-  public void userTaskKey(final Long userTaskKey) {
-    this.userTaskKey = userTaskKey;
-  }
-
-  public String elementId() {
-    return elementId;
-  }
-
-  public void elementId(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public void name(final String name) {
-    this.name = name;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public OffsetDateTime creationDate() {
-    return creationDate;
-  }
-
-  public void creationDate(final OffsetDateTime creationDate) {
-    this.creationDate = creationDate;
-  }
-
-  public OffsetDateTime completionDate() {
-    return completionDate;
-  }
-
-  public void completionDate(final OffsetDateTime completionDate) {
-    this.completionDate = completionDate;
-  }
-
-  public String assignee() {
-    return assignee;
-  }
-
-  public void assignee(final String assignee) {
-    this.assignee = assignee;
-  }
-
-  public UserTaskState state() {
-    return state;
-  }
-
-  public void state(final UserTaskState state) {
-    this.state = state;
-  }
-
-  public Long formKey() {
-    return formKey;
-  }
-
-  public void formKey(final Long formKey) {
-    this.formKey = formKey;
-  }
-
-  public Long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void processDefinitionKey(final Long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public Long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void processInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public Long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public String businessId() {
-    return businessId;
-  }
-
-  public void businessId(final String businessId) {
-    this.businessId = businessId;
-  }
-
-  public Long elementInstanceKey() {
-    return elementInstanceKey;
-  }
-
-  public void elementInstanceKey(final Long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public OffsetDateTime dueDate() {
-    return dueDate;
-  }
-
-  public void dueDate(final OffsetDateTime dueDate) {
-    this.dueDate = dueDate;
-  }
-
-  public OffsetDateTime followUpDate() {
-    return followUpDate;
-  }
-
-  public void followUpDate(final OffsetDateTime followUpDate) {
-    this.followUpDate = followUpDate;
-  }
-
-  public List<String> candidateGroups() {
-    return candidateGroups;
-  }
-
-  public void candidateGroups(final List<String> candidateGroups) {
-    this.candidateGroups = candidateGroups;
-  }
-
-  public List<String> candidateUsers() {
-    return candidateUsers;
-  }
-
-  public void candidateUsers(final List<String> candidateUsers) {
-    this.candidateUsers = candidateUsers;
-  }
-
-  public String externalFormReference() {
-    return externalFormReference;
-  }
-
-  public void externalFormReference(final String externalFormReference) {
-    this.externalFormReference = externalFormReference;
-  }
-
-  public Integer processDefinitionVersion() {
-    return processDefinitionVersion;
-  }
-
-  public void processDefinitionVersion(final Integer processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public String serializedCustomHeaders() {
-    return serializedCustomHeaders;
-  }
-
-  public void serializedCustomHeaders(final String serializedCustomHeaders) {
-    this.serializedCustomHeaders = serializedCustomHeaders;
-    customHeaders = MapSerializer.deserialize(serializedCustomHeaders);
-  }
-
   public Map<String, String> customHeaders() {
-    return customHeaders;
-  }
-
-  public void customHeaders(final Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
-  }
-
-  public Integer priority() {
-    return priority;
-  }
-
-  public void priority(final Integer priority) {
-    this.priority = priority;
-  }
-
-  public Set<String> tags() {
-    return tags;
-  }
-
-  public void tags(final Set<String> tags) {
-    this.tags = tags;
-  }
-
-  public int partitionId() {
-    return partitionId;
+    return MapSerializer.deserialize(serializedCustomHeaders);
   }
 
   public Builder toBuilder() {
-    return new Builder()
+    return new Builder(serializedCustomHeaders)
         .userTaskKey(userTaskKey)
         .elementId(elementId)
         .name(name)
@@ -334,7 +140,6 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .candidateUsers(candidateUsers)
         .externalFormReference(externalFormReference)
         .processDefinitionVersion(processDefinitionVersion)
-        .customHeaders(customHeaders)
         .priority(priority)
         .tags(tags)
         .partitionId(partitionId);
@@ -363,13 +168,22 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private List<String> candidateUsers;
     private String externalFormReference;
     private Integer processDefinitionVersion;
-    private Map<String, String> customHeaders;
+    private String serializedCustomHeaders;
     private Integer priority;
     private Set<String> tags;
     private int partitionId;
 
     // Public constructor to initialize the builder
     public Builder() {}
+
+    // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
+    // customHeaders() carries the original string through unparsed instead of round-tripping it
+    // through Jackson. Package-private, not a public setter: a second public setter aliasing the
+    // same field as customHeaders(Map) would let callers silently drop one write (e.g.
+    // builder.serializedCustomHeaders(x).customHeaders(y) loses x).
+    Builder(final String serializedCustomHeaders) {
+      this.serializedCustomHeaders = serializedCustomHeaders;
+    }
 
     public static UserTaskDbModel of(
         final Function<UserTaskDbModel.Builder, ObjectBuilder<UserTaskDbModel>> fn) {
@@ -483,7 +297,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     }
 
     public Builder customHeaders(final Map<String, String> customHeaders) {
-      this.customHeaders = customHeaders;
+      serializedCustomHeaders = MapSerializer.serialize(customHeaders);
       return this;
     }
 
@@ -505,36 +319,32 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     // Build method to create the record
     @Override
     public UserTaskDbModel build() {
-      final var model =
-          new UserTaskDbModel(
-              userTaskKey,
-              elementId,
-              name,
-              processDefinitionId,
-              creationDate,
-              completionDate,
-              assignee,
-              state,
-              formKey,
-              processDefinitionKey,
-              processInstanceKey,
-              rootProcessInstanceKey,
-              businessId,
-              elementInstanceKey,
-              tenantId,
-              dueDate,
-              followUpDate,
-              externalFormReference,
-              processDefinitionVersion,
-              customHeaders,
-              priority,
-              tags,
-              partitionId);
-
-      model.candidateUsers(candidateUsers);
-      model.candidateGroups(candidateGroups);
-
-      return model;
+      return new UserTaskDbModel(
+          userTaskKey,
+          elementId,
+          name,
+          processDefinitionId,
+          creationDate,
+          completionDate,
+          assignee,
+          state,
+          formKey,
+          processDefinitionKey,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          businessId,
+          elementInstanceKey,
+          tenantId,
+          dueDate,
+          followUpDate,
+          candidateGroups,
+          candidateUsers,
+          externalFormReference,
+          processDefinitionVersion,
+          serializedCustomHeaders,
+          priority,
+          tags,
+          partitionId);
     }
   }
 
