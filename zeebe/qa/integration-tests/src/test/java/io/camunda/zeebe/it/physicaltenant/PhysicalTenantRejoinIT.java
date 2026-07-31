@@ -14,6 +14,9 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.PartitionBrokerRole;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -97,16 +100,27 @@ final class PhysicalTenantRejoinIT {
     }
   }
 
+  // uses the per-physical-tenant topology endpoint (client.newTopologyRequest()) rather than
+  // inspecting the broker bean directly, exercising the same public contract clients rely on
   private void awaitLeaderForEveryPartition(final String group) {
-    Awaitility.await("every partition of physical tenant '" + group + "' has a leader")
-        .atMost(Duration.ofSeconds(60))
-        .pollInSameThread()
-        .untilAsserted(
-            () ->
+    try (final var client = TENANTS.newClientBuilder(cluster.availableGateway(), group).build()) {
+      Awaitility.await("every partition of physical tenant '" + group + "' has a leader")
+          .atMost(Duration.ofSeconds(60))
+          .pollInSameThread()
+          .untilAsserted(
+              () -> {
+                final var topology = client.newTopologyRequest().send().join();
                 IntStream.rangeClosed(1, PARTITIONS_COUNT)
                     .forEach(
-                        partition ->
-                            assertThat(hasLeaderAmongSurvivors(group, partition, null)).isTrue()));
+                        partition -> assertThat(hasLeaderInTopology(topology, partition)).isTrue());
+              });
+    }
+  }
+
+  private static boolean hasLeaderInTopology(final Topology topology, final int partitionId) {
+    return topology.getBrokers().stream()
+        .flatMap(broker -> broker.getPartitions().stream())
+        .anyMatch(partition -> partition.getPartitionId() == partitionId && partition.isLeader());
   }
 
   private void awaitLeaderForEveryPartitionAmongSurvivors(
@@ -137,46 +151,54 @@ final class PhysicalTenantRejoinIT {
   }
 
   // asserts that, for every partition the restarted broker should host in the given group, it now
-  // reports an active raft role (FOLLOWER or LEADER) rather than INACTIVE
+  // reports an active role (FOLLOWER or LEADER) rather than INACTIVE. Uses the per-physical-tenant
+  // topology endpoint (client.newTopologyRequest()) rather than inspecting the broker bean
+  // directly, exercising the same public contract clients rely on.
   private void awaitBrokerRejoinsEveryPartition(final MemberId restarted, final String group) {
-    Awaitility.await(
-            "broker "
-                + restarted
-                + " rejoins every partition of physical tenant '"
-                + group
-                + "' in an active role")
-        .atMost(Duration.ofSeconds(90))
-        .pollInSameThread()
-        .untilAsserted(
-            () -> {
-              final var broker = cluster.brokers().get(restarted);
-              assertThat(broker.isStarted()).isTrue();
-              final var partitionManager =
-                  broker.bean(Broker.class).getBrokerContext().getPartitionManagers().get(group);
-              assertThat(partitionManager)
-                  .describedAs(
-                      "physical tenant '%s' partition manager on restarted broker %s",
-                      group, restarted)
-                  .isNotNull();
-              final var hostedPartitions =
-                  partitionManager.getRaftPartitions().stream()
-                      .map(raftPartition -> raftPartition.id().number())
-                      .collect(Collectors.toSet());
-              assertThat(hostedPartitions)
-                  .describedAs(
-                      "partitions hosted by restarted broker %s in physical tenant '%s'",
-                      restarted, group)
-                  .containsExactlyInAnyOrderElementsOf(expectedPartitions());
-              final Set<Role> roles =
-                  partitionManager.getRaftPartitions().stream()
-                      .map(RaftPartition::getRole)
-                      .collect(Collectors.toSet());
-              assertThat(roles)
-                  .describedAs(
-                      "raft roles reported by restarted broker %s in physical tenant '%s'",
-                      restarted, group)
-                  .doesNotContain((Role) null, Role.INACTIVE);
-            });
+    try (final var client = TENANTS.newClientBuilder(cluster.availableGateway(), group).build()) {
+      Awaitility.await(
+              "broker "
+                  + restarted
+                  + " rejoins every partition of physical tenant '"
+                  + group
+                  + "' in an active role")
+          .atMost(Duration.ofSeconds(90))
+          .pollInSameThread()
+          .untilAsserted(
+              () -> {
+                assertThat(cluster.brokers().get(restarted).isStarted()).isTrue();
+                final var topology = client.newTopologyRequest().send().join();
+                final var brokerInfo =
+                    topology.getBrokers().stream()
+                        .filter(broker -> broker.getMemberId().equals(restarted.id()))
+                        .findFirst()
+                        .orElse(null);
+                assertThat(brokerInfo)
+                    .describedAs(
+                        "physical tenant '%s' topology entry for restarted broker %s",
+                        group, restarted)
+                    .isNotNull();
+                final var hostedPartitions =
+                    brokerInfo.getPartitions().stream()
+                        .map(PartitionInfo::getPartitionId)
+                        .collect(Collectors.toSet());
+                assertThat(hostedPartitions)
+                    .describedAs(
+                        "partitions hosted by restarted broker %s in physical tenant '%s'",
+                        restarted, group)
+                    .containsExactlyInAnyOrderElementsOf(expectedPartitions());
+                final Set<PartitionBrokerRole> roles =
+                    brokerInfo.getPartitions().stream()
+                        .map(PartitionInfo::getRole)
+                        .collect(Collectors.toSet());
+                assertThat(roles)
+                    .describedAs(
+                        "roles reported by the topology for restarted broker %s in physical tenant"
+                            + " '%s'",
+                        restarted, group)
+                    .doesNotContain((PartitionBrokerRole) null, PartitionBrokerRole.INACTIVE);
+              });
+    }
   }
 
   // replicationFactor == brokersCount, so every broker hosts every partition of every group
