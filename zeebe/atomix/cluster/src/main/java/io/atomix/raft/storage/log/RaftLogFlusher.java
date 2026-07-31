@@ -8,9 +8,9 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Configurable flush strategy for the {@link io.atomix.raft.storage.log.RaftLog}. You can use its
@@ -18,35 +18,76 @@ import io.camunda.zeebe.util.CloseableSilently;
  *
  * <p>The default strategy is {@link DirectFlusher}, which is the safest but slowest option.
  *
+ * <p>{@link CoalescedFlusher} keeps the {@link DirectFlusher}'s durability guarantee, but elides
+ * redundant flushes and covers concurrent flush requests with a single flush. Prefer it when
+ * flushes are slow, e.g. on network-attached storage.
+ *
  * <p>The {@link NoopFlusher} is the fastest but most dangerous option, as it will defer flushing to
  * the operating system. It's then possible to run into data corruption or data loss issues. Please
  * refer to the documentation regarding this.
  *
  * <p>{@link DelayedFlusher} can be configured to provide a trade-off between performance and
  * safety. This will cause flushes to be performed in a delayed fashion. See its documentation for
- * more. You should pick this if {@link DirectFlusher} does not provide the desired performance, but
- * you still wish a lower likelihood of corruption issues than with {@link NoopFlusher}. The
- * recommended configuration would be to find the smallest possible delay with which you achieve
- * your performance goals.
+ * more. You should pick this if the durability-preserving strategies do not provide the desired
+ * performance, but you still wish a lower likelihood of corruption issues than with {@link
+ * NoopFlusher}. The recommended configuration would be to find the smallest possible delay with
+ * which you achieve your performance goals.
  */
-@FunctionalInterface
 public interface RaftLogFlusher extends CloseableSilently {
 
-  /**
-   * Signals that there is data to be flushed in the journal. The implementation may or may not
-   * immediately flush this.
-   *
-   * @param journal the journal to flush
-   */
-  void flush(final Journal journal) throws FlushException;
+  /** Shared result for flush requests which complete immediately. */
+  CompletableFuture<Void> COMPLETED = CompletableFuture.completedFuture(null);
 
   /**
-   * If this returns true, then any calls to {@link #flush(Journal)} are synchronous and immediate,
-   * and any guarantees offered by the implementation will hold after a call to {@link
-   * #flush(Journal)}.
+   * Signals that the journal should be durable at least up to the given index. The returned future
+   * completes once this flusher's durability guarantee holds for the given index: implementations
+   * which preserve Raft's durability contract complete it only after a flush covering the index
+   * succeeded, while implementations which trade durability for performance (e.g. {@link
+   * DelayedFlusher}, {@link NoopFlusher}) complete it immediately, before the data is actually on
+   * disk.
+   *
+   * <p>Results of requests which require a flush complete in call order. A request for an already
+   * durable index may complete immediately, ahead of pending earlier requests. Results may complete
+   * on a different thread than the calling thread, depending on the implementation.
+   *
+   * @param journal the journal to flush
+   * @param index the index up to which durability is requested
+   * @return a future which completes once records up to the given index may be treated as handled
+   *     according to this flusher's guarantees; it fails if the flush failed, in which case the
+   *     records must be assumed to not be durable
    */
-  default boolean isDirect() {
+  CompletableFuture<Void> flush(Journal journal, long index);
+
+  /**
+   * Signals that all records with an index greater than the given index ceased to exist, e.g.
+   * because the log was truncated after a conflict, or reset when receiving a snapshot. Pending
+   * flush results for such records must be failed instead of completed, as the records can never
+   * become durable.
+   *
+   * <p>This is always called on the same thread which appends to and truncates the log, i.e. the
+   * Raft thread.
+   *
+   * @param newLastIndex the highest index which is still part of the log
+   */
+  void onLogTruncation(long newLastIndex);
+
+  /**
+   * Returns true if {@link #flush(Journal, long)} flushes synchronously and immediately, i.e.
+   * everything written before the call is already on disk when the call returns. Callers can use
+   * this to skip flushes which would be redundant, e.g. a forced flush before taking a snapshot.
+   */
+  default boolean flushesDirectly() {
     return false;
+  }
+
+  /**
+   * Returns true if this flusher ever flushes the journal itself, either synchronously in {@link
+   * #flush(Journal, long)} or at a later point. This is false only for the {@link NoopFlusher},
+   * which never flushes: with it, the write path deliberately performs no journal I/O at all, so
+   * callers must not flush on its behalf either.
+   */
+  default boolean flushesEventually() {
+    return true;
   }
 
   @Override
@@ -59,23 +100,47 @@ public interface RaftLogFlusher extends CloseableSilently {
   final class NoopFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal ignoredJournal) {}
+    public CompletableFuture<Void> flush(final Journal journal, final long index) {
+      return COMPLETED;
+    }
+
+    @Override
+    public void onLogTruncation(final long newLastIndex) {
+      // nothing to do - flush results complete immediately, so there are never pending results
+    }
+
+    @Override
+    public boolean flushesEventually() {
+      return false;
+    }
   }
 
   /**
    * An implementation of {@link RaftLogFlusher} which flushes immediately in a blocking fashion.
-   * After any calls to {@link #flush(Journal)}, any data written before the call is guaranteed to
-   * be on disk.
+   * The returned future is always completed, and completed successfully only if the data written
+   * before the call is guaranteed to be on disk.
    */
   final class DirectFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal journal) throws FlushException {
-      journal.flush();
+    public CompletableFuture<Void> flush(final Journal journal, final long index) {
+      try {
+        journal.flush();
+        return COMPLETED;
+      } catch (final Exception e) {
+        // any failure, not just the expected journal exceptions, means the records cannot be
+        // treated as durable; callers turn this into a rejected append or a leader step-down
+        return CompletableFuture.failedFuture(e);
+      }
     }
 
     @Override
-    public boolean isDirect() {
+    public void onLogTruncation(final long newLastIndex) {
+      // nothing to do - flushes are synchronous, so there are never pending flush results
+    }
+
+    @Override
+    public boolean flushesDirectly() {
       return true;
     }
   }

@@ -17,11 +17,13 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -34,17 +36,23 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.utils.concurrent.Scheduler;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -215,6 +223,76 @@ class RaftLogTest {
   }
 
   @Test
+  void shouldNotDeleteEntriesAnnouncedAsCommitted() {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final ApplicationEntry secondApplicationEntry =
+        createApplicationEntryAfter(firstApplicationEntry);
+    final var deleteIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var announcedIndex =
+        raftlog
+            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .index();
+
+    // when - the leader announced the last entry as committed, but it is not durable yet, so the
+    // commit index does not cover it
+    raftlog.announceCommitIndex(announcedIndex);
+
+    // then
+    assertThat(raftlog.getCommitIndex()).isLessThan(announcedIndex);
+    assertThatThrownBy(() -> raftlog.deleteAfter(deleteIndex))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotResetBelowAnnouncedCommitIndex() {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final ApplicationEntry secondApplicationEntry =
+        createApplicationEntryAfter(firstApplicationEntry);
+    final var resetIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var announcedIndex =
+        raftlog
+            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .index();
+
+    // when - the leader announced the last entry as committed, but it is not durable yet, so the
+    // commit index does not cover it
+    raftlog.announceCommitIndex(announcedIndex);
+
+    // then
+    assertThatThrownBy(() -> raftlog.reset(resetIndex)).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldKeepHighestAnnouncedCommitIndex() {
+    // given
+    raftlog.announceCommitIndex(2);
+
+    // when - a lower commit index is announced afterwards, e.g. by an outdated request
+    raftlog.announceCommitIndex(1);
+
+    // then - the announced index never decreases, so it keeps protecting the entries
+    assertThat(raftlog.getAnnouncedCommitIndex()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldIncreaseTruncationGenerationOnEveryTruncation() throws CheckedJournalException {
+    // given
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final var initialGeneration = raftlog.getTruncationGeneration();
+
+    // when
+    raftlog.deleteAfter(1);
+    final var generationAfterDelete = raftlog.getTruncationGeneration();
+    raftlog.reset(5);
+
+    // then - every truncation is detectable by operations which completed asynchronously
+    assertThat(generationAfterDelete).isGreaterThan(initialGeneration);
+    assertThat(raftlog.getTruncationGeneration()).isGreaterThan(generationAfterDelete);
+  }
+
+  @Test
   void shouldReset() {
     // given
     raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
@@ -254,17 +332,64 @@ class RaftLogTest {
   @Nested
   final class FlushTest {
     @Test
-    void shouldUseFlusher() throws CheckedJournalException {
+    void shouldUseFlusher() {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
       final var log = new RaftLog(journal, flusher);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
-      verify(flusher, times(1)).flush(journal);
+      verify(flusher, times(1)).flush(journal, 3L);
+      assertThat(result).isCompleted();
+    }
+
+    @Test
+    void shouldFlushSyncViaFlusher() throws CheckedJournalException {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.completedFuture(null));
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.flushSync(3L);
+
+      // then
+      verify(flusher, times(1)).flush(journal, 3L);
+    }
+
+    @Test
+    void shouldThrowFlushExceptionWhenSyncFlushFails() {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      final var failure = new FlushException(new IOException("failed to sync"));
+      when(flusher.flush(journal, 3L)).thenReturn(CompletableFuture.failedFuture(failure));
+      final var log = new RaftLog(journal, flusher);
+
+      // when - then
+      assertThatThrownBy(() -> log.flushSync(3L)).isSameAs(failure);
+    }
+
+    @Test
+    void shouldFailFlushResultOnUnexpectedException() throws CheckedJournalException {
+      // given - a failure outside the expected journal exceptions, e.g. from the metastore
+      final var journal = mock(Journal.class);
+      final var log = new RaftLog(journal, new DirectFlusher());
+      final var failure = new IllegalStateException("unexpected");
+      doThrow(failure).when(journal).flush();
+
+      // when
+      final var result = log.flush(3L);
+
+      // then - the failure is reported through the result instead of thrown, so that callers
+      // reject the append or step down instead of crashing the raft thread
+      assertThat(result).isCompletedExceptionally();
+      assertThatThrownBy(() -> log.flushSync(3L)).isSameAs(failure);
     }
 
     @Test
@@ -282,6 +407,58 @@ class RaftLogTest {
     }
 
     @Test
+    void shouldFlushTruncationImmediatelyWithDelayedFlusher() throws CheckedJournalException {
+      // given - a flusher which flushes eventually, but not when requested to
+      final var journal = mock(Journal.class);
+      final var flusher = spy(new DelayedFlusher(mock(Scheduler.class), Duration.ofSeconds(5)));
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.deleteAfter(2);
+
+      // then - the truncation is flushed directly, bypassing the flush strategy
+      verify(flusher, times(1)).onLogTruncation(2);
+      verify(journal, times(1)).deleteAfter(2);
+      verify(journal, times(1)).flush();
+    }
+
+    @Test
+    void shouldNotFlushTruncationWhenFlushingIsDisabled() throws CheckedJournalException {
+      // given - a flusher which never flushes, i.e. flushing is disabled
+      final var journal = mock(Journal.class);
+      final var flusher = spy(new NoopFlusher());
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.deleteAfter(2);
+
+      // then - no i/o is done on the write path, so a transient flush error cannot reject the
+      // truncation
+      verify(flusher, times(1)).onLogTruncation(2);
+      verify(journal, times(1)).deleteAfter(2);
+      verify(journal, never()).flush();
+    }
+
+    @Test
+    void shouldOnlyReportDirectFlushingForTheDirectFlusher() {
+      // given
+      final var journal = mock(Journal.class);
+
+      // when - then - only the direct flusher guarantees durability synchronously, so only for it
+      // callers may skip flushing, e.g. before taking a snapshot
+      assertThat(new RaftLog(journal, new DirectFlusher()).flushesDirectly()).isTrue();
+      assertThat(new RaftLog(journal, new NoopFlusher()).flushesDirectly()).isFalse();
+      assertThat(
+              new RaftLog(journal, new DelayedFlusher(mock(Scheduler.class), Duration.ofSeconds(5)))
+                  .flushesDirectly())
+          .isFalse();
+      assertThat(
+              new RaftLog(journal, new CoalescedFlusher(mock(ThreadContext.class)))
+                  .flushesDirectly())
+          .isFalse();
+    }
+
+    @Test
     void shouldFlushDirectly() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
@@ -289,25 +466,27 @@ class RaftLogTest {
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
       verify(journal, times(1)).flush();
+      assertThat(result).isCompleted();
     }
 
     @Test
-    void shouldDisableFlush() throws CheckedJournalException {
+    void shouldDisableFlush() {
       // given
       final var journal = mock(Journal.class);
       final var flusher = spy(new NoopFlusher());
       final var log = new RaftLog(journal, flusher);
 
       // when
-      log.flush();
+      final var result = log.flush(3L);
 
       // then
-      verify(flusher, times(1)).flush(journal);
-      verify(journal, never()).flush();
+      verify(flusher, times(1)).flush(journal, 3L);
+      verifyNoInteractions(journal);
+      assertThat(result).isCompleted();
     }
   }
 }
