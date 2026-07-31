@@ -286,6 +286,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .getStatus();
    * </pre>
    *
+   * <p>Being cluster-wide, the status is served outside the per-physical-tenant path. The request
+   * therefore fails against a REST address that is a proxy for a tenant-prefixed URL, unless that
+   * proxy also forwards the cluster-scoped paths — see {@link
+   * CamundaClientBuilder#prefixPhysicalTenantPath(boolean)}.
+   *
    * @return the request where you must call {@code send()}
    */
   StatusRequestStep1 newStatusRequest();
