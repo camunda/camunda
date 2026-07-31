@@ -1001,10 +1001,9 @@ final class CheckpointRecordsProcessorTest {
     assertThat(result.postCommitTasks()).hasSize(1);
 
     // when — the post-commit task is executed
-    final var success = result.executePostCommitTasks();
+    result.executePostCommitTasks();
 
     // then — task succeeds (fire-and-forget) and sync metadata is called
-    assertThat(success).isTrue();
     verify(backupManager).syncMetadata(any(), any());
   }
 
@@ -1103,10 +1102,9 @@ final class CheckpointRecordsProcessorTest {
     assertThat(result.postCommitTasks()).hasSize(1);
 
     // when — the post-commit task is executed
-    final var success = result.executePostCommitTasks();
+    result.executePostCommitTasks();
 
     // then — task succeeds and sync metadata is called
-    assertThat(success).isTrue();
     verify(backupManager).syncMetadata(any(), any());
   }
 

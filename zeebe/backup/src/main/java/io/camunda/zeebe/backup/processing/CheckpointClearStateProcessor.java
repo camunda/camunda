@@ -70,11 +70,7 @@ public final class CheckpointClearStateProcessor {
     // Schedule post-commit task to sync metadata (will write empty metadata to backup store)
     final var checkpoints = checkpointMetadataState.getAllCheckpoints();
     final var ranges = backupRangeState.getAllRanges();
-    resultBuilder.appendPostCommitTask(
-        () -> {
-          backupManager.syncMetadata(checkpoints, ranges);
-          return true;
-        });
+    resultBuilder.appendPostCommitTask(() -> backupManager.syncMetadata(checkpoints, ranges));
 
     return resultBuilder.build();
   }

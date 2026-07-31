@@ -204,11 +204,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
     sideEffectRunner =
         new SideEffectRunner(
-            context.getPartitionId(),
-            actor,
-            processingMetrics,
-            context.getCommandResponseWriter(),
-            abortCondition);
+            context.getPartitionId(), actor, processingMetrics, context.getCommandResponseWriter());
     context.getLogStream().registerCommitListener(sideEffectRunner);
     final EventFilter commandFilter =
         event -> {

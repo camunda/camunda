@@ -110,11 +110,7 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
 
   private void applyClockModification(final long key, final ClockRecord clockRecord) {
     final var pinnedAt = Instant.ofEpochMilli(clockRecord.getTime());
-    final SideEffectProducer sideEffect =
-        () -> {
-          clock.pinAt(pinnedAt);
-          return true;
-        };
+    final SideEffectProducer sideEffect = () -> clock.pinAt(pinnedAt);
     sideEffectWriter.appendSideEffect(sideEffect);
     stateWriter.appendFollowUpEvent(key, ClockIntent.PINNED, clockRecord);
   }

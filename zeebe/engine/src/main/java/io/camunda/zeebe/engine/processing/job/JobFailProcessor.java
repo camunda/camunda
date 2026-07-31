@@ -137,7 +137,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
-            return true;
           });
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);

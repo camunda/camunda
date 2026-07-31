@@ -18,7 +18,6 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
-import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +29,13 @@ import org.slf4j.LoggerFactory;
  * thread-safe.
  */
 final class SideEffectRunner implements CommitListener {
-  private static final long RETRY_DELAY_MILLIS = 1;
-  private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-  private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.";
+  private static final Logger LOG = LoggerFactory.getLogger(SideEffectRunner.class);
 
   private final int partitionId;
   private final ActorControl actor;
   private final ProcessingMetrics processingMetrics;
   private final CommandResponseWriter responseWriter;
   private final Queue<SideEffects> sideEffects;
-  private final BooleanSupplier abortCondition;
   private long highestCommittedPosition = StreamProcessor.UNSET_POSITION;
   private boolean executingSideEffects;
 
@@ -48,12 +43,10 @@ final class SideEffectRunner implements CommitListener {
       final int partitionId,
       final ActorControl actor,
       final ProcessingMetrics processingMetrics,
-      final CommandResponseWriter responseWriter,
-      final BooleanSupplier abortCondition) {
+      final CommandResponseWriter responseWriter) {
     this.actor = actor;
     this.processingMetrics = processingMetrics;
     this.responseWriter = responseWriter;
-    this.abortCondition = abortCondition;
     this.partitionId = partitionId;
     sideEffects = new ArrayDeque<>();
   }
@@ -95,18 +88,23 @@ final class SideEffectRunner implements CommitListener {
     }
 
     executingSideEffects = true;
-    actor.submit(() -> executeSideEffectsWithRetry(nextSideEffects));
+    actor.submit(() -> executeSideEffects(nextSideEffects));
   }
 
-  private void executeSideEffectsWithRetry(final SideEffects sideEffects) {
+  private void executeSideEffects(final SideEffects sideEffects) {
     try {
-      if (executeSideEffects(sideEffects) || abortCondition.getAsBoolean()) {
-        completeSideEffects(sideEffects);
-      } else {
-        actor.schedule(RETRY_DELAY_MILLIS, () -> executeSideEffectsWithRetry(sideEffects));
+      sendResponses(sideEffects.responses());
+      try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+        // The flush result is intentionally ignored: side effects are executed exactly once and
+        // cannot be retried, as a retry could duplicate effects that already partially succeeded.
+        sideEffects.postCommitTask().flush();
       }
     } catch (final Exception exception) {
-      LOG.error(ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, sideEffects.position(), exception);
+      LOG.error(
+          "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
+          sideEffects.position(),
+          exception);
+    } finally {
       completeSideEffects(sideEffects);
     }
   }
@@ -118,13 +116,6 @@ final class SideEffectRunner implements CommitListener {
       completedSideEffects.completionCallback().run();
     } finally {
       executeNextSideEffects();
-    }
-  }
-
-  private boolean executeSideEffects(final SideEffects sideEffects) {
-    sendResponses(sideEffects.responses());
-    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
-      return sideEffects.postCommitTask().flush();
     }
   }
 
@@ -166,16 +157,10 @@ final class SideEffectRunner implements CommitListener {
     }
 
     @Override
-    public boolean flush() {
-      boolean aggregatedResult = true;
+    public void flush() {
       for (final PostCommitTask task : postCommitTasks) {
-        try {
-          aggregatedResult = aggregatedResult && task.flush();
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
+        task.flush();
       }
-      return aggregatedResult;
     }
   }
 }

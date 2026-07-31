@@ -40,19 +40,11 @@ public interface ProcessingResult {
    */
   List<PostCommitTask> getPostCommitTasks();
 
-  /**
-   * @return <code>false</code> to indicate that the side effect could not be applied successfully
-   */
-  default boolean executePostCommitTasks() {
-    boolean aggregatedResult = true;
+  /** Executes the post-commit tasks of this processing result. */
+  default void executePostCommitTasks() {
     for (final PostCommitTask task : getPostCommitTasks()) {
-      try {
-        aggregatedResult = aggregatedResult && task.flush();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+      task.flush();
     }
-    return aggregatedResult;
   }
 
   /**
