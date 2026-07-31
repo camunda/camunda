@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
@@ -55,6 +57,11 @@ public class AuditLogCleanupHandler<R extends RecordValue>
       return auditLogEntityType != AuditLogEntityType.DECISION;
     }
     return false;
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
+    return indexLocator.locate(getIndexName());
   }
 
   @VisibleForTesting

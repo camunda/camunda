@@ -19,6 +19,11 @@ public class JobAuditLogTransformer implements AuditLogTransformer<JobRecordValu
   }
 
   @Override
+  public Class<JobRecordValue> getRecordValueType() {
+    return JobRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<JobRecordValue> record, final AuditLogEntry log) {
     log.setJobKey(record.getKey());
     final var value = record.getValue();

@@ -23,6 +23,8 @@ import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.operation.AbstractOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -106,13 +108,17 @@ public class ExportHandlerArchTest {
           .and()
           .doNotHaveModifier(JavaModifier.ABSTRACT)
           .and()
-          // operation handler needs to be excluded as it needs slight custom handling
-          .areNotAssignableTo(AbstractOperationHandler.class)
+          .areNotAssignableTo(
+              DescribedPredicate.or(
+                  // operation handler needs to be excluded as it needs slight custom handling
+                  Predicates.assignableTo(AbstractOperationHandler.class),
+                  // audit log handlers also have custom handling
+                  Predicates.assignableTo(AuditLogHandler.class),
+                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
           .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
           .resideOutsideOfPackages(
-              "io.camunda.exporter.handlers.auditlog..",
               "io.camunda.exporter.handlers.batchoperation..",
               "io.camunda.exporter.handlers.waitstate..")
           .should()

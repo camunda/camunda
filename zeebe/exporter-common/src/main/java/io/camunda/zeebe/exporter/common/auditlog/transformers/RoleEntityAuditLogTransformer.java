@@ -19,6 +19,11 @@ public class RoleEntityAuditLogTransformer implements AuditLogTransformer<RoleRe
   }
 
   @Override
+  public Class<RoleRecordValue> getRecordValueType() {
+    return RoleRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<RoleRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(value.getRoleId())
