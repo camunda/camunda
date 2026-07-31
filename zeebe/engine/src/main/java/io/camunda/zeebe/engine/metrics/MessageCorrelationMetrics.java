@@ -7,16 +7,23 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.AskOutcome;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.MessageCorrelationKeyNames;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseResult;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.RequestOutcome;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,8 +35,15 @@ import java.util.Objects;
  * <p>All recording happens on live leader-only paths (command processors, behaviors and
  * schedulers), never in event appliers, so replay does not double-count. Counters tagged by a
  * closed enum are registered lazily per tag value using the {@link EnumMap} idiom.
+ *
+ * <p>The cross-partition ask-duration timer (M7) keeps an in-memory {@link Timer.Sample} per
+ * outstanding ask. Those samples are mutated only from the processing actor (the ask is started by
+ * a behavior, stopped by the STARTED reply processor or the message-expiry processor, all on {@code
+ * P_K}), never from the scheduler actors that touch the counters, so a plain {@link HashMap} is
+ * safe. They are dropped on recovery ({@link #onRecovered}): samples from a previous leadership
+ * term would otherwise record meaningless durations.
  */
-public final class MessageCorrelationMetrics {
+public final class MessageCorrelationMetrics implements StreamProcessorLifecycleAware {
 
   private final MeterRegistry registry;
 
@@ -40,6 +54,14 @@ public final class MessageCorrelationMetrics {
   private final Map<ReleaseResult, Counter> lockReleaseCounters =
       new EnumMap<>(ReleaseResult.class);
   private final Map<BlockReason, Counter> blockedCounters = new EnumMap<>(BlockReason.class);
+  private final Map<AskOutcome, Timer> askDurationTimers = new EnumMap<>(AskOutcome.class);
+
+  /**
+   * Outstanding ask-duration samples keyed by {@code messageKey → processDefinitionKey}. A single
+   * message can fan out to several process definitions, and expiry must close all of them by
+   * messageKey alone, hence the nested map.
+   */
+  private final Map<Long, Map<Long, Timer.Sample>> pendingAskSamples = new HashMap<>();
 
   private final Counter askCounter;
   private final Counter askRetryCounter;
@@ -152,6 +174,66 @@ public final class MessageCorrelationMetrics {
                     MessageCorrelationKeyNames.REASON.asString(),
                     r.getLabel()))
         .increment();
+  }
+
+  /**
+   * M7: starts the ask-duration timer for a cross-partition ask newly dispatched from {@code P_K}.
+   * No-op if a sample for this {@code (messageKey, processDefinitionKey)} already exists, so
+   * retries keep accruing against the original dispatch rather than restarting the clock.
+   */
+  public void startCrossPartitionAsk(final long messageKey, final long processDefinitionKey) {
+    pendingAskSamples
+        .computeIfAbsent(messageKey, k -> new HashMap<>())
+        .computeIfAbsent(processDefinitionKey, k -> Timer.start(registry));
+  }
+
+  /**
+   * M7: stops the ask-duration timer with {@code outcome=started} when {@code P_K} processes the
+   * STARTED reply. No-op if no sample is tracked (e.g. after a leader change cleared it).
+   */
+  public void completeCrossPartitionAskStarted(
+      final long messageKey, final long processDefinitionKey) {
+    final var byProcessDefinition = pendingAskSamples.get(messageKey);
+    if (byProcessDefinition == null) {
+      return;
+    }
+    final var sample = byProcessDefinition.remove(processDefinitionKey);
+    if (byProcessDefinition.isEmpty()) {
+      pendingAskSamples.remove(messageKey);
+    }
+    if (sample != null) {
+      sample.stop(askDurationTimer(AskOutcome.STARTED));
+    }
+  }
+
+  /**
+   * M7: stops every outstanding ask-duration timer for an expiring message with {@code
+   * outcome=expired} on {@code P_K}. Called for every expiring buffered message; a no-op for the
+   * common case with no pending cross-partition ask.
+   */
+  public void expireCrossPartitionAsks(final long messageKey) {
+    final var byProcessDefinition = pendingAskSamples.remove(messageKey);
+    if (byProcessDefinition == null) {
+      return;
+    }
+    final var timer = askDurationTimer(AskOutcome.EXPIRED);
+    byProcessDefinition.values().forEach(sample -> sample.stop(timer));
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    // Samples belong to the previous leadership term; recording them would produce bogus durations.
+    pendingAskSamples.clear();
+  }
+
+  private Timer askDurationTimer(final AskOutcome outcome) {
+    return askDurationTimers.computeIfAbsent(
+        outcome,
+        o ->
+            MicrometerUtil.buildTimer(MessageCorrelationMetricsDoc.CROSS_PARTITION_ASK_DURATION)
+                .tag(MessageCorrelationKeyNames.OUTCOME.asString(), o.getLabel())
+                .minimumExpectedValue(Duration.ofMillis(10))
+                .register(registry));
   }
 
   private Counter registerCounter(final MessageCorrelationMetricsDoc doc) {

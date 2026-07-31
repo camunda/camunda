@@ -18,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -44,6 +46,8 @@ public final class MessageBatchExpireProcessorTest {
   private final TypedCommandWriter commandWriter = Mockito.mock(TypedCommandWriter.class);
   private final MessageState messageState = Mockito.mock(MessageState.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.systemDefault());
+  private final MessageCorrelationMetrics metrics =
+      new MessageCorrelationMetrics(new SimpleMeterRegistry());
 
   @Test
   public void shouldExpireMessagesFromState() {
@@ -198,7 +202,13 @@ public final class MessageBatchExpireProcessorTest {
     // default: always have space unless explicitly stubbed otherwise per test
     when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
     return new MessageBatchExpireProcessor(
-        stateWriter, commandWriter, messageState, batchLimit, appendMessageBodyOnExpired, clock);
+        stateWriter,
+        commandWriter,
+        messageState,
+        batchLimit,
+        appendMessageBodyOnExpired,
+        clock,
+        metrics);
   }
 
   private UnwrittenRecord emptyBatchRecord() {

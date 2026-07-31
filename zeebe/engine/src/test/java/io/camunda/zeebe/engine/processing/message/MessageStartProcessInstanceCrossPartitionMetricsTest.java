@@ -9,17 +9,20 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +51,10 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
       "zeebe.message.start.cross.partition.requests.total";
   private static final String REPLIES_METRIC = "zeebe.message.start.cross.partition.replies.total";
   private static final String ASKS_METRIC = "zeebe.message.start.cross.partition.asks.total";
+  private static final String ASK_DURATION_METRIC =
+      "zeebe.message.start.cross.partition.asks.duration";
+
+  private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
 
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -163,6 +170,80 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
         .isGreaterThanOrEqualTo(1.0);
   }
 
+  @Test
+  public void shouldRecordAskDurationAsStartedForCleanCrossPartitionStart() {
+    // given
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(MESSAGE_START_PROCESS);
+
+    // when the cross-partition handshake completes successfully
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .publish();
+
+    // and P_K processes the STARTED reply (which writes CORRELATED for the start subscription)
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CORRELATED)
+        .withMessageName(MESSAGE_NAME)
+        .getFirst();
+
+    // then the ask duration is recorded once on P_K, tagged started (M7)
+    final int pK = partitionFor(CORRELATION_KEY);
+    assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "started"))
+        .as("M7: the cross-partition ask duration is recorded as started on P_K")
+        .isEqualTo(1L);
+    assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "expired"))
+        .as("M7: a clean start records no expired sample")
+        .isZero();
+  }
+
+  @Test
+  public void shouldRecordAskDurationAsExpiredWhenBlockedMessageExpiresAtTtl() {
+    // given a holder PI that keeps the businessId held on P_B so every ask is rejected
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(DUAL_START_PROCESS);
+    final long holderKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .onPartition(partitionFor(BUSINESS_ID))
+            .withBusinessId(BUSINESS_ID)
+            .create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .filter(r -> r.getValue().getProcessInstanceKey() == holderKey)
+        .getFirst();
+
+    // when a message-start publish asks P_B for the same businessId with a finite TTL
+    final var blocked =
+        engine
+            .message()
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
+            .withBusinessId(BUSINESS_ID)
+            .withTimeToLive(MESSAGE_TTL.toMillis())
+            .publish();
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
+        .getFirst();
+
+    // and time advances past the messageDeadline so the buffered message expires on P_K
+    engine.increaseTime(
+        MESSAGE_TTL.plus(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
+    RecordingExporter.messageRecords(MessageIntent.EXPIRED)
+        .withRecordKey(blocked.getKey())
+        .getFirst();
+
+    // then the ask duration is recorded on P_K tagged expired, never started (M7)
+    final int pK = partitionFor(CORRELATION_KEY);
+    assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "expired"))
+        .as("M7: a never-freed holder lets the ask duration terminate as expired on P_K")
+        .isGreaterThanOrEqualTo(1L);
+    assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "started"))
+        .as("M7: a message that never starts records no started sample")
+        .isZero();
+  }
+
   private double counter(
       final int partition, final String name, final String tagKey, final String tagValue) {
     var search = engine.getMeterRegistry(partition).find(name);
@@ -171,6 +252,16 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
     }
     final var counter = search.counter();
     return counter != null ? counter.count() : 0.0;
+  }
+
+  private long timerCount(
+      final int partition, final String name, final String tagKey, final String tagValue) {
+    var search = engine.getMeterRegistry(partition).find(name);
+    if (tagKey != null) {
+      search = search.tag(tagKey, tagValue);
+    }
+    final var timer = search.timer();
+    return timer != null ? timer.count() : 0L;
   }
 
   private void deployAndAwaitStartEventSubscriptionsOnAllPartitions(

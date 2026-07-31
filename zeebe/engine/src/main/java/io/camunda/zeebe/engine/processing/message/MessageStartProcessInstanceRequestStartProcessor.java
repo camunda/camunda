@@ -100,6 +100,8 @@ public final class MessageStartProcessInstanceRequestStartProcessor
     final var reply = record.getValue();
 
     metrics.crossPartitionReply(ReplyOutcome.STARTED);
+    metrics.completeCrossPartitionAskStarted(
+        reply.getMessageKey(), reply.getProcessDefinitionKey());
 
     // Look up the buffered message once: both the CORRELATED applier and the EXPIRED applier need
     // it (CORRELATED writes a foreign-key reference into MESSAGE_KEY; EXPIRED removes the buffered

@@ -106,7 +106,8 @@ public final class MessageEventProcessors {
                 messageState,
                 config.getMessagesTtlCheckerBatchLimit(),
                 featureFlags.enableMessageBodyOnExpired(),
-                clock))
+                clock,
+                metrics))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(
@@ -277,6 +278,9 @@ public final class MessageEventProcessors {
                 scheduledTaskStateFactory.get().getMessageState(),
                 config::getMessageStartLockReleasePollInterval,
                 config::getMessageStartLockReleasePollBatchLimit,
-                metrics));
+                metrics))
+        // Clears the recorder's in-memory ask-duration samples on recovery: they belong to the
+        // previous leadership term and must not be recorded (M7).
+        .withListener(metrics);
   }
 }
