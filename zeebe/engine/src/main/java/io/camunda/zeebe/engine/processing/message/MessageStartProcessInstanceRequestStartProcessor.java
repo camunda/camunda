@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -73,6 +75,7 @@ public final class MessageStartProcessInstanceRequestStartProcessor
 
   private final StateWriter stateWriter;
   private final MessageState messageState;
+  private final MessageCorrelationMetrics metrics;
   private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
   private final MessageStartEventSubscriptionRecord correlatedSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
@@ -82,9 +85,11 @@ public final class MessageStartProcessInstanceRequestStartProcessor
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageState messageState,
-      final MessageCorrelationState messageCorrelationState) {
+      final MessageCorrelationState messageCorrelationState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
     this.messageState = messageState;
+    this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, responseWriter, messageCorrelationState, messageState);
@@ -93,6 +98,8 @@ public final class MessageStartProcessInstanceRequestStartProcessor
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
+
+    metrics.crossPartitionReply(ReplyOutcome.STARTED);
 
     // Look up the buffered message once: both the CORRELATED applier and the EXPIRED applier need
     // it (CORRELATED writes a foreign-key reference into MESSAGE_KEY; EXPIRED removes the buffered

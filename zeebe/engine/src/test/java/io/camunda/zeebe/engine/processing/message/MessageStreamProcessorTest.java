@@ -25,6 +25,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
@@ -119,7 +121,8 @@ public final class MessageStreamProcessorTest {
               routingInfo,
               mock(AuthorizationCheckPort.class),
               mock(LazyTokenClaimsConverter.class),
-              mock(EngineSecurityConfig.class));
+              mock(EngineSecurityConfig.class),
+              new MessageCorrelationMetrics(new SimpleMeterRegistry()));
           return typedRecordProcessors;
         });
   }

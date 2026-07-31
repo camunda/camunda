@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
@@ -166,6 +167,8 @@ public final class EngineProcessors {
         new ProcessDefinitionMetrics(
             typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var messageCorrelationMetrics =
+        new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -262,6 +265,7 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics,
+            messageCorrelationMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             cslCheck);
 
@@ -311,7 +315,8 @@ public final class EngineProcessors {
         routingInfo,
         authzService,
         claimsConverter,
-        securityConfig);
+        securityConfig,
+        messageCorrelationMetrics);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -608,6 +613,7 @@ public final class EngineProcessors {
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
+      final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final CslAuthorizationCheck cslCheck) {
     return new BpmnBehaviorsImpl(
@@ -624,6 +630,7 @@ public final class EngineProcessors {
         expressionLanguageMetrics,
         config,
         incidentMetrics,
+        messageCorrelationMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         cslCheck);
   }
@@ -758,7 +765,8 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final AuthorizationCheckPort authzService,
       final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final MessageCorrelationMetrics messageCorrelationMetrics) {
     MessageEventProcessors.addMessageProcessors(
         partitionId,
         bpmnBehaviors,
@@ -774,7 +782,8 @@ public final class EngineProcessors {
         routingInfo,
         authzService,
         claimsConverter,
-        securityConfig);
+        securityConfig,
+        messageCorrelationMetrics);
   }
 
   private static void addDecisionProcessors(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -79,7 +80,8 @@ public final class MessageCorrelationCorrelateProcessor
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final MessageCorrelationMetrics metrics) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -105,7 +107,8 @@ public final class MessageCorrelationCorrelateProcessor
             bannedInstanceState,
             businessIdUniquenessEnabled,
             routingInfo,
-            partitionId);
+            partitionId,
+            metrics);
   }
 
   @Override

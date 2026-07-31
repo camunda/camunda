@@ -18,6 +18,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
   private MessageState mockMessageState;
   private TypedResponseWriter mockResponseWriter;
   private MessageCorrelationState mockMessageCorrelationState;
+  private SimpleMeterRegistry meterRegistry;
+  private MessageCorrelationMetrics metrics;
 
   @BeforeEach
   void setUp() {
@@ -66,22 +70,44 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     mockMessageState = mock(MessageState.class);
     mockResponseWriter = mock(TypedResponseWriter.class);
     mockMessageCorrelationState = mock(MessageCorrelationState.class);
+    meterRegistry = new SimpleMeterRegistry();
+    metrics = new MessageCorrelationMetrics(meterRegistry);
+  }
+
+  private double replyCount(final String outcome) {
+    return meterRegistry
+        .get("zeebe.message.start.cross.partition.replies.total")
+        .tag("outcome", outcome)
+        .counter()
+        .count();
   }
 
   private MessageStartProcessInstanceRequestStartProcessor startProcessor() {
     return new MessageStartProcessInstanceRequestStartProcessor(
-        mockStateWriter, mockResponseWriter, mockMessageState, mockMessageCorrelationState);
+        mockStateWriter,
+        mockResponseWriter,
+        mockMessageState,
+        mockMessageCorrelationState,
+        metrics);
   }
 
   private MessageStartProcessInstanceRequestRejectUniquenessProcessor uniquenessProcessor() {
     return new MessageStartProcessInstanceRequestRejectUniquenessProcessor(
-        mockStateWriter, mockResponseWriter, mockMessageCorrelationState, mockMessageState);
+        mockStateWriter,
+        mockResponseWriter,
+        mockMessageCorrelationState,
+        mockMessageState,
+        metrics);
   }
 
   private MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor
       noSubscriptionProcessor() {
     return new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
-        mockStateWriter, mockResponseWriter, mockMessageCorrelationState, mockMessageState);
+        mockStateWriter,
+        mockResponseWriter,
+        mockMessageCorrelationState,
+        mockMessageState,
+        metrics);
   }
 
   @SuppressWarnings("unchecked")
@@ -155,6 +181,9 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
 
       verify(mockStateWriter)
           .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageIntent.EXPIRED), any());
+
+      // and the STARTED reply outcome is counted (M2)
+      assertThat(replyCount("started")).isEqualTo(1.0);
     }
 
     @Test
@@ -271,6 +300,9 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
               eq(record.getKey()),
               eq(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED),
               any());
+
+      // and the uniqueness-rejection reply outcome is counted (M2)
+      assertThat(replyCount("rejected_uniqueness")).isEqualTo(1.0);
     }
 
     @Test
@@ -350,6 +382,9 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
               eq(record.getKey()),
               eq(MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED),
               any());
+
+      // and the no-subscription-rejection reply outcome is counted (M2)
+      assertThat(replyCount("rejected_no_subscription")).isEqualTo(1.0);
     }
 
     @Test

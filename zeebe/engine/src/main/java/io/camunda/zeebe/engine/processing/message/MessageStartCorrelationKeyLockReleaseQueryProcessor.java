@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -56,18 +58,21 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
   private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
 
   public MessageStartCorrelationKeyLockReleaseQueryProcessor(
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final MessageState messageState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final Writers writers,
+      final MessageCorrelationMetrics metrics) {
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
     this.messageState = messageState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
+    this.metrics = metrics;
   }
 
   @Override
@@ -82,6 +87,7 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
         continue;
       }
       commandSender.sendCorrelationKeyLockRelease(query.getRequestKey(), holder);
+      metrics.lockReleaseSent(ReleaseTrigger.RECONCILIATION);
       cleanUpOriginIfLeftover(holder);
     }
   }

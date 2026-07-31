@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -48,14 +50,17 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
           + " instance per business ID is allowed for message start events.";
 
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
   private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
 
   public MessageStartProcessInstanceRequestRejectUniquenessProcessor(
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageCorrelationState messageCorrelationState,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
+    this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, responseWriter, messageCorrelationState, messageState);
@@ -66,6 +71,7 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
     final var reply = record.getValue();
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, reply);
+    metrics.crossPartitionReply(ReplyOutcome.REJECTED_UNIQUENESS);
 
     deferredCorrelationResponse.writeNotCorrelatedResponse(
         reply,

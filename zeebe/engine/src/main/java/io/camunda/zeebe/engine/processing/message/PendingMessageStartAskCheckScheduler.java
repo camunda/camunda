@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.MessageStartProcessInstanceAsk;
@@ -59,6 +60,7 @@ public final class PendingMessageStartAskCheckScheduler
   private final MessageStartProcessInstanceAskState state;
   private final RoutingInfo routingInfo;
   private final Supplier<Duration> retryInterval;
+  private final MessageCorrelationMetrics metrics;
 
   private InstantSource clock;
 
@@ -75,11 +77,13 @@ public final class PendingMessageStartAskCheckScheduler
       final SubscriptionCommandSender commandSender,
       final MessageStartProcessInstanceAskState state,
       final RoutingInfo routingInfo,
-      final Supplier<Duration> retryInterval) {
+      final Supplier<Duration> retryInterval,
+      final MessageCorrelationMetrics metrics) {
     this.commandSender = commandSender;
     this.state = state;
     this.routingInfo = routingInfo;
     this.retryInterval = retryInterval;
+    this.metrics = metrics;
   }
 
   @Override
@@ -139,6 +143,7 @@ public final class PendingMessageStartAskCheckScheduler
 
     // Update the sent time to prevent it from being re-sent too soon
     state.updateLastSentTime(ask.getMessageKey(), ask.getProcessDefinitionKey(), now);
+    metrics.crossPartitionAskRetried();
   }
 
   @Override

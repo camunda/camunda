@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -45,14 +47,17 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
 
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
   private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
 
   public MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageCorrelationState messageCorrelationState,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
+    this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, responseWriter, messageCorrelationState, messageState);
@@ -63,6 +68,7 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
     final var reply = record.getValue();
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, reply);
+    metrics.crossPartitionReply(ReplyOutcome.REJECTED_NO_SUBSCRIPTION);
 
     deferredCorrelationResponse.writeNotCorrelatedResponse(
         reply,

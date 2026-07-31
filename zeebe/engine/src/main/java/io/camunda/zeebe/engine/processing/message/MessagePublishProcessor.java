@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -77,7 +78,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
@@ -107,7 +109,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             bannedInstanceState,
             businessIdUniquenessEnabled,
             routingInfo,
-            partitionId);
+            partitionId,
+            metrics);
   }
 
   @Override

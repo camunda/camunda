@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -49,6 +51,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final InstantSource clock;
   private final StateWriter stateWriter;
   private final SubscriptionCommandSender commandSender;
+  private final MessageCorrelationMetrics metrics;
 
   public BpmnBufferedMessageStartEventBehavior(
       final ProcessingState processingState,
@@ -59,7 +62,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final SubscriptionCommandSender commandSender,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final MessageCorrelationMetrics metrics) {
     messageState = processingState.getMessageState();
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
@@ -70,6 +74,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     this.clock = clock;
     stateWriter = writers.state();
     this.commandSender = commandSender;
+    this.metrics = metrics;
 
     final var eventHandle =
         new EventHandle(
@@ -95,7 +100,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
             bannedInstanceState,
             businessIdUniquenessEnabled,
             routingInfo,
-            processingState.getPartitionId());
+            processingState.getPartitionId(),
+            metrics);
   }
 
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
@@ -145,6 +151,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     stateWriter.appendFollowUpEvent(
         processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);
     commandSender.sendCorrelationKeyLockRelease(requestKey, holder);
+    metrics.lockReleaseSent(ReleaseTrigger.PUSH);
   }
 
   /**

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +54,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
   private BpmnBufferedMessageStartEventBehavior bufferedBehavior;
   private StateWriter stateWriter;
   private TypedRejectionWriter rejectionWriter;
+  private SimpleMeterRegistry meterRegistry;
   private MessageStartCorrelationKeyLockReleaseReleaseProcessor processor;
 
   @BeforeEach
@@ -63,9 +66,18 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
     when(writers.rejection()).thenReturn(rejectionWriter);
+    meterRegistry = new SimpleMeterRegistry();
     processor =
         new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
-            messageState, bufferedBehavior, writers);
+            messageState, bufferedBehavior, writers, new MessageCorrelationMetrics(meterRegistry));
+  }
+
+  private double releaseCount(final String result) {
+    return meterRegistry
+        .get("zeebe.message.start.cross.partition.lock.releases.total")
+        .tag("result", result)
+        .counter()
+        .count();
   }
 
   @Test
@@ -100,6 +112,9 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
 
     // and the reply is not rejected
     verify(rejectionWriter, never()).appendRejection(any(), any(), anyString());
+
+    // and the release is counted as a released outcome (M13)
+    assertThat(releaseCount("released")).isEqualTo(1.0);
   }
 
   @Test
@@ -117,6 +132,9 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
         .appendRejection(eq(record), eq(RejectionType.INVALID_STATE), anyString());
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
     verifyNoInteractions(bufferedBehavior);
+
+    // and the release is counted as a redundant outcome (M13)
+    assertThat(releaseCount("redundant")).isEqualTo(1.0);
   }
 
   @Test

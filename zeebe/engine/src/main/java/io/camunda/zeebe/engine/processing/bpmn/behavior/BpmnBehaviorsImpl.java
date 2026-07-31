@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -84,6 +85,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
+      final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final CslAuthorizationCheck cslCheck) {
 
@@ -219,7 +221,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             subscriptionCommandSender,
             routingInfo,
             clock,
-            config.isBusinessIdUniquenessEnabled());
+            config.isBusinessIdUniquenessEnabled(),
+            messageCorrelationMetrics);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
