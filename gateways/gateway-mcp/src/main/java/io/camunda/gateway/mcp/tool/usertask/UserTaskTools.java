@@ -24,6 +24,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.OffsetPagination;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
@@ -34,9 +35,11 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
+import java.util.Map;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -168,6 +171,46 @@ public class UserTaskTools {
                 unassignRequest.action(),
                 authenticationProvider.getCamundaAuthentication()),
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
+  }
+
+  @CamundaMcpTool(
+      description =
+          "Complete a user task, optionally providing variables to complete it with. The user "
+              + "task must be assigned to the calling user, or task assignment must not be "
+              + "required, for the completion to succeed.")
+  public CallToolResult completeUserTask(
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
+          @NotNull(message = USER_TASK_KEY_NOT_NULL_MESSAGE)
+          @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
+          final Long userTaskKey,
+      @McpToolParam(description = "The variables to complete the user task with.", required = false)
+          final Map<@NotBlank String, Object> variables,
+      @McpToolParam(
+              description =
+                  "A custom action value that will be accessible from user task events resulting from this tool invocation. If not provided, it will default to \"complete\".",
+              required = false)
+          final String action) {
+    try {
+      final var completionRequest =
+          RequestMapper.toUserTaskCompletionRequest(
+              UserTaskCompletionRequest.Builder.create()
+                  .variables(variables)
+                  .action(action)
+                  .build(),
+              userTaskKey);
+
+      return CallToolResultMapper.fromPrimitive(
+          serviceRegistry
+              .userTaskServices(PhysicalTenantContext.current())
+              .completeUserTask(
+                  completionRequest.userTaskKey(),
+                  completionRequest.variables(),
+                  completionRequest.action(),
+                  authenticationProvider.getCamundaAuthentication()),
+          r -> "User task with key %s completed.".formatted(completionRequest.userTaskKey()));
+    } catch (final Exception e) {
+      return CallToolResultMapper.mapErrorToResult(e);
+    }
   }
 
   @CamundaMcpTool(
