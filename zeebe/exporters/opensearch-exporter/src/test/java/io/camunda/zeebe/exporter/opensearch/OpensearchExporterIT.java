@@ -164,7 +164,7 @@ final class OpensearchExporterIT {
         .containsExactly(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
+            indexRouter.routingFor(record),
             record);
   }
 
@@ -412,7 +412,7 @@ final class OpensearchExporterIT {
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
+              indexRouter.routingFor(record));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)

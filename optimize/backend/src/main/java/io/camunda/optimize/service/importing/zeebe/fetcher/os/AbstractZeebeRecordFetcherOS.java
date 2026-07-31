@@ -61,7 +61,6 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
     final SearchRequest.Builder builder =
         new SearchRequest.Builder()
             .index(getIndexAlias())
-            .routing(String.valueOf(partitionId))
             .requestCache(Boolean.FALSE)
             .query(getRecordQuery(positionBasedImportPage))
             .size(getDynamicBatchSize())
@@ -102,7 +101,6 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
     final CountRequest.Builder builder =
         new CountRequest.Builder()
             .index(getIndexAlias())
-            .routing(String.valueOf(partitionId))
             .query(buildPositionQuery(positionBasedImportPage));
 
     try {
