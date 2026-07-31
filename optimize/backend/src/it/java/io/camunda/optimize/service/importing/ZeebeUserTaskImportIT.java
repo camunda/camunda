@@ -91,11 +91,11 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
     List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
     zeebeExtension.completeZeebeUserTask(getExpectedUserTaskInstanceIdFromRecords(userTaskEvents));
     waitUntilUserTaskRecordWithIntentExported(COMPLETED);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -153,6 +153,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
     zeebeExtension.completeZeebeUserTask(getExpectedUserTaskInstanceIdFromRecords(userTaskEvents));
     waitUntilUserTaskRecordWithIntentExported(COMPLETED);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -497,6 +499,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     zeebeExtension.assignUserTask(
         getExpectedUserTaskInstanceIdFromRecords(exportedEvents), ASSIGNEE_ID);
     waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -635,6 +639,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
       zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
       waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
     }
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromLastIndex();
