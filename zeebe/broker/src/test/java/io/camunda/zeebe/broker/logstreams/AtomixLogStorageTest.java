@@ -20,7 +20,10 @@ final class AtomixLogStorageTest {
   void shouldNotifyCommitListenersWithPosition() {
     // given
     final var logStorage =
-        new AtomixLogStorage(mock(AtomixReaderFactory.class), mock(ZeebeLogAppender.class));
+        new AtomixLogStorage(
+            mock(AtomixReaderFactory.class),
+            mock(AtomixReaderFactory.class),
+            mock(ZeebeLogAppender.class));
     final var listener = mock(CommitListener.class);
     logStorage.addCommitListener(listener);
 

@@ -180,7 +180,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     this.scheduledCommandCache = scheduledCommandCache;
     actor = context.getActor();
     recordValues = context.getRecordValues();
-    logStreamReader = context.getLogStreamReader();
+    logStreamReader = context.getProcessingLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();

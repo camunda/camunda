@@ -36,9 +36,11 @@ public class ListLogStorage implements LogStorage {
   private final ConcurrentSkipListMap<Integer, Entry> entries;
   private @Nullable LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
+  private final Set<AppendedListener> appendedListeners = new HashSet<>();
   private final Queue<Runnable> pendingCommits = new ConcurrentLinkedQueue<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
+  private final AtomicInteger committedIndex = new AtomicInteger(-1);
   private volatile boolean deferCommits;
 
   public ListLogStorage() {
@@ -53,7 +55,14 @@ public class ListLogStorage implements LogStorage {
 
   @Override
   public LogStorageReader newReader() {
-    final ListLogStorageReader listLogStorageReader = new ListLogStorageReader();
+    final ListLogStorageReader listLogStorageReader = new ListLogStorageReader(true);
+    listLogStorageReaders.add(listLogStorageReader);
+    return listLogStorageReader;
+  }
+
+  @Override
+  public LogStorageReader newUncommittedReader() {
+    final ListLogStorageReader listLogStorageReader = new ListLogStorageReader(false);
     listLogStorageReaders.add(listLogStorageReader);
     return listLogStorageReader;
   }
@@ -80,12 +89,14 @@ public class ListLogStorage implements LogStorage {
     entries.put(index, entry);
     positionIndexMapping.put(lowestPosition, index);
     listener.onWrite(index, highestPosition);
+    appendedListeners.forEach(appendedListener -> appendedListener.onAppend(highestPosition));
 
     if (positionListener != null) {
       positionListener.accept(highestPosition);
     }
     final Runnable commit =
         () -> {
+          committedIndex.set(index);
           listener.onCommit(index, highestPosition);
           commitListeners.forEach(commitListener -> commitListener.onCommit(highestPosition));
         };
@@ -104,6 +115,16 @@ public class ListLogStorage implements LogStorage {
   @Override
   public void removeCommitListener(final CommitListener listener) {
     commitListeners.remove(listener);
+  }
+
+  @Override
+  public void addAppendedListener(final AppendedListener listener) {
+    appendedListeners.add(listener);
+  }
+
+  @Override
+  public void removeAppendedListener(final AppendedListener listener) {
+    appendedListeners.remove(listener);
   }
 
   public void deferCommits() {
@@ -134,13 +155,17 @@ public class ListLogStorage implements LogStorage {
 
   private final class ListLogStorageReader implements LogStorageReader {
     final AtomicInteger currentIndex = new AtomicInteger(0);
+    private final boolean committedOnly;
+
+    private ListLogStorageReader(final boolean committedOnly) {
+      this.committedOnly = committedOnly;
+    }
 
     @Override
     public void seek(final long position) {
       currentIndex.set(
           Optional.ofNullable(positionIndexMapping.lowerEntry(position))
               .map(Map.Entry::getValue)
-              //              .map(index -> index - 1)
               .orElse(0));
     }
 
@@ -152,7 +177,10 @@ public class ListLogStorage implements LogStorage {
     @Override
     public boolean hasNext() {
       final var index = currentIndex.get();
-      return index >= 0 && !entries.tailMap(index).isEmpty(); // && currentIndex < entries.size();
+      if (committedOnly && index > committedIndex.get()) {
+        return false;
+      }
+      return index >= 0 && !entries.tailMap(index).isEmpty();
     }
 
     @Override

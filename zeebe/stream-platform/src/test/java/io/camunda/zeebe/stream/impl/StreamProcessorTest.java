@@ -750,6 +750,47 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldProcessRecordsBeforeTheyAreCommitted() {
+    // given
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    logStorage.deferCommits();
+
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .appendRecord(
+            2,
+            Records.processInstance(2),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""))
+        .appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when - write a command whose results are not committed yet
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then - the command is processed even though its results are not committed yet
+    verify(defaultMockedRecordProcessor, TIMEOUT).process(any(), any());
+    assertThat(logStorage.pendingCommitCount()).isGreaterThanOrEqualTo(1);
+    verify(postCommitTask, never()).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), never()).onProcessed(anyLong());
+
+    // when - the command and its results are committed
+    logStorage.commitPendingEntries();
+
+    // then - the side effects run
+    verify(postCommitTask, TIMEOUT).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT).onProcessed(anyLong());
+  }
+
+  @Test
   public void shouldLogAndContinueWhenPostCommitTaskThrows() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -1637,6 +1678,12 @@ public final class StreamProcessorTest {
                     (LogStreamReader) invocation.callRealMethod(), recordUnmapped))
         .when(spyStream)
         .newLogStreamReader();
+    doAnswer(
+            invocation ->
+                new UnmapOnCrossReader(
+                    (LogStreamReader) invocation.callRealMethod(), recordUnmapped))
+        .when(spyStream)
+        .newUncommittedLogStreamReader();
 
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.buildStreamProcessor(spyStream, true);
