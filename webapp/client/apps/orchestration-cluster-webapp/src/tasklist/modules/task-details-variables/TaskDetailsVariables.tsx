@@ -196,7 +196,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 												isDisabled={isCompletionBusy}
 												fetchFullVariable={fetchFullVariable}
 												variablesLoadingFullValue={variablesLoadingFullValue}
-												onEdit={(fieldName) => setEditingVariable(fieldName)}
+												onMaximizeClick={(fieldName) => setEditingVariable(fieldName)}
 												fetchNextPage={onLoadNextPage}
 												hasNextPage={hasNextPage}
 												isFetchingNextPage={isFetchingNextPage}

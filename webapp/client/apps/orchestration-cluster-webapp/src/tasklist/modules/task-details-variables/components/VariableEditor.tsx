@@ -55,7 +55,7 @@ type Props = {
 	isDisabled: boolean;
 	fetchFullVariable: (variableKey: string) => Promise<void>;
 	variablesLoadingFullValue: string[];
-	onEdit: (fieldName: string, value: string) => void;
+	onMaximizeClick: (fieldName: string, value: string) => void;
 	fetchNextPage: () => void;
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
@@ -71,7 +71,7 @@ const VariableEditor: React.FC<Props> = ({
 	isDisabled,
 	fetchFullVariable,
 	variablesLoadingFullValue,
-	onEdit,
+	onMaximizeClick,
 	fetchNextPage,
 	hasNextPage,
 	isFetchingNextPage,
@@ -157,7 +157,7 @@ const VariableEditor: React.FC<Props> = ({
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
-													onEdit(createVariableFieldName(variable.name), variable.value);
+												onMaximizeClick(createVariableFieldName(variable.name), variable.value);
 												}}
 												size="sm"
 												kind="ghost"
@@ -216,7 +216,7 @@ const VariableEditor: React.FC<Props> = ({
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
-													onEdit(fieldName, variable.value);
+												onMaximizeClick(fieldName, variable.value);
 												}}
 												disabled={isDisabled}
 												size="sm"
@@ -298,7 +298,7 @@ const VariableEditor: React.FC<Props> = ({
 												<div className={styles.controls}>
 													<IconButton
 														label={t('tasklist.variableEditorOpenJsonLabel')}
-														onClick={() => onEdit(valueFieldName, '')}
+													onClick={() => onMaximizeClick(valueFieldName, '')}
 														disabled={isDisabled}
 														size="sm"
 														kind="ghost"
