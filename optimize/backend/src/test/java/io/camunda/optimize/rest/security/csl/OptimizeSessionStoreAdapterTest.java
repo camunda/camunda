@@ -9,11 +9,16 @@ package io.camunda.optimize.rest.security.csl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.query.WebSessionDto;
 import io.camunda.optimize.service.db.repository.PersistentWebSessionRepository;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.security.api.model.session.PersistentSession;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +110,30 @@ class OptimizeSessionStoreAdapterTest {
     assertThat(dto.getLastAccessedTime()).isEqualTo(LAST_ACCESSED_TIME);
     assertThat(dto.getMaxInactiveIntervalInSeconds()).isEqualTo(MAX_INACTIVE_INTERVAL_SECONDS);
     assertThat(dto.getAttributes()).containsExactly(Map.entry(ATTRIBUTE_NAME, ATTRIBUTE_VALUE));
+  }
+
+  @Test
+  void shouldNotFailTheRequestWhenTheSessionCannotBeStored() {
+    // given a database that is temporarily unreachable
+    doThrow(new OptimizeRuntimeException("elasticsearch is down"))
+        .when(repository)
+        .upsert(any(WebSessionDto.class));
+
+    // when
+    // then Spring Session saves while the response is committing, so the blip must not surface
+    assertThatNoException().isThrownBy(() -> adapter.upsert(persistentSession()));
+  }
+
+  @Test
+  void shouldPropagateFailuresWhenTheSessionCannotBeLoaded() {
+    // given
+    when(repository.get(SESSION_ID))
+        .thenThrow(new OptimizeRuntimeException("elasticsearch is down"));
+
+    // when
+    // then an unreadable session must not look like an absent one, which would silently log the
+    // user out and start a fresh session
+    assertThatThrownBy(() -> adapter.get(SESSION_ID)).isInstanceOf(OptimizeRuntimeException.class);
   }
 
   @Test

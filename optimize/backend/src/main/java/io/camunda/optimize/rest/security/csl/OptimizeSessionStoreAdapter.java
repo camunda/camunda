@@ -14,6 +14,8 @@ import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -32,11 +34,18 @@ import org.springframework.stereotype.Component;
  * routes sessions here only while {@code camunda.security.session.persistent.enabled=true}, which
  * {@link OptimizeSecurityConfigCompatibilityPostProcessor} sets for the Elasticsearch edition;
  * OpenSearch keeps CSL's in-memory sessions until the OpenSearch store lands.
+ *
+ * <p>A failed {@link #upsert(PersistentSession)} is logged and swallowed. Spring Session saves the
+ * session while the response is being committed, so letting a storage failure through would turn an
+ * Elasticsearch blip into failed requests. The reads stay strict: a session that cannot be loaded
+ * must not be mistaken for one that does not exist.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
 @ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
 public class OptimizeSessionStoreAdapter implements SessionStorePort {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeSessionStoreAdapter.class);
 
   private final PersistentWebSessionRepository repository;
 
@@ -54,7 +63,13 @@ public class OptimizeSessionStoreAdapter implements SessionStorePort {
 
   @Override
   public void upsert(final PersistentSession session) {
-    repository.upsert(toDto(session));
+    try {
+      repository.upsert(toDto(session));
+    } catch (final RuntimeException e) {
+      // The session stays valid on the instance that handled the request, but it is not shared and
+      // it does not survive a restart, so the user may have to log in again.
+      LOG.warn("Could not save web session {} to Elasticsearch.", session.id(), e);
+    }
   }
 
   @Override
