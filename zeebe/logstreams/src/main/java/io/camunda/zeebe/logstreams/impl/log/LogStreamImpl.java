@@ -128,7 +128,18 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
-  public void onCommit() {
+  public void registerCommitListener(final CommitListener listener) {
+    ensureOpen();
+    logStorage.addCommitListener(listener);
+  }
+
+  @Override
+  public void removeCommitListener(final CommitListener listener) {
+    logStorage.removeCommitListener(listener);
+  }
+
+  @Override
+  public void onCommit(final long highestPosition) {
     if (closed) {
       // This can be called by the raft thread after we've already closed the log stream.
       // We can just ignore it in that case. Using `ensureOpen` would throw an exception that would

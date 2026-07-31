@@ -34,7 +34,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     if (logStorage != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
-      context.getRaftPartition().getServer().removeCommitListener(logStorage);
+      final var server = context.getRaftPartition().getServer();
+      server.removeCommittedEntryListener(logStorage);
       context.setLogStorage(null);
     }
     return CompletableActorFuture.completed(null);
@@ -52,7 +53,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
       if (logStorageOrException.isRight()) {
         final var logStorage = logStorageOrException.get();
         context.setLogStorage(logStorage);
-        context.getRaftPartition().getServer().addCommitListener(logStorage);
+        final var server = context.getRaftPartition().getServer();
+        server.addCommittedEntryListener(logStorage);
         openFuture.complete(null);
       } else {
         openFuture.completeExceptionally(logStorageOrException.getLeft());

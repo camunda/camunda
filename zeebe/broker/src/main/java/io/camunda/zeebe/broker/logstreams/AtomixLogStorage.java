@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.logstreams;
 
-import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -21,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * should be changed when the log storage implementation is taken out of this module, at which point
  * it can be made final.
  */
-public class AtomixLogStorage implements LogStorage, RaftCommitListener {
+public class AtomixLogStorage implements LogStorage, RaftApplicationEntryCommittedPositionListener {
 
   private final AtomixReaderFactory readerFactory;
   private final ZeebeLogAppender logAppender;
@@ -64,7 +64,7 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   }
 
   @Override
-  public void onCommit(final long index) {
-    commitListeners.forEach(CommitListener::onCommit);
+  public void onCommit(final long highestPosition) {
+    commitListeners.forEach(listener -> listener.onCommit(highestPosition));
   }
 }

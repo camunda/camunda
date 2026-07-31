@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,8 +36,10 @@ public class ListLogStorage implements LogStorage {
   private final ConcurrentSkipListMap<Integer, Entry> entries;
   private @Nullable LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
+  private final Queue<Runnable> pendingCommits = new ConcurrentLinkedQueue<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
+  private volatile boolean deferCommits;
 
   public ListLogStorage() {
     entries = new ConcurrentSkipListMap<Integer, Entry>();
@@ -80,8 +84,16 @@ public class ListLogStorage implements LogStorage {
     if (positionListener != null) {
       positionListener.accept(highestPosition);
     }
-    listener.onCommit(index, highestPosition);
-    commitListeners.forEach(CommitListener::onCommit);
+    final Runnable commit =
+        () -> {
+          listener.onCommit(index, highestPosition);
+          commitListeners.forEach(commitListener -> commitListener.onCommit(highestPosition));
+        };
+    if (deferCommits) {
+      pendingCommits.add(commit);
+    } else {
+      commit.run();
+    }
   }
 
   @Override
@@ -92,6 +104,21 @@ public class ListLogStorage implements LogStorage {
   @Override
   public void removeCommitListener(final CommitListener listener) {
     commitListeners.remove(listener);
+  }
+
+  public void deferCommits() {
+    deferCommits = true;
+  }
+
+  public int pendingCommitCount() {
+    return pendingCommits.size();
+  }
+
+  public void commitPendingEntries() {
+    Runnable pendingCommit;
+    while ((pendingCommit = pendingCommits.poll()) != null) {
+      pendingCommit.run();
+    }
   }
 
   public void reset() {

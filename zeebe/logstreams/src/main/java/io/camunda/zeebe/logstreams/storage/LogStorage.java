@@ -124,7 +124,11 @@ public interface LogStorage {
    */
   interface CommitListener {
 
-    /** Called when a new record is committed in the storage */
-    void onCommit();
+    /**
+     * Called when records are committed in the storage.
+     *
+     * @param highestPosition the highest committed record position
+     */
+    void onCommit(long highestPosition);
   }
 }
