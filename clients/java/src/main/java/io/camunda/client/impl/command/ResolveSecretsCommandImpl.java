@@ -88,7 +88,10 @@ public class ResolveSecretsCommandImpl implements ResolveSecretsCommandStep1 {
     final Set<String> requestedReferences = new LinkedHashSet<>(request.getReferences());
     final HttpCamundaFuture<ResolveSecretsResponse> result = new HttpCamundaFuture<>();
     final String path = "/secrets/resolve";
-    httpClient.post(
+    // Sent as a sensitive response so that a response the client cannot make sense of is reported
+    // without echoing the body: the resolved values are only kept out of logs by
+    // ResolveSecretsResponseImpl, whereas the wire representation prints them.
+    httpClient.postWithSensitiveResponse(
         path,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),

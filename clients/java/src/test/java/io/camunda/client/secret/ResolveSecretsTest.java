@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ResolveSecretsResponse;
 import io.camunda.client.api.response.ResolveSecretsResponse.ResolutionError;
@@ -481,6 +483,30 @@ public class ResolveSecretsTest extends ClientRestTest {
   }
 
   @Test
+  void shouldNotExposeSecretValuesOfAResponseSentUnderAnErrorStatus() {
+    // given a cluster or proxy breaking the contract by answering with secrets and an error status
+    stubResolveResponse(502, "application/json", secretsBody());
+
+    // when / then the mismatch is reported without the body it could not make sense of
+    assertThatThrownBy(() -> client.newResolveSecretsCommand().reference(REFERENCE).send().join())
+        .isInstanceOf(MalformedResponseException.class)
+        .hasMessageContaining("redacted")
+        .hasMessageNotContaining(VALUE);
+  }
+
+  @Test
+  void shouldNotExposeSecretValuesOfAResponseSentUnderAnUnexpectedContentType() {
+    // given a cluster or proxy breaking the contract by answering with a non-JSON content type
+    stubResolveResponse(200, "text/plain", secretsBody());
+
+    // when / then the raw body is not echoed, as it carries the resolved values verbatim
+    assertThatThrownBy(() -> client.newResolveSecretsCommand().reference(REFERENCE).send().join())
+        .isInstanceOf(MalformedResponseException.class)
+        .hasMessageContaining("redacted")
+        .hasMessageNotContaining(VALUE);
+  }
+
+  @Test
   void shouldRaiseExceptionOnNullReferences() {
     // when / then
     assertThatThrownBy(() -> client.newResolveSecretsCommand().references((List<String>) null))
@@ -511,6 +537,21 @@ public class ResolveSecretsTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newResolveSecretsCommand().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("references");
+  }
+
+  private static void stubResolveResponse(
+      final int status, final String contentType, final String body) {
+    WireMock.stubFor(
+        WireMock.post(WireMock.urlEqualTo(RestGatewayPaths.getSecretsResolveUrl()))
+            .willReturn(
+                WireMock.aResponse()
+                    .withStatus(status)
+                    .withHeader("Content-Type", contentType)
+                    .withBody(body)));
+  }
+
+  private static String secretsBody() {
+    return "{\"resolved\":[{\"reference\":\"" + REFERENCE + "\",\"value\":\"" + VALUE + "\"}]}";
   }
 
   private static ResolvedSecret resolved(final String reference, final String value) {
