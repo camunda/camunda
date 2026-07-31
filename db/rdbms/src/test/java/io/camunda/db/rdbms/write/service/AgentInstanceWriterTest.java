@@ -7,25 +7,38 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
+import io.camunda.db.rdbms.sql.AgentInstanceMapper.AgentInstanceElementInstanceKeysDto;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class AgentInstanceWriterTest {
 
@@ -67,7 +80,7 @@ class AgentInstanceWriterTest {
                     WriteStatementType.INSERT,
                     1L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
-                    model)));
+                    new AgentInstanceElementInstanceKeysDto(1L, List.of(100L)))));
     verify(executionQueue, never())
         .executeInQueue(
             argThat(
@@ -145,7 +158,96 @@ class AgentInstanceWriterTest {
                     WriteStatementType.INSERT,
                     3L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
-                    model)));
+                    new AgentInstanceElementInstanceKeysDto(3L, List.of(200L)))));
+  }
+
+  @Test
+  void shouldApplyUpdateToRowInsertNotToChildKeysInsertWhenMergedBeforeFlush() throws Exception {
+    // given: a real ExecutionQueue so the actual merge logic (UpsertMerger + newest-first scan)
+    // runs, reproducing https://github.com/camunda/camunda/issues/58968 - create() queues both a
+    // row INSERT and an insertElementInstanceKeys INSERT for the same agentInstanceKey; update()
+    // must merge into the former, not the latter. The update's elementInstanceKeys is a superset of
+    // create()'s, mirroring the real AgentInstanceExportHandler/engine contract that every update
+    // carries the full cumulative set of element instance keys (never a delta, never empty right
+    // after a non-empty create) - so update()'s unconditional DELETE-then-reinsert of child rows is
+    // exercised and asserted here rather than left unchecked.
+    final var session = mock(SqlSession.class);
+    final var sqlSessionFactory = mock(SqlSessionFactory.class);
+    final var metrics = mock(RdbmsWriterMetrics.class);
+    when(sqlSessionFactory.openSession(
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
+        .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
+
+    final var realExecutionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    final var realWriter =
+        new AgentInstanceWriter(realExecutionQueue, mapper, vendorDatabaseProperties);
+
+    final var created = buildModel(4L, List.of(300L));
+    final var updated =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(4L)
+            .status(AgentInstanceStatus.COMPLETED)
+            .inputTokens(42L)
+            .outputTokens(7L)
+            .modelCalls(3)
+            .toolCalls(2)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .completionDate(OffsetDateTime.now())
+            .elementInstanceKeys(List.of(300L, 301L))
+            .build();
+
+    // when
+    realWriter.create(created);
+    realWriter.update(updated);
+    realExecutionQueue.flush();
+
+    // then: the row INSERT carries the merged (COMPLETED) status ...
+    final var rowInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), rowInsertParam.capture());
+    assertThat(rowInsertParam.getValue()).isInstanceOf(AgentInstanceDbModel.class);
+    assertThat(((AgentInstanceDbModel) rowInsertParam.getValue()).status())
+        .isEqualTo(AgentInstanceStatus.COMPLETED);
+
+    // ... no separate UPDATE statement was needed, since the merge absorbed it into the INSERT ...
+    verify(session, never())
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+
+    // ... create()'s child-table insert is unaffected by the merge, still carrying its original
+    // keys, and update()'s DELETE-then-reinsert of the (now larger) key set runs after it, in
+    // insertion order, without touching the row insert or create()'s child insert.
+    final var childInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session, times(2))
+        .update(
+            eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys"),
+            childInsertParam.capture());
+    assertThat(childInsertParam.getAllValues())
+        .containsExactly(
+            new AgentInstanceElementInstanceKeysDto(4L, List.of(300L)),
+            new AgentInstanceElementInstanceKeysDto(4L, List.of(300L, 301L)));
+    verify(session)
+        .update(
+            eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys"), eq(4L));
+
+    final var order = inOrder(session);
+    order.verify(session).update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), any());
+    order
+        .verify(session)
+        .update(
+            eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys"),
+            eq(new AgentInstanceElementInstanceKeysDto(4L, List.of(300L))));
+    order
+        .verify(session)
+        .update(
+            eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys"), eq(4L));
+    order
+        .verify(session)
+        .update(
+            eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys"),
+            eq(new AgentInstanceElementInstanceKeysDto(4L, List.of(300L, 301L))));
   }
 
   private AgentInstanceDbModel buildModel(final long key, final List<Long> elementInstanceKeys) {

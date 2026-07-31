@@ -19,9 +19,12 @@ public interface AgentInstanceMapper extends ProcessInstanceDependantMapper {
 
   void deleteElementInstanceKeys(long agentInstanceKey);
 
-  void insertElementInstanceKeys(AgentInstanceDbModel agentInstance);
+  void insertElementInstanceKeys(AgentInstanceElementInstanceKeysDto elementInstanceKeys);
 
   Long count(AgentInstanceDbQuery query);
 
   List<AgentInstanceDbModel> search(AgentInstanceDbQuery query);
+
+  record AgentInstanceElementInstanceKeysDto(
+      long agentInstanceKey, List<Long> elementInstanceKeys) {}
 }
