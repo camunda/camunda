@@ -17,7 +17,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -218,7 +217,7 @@ public class Starter implements CommandLineRunner {
                   client
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
-                      .sort(ProcessInstanceSort::startDate)
+                      .sort(s -> s.startDate().asc())
                       .page(p -> p.limit(2500))
                       .send();
 
