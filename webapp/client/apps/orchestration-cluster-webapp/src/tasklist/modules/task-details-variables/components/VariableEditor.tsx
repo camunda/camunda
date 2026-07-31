@@ -157,7 +157,7 @@ const VariableEditor: React.FC<Props> = ({
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
-												onMaximizeClick(createVariableFieldName(variable.name), variable.value);
+													onMaximizeClick(createVariableFieldName(variable.name), variable.value);
 												}}
 												size="sm"
 												kind="ghost"
@@ -216,7 +216,7 @@ const VariableEditor: React.FC<Props> = ({
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
-												onMaximizeClick(fieldName, variable.value);
+													onMaximizeClick(fieldName, variable.value);
 												}}
 												disabled={isDisabled}
 												size="sm"
@@ -298,7 +298,7 @@ const VariableEditor: React.FC<Props> = ({
 												<div className={styles.controls}>
 													<IconButton
 														label={t('tasklist.variableEditorOpenJsonLabel')}
-													onClick={() => onMaximizeClick(valueFieldName, '')}
+														onClick={() => onMaximizeClick(valueFieldName, '')}
 														disabled={isDisabled}
 														size="sm"
 														kind="ghost"
