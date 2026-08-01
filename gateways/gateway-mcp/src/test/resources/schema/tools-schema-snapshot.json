@@ -690,6 +690,40 @@
       "annotations": {}
     },
     {
+      "name": "completeUserTask",
+      "title": "completeUserTask",
+      "description": "Complete a user task, optionally providing the variables to complete the task with.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "userTaskKey": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The user task key."
+          },
+          "completionOptions": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"complete\". "
+              },
+              "variables": {
+                "type": "object",
+                "description": "The variables to complete the user task with."
+              }
+            },
+            "description": "Completion options, like variables or a custom action."
+          }
+        },
+        "required": [
+          "userTaskKey"
+        ]
+      },
+      "annotations": {}
+    },
+    {
       "name": "getUserTask",
       "title": "getUserTask",
       "description": "Get user task by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",

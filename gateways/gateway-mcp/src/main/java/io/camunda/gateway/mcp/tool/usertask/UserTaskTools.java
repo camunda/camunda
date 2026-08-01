@@ -27,6 +27,7 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.OffsetPagination;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -95,6 +96,36 @@ public class UserTaskTools {
               serviceRegistry
                   .userTaskServices(PhysicalTenantContext.current())
                   .getByKey(userTaskKey, authenticationProvider.getCamundaAuthentication())));
+    } catch (final Exception e) {
+      return CallToolResultMapper.mapErrorToResult(e);
+    }
+  }
+
+  @CamundaMcpTool(
+      description =
+          "Complete a user task, optionally providing the variables to complete the task with.")
+  public CallToolResult completeUserTask(
+      @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
+          @NotNull(message = USER_TASK_KEY_NOT_NULL_MESSAGE)
+          @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
+          final Long userTaskKey,
+      @McpToolParam(
+              description = "Completion options, like variables or a custom action.",
+              required = false)
+          final UserTaskCompletionRequest completionOptions) {
+    try {
+      final var completionRequest =
+          RequestMapper.toUserTaskCompletionRequest(completionOptions, userTaskKey);
+
+      return CallToolResultMapper.fromPrimitive(
+          serviceRegistry
+              .userTaskServices(PhysicalTenantContext.current())
+              .completeUserTask(
+                  completionRequest.userTaskKey(),
+                  completionRequest.variables(),
+                  completionRequest.action(),
+                  authenticationProvider.getCamundaAuthentication()),
+          r -> "User task with key %s completed.".formatted(completionRequest.userTaskKey()));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
