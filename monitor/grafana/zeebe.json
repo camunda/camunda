@@ -36,6 +36,18 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
+        "enable": true,
+        "expr": "increase(zeebe_cluster_rebalance_elapsed_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__interval]) > 0",
+        "hide": false,
+        "iconColor": "purple",
+        "name": "Rebalancing",
+        "titleFormat": "Rebalancing"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
         "enable": false,
         "expr": "zeebe_flow_control_write_rate_maximum{namespace=~\"$namespace\", pod=~\"$pod\"} > zeebe_flow_control_write_rate_limit{namespace=~\"$namespace\", pod=~\"$pod\"}",
         "hide": false,
@@ -13565,6 +13577,103 @@
           ],
           "title": "Non replicated records",
           "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "How far behind each follower is in bytes, counting both log replication and snapshot installation. Reported by the partition's leader. This is what a coordinated leadership transfer admits on: a follower above the configured lag threshold is declined with LAG_TOO_HIGH rather than paused behind. It is the byte-sized view of the same distance the non-replicated records gauge counts in records.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 5005
+          },
+          "id": 750,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_raft_replication_lag_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition, follower)",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} p{{partition}} f{{follower}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Follower replication lag",
+          "type": "timeseries"
         }
       ],
       "title": "Raft",
@@ -28844,6 +28953,917 @@
         "x": 0,
         "y": 30
       },
+      "id": 749,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Fraction of partitions led by the member the cluster configuration gives the highest priority for them, where 100% is fully balanced. Every broker reports on every partition it knows of, so the answer is reduced per partition before being averaged across them, and it is answered at all times rather than only once a rebalance has run.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 5,
+            "x": 0,
+            "y": 5604
+          },
+          "id": 740,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(min by (physicalTenant, partition) (zeebe_cluster_partition_balanced{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}))",
+              "instant": true,
+              "legendFormat": "Balanced",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Cluster balance",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "How the cluster's balance moved. A rebalance that did what it set out to do ends at 100%. A drop with no rebalance running is leadership having moved on its own, by election or by a broker restarting, and is what makes the next rebalance worth running.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 5,
+            "y": 5604
+          },
+          "id": 741,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(min by (physicalTenant, partition) (zeebe_cluster_partition_balanced{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}))",
+              "instant": false,
+              "legendFormat": "Balanced",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Cluster balance over time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Which partitions are led by the member the configuration wants leading them and which are not. Populated at all times, so this is where to look before deciding whether a rebalance is worth running as well as after one has run. A partition with no leader at all counts as unbalanced. Leadership and the configuration are gossiped separately, so brokers disagree about a partition briefly after either of them changes.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 1,
+                "spanNulls": false
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "light-red",
+                      "index": 1,
+                      "text": "Unbalanced"
+                    },
+                    "1": {
+                      "color": "light-green",
+                      "index": 0,
+                      "text": "Balanced"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5611
+          },
+          "id": 751,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "min by (physicalTenant, partition) (zeebe_cluster_partition_balanced{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Partition leadership balance",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Where the most recent rebalance got to with each partition, and where the running one has got to while it runs. Transfers are sequenced one at a time, so a healthy rebalance walks a single partition through Transferring while the ones after it wait in Pending and the ones before it hold what became of them. What each partition reached is left standing after the rebalance ends, because a rebalance is often over inside a single scrape and there would otherwise be nothing to see; the next rebalance replaces it, and it goes away if the coordinator moves. Why a partition failed is on the rebalance status endpoint, and the tally across past rebalances is in the transfer outcomes table.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 1,
+                "spanNulls": false
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "1": {
+                      "color": "text",
+                      "index": 4,
+                      "text": "Pending"
+                    },
+                    "2": {
+                      "color": "super-light-orange",
+                      "index": 3,
+                      "text": "Transferring"
+                    },
+                    "3": {
+                      "color": "light-green",
+                      "index": 0,
+                      "text": "Transferred"
+                    },
+                    "4": {
+                      "color": "light-blue",
+                      "index": 1,
+                      "text": "Skipped"
+                    },
+                    "5": {
+                      "color": "light-red",
+                      "index": 2,
+                      "text": "Failed"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 5619
+          },
+          "id": 743,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max by (physicalTenant, partition) (zeebe_cluster_rebalance_partition_state{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Last rebalance state per partition",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Cluster-wide rebalances that ended within the dashboard range, by how they ended. COMPLETED reached every partition in scope, CANCELLED was stopped by an operator and FAILED stopped short of its remaining partitions. Only the coordinating member reports these, so they are not filtered by pod. Counted over the range rather than read off a running total, so the coordinator moving to another member neither resets them nor double-counts them.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Average duration"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 9,
+            "x": 15,
+            "y": 5604
+          },
+          "id": 744,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Rebalances"
+              }
+            ]
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "round(sum by (result) (increase(zeebe_cluster_rebalance_elapsed_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (result) (increase(zeebe_cluster_rebalance_elapsed_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__range])) / (sum by (result) (increase(zeebe_cluster_rebalance_elapsed_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__range])) > 0)",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "B"
+            }
+          ],
+          "title": "Cluster rebalances",
+          "transformations": [
+            {
+              "id": "joinByField",
+              "options": {
+                "byField": "result",
+                "mode": "outer"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time 1": true,
+                  "Time 2": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {
+                  "Value #A": "Rebalances",
+                  "Value #B": "Average duration",
+                  "result": "Result"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "What became of each partition a rebalance worked on within the dashboard range. TRANSFERRED is the success; every other result names why leadership stayed where it was, so this is the first place to look when a rebalance reports failed partitions. Recorded by the coordinator, so it covers the partitions no leader ever answered for as well as the reasons a leader gave: LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row, LEADER_SILENT and LEADER_UNREACHABLE at the leader itself. Broken down by partition, because one partition failing every time is a different problem from every partition failing once. The coordinator only starts counting an outcome for a partition once it has seen it, so this counts the change over the range but takes a first outcome in full rather than losing it.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 5619
+          },
+          "id": 745,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": [
+                "Value"
+              ],
+              "reducer": [
+                "sum"
+              ],
+              "show": true
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (partition, result) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"} - (zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"} offset $__range)) or zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}, 0))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Partition transfer outcomes",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "When each partition was frozen for a leadership transfer: writes are declined and processing is paused while the desired leader catches up, so this is the window in which the partition is unavailable. Unlike the processing phase panel, this only reports pauses a transfer caused.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 1,
+                "spanNulls": false
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "light-green",
+                      "index": 1,
+                      "text": "Accepting writes"
+                    },
+                    "1": {
+                      "color": "light-red",
+                      "index": 0,
+                      "text": "Paused for transfer"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5611
+          },
+          "id": 746,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_cluster_rebalance_partition_paused{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition)",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Partitions paused for transfer",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "How long partitions stayed frozen while the desired leader caught up. This is what a rebalance costs in availability, so it is the number to watch when tuning the replication timeout or the lag threshold.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5628
+          },
+          "id": 747,
+          "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "s"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (le) (increase(zeebe_cluster_rebalance_partition_pause_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
+              "format": "heatmap",
+              "instant": false,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Partition pause duration",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "How long the rebalance spent on each partition it took on, from deciding to act on it to knowing what became of it. Reported by the coordinator, so it includes waiting on a leader that answered slowly or never answered at all. The partitions the plan resolved without asking anyone cost no time and are left out, so that they do not bury the distribution in its lowest bucket; they are still counted in the transfer outcomes table. Counted the same way as that table, so that the first time a partition reaches an outcome it shows up here too.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5628
+          },
+          "id": 748,
+          "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "s"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"}, 0))",
+              "format": "heatmap",
+              "instant": false,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Partition rebalance duration",
+          "type": "heatmap"
+        }
+      ],
+      "title": "Rebalancing",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
       "id": 679,
       "panels": [
         {
@@ -29252,7 +30272,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 32
       },
       "id": 718,
       "panels": [
