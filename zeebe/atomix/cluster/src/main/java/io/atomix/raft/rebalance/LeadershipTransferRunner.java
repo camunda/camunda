@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.roles;
+package io.atomix.raft.rebalance;
 
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.roles.LeaderRole;
 import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -31,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * survives from one transfer into the next.
  */
 @NullMarked
-final class LeadershipTransferRunner {
+public final class LeadershipTransferRunner {
   private final RaftContext raft;
   private final LeaderRole leader;
   private final LeadershipTransferAdmission admission;
@@ -39,7 +40,7 @@ final class LeadershipTransferRunner {
   // finishes.
   private volatile @Nullable LeadershipTransferAttempt currentAttempt;
 
-  LeadershipTransferRunner(
+  public LeadershipTransferRunner(
       final RaftContext raft,
       final LeaderRole leader,
       final BooleanSupplier pausedForTransfer,
@@ -65,7 +66,7 @@ final class LeadershipTransferRunner {
    * accepted request starts a one-shot attempt, whose outcome reaches the coordinator separately
    * once the transfer finishes.
    */
-  LeadershipTransferInitiateResponse handleInitiate(
+  public LeadershipTransferInitiateResponse handleInitiate(
       final LeadershipTransferInitiateRequest request) {
     raft.checkThread();
     final var rejectionReason =
@@ -84,7 +85,7 @@ final class LeadershipTransferRunner {
     return LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
   }
 
-  void onLeaderStopped() {
+  public void onLeaderStopped() {
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onLeaderStopped();
@@ -92,7 +93,7 @@ final class LeadershipTransferRunner {
   }
 
   /** The freeze ended. */
-  void onPauseCleared() {
+  public void onPauseCleared() {
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onPauseCleared();
@@ -100,7 +101,7 @@ final class LeadershipTransferRunner {
   }
 
   /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
-  void onPauseDeadlineExpired() {
+  public void onPauseDeadlineExpired() {
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onPauseDeadlineExpired();

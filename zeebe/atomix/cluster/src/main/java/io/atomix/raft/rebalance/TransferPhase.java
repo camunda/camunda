@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.roles;
+package io.atomix.raft.rebalance;
 
 /**
  * One step of a coordinated leadership transfer. A phase owns its timers and listeners, completes

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.roles;
+package io.atomix.raft.rebalance;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;

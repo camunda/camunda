@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.rebalance.LeadershipTransferRunner;
 import io.atomix.raft.roles.LeaderRole.ConfigurationChangeInProgressException;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;

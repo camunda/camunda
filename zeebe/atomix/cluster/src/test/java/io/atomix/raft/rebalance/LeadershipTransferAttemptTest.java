@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.roles;
+package io.atomix.raft.rebalance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +27,7 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
