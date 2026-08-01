@@ -17,15 +17,18 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendedListener;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-public final class LogStreamImpl implements LogStream, CommitListener {
+public final class LogStreamImpl implements LogStream, CommitListener, AppendedListener {
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -68,6 +71,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
             new SequencerMetrics(meterRegistry),
             flowControl);
     logStorage.addCommitListener(this);
+    logStorage.addAppendedListener(this);
   }
 
   @Override
@@ -76,6 +80,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     LOG.debug("Closing {} with {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
+    logStorage.removeAppendedListener(this);
   }
 
   @Override
@@ -91,7 +96,13 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   @Override
   public LogStreamReader newLogStreamReader() {
     ensureOpen();
-    return createLogStreamReader();
+    return createLogStreamReader(logStorage::newReader);
+  }
+
+  @Override
+  public LogStreamReader newUncommittedLogStreamReader() {
+    ensureOpen();
+    return createLogStreamReader(logStorage::newUncommittedReader);
   }
 
   @Override
@@ -128,11 +139,30 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
-  public void onCommit() {
+  public void registerCommitListener(final CommitListener listener) {
+    ensureOpen();
+    logStorage.addCommitListener(listener);
+  }
+
+  @Override
+  public void removeCommitListener(final CommitListener listener) {
+    logStorage.removeCommitListener(listener);
+  }
+
+  @Override
+  public void onCommit(final long highestPosition) {
     if (closed) {
       // This can be called by the raft thread after we've already closed the log stream.
       // We can just ignore it in that case. Using `ensureOpen` would throw an exception that would
       // break the raft thread.
+      return;
+    }
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
+  }
+
+  @Override
+  public void onAppend(final long highestPosition) {
+    if (closed) {
       return;
     }
     recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
@@ -144,8 +174,8 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     }
   }
 
-  private LogStreamReader createLogStreamReader() {
-    final var newReader = new LogStreamReaderImpl(logStorage.newReader());
+  private LogStreamReader createLogStreamReader(final Supplier<LogStorageReader> readerSupplier) {
+    final var newReader = new LogStreamReaderImpl(readerSupplier.get());
     readers.add(newReader);
     return newReader;
   }

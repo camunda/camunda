@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -48,6 +49,14 @@ public interface LogStream extends AutoCloseable {
   LogStreamReader newLogStreamReader();
 
   /**
+   * Returns a new log stream reader that also reads records that have not been committed yet. This
+   * is only safe for consumers that can tolerate records being truncated again.
+   *
+   * @return a new log stream reader
+   */
+  LogStreamReader newUncommittedLogStreamReader();
+
+  /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */
@@ -81,4 +90,12 @@ public interface LogStream extends AutoCloseable {
    * @param recordAwaiter the listener to remove
    */
   void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  /**
+   * Registers a listener that is notified with the highest committed application record position.
+   */
+  void registerCommitListener(CommitListener listener);
+
+  /** Removes an application record commit listener. */
+  void removeCommitListener(CommitListener listener);
 }
