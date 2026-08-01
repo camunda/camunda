@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "873ad88bb686a52dd88ec0d0b3805e2b3fcf55fa",
-    "generatedAt": "2026-07-30T12:35:46.828Z",
+    "commit": "3bf15c6330191f63d6de391116babfff6b9332ec",
+    "generatedAt": "2026-08-01T12:22:36.482Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "775ddd726f98d4aca1058c75fb629f7e34195a11051480b07d3937d08f8687e3"
+    "specSha256": "44ecb6a0fbfc7db951dddbaff3076ab8b9763816da297503ac7251d0e93a1dca"
   },
   "responses": [
     {
@@ -451,8 +451,7 @@
                 },
                 {
                   "name": "loopIteration",
-                  "type": "number",
-                  "nullable": true
+                  "type": "number"
                 },
                 {
                   "name": "metrics",
@@ -4307,6 +4306,26 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/exporting",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "EXPORTING",
+              "PAUSED",
+              "SOFT_PAUSED",
+              "MIXED"
+            ]
           }
         ],
         "optional": []
@@ -8299,7 +8318,8 @@
                   "enumValues": [
                     "NOT_FOUND",
                     "ACCESS_DENIED",
-                    "INVALID_REFERENCE"
+                    "INVALID_REFERENCE",
+                    "UNREADABLE"
                   ]
                 },
                 {
@@ -9103,6 +9123,87 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/restore",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "brokers",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "brokerId",
+                  "type": "string"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupIds",
+                        "type": "array<number>"
+                      },
+                      {
+                        "name": "completedAt",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "state",
+                        "type": "string",
+                        "enumValues": [
+                          "PENDING",
+                          "RESTORING",
+                          "RESTORED"
+                        ]
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "partitionsRestored",
+                  "type": "number"
+                },
+                {
+                  "name": "partitionsToRestore",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "changeId",
+            "type": "string"
+          },
+          {
+            "name": "startedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ]
           }
         ],
         "optional": []
