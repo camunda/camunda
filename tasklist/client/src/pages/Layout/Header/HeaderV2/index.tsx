@@ -89,7 +89,6 @@ const HeaderV2: React.FC<{hideNavLinks?: boolean}> = ({
       sidebarChildren,
       breadcrumbs,
       tools,
-      // @ts-expect-error - we need to fix it from the C3 side
       linkComponent: RouterLink,
       headerTrailingContent: showLicenseTag ? (
         <C3LicenseTag
