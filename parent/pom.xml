@@ -72,7 +72,7 @@
     <version.jackson3>3.1.5</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.2</version.json-flattener>
-    <version.jspecify>1.0.0</version.jspecify>
+    <version.jspecify>1.0.1</version.jspecify>
     <version.junit>6.0.3</version.junit>
     <version.junit-pioneer>2.3.0</version.junit-pioneer>
     <version.junit4>4.13.2</version.junit4>
