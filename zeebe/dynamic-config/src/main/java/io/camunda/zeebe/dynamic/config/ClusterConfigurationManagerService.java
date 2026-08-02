@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
+import io.camunda.zeebe.dynamic.config.metrics.PartitionBalanceMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.rebalance.PartitionLeaders;
@@ -99,6 +100,7 @@ public final class ClusterConfigurationManagerService
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
   private final ClusterConfigurationRequestServer configurationRequestServer;
   private final RebalanceCoordinator rebalanceCoordinator;
+  private final PartitionBalanceMetrics partitionBalanceMetrics;
   private final RebalanceRequestServer rebalanceRequestServer;
   private final LeadershipTransferClient leadershipTransferClient;
   private final Actor gossipActor;
@@ -218,6 +220,7 @@ public final class ClusterConfigurationManagerService
     // are forwarded to, so it shares this service's actor rather than running one of its own.
     leadershipTransferClient =
         new LeadershipTransferClient(communicationService, transferRequestTimeout);
+    partitionBalanceMetrics = new PartitionBalanceMetrics(meterRegistry, partitionLeaders);
     final var rebalanceMetrics = new ClusterRebalanceMetrics(meterRegistry);
     rebalanceCoordinator =
         new RebalanceCoordinator(
@@ -352,6 +355,7 @@ public final class ClusterConfigurationManagerService
     configurationRequestServer.start();
     rebalanceRequestServer.start();
     addUpdateListener(rebalanceCoordinator);
+    addUpdateListener(partitionBalanceMetrics);
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
     // it can immediately gossip it.
@@ -448,6 +452,7 @@ public final class ClusterConfigurationManagerService
     rebalanceRequestServer.close();
     leadershipTransferClient.close();
     removeUpdateListener(rebalanceCoordinator);
+    removeUpdateListener(partitionBalanceMetrics);
     clusterConfigurationGossiper.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }
