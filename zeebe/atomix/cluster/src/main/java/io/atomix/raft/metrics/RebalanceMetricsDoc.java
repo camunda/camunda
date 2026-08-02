@@ -11,6 +11,8 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import java.time.Duration;
+import java.util.stream.Stream;
 
 /** Metrics for coordinated leadership transfer (rebalancing). */
 @SuppressWarnings("NullableProblems")
@@ -20,9 +22,26 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
    * leader waited for the desired leader to catch up during a leadership transfer.
    */
   PARTITION_PAUSE_DURATION {
+    /**
+     * A pause is bounded by the time the desired leader is given to catch up, the time the
+     * promotion is given after that, and the watchdog's slack on top. The default buckets stop at
+     * ten seconds, which is where that budget starts rather than ends, so a pause worth knowing
+     * about would land in the overflow and the tail - the part an operator is paying for in
+     * availability - could not be read at all.
+     */
+    private static final Duration[] TIMER_SLOS =
+        Stream.of(100, 250, 500, 1_000, 2_500, 5_000, 10_000, 15_000, 20_000, 30_000, 60_000)
+            .map(Duration::ofMillis)
+            .toArray(Duration[]::new);
+
     @Override
     public String getBaseUnit() {
       return "ms";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return TIMER_SLOS;
     }
 
     @Override
