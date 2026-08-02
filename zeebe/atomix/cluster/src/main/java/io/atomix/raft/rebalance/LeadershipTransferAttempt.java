@@ -231,7 +231,6 @@ final class LeadershipTransferAttempt {
     }
     finished = true;
     finishListener.run();
-    observeDuration(result);
     if (!leader.isRunning()) {
       // the step-down that ended this leader already lifted the freeze
       reportResult(result);
@@ -243,7 +242,6 @@ final class LeadershipTransferAttempt {
   private void abandon(final LeadershipTransferResult result) {
     finished = true;
     finishListener.run();
-    observeDuration(result);
     reportResult(result);
   }
 
@@ -255,11 +253,6 @@ final class LeadershipTransferAttempt {
   /** The wall time {@link TimeoutNowPromotion} can spend spacing out its attempts. */
   private Duration promotionBudget() {
     return raft.getHeartbeatInterval().multipliedBy(configuration.maxTransferAttempts());
-  }
-
-  private void observeDuration(final LeadershipTransferResult result) {
-    raft.getRebalanceMetrics()
-        .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
   }
 
   private void reportResult(final LeadershipTransferResult result) {
