@@ -78,7 +78,7 @@
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <mockserver.version>7.4.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
-    <google-java-format.plugin.version>1.35.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.36.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
