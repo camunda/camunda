@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeAwaiter;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -25,15 +26,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
+  private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
+  private static final Duration TIMEOUT = Duration.ofSeconds(60);
+
+  private final ClusterConfigurationManagementRequestSender requestSender;
+  private final ClusterConfigurationChangeAwaiter changeAwaiter;
 
   @Autowired
-  public ExportingEndpoint(final BrokerClient brokerClient) {
-    this(new ExportingRequestBroadcaster(brokerClient));
+  public ExportingEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
+    this(
+        requestSender,
+        new ClusterConfigurationChangeAwaiter(requestSender, POLL_INTERVAL, TIMEOUT));
   }
 
-  ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
-    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
+  ExportingEndpoint(
+      final ClusterConfigurationManagementRequestSender requestSender,
+      final ClusterConfigurationChangeAwaiter changeAwaiter) {
+    this.requestSender = requestSender;
+    this.changeAwaiter = changeAwaiter;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -42,16 +52,17 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
-      final var result =
+      final var targetState =
           switch (operationKey) {
-            case RESUME -> exportingRequestBroadcaster.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
-            case PAUSE ->
-                soft
-                    ? exportingRequestBroadcaster.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
-                    : exportingRequestBroadcaster.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case RESUME -> ExportingState.EXPORTING;
+            case PAUSE -> soft ? ExportingState.SOFT_PAUSED : ExportingState.PAUSED;
             default -> throw new UnsupportedOperationException();
           };
-      result.join();
+      changeAwaiter
+          .awaitCompletion(
+              requestSender.changeExportingState(
+                  new ExportingStateChangeRequest(targetState, false)))
+          .join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
       final var message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
