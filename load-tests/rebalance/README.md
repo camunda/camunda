@@ -119,7 +119,7 @@ that produced no readable dashboard says so.
 | `coordinator-kill`        | The coordinator killed mid-rebalance leaves no partition frozen and no gauges behind; a later rebalance still works                                          |
 | `broker-down`             | A partition the rebalance wanted to move and could not is `FAILED`, not `SKIPPED` — an operator must be able to tell those apart                             |
 | `leader-wait-timeout`     | The coordinator giving up while a leader is still working: whether the partition is left frozen, and for how long                                            |
-| `soak`                    | 45 minutes of rebalances with broker restarts between them, watching for stuck state, leaders that refuse later transfers, and metric series leaks           |
+| `soak`                    | An hour of rebalances with broker restarts between them, watching for stuck state, leaders that refuse later transfers, and metric series leaks              |
 
 Scenarios that need an imbalance create their own by restarting brokers, since nothing moves
 leadership back after a restart — which is the reason the feature exists.

@@ -201,6 +201,12 @@ scenario_imbalance-and-rebalance() {
     'sum by (partition, result) (zeebe_cluster_rebalance_partition_duration_seconds_count{namespace="$NAMESPACE"})'
   prom_snapshot "pause-durations" \
     'sum by (partition) (zeebe_cluster_rebalance_partition_pause_duration_seconds_sum{namespace="$NAMESPACE"})'
+
+  # The recovery is as much of the story as the disruption, and a panel needs
+  # more than the couple of scrapes a rebalance itself occupies to show it.
+  settle 300 "the recovery to be readable on the dashboard rather than a single point"
+  assert_num "throughput is back at the baseline" "$PI_PER_SECOND_QUERY" gt 10
+  assert_num "the cluster stayed balanced" "$BALANCE_QUERY" eq 1
 }
 
 # Serialisation is the core safety claim, and polling cannot prove it: a whole

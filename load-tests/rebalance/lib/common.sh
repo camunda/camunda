@@ -105,7 +105,8 @@ note() {
 render_summary() {
   local summary="$RUN_DIR/SUMMARY.md"
   local run_end_ms; run_end_ms=$(now_ms)
-  local grafana="https://dashboard.benchmark.camunda.cloud"
+  local grafana="$GRAFANA_URL"
+  local dashboard="$grafana/d/$DASHBOARD_UID/$DASHBOARD_SLUG"
 
   {
     echo "# Coordinated rebalance run — $NS"
@@ -121,7 +122,7 @@ render_summary() {
     echo
     echo "Whole run in Grafana:"
     echo
-    echo "- Rebalancing and Zeebe internals: <$grafana/d/zeebe-dashboard/zeebe?var-namespace=$NS&from=$RUN_START_MS&to=$run_end_ms>"
+    echo "- Rebalancing and Zeebe internals: <$dashboard?var-namespace=$NS&from=$RUN_START_MS&to=$run_end_ms>"
     echo "- Performance: <$grafana/d/camunda-performance/camunda-performance?var-namespace=$NS&from=$RUN_START_MS&to=$run_end_ms>"
     echo
     echo "## Scenarios"
@@ -142,7 +143,7 @@ render_summary() {
         "$index" "$scenario" \
         "$(clock_from_ms "$from")" "$(clock_from_ms "$to")" \
         "$verdict" \
-        "$grafana/d/zeebe-dashboard/zeebe?var-namespace=$NS&from=$from&to=$to"
+        "$dashboard?var-namespace=$NS&from=$from&to=$to"
     done < "$RUN_DIR/timeline.jsonl"
     echo
     echo "## Failed assertions"

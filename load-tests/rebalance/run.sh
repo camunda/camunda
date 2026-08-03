@@ -31,8 +31,15 @@ NETEM_DELAY=200ms
 NETEM_LOSS=2%
 NETEM_IMAGE=nicolaka/netshoot:latest
 BROKER_CONTAINER=orchestration
-SOAK_ITERATIONS=9
+SOAK_ITERATIONS=12
 BASELINE_PI_PER_SECOND=50
+GRAFANA_URL=https://dashboard.benchmark.camunda.cloud
+# The shared Grafana serves whatever version of the Zeebe dashboard it was
+# provisioned with, which will not carry the branch's Rebalancing row. Point
+# these at a privately imported copy of monitor/grafana/zeebe.json to get links
+# that land on the row this suite exercises.
+DASHBOARD_UID=zeebe-dashboard
+DASHBOARD_SLUG=zeebe
 LAGGING_BROKER=""
 
 usage() {
@@ -52,9 +59,12 @@ Options:
       --time-scale <f>    Multiply every wait by this, e.g. 0.05 for a quick shakedown (default 1)
       --assert-timeout <s> How long an assertion retries while metrics scrape (default 120)
       --scrape-settle <s> Pause between scenarios so their counters do not overlap (default 25)
-      --soak-iterations <n> Rebalances in the soak scenario (default 9, one every 5 min)
+      --soak-iterations <n> Rebalances in the soak scenario (default 12, one every 5 min)
       --netem-image <ref> Image with tc, for injecting replication lag (default nicolaka/netshoot:latest)
       --broker-container <name> Broker container name in the pod (default orchestration)
+      --grafana-url <url> Grafana base URL for the summary's links (default the benchmark Grafana)
+      --dashboard-uid <uid> Dashboard uid to link to; use your imported copy's uid if the shared
+                          dashboard predates the Rebalancing row (default zeebe-dashboard)
       --only <a,b>        Run only these scenarios
       --skip <a,b>        Skip these scenarios
       --from <scenario>   Start at this scenario, skipping the ones before it
@@ -81,6 +91,8 @@ while [[ $# -gt 0 ]]; do
     --soak-iterations) SOAK_ITERATIONS=$2; shift 2 ;;
     --netem-image) NETEM_IMAGE=$2; shift 2 ;;
     --broker-container) BROKER_CONTAINER=$2; shift 2 ;;
+    --grafana-url) GRAFANA_URL=$2; shift 2 ;;
+    --dashboard-uid) DASHBOARD_UID=$2; shift 2 ;;
     --only) ONLY=$2; shift 2 ;;
     --skip) SKIP=$2; shift 2 ;;
     --from) FROM=$2; shift 2 ;;
