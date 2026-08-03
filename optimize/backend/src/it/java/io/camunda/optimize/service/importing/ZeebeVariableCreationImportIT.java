@@ -167,11 +167,15 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
 
     // then (object-shaped)
     assertThat(instance.getVariables())
+        .filteredOn(
+            variable ->
+                variable.getName().equals("numericStrings")
+                    || variable.getName().startsWith("numericStrings."))
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .contains(
+        .containsExactlyInAnyOrder(
             Tuple.tuple(
                 "numericStrings",
                 OBJECT.getId(),
@@ -210,11 +214,15 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
 
     // then (list-shaped)
     assertThat(instance.getVariables())
+        .filteredOn(
+            variable ->
+                variable.getName().equals("numericStringsList")
+                    || variable.getName().startsWith("numericStringsList."))
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .contains(
+        .containsExactlyInAnyOrder(
             Tuple.tuple("numericStringsList", STRING.getId(), numericStringList),
             // additional _listSize variable for lists
             Tuple.tuple(
