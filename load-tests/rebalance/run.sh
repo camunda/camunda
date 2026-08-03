@@ -33,6 +33,10 @@ NETEM_IMAGE=nicolaka/netshoot:latest
 BROKER_CONTAINER=orchestration
 SOAK_ITERATIONS=12
 BASELINE_PI_PER_SECOND=50
+# How far above the baseline the saturation scenario pushes. The measured ceiling
+# on a 6-broker cluster with secondary storage off was around 92 PI/s against a
+# 50 PI/s baseline, so 1.6 sits under it while still making catch-ups work.
+SATURATION_FACTOR=1.6
 GRAFANA_URL=https://dashboard.benchmark.camunda.cloud
 # The shared Grafana serves whatever version of the Zeebe dashboard it was
 # provisioned with, which will not carry the branch's Rebalancing row. Point
@@ -60,6 +64,8 @@ Options:
       --assert-timeout <s> How long an assertion retries while metrics scrape (default 120)
       --scrape-settle <s> Pause between scenarios so their counters do not overlap (default 25)
       --soak-iterations <n> Rebalances in the soak scenario (default 12, one every 5 min)
+      --saturation-factor <f> How far above the baseline rate the saturation scenario pushes
+                          (default 1.6; above the cluster's ceiling the starter dies)
       --netem-image <ref> Image with tc, for injecting replication lag (default nicolaka/netshoot:latest)
       --broker-container <name> Broker container name in the pod (default orchestration)
       --grafana-url <url> Grafana base URL for the summary's links (default the benchmark Grafana)
@@ -89,6 +95,7 @@ while [[ $# -gt 0 ]]; do
     --assert-timeout) ASSERT_TIMEOUT=$2; shift 2 ;;
     --scrape-settle) SCRAPE_SETTLE=$2; shift 2 ;;
     --soak-iterations) SOAK_ITERATIONS=$2; shift 2 ;;
+    --saturation-factor) SATURATION_FACTOR=$2; shift 2 ;;
     --netem-image) NETEM_IMAGE=$2; shift 2 ;;
     --broker-container) BROKER_CONTAINER=$2; shift 2 ;;
     --grafana-url) GRAFANA_URL=$2; shift 2 ;;

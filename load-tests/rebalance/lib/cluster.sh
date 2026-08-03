@@ -269,6 +269,30 @@ starter_scale() {
   log "  starter scaled to $1 replica(s)"
 }
 
+# starter_rate <instances per second> — raises or lowers the load the starter
+# asks for.
+#
+# Adding a replica is the wrong instrument: it doubles the rate in one step, and
+# a starter asked for more than the cluster completes grows an unbounded
+# in-flight queue until its heap dies - which happened here within seven minutes
+# of doubling. The rate is a system property rather than an environment
+# variable, so it is edited inside JDK_JAVA_OPTIONS; the rollout that follows
+# also gives the new rate an empty queue to start from.
+starter_rate() {
+  local rate=$1 opts new
+  opts=$(kubectl get deploy starter -n "$NS" \
+    -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="JDK_JAVA_OPTIONS")].value}' 2>/dev/null)
+  if [[ -z "$opts" || "$opts" != *"-Dapp.starter.rate="* ]]; then
+    warn "  the starter does not carry -Dapp.starter.rate, so its rate cannot be changed"
+    return 1
+  fi
+  new=$(sed "s/-Dapp.starter.rate=[0-9]*/-Dapp.starter.rate=$rate/" <<<"$opts")
+  kubectl set env deployment/starter -n "$NS" JDK_JAVA_OPTIONS="$new" >/dev/null
+  kubectl rollout status deployment/starter -n "$NS" --timeout=300s >/dev/null 2>&1 || \
+    warn "  the starter did not roll out within 300s"
+  log "  starter rate set to $rate instances per second"
+}
+
 # workload_recover — puts the load back to the baseline and restarts the starter,
 # for when raising the rate killed it. Asking for more than the cluster completes
 # grows an unbounded in-flight queue until the JVM dies, and the workload then

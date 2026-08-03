@@ -242,10 +242,15 @@ assert_serialisation() {
 # --- 5. Rebalance under saturation ---------------------------------------
 
 scenario_saturation-rebalance() {
+  # The starter's in-flight queue is unbounded, so asking for more than the
+  # cluster completes grows it until the JVM dies. What the cluster completes is
+  # well above what the baseline asks for - the baseline rate is an SLO, not a
+  # ceiling - so the raise is a multiple of the baseline rather than a second
+  # replica, which would double it in one step and has killed the starter here.
   local target
-  target=$(awk -v r="${BASELINE_PI_PER_SECOND:-50}" 'BEGIN { print int(r * 0.9) }')
-  note "raising load towards ${target} PI/s, which stays under the measured ceiling: the starter's in-flight queue is unbounded, so asking for more than the cluster completes kills it silently"
-  starter_scale 2
+  target=$(awk -v r="${BASELINE_PI_PER_SECOND:-50}" -v f="$SATURATION_FACTOR" 'BEGIN { print int(r * f) }')
+  note "raising the starter's rate to ${target} PI/s, ${SATURATION_FACTOR}x the ${BASELINE_PI_PER_SECOND%%.*} PI/s baseline"
+  starter_rate "$target" || note "the rate could not be raised, so this scenario repeats the steady-load case rather than saturating"
   settle 420 "the raised load to reach a steady state"
   workload_alive || workload_recover || {
     note "the workload could not be brought back, so this scenario is void and the ones after it would be too"
@@ -280,7 +285,7 @@ scenario_saturation-rebalance() {
   assert_num "the cluster is balanced again" "$BALANCE_QUERY" eq 1 240
   workload_alive || warn "the workload did not survive the saturated rebalance"
 
-  starter_scale 1
+  starter_rate "${BASELINE_PI_PER_SECOND%%.*}" || starter_scale 1
   settle 300 "the load to fall back to the baseline"
   workload_alive || workload_recover || warn "the workload is still not alive; the scenarios after this one will be measuring nothing"
 }
