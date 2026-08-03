@@ -23,6 +23,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -445,6 +446,47 @@ public class FlowNodeInstanceIT {
     assertThat(actual.flowNodeName())
         .describedAs("the first resolved name must survive the merge into the still-queued insert")
         .isEqualTo("first");
+  }
+
+  /**
+   * RDBMS analogue of the ES/OS same-batch regression behind #58803: on ES/OS, one shared cached
+   * entity per id let the inner instance's own completion clobber the name resolved by the entry
+   * child's activation when both landed in the same flush. On RDBMS both writes instead target the
+   * same still-queued insert independently — this pins that merging a name resolution and a
+   * completion into that one pending insert preserves both, rather than the second merge
+   * overwriting the first.
+   */
+  @TestTemplate
+  public void shouldKeepNameAndApplyFinishWhenBothMergeIntoPendingInsert(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // deliberately not flushed: the insert has to stay queued for both merges to be reached
+    final var instance = FlowNodeInstanceFixtures.createRandomized(b -> b.flowNodeName(null));
+    rdbmsWriters.getFlowNodeInstanceWriter().create(instance);
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .updateName(instance.flowNodeInstanceKey(), "List users");
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .finish(instance.flowNodeInstanceKey(), FlowNodeState.COMPLETED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName())
+        .describedAs(
+            "the resolved name must survive merging into the same pending insert as finish()")
+        .isEqualTo("List users");
+    assertThat(actual.state())
+        .describedAs(
+            "finish() merging into the pending insert must still apply the completed state")
+        .isEqualTo(FlowNodeState.COMPLETED);
   }
 
   private static void compareFlowNodeInstance(
