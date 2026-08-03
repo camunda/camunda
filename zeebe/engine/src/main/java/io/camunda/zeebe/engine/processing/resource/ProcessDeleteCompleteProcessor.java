@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,8 +25,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 /**
  * Aggregates per-partition drain reports on the deployment partition. Each report clears the
  * reporting partition ({@link ProcessIntent#DELETE_COMPLETED}); once none remain, the definition is
- * marked gone cluster-wide ({@link ProcessIntent#FULLY_DELETED}). Physical removal already happened
- * locally on each partition (see {@code BpmnProcessDeletionBehavior}).
+ * marked gone cluster-wide ({@link ProcessIntent#FULLY_DELETED}) and its history is deleted if the
+ * deletion asked for it. Physical removal already happened locally on each partition (see {@code
+ * BpmnProcessDeletionBehavior}).
  */
 @ExcludeAuthorizationCheck
 public final class ProcessDeleteCompleteProcessor
@@ -36,6 +38,7 @@ public final class ProcessDeleteCompleteProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ProcessState processState;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final HistoryDeletionBehavior historyDeletionBehavior;
 
   public ProcessDeleteCompleteProcessor(
       final int currentPartitionId,
@@ -47,6 +50,8 @@ public final class ProcessDeleteCompleteProcessor
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    historyDeletionBehavior =
+        new HistoryDeletionBehavior(processingState.getKeyGenerator(), writers.command());
   }
 
   @Override
@@ -95,12 +100,12 @@ public final class ProcessDeleteCompleteProcessor
 
   private void finishProcessDelete(
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
+    // delete the history first, then emit FULLY_DELETED as the terminal marker of the deletion
+    if (process.isDeleteHistory()) {
+      historyDeletionBehavior.deleteProcessInstanceHistory(
+          command.getKey(), process.getProcessDefinitionKey());
+    }
+
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);
-
-    deleteHistory(command.getKey(), command);
-  }
-
-  private void deleteHistory(final long eventKey, final TypedRecord<ProcessRecord> command) {
-    // TODO delete history https://github.com/camunda/camunda/issues/56973
   }
 }
