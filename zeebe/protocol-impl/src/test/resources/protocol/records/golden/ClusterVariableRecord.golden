@@ -190,14 +190,4 @@ public class ClusterVariableRecord extends UnifiedRecordValue
         .setPath(path);
     return this;
   }
-
-  /**
-   * Copies the values buffer-to-buffer, avoiding the String round-trip of {@link
-   * #addSecretReference}.
-   */
-  public ClusterVariableRecord copySecretReferencesFrom(final ClusterVariableRecord other) {
-    secretReferencesProp.reset();
-    other.secretReferencesProp.forEach(reference -> secretReferencesProp.add().wrap(reference));
-    return this;
-  }
 }
