@@ -177,24 +177,24 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
         return TaskStatus.notFound();
       }
 
-      final boolean completed =
-          res.completed()
-              && res.error() == null
+      final boolean successful =
+          res.error() == null
               && (status.failures() == null || status.failures().isEmpty())
               && (status.created() + status.updated() + status.deleted() + status.versionConflicts()
                   >= status.total());
-      final var taskStatus =
-          new TaskStatus(
-              taskId,
-              true,
-              completed,
-              res.task().description(),
-              status.total(),
-              status.created(),
-              status.updated(),
-              status.deleted());
-      LOG.debug("Retrieved TaskStatus {}", taskStatus);
-      return taskStatus;
+      LOG.debug(
+          "Task {} completed {}, successful {}, total {}, created {}, updated {}, deleted {}",
+          taskId,
+          res.completed(),
+          successful,
+          status.total(),
+          status.created(),
+          status.updated(),
+          status.deleted());
+      if (!res.completed()) {
+        return TaskStatus.running(taskId);
+      }
+      return successful ? TaskStatus.completed(taskId) : TaskStatus.failed(taskId);
     } catch (final Exception e) {
       throw new MigrationException(e);
     }

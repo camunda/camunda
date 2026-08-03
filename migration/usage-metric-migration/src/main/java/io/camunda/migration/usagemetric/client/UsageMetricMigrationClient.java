@@ -66,18 +66,37 @@ public interface UsageMetricMigrationClient {
     return step;
   }
 
-  record TaskStatus(
-      String taskId,
-      boolean found,
-      boolean completed,
-      String description,
-      long total,
-      long created,
-      long updated,
-      long deleted) {
+  record TaskStatus(String taskId, State state) {
+
+    enum State {
+      NOT_FOUND,
+      RUNNING,
+      COMPLETED,
+      FAILED
+    }
 
     public static TaskStatus notFound() {
-      return new TaskStatus("", false, false, "", 0, 0, 0, 0);
+      return new TaskStatus("", State.NOT_FOUND);
+    }
+
+    public static TaskStatus running(final String taskId) {
+      return new TaskStatus(taskId, State.RUNNING);
+    }
+
+    public static TaskStatus completed(final String taskId) {
+      return new TaskStatus(taskId, State.COMPLETED);
+    }
+
+    public static TaskStatus failed(final String taskId) {
+      return new TaskStatus(taskId, State.FAILED);
+    }
+
+    public boolean isCompleted() {
+      return state == State.COMPLETED;
+    }
+
+    public boolean needsRestart() {
+      return state == State.NOT_FOUND || state == State.FAILED;
     }
   }
 }

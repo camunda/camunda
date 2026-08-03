@@ -186,16 +186,23 @@ public final class ElasticsearchUsageMetricMigrationClient implements UsageMetri
     final int conflicts = status.getInt("version_conflicts");
     final var failures = status.getJsonArray("failures");
     final int total = status.getInt("total");
-    final boolean completed =
-        res.completed()
-            && (failures == null || failures.isEmpty())
+    final boolean successful =
+        (failures == null || failures.isEmpty())
             && res.error() == null
             && (created + updated + deleted + conflicts) >= total;
-    final var taskStatus =
-        new TaskStatus(
-            taskId, true, completed, res.task().description(), total, created, updated, deleted);
-    LOG.debug("Retrieved TaskStatus {}", taskStatus);
-    return taskStatus;
+    LOG.debug(
+        "Task {} completed {}, successful {}, total {}, created {}, updated {}, deleted {}",
+        taskId,
+        res.completed(),
+        successful,
+        total,
+        created,
+        updated,
+        deleted);
+    if (!res.completed()) {
+      return TaskStatus.running(taskId);
+    }
+    return successful ? TaskStatus.completed(taskId) : TaskStatus.failed(taskId);
   }
 
   @Override
