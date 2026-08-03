@@ -90,6 +90,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantAssignedProvidersValidation.validate(environment);
     PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     PhysicalTenantExporterAssignedValidation.validateRootAssignedAbsent(environment);
+    PhysicalTenantRdbmsPrefixValidation.validate(environment, physicalTenantIds);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
