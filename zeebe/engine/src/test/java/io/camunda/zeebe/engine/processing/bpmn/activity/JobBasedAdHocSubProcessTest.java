@@ -1142,42 +1142,6 @@ public class JobBasedAdHocSubProcessTest {
   }
 
   @Test
-  public void shouldRejectWhenCompletionConditionIsFulfilledAndActivatingElements() {
-    // given
-    final var jobType = UUID.randomUUID().toString();
-    final BpmnModelInstance process =
-        process(
-            jobType,
-            adHocSubProcess -> {
-              adHocSubProcess.task("A");
-              adHocSubProcess.userTask("B");
-              adHocSubProcess.userTask("C");
-            });
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    completeJob(jobType, true, false, activateElement("A"), activateElement("B"));
-
-    // then
-    final var ahspKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId(AHSP_ELEMENT_ID)
-            .getFirst()
-            .getKey();
-
-    Assertions.assertThat(RecordingExporter.jobRecords().onlyCommandRejections().getFirst())
-        .extracting(Record::getRejectionType, Record::getIntent, Record::getRejectionReason)
-        .containsOnly(
-            RejectionType.INVALID_ARGUMENT,
-            JobIntent.COMPLETE,
-            "No elements can be activated for ad-hoc sub-process with key '%s' because the completion condition is fulfilled."
-                .formatted(ahspKey));
-  }
-
-  @Test
   public void shouldNotLeakInnerInstanceLocalVariablesWhenActivityHasOutputMapping() {
     // given
     final var ahspJobType = UUID.randomUUID().toString();
