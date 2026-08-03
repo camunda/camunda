@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
+import io.camunda.zeebe.engine.metrics.CrossPartitionMessageStateMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -174,6 +175,7 @@ public final class DbMessageState implements MutableMessageState {
   private final CrossPartitionMessageStartHolderOrigin crossPartitionStartHolderOrigin;
 
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
+  private final CrossPartitionMessageStateMetrics crossPartitionMetrics;
 
   private Long localMessageDeadlineCount = 0L;
 
@@ -282,6 +284,7 @@ public final class DbMessageState implements MutableMessageState {
             crossPartitionStartHolderOrigin);
 
     bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
+    crossPartitionMetrics = new CrossPartitionMessageStateMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -292,6 +295,10 @@ public final class DbMessageState implements MutableMessageState {
     }
 
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
+    // Authoritatively re-seed the gauges from persisted state, discarding any level accumulated
+    // by the +1/-1 mutations replayed before this hook runs.
+    crossPartitionMetrics.setStartLocks(crossPartitionStartLockColumnFamily.count());
+    crossPartitionMetrics.setBufferedMessages(messageByBusinessIdColumnFamily.count());
   }
 
   @Override
@@ -325,6 +332,7 @@ public final class DbMessageState implements MutableMessageState {
     if (businessIdBuffer.capacity() > 0) {
       businessId.wrapBuffer(businessIdBuffer);
       messageByBusinessIdColumnFamily.insert(businessIdMessageKey, DbNil.INSTANCE);
+      crossPartitionMetrics.incrementBufferedMessages();
     }
   }
 
@@ -388,8 +396,12 @@ public final class DbMessageState implements MutableMessageState {
     // upsert because cross-partition STARTED replies can be retried (P_B's success-only dedup
     // re-replies the same processInstanceKey); writing the same holder twice is a no-op overwrite
     // rather than an error.
+    final boolean isNew = !crossPartitionStartLockColumnFamily.exists(bpmnProcessIdCorrelationKey);
     crossPartitionStartLockColumnFamily.upsert(
         bpmnProcessIdCorrelationKey, crossPartitionStartLock);
+    if (isNew) {
+      crossPartitionMetrics.incrementStartLocks();
+    }
   }
 
   @Override
@@ -423,7 +435,11 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
+    final boolean existed = crossPartitionStartLockColumnFamily.exists(bpmnProcessIdCorrelationKey);
     crossPartitionStartLockColumnFamily.deleteIfExists(bpmnProcessIdCorrelationKey);
+    if (existed) {
+      crossPartitionMetrics.decrementStartLocks();
+    }
   }
 
   @Override
@@ -514,7 +530,14 @@ public final class DbMessageState implements MutableMessageState {
       // deleteIfExists (not deleteExisting): the business-id index was added after buffered
       // messages already carried a business id, so a message published before the index existed
       // (upgraded RocksDB state) has no entry here. Removing it must not throw on the missing key.
+      // Decrement the gauge only when a row was actually present, so the upgraded-state case and
+      // any
+      // repeated removal cannot drive the level negative.
+      final boolean existed = messageByBusinessIdColumnFamily.exists(businessIdMessageKey);
       messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
+      if (existed) {
+        crossPartitionMetrics.decrementBufferedMessages();
+      }
     }
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());

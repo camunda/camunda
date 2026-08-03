@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseResult;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
@@ -136,6 +137,18 @@ final class MessageCorrelationMetricsTest {
     assertThat(lockReleaseCount("redundant")).isEqualTo(1.0);
   }
 
+  @Test
+  void shouldRecordBlockedStartsTaggedByReason() {
+    // when
+    metrics.messageStartBlocked(BlockReason.CORRELATION_KEY);
+    metrics.messageStartBlocked(BlockReason.BUSINESS_ID);
+    metrics.messageStartBlocked(BlockReason.BUSINESS_ID);
+
+    // then each reason is counted independently under its own tag (M14)
+    assertThat(blockedCount("correlation_key")).isEqualTo(1.0);
+    assertThat(blockedCount("business_id")).isEqualTo(2.0);
+  }
+
   private double counter(final String name) {
     final var counter = registry.find(name).counter();
     return counter != null ? counter.count() : 0.0;
@@ -161,5 +174,9 @@ final class MessageCorrelationMetricsTest {
 
   private double lockReleaseCount(final String result) {
     return taggedCount("zeebe.message.start.cross.partition.lock.releases.total", "result", result);
+  }
+
+  private double blockedCount(final String reason) {
+    return taggedCount("zeebe.message.start.blocked.total", "reason", reason);
   }
 }

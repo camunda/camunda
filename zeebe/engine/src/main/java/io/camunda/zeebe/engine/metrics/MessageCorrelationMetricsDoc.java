@@ -278,9 +278,162 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Current number of pending cross-partition message-start asks awaiting a reply on {@code P_K}.
+   * Unlike the ask counters this is a live level, seeded from persisted state on recovery: a value
+   * that stays elevated points at asks that never get a terminal reply (the blocked-start symptom
+   * spike #58900 investigates).
+   */
+  CROSS_PARTITION_ASKS_PENDING {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.asks.pending";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of pending cross-partition message-start asks awaiting a reply on the correlation-key partition (P_K).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
+   * Current number of held cross-partition message-start locks on {@code P_K} — correlation keys
+   * reserved by a started cross-partition instance that has not yet released them. A level that
+   * only grows points at releases that never arrive (lost push and lost reconciliation), which
+   * would block further starts on those keys.
+   */
+  CROSS_PARTITION_LOCKS {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.locks";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of held cross-partition message-start correlation-key locks on the correlation-key partition (P_K).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
+   * Tracks how many buffered messages on this partition carry a business id and are therefore
+   * indexed for the cross-partition message-start uniqueness handshake. A same-partition start that
+   * is skipped on uniqueness is re-found through this index once the holder frees the business id,
+   * so this is the subset of {@code zeebe.buffered.messages.count} that participates in the
+   * handshake. Watching it against the total buffer shows how much of the buffer the feature is
+   * responsible for, and a level that only grows points at business-id index rows that are never
+   * cleaned up.
+   */
+  CROSS_PARTITION_BUFFERED_MESSAGES {
+    @Override
+    public String getName() {
+      return "zeebe.buffered.messages.business.id.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of buffered messages indexed by business id on the message partition for the cross-partition message-start uniqueness handshake.";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
+   * Tracks how many cross-partition message-start dedup entries are currently outstanding on {@code
+   * P_B = hash(businessId)}. Each entry records a uniqueness decision so a retried request from
+   * {@code P_K} is answered with the original result instead of starting a duplicate; it is removed
+   * once swept after its deadline. A level that only grows points at dedup rows that never expire —
+   * the sweep not keeping up — which both retains stale uniqueness decisions and grows {@code
+   * P_B}'s state unboundedly.
+   */
+  CROSS_PARTITION_DEDUP_ENTRIES {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.dedup.entries";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Current number of outstanding cross-partition message-start dedup entries on the business-id partition (P_B).";
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
+   * Counts message-start correlations left buffered because an active holder blocks them on the
+   * message partition: a live publish/correlate finds either the correlation key already taken by
+   * an active instance or the business id already held for the process definition, so no new
+   * instance is started and the message stays buffered until the holder frees it. The {@code
+   * reason} tag attributes each block to the gate that fired — the correlation key takes precedence
+   * — so an operator can tell correlation-key contention apart from business-id uniqueness
+   * back-pressure. A sustained rate with no matching drain (started instances) points at holders
+   * that never release.
+   */
+  MESSAGE_START_BLOCKED {
+    @Override
+    public String getName() {
+      return "zeebe.message.start.blocked.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Number of message-start correlations left buffered by an active holder on the message partition, tagged by the uniqueness gate that blocked.";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {MessageCorrelationKeyNames.REASON};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
-  /** The tag keys used by the message-correlation meters. */
   public enum MessageCorrelationKeyNames implements KeyName {
     /** The outcome of a cross-partition request or reply. */
     OUTCOME {
@@ -303,6 +456,14 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "result";
+      }
+    },
+
+    /** Which uniqueness gate blocked a message-start correlation (correlation key, business id). */
+    REASON {
+      @Override
+      public String asString() {
+        return "reason";
       }
     };
   }
@@ -371,6 +532,22 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     private final String label;
 
     ReleaseResult(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
+    }
+  }
+
+  /** Which uniqueness gate blocked a message-start correlation ({@code reason} tag). */
+  public enum BlockReason {
+    CORRELATION_KEY("correlation_key"),
+    BUSINESS_ID("business_id");
+
+    private final String label;
+
+    BlockReason(final String label) {
       this.label = label;
     }
 

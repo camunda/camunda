@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.MessageCorrelationKeyNames;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseResult;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
@@ -38,6 +39,7 @@ public final class MessageCorrelationMetrics {
       new EnumMap<>(ReleaseTrigger.class);
   private final Map<ReleaseResult, Counter> lockReleaseCounters =
       new EnumMap<>(ReleaseResult.class);
+  private final Map<BlockReason, Counter> blockedCounters = new EnumMap<>(BlockReason.class);
 
   private final Counter askCounter;
   private final Counter askRetryCounter;
@@ -132,6 +134,22 @@ public final class MessageCorrelationMetrics {
                 registerTaggedCounter(
                     MessageCorrelationMetricsDoc.LOCK_RELEASES,
                     MessageCorrelationKeyNames.RESULT.asString(),
+                    r.getLabel()))
+        .increment();
+  }
+
+  /**
+   * M14: records a message-start correlation left buffered by an active holder on the message
+   * partition, attributed to the uniqueness gate(s) that blocked it.
+   */
+  public void messageStartBlocked(final BlockReason reason) {
+    blockedCounters
+        .computeIfAbsent(
+            reason,
+            r ->
+                registerTaggedCounter(
+                    MessageCorrelationMetricsDoc.MESSAGE_START_BLOCKED,
+                    MessageCorrelationKeyNames.REASON.asString(),
                     r.getLabel()))
         .increment();
   }

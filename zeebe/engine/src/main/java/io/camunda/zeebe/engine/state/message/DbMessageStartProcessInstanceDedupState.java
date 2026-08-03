@@ -12,8 +12,11 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.metrics.MessageStartProcessInstanceDedupMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import org.agrona.collections.MutableBoolean;
 
 /**
@@ -42,7 +45,7 @@ import org.agrona.collections.MutableBoolean;
  * deadline.
  */
 public final class DbMessageStartProcessInstanceDedupState
-    implements MutableMessageStartProcessInstanceDedupState {
+    implements MutableMessageStartProcessInstanceDedupState, StreamProcessorLifecycleAware {
 
   private final DbLong processDefinitionKey = new DbLong();
   private final DbLong messageKey = new DbLong();
@@ -52,6 +55,7 @@ public final class DbMessageStartProcessInstanceDedupState
       new MessageStartProcessInstanceDedupEntry();
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, MessageStartProcessInstanceDedupEntry>
       columnFamily;
+  private final MessageStartProcessInstanceDedupMetrics dedupMetrics;
 
   public DbMessageStartProcessInstanceDedupState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -61,6 +65,14 @@ public final class DbMessageStartProcessInstanceDedupState
             transactionContext,
             processDefinitionAndMessageKey,
             entry);
+    dedupMetrics = new MessageStartProcessInstanceDedupMetrics(zeebeDb.getMeterRegistry());
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    // Authoritatively re-seed the gauge from persisted state, discarding any level accumulated by
+    // the +1/-1 mutations replayed before this hook runs.
+    dedupMetrics.setDedupEntries(columnFamily.count());
   }
 
   @Override
@@ -117,13 +129,22 @@ public final class DbMessageStartProcessInstanceDedupState
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageKey.wrapLong(messageKey);
     entry.setProcessInstanceKey(processInstanceKey).setDeletionDeadline(deletionDeadline);
+    // put upserts, so only a genuine insert changes the outstanding-entry level.
+    final boolean isNew = !columnFamily.exists(processDefinitionAndMessageKey);
     columnFamily.upsert(processDefinitionAndMessageKey, entry);
+    if (isNew) {
+      dedupMetrics.incrementDedupEntries();
+    }
   }
 
   @Override
   public void delete(final long processDefinitionKey, final long messageKey) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageKey.wrapLong(messageKey);
+    final boolean existed = columnFamily.exists(processDefinitionAndMessageKey);
     columnFamily.deleteIfExists(processDefinitionAndMessageKey);
+    if (existed) {
+      dedupMetrics.decrementDedupEntries();
+    }
   }
 }
