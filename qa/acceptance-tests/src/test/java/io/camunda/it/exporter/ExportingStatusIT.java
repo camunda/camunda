@@ -34,11 +34,11 @@ import org.junit.jupiter.params.provider.ValueSource;
  *
  * <p>{@code ExportingServicesTest} and {@code ExportingControllerTest} stub the cluster
  * configuration responses, so they only prove the phases are aggregated and rendered correctly.
- * What they cannot prove is that the phase read out of a running broker is the one pause and
- * resume just wrote —
- * that spans the admin request round trip, the persisted partition state and the aggregation, and
- * is the whole point of the endpoint. Every phase assertion is therefore cross-checked against the
- * {@code partitions} actuator, which reads the phase by an independent path.
+ * What they cannot prove is that the phase read out of a running broker is the one pause and resume
+ * just wrote — that spans the admin request round trip, the persisted partition state and the
+ * aggregation, and is the whole point of the endpoint. Every phase assertion is therefore
+ * cross-checked against the {@code partitions} actuator, which reads the phase by an independent
+ * path.
  *
  * <p>Several partitions are configured because the endpoint folds over all of them: with a single
  * partition, an aggregation that dropped every partition but the first would still pass.
