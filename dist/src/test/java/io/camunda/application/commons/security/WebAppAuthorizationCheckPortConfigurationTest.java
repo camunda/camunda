@@ -10,10 +10,15 @@ package io.camunda.application.commons.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationService;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.authz.AuthorizationCheckerConfiguration;
 import io.camunda.security.spring.authz.AuthorizationConfiguration;
@@ -37,6 +42,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
               AuthorizationScopeRepositoryPort.class,
               () -> mock(AuthorizationScopeRepositoryPort.class))
           .withBean(LazyTokenClaimsConverter.class, () -> mock(LazyTokenClaimsConverter.class))
+          .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
           .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
           .withConfiguration(
               AutoConfigurations.of(
@@ -57,6 +63,45 @@ class WebAppAuthorizationCheckPortConfigurationTest {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
               assertThat(ctx.getBean(AuthorizationCheckPort.class))
                   .isInstanceOf(TenantAwareAuthorizationCheckPort.class);
+            });
+  }
+
+  @Test
+  void shouldPerformAuthorizationChecksWithoutLazyTokenClaimsConverterUnderNonOidcAuthentication() {
+    // given: no LazyTokenClaimsConverter bean, mirroring BASIC/UNPROTECTED authentication, where
+    // OidcOverrideBeansConfiguration (the only producer of this bean) never registers; only the
+    // always-available MembershipPort bean is present
+
+    // when / then: the port constructs, and a check() call -- exactly what the webapp
+    // authorization filter drives on every authenticated request -- does not throw, since the
+    // fallback converter it builds from MembershipPort satisfies AuthorizationService's own
+    // non-null requirement even though it is never actually invoked by this code path
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
+        .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(
+            AuthorizationCheckerProviderConfiguration.class,
+            WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
+              final AuthorizationCheckPort port = ctx.getBean(AuthorizationCheckPort.class);
+              assertThat(port).isInstanceOf(TenantAwareAuthorizationCheckPort.class);
+
+              final RequiredAuthorization<Void> authorization =
+                  RequiredAuthorization.<Void>of(
+                          b ->
+                              b.resourceType(AuthorizationResourceType.COMPONENT)
+                                  .permissionType(PermissionType.ACCESS))
+                      .withResourceId("operate");
+              assertThat(port.check(CamundaAuthentication.of(b -> b.user("alice")), authorization))
+                  .isNotNull();
             });
   }
 
