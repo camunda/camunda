@@ -8,6 +8,27 @@ builds the Camunda image, deploys it to GKE via the Helm charts, runs a Self-Man
 smoke suite, and separately triggers a SaaS smoke suite. `alwaysgreen-triage.yml`
 classifies a failure and dispatches you with the specs already extracted.
 
+## Turning it on and off
+
+Controlled by the repository variable `ALWAYSGREEN_FIX_AGENT` (Settings → Variables →
+Actions). Changes take effect on the very next run — no PR, no merge, no redeploy.
+
+|   Value   |                               Effect                               |
+|-----------|--------------------------------------------------------------------|
+| `off`     | triage exits immediately; queued and future fix agents are skipped |
+| `dry-run` | triage classifies and reports; nothing is dispatched               |
+| `on`      | triage dispatches fix agents                                       |
+| *unset*   | treated as `dry-run`                                               |
+
+Unset means `dry-run`, so deleting the variable degrades to safe rather than to live. An
+unrecognised value logs a warning and is also treated as `dry-run`.
+
+`off` blocks a fix agent that has been dispatched but not yet started. It does **not**
+interrupt a run already inside its Claude step — cancel that run explicitly.
+
+In `dry-run` the job summary shows a "Would dispatch" table, so the classification can be
+reviewed without anything being opened.
+
 ## The rule that matters most
 
 **The failing job identifies the surface that broke. It does not identify the repository
@@ -32,12 +53,12 @@ Everything is under `/tmp/alwaysgreen-artifacts/`. There is no live cluster — 
 namespace is deleted by the pipeline's cleanup job and the SaaS org is deleted by the
 nightly, both before you start. Never try to reach a cluster or run `kubectl`.
 
-| Artifact | Surface | Contains |
-|---|---|---|
-| `playwright-results-json*` | `sm-smoke-e2e` | the report, incl. `config.rootDir` and retry history |
-| `playwright-traces*` | `sm-smoke-e2e` | `trace.zip`, `test-failed-1.png`, screenshots per attempt |
-| `json-report*`, `Playwright Report*` | `saas-smoke-e2e` | downstream report and HTML report |
-| `diagnostics-e2e*` | `sm-smoke-e2e` | **namespace dump: describe + logs for every pod** |
+|               Artifact               |     Surface      |                         Contains                          |
+|--------------------------------------|------------------|-----------------------------------------------------------|
+| `playwright-results-json*`           | `sm-smoke-e2e`   | the report, incl. `config.rootDir` and retry history      |
+| `playwright-traces*`                 | `sm-smoke-e2e`   | `trace.zip`, `test-failed-1.png`, screenshots per attempt |
+| `json-report*`, `Playwright Report*` | `saas-smoke-e2e` | downstream report and HTML report                         |
+| `diagnostics-e2e*`                   | `sm-smoke-e2e`   | **namespace dump: describe + logs for every pod**         |
 
 `diagnostics-e2e*` is the one that resolves the Keycloak class. It contains
 `Pod: <name> — logs` sections for **all** pods, including Ready ones, so a component that
@@ -67,12 +88,12 @@ Read PNG screenshots directly. For a trace: `unzip -l trace.zip`, then extract w
 
 ## Where fixes go
 
-| Diagnosis | Repository | Path |
-|---|---|---|
-| stale selector, wrong wait, bad assertion | `c8-cross-component-e2e-tests` | `tests/SM-8.x/`, `tests/8.x/`, `pages/` |
-| chart values, Keycloak/Identity wiring, deploy config | `camunda-platform-helm` | `charts/camunda-platform-8.x/` |
-| product regression | `camunda` | the owning module |
-| pipeline plumbing | `camunda` | `.github/` |
+|                       Diagnosis                       |           Repository           |                  Path                   |
+|-------------------------------------------------------|--------------------------------|-----------------------------------------|
+| stale selector, wrong wait, bad assertion             | `c8-cross-component-e2e-tests` | `tests/SM-8.x/`, `tests/8.x/`, `pages/` |
+| chart values, Keycloak/Identity wiring, deploy config | `camunda-platform-helm`        | `charts/camunda-platform-8.x/`          |
+| product regression                                    | `camunda`                      | the owning module                       |
+| pipeline plumbing                                     | `camunda`                      | `.github/`                              |
 
 The spec paths in `/tmp/test_specs.json` are already mapped to source. If you need to
 redo it: the suite comes from `config.rootDir` (`…/dist/tests/SM-8.10` → `SM-8.10`) and

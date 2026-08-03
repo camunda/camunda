@@ -66,6 +66,10 @@ jobs:
     name: Fix ${{ inputs.surface }} on ${{ inputs.base_ref }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # Honour the same kill switch as triage, so setting ALWAYSGREEN_FIX_AGENT=off stops
+    # agents that were already dispatched or queued, and blocks a manual dispatch. A
+    # run that has already started its Claude step is not interrupted — cancel it.
+    if: ${{ vars.ALWAYSGREEN_FIX_AGENT != 'off' }}
 
     steps:
       - name: Validate inputs
