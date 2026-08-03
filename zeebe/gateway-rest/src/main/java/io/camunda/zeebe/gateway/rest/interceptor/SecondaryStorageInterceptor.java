@@ -68,6 +68,10 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
     return true;
   }
 
+  public String getDatabaseType() {
+    return databaseType;
+  }
+
   public void setDatabaseType(final String databaseType) {
     this.databaseType = databaseType;
     secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
