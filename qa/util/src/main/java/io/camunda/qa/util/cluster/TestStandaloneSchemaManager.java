@@ -10,6 +10,7 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneSchemaManager;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
@@ -22,6 +23,13 @@ public class TestStandaloneSchemaManager
 
   public TestStandaloneSchemaManager() {
     super(UnifiedConfigurationModule.class, StandaloneSchemaManager.class);
+    // UnifiedConfigurationModule scans in LegacySecondaryStorageInterceptor, which requires a
+    // SecondaryStorageReadiness bean; this standalone application doesn't wire the production
+    // provider (SecondaryStorageReadinessConfiguration), so supply a stand-in here.
+    withBean(
+        "secondaryStorageReadiness",
+        SecondaryStorageReadiness.ALWAYS_READY,
+        SecondaryStorageReadiness.class);
   }
 
   @Override
