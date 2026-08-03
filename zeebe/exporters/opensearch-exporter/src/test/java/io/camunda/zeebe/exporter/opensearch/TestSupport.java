@@ -88,6 +88,7 @@ final class TestSupport {
       case GLOBAL_LISTENER -> config.globalListener = value;
       case AGENT_INSTANCE -> config.agentInstance = value;
       case AGENT_HISTORY -> config.agentHistory = value;
+      case AGENT_INSTANCE_BATCH -> config.agentInstanceBatch = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);

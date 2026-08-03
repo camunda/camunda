@@ -220,6 +220,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.agentHistory) {
         createValueIndexTemplate(ValueType.AGENT_HISTORY, version);
       }
+      if (index.agentInstanceBatch) {
+        createValueIndexTemplate(ValueType.AGENT_INSTANCE_BATCH, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

@@ -128,6 +128,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case GLOBAL_LISTENER -> index.globalListener;
       case AGENT_INSTANCE -> index.agentInstance;
       case AGENT_HISTORY -> index.agentHistory;
+      case AGENT_INSTANCE_BATCH -> index.agentInstanceBatch;
       default -> false;
     };
   }
@@ -266,6 +267,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
     public boolean agentInstance = true;
     public boolean agentHistory = true;
+    public boolean agentInstanceBatch = false;
 
     // index settings
     private Integer numberOfShards = null;
