@@ -9,13 +9,11 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
-import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -29,7 +27,9 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -257,8 +257,7 @@ public class DynamicClusterConfigurationService
             brokerConfiguration, physicalTenantConfigs, localMember);
 
     final var legacyExportingStates =
-        readLegacyExportingStates(
-            brokerConfiguration.getData().getDirectory(), staticConfiguration);
+        readLegacyExportingStates(brokerConfiguration.getData().getDirectory());
 
     return clusterConfigurationManagerService.start(
         brokerStartupContext.getActorSchedulingService(),
@@ -271,23 +270,51 @@ public class DynamicClusterConfigurationService
    * member, so it can be migrated into the dynamic cluster configuration. See {@link
    * io.camunda.zeebe.dynamic.config.ExportingStateInitializer}.
    */
-  private static Map<Integer, ExportingState> readLegacyExportingStates(
-      final String dataDirectory, final StaticConfiguration staticConfiguration) {
-    final var localMemberId = staticConfiguration.localMemberId();
+  @VisibleForTesting
+  static Map<Integer, ExportingState> readLegacyExportingStates(final String dataDirectory) {
     final Map<Integer, ExportingState> legacyExportingStates = new HashMap<>();
-    for (final var partition : staticConfiguration.generatePartitionDistribution()) {
-      if (!partition.members().contains(localMemberId)) {
-        continue;
+    final var dataDir = Path.of(dataDirectory);
+    if (!Files.isDirectory(dataDir)) {
+      return legacyExportingStates;
+    }
+    // Legacy .exporterPaused files live at <dataDir>/<group>/partitions/<number>/. Enumerate the
+    // partition directories that already exist on disk rather than computing the partition
+    // distribution: distribution generation goes through the partition distributor, which is not
+    // valid at this early startup point in some cluster configurations (e.g. zone-aware, where the
+    // static replication factor does not yet match the per-zone replica sum). A partition the local
+    // member does not host has no directory here, so there is nothing to migrate anyway.
+    try (final var groupDirs = Files.newDirectoryStream(dataDir, Files::isDirectory)) {
+      for (final var groupDir : groupDirs) {
+        final var partitionsDir = groupDir.resolve("partitions");
+        if (!Files.isDirectory(partitionsDir)) {
+          continue;
+        }
+        try (final var partitionDirs =
+            Files.newDirectoryStream(partitionsDir, Files::isDirectory)) {
+          for (final var partitionDir : partitionDirs) {
+            final var partitionId = tryParsePartitionId(partitionDir);
+            if (partitionId == null) {
+              continue;
+            }
+            final var exporterPausedFile =
+                partitionDir.resolve(
+                    PartitionProcessingState.PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
+            legacyExportingStates.put(partitionId, readLegacyExportingState(exporterPausedFile));
+          }
+        }
       }
-      final var partitionDirectory =
-          RaftPartitionFactory.getPartitionDirectory(partition.id(), dataDirectory);
-      final var exporterPausedFile =
-          partitionDirectory.resolve(
-              PartitionProcessingState.PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-      legacyExportingStates.put(
-          partition.id().number(), readLegacyExportingState(exporterPausedFile));
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
     return legacyExportingStates;
+  }
+
+  private static @Nullable Integer tryParsePartitionId(final Path partitionDir) {
+    try {
+      return Integer.parseInt(partitionDir.getFileName().toString());
+    } catch (final NumberFormatException e) {
+      return null;
+    }
   }
 
   private static ExportingState readLegacyExportingState(final Path exporterPausedFile) {
