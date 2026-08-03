@@ -628,6 +628,11 @@ jobs:
     permissions:
       contents: read
       actions: read
+    # Surfaced so alwaysgreen-triage can reply in the feedback message's thread rather
+    # than opening a second top-level message for the same failure.
+    outputs:
+      slack_ts: ${{ steps.feedback.outputs.slack_ts }}
+      slack_channel: ${{ steps.feedback.outputs.slack_channel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: |
@@ -694,6 +699,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
       - name: Post AlwaysGreen failure feedback
+        id: feedback
         if: failure()
         continue-on-error: true
         uses: ./.github/actions/post-failure-feedback
@@ -1143,3 +1149,7 @@ jobs:
     with:
       base_ref: ${{ github.ref_name }}
       chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
+      # Empty when the helm stage did not fail, or Slack was unavailable; triage then
+      # posts its own parent message instead of threading.
+      parent_slack_ts: ${{ needs.helm-deploy-status.outputs.slack_ts }}
+      parent_slack_channel: ${{ needs.helm-deploy-status.outputs.slack_channel }}

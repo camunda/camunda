@@ -29,6 +29,18 @@ on:
         required: false
         type: number
         default: 2
+      parent_slack_ts:
+        description: >
+          ts of the post-failure-feedback message for this failure. When set, triage
+          replies in that thread instead of starting a new one.
+        required: false
+        type: string
+        default: ''
+      parent_slack_channel:
+        description: 'Channel of parent_slack_ts'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       run_id:
@@ -189,27 +201,64 @@ jobs:
 
       - name: Post Slack summary
         id: slack
-        if: ${{ steps.plan.outcome == 'success' && steps.plan.outputs.count != '0' && steps.slack-secrets.outcome == 'success' }}
+        if: ${{ steps.slack-secrets.outcome == 'success' && (steps.plan.outputs.count != '0' || inputs.parent_slack_ts != '') }}
         continue-on-error: true
         env:
           SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PARENT_TS: ${{ inputs.parent_slack_ts }}
+          PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
         run: |
           set -euo pipefail
           base_ref='${{ steps.target.outputs.base_ref }}'
+          [ -f /tmp/alwaysgreen-plan.json ] || echo '{"dispatches":[],"suppressed":[],"noise":[],"blame":{}}' > /tmp/alwaysgreen-plan.json
           count=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)
-          failing_url=$(jq -r '.run_url' /tmp/alwaysgreen-plan.json)
+          failing_url=$(jq -r '.run_url // ""' /tmp/alwaysgreen-plan.json)
           surfaces=$(jq -r '[.dispatches[].surface] | join(", ")' /tmp/alwaysgreen-plan.json)
           reviewer=$(jq -r 'if .blame.reviewer then "<https://github.com/\(.blame.reviewer)|@\(.blame.reviewer)>" else "unresolved" end' /tmp/alwaysgreen-plan.json)
-          text=":robot_face: *AlwaysGreen fix agent dispatched* on \`${base_ref}\`"$'\n'"${count} agent(s): ${surfaces}"$'\n'"Failing run: <${failing_url}|↗> · Triage: <${RUN_URL}|↗> · Blame: ${reviewer}"
-          payload=$(jq -nc --arg channel "${{ env.ALERT_CHANNEL_ID }}" --arg text "$text" \
-            '{channel: $channel, text: $text, mrkdwn: true}')
+
+          if [ "${PLAN_OUTCOME}" != "success" ]; then
+            text=":warning: *AlwaysGreen triage failed* on \`${base_ref}\` — no agent dispatched"$'\n'"Triage: <${RUN_URL}|↗>"
+          elif [ "${count}" != "0" ]; then
+            text=":robot_face: *AlwaysGreen fix agent dispatched* on \`${base_ref}\`"$'\n'"${count} agent(s): ${surfaces}"$'\n'"Failing run: <${failing_url}|↗> · Triage: <${RUN_URL}|↗> · Blame: ${reviewer}"
+          else
+            # Nothing actionable. Name the reasons so the thread explains itself without
+            # anyone opening the run.
+            reasons=$(jq -r '
+              ([.suppressed[]? | .reason] + [.noise[]? | .verdict])
+              | if length == 0 then "no failing job mapped to a known surface"
+                else (group_by(.) | map("\(.[0]) x\(length)") | join(", ")) end' \
+              /tmp/alwaysgreen-plan.json 2>/dev/null || echo "unknown")
+            text=":information_source: *AlwaysGreen triage: nothing to dispatch* on \`${base_ref}\`"$'\n'"${reasons}"$'\n'"Triage: <${RUN_URL}|↗>"
+          fi
+
+          # Thread onto the post-failure-feedback message when the caller handed one
+          # down, so one failure produces one Slack thread. Falling back to a new
+          # top-level message keeps SaaS-only failures (whose stage posts no feedback)
+          # and Slack outages reported rather than silent.
+          if [ -n "${PARENT_TS}" ] && [ -n "${PARENT_CHANNEL}" ]; then
+            channel="${PARENT_CHANNEL}"
+            payload=$(jq -nc --arg channel "$channel" --arg ts "${PARENT_TS}" --arg text "$text" \
+              '{channel: $channel, thread_ts: $ts, text: $text, mrkdwn: true}')
+          else
+            channel="${{ env.ALERT_CHANNEL_ID }}"
+            payload=$(jq -nc --arg channel "$channel" --arg text "$text" \
+              '{channel: $channel, text: $text, mrkdwn: true}')
+          fi
+
           resp=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer ${SLACK_TOKEN}" \
             -H 'Content-Type: application/json; charset=utf-8' \
             -d "$payload" || echo '{}')
-          echo "ts=$(jq -r '.ts // ""' <<<"$resp")" >> "$GITHUB_OUTPUT"
-          echo "channel=$(jq -r '.channel // ""' <<<"$resp")" >> "$GITHUB_OUTPUT"
+          [ "$(jq -r '.ok // false' <<<"$resp")" = "true" ] \
+            || echo "::warning::Slack post failed: $(jq -r '.error // "unknown"' <<<"$resp")"
+
+          # The fix agent must reply as a sibling in the SAME thread, so pass the parent
+          # ts through when threading; our own reply's ts would nest nothing useful.
+          out_ts="${PARENT_TS:-$(jq -r '.ts // ""' <<<"$resp")}"
+          echo "ts=${out_ts}" >> "$GITHUB_OUTPUT"
+          echo "channel=$(jq -r --arg c "$channel" '.channel // $c' <<<"$resp")" >> "$GITHUB_OUTPUT"
 
       - name: Dispatch fix agents
         # outcome, not just count: a failed discovery leaves count empty, and '' != '0'
