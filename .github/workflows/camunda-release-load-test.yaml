@@ -11,6 +11,8 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Release load test workflow
+run-name: "Camunda Release load test workflow: ${{ inputs.name }}"
+
 on:
   workflow_dispatch:
     inputs:

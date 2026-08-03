@@ -5,6 +5,8 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Load Test Metrics
+run-name: "Camunda Load Test Metrics: ${{ inputs.namespace }}"
+
 on:
   workflow_dispatch:
     inputs:
