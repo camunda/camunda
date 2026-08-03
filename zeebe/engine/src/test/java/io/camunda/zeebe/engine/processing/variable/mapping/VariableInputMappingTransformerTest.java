@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableM
 import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
@@ -205,7 +204,7 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return accumulated != null ? accumulated : variables.get(name);
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
@@ -238,7 +237,7 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return accumulated != null ? accumulated : variables.get(name);
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
@@ -280,7 +279,7 @@ final class VariableInputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return accumulated != null ? accumulated : variables.get(name);
           };
       final var result = language.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
