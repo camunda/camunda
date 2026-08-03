@@ -108,7 +108,14 @@ public final class BpmnJobBehavior {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
-      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
+      EnumSet.of(
+          State.ACTIVATABLE,
+          State.ACTIVATED,
+          State.FAILED,
+          State.ERROR_THROWN,
+          // a job parked for secret resolution must be canceled with its element instance, or its
+          // record and its waiting entries would outlive the process instance
+          State.WAITING_FOR_SECRET_RESOLUTION);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);

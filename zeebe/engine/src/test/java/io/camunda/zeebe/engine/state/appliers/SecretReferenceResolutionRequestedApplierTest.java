@@ -239,9 +239,34 @@ final class SecretReferenceResolutionRequestedApplierTest {
     // when
     applier.applyState(100L, record);
 
-    // then - the job keeps its ACTIVATABLE state but is removed from the activatable index, so a
-    // long poll does not collect it again until it is reactivated
-    assertThat(jobState.isInState(1L, State.ACTIVATABLE)).isTrue();
+    // then - the job waits in its own state and is removed from the activatable index, so a long
+    // poll does not collect it again until it is reactivated
+    assertThat(jobState.isInState(1L, State.WAITING_FOR_SECRET_RESOLUTION)).isTrue();
+    assertThat(activatableKeys(type)).isEmpty();
+  }
+
+  @Test
+  void shouldParkJobWaitingOnASecondSecretReference() {
+    // given - a job already parked on one reference
+    final DirectBuffer type = wrapString("type-a");
+    createActivatableJob(1L, type);
+    applier.applyState(
+        100L,
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(1L));
+
+    // when - a second reference of the same job is requested
+    applier.applyState(
+        101L,
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-b")
+            .addJobKey(1L));
+
+    // then - parking an already parked job is idempotent
+    assertThat(jobState.isInState(1L, State.WAITING_FOR_SECRET_RESOLUTION)).isTrue();
     assertThat(activatableKeys(type)).isEmpty();
   }
 

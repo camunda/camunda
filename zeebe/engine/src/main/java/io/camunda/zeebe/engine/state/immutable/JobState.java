@@ -58,7 +58,13 @@ public interface JobState {
     ACTIVATED((byte) 1),
     FAILED((byte) 2),
     NOT_FOUND((byte) 3),
-    ERROR_THROWN((byte) 4);
+    ERROR_THROWN((byte) 4),
+    /**
+     * The job is parked until its secret references are resolved in the background. It is not in
+     * the activatable index, so it is handed out to no worker, and it leaves this state only by
+     * being reactivated after the resolution or by being deleted.
+     */
+    WAITING_FOR_SECRET_RESOLUTION((byte) 5);
 
     byte value;
 

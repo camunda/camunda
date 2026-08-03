@@ -53,7 +53,14 @@ public class JobUpdateBehaviour {
             jobState,
             processingStateState.getBannedInstanceState(),
             "update",
-            List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN),
+            // a job parked for secret resolution stays updatable: an operator re-prioritising or
+            // topping up the retries of queued work has no reason to wait for the resolution
+            List.of(
+                State.ACTIVATABLE,
+                State.ACTIVATED,
+                State.FAILED,
+                State.ERROR_THROWN,
+                State.WAITING_FOR_SECRET_RESOLUTION),
             List.of(JobLeaseFencingCheck.forUpdateCommand()),
             cslCheck);
     this.cslCheck = cslCheck;

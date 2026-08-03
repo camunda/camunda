@@ -382,6 +382,22 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldKeepJobParkedWhenUpdatingPriorityOfJobWaitingForSecretResolution() {
+    // given - a job parked while its secret references are resolved
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    parkJobForSecretResolution(jobKey, jobRecord);
+
+    // when
+    jobState.updateJobPriority(jobKey, 99);
+
+    // then - the new priority is stored, but the job is not put back into the activatable index
+    assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(99);
+    assertJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
+    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+  }
+
+  @Test
   public void shouldUpdateDeadline() {
     // given
     final long jobKey = 1L;
@@ -800,6 +816,15 @@ public final class JobStateTest {
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
     jobState.create(key, record);
     jobState.activate(key, record);
+  }
+
+  /** Creates an activatable job and parks it the way the secret resolution flow does. */
+  private void parkJobForSecretResolution(final long key, final JobRecord record) {
+    jobState.insertJobRecordActivatable(key, record);
+    jobState.makeJobActivatableByPriority(
+        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+    jobState.updateJobState(key, State.WAITING_FOR_SECRET_RESOLUTION);
+    jobState.makeJobNotActivatable(key, record);
   }
 
   private JobRecord newJobRecord() {

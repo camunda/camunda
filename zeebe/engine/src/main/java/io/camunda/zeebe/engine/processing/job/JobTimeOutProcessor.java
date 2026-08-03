@@ -66,6 +66,8 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
             case ACTIVATABLE -> "it must be activated first";
             case FAILED -> "it is marked as failed and is not activated";
             case ERROR_THROWN -> "it has thrown an error and is not activated";
+            case WAITING_FOR_SECRET_RESOLUTION ->
+                "it is waiting for a secret to be resolved and is not activated";
             case NOT_FOUND -> "no such job was found";
           };
 
