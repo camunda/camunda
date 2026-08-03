@@ -530,12 +530,17 @@ async function main() {
               restoreUpstreamOperationRefs: true
             });
           } catch (fallbackErr) {
-            console.error(`  ERROR bundling ${version} (fallback to main): ${fallbackErr.message}`);
-            continue;
+            throw new Error(
+              `Failed to bundle ${version}: ref ${ref} failed (${err.message}), and the ` +
+              `fallback to \`main\` also failed (${fallbackErr.message}). Refusing to write ` +
+              `a version-map computed from an incomplete baseline set.`
+            );
           }
         } else {
-          console.error(`  ERROR bundling ${version}: ${err.message}`);
-          continue;
+          throw new Error(
+            `Failed to bundle ${version} (ref ${ref}): ${err.message}. Refusing to write a ` +
+            `version-map computed from an incomplete baseline set.`
+          );
         }
       }
     }
@@ -784,9 +789,12 @@ async function main() {
       // the operation order chosen by the bundler.
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
     const endpointMap = Object.fromEntries(entries);
-    // One file per MAIN_BRANCH_VERSIONS entry so multi-version runs don't
-    // silently overwrite each other. The cross-version `bundler-version-map.json`
-    // stays unsuffixed because there is exactly one of it.
+    // Unsuffixed, single file: correct as long as MAIN_BRANCH_VERSIONS has
+    // exactly one entry, which is the only configuration ever used in this
+    // repo today. If MAIN_BRANCH_VERSIONS ever grows to more than one entry,
+    // this silently overwrites the file on each loop iteration, keeping only
+    // the last version's endpoint-map — revisit then, e.g. by suffixing the
+    // filename per version.
     const endpointMapPath =
       `${OUTPUT_PATH}/endpoint-map.json`;
     mkdirSync(OUTPUT_PATH, { recursive: true });
