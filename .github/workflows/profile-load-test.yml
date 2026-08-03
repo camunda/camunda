@@ -12,6 +12,8 @@
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
 name: Profile running load test
+run-name: "Profile running load test: ${{ inputs.name }}"
+
 on:
   workflow_dispatch:
     inputs:
