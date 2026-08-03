@@ -45,14 +45,6 @@ import org.springframework.web.method.HandlerMethod;
 })
 class SecondaryStorageInterceptorOverrideTest {
 
-  @Configuration
-  static class SecondaryStorageReadinessTestConfig {
-    @Bean
-    SecondaryStorageReadiness secondaryStorageReadiness() {
-      return SecondaryStorageReadiness.ALWAYS_READY;
-    }
-  }
-
   @AfterEach
   void tearDown() {
     RequestContextHolder.resetRequestAttributes();
@@ -72,6 +64,14 @@ class SecondaryStorageInterceptorOverrideTest {
     final var handlerMethod = mock(HandlerMethod.class);
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     return handlerMethod;
+  }
+
+  @Configuration
+  static class SecondaryStorageReadinessTestConfig {
+    @Bean
+    SecondaryStorageReadiness secondaryStorageReadiness() {
+      return SecondaryStorageReadiness.ALWAYS_READY;
+    }
   }
 
   @Nested
