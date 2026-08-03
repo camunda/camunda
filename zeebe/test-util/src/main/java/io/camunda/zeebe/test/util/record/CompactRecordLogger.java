@@ -76,6 +76,7 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -346,6 +347,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
+    valueLoggers.put(ValueType.AGENT_INSTANCE_BATCH, this::summarizeAgentInstanceBatch);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
   }
@@ -559,6 +561,20 @@ public class CompactRecordLogger {
               changedAttributes.stream()
                   .map(CompactRecordLogger::abbreviateToFirstLetters)
                   .toList());
+    }
+
+    return result.toString();
+  }
+
+  private String summarizeAgentInstanceBatch(final Record<?> record) {
+    final var value = (AgentInstanceBatchRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append(
+        summarizeProcessInformation(
+            value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+    if (value.getAgentInstanceKey() != -1) {
+      result.append(" next AI:").append(shortenKey(value.getAgentInstanceKey()));
     }
 
     return result.toString();
