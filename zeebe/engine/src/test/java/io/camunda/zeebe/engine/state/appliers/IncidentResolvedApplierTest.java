@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -113,8 +114,8 @@ public class IncidentResolvedApplierTest {
 
   @Test
   void shouldMakeParkedJobActivatableWhenSecretResolutionIncidentIsResolvedV4() {
-    // given - a job parked for secret resolution keeps the ACTIVATABLE state, so the regular
-    //         FAILED/ERROR_THROWN resolution path does not apply to it
+    // given - a job parked for secret resolution is not FAILED or ERROR_THROWN, so the regular
+    //         resolution path does not apply to it
     final var incidentKey = 1L;
     final var jobKey = 2L;
     final var incidentRecord =
@@ -122,7 +123,6 @@ public class IncidentResolvedApplierTest {
             .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
             .setJobKey(jobKey)
             .setElementId(BufferUtil.wrapString("elementId"));
-    when(jobStateMock.getState(jobKey)).thenReturn(State.ACTIVATABLE);
 
     final var v4Applier =
         new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
@@ -130,23 +130,24 @@ public class IncidentResolvedApplierTest {
     // when
     v4Applier.applyState(incidentKey, incidentRecord);
 
-    // then - the job is put back into the activatable index so the next activation attempt
-    //        re-evaluates its secret references
+    // then - the reactivation is delegated to job state, which reactivates the job only if it is
+    //        still waiting; the regular resolution path is not taken
     verify(jobStateMock).makeActivatableAfterSecretResolution(jobKey);
+    verify(jobStateMock, never()).updateJobState(anyLong(), any());
   }
 
   @Test
-  void shouldNotMakeNonParkedJobActivatableWhenSecretResolutionIncidentIsResolvedV4() {
-    // given - the job is no longer parked when the secret-resolution incident is resolved
-    //         (e.g. it was picked up by a worker after a concurrent reactivation)
+  void shouldNotReactivateJobOfNonSecretIncidentWhenResolvedV4() {
+    // given - an incident that is not about secret resolution, raised for a job that is neither
+    //         FAILED nor ERROR_THROWN
     final var incidentKey = 1L;
     final var jobKey = 2L;
     final var incidentRecord =
         new IncidentRecord()
-            .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+            .setErrorType(ErrorType.IO_MAPPING_ERROR)
             .setJobKey(jobKey)
             .setElementId(BufferUtil.wrapString("elementId"));
-    when(jobStateMock.getState(jobKey)).thenReturn(State.ACTIVATED);
+    when(jobStateMock.getState(jobKey)).thenReturn(State.WAITING_FOR_SECRET_RESOLUTION);
 
     final var v4Applier =
         new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
@@ -154,8 +155,9 @@ public class IncidentResolvedApplierTest {
     // when
     v4Applier.applyState(incidentKey, incidentRecord);
 
-    // then - re-inserting a non-parked job into the activatable index would corrupt job state
+    // then - the secret resolution reactivation is reserved for secret resolution incidents
     verify(jobStateMock, never()).makeActivatableAfterSecretResolution(anyLong());
+    verify(jobStateMock, never()).updateJobState(anyLong(), any());
   }
 
   @Test

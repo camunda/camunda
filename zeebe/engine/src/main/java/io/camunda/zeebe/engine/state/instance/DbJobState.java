@@ -266,12 +266,15 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void makeActivatableAfterSecretResolution(final long key) {
-    final JobRecord record = getJob(key);
-    if (record != null) {
-      updateJobState(key, State.ACTIVATABLE);
-      makeJobActivatableByPriority(
-          record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+    if (!isInState(key, State.WAITING_FOR_SECRET_RESOLUTION)) {
+      // the job is gone, or was already reactivated by another resolved reference of the same
+      // activation; re-inserting it in either case corrupts the activatable index
+      return;
     }
+    final JobRecord record = getJob(key);
+    updateJobState(key, State.ACTIVATABLE);
+    makeJobActivatableByPriority(
+        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
   }
 
   /**

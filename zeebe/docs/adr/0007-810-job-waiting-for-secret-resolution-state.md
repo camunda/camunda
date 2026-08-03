@@ -106,11 +106,13 @@ An older broker reading state written by a newer one would fail on `Enum.valueOf
 follows the general no-downgrade rule for 8.10 state. Reading older state is unaffected: no existing
 entry carries the new name.
 
-The two event appliers whose logic changes (`SecretReferenceResolutionRequestedApplier` and the
+The two pieces of applier logic that change (`SecretReferenceResolutionRequestedApplier` and the
 `SECRET_RESOLUTION_ERROR` branch of `IncidentResolvedV4Applier`) are updated in place, with their
 golden files regenerated, instead of being registered as new versions. Both were merged after the
-`8.10.0-alpha4` release candidates were cut and are contained in no release tag, so no cluster can
-have replayed them.
+`8.10.0-alpha4` candidates were branched: the parking applier is contained in no release tag at all,
+and the incident branch was added to `IncidentResolvedV4Applier` (whose other branches did ship in
+those candidates) after that branch point. No released build ever applied either of them, so no
+cluster can have replayed them.
 
 ## Alternatives considered
 
