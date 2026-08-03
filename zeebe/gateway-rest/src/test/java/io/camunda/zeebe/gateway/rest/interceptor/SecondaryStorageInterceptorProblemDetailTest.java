@@ -40,7 +40,7 @@ class SecondaryStorageInterceptorProblemDetailTest {
     // given
     final var readiness = mock(SecondaryStorageReadiness.class);
     when(readiness.isReady(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(false);
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch", readiness);
+    final var interceptor = new SecondaryStorageInterceptor(readiness);
     final MockMvc mockMvc =
         MockMvcBuilders.standaloneSetup(new TestController())
             .addInterceptors(interceptor)
