@@ -55,10 +55,22 @@ inputs:
     required: false
     default: ""
 
+outputs:
+  slack_ts:
+    description: >
+      Timestamp of the Slack message that was posted, so a later job can reply in its
+      thread instead of starting a second top-level message. Empty when Slack was
+      skipped or the post failed.
+    value: ${{ steps.feedback.outputs.slack_ts }}
+  slack_channel:
+    description: "Channel id the message was posted to. Empty when nothing was posted."
+    value: ${{ steps.feedback.outputs.slack_channel }}
+
 runs:
   using: composite
   steps:
     - name: Render & post failure feedback
+      id: feedback
       shell: bash
       continue-on-error: true
       env:
