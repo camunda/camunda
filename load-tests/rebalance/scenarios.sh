@@ -397,13 +397,15 @@ scenario_cancel-mid-rebalance() {
   fi
 
   assert_num "nothing is left frozen after cancelling" "$PAUSED_PARTITIONS_QUERY" eq 0 180
-  # Not the mid-rebalance check: a cancelled rebalance records the partitions it
-  # never reached as pending, and the gauge holds that record, so they read as
-  # pending until the next rebalance replaces it. What must be true is that
-  # nothing is still being transferred.
-  assert_num "no partition is still being transferred after cancelling" "$TRANSFERRING_QUERY" eq 0 180
-  local pending; pending=$(prom_query "$MID_REBALANCE_QUERY")
-  note "$pending partitions read as pending on the dashboard after the cancellation, and will until the next rebalance: pending is also what the coordinator records for a partition it never reached, so the state panel alone cannot tell a cancelled rebalance from a running one"
+  # A cancelled rebalance now turns every partition it never reached into
+  # cancelled rather than leaving it pending, so this is back to the same
+  # mid-rebalance check every other scenario uses - pending no longer means
+  # "maybe still running".
+  assert_num "no partition is left mid-rebalance after cancelling" "$MID_REBALANCE_QUERY" eq 0 180
+  if [[ "$cancelled" == "true" ]]; then
+    local cancelled_count; cancelled_count=$(prom_query "$CANCELLED_QUERY")
+    note "${cancelled_count:-0} partitions read as cancelled on the dashboard after the cancellation, and will until the next rebalance replaces them"
+  fi
   assert_num "the workload is still being served" "$PI_PER_SECOND_QUERY" gt 1
 
   clear_lag
@@ -441,8 +443,9 @@ scenario_coordinator-kill() {
   assert_num "no partition is left frozen after the coordinator went away" \
     "$PAUSED_PARTITIONS_QUERY" eq 0 240
   assert_num "the workload is still being served" "$PI_PER_SECOND_QUERY" gt 1
-  # As with a cancellation, the partitions the abandoned rebalance never reached
-  # keep reading as pending, so the check is that nothing is still transferring.
+  # Unlike a cancellation, nobody is left to turn the abandoned rebalance's
+  # untouched partitions into anything else, so they keep reading as pending;
+  # the check here is that nothing is still transferring.
   assert_num "no partition is still being transferred by the abandoned rebalance" \
     "$TRANSFERRING_QUERY" eq 0 300
   assert_num "responsibility did not split across two coordinators" "$COORDINATORS_QUERY" le 1 300

@@ -206,9 +206,15 @@ MID_REBALANCE_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$N
 # does, so more than one would mean two members believe they coordinate.
 # Only a partition actually being transferred (2) is work in flight. Pending (1)
 # is also what a rebalance records for the partitions it never reached, so after
-# a cancelled or abandoned rebalance a pending state is a finished record rather
-# than a live one.
+# an abandoned rebalance - one nobody was left to finish - a pending state is a
+# finished record rather than a live one. A cancelled rebalance no longer has this
+# ambiguity: its still-pending partitions become cancelled (6) instead.
 TRANSFERRING_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"} == 2) or vector(0)'
+
+# How many partitions the operator's own cancellation left untouched, as opposed
+# to a rebalance still running or one the coordinator abandoned - neither of which
+# produces this state.
+CANCELLED_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"} == 6) or vector(0)'
 
 COORDINATORS_QUERY='count(count by (pod) (zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"})) or vector(0)'
 
