@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {isEqual} from 'lodash';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
@@ -48,6 +49,8 @@ type FormValues = {
 	timestampBefore?: string;
 };
 
+const EMPTY_FILTERS: FormValues = {};
+
 const Filters: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
@@ -64,18 +67,6 @@ const Filters: React.FC<Props> = ({search}) => {
 					.map((def) => def.version),
 			]
 		: [];
-
-	const isResetDisabled =
-		search.tenantId === undefined &&
-		search.process === undefined &&
-		search.version === undefined &&
-		search.processInstanceKey === undefined &&
-		search.operationType === undefined &&
-		search.entityType === undefined &&
-		search.result === undefined &&
-		search.actorId === undefined &&
-		search.timestampAfter === undefined &&
-		search.timestampBefore === undefined;
 
 	const handleFiltersSubmit = (values: FormValues) => {
 		void navigate({
@@ -99,14 +90,14 @@ const Filters: React.FC<Props> = ({search}) => {
 
 	return (
 		<Form<FormValues> onSubmit={handleFiltersSubmit} initialValues={search}>
-			{({handleSubmit, form}) => (
+			{({handleSubmit, form, values}) => (
 				<StyledForm onSubmit={handleSubmit}>
 					<AutoSubmit
 						fieldsToSkipTimeout={['tenantId', 'process', 'version', 'operationType', 'entityType', 'result']}
 					/>
 					<FiltersPanel
 						localStorageKey="isAuditLogsFiltersCollapsed"
-						isResetButtonDisabled={isResetDisabled}
+						isResetButtonDisabled={isEqual(EMPTY_FILTERS, values)}
 						onResetClick={() => {
 							form.reset();
 							void navigate({to: '.', search: {}});

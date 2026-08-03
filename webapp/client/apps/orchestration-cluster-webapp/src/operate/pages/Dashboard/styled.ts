@@ -13,7 +13,6 @@ import {Link} from '@tanstack/react-router';
 
 const Container = styled.main`
 	height: 100%;
-	padding-top: var(--cds-spacing-09);
 	box-sizing: border-box;
 	overflow: hidden;
 `;

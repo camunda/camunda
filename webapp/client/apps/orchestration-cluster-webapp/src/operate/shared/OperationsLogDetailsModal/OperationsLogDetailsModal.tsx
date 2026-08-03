@@ -20,7 +20,7 @@ import {
 } from '@carbon/react/icons';
 import {Link as RouterLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {ActorIcon} from './ActorIcon';
@@ -55,6 +55,8 @@ type DetailsModalState = {
 	isOpen: boolean;
 	auditLog?: AuditLog;
 };
+
+const PARENT_ENTITY_TYPES: AuditLogEntityType[] = ['USER_TASK', 'INCIDENT', 'VARIABLE'];
 
 const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
 	const {t} = useTranslation();
@@ -178,9 +180,8 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							{auditLog.entityDescription?.trim() || entityKeyData.name}
 						</SecondColumn>
 					</VerticallyAlignedRow>
-					{(['USER_TASK', 'INCIDENT', 'VARIABLE'] as const).includes(
-						auditLog.entityType as 'USER_TASK' | 'INCIDENT' | 'VARIABLE',
-					) && isValidProcessInstanceKey(auditLog.processInstanceKey) ? (
+					{PARENT_ENTITY_TYPES.includes(auditLog.entityType) &&
+					isValidProcessInstanceKey(auditLog.processInstanceKey) ? (
 						<VerticallyAlignedRow>
 							<FirstColumn noWrap>
 								<IconText>

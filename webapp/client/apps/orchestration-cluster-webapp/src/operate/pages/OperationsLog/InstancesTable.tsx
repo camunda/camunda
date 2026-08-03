@@ -9,9 +9,12 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
-import type {AuditLog, AuditLogSortField, QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+	auditLogSortFieldEnum,
+	type AuditLog,
+	type QueryAuditLogsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queries} from '#/shared/http/queries';
-import {tracking} from '#/shared/tracking';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {logger} from '#/operate/shared/utils/logger';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
@@ -69,8 +72,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			: undefined;
 
 	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
-	const sortField = (rawSortField ?? 'timestamp') as AuditLogSortField;
-	const sortOrder = (rawSortOrder ?? 'desc') as 'asc' | 'desc';
+	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
+	const sortField = parsedSortField.success ? parsedSortField.data : 'timestamp';
+	const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
@@ -100,22 +104,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	} = useAuditLogs(requestFilter, [{field: sortField, order: sortOrder}]);
 
 	useEffect(() => {
-		if (data !== undefined) {
-			tracking.track({
-				eventName: 'operate:audit-logs-loaded',
-				filters: Object.keys(requestFilter),
-				sort: sortField,
-			});
-		}
-		// Only re-fire when a new page of results actually arrives, matching legacy's `select`-based
-		// tracking; including requestFilter/sortField would double-fire between a filter change and
-		// the query settling.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data]);
-
-	useEffect(() => {
 		if (error) {
-			tracking.track({eventName: 'operate:audit-logs-fetch-failed'});
 			notificationsStore.displayNotification({
 				isDismissable: true,
 				kind: 'error',
@@ -128,7 +117,17 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const totalCount = data?.pages.at(0)?.page.totalItems ?? 0;
 
-	const hasAnyFilter = Object.entries(search).some(([key, value]) => key !== 'sort' && value !== undefined);
+	const hasAnyFilter =
+		search.tenantId !== undefined ||
+		search.process !== undefined ||
+		search.version !== undefined ||
+		search.processInstanceKey !== undefined ||
+		search.operationType !== undefined ||
+		search.entityType !== undefined ||
+		search.result !== undefined ||
+		search.actorId !== undefined ||
+		search.timestampAfter !== undefined ||
+		search.timestampBefore !== undefined;
 
 	const emptyState = hasAnyFilter ? (
 		<EmptyMessage

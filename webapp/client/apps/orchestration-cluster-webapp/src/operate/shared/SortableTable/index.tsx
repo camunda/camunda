@@ -76,37 +76,38 @@ function SortableTable<TRow>(props: Props<TRow>) {
 	const selection = props.selectionType === 'checkbox' ? props : undefined;
 	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
-	const columnCount = columns.length + (selection !== undefined ? 1 : 0);
+
+	if (rows.length === 0 && emptyState !== undefined) {
+		const emptyContent = <EmptyStateContainer>{emptyState}</EmptyStateContainer>;
+
+		if (hasScrollHandlers) {
+			return <ScrollContainer data-testid={dataTestId}>{emptyContent}</ScrollContainer>;
+		}
+
+		return <TableContainer data-testid={dataTestId}>{emptyContent}</TableContainer>;
+	}
 
 	const tableBody = (
 		<TableBody>
-			{rows.length === 0 && emptyState !== undefined ? (
-				<TableRow>
-					<TableCell colSpan={columnCount}>
-						<EmptyStateContainer>{emptyState}</EmptyStateContainer>
-					</TableCell>
-				</TableRow>
-			) : (
-				rows.map((row) => {
-					const id = rowKey(row);
-					return (
-						<TableRow key={id}>
-							{selection !== undefined && (
-								<TableSelectRow
-									id={`select-row-${id}`}
-									name={`select-row-${id}`}
-									aria-label={selection.selectRowLabel(id)}
-									checked={selection.checkIsRowSelected(id)}
-									onSelect={() => selection.onSelect(id)}
-								/>
-							)}
-							{columns.map((col) => (
-								<TableCell key={col.key}>{col.render(row)}</TableCell>
-							))}
-						</TableRow>
-					);
-				})
-			)}
+			{rows.map((row) => {
+				const id = rowKey(row);
+				return (
+					<TableRow key={id}>
+						{selection !== undefined && (
+							<TableSelectRow
+								id={`select-row-${id}`}
+								name={`select-row-${id}`}
+								aria-label={selection.selectRowLabel(id)}
+								checked={selection.checkIsRowSelected(id)}
+								onSelect={() => selection.onSelect(id)}
+							/>
+						)}
+						{columns.map((col) => (
+							<TableCell key={col.key}>{col.render(row)}</TableCell>
+						))}
+					</TableRow>
+				);
+			})}
 		</TableBody>
 	);
 

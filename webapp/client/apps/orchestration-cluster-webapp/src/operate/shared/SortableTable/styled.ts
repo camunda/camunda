@@ -35,7 +35,7 @@ const EmptyStateContainer = styled.div`
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	padding: var(--cds-spacing-09) 0;
+	height: 100%;
 `;
 
 export {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer};

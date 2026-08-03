@@ -67,7 +67,11 @@ describe('<OperationsLog />', () => {
 		worker.use(
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({items: [createAuditLog({auditLogKey: '123'})]}),
+				),
+			}),
 		);
 
 		const screen = await renderPage();
@@ -245,5 +249,51 @@ describe('<OperationsLog />', () => {
 		await screen.getByRole('button', {name: /open details/i}).click();
 
 		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	describe('reset button', () => {
+		it('is disabled at the default filter state', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeDisabled();
+		});
+
+		it('is enabled once a filter is set via the URL', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
+			);
+
+			const screen = await renderPage({actorId: 'demo-user'});
+
+			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
+		});
+
+		it('is enabled after typing into a filter field and disabled again after reset', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
+			);
+
+			const screen = await renderPage();
+			const resetButton = screen.getByRole('button', {name: 'Reset filters'});
+
+			await screen.getByLabelText('Actor').fill('demo-user');
+
+			await expect.element(resetButton).not.toBeDisabled();
+
+			await resetButton.click();
+
+			await expect.element(resetButton).toBeDisabled();
+			await expect.element(screen.getByLabelText('Actor')).toHaveValue('');
+		});
 	});
 });
