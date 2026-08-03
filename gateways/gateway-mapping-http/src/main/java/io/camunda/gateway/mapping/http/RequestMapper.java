@@ -133,11 +133,6 @@ public class RequestMapper {
         getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
   }
 
-  /**
-   * Overload for the <em>simple</em> generated model used by the MCP gateway, which is a distinct
-   * type from the standard model. It converts to the standard model so that the defaulting rules
-   * stay defined in a single place. Mirrors the {@code toUserTaskAssignmentRequest} overloads.
-   */
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskCompletionRequest
           completionRequest,
