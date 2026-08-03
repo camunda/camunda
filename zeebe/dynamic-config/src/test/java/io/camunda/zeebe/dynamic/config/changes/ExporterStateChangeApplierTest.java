@@ -116,7 +116,7 @@ final class ExporterStateChangeApplierTest {
   }
 
   private ClusterConfiguration clusterWithPartitions(final int... partitionIds) {
-    var partitions = new java.util.HashMap<Integer, PartitionState>();
+    final var partitions = new java.util.HashMap<Integer, PartitionState>();
     for (final int partitionId : partitionIds) {
       partitions.put(partitionId, PartitionState.active(1, DynamicPartitionConfig.init()));
     }
