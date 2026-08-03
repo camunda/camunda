@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessIn
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartProcessInstanceRequestIntent#REJECT_NO_SUBSCRIPTION} command on
@@ -42,6 +44,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(
+          MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor.class);
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
@@ -69,6 +75,12 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_NO_SUBSCRIPTION);
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", reply.getMessageKey())
+        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
+        .addKeyValue("outcome", ReplyOutcome.REJECTED_NO_SUBSCRIPTION.getLabel())
+        .log("Applied cross-partition message-start reply");
 
     deferredCorrelationResponse.writeNotCorrelatedResponse(
         reply,

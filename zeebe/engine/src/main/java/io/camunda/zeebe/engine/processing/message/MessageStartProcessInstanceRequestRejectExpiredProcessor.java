@@ -15,6 +15,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartProcessInstanceRequestIntent#REJECT_EXPIRED} command on {@code
@@ -34,6 +36,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestRejectExpiredProcessor.class);
+
   private final StateWriter stateWriter;
   private final MessageCorrelationMetrics metrics;
 
@@ -45,10 +50,15 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
 
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
+    final var reply = record.getValue();
     stateWriter.appendFollowUpEvent(
-        record.getKey(),
-        MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED,
-        record.getValue());
+        record.getKey(), MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_EXPIRED);
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", reply.getMessageKey())
+        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
+        .addKeyValue("outcome", ReplyOutcome.REJECTED_EXPIRED.getLabel())
+        .log("Applied cross-partition message-start reply");
   }
 }

@@ -29,6 +29,8 @@ import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Correlates published messages to message start-event subscriptions and to intermediate message
@@ -80,6 +82,8 @@ import org.agrona.collections.MutableBoolean;
  * start events — honor this invariant.
  */
 public final class MessageCorrelateBehavior {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MessageCorrelateBehavior.class);
 
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final MessageSubscriptionState messageSubscriptionState;
@@ -466,8 +470,17 @@ public final class MessageCorrelateBehavior {
     metrics.startCrossPartitionAsk(
         messageData.messageKey(), subscriptionRecord.getProcessDefinitionKey());
 
+    final int targetPartition = routingInfo.partitionForCorrelationKey(messageData.businessId());
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", messageData.messageKey())
+        .addKeyValue("processDefinitionKey", subscriptionRecord.getProcessDefinitionKey())
+        .addKeyValue("targetPartition", targetPartition)
+        .addKeyValue("tenantId", messageData.tenantId())
+        .log("Delegating message-start to business-ID partition");
+
     commandSender.sendStartProcessInstanceRequest(
-        routingInfo.partitionForCorrelationKey(messageData.businessId()),
+        targetPartition,
         messageData.messageKey(),
         messageData.messageName(),
         messageData.correlationKey(),
