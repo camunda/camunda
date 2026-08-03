@@ -29212,9 +29212,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "min by (physicalTenant, partition) (zeebe_cluster_partition_balanced{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "expr": "label_replace(label_replace(label_replace(min by (physicalTenant, partition) (zeebe_cluster_partition_balanced{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}), \"partitionSort\", \"00$1\", \"partition\", \"(\\d)\"), \"partitionSort\", \"0$1\", \"partition\", \"(\\d\\d)\"), \"partitionSort\", \"$1\", \"partition\", \"(\\d\\d\\d)\")",
               "instant": false,
-              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "legendFormat": "{{physicalTenant}} p{{partitionSort}}",
               "range": true,
               "refId": "A"
             }
@@ -29340,9 +29340,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max by (physicalTenant, partition) (zeebe_cluster_rebalance_partition_state{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})",
+              "expr": "label_replace(label_replace(label_replace(max by (physicalTenant, partition) (zeebe_cluster_rebalance_partition_state{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}), \"partitionSort\", \"00$1\", \"partition\", \"(\\d)\"), \"partitionSort\", \"0$1\", \"partition\", \"(\\d\\d)\"), \"partitionSort\", \"$1\", \"partition\", \"(\\d\\d\\d)\")",
               "instant": false,
-              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "legendFormat": "{{physicalTenant}} p{{partitionSort}}",
               "range": true,
               "refId": "A"
             }
@@ -29669,9 +29669,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_cluster_rebalance_partition_paused{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition)",
+              "expr": "label_replace(label_replace(label_replace(max(zeebe_cluster_rebalance_partition_paused{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition), \"partitionSort\", \"00$1\", \"partition\", \"(\\d)\"), \"partitionSort\", \"0$1\", \"partition\", \"(\\d\\d)\"), \"partitionSort\", \"$1\", \"partition\", \"(\\d\\d\\d)\")",
               "instant": false,
-              "legendFormat": "{{physicalTenant}} p{{partition}}",
+              "legendFormat": "{{physicalTenant}} p{{partitionSort}}",
               "range": true,
               "refId": "A"
             }
@@ -30903,7 +30903,7 @@
         "refresh": 2,
         "regex": "",
         "regexApplyTo": "value",
-        "sort": 1,
+        "sort": 3,
         "type": "query"
       },
       {
