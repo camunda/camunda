@@ -204,6 +204,12 @@ MID_REBALANCE_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$N
 
 # How many members are publishing rebalance state. Only the coordinating member
 # does, so more than one would mean two members believe they coordinate.
+# Only a partition actually being transferred (2) is work in flight. Pending (1)
+# is also what a rebalance records for the partitions it never reached, so after
+# a cancelled or abandoned rebalance a pending state is a finished record rather
+# than a live one.
+TRANSFERRING_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"} == 2) or vector(0)'
+
 COORDINATORS_QUERY='count(count by (pod) (zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"})) or vector(0)'
 
 PAUSED_PARTITIONS_QUERY='max(zeebe_cluster_rebalance_partition_paused{namespace="$NAMESPACE"})'
