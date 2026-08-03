@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -40,18 +41,21 @@ public class ClusterVariableCreateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ClusterVariableRecordValidator clusterVariableRecordValidator;
+  private final ClusterVariableSecretReferenceScanner secretReferenceScanner;
 
   public ClusterVariableCreateProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ClusterVariableRecordValidator clusterVariableRecordValidator) {
+      final ClusterVariableRecordValidator clusterVariableRecordValidator,
+      final ClusterVariableSecretReferenceScanner secretReferenceScanner) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.cslCheck = cslCheck;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.clusterVariableRecordValidator = clusterVariableRecordValidator;
+    this.secretReferenceScanner = secretReferenceScanner;
   }
 
   @Override
@@ -62,6 +66,7 @@ public class ClusterVariableCreateProcessor
         .flatMap(clusterVariableRecordValidator::ensureValidScope)
         .flatMap(record -> isAuthorized(record, command))
         .flatMap(clusterVariableRecordValidator::validateUniqueness)
+        .flatMap(this::applySecretReferences)
         .ifRightOrLeft(
             record -> {
               final var key = keyGenerator.nextKey();
@@ -99,6 +104,27 @@ public class ClusterVariableCreateProcessor
                 writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * For a SECRET_REFERENCE-kind record, scans its value for secret references and sets them on the
+   * record; a non-SECRET_REFERENCE record passes through unchanged. Only ever called on the origin
+   * partition ({@link #processNewCommand}): the resulting refs are set on the same record that is
+   * appended, returned in the accepted response, and distributed, so a receiver's {@link
+   * #processDistributedCommand} carries them without re-scanning.
+   */
+  private Either<Rejection, ClusterVariableRecord> applySecretReferences(
+      final ClusterVariableRecord record) {
+    if (record.getKind() != ClusterVariableKind.SECRET_REFERENCE) {
+      return Either.right(record);
+    }
+    return secretReferenceScanner
+        .scan(record.getValueBuffer())
+        .map(
+            references -> {
+              references.forEach(ref -> record.addSecretReference("", ref.name(), ref.pointer()));
+              return record;
+            });
   }
 
   private Either<Rejection, ClusterVariableRecord> isAuthorized(

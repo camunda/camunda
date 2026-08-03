@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
@@ -48,6 +49,7 @@ final class BulkIndexRequest {
           .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
           .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
+          .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -65,6 +67,8 @@ final class BulkIndexRequest {
   private static final String LEASE_TOKEN_PROPERTY = "leaseToken";
   private static final String SECRET_REFERENCES_PROPERTY = "secretReferences";
   private static final String WITH_LEASE_PROPERTY = "withLease";
+  private static final String METADATA_PROPERTY = "metadata";
+  private static final String KIND_PROPERTY = "kind";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -199,4 +203,7 @@ final class BulkIndexRequest {
   /** Shared by record values that only need to strip {@code businessId} for previous versions. */
   @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
   private static final class BusinessIdMixin {}
+
+  @JsonIgnoreProperties({METADATA_PROPERTY, KIND_PROPERTY, SECRET_REFERENCES_PROPERTY})
+  private static final class ClusterVariableMixin {}
 }

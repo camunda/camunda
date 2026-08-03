@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -40,18 +41,21 @@ public class ClusterVariableUpdateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ClusterVariableRecordValidator clusterVariableRecordValidator;
+  private final ClusterVariableSecretReferenceScanner secretReferenceScanner;
 
   public ClusterVariableUpdateProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ClusterVariableRecordValidator clusterVariableRecordValidator) {
+      final ClusterVariableRecordValidator clusterVariableRecordValidator,
+      final ClusterVariableSecretReferenceScanner secretReferenceScanner) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.cslCheck = cslCheck;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.clusterVariableRecordValidator = clusterVariableRecordValidator;
+    this.secretReferenceScanner = secretReferenceScanner;
   }
 
   @Override
@@ -60,8 +64,8 @@ public class ClusterVariableUpdateProcessor
     clusterVariableRecordValidator
         .ensureValidScope(commandRecord)
         .flatMap(clusterVariableRecordValidator::loadExisting)
-        .map(stored -> applyUpdate(stored, commandRecord))
-        .flatMap(record -> isAuthorized(record, command))
+        .flatMap(stored -> isAuthorized(stored, command))
+        .flatMap(stored -> applyUpdateWithSecretReferences(stored, commandRecord))
         .ifRightOrLeft(
             record -> {
               final long key = keyGenerator.nextKey();
@@ -87,8 +91,7 @@ public class ClusterVariableUpdateProcessor
   public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
     final var commandRecord = command.getValue();
     clusterVariableRecordValidator
-        .loadExisting(commandRecord)
-        .map(stored -> applyUpdate(stored, commandRecord))
+        .validateExistence(commandRecord)
         .ifRightOrLeft(
             record ->
                 writers
@@ -99,11 +102,29 @@ public class ClusterVariableUpdateProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private ClusterVariableRecord applyUpdate(
+  /**
+   * Kind is immutable-from-stored on update (the command may omit or misreport it), so this pins
+   * the stored kind onto the command record first. For a SECRET_REFERENCE-stored variable, it then
+   * scans the command's (new) value for secret references and sets them on the command record; a
+   * non-SECRET_REFERENCE variable skips the scan. Only ever called on the origin partition ({@link
+   * #processNewCommand}): the command record already carries the new value/metadata, and now kind
+   * and secretReferences too, making it a complete stand-in for the merged record. That same
+   * command then rides the distribution, so the receiver's {@link #processDistributedCommand} only
+   * needs to confirm the variable still exists and can append the command record as-is.
+   */
+  private Either<Rejection, ClusterVariableRecord> applyUpdateWithSecretReferences(
       final ClusterVariableRecord stored, final ClusterVariableRecord command) {
-    stored.setValue(command.getValueBuffer());
-    stored.setMetadata(command.getMetadataBuffer());
-    return stored;
+    command.setKind(stored.getKind());
+    if (stored.getKind() != ClusterVariableKind.SECRET_REFERENCE) {
+      return Either.right(command);
+    }
+    return secretReferenceScanner
+        .scan(command.getValueBuffer())
+        .map(
+            references -> {
+              references.forEach(ref -> command.addSecretReference("", ref.name(), ref.pointer()));
+              return command;
+            });
   }
 
   private Either<Rejection, ClusterVariableRecord> isAuthorized(

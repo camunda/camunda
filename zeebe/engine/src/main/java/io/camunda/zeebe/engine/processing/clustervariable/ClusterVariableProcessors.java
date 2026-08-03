@@ -34,16 +34,27 @@ public class ClusterVariableProcessors {
             tenantState,
             new ClusterVariableValidationConfiguration(
                 engineConfiguration.getMaxNameFieldLength()));
+    final var secretReferenceScanner = new ClusterVariableSecretReferenceScanner();
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.CREATE,
         new ClusterVariableCreateProcessor(
-            keyGenerator, writers, cslCheck, distributionBehavior, clusterVariableRecordValidator));
+            keyGenerator,
+            writers,
+            cslCheck,
+            distributionBehavior,
+            clusterVariableRecordValidator,
+            secretReferenceScanner));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.UPDATE,
         new ClusterVariableUpdateProcessor(
-            keyGenerator, writers, cslCheck, distributionBehavior, clusterVariableRecordValidator));
+            keyGenerator,
+            writers,
+            cslCheck,
+            distributionBehavior,
+            clusterVariableRecordValidator,
+            secretReferenceScanner));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.DELETE,

@@ -13,6 +13,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.camunda.feel.syntaxtree.ConstContext;
 import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.ParsedExpression;
@@ -43,6 +44,16 @@ import scala.jdk.javaapi.CollectionConverters;
  */
 @NullMarked
 public record SecretReference(String storeId, String name) {
+
+  /**
+   * Matches a {@code camunda.secrets.<name>} occurrence in raw text, shared by callers that scan
+   * text rather than a parsed FEEL AST (e.g. {@link
+   * io.camunda.zeebe.engine.processing.deployment.model.validation.SecretReferenceLiteralValidator}
+   * and {@link
+   * io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableSecretReferenceScanner}).
+   */
+  public static final Pattern REFERENCE_PATTERN =
+      Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
 
   private static final String ROOT = "camunda";
   private static final String NAMESPACE = "secrets";
