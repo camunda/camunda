@@ -409,3 +409,66 @@ def test_is_bot():
     assert classify.is_bot("renovate[bot]")
     assert not classify.is_bot("slolatte")
     assert not classify.is_bot(None)
+
+
+# ---------------------------------------------------------------------------
+# Base ref normalisation
+# ---------------------------------------------------------------------------
+
+
+def test_plain_branch_is_unchanged():
+    assert classify.normalise_base_ref("main") == "main"
+    assert classify.normalise_base_ref("stable/8.9") == "stable/8.9"
+
+
+def test_merge_queue_ref_collapses_to_its_base():
+    # A merge_group run reports this shape. Left alone it would make every run's
+    # fingerprints unique and silently defeat dedupe.
+    assert (
+        classify.normalise_base_ref("gh-readonly-queue/main/pr-59043-abc1234")
+        == "main"
+    )
+    assert (
+        classify.normalise_base_ref("gh-readonly-queue/stable/8.9/pr-123-deadbee")
+        == "stable/8.9"
+    )
+
+
+def test_fully_qualified_ref_is_stripped():
+    assert classify.normalise_base_ref("refs/heads/main") == "main"
+    assert classify.normalise_base_ref("refs/heads/stable/8.7") == "stable/8.7"
+
+
+def test_qualified_merge_queue_ref_handles_both_layers():
+    assert (
+        classify.normalise_base_ref("refs/heads/gh-readonly-queue/main/pr-1-abc")
+        == "main"
+    )
+
+
+def test_branch_merely_containing_pr_is_not_truncated():
+    assert classify.normalise_base_ref("feature/pr-review-tweaks") == (
+        "feature/pr-review-tweaks"
+    )
+
+
+def test_empty_and_whitespace_are_safe():
+    assert classify.normalise_base_ref("") == ""
+    assert classify.normalise_base_ref("  main  ") == "main"
+
+
+def test_normalised_ref_makes_fingerprints_stable_across_queue_runs():
+    # The point of the normalisation: two merge-queue runs for different PRs targeting
+    # the same branch must fingerprint identically, or dedupe never suppresses anything.
+    a = classify.spec_fingerprint(
+        classify.normalise_base_ref("gh-readonly-queue/main/pr-1-aaa"),
+        "sm-smoke-e2e", "tests/SM-8.10/smoke-tests.spec.ts", "t",
+    )
+    b = classify.spec_fingerprint(
+        classify.normalise_base_ref("gh-readonly-queue/main/pr-2-bbb"),
+        "sm-smoke-e2e", "tests/SM-8.10/smoke-tests.spec.ts", "t",
+    )
+    direct = classify.spec_fingerprint(
+        "main", "sm-smoke-e2e", "tests/SM-8.10/smoke-tests.spec.ts", "t"
+    )
+    assert a == b == direct

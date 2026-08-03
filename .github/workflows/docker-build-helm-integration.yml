@@ -1147,6 +1147,10 @@ jobs:
     uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
     secrets: inherit
     with:
+      # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the
+      # target branch. Triage normalises it (classify.normalise_base_ref) before anything
+      # derives from it, because the ref is part of every fingerprint and a per-PR value
+      # would defeat dedupe.
       base_ref: ${{ github.ref_name }}
       chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
       # Empty when the helm stage did not fail, or Slack was unavailable; triage then

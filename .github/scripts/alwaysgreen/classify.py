@@ -69,6 +69,31 @@ def noise_verdict(
 
 
 # ---------------------------------------------------------------------------
+# Base ref
+# ---------------------------------------------------------------------------
+
+_QUEUE_REF_RE = re.compile(r"^gh-readonly-queue/(?P<base>.+?)/pr-\d+")
+
+
+def normalise_base_ref(ref: str) -> str:
+    """Reduce a git ref to the branch the failure belongs to.
+
+    A merge_group run reports `gh-readonly-queue/<base>/pr-<n>-<sha>` as its ref, and a
+    caller may pass a fully-qualified `refs/heads/<base>`. Both must collapse to the
+    base branch: the ref is part of every fingerprint, so a per-PR queue ref would make
+    each run's fingerprints unique and defeat dedupe entirely, and the fix workflow
+    validates the value against the supported branches.
+    """
+    value = (ref or "").strip()
+    if value.startswith("refs/heads/"):
+        value = value[len("refs/heads/") :]
+    match = _QUEUE_REF_RE.match(value)
+    if match:
+        return match.group("base")
+    return value
+
+
+# ---------------------------------------------------------------------------
 # Surface classification
 # ---------------------------------------------------------------------------
 

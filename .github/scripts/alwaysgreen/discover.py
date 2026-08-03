@@ -380,9 +380,15 @@ def main() -> int:
     ap.add_argument("--max-dispatches", type=int, default=2)
     args = ap.parse_args()
 
+    # Normalise before anything derives from it: the ref is part of every fingerprint
+    # and is validated by the fix workflow.
+    base_ref = classify.normalise_base_ref(args.base_ref)
+    if base_ref != args.base_ref:
+        log(f"normalised base_ref '{args.base_ref}' -> '{base_ref}'")
+
     with tempfile.TemporaryDirectory(prefix="alwaysgreen-") as tmp:
         workdir = Path(tmp)
-        candidates, noise = build_candidates(args.run_id, args.base_ref, workdir)
+        candidates, noise = build_candidates(args.run_id, base_ref, workdir)
 
         keys, keys_ok = inflight_keys()
         if not keys_ok:
