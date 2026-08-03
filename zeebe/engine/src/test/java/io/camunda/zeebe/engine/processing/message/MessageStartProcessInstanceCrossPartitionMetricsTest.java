@@ -56,8 +56,12 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
   private static final String ASKS_METRIC = "zeebe.message.start.cross.partition.asks.total";
   private static final String ASK_DURATION_METRIC =
       "zeebe.message.start.cross.partition.asks.duration";
+  private static final String RELEASE_TO_START_METRIC =
+      "zeebe.message.start.cross.partition.release.to.start.duration";
 
   private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
+  private static final Duration ASK_RETRY_INTERVAL = Duration.ofSeconds(1);
+  private static final String HOLDER_TIMER_DURATION = "PT2S";
 
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -78,10 +82,29 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
           .connectTo("task")
           .done();
 
+  // A holder that parks on an intermediate timer (so it can be completed on a clock-controlled
+  // schedule on P_B, which the engine job client cannot reach) plus a message-start arm. Used by
+  // the release-to-start (M16) test: the holder blocks the first ask, its timer fires and frees the
+  // businessId, and a retried ask then starts.
+  private static final BpmnModelInstance TIMER_HOLDER_AND_MESSAGE_START_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("noneStart")
+          .intermediateCatchEvent("holderTimer", e -> e.timerWithDuration(HOLDER_TIMER_DURATION))
+          .endEvent()
+          .moveToProcess(PROCESS_ID)
+          .startEvent(START_EVENT_ID)
+          .message(MESSAGE_NAME)
+          .endEvent()
+          .done();
+
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
-          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+          .withEngineConfig(
+              config ->
+                  config
+                      .setBusinessIdUniquenessEnabled(true)
+                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -136,6 +159,9 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
     assertThat(counter(pK, REPLIES_METRIC, "outcome", "started"))
         .as("M2: the STARTED reply is processed on P_K")
         .isEqualTo(1.0);
+    assertThat(timerCount(pB, RELEASE_TO_START_METRIC, null, null))
+        .as("M16: a clean, uncontended start was never blocked, so records no release-to-start")
+        .isZero();
   }
 
   @Test
@@ -295,6 +321,56 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
     assertThat(timerCount(secondPk, ASK_DURATION_METRIC, "outcome", "started"))
         .as("M7: the rejected correlate never records a started sample on its P_K")
         .isZero();
+  }
+
+  @Test
+  public void shouldRecordReleaseToStartWhenBlockedAskStartsAfterHolderFreesBusinessId() {
+    // given a holder PI parked on a timer holds the businessId on P_B
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(TIMER_HOLDER_AND_MESSAGE_START_PROCESS);
+    final long holderPiKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .onPartition(partitionFor(BUSINESS_ID))
+            .withBusinessId(BUSINESS_ID)
+            .create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(holderPiKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+
+    // and a cross-partition message-start is blocked on the same businessId (kept and retried)
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+    RecordingExporter.records()
+        .withIntent(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
+        .getFirst();
+
+    // when the holder's timer fires, completing it and freeing the businessId on P_B
+    engine.increaseTime(Duration.ofSeconds(3));
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderPiKey)
+        .filterRootScope()
+        .await();
+
+    // and the retry scheduler re-dispatches the ask, which now starts a fresh PI on P_B
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(64).plusSeconds(1));
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .withElementType(BpmnElementType.PROCESS)
+        .withBpmnProcessId(PROCESS_ID)
+        .filter(r -> r.getValue().getProcessInstanceKey() != holderPiKey)
+        .getFirst();
+
+    // then P_B records the release-to-start latency once (M16)
+    final int pB = partitionFor(BUSINESS_ID);
+    assertThat(timerCount(pB, RELEASE_TO_START_METRIC, null, null))
+        .as("M16: the wait from businessId release to the blocked ask starting is recorded on P_B")
+        .isEqualTo(1L);
   }
 
   private double counter(

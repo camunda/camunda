@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigg
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.RequestOutcome;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,8 @@ final class MessageCorrelationMetricsTest {
 
   private static final String ASK_DURATION_METRIC =
       "zeebe.message.start.cross.partition.asks.duration";
+  private static final String RELEASE_TO_START_METRIC =
+      "zeebe.message.start.cross.partition.release.to.start.duration";
 
   private SimpleMeterRegistry registry;
   private MessageCorrelationMetrics metrics;
@@ -218,6 +221,139 @@ final class MessageCorrelationMetricsTest {
     // then a subsequent terminal is a no-op — the stale sample is gone (M7)
     metrics.completeCrossPartitionAskStarted(1L, 100L);
     assertThat(registry.find(ASK_DURATION_METRIC).timers()).isEmpty();
+  }
+
+  @Test
+  void shouldRecordReleaseToStartFromFreeToStart() {
+    // given a cross-partition ask (messageKey 100) is blocked on a held businessId
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    // and its holder frees the businessId at t=1000
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+
+    // when the blocked ask starts at t=1250
+    metrics.recordReleaseToStart("biz-1", 100L, 1_250L);
+
+    // then the release-to-start latency is recorded once as 250ms (M16)
+    final var timer = registry.get(RELEASE_TO_START_METRIC).timer();
+    assertThat(timer.count()).isEqualTo(1L);
+    assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(250.0);
+  }
+
+  @Test
+  void shouldNotRecordReleaseToStartWhenBusinessIdWasNotFreed() {
+    // given a blocked ask whose holder never reported a free (e.g. banned/migrated)
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+
+    // when it starts anyway
+    metrics.recordReleaseToStart("biz-1", 100L, 1_250L);
+
+    // then nothing is recorded — there is no release time to measure from (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isZero();
+  }
+
+  @Test
+  void shouldNotRecordReleaseToStartForUncontendedCompletionAndReuse() {
+    // given a holder frees a businessId that no ask was ever blocked on (uncontended)
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+
+    // when a fresh, never-blocked start later reuses that businessId
+    metrics.recordReleaseToStart("biz-1", 100L, 9_999_000L);
+
+    // then it is not measured — a benign reuse gap must not pollute the histogram (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isZero();
+  }
+
+  @Test
+  void shouldMeasureOnlyTheBlockedAskNotAnUncontendedStartOnTheSameBusinessId() {
+    // given ask 100 is blocked on a businessId that is then freed
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+
+    // when a different, never-blocked ask 200 starts on the same businessId first
+    metrics.recordReleaseToStart("biz-1", 200L, 1_100L);
+
+    // then it is ignored, and only the genuinely blocked ask 100 is measured when it starts (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isZero();
+    metrics.recordReleaseToStart("biz-1", 100L, 1_300L);
+    final var timer = registry.get(RELEASE_TO_START_METRIC).timer();
+    assertThat(timer.count()).isEqualTo(1L);
+    assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(300.0);
+  }
+
+  @Test
+  void shouldConsumeBlockedAskSoASecondStartDoesNotRecordAgain() {
+    // given a blocked ask already measured by its start
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+    metrics.recordReleaseToStart("biz-1", 100L, 1_250L);
+
+    // when a second start (e.g. a dedup-hit retry) fires for the same ask
+    metrics.recordReleaseToStart("biz-1", 100L, 1_900L);
+
+    // then it is a no-op: the ask was pruned, so exactly one sample stands (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldMeasureReleaseToStartFromMostRecentFree() {
+    // given the businessId is freed, re-taken and freed again before the blocked ask starts
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+    metrics.recordBusinessIdFreed("biz-1", 2_000L);
+
+    // when the blocked cross-partition ask finally starts
+    metrics.recordReleaseToStart("biz-1", 100L, 2_100L);
+
+    // then the latency is measured from the most recent release, not the first (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().max(TimeUnit.MILLISECONDS))
+        .isEqualTo(100.0);
+  }
+
+  @Test
+  void shouldMeasureEachConcurrentlyBlockedAskFromItsOwnRelease() {
+    // given two asks are blocked on the same businessId
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.recordAskBlockedOnBusinessId("biz-1", 200L);
+
+    // when the first free lets ask 100 through (which re-holds the id), then a second free lets ask
+    // 200 through
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+    metrics.recordReleaseToStart("biz-1", 100L, 1_100L);
+    metrics.recordBusinessIdFreed("biz-1", 2_000L);
+    metrics.recordReleaseToStart("biz-1", 200L, 2_200L);
+
+    // then each ask is measured once from its own release (M16)
+    final var timer = registry.get(RELEASE_TO_START_METRIC).timer();
+    assertThat(timer.count()).isEqualTo(2L);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(300.0);
+  }
+
+  @Test
+  void shouldDiscardBlockedAskOnExpirySoALaterReuseIsNotMeasured() {
+    // given a blocked ask that is then rejected as expired (it will stop retrying)
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.discardBlockedAsk("biz-1", 100L);
+
+    // when the holder later frees the businessId and a fresh reuse starts
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+    metrics.recordReleaseToStart("biz-1", 200L, 5_000L);
+
+    // then nothing is recorded — the stale blocked ask no longer arms the release (M16)
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isZero();
+  }
+
+  @Test
+  void shouldClearBlockedAndFreedBusinessIdsOnRecovery() {
+    // given a blocked-and-freed businessId tracked in the previous leadership term
+    metrics.recordAskBlockedOnBusinessId("biz-1", 100L);
+    metrics.recordBusinessIdFreed("biz-1", 1_000L);
+
+    // when recovery drops the in-memory maps
+    metrics.onRecovered(null);
+
+    // then a subsequent start is a no-op — the stale tracking is gone (M16)
+    metrics.recordReleaseToStart("biz-1", 100L, 1_250L);
+    assertThat(registry.get(RELEASE_TO_START_METRIC).timer().count()).isZero();
   }
 
   private double counter(final String name) {
