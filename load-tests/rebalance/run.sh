@@ -243,6 +243,15 @@ main() {
     scenario_end
   done
 
+  # Whether the dashboard tells the story is the point of the run, so it is
+  # checked rather than assumed: every query behind the Rebalancing row, over the
+  # window the run covered.
+  section "checking the dashboard row against the run's window"
+  local minutes; minutes=$(( ($(now_ms) - RUN_START_MS) / 60000 + 1 ))
+  "$HERE/check-panels.sh" --namespace "$NS" --prom "$PROM_URL" --range "${minutes}m" \
+    --rate-interval 5m | tee "$RUN_DIR/dashboard-panels.txt" | tee -a "$RUN_DIR/run.log" >&2 || \
+    warn "some dashboard panels would draw nothing for this run — see dashboard-panels.txt"
+
   render_summary
   section "done: $RUN_PASSED assertions passed, $RUN_FAILED failed"
   [[ "$RUN_FAILED" -eq 0 ]]

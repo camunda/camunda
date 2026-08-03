@@ -269,6 +269,20 @@ starter_scale() {
   log "  starter scaled to $1 replica(s)"
 }
 
+# workload_recover — puts the load back to the baseline and restarts the starter,
+# for when raising the rate killed it. Asking for more than the cluster completes
+# grows an unbounded in-flight queue until the JVM dies, and the workload then
+# ends silently; every scenario after that would be measuring nothing, so this is
+# worth one recovery attempt rather than abandoning the run.
+workload_recover() {
+  warn "  the workload is not alive: dropping back to one starter and restarting it"
+  starter_scale 1
+  kubectl rollout restart deployment/starter -n "$NS" >/dev/null 2>&1 || true
+  kubectl rollout status deployment/starter -n "$NS" --timeout=300s >/dev/null 2>&1 || true
+  settle 240 "the workload to pick up again"
+  workload_alive 180
+}
+
 # --- Faults ----------------------------------------------------------------
 
 # create_imbalance <broker...> — restarts brokers so that leadership migrates

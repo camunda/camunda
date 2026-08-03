@@ -155,6 +155,16 @@ render_summary() {
       echo "None."
     fi
     echo
+    echo "## Dashboard panels over this window"
+    echo
+    if [[ -s "$RUN_DIR/dashboard-panels.txt" ]]; then
+      echo '```'
+      cat "$RUN_DIR/dashboard-panels.txt"
+      echo '```'
+    else
+      echo "Not checked."
+    fi
+    echo
     echo "## Artefacts"
     echo
     echo "Per scenario: \`assertions.tsv\` (every metric assertion with its actual value),"

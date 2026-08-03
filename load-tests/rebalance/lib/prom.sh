@@ -195,6 +195,17 @@ PI_PER_SECOND_WIDE_QUERY='sum(rate(zeebe_element_instance_events_total{namespace
 # RESOURCE_EXHAUSTED, so this is the client-visible cost of a rebalance.
 REJECTED_WRITES_QUERY='sum(zeebe_flow_control_total{namespace="$NAMESPACE", outcome="partitionPaused"})'
 
+# A partition still pending (1) or transferring (2) is a rebalance that has not
+# resolved it. The gauge is deliberately left standing once a rebalance ends,
+# holding what each partition reached, because a rebalance is often over inside a
+# single scrape and there would otherwise be nothing to see - so absence is not
+# the check, a live state is.
+MID_REBALANCE_QUERY='count(zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"} <= 2) or vector(0)'
+
+# How many members are publishing rebalance state. Only the coordinating member
+# does, so more than one would mean two members believe they coordinate.
+COORDINATORS_QUERY='count(count by (pod) (zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"})) or vector(0)'
+
 PAUSED_PARTITIONS_QUERY='max(zeebe_cluster_rebalance_partition_paused{namespace="$NAMESPACE"})'
 
 PAUSE_COUNT_QUERY='sum(zeebe_cluster_rebalance_partition_pause_duration_seconds_count{namespace="$NAMESPACE"})'

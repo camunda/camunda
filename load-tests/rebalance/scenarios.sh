@@ -31,10 +31,10 @@ scenario_baseline() {
   assert_num "balance gauge published by every member" \
     'count(zeebe_cluster_partition_balanced{namespace="$NAMESPACE"})' eq "$((PARTITIONS * BROKERS))"
   assert_num "cluster is balanced" "$BALANCE_QUERY" eq 1
-  assert_num "every partition is active" \
-    'count(zeebe_cluster_partition_balanced{namespace="$NAMESPACE"}) / '"$BROKERS" eq "$PARTITIONS"
-  assert_absent "no rebalance is running" \
-    'zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"}'
+  assert_num "every partition is reported on" \
+    'count(count by (physicalTenant, partition) (zeebe_cluster_partition_balanced{namespace="$NAMESPACE"}))' \
+    eq "$PARTITIONS"
+  assert_num "no partition is mid-rebalance" "$MID_REBALANCE_QUERY" eq 0
   assert_absent "nothing is left frozen" \
     'zeebe_cluster_rebalance_partition_paused{namespace="$NAMESPACE"} > 0'
 
@@ -131,8 +131,7 @@ scenario_balanced-rebalance() {
   assert_delta "no leadership was transferred" "$(result_query TRANSFERRED)" eq 0 "$transferred_before"
   assert_delta "every partition is counted as already balanced" \
     "$(result_query ALREADY_BALANCED)" eq "$PARTITIONS" "$already_before"
-  assert_absent "the coordinator's gauges are torn down" \
-    'zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"}'
+  assert_num "no partition is left mid-rebalance" "$MID_REBALANCE_QUERY" eq 0
 }
 
 # --- 4. Imbalance, then a rebalance under steady load ---------------------
@@ -192,8 +191,7 @@ scenario_imbalance-and-rebalance() {
   assert_delta "each transfer froze its partition" "$PAUSE_COUNT_QUERY" gt 0 "$paused_before"
   assert_delta "the coordinator timed each partition it worked on" "$TRANSFER_COUNT_QUERY" gt 0 "$transfers_before"
   assert_num "nothing is left frozen" "$PAUSED_PARTITIONS_QUERY" eq 0
-  assert_absent "the coordinator's state gauges are torn down" \
-    'zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"}'
+  assert_num "no partition is left mid-rebalance" "$MID_REBALANCE_QUERY" eq 0
   assert_num "the workload recovered" "$PI_PER_SECOND_QUERY" gt 10
 
   local rejected_delta
@@ -243,10 +241,13 @@ scenario_saturation-rebalance() {
   note "raising load towards ${target} PI/s, which stays under the measured ceiling: the starter's in-flight queue is unbounded, so asking for more than the cluster completes kills it silently"
   starter_scale 2
   settle 420 "the raised load to reach a steady state"
-  workload_alive || die "the workload did not survive the raised load, so nothing measured after this would mean anything"
+  workload_alive || workload_recover || {
+    note "the workload could not be brought back, so this scenario is void and the ones after it would be too"
+    return 1
+  }
 
   create_imbalance 1 4
-  workload_alive || die "the workload did not survive the imbalance"
+  workload_alive || workload_recover || return 1
 
   local paused_before rejected_before
   paused_before=$(prom_baseline "$PAUSE_COUNT_QUERY")
@@ -275,6 +276,7 @@ scenario_saturation-rebalance() {
 
   starter_scale 1
   settle 300 "the load to fall back to the baseline"
+  workload_alive || workload_recover || warn "the workload is still not alive; the scenarios after this one will be measuring nothing"
 }
 
 # --- 6. Manufactured replication lag, refused at admission ---------------
@@ -352,7 +354,10 @@ scenario_lag-timeout() {
 
 scenario_cancel-mid-rebalance() {
   local desired
-  create_imbalance 1 3 5
+  # Two brokers, not three: at replication factor 3 of 6, restarting three at
+  # once costs some partitions their quorum, which is a heavier disruption than
+  # the imbalance this needs.
+  create_imbalance 1 4
   desired=$(next_desired_leader)
   # A transfer is tens of milliseconds at native speed, so a cancellation aimed
   # at one is chance rather than method. Lag widens the window to aim at.
@@ -381,8 +386,7 @@ scenario_cancel-mid-rebalance() {
   fi
 
   assert_num "nothing is left frozen after cancelling" "$PAUSED_PARTITIONS_QUERY" eq 0 180
-  assert_absent "the coordinator's gauges are torn down after cancelling" \
-    'zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"}'
+  assert_num "no partition is left mid-rebalance after cancelling" "$MID_REBALANCE_QUERY" eq 0 180
   assert_num "the workload is still being served" "$PI_PER_SECOND_QUERY" gt 1
 
   clear_lag
@@ -402,8 +406,7 @@ scenario_coordinator-kill() {
 
   coordinator=$(coordinator_pod)
   note "coordinating member is $coordinator"
-  assert_num "only one member publishes the coordinator's gauges before the kill" \
-    'count(count by (pod) (zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"})) or vector(0)' le 1
+  assert_num "at most one member publishes rebalance state before the kill" "$COORDINATORS_QUERY" le 1
 
   reb_post '{"replicationTimeout":"PT20S"}' >/dev/null
   sleep 3
@@ -421,10 +424,11 @@ scenario_coordinator-kill() {
   assert_num "no partition is left frozen after the coordinator went away" \
     "$PAUSED_PARTITIONS_QUERY" eq 0 240
   assert_num "the workload is still being served" "$PI_PER_SECOND_QUERY" gt 1
-  assert_absent "no member is still publishing gauges for the abandoned rebalance" \
-    'zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"}' 180
-  prom_snapshot "pending-gauge-by-pod" \
-    'count by (pod) (zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"})'
+  assert_num "no partition is left mid-rebalance by the abandoned rebalance" \
+    "$MID_REBALANCE_QUERY" eq 0 300
+  assert_num "responsibility did not split across two coordinators" "$COORDINATORS_QUERY" le 1 300
+  prom_snapshot "state-gauge-by-pod" \
+    'count by (pod) (zeebe_cluster_rebalance_partition_state{namespace="$NAMESPACE"})'
   assert_num "every member still publishes the balance gauge" \
     'count(zeebe_cluster_partition_balanced{namespace="$NAMESPACE"})' eq "$((PARTITIONS * BROKERS))" 240
 
@@ -527,8 +531,8 @@ scenario_soak() {
     assert_that "soak iteration $i resolved every partition" "COMPLETED" "$outcome" \
       "$([[ "$outcome" == "COMPLETED" ]] && echo true || echo false)"
     assert_num "soak iteration $i left nothing frozen" "$PAUSED_PARTITIONS_QUERY" eq 0 120
-    assert_absent "soak iteration $i left no coordinator gauges behind" \
-      'zeebe_cluster_rebalance_partition_pending{namespace="$NAMESPACE"}' 120
+    assert_num "soak iteration $i left no partition mid-rebalance" "$MID_REBALANCE_QUERY" eq 0 120
+    assert_num "soak iteration $i kept one coordinator" "$COORDINATORS_QUERY" le 1 120
     assert_num "soak iteration $i kept the balance gauge series count" \
       'count(zeebe_cluster_partition_balanced{namespace="$NAMESPACE"})' eq "$((PARTITIONS * BROKERS))" 180
     workload_alive || warn "  the workload is not alive at soak iteration $i"
