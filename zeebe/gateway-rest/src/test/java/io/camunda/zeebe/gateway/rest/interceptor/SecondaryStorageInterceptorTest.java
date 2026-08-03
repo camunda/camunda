@@ -112,8 +112,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
-    final var interceptor =
-        new SecondaryStorageInterceptor(ELASTICSEARCH_DB_TYPE, degraded(PHYSICAL_TENANT_ID));
+    final var interceptor = new SecondaryStorageInterceptor(degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageDegradedException.class);
   }
@@ -124,8 +123,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
-    final var interceptor =
-        new SecondaryStorageInterceptor(ELASTICSEARCH_DB_TYPE, degraded(PHYSICAL_TENANT_ID));
+    final var interceptor = new SecondaryStorageInterceptor(degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageDegradedException.class);
 
