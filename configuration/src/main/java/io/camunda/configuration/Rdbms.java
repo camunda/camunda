@@ -19,7 +19,10 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   /** If true, the database schema is automatically created and updated on application startup. */
   private boolean autoDdl = DEFAULT_AUTO_DDL;
 
-  /** The prefix to use for all database artifacts like tables, indexes etc. */
+  /**
+   * The prefix to use for all database artifacts like tables, indexes etc. Must contain only
+   * upper-case letters, digits and underscores, and must not start with a digit.
+   */
   private String prefix;
 
   /** The interval at which the exporters execution queue is flushed. */
