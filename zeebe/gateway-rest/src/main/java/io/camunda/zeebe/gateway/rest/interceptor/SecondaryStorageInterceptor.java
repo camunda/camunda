@@ -32,6 +32,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       configured but the request's physical tenant's secondary storage is currently degraded (see
  *       {@link SecondaryStorageReadiness}).
  * </ul>
+ *
+ * NOTE: This is not a @Component. The actual bean is created with the Unified Configuration system
+ * in `SecondaryStorageInterceptorOverride.java`.
  */
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
