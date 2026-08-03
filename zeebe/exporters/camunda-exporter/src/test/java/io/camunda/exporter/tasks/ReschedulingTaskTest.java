@@ -19,7 +19,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -239,17 +238,28 @@ final class ReschedulingTaskTest {
   @Test
   void shouldNotRescheduleIfClosed() {
     final var runningCounter = new AtomicInteger();
-    final var job =
-        new ArchiverJob() {
-          @Override
-          public CompletionStage<Integer> archiveNextBatch() {
-            return CompletableFuture.completedFuture(runningCounter.incrementAndGet());
-          }
-        };
-    final var task = new ReschedulingTask(job, 1, 100, 100, EXECUTOR, LOGGER);
+
+    final var task = new ReschedulingTask(archiverJob, 1, 100, 100, EXECUTOR, LOGGER);
+
+    final CompletableFuture<Integer> future = new CompletableFuture<>();
+
+    when(archiverJob.execute())
+        .thenReturn(
+            future.thenApply(
+                unused -> {
+                  // ensure task is closed before the future actually completes
+                  // so the task will be closed before we attempt to reschedule it
+                  task.close();
+                  return runningCounter.incrementAndGet();
+                }));
+
+    // when
     task.run();
-    task.close();
-    Awaitility.await("Until it's been rescheduled").until(() -> task.executionCount() == 1);
+    future.complete(1);
+
+    // then
+    Awaitility.await("Until task has been run").until(() -> task.executionCount() >= 1);
+    assertThat(task.executionCount()).isEqualTo(1L);
     assertThat(runningCounter.get()).isEqualTo(1);
   }
 
