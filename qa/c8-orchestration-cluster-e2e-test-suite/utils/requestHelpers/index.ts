@@ -90,6 +90,7 @@ export {
 } from './decision-requirement-requestHelper';
 export {
   createMammalProcessInstanceAndDeployMammalDecision,
+  searchDecisionInstancesByProcessInstanceKey,
   type DecisionInstance,
 } from './decision-instance-requestHelpers';
 export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';

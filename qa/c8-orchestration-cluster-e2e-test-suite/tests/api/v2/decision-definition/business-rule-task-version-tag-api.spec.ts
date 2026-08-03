@@ -13,6 +13,7 @@ import {
   deployEligibilityProcess,
   deployTaggedDecision,
   expectEvaluatedDecisionVersion,
+  expectRejectionTaskCompleted,
   findUserTask,
   resolveIncident,
   REVIEW_USER_TASK_ID,
@@ -20,7 +21,6 @@ import {
   VIP_INPUT,
   waitForVersionTagIncident,
   expectProcessState,
-  expectNoUserTask,
 } from '@requestHelpers';
 import {setVariables} from '../../../../utils/zeebeClient';
 
@@ -99,7 +99,7 @@ test.describe
     await test.step('instance with decisionVersion=v2 evaluates v2 and takes the rejection branch', async () => {
       await expectEvaluatedDecisionVersion(request, notEligibleInstanceKey, v2);
       await expectProcessState(request, notEligibleInstanceKey, 'COMPLETED');
-      await expectNoUserTask(request, notEligibleInstanceKey);
+      await expectRejectionTaskCompleted(request, notEligibleInstanceKey);
     });
   });
 
@@ -125,7 +125,7 @@ test.describe
     };
     const expectRejectionBranch = async (processInstanceKey: string) => {
       await expectProcessState(request, processInstanceKey, 'COMPLETED');
-      await expectNoUserTask(request, processInstanceKey);
+      await expectRejectionTaskCompleted(request, processInstanceKey);
     };
 
     const cases = [

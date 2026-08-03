@@ -17,7 +17,7 @@ import {
   deployEligibilityForm,
   deployEligibilityProcess,
   deployTaggedDecision,
-  getEvaluatedDecisionInstance,
+  searchDecisionInstancesByProcessInstanceKey,
   startEligibilityInstance,
   VIP_INPUT,
 } from '@requestHelpers';
@@ -171,10 +171,11 @@ test.describe('Decision Instances', () => {
         ...VIP_INPUT,
         decisionVersion: 'v1',
       });
-      const decisionInstance = await getEvaluatedDecisionInstance(
-        request,
-        processInstanceKey,
-      );
+      const [decisionInstance] =
+        await searchDecisionInstancesByProcessInstanceKey(
+          processInstanceKey,
+          request,
+        );
       decisionEvaluationInstanceKey =
         decisionInstance.decisionEvaluationInstanceKey;
     });

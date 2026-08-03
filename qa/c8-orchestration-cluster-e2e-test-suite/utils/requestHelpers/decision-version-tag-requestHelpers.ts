@@ -14,13 +14,10 @@ import {
   deploy,
   deployWithSubstitutions,
 } from '../zeebeClient';
-import {
-  assertRequiredFields,
-  assertStatusCode,
-  buildUrl,
-  jsonHeaders,
-} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {searchDecisionInstancesByProcessInstanceKey} from './decision-instance-requestHelpers';
+import {searchElementInstanceByElementIdAndState} from './element-instance-requestHelpers';
+import {searchIncidentByPIK} from './incident-requestHelpers';
 
 const DMN_TEMPLATE = './resources/decideUpgradeEligibility.dmn';
 const PROCESS_TEMPLATE = './resources/decideUpgradeEligibilityProcess.bpmn';
@@ -53,9 +50,9 @@ export type DeployedDecisionVersion = {
 export function createEligibilityIds(label: string): EligibilityIds {
   const suffix = `${label}_${randomUUID().slice(0, 8)}`;
   return {
-    processId: `versionTagProcess_${suffix}`,
-    decisionId: `versionTagDecision_${suffix}`,
-    drdId: `versionTagDrd_${suffix}`,
+    processId: `dmnTagProcess_${suffix}`,
+    decisionId: `dmnTagDecision_${suffix}`,
+    drdId: `dmnTagDrd_${suffix}`,
   };
 }
 
@@ -105,14 +102,15 @@ export async function deployTaggedDecision(
   const decision = response.decisions.find(
     (d) => d.decisionDefinitionId === ids.decisionId,
   );
-  expect(
-    decision,
-    `Decision ${ids.decisionId} missing from deployment response`,
-  ).toBeDefined();
+  if (!decision) {
+    throw new Error(
+      `Decision ${ids.decisionId} missing from deployment response`,
+    );
+  }
   return {
     versionTag,
-    version: decision!.version,
-    decisionDefinitionKey: decision!.decisionDefinitionKey,
+    version: decision.version,
+    decisionDefinitionKey: decision.decisionDefinitionKey,
   };
 }
 
@@ -135,69 +133,34 @@ export async function startEligibilityInstance(
   return instance.processInstanceKey;
 }
 
-export type EvaluatedDecisionInstance = {
-  decisionEvaluationInstanceKey: string;
-  decisionDefinitionKey: string;
-  decisionDefinitionVersion: number;
-  decisionDefinitionName: string;
-};
-
-const DECISION_INSTANCE_FIELDS = [
-  'decisionEvaluationInstanceKey',
-  'decisionDefinitionKey',
-  'decisionDefinitionVersion',
-  'decisionDefinitionName',
-];
-
-/** Waits for the instance's single decision instance to be indexed. */
-export async function getEvaluatedDecisionInstance(
-  request: APIRequestContext,
-  processInstanceKey: string,
-): Promise<EvaluatedDecisionInstance> {
-  const found: Partial<EvaluatedDecisionInstance> = {};
-  await expect(async () => {
-    const res = await request.post(buildUrl('/decision-instances/search'), {
-      headers: jsonHeaders(),
-      data: {filter: {processInstanceKey}},
-    });
-    await assertStatusCode(res, 200);
-    const body = await res.json();
-    expect(body.items).toHaveLength(1);
-    expect(body.items[0].state).toBe('EVALUATED');
-    assertRequiredFields(body.items[0], DECISION_INSTANCE_FIELDS);
-    Object.assign(found, body.items[0]);
-  }).toPass(defaultAssertionOptions);
-  return found as EvaluatedDecisionInstance;
-}
-
 /** Asserts which deployed version the engine actually evaluated. */
 export async function expectEvaluatedDecisionVersion(
   request: APIRequestContext,
   processInstanceKey: string,
   expected: DeployedDecisionVersion,
 ): Promise<void> {
-  const decisionInstance = await getEvaluatedDecisionInstance(
-    request,
+  const [instance] = await searchDecisionInstancesByProcessInstanceKey(
     processInstanceKey,
+    request,
   );
-  expect(decisionInstance.decisionDefinitionVersion).toBe(expected.version);
-  expect(decisionInstance.decisionDefinitionKey).toBe(
-    expected.decisionDefinitionKey,
-  );
+  expect(instance.decisionDefinitionVersion).toBe(expected.version);
+  expect(instance.decisionDefinitionKey).toBe(expected.decisionDefinitionKey);
 }
 
-/** No user task means the gateway took the "not eligible" branch. */
-export async function expectNoUserTask(
+/**
+ * The "not eligible" branch's only outcome is the rejection task, so its
+ * completion is a positive witness that branch was taken.
+ */
+export async function expectRejectionTaskCompleted(
   request: APIRequestContext,
   processInstanceKey: string,
 ): Promise<void> {
-  const res = await request.post(buildUrl('/user-tasks/search'), {
-    headers: jsonHeaders(),
-    data: {filter: {processInstanceKey}},
-  });
-  await assertStatusCode(res, 200);
-  const body = await res.json();
-  expect(body.page.totalItems).toBe(0);
+  await searchElementInstanceByElementIdAndState(
+    request,
+    processInstanceKey,
+    'Activity_sendemail',
+    'COMPLETED',
+  );
 }
 
 export type IncidentSummary = {
@@ -206,25 +169,21 @@ export type IncidentSummary = {
   errorMessage: string;
 };
 
-const INCIDENT_FIELDS = ['incidentKey', 'errorType', 'errorMessage'];
-
+/** Filters for the CALLED_DECISION_ERROR incident raised by version tag resolution. */
 export async function waitForVersionTagIncident(
   request: APIRequestContext,
   processInstanceKey: string,
 ): Promise<IncidentSummary> {
-  const found: Partial<IncidentSummary> = {};
-  await expect(async () => {
-    const res = await request.post(
-      buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
-      {headers: jsonHeaders(), data: {filter: {state: 'ACTIVE'}}},
+  const incidents = await searchIncidentByPIK(request, {processInstanceKey});
+  const incident = (incidents as unknown as IncidentSummary[]).find(
+    (i) => i.errorType === 'CALLED_DECISION_ERROR',
+  );
+  if (!incident) {
+    throw new Error(
+      `No CALLED_DECISION_ERROR incident found for process instance ${processInstanceKey}`,
     );
-    await assertStatusCode(res, 200);
-    const body = await res.json();
-    expect(body.items).toHaveLength(1);
-    assertRequiredFields(body.items[0], INCIDENT_FIELDS);
-    Object.assign(found, body.items[0]);
-  }).toPass(defaultAssertionOptions);
-  return found as IncidentSummary;
+  }
+  return incident;
 }
 
 export async function resolveIncident(
