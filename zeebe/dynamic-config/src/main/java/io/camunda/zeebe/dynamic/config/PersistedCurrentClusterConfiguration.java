@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
+import org.jspecify.annotations.NonNull;
 
 /**
  * The multi-partition-group counterpart of {@link PersistedClusterConfiguration}. Reads and writes
@@ -48,12 +49,12 @@ public final class PersistedCurrentClusterConfiguration {
 
   private final Path configurationFile;
   private final ClusterConfigurationSerializer serializer;
-  private CurrentClusterConfiguration configuration;
+  private @NonNull CurrentClusterConfiguration configuration;
 
   private PersistedCurrentClusterConfiguration(
       final Path configurationFile,
       final ClusterConfigurationSerializer serializer,
-      final CurrentClusterConfiguration configuration) {
+      final @NonNull CurrentClusterConfiguration configuration) {
     this.configurationFile = configurationFile;
     this.serializer = serializer;
     this.configuration = configuration;

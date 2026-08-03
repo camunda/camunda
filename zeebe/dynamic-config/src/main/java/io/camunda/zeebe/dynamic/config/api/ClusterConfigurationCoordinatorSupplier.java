@@ -10,10 +10,13 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public interface ClusterConfigurationCoordinatorSupplier {
   MemberId getDefaultCoordinator();
@@ -74,11 +77,47 @@ public interface ClusterConfigurationCoordinatorSupplier {
 
   static ClusterConfigurationCoordinatorSupplier from(
       final Supplier<CurrentClusterConfiguration> clusterTopologySupplier) {
-    return ofMembers(() -> clusterTopologySupplier.get().globalConfiguration().members().keySet());
+    return ofMembers(() -> getActiveMembers(clusterTopologySupplier.get()));
   }
 
   static ClusterConfigurationCoordinatorSupplier of(
       final Supplier<ClusterConfiguration> clusterTopologySupplier) {
     return ofMembers(() -> clusterTopologySupplier.get().members().keySet());
+  }
+
+  private static Set<MemberId> getActiveMembers(
+      final CurrentClusterConfiguration currentClusterConfiguration) {
+    final var toBeRemovedMembers =
+        currentClusterConfiguration
+            .phasedChangeState()
+            .pending()
+            .map(
+                plan ->
+                    plan.phases().stream()
+                        .filter(phase -> phase instanceof GlobalPhase)
+                        .flatMap(
+                            phase ->
+                                ((GlobalPhase) phase)
+                                    .operations().stream()
+                                        .filter(
+                                            op ->
+                                                op
+                                                    instanceof
+                                                    GlobalChangeOperation.MemberRemoveOperation)
+                                        .map(
+                                            op ->
+                                                ((GlobalChangeOperation.MemberRemoveOperation) op)
+                                                    .memberToRemove()))
+                        .toList());
+
+    final var result =
+        toBeRemovedMembers
+            .map(
+                memberIds ->
+                    currentClusterConfiguration.getMembers().stream()
+                        .filter(member -> !memberIds.contains(member))
+                        .collect(Collectors.toSet()))
+            .orElseGet(currentClusterConfiguration::getMembers);
+    return result;
   }
 }

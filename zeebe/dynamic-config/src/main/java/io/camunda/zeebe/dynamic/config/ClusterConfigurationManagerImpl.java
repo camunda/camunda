@@ -174,13 +174,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
     useNewConfig = true;
     coordinatorSupplier =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(
-            () ->
-                this.persistedCurrentConfiguration
-                    .getConfiguration()
-                    .globalConfiguration()
-                    .members()
-                    .keySet());
+        ClusterConfigurationCoordinatorSupplier.from(
+            () -> this.persistedCurrentConfiguration.getConfiguration());
   }
 
   @Override
