@@ -511,7 +511,7 @@ public final class EngineProcessors {
         clock);
 
     AgentInstanceProcessors.addAgentInstanceProcessors(
-        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
+        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState, config);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);

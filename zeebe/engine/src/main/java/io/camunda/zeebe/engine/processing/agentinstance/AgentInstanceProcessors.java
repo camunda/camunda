@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -24,7 +26,8 @@ public final class AgentInstanceProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.CREATE,
@@ -37,5 +40,13 @@ public final class AgentInstanceProcessors {
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.COMPLETE,
         new AgentInstanceCompleteProcessor(writers, processingState));
+    typedRecordProcessors.onCommand(
+        ValueType.AGENT_INSTANCE_BATCH,
+        AgentInstanceBatchIntent.COMPLETE,
+        new AgentInstanceBatchCompleteProcessor(
+            writers,
+            keyGenerator,
+            processingState.getAgentInstanceState(),
+            config.getAgentInstanceCompletionBatchLimit()));
   }
 }
