@@ -893,7 +893,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD
-        # The prefix to use for all database artifacts like tables, indexes etc.
+        # The prefix to use for all database artifacts like tables, indexes etc. Must contain only upper-case
+        # letters, digits and underscores, and must not start with a digit.
         prefix: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PREFIX
         # Process definition cache configuration. Defines the size of the process definition cache.
         process-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PROCESSCACHE
