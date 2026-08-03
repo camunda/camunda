@@ -120,7 +120,9 @@ const VariableEditor: React.FC<Props> = ({
 					<StructuredListCell className={styles.cell} head>
 						{t('tasklist.variableEditorVariableValueHeader')}
 					</StructuredListCell>
-					<StructuredListCell className={styles.cell} head />
+					<StructuredListCell className={styles.cell} head>
+						<span className="cds--visually-hidden">{t('tasklist.variableEditorOpenJsonLabel')}</span>
+					</StructuredListCell>
 				</StructuredListRow>
 			</StructuredListHead>
 			<StructuredListBody>
@@ -179,9 +181,7 @@ const VariableEditor: React.FC<Props> = ({
 							const fieldName = createVariableFieldName(variable.name);
 							return (
 								<StructuredListRow key={variable.name}>
-									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>
-										<label htmlFor={fieldName}>{variable.name}</label>
-									</StructuredListCell>
+									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>{variable.name}</StructuredListCell>
 									<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
 										<Field<string>
 											name={fieldName}

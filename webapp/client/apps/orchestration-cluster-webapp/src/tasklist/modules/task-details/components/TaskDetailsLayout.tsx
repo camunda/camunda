@@ -56,7 +56,7 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 
 	return (
 		<div className={layoutStyles.container} data-testid="details-info">
-			<Section className={layoutStyles.content} level={4}>
+			<Section className={layoutStyles.content}>
 				<TurnOnNotificationPermission />
 				<TaskDetailsHeader
 					taskName={task.name ?? task.elementId}

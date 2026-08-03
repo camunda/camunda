@@ -24,6 +24,7 @@ function createVariable(overrides?: Partial<Variable>): Variable {
 
 function createQueryVariablesByUserTaskResponse(overrides?: {
 	items?: Variable[];
+	page?: Partial<QueryVariablesByUserTaskResponseBody['page']>;
 }): QueryVariablesByUserTaskResponseBody {
 	const items = overrides?.items ?? [];
 	return {
@@ -33,6 +34,7 @@ function createQueryVariablesByUserTaskResponse(overrides?: {
 			startCursor: null,
 			endCursor: null,
 			hasMoreTotalItems: false,
+			...overrides?.page,
 		},
 	};
 }
