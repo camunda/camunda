@@ -5,42 +5,34 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.zeebe.dynamic.config.api;
 
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.jspecify.annotations.NullMarked;
 
 /**
- * Controls exporting through dynamic cluster configuration. Each operation submits a single
- * cluster-wide {@code ExportingStateChangeRequest} and completes only once the resulting
- * configuration change has been fully applied, preserving the synchronous contract expected by the
- * exporting actuator endpoint.
+ * Awaits completion of a cluster configuration change submitted through a {@link
+ * ClusterConfigurationManagementRequestSender}, polling the cluster topology until the change has
+ * been fully applied. Useful for callers that need a synchronous request/response contract on top
+ * of the otherwise asynchronous cluster configuration change mechanism.
  */
-public class ClusterConfigExportingControlService {
-
-  private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMillis(200);
-  private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
+@NullMarked
+public final class ClusterConfigurationChangeAwaiter {
 
   private final ClusterConfigurationManagementRequestSender requestSender;
   private final Duration pollInterval;
   private final Duration timeout;
 
-  public ClusterConfigExportingControlService(
-      final ClusterConfigurationManagementRequestSender requestSender) {
-    this(requestSender, DEFAULT_POLL_INTERVAL, DEFAULT_TIMEOUT);
-  }
-
-  ClusterConfigExportingControlService(
+  public ClusterConfigurationChangeAwaiter(
       final ClusterConfigurationManagementRequestSender requestSender,
       final Duration pollInterval,
       final Duration timeout) {
@@ -49,26 +41,18 @@ public class ClusterConfigExportingControlService {
     this.timeout = timeout;
   }
 
-  public CompletableFuture<Void> pauseExporting(final String physicalTenantId) {
-    return changeState(ExportingState.PAUSED);
-  }
-
-  public CompletableFuture<Void> softPauseExporting(final String physicalTenantId) {
-    return changeState(ExportingState.SOFT_PAUSED);
-  }
-
-  public CompletableFuture<Void> resumeExporting(final String physicalTenantId) {
-    return changeState(ExportingState.EXPORTING);
-  }
-
-  private CompletableFuture<Void> changeState(final ExportingState targetState) {
+  /**
+   * Completes once the change submitted via {@code submission} has been fully applied. Fails if
+   * submission failed, the change failed to apply, or the timeout elapses first.
+   */
+  public CompletableFuture<Void> awaitCompletion(
+      final CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+          submission) {
     final long deadlineNanos = System.nanoTime() + timeout.toNanos();
-    return requestSender
-        .changeExporterState(new ExportingStateChangeRequest(targetState, false))
-        .thenCompose(response -> onChangeSubmitted(response, deadlineNanos));
+    return submission.thenCompose(response -> onSubmitted(response, deadlineNanos));
   }
 
-  private CompletableFuture<Void> onChangeSubmitted(
+  private CompletableFuture<Void> onSubmitted(
       final Either<ErrorResponse, ClusterConfigurationChangeResponse> response,
       final long deadlineNanos) {
     if (response.isLeft()) {
@@ -76,7 +60,7 @@ public class ClusterConfigExportingControlService {
     }
 
     final var change = response.get();
-    // An empty plan means all exporters are already in the requested state: nothing to await.
+    // An empty plan means the cluster is already in the requested state: nothing to await.
     if (change.plannedChanges().isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -94,16 +78,16 @@ public class ClusterConfigExportingControlService {
               }
 
               return switch (progressOf(topology.get(), changeId)) {
-                case COMPLETED -> CompletableFuture.completedFuture((Void) null);
+                case COMPLETED -> CompletableFuture.completedFuture(unit());
                 case FAILED ->
                     CompletableFuture.failedFuture(
                         new IllegalStateException(
-                            "Exporter state change " + changeId + " failed to apply"));
+                            "Cluster configuration change " + changeId + " failed to apply"));
                 case PENDING -> {
                   if (System.nanoTime() >= deadlineNanos) {
                     yield CompletableFuture.failedFuture(
-                        new java.util.concurrent.TimeoutException(
-                            "Timed out waiting for exporter state change " + changeId));
+                        new TimeoutException(
+                            "Timed out waiting for cluster configuration change " + changeId));
                   }
                   yield CompletableFuture.supplyAsync(() -> null, delayedExecutor())
                       .thenCompose(ignored -> awaitChange(changeId, deadlineNanos));

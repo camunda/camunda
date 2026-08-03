@@ -5,22 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.zeebe.dynamic.config.api;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -35,144 +28,95 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
-final class ClusterConfigExportingControlServiceTest {
+final class ClusterConfigurationChangeAwaiterTest {
 
   private final ClusterConfigurationManagementRequestSender sender =
       mock(ClusterConfigurationManagementRequestSender.class);
-  private final ClusterConfigExportingControlService service =
-      new ClusterConfigExportingControlService(
-          sender, Duration.ofMillis(1), Duration.ofSeconds(10));
-
-  @Test
-  void shouldMapResumeToExporting() {
-    // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(sender.changeExporterState(captor.capture())).thenReturn(emptyPlan());
-
-    // when
-    service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
-
-    // then
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.EXPORTING);
-  }
-
-  @Test
-  void shouldMapPauseToPaused() {
-    // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(sender.changeExporterState(captor.capture())).thenReturn(emptyPlan());
-
-    // when
-    service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
-
-    // then
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.PAUSED);
-  }
-
-  @Test
-  void shouldMapSoftPauseToSoftPaused() {
-    // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(sender.changeExporterState(captor.capture())).thenReturn(emptyPlan());
-
-    // when
-    service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
-
-    // then
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.SOFT_PAUSED);
-  }
+  private final ClusterConfigurationChangeAwaiter awaiter =
+      new ClusterConfigurationChangeAwaiter(sender, Duration.ofMillis(1), Duration.ofSeconds(10));
 
   @Test
   void shouldCompleteImmediatelyWhenPlanIsEmpty() {
-    // given
-    when(sender.changeExporterState(any())).thenReturn(emptyPlan());
-
     // when - then
-    assertThat(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .succeedsWithin(Duration.ofSeconds(1));
+    assertThat(awaiter.awaitCompletion(emptyPlan())).succeedsWithin(Duration.ofSeconds(1));
   }
 
   @Test
   void shouldCompleteWhenChangeCompletes() {
     // given
-    when(sender.changeExporterState(any())).thenReturn(plan(7));
     when(sender.getTopology())
         .thenReturn(topology(Optional.of(completed(7, Status.COMPLETED)), Optional.empty()));
 
     // when - then
-    assertThat(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .succeedsWithin(Duration.ofSeconds(1));
+    assertThat(awaiter.awaitCompletion(plan(7))).succeedsWithin(Duration.ofSeconds(1));
   }
 
   @Test
   void shouldPollUntilChangeCompletes() {
     // given
-    when(sender.changeExporterState(any())).thenReturn(plan(7));
     when(sender.getTopology())
         .thenReturn(topology(Optional.empty(), Optional.of(pending(7))))
         .thenReturn(topology(Optional.empty(), Optional.of(pending(7))))
         .thenReturn(topology(Optional.of(completed(7, Status.COMPLETED)), Optional.empty()));
 
-    // when
-    service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
-
-    // then
+    // when - then
+    assertThat(awaiter.awaitCompletion(plan(7))).succeedsWithin(Duration.ofSeconds(1));
     verify(sender, atLeast(3)).getTopology();
   }
 
   @Test
   void shouldCompleteWhenSupersededByNewerChange() {
     // given a newer change already completed -> our change finished before it
-    when(sender.changeExporterState(any())).thenReturn(plan(7));
     when(sender.getTopology())
         .thenReturn(topology(Optional.of(completed(8, Status.COMPLETED)), Optional.empty()));
 
     // when - then
-    assertThat(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .succeedsWithin(Duration.ofSeconds(1));
+    assertThat(awaiter.awaitCompletion(plan(7))).succeedsWithin(Duration.ofSeconds(1));
   }
 
   @Test
   void shouldFailWhenChangeFailed() {
     // given
-    when(sender.changeExporterState(any())).thenReturn(plan(7));
     when(sender.getTopology())
         .thenReturn(topology(Optional.of(completed(7, Status.FAILED)), Optional.empty()));
 
     // when - then
-    assertThatThrownBy(() -> service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join())
-        .isInstanceOf(CompletionException.class);
+    assertThat(awaiter.awaitCompletion(plan(7)))
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class);
   }
 
   @Test
   void shouldFailWhenSubmitFails() {
     // given
-    when(sender.changeExporterState(any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "nope"))));
+    final var submission =
+        CompletableFuture.completedFuture(
+            Either.<ErrorResponse, ClusterConfigurationChangeResponse>left(
+                new ErrorResponse(ErrorCode.INVALID_REQUEST, "nope")));
 
     // when - then
-    assertThatThrownBy(() -> service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join())
-        .isInstanceOf(CompletionException.class);
+    assertThat(awaiter.awaitCompletion(submission))
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class);
   }
 
   @Test
   void shouldFailWhenChangeNeverCompletes() {
     // given
-    final var timingOutService =
-        new ClusterConfigExportingControlService(
-            sender, Duration.ofMillis(1), Duration.ofMillis(5));
-    when(sender.changeExporterState(any())).thenReturn(plan(7));
+    final var timingOutAwaiter =
+        new ClusterConfigurationChangeAwaiter(sender, Duration.ofMillis(1), Duration.ofMillis(5));
     when(sender.getTopology()).thenReturn(topology(Optional.empty(), Optional.of(pending(7))));
 
     // when - then
-    assertThatThrownBy(() -> timingOutService.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join())
-        .isInstanceOf(CompletionException.class);
+    assertThat(timingOutAwaiter.awaitCompletion(plan(7)))
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(TimeoutException.class);
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> emptyPlan() {
