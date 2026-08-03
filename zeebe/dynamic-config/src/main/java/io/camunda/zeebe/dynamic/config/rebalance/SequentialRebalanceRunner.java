@@ -61,9 +61,11 @@ import org.slf4j.LoggerFactory;
  *   PENDING ------------------------.
  *     |                             |
  *     |                             v
- *     |                           SKIPPED  (no member eligible to lead it)
- *     |                           SKIPPED  (already led by the desired leader)
- *     |                           FAILED   (no leader to ask)
+ *     |                           SKIPPED    (no member eligible to lead it)
+ *     |                           SKIPPED    (already led by the desired leader)
+ *     |                           FAILED     (no leader to ask)
+ *     |                           CANCELLED  (the operator stopped the rebalance before its
+ *     |                                       turn came)
  *     |
  *     | its turn comes - one partition in flight at a time, in order
  *     v
@@ -84,10 +86,11 @@ import org.slf4j.LoggerFactory;
  * outcome it later reports, and the topology poll all arrive independently - so each one first
  * checks the partition is still TRANSFERRING, and whichever arrives first is the one that resolves
  * it. Every resolution moves the rebalance on to the next PENDING partition; it finishes when there
- * is none left, or when the operator has asked it to stop, which leaves the partitions after the
- * current one PENDING for good. A rebalance the coordinator has abandoned stops where it is without
- * finishing at all, there being nobody left to finish it for. A dry run finishes at the plan,
- * having asked nothing of any leader.
+ * is none left, or when the operator has asked it to stop, which turns every partition still
+ * PENDING into CANCELLED rather than leaving it pending for good. A rebalance the coordinator has
+ * abandoned stops where it is without finishing at all, there being nobody left to finish it for -
+ * its still-PENDING partitions are not turned into anything, since there is no longer a member left
+ * to publish the change. A dry run finishes at the plan, having asked nothing of any leader.
  *
  * <p>Runs entirely on the coordinator's actor thread, which is also the thread the {@link
  * RebalanceRun} it is given is confined to.
@@ -527,15 +530,45 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   }
 
   private void finish(final RebalanceRun rebalance, final ActorFuture<Void> completion) {
+    if (rebalance.isCancelRequested()) {
+      cancelPending(rebalance);
+    }
     final var partitions = rebalance.partitions();
     LOG.info(
-        "Rebalance {} transferred {} partitions, skipped {}, failed on {} and left {} untouched",
+        "Rebalance {} transferred {} partitions, skipped {}, failed on {}, cancelled {} and left {} "
+            + "untouched",
         rebalance.id(),
         count(partitions, PartitionRebalanceState.TRANSFERRED),
         count(partitions, PartitionRebalanceState.SKIPPED),
         count(partitions, PartitionRebalanceState.FAILED),
+        count(partitions, PartitionRebalanceState.CANCELLED),
         count(partitions, PartitionRebalanceState.PENDING));
     complete(completion);
+  }
+
+  /**
+   * Turns every partition the rebalance never reached into a record of that, rather than leaving it
+   * PENDING for good - which would otherwise be indistinguishable from a rebalance still running.
+   */
+  private void cancelPending(final RebalanceRun rebalance) {
+    var cancelledAny = false;
+    for (int index = 0; index < rebalance.partitionCount(); index++) {
+      final var partition = rebalance.partition(index);
+      if (partition.state() != PartitionRebalanceState.PENDING) {
+        continue;
+      }
+      rebalance.updatePartition(
+          index,
+          pending ->
+              pending.withState(
+                  PartitionRebalanceState.CANCELLED,
+                  "the operator cancelled the rebalance before its transfer began"));
+      observe(partition, PartitionRebalanceResult.CANCELLED, Duration.ZERO);
+      cancelledAny = true;
+    }
+    if (cancelledAny) {
+      publish(rebalance);
+    }
   }
 
   /**

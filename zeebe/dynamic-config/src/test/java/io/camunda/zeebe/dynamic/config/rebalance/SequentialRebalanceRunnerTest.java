@@ -469,7 +469,8 @@ final class SequentialRebalanceRunnerTest {
 
     // then
     assertThat(transfers.initiated).hasSize(1);
-    assertThat(rebalance.partition(1).state()).isEqualTo(PartitionRebalanceState.PENDING);
+    assertThat(rebalance.partition(1).state()).isEqualTo(PartitionRebalanceState.CANCELLED);
+    assertThat(partitionDurationCount(2, PartitionRebalanceResult.CANCELLED.name())).isEqualTo(1);
   }
 
   @Test
