@@ -12,6 +12,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
@@ -39,6 +40,15 @@ public class OptimizeMetrics {
   public static Timer getTimer(
       final MetricEnum metric, final String recordType, final Integer partitionId) {
     return Timer.builder(metric.getName())
+        .description(metric.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
+  public static Counter getCounter(
+      final MetricEnum metric, final String recordType, final Integer partitionId) {
+    return Counter.builder(metric.getName())
         .description(metric.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
