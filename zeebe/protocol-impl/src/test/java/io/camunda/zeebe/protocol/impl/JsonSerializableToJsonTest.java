@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -5154,6 +5155,37 @@ final class JsonSerializableToJsonTest {
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
           "changedAttributes": []
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentInstanceBatchRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentInstanceBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AgentInstanceBatchRecord()
+                    .setProcessInstanceKey(2251799813685248L)
+                    .setProcessDefinitionKey(2251799813685100L)
+                    .setAgentInstanceKey(2251799813685251L),
+        """
+        {
+          "processInstanceKey": 2251799813685248,
+          "processDefinitionKey": 2251799813685100,
+          "agentInstanceKey": 2251799813685251
+        }
+        """
+      },
+      {
+        "Empty AgentInstanceBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new AgentInstanceBatchRecord().setProcessInstanceKey(123L),
+        """
+        {
+          "processInstanceKey": 123,
+          "processDefinitionKey": -1,
+          "agentInstanceKey": -1
         }
         """
       },
