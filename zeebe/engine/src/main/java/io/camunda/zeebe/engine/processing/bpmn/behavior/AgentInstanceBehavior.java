@@ -10,32 +10,31 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceBatchRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceBatchIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class AgentInstanceBehavior {
 
   private final TypedCommandWriter commandWriter;
-  private final AgentInstanceState agentInstanceState;
+  private final KeyGenerator keyGenerator;
 
-  public AgentInstanceBehavior(final ProcessingState processingState, final Writers writers) {
+  public AgentInstanceBehavior(final Writers writers, final KeyGenerator keyGenerator) {
     commandWriter = writers.command();
-    agentInstanceState = processingState.getAgentInstanceState();
+    this.keyGenerator = keyGenerator;
   }
 
-  /** Completes every agent instance still associated with the given process instance. */
+  /**
+   * Triggers the batched completion of every agent instance still associated with the given process
+   * instance, by writing a single {@link AgentInstanceBatchIntent#COMPLETE} command.
+   */
   public void completeAgentInstancesOfProcessInstance(final BpmnElementContext context) {
     final long processInstanceKey = context.getProcessInstanceKey();
-    for (final long agentInstanceKey :
-        agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey)) {
-      commandWriter.appendFollowUpCommand(
-          agentInstanceKey,
-          AgentInstanceIntent.COMPLETE,
-          new AgentInstanceRecord()
-              .setAgentInstanceKey(agentInstanceKey)
-              .setProcessInstanceKey(processInstanceKey));
-    }
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(),
+        AgentInstanceBatchIntent.COMPLETE,
+        new AgentInstanceBatchRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setProcessDefinitionKey(context.getProcessDefinitionKey()));
   }
 }

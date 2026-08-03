@@ -299,7 +299,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             variableBehavior,
             processingState);
 
-    agentInstanceBehavior = new AgentInstanceBehavior(processingState, writers);
+    agentInstanceBehavior = new AgentInstanceBehavior(writers, processingState.getKeyGenerator());
 
     processDeletionBehavior =
         new BpmnProcessDeletionBehavior(
