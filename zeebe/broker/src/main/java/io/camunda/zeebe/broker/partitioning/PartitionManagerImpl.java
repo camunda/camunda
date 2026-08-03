@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.util.Unit.unit;
-
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -551,10 +549,24 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
-    return partitions.keySet().stream()
-        .map(partitionId -> setExportingState(partitionId, exportingState))
-        .collect(new ActorFutureCollector<Void>(concurrencyControl))
-        .thenAccept(ignored -> unit());
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var completed =
+              partitions.keySet().stream()
+                  .map(partitionId -> setExportingState(partitionId, exportingState))
+                  .collect(new ActorFutureCollector<Void>(concurrencyControl));
+          concurrencyControl.runOnCompletion(
+              completed,
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                } else {
+                  result.complete(null);
+                }
+              });
+        });
+    return result;
   }
 
   private ActorFuture<Void> setExportingState(
