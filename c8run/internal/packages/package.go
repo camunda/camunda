@@ -16,11 +16,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/archive"
 	"github.com/rs/zerolog/log"
 )
+
+const helperJavaRelease = 21
 
 func Clean(camundaVersion string) {
 	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
@@ -197,17 +200,12 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-<<<<<<< HEAD
-	javaVersionCmd := exec.Command("javac", "--release", "21", "JavaVersion.java")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-=======
 	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
-		if err := compileJavaHelper(javaFile); err != nil {
-			return err
+		javaCmd := exec.Command("javac", "--release", strconv.Itoa(helperJavaRelease), javaFile)
+		var stderr strings.Builder
+		javaCmd.Stderr = &stderr
+		if err := javaCmd.Run(); err != nil {
+			return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
 		}
 		classFile := strings.TrimSuffix(javaFile, ".java") + ".class"
 		if err := verifyClassFileVersion(classFile); err != nil {
@@ -215,22 +213,6 @@ func BuildJavaScripts() error {
 		}
 	}
 	return nil
-}
-
-func compileJavaHelper(javaFile string) error {
-	javaCmd := exec.Command("javac", buildJavaHelperArgs(javaFile)...)
-	var out strings.Builder
-	var stderr strings.Builder
-	javaCmd.Stdout = &out
-	javaCmd.Stderr = &stderr
-	if err := javaCmd.Run(); err != nil {
-		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
-	}
-	return nil
-}
-
-func buildJavaHelperArgs(sourceFile string) []string {
-	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
 }
 
 func verifyClassFileVersion(classFile string) error {
@@ -247,30 +229,10 @@ func verifyClassFileVersion(classFile string) error {
 	expected := 44 + helperJavaRelease
 	if major != expected {
 		return fmt.Errorf(
-			"%s compiled for Java %d (class file version %d), expected Java %d (version %d); "+
+			"%s compiled for Java %d (class file version %d), expected Java %d (class file version %d); "+
 				"ensure javac is invoked with --release %d",
 			classFile, major-44, major, helperJavaRelease, expected, helperJavaRelease,
 		)
-	}
-	return nil
-}
-
-func BuildJRE(camundaVersion, _ string) error {
-	if err := ensureJLinkVersion(); err != nil {
-		return err
-	}
-
-	modules, err := detectRequiredJREModules(camundaVersion)
->>>>>>> ef5a7f86 (feat: verify JavaVersion.class file version matches helperJavaRelease after compilation)
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaVersion : %w", err)
-	}
-	javaHomeCmd := exec.Command("javac", "--release", "21", "JavaHome.java")
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err = javaHomeCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaHome : %w", err)
 	}
 	return nil
 }
