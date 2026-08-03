@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -216,6 +217,7 @@ public final class EventAppliers implements EventApplier {
     register(
         AgentInstanceIntent.MIGRATED,
         new AgentInstanceMigratedApplier(state.getAgentInstanceState()));
+    register(AgentInstanceBatchIntent.COMPLETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
