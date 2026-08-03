@@ -481,6 +481,55 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldCarryDeleteHistoryIntentOnDrainReport() {
+    // given - a draining definition whose deletion also requested its history to be deleted
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata, true);
+
+    // when - the last active instance completes
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the report carries the intent, since this partition removes the definition locally
+    // right away and the deployment partition can no longer read it from state
+    final var report =
+        RecordingExporter.processRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withIntent(ProcessIntent.DELETE_COMPLETE)
+            .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+            .getFirst();
+    Assertions.assertThat(((ProcessRecord) report.getValue()).isDeleteHistory())
+        .describedAs("the drain report carries the history deletion intent")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldNotCarryDeleteHistoryIntentWhenNotRequested() {
+    // given - a draining definition whose deletion did not request history deletion
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata);
+
+    // when - the last active instance completes
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then
+    final var report =
+        RecordingExporter.processRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withIntent(ProcessIntent.DELETE_COMPLETE)
+            .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+            .getFirst();
+    Assertions.assertThat(((ProcessRecord) report.getValue()).isDeleteHistory())
+        .describedAs("the drain report does not request history deletion")
+        .isFalse();
+  }
+
+  @Test
   public void shouldReportDrainedWhenLastDrainingInstanceTerminates() {
     // given
     final var processId = helper.getBpmnProcessId();
@@ -706,6 +755,10 @@ public class DrainingProcessDefinitionTest {
    * change lands, and remove this injection helper.
    */
   private void drain(final ProcessMetadataValue metadata) {
+    drain(metadata, false);
+  }
+
+  private void drain(final ProcessMetadataValue metadata, final boolean deleteHistory) {
     engine.stop();
     engine.writeRecords(
         RecordToWrite.event()
@@ -717,7 +770,8 @@ public class DrainingProcessDefinitionTest {
                     .setBpmnProcessId(metadata.getBpmnProcessId())
                     .setVersion(metadata.getVersion())
                     .setResourceName(metadata.getResourceName())
-                    .setTenantId(metadata.getTenantId())));
+                    .setTenantId(metadata.getTenantId())
+                    .setDeleteHistory(deleteHistory)));
     engine.start();
 
     RecordingExporter.processRecords()

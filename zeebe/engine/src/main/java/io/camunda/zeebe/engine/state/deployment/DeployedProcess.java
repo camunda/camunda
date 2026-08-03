@@ -56,6 +56,10 @@ public final class DeployedProcess {
     return persistedProcess.getState() == PersistedProcessState.DRAINING;
   }
 
+  public boolean isDeleteHistory() {
+    return persistedProcess.isDeleteHistory();
+  }
+
   public String getTenantId() {
     return persistedProcess.getTenantId();
   }
