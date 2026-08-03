@@ -7,8 +7,8 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
-import {http, HttpResponse} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {http, HttpResponse, type PathParams} from 'msw';
+import {endpoints, type QueryDecisionDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -128,10 +128,13 @@ describe('Multi tenancy', () => {
 	it('should scope the decision-definitions request to the selected tenant', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
-			http.post(endpoints.queryDecisionDefinitions.getUrl(), async ({request}) => {
-				requestedFilter = (await request.json()).filter;
-				return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
-			}),
+			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
+				endpoints.queryDecisionDefinitions.getUrl(),
+				async ({request}) => {
+					requestedFilter = (await request.json()).filter;
+					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
+				},
+			),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
@@ -144,10 +147,13 @@ describe('Multi tenancy', () => {
 	it('should not scope the decision-definitions request when "all tenants" is selected', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
-			http.post(endpoints.queryDecisionDefinitions.getUrl(), async ({request}) => {
-				requestedFilter = (await request.json()).filter;
-				return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
-			}),
+			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
+				endpoints.queryDecisionDefinitions.getUrl(),
+				async ({request}) => {
+					requestedFilter = (await request.json()).filter;
+					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
+				},
+			),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
