@@ -24,9 +24,11 @@ import org.jspecify.annotations.NullMarked;
 /**
  * What the rebalancing coordinator reports about the rebalances it runs.
  *
- * <p>Every meter is registered the first time it is written, so a member that never coordinates -
- * which is every member but one - publishes none of these, and the cluster-wide values are not
- * confused by a series per member.
+ * <p>Nothing is registered until the member coordinates, so a member that never does - which is
+ * every member but one - publishes none of these, and the cluster-wide values are not confused by a
+ * series per member. From that point the rebalance counts are published whether or not there is
+ * anything to count (see {@link #startCoordinating()}), while the per-partition meters wait for a
+ * partition to report on, their label sets not being known in advance.
  *
  * <p>The gauges only mean anything while a rebalance is running, so {@link #clear()} takes them
  * down when one ends and when a member stops coordinating: a gauge left behind would hold its last
@@ -45,6 +47,21 @@ public final class ClusterRebalanceMetrics {
 
   public ClusterRebalanceMetrics(final MeterRegistry registry) {
     this.registry = registry;
+  }
+
+  /**
+   * Publishes the rebalance counts from the moment this member takes the coordinating role, before
+   * it has anything to count.
+   *
+   * <p>A counter that first appears already holding the event that created it hides that event from
+   * {@code increase()}, which can only see a change between two samples. A dashboard counting
+   * rebalances over a window would therefore miss the first one of each outcome - and one rebalance
+   * is exactly the case an operator looks at the dashboard for.
+   */
+  public void startCoordinating() {
+    for (final var outcome : RebalanceOutcome.values()) {
+      elapsed.computeIfAbsent(outcome, this::registerElapsed);
+    }
   }
 
   public void observeElapsed(final RebalanceOutcome outcome, final Duration duration) {

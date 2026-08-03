@@ -201,6 +201,7 @@ public final class RebalanceCoordinator
     if (nowCoordinating != (configuration != null)) {
       if (nowCoordinating) {
         LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
+        metrics.startCoordinating();
       } else {
         LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
         discardState();

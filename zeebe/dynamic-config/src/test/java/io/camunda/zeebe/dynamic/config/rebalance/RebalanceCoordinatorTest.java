@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -197,13 +198,7 @@ final class RebalanceCoordinatorTest {
     runner.finish();
 
     // then
-    assertThat(
-            registry
-                .get("zeebe.cluster.rebalance.elapsed")
-                .tag("result", RebalanceOutcome.COMPLETED.name())
-                .timer()
-                .count())
-        .isEqualTo(1);
+    assertThat(elapsed(RebalanceOutcome.COMPLETED).count()).isEqualTo(1);
   }
 
   @Test
@@ -254,7 +249,36 @@ final class RebalanceCoordinatorTest {
             .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
 
     // then
-    assertThat(registry.get("zeebe.cluster.rebalance.elapsed").timer().count()).isEqualTo(1);
+    assertThat(elapsed(RebalanceOutcome.COMPLETED).count()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldPublishRebalanceCountsBeforeThereIsAnythingToCount() {
+    // given
+    final var coordinator = startCoordinator(LOWEST_ID_MEMBER, RebalanceRunner.none());
+
+    // when
+    configurationWithBothMembers(coordinator);
+
+    // then
+    assertThat(RebalanceOutcome.values())
+        .allSatisfy(outcome -> assertThat(elapsed(outcome).count()).isZero());
+  }
+
+  @Test
+  void shouldNotPublishRebalanceCountsOnAMemberThatDoesNotCoordinate() {
+    // given
+    final var coordinator = startCoordinator(OTHER_MEMBER, RebalanceRunner.none());
+
+    // when
+    configurationWithBothMembers(coordinator);
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.elapsed").timers()).isEmpty();
+  }
+
+  private Timer elapsed(final RebalanceOutcome outcome) {
+    return registry.get("zeebe.cluster.rebalance.elapsed").tag("result", outcome.name()).timer();
   }
 
   @Test
