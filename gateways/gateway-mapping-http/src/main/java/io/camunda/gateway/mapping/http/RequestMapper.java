@@ -125,12 +125,27 @@ public class RequestMapper {
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
-      final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
+      final @Nullable UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
     return new CompleteUserTaskRequest(
         userTaskKey,
         getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
         getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
+  }
+
+  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+      final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskCompletionRequest
+          completionRequest,
+      final long userTaskKey) {
+
+    return toUserTaskCompletionRequest(
+        completionRequest == null
+            ? null
+            : UserTaskCompletionRequest.Builder.create()
+                .variables(completionRequest.getVariables())
+                .action(completionRequest.getAction())
+                .build(),
+        userTaskKey);
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
