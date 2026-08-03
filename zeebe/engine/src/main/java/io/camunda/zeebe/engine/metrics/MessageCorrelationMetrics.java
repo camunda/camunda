@@ -253,14 +253,18 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
    * M7: stops every outstanding ask-duration timer for an expiring message with {@code
    * outcome=expired} on {@code P_K}. Called for every expiring buffered message; a no-op for the
    * common case with no pending cross-partition ask.
+   *
+   * @return {@code true} if the message had at least one pending cross-partition ask whose timer
+   *     was stopped, {@code false} for the common uncontended case
    */
-  public void expireCrossPartitionAsks(final long messageKey) {
+  public boolean expireCrossPartitionAsks(final long messageKey) {
     final var byProcessDefinition = pendingAskSamples.remove(messageKey);
     if (byProcessDefinition == null) {
-      return;
+      return false;
     }
     final var timer = askDurationTimer(AskOutcome.EXPIRED);
     byProcessDefinition.values().forEach(sample -> sample.stop(timer));
+    return true;
   }
 
   /**

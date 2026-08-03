@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 import org.agrona.collections.MutableLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Consumes a {@link MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger and
@@ -35,6 +37,9 @@ import org.agrona.collections.MutableLong;
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor.class);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -87,6 +92,15 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
     if (deleted.get() > 0) {
       metrics.dedupSwept((int) deleted.get());
     }
+
+    // Logged per sweep run (not per scheduler tick): the scheduler only writes a
+    // SWEEP_EXPIRED_DEDUPS command after a read-only probe finds an expired entry, so a run with
+    // sweptCount=0 is the rare probe/process race worth surfacing, and hasMore=true flags a
+    // batch-limited sweep that will continue on a follow-up command.
+    LOG.atDebug()
+        .addKeyValue("sweptCount", deleted.get())
+        .addKeyValue("hasMore", hasMore)
+        .log("Swept expired cross-partition message-start dedup entries");
 
     if (hasMore) {
       // Past-deadline dedup entries remain beyond what fit in this batch. Schedule the next cycle

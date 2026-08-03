@@ -247,10 +247,14 @@ public final class BpmnBufferedMessageStartEventBehavior {
             : Optional.<Correlation>empty();
 
     if (correlationKeyCandidate.isEmpty()) {
-      businessIdCandidate.ifPresent(this::triggerCorrelation);
+      if (businessIdCandidate.isPresent()) {
+        traceBufferedRedrive("business_id_only", correlationKeyCandidate, businessIdCandidate);
+        triggerCorrelation(businessIdCandidate.get());
+      }
       return;
     }
     if (businessIdCandidate.isEmpty()) {
+      traceBufferedRedrive("correlation_key_only", correlationKeyCandidate, businessIdCandidate);
       triggerCorrelation(correlationKeyCandidate.get());
       return;
     }
@@ -259,6 +263,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     final var bid = businessIdCandidate.get();
     if (ck.messageKey == bid.messageKey) {
       // both reasons resolve to the same buffered message: trigger it once
+      traceBufferedRedrive("same_message", correlationKeyCandidate, businessIdCandidate);
       triggerCorrelation(ck);
       return;
     }
@@ -270,11 +275,12 @@ public final class BpmnBufferedMessageStartEventBehavior {
             : "";
     if (businessId.equals(ckBusinessId)) {
       // both candidates carry the freed Business ID — starting both would create two PIs holding
-      // it,
-      // since the first start's hold is not yet applied. Trigger only the earlier (FIFO) one.
+      // it, since the first start's hold is not yet applied. Trigger only the earlier (FIFO) one.
+      traceBufferedRedrive("fifo_collision", correlationKeyCandidate, businessIdCandidate);
       triggerCorrelation(ck.messageKey <= bid.messageKey ? ck : bid);
     } else {
       // different Business IDs (or the correlation-key candidate carries none) — safe to start both
+      traceBufferedRedrive("both_independent", correlationKeyCandidate, businessIdCandidate);
       triggerCorrelation(ck);
       triggerCorrelation(bid);
     }
@@ -301,6 +307,24 @@ public final class BpmnBufferedMessageStartEventBehavior {
             message.getTimeToLive()),
         messageCorrelation.subscriptionKey,
         messageCorrelation.subscriptionRecord);
+  }
+
+  private void traceBufferedRedrive(
+      final String branch,
+      final Optional<Correlation> correlationKeyCandidate,
+      final Optional<Correlation> businessIdCandidate) {
+    if (!LOG.isTraceEnabled()) {
+      return;
+    }
+    LOG.atTrace()
+        .addKeyValue("branch", branch)
+        .addKeyValue(
+            "correlationKeyCandidate",
+            correlationKeyCandidate.map(candidate -> candidate.messageKey).orElse(-1L))
+        .addKeyValue(
+            "businessIdCandidate",
+            businessIdCandidate.map(candidate -> candidate.messageKey).orElse(-1L))
+        .log("Re-driving buffered message(s) on completion");
   }
 
   /**

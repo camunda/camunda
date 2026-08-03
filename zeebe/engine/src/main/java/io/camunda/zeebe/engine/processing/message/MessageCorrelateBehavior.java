@@ -239,10 +239,13 @@ public final class MessageCorrelateBehavior {
         subscription -> {
 
           // correlate the message only once per process
-          if (!subscription.isCorrelating()
-              && !correlatingSubscriptions.contains(
-                  subscription.getRecord().getBpmnProcessIdBuffer())
-              && businessIdMatches(
+          if (subscription.isCorrelating()
+              || correlatingSubscriptions.contains(
+                  subscription.getRecord().getBpmnProcessIdBuffer())) {
+            return true;
+          }
+
+          if (businessIdMatches(
                   messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())
               && !skipProcessInstance.test(subscription.getRecord().getProcessInstanceKey())) {
 
@@ -258,6 +261,11 @@ public final class MessageCorrelateBehavior {
                 correlatingSubscription);
 
             correlatingSubscriptions.add(correlatingSubscription);
+          } else {
+            LOG.atTrace()
+                .addKeyValue("messageKey", messageData.messageKey())
+                .addKeyValue("subscriptionKey", subscription.getKey())
+                .log("Skipping subscription: business ID mismatch");
           }
 
           return true;

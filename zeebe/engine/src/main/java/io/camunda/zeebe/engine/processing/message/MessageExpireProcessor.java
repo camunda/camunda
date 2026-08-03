@@ -14,9 +14,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class MessageExpireProcessor implements TypedRecordProcessor<MessageRecord> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MessageExpireProcessor.class);
 
   private final StateWriter stateWriter;
   private final MessageCorrelationMetrics metrics;
@@ -31,6 +35,10 @@ public final class MessageExpireProcessor implements TypedRecordProcessor<Messag
   public void processRecord(final TypedRecord<MessageRecord> record) {
 
     stateWriter.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
-    metrics.expireCrossPartitionAsks(record.getKey());
+    if (metrics.expireCrossPartitionAsks(record.getKey())) {
+      LOG.atDebug()
+          .addKeyValue("messageKey", record.getKey())
+          .log("Buffered message expired while its cross-partition ask was still pending");
+    }
   }
 }
