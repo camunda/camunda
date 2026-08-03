@@ -133,6 +133,27 @@ class SecondaryStorageInterceptorOverrideTest {
   }
 
   @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.database.type=rdbms",
+        "camunda.data.secondary-storage.type=rdbms",
+      })
+  class WithMatchingLegacyAndUnifiedRdbmsType {
+    @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+    @Test
+    void shouldAllowRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() {
+      final boolean result =
+          secondaryStorageInterceptor.preHandle(
+              requestDispatch(),
+              mock(HttpServletResponse.class),
+              requiresSecondaryStorageHandler());
+
+      assertThat(result).isTrue();
+    }
+  }
+
+  @Nested
   @TestPropertySource(properties = "camunda.data.secondary-storage.type=none")
   class WithNoneType {
     @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
