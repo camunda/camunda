@@ -7,14 +7,12 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue.ClusterVariableSecretReferenceValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
   /* Inherited from ObjectValue. They have no purpose in exported JSON records. */
@@ -69,32 +67,9 @@ public final class ClusterVariableSecretReference extends ObjectValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getStoreIdBuffer() {
-    return storeIdProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getSecretReferenceBuffer() {
-    return secretReferenceProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getPathBuffer() {
-    return pathProp.getValue();
-  }
-
   public void copy(final ClusterVariableSecretReferenceValue secretReference) {
     setStoreId(secretReference.getStoreId());
     setSecretReference(secretReference.getSecretReference());
     setPath(secretReference.getPath());
-  }
-
-  /** Copies the values buffer-to-buffer, avoiding the String round-trip of {@link #copy}. */
-  public ClusterVariableSecretReference wrap(final ClusterVariableSecretReference other) {
-    storeIdProp.setValue(other.getStoreIdBuffer());
-    secretReferenceProp.setValue(other.getSecretReferenceBuffer());
-    pathProp.setValue(other.getPathBuffer());
-    return this;
   }
 }
