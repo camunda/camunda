@@ -136,8 +136,8 @@ The template files live under `setup/main/`:
   them. For example, `elasticsearch` copies
   `camunda-platform-values-defaults.yaml`,
   `camunda-platform-values-elasticsearch.yaml`,
-  `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
-  `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
+  `camunda-platform-override-values.yaml`, `load-test-values.yaml` and
+  `values-stable.yaml`
 - `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
   Helm chart). Copied into the namespace folder only when the matching
   storage is chosen.
@@ -153,6 +153,7 @@ The load-test-setup chart owns all the resources deployed for a single load test
 * the leader-balancer cronjob
 * the chaos-killer cronjob (optional, disabled by default)
 * the Elasticsearch ECK custom resource (optional, disabled by default but auto-enabled when using the `elasticsearch` secondary storage, or by Optimize, when the secondary storage is not directly usable by Optimize)
+* the Prometheus exporter for Elasticsearch (optional, disabled by default but auto-enabled whenever the ECK Elasticsearch resource above or OpenSearch is enabled — see [the chart's README](charts/load-test-setup/README.md#dependencies))
 
 It is parameterized by a values file baked at scaffold time:
 
@@ -484,7 +485,7 @@ cd c8-my-load-test-name
 make clean
 ```
 
-This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter + load-test-setup), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+This uninstalls the Helm releases (Camunda Platform + load test + load-test-setup, the latter including the Prometheus Elasticsearch exporter subchart when enabled), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
 
 `make clean` also explicitly deletes the Keycloak resources `keycloak-operator` namespace since they
 don't live in the namespace being torn down.

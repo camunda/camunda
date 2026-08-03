@@ -1,3 +1,50 @@
+# Load Test Setup Helm Chart
+
+This Helm Chart sets up the surrounding infrastructure for a Camunda load test namespace.
+
+* The **namespace** itself, labeled with the owner, a reclaim deadline, and (optionally) an AZ pin.
+* The `camunda-credentials` and `load-test-credentials` secrets, with deterministic passwords
+  generated via Helm's `derivePassword` so reinstalls (e.g. after a TTL cleanup) don't rotate
+  credentials out from under the platform release.
+* A **leader-balancer** CronJob that periodically triggers Zeebe partition leader rebalancing.
+* An optional **chaos-killer** CronJob that randomly deletes matching pods to simulate unscheduled
+  restarts.
+* An optional **ECK-managed Elasticsearch** cluster (`elasticsearch.enabled=true`), for load tests
+  that use Elasticsearch as secondary storage.
+* An optional **Keycloak instance**, backed by its own **PostgreSQL cluster** (`keycloak.enabled`,
+  default: `true`). See the [Keycloak](#keycloak) section below for details.
+* An optional **metrics-exporter** deployment to query the report internal
+  metrics from the Camunda components (see [the `metrics-exporter`
+  component](../../../metrics-exporter))
+* An optional **[Prometheus Elasticsearch exporter](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter)**
+  subchart to monitor Elasticsearch/OpenSearch (`prometheus-elasticsearch-exporter.enabled`).
+* The **`load-tester` subchart** ([`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)),
+  which deploys the actual load generators (starter/worker). Can be disabled for a bare
+  infrastructure-only setup.
+
+This chart is currently only used for the internal load test infrastructure and
+is not made to be generally reusable.
+
+## Dependencies
+
+|                                                                     Chart                                                                     |                Alias                |                          Enabled when                          |
+|-----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------------------------------------------------|
+| [`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)                                                                    | `load-tester`                       | `load-tester.enabled` (default: `true`)                        |
+| [`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter) | `prometheus-elasticsearch-exporter` | `prometheus-elasticsearch-exporter.enabled` (default: `false`) |
+
+## Prometheus Exporter for Elasticsearch/OpenSearch
+
+This Helm Chart can deploy and configure the
+[`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter)
+subchart. To enable the exporter, configure your values file with:
+
+```yaml
+prometheus-elasticsearch-exporter:
+  enabled: true
+```
+
+If you deploy Elasticsearch or OpenSearch, you most likely want to enable the exporter so Prometheus can scrape metrics from it.
+
 ## Keycloak
 
 ### Keycloak instance

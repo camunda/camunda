@@ -14,3 +14,8 @@ dependencies:
     # the load generators (e.g. for a bare cluster setup or when using the
     # standalone load-tester Helm release on stable versions).
     condition: load-tester.enabled
+
+  - name: prometheus-elasticsearch-exporter
+    version: "7.2.1"
+    repository: oci://ghcr.io/prometheus-community/charts
+    condition: prometheus-elasticsearch-exporter.enabled
