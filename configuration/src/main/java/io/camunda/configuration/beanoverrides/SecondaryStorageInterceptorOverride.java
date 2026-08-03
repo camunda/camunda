@@ -30,7 +30,7 @@ public class SecondaryStorageInterceptorOverride {
       final LegacySecondaryStorageInterceptor legacySecondaryStorageInterceptor,
       final SecondaryStorageReadiness readiness) {
     final SecondaryStorageInterceptor override = new SecondaryStorageInterceptor(readiness);
-    BeanUtils.copyProperties(override, legacySecondaryStorageInterceptor);
+    BeanUtils.copyProperties(legacySecondaryStorageInterceptor, override);
     override.setDatabaseType(uc.getCamunda().getData().getSecondaryStorage().getType().name());
     return override;
   }
