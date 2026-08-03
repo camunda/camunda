@@ -304,11 +304,16 @@ starter_rate() {
 
   # A rate the workload does not follow would make the scenario measure the old
   # load under a new name, which is worse than not running it.
-  local started created
+  # Checked as a band rather than a floor, so that lowering the rate waits for
+  # the load to come down instead of passing immediately on the rate it is
+  # leaving behind.
+  local started created low high
+  low=$(awk -v r="$rate" 'BEGIN { print r * 0.75 }')
+  high=$(awk -v r="$rate" 'BEGIN { print r * 1.25 }')
   started=$(date +%s)
   while :; do
     created=$(prom_query 'sum(rate(zeebe_element_instance_events_total{namespace="$NAMESPACE", action="activated", type="PROCESS"}[2m]))' || echo "")
-    if [[ -n "$created" ]] && compare_num "$created" gt "$(awk -v r="$rate" 'BEGIN { print r * 0.75 }')"; then
+    if [[ -n "$created" ]] && compare_num "$created" gt "$low" && compare_num "$created" lt "$high"; then
       log "  instances are being started at $(printf '%.1f' "$created") per second"
       return 0
     fi
