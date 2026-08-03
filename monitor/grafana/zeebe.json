@@ -29133,7 +29133,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Partitions the rebalance has still to resolve, per physical tenant. Transfers run one at a time, so this drains stepwise and reaching zero means the rebalance is done.",
+          "description": "Partitions the rebalance has still to resolve, per physical tenant. Transfers run one at a time, so this drains stepwise and reaching zero means the rebalance is done. The gauge is published only while a rebalance is running, so an empty panel means no rebalance is in flight rather than a rebalance with nothing left.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29591,7 +29591,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "What became of each partition a rebalance worked on within the dashboard range. TRANSFERRED is the success; every other result names why leadership stayed where it was, so this is the first place to look when a rebalance reports failed partitions. Recorded by the coordinator, so it covers the partitions no leader ever answered for as well as the reasons a leader gave: LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row, LEADER_SILENT and LEADER_UNREACHABLE at the leader itself. Broken down by partition, because one partition failing every time is a different problem from every partition failing once.",
+          "description": "What became of each partition a rebalance worked on within the dashboard range. TRANSFERRED is the success; every other result names why leadership stayed where it was, so this is the first place to look when a rebalance reports failed partitions. Recorded by the coordinator, so it covers the partitions no leader ever answered for as well as the reasons a leader gave: LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row, LEADER_SILENT and LEADER_UNREACHABLE at the leader itself. Broken down by partition, because one partition failing every time is a different problem from every partition failing once. The coordinator only starts counting an outcome for a partition once it has seen it, so this counts the change over the range but takes a first outcome in full rather than losing it.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29667,7 +29667,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (partition, result) (increase(zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__range]))",
+              "expr": "sum by (partition, result) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"} - (zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"} offset $__range)) or zeebe_cluster_rebalance_partition_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}, 0))",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -29873,7 +29873,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "How long the rebalance spent on each partition it took on, from deciding to act on it to knowing what became of it. Reported by the coordinator, so it includes waiting on a leader that answered slowly or never answered at all. The partitions the plan resolved without asking anyone cost no time and are left out, so that they do not bury the distribution in its lowest bucket; they are still counted in the transfer outcomes table.",
+          "description": "How long the rebalance spent on each partition it took on, from deciding to act on it to knowing what became of it. Reported by the coordinator, so it includes waiting on a leader that answered slowly or never answered at all. The partitions the plan resolved without asking anyone cost no time and are left out, so that they do not bury the distribution in its lowest bucket; they are still counted in the transfer outcomes table. Counted the same way as that table, so that the first time a partition reaches an outcome it shows up here too.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -29939,7 +29939,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (le) (increase(zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"}[$__rate_interval]))",
+              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"}, 0))",
               "format": "heatmap",
               "instant": false,
               "legendFormat": "{{le}}",
