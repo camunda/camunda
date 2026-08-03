@@ -64,8 +64,8 @@ public class ClusterVariableUpdateProcessor
     clusterVariableRecordValidator
         .ensureValidScope(commandRecord)
         .flatMap(clusterVariableRecordValidator::loadExisting)
+        .flatMap(stored -> isAuthorized(stored, command))
         .flatMap(stored -> applyUpdateWithSecretReferences(stored, commandRecord))
-        .flatMap(record -> isAuthorized(record, command))
         .ifRightOrLeft(
             record -> {
               final long key = keyGenerator.nextKey();
