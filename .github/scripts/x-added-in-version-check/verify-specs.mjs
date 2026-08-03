@@ -188,6 +188,24 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
   const loader = createYamlLoader(specDir);
   const { loadYaml, jsValue, lineOfPath } = loader;
 
+  // -- Apply x-added-in-version-override to the version-map, before anything
+  // reads versionMap.operations. An override replaces the version the
+  // bundler computed for that operation — every downstream check (including
+  // property Rule 1/3, which reads the consuming endpoint's version) then
+  // runs unchanged against the corrected value. See "Overriding the computed
+  // version" in the README for why this design, rather than a parallel fact
+  // to cross-check afterward.
+  for (const [opKey, info] of Object.entries(versionMap.operations)) {
+    const sourceFile = endpointToFile.get(opKey);
+    if (!sourceFile) continue;
+    const spaceIdx = opKey.indexOf(" ");
+    const method = opKey.slice(0, spaceIdx).toLowerCase();
+    const apiPath = opKey.slice(spaceIdx + 1);
+    const doc = jsValue(loadYaml(sourceFile));
+    const override = doc?.paths?.[apiPath]?.[method]?.["x-added-in-version-override"];
+    if (override !== undefined) info.version = override;
+  }
+
   // -- Operation verification (driven by version-map) ------------------------
   let opOk = 0;
   let opSkippedDeleted = 0;
@@ -291,6 +309,51 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
     }
   }
 
+  // Walk every YAML in the spec dir (including schema-only files like
+  // keys.yaml that aren't endpoint-map members) and collect every
+  // `x-properties-added-in-version` entry, including its optional sibling
+  // `addedInVersionOverride`. Used below to (a) patch the aggregated intro
+  // for overridden property locations before Rule 1/2/3 evaluate them, and
+  // (b) — later in the file — cross-check entries against `expected` so ones
+  // unjustified by the version-map can be flagged.
+  const allSpecYamlFiles = readdirSync(specDir).filter((f) => f.endsWith(".yaml"));
+  for (const f of allSpecYamlFiles) loadYaml(f);
+
+  const yamlPropAnnotations = []; // {file, parentPath, propName, addedInVersion, addedInVersionOverride}
+  function walkForPropertyAnnotations(node, path, file) {
+    if (node == null || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        // Use numeric indices so the resulting path stays compatible with
+        // `yaml`'s `doc.getIn()` (sequence lookups) when fed to `lineOfPath`.
+        walkForPropertyAnnotations(node[i], [...path, i], file);
+      }
+      return;
+    }
+    const list = node["x-properties-added-in-version"];
+    if (Array.isArray(list)) {
+      for (const item of list) {
+        if (item && typeof item === "object" && typeof item.propertyName === "string") {
+          yamlPropAnnotations.push({
+            file,
+            parentPath: path,
+            propName: item.propertyName,
+            addedInVersion: item.addedInVersion,
+            addedInVersionOverride: item.addedInVersionOverride,
+          });
+        }
+      }
+    }
+    for (const k of Object.keys(node)) {
+      if (k === "x-properties-added-in-version") continue;
+      walkForPropertyAnnotations(node[k], [...path, k], file);
+    }
+  }
+  for (const f of allSpecYamlFiles) {
+    const doc = jsValue(loadYaml(f));
+    if (doc) walkForPropertyAnnotations(doc, [], f);
+  }
+
   // -- Build expected property locations -------------------------------------
   const parentOf = new Map();
   for (const [propKey, entry] of Object.entries(versionMap.properties || {})) {
@@ -328,6 +391,19 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
     loc.propKeys.push(propKey);
     loc.endpointVersions.add(epInfo?.version ?? null);
     if (entry.endpoint) loc.consumerEndpoints.add(entry.endpoint);
+  }
+
+  // -- Apply addedInVersionOverride to the aggregated intro, before Rule
+  // 1/2/3 evaluate it. Same idea as the operation-level override above: the
+  // override replaces what the bundler computed for this property location,
+  // and Rule 1/2/3 then runs unchanged — so `x-added-in-version` on the
+  // property entry is only required when the *overridden* value still needs
+  // one (i.e. it isn't inferred from the endpoint/ancestor version).
+  for (const ann of yamlPropAnnotations) {
+    if (ann.addedInVersionOverride === undefined) continue;
+    const key = locationKey(ann.file, [...ann.parentPath, "properties", ann.propName]);
+    const loc = locations.get(key);
+    if (loc) loc.intro = ann.addedInVersionOverride;
   }
 
   const expected = new Map();
@@ -379,47 +455,6 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
       }
     }
     return undefined;
-  }
-
-  // Walk every YAML in the spec dir (including schema-only files like
-  // keys.yaml that aren't endpoint-map members) and collect every
-  // `x-properties-added-in-version` entry. Cross-checked below against
-  // `expected` so entries unjustified by the version-map can be flagged.
-  const allSpecYamlFiles = readdirSync(specDir).filter((f) => f.endsWith(".yaml"));
-  for (const f of allSpecYamlFiles) loadYaml(f);
-
-  const yamlPropAnnotations = []; // {file, parentPath, propName, addedInVersion}
-  function walkForPropertyAnnotations(node, path, file) {
-    if (node == null || typeof node !== "object") return;
-    if (Array.isArray(node)) {
-      for (let i = 0; i < node.length; i++) {
-        // Use numeric indices so the resulting path stays compatible with
-        // `yaml`'s `doc.getIn()` (sequence lookups) when fed to `lineOfPath`.
-        walkForPropertyAnnotations(node[i], [...path, i], file);
-      }
-      return;
-    }
-    const list = node["x-properties-added-in-version"];
-    if (Array.isArray(list)) {
-      for (const item of list) {
-        if (item && typeof item === "object" && typeof item.propertyName === "string") {
-          yamlPropAnnotations.push({
-            file,
-            parentPath: path,
-            propName: item.propertyName,
-            addedInVersion: item.addedInVersion,
-          });
-        }
-      }
-    }
-    for (const k of Object.keys(node)) {
-      if (k === "x-properties-added-in-version") continue;
-      walkForPropertyAnnotations(node[k], [...path, k], file);
-    }
-  }
-  for (const f of allSpecYamlFiles) {
-    const doc = jsValue(loadYaml(f));
-    if (doc) walkForPropertyAnnotations(doc, [], f);
   }
 
   // -- Compare expected vs actual property annotations -----------------------

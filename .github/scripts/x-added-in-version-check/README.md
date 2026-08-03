@@ -157,6 +157,42 @@ OffsetPagination:
 
 If both ancestor properties had aggregated to 8.6, Rule 2 would have suppressed the child property annotation. This is exactly why `LimitPagination.limit` and `CursorBackwardPagination.limit` get no annotation in `search-models.yaml` while their siblings `OffsetPagination.limit` and `CursorForwardPagination.limit` keep one: the former two are only ever reached through `SearchQueryRequest.page` (single ancestor property, aggregated intro 8.6, matches the child property → Rule 2 suppresses); the latter two are additionally reached from statistics-query ancestor properties (`JobTypeStatisticsQuery.page` etc., introduced in 8.9), so not every ancestor property agrees with the child property's 8.6 intro and Rule 2 cannot fire.
 
+## Overriding the computed version
+
+`x-added-in-version` and `x-properties-added-in-version` are public-facing — generated docs and SDKs read them directly (see [`docs/rest-api-endpoint-guidelines.md`](../../../docs/rest-api-endpoint-guidelines.md) §2.17). The verifier's computed version is derived from presence at each released version's immutable `<version>.0` tag, so it already survives later backports or retractions on that release line without any manual intervention — that's the whole point of the tag-pinning fix for #58872. A feature briefly retracted and reshipped still computes as introduced in its original release tag; nothing needs overriding there.
+
+What the override is actually for: letting a reviewer deliberately publish a version *other than* the one the tool computes, when they judge that's the more useful version to document for API consumers — a considered choice, not a workaround for the computed value being wrong, unstable, or otherwise something to defend against. For that case, add `x-added-in-version-override` (operations) or `addedInVersionOverride` (properties — a sibling field on the existing `x-properties-added-in-version` entry, not a separate list):
+
+```yaml
+# Operation-level
+x-added-in-version: "8.6"
+x-added-in-version-override: "8.6"
+```
+
+```yaml
+# Property-level — sibling of addedInVersion on the same entry
+x-properties-added-in-version:
+  - propertyName: "state"
+    addedInVersion: "8.6"
+    addedInVersionOverride: "8.6"
+```
+
+An override **replaces the version the bundler computed** for that operation or property before Rule 1/2/3 evaluate it — it isn't a separate fact checked against the annotation afterward. Concretely: the verifier patches the version-map's computed value for that entry to the override's value, then runs the exact same Rule 1/2/3 logic as always, using the override as if it were the bundler's own answer.
+
+One direct consequence: `addedInVersion` is only *required* alongside `addedInVersionOverride` when the overridden value still needs an explicit annotation — i.e. it doesn't already match its endpoint's or ancestor's version. If the override happens to make Rule 1/2/3 suppress the annotation, the entry can carry `addedInVersionOverride` alone:
+
+```yaml
+# Overriding a property to a version that matches its endpoint's own version —
+# Rule 1 suppresses the annotation, so addedInVersion isn't needed here at all.
+x-properties-added-in-version:
+  - propertyName: "state"
+    addedInVersionOverride: "8.8"
+```
+
+This is why the check still catches drift instead of silently trusting the override forever: if `addedInVersion` is present, it's compared against what Rule 1/2/3 compute *using the override* — so a later, unrelated edit to `addedInVersion` (or a change in whether an annotation is even needed) still fails the normal `VERSION_MISMATCH`/`MISSING_X_PROPERTIES_ADDED_IN_VERSION`/`UNEXPECTED_ANNOTATION_ON_SUPPRESSED` checks, exactly as it would for any non-overridden entry.
+
+Spectral only validates shape (`properties-added-in-version-shape` requires at least one of `addedInVersion`/`addedInVersionOverride`; `added-in-version-override-shape` checks the operation-level sibling is a version string) — it can't cheaply cross-reference the override against Rule 1/2/3, so that evaluation lives entirely in this verifier.
+
 ## Local run
 
 ```bash
