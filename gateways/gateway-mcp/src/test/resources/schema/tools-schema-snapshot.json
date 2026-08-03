@@ -692,7 +692,7 @@
     {
       "name": "completeUserTask",
       "title": "completeUserTask",
-      "description": "Complete a user task, optionally providing the variables to complete the task with.",
+      "description": "Complete a user task, optionally providing variables and/or a custom action to complete the task with.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",

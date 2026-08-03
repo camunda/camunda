@@ -103,7 +103,7 @@ public class UserTaskTools {
 
   @CamundaMcpTool(
       description =
-          "Complete a user task, optionally providing the variables to complete the task with.")
+          "Complete a user task, optionally providing variables and/or a custom action to complete the task with.")
   public CallToolResult completeUserTask(
       @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
           @NotNull(message = USER_TASK_KEY_NOT_NULL_MESSAGE)
