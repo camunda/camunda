@@ -160,9 +160,8 @@ public final class CslAuthorizationCheck {
 
   /**
    * Combines {@link #check} and {@link CslTenantCheck#checkTenant} into the single call most
-   * command sites need: RBAC permission first, tenant membership second. Mirrors the priority
-   * {@code main}'s {@code AuthorizationCheckBehavior} aggregation gives when both checks would fail
-   * on the same command (permission rejection wins) — so a principal with no permission at all
+   * command sites need: RBAC permission first, tenant membership second. When both checks would
+   * fail on the same command, permission rejection wins — so a principal with no permission at all
    * always sees {@code FORBIDDEN}, never a tenant-shaped rejection that could hint at the
    * resource's existence.
    *
