@@ -9,8 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -25,15 +24,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
+  private final ClusterConfigExportingControlService exportingControlService;
 
   @Autowired
-  public ExportingEndpoint(final BrokerClient brokerClient) {
-    this(new ExportingRequestBroadcaster(brokerClient));
+  public ExportingEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
+    this(new ClusterConfigExportingControlService(requestSender));
   }
 
-  ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
-    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
+  ExportingEndpoint(final ClusterConfigExportingControlService exportingControlService) {
+    this.exportingControlService = exportingControlService;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -44,11 +43,11 @@ public final class ExportingEndpoint {
     try {
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingRequestBroadcaster.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case RESUME -> exportingControlService.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
             case PAUSE ->
                 soft
-                    ? exportingRequestBroadcaster.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
-                    : exportingRequestBroadcaster.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
+                    ? exportingControlService.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
+                    : exportingControlService.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
             default -> throw new UnsupportedOperationException();
           };
       result.join();
