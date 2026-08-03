@@ -34,6 +34,10 @@ on:
         description: 'Profiling duration in seconds'
         default: '100'
         required: false
+      timeout-minutes:
+        description: 'GitHub Actions job timeout in minutes for the profiling job(s). Must stay greater than duration-seconds/60 plus a buffer for setup/upload/jfrconv steps.'
+        default: '60'
+        required: false
   workflow_call:
     inputs:
       name:
@@ -57,6 +61,11 @@ on:
       duration-seconds:
         description: 'Profiling duration in seconds'
         default: '100'
+        required: false
+        type: string
+      timeout-minutes:
+        description: 'GitHub Actions job timeout in minutes for the profiling job(s). Must stay greater than duration-seconds/60 plus a buffer for setup/upload/jfrconv steps.'
+        default: '60'
         required: false
         type: string
 
@@ -85,13 +94,14 @@ jobs:
     # jfrconv conversion step (fast: it's a local read-and-render over the already-captured
     # recording, not a live profiling session). GitHub Actions does not support arithmetic
     # in `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed
-    # from `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
-    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
+    # from `inputs.duration-seconds` automatically -- callers must pass a larger
+    # `timeout-minutes` input if they raise duration-seconds. Default ('60') matches the
+    # largest known caller today: camunda-daily-load-tests.yml's profile-grpc/profile-rest
+    # jobs pass duration-seconds: '1800' (30 min).
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
     # timeout.
-    timeout-minutes: 60
+    timeout-minutes: ${{ fromJSON(inputs.timeout-minutes) }}
     if: ${{ inputs.pod == '' }}
     permissions:
       contents: 'read'
@@ -179,10 +189,11 @@ jobs:
     # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
     # job may time out mid-profile. GitHub Actions does not support arithmetic in
     # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
-    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
-    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
-    timeout-minutes: 60
+    # `inputs.duration-seconds` automatically -- callers must pass a larger
+    # `timeout-minutes` input if they raise duration-seconds. Default ('60') matches the
+    # largest known caller today: camunda-daily-load-tests.yml's profile-grpc/profile-rest
+    # jobs pass duration-seconds: '1800' (30 min).
+    timeout-minutes: ${{ fromJSON(inputs.timeout-minutes) }}
     if: ${{ inputs.pod != '' }}
     permissions:
       contents: 'read'
