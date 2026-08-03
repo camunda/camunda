@@ -57,6 +57,8 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(AgentHistoryIntent.class, AgentHistoryIntent::from));
     result.addAll(buildParameterSets(AgentInstanceIntent.class, AgentInstanceIntent::from));
     result.addAll(
+        buildParameterSets(AgentInstanceBatchIntent.class, AgentInstanceBatchIntent::from));
+    result.addAll(
         buildParameterSets(
             AdHocSubProcessInstructionIntent.class, AdHocSubProcessInstructionIntent::from));
     result.addAll(buildParameterSets(AsyncRequestIntent.class, AsyncRequestIntent::from));

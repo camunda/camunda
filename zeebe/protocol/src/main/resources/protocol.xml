@@ -100,6 +100,7 @@
       <validValue name="PROCESS_INSTANCE_BUSINESS_ID">74</validValue>
       <validValue name="SECRET_REFERENCE">75</validValue>
       <validValue name="PROCESS_INSTANCE_BUFFERED_COMMAND">76</validValue>
+      <validValue name="AGENT_INSTANCE_BATCH">77</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
