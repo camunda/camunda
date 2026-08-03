@@ -566,7 +566,7 @@ components:
           type: string
       x-properties-added-in-version:
         - propertyName: jobKey
-          addedInVersion: "8.7"
+          addedInVersionOverride: "8.6"
         - propertyName: kind
           addedInVersion: "8.8"
         - propertyName: listenerEventType

@@ -83,7 +83,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-added-in-version: "8.6"
+      x-added-in-version: "8.8"
+      x-added-in-version-override: "8.8"
 
   /users/{username}:
     get:
@@ -323,11 +324,11 @@ components:
         - email
       x-properties-added-in-version:
         - propertyName: "username"
-          addedInVersion: "8.6"
+          addedInVersionOverride: "8.8"
         - propertyName: "name"
-          addedInVersion: "8.6"
+          addedInVersionOverride: "8.8"
         - propertyName: "email"
-          addedInVersion: "8.6"
+          addedInVersionOverride: "8.8"
 
     UserSearchQuerySortRequest:
       type: object
@@ -343,6 +344,11 @@ components:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
+      x-properties-added-in-version:
+        - propertyName: "field"
+          addedInVersionOverride: "8.8"
+        - propertyName: "order"
+          addedInVersionOverride: "8.8"
 
     UserSearchQueryRequest:
       allOf:
@@ -359,6 +365,11 @@ components:
           allOf:
             - $ref: '#/components/schemas/UserFilter'
           description: The user search filters.
+      x-properties-added-in-version:
+        - propertyName: "sort"
+          addedInVersionOverride: "8.8"
+        - propertyName: "filter"
+          addedInVersionOverride: "8.8"
 
     UserFilter:
       description: User search filter.
@@ -376,6 +387,13 @@ components:
           description: The email of the user.
           allOf:
             - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
+      x-properties-added-in-version:
+        - propertyName: "username"
+          addedInVersionOverride: "8.8"
+        - propertyName: "name"
+          addedInVersionOverride: "8.8"
+        - propertyName: "email"
+          addedInVersionOverride: "8.8"
 
     UserSearchResult:
       type: object
@@ -389,3 +407,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserResult'
+      x-properties-added-in-version:
+        - propertyName: "items"
+          addedInVersionOverride: "8.8"

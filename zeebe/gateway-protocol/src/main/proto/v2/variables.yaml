@@ -195,9 +195,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VariableSearchResult'
-      x-properties-added-in-version:
-        - propertyName: "items"
-          addedInVersion: "8.8"
 
     VariableSearchResult:
       required:
@@ -270,16 +267,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
       x-properties-added-in-version:
-        - propertyName: name
-          addedInVersion: "8.8"
-        - propertyName: tenantId
-          addedInVersion: "8.8"
-        - propertyName: variableKey
-          addedInVersion: "8.8"
-        - propertyName: scopeKey
-          addedInVersion: "8.8"
-        - propertyName: processInstanceKey
-          addedInVersion: "8.8"
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
 
@@ -331,3 +318,10 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - variables
+      x-properties-added-in-version:
+        - propertyName: "variables"
+          addedInVersionOverride: "8.6"
+        - propertyName: "local"
+          addedInVersionOverride: "8.6"
+        - propertyName: "operationReference"
+          addedInVersionOverride: "8.6"
