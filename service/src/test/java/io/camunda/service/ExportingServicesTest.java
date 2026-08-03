@@ -17,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -27,24 +28,37 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.gateway.admin.ExportingStatus;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
+import io.camunda.zeebe.util.Either;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class ExportingServicesTest {
 
   private static final String PHYSICAL_TENANT_ID = "testtenant";
 
   private ExportingServices services;
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster =
-      mock(ExportingRequestBroadcaster.class);
+  private final ClusterConfigurationManagementRequestSender requestSender =
+      mock(ClusterConfigurationManagementRequestSender.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
   private final AuthorizationsConfiguration authorizationsConfig =
       new AuthorizationsConfiguration();
@@ -58,7 +72,7 @@ public class ExportingServicesTest {
             PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
-            exportingRequestBroadcaster,
+            requestSender,
             authorizationChecker,
             authorizationsConfig,
             mock(ApiServicesExecutorProvider.class),
@@ -68,57 +82,86 @@ public class ExportingServicesTest {
   @Test
   public void shouldDelegatePauseWhenAuthorizationsDisabled() {
     // given
-    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
+    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
 
     // when
     final var future = services.pauseExporting(false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(exportingRequestBroadcaster).pauseExporting(PHYSICAL_TENANT_ID);
+    assertThat(captor.getValue().state()).isEqualTo(ExportingState.PAUSED);
   }
 
   @Test
   public void shouldDelegateSoftPauseToSoftPause() {
     // given
-    when(exportingRequestBroadcaster.softPauseExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
+    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
 
     // when
     final var future = services.pauseExporting(true, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(exportingRequestBroadcaster).softPauseExporting(PHYSICAL_TENANT_ID);
+    assertThat(captor.getValue().state()).isEqualTo(ExportingState.SOFT_PAUSED);
   }
 
   @Test
   public void shouldDelegateResume() {
     // given
-    when(exportingRequestBroadcaster.resumeExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
+    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
 
     // when
     final var future = services.resumeExporting(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(exportingRequestBroadcaster).resumeExporting(PHYSICAL_TENANT_ID);
+    assertThat(captor.getValue().state()).isEqualTo(ExportingState.EXPORTING);
   }
 
   @Test
   public void shouldDelegateStatusQuery() {
     // given
-    when(exportingRequestBroadcaster.getExportingStatus(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(ExportingStatus.SOFT_PAUSED));
+    when(requestSender.getTopology())
+        .thenReturn(topology(Map.of(MemberId.from("0"), ExportingState.SOFT_PAUSED)));
 
     // when
     final var future = services.getExportingStatus(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1)).isEqualTo(ExportingStatus.SOFT_PAUSED);
-    verify(exportingRequestBroadcaster).getExportingStatus(PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  public void shouldReportMixedStatusWhenReplicasDisagree() {
+    // given
+    when(requestSender.getTopology())
+        .thenReturn(
+            topology(
+                Map.of(
+                    MemberId.from("0"), ExportingState.PAUSED,
+                    MemberId.from("1"), ExportingState.EXPORTING)));
+
+    // when
+    final var future = services.getExportingStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1)).isEqualTo(ExportingStatus.MIXED);
+  }
+
+  @Test
+  public void shouldReportExportingStatusWhenNeverControlledByConfig() {
+    // given - a replica config never touched by a state-change operation is UNKNOWN
+    when(requestSender.getTopology())
+        .thenReturn(topology(Map.of(MemberId.from("0"), ExportingState.UNKNOWN)));
+
+    // when
+    final var future = services.getExportingStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1)).isEqualTo(ExportingStatus.EXPORTING);
   }
 
   @Test
@@ -139,7 +182,7 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(exportingRequestBroadcaster, never()).getExportingStatus(any());
+    verify(requestSender, never()).getTopology();
   }
 
   @Test
@@ -160,38 +203,35 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(exportingRequestBroadcaster, never()).pauseExporting(any());
-    verify(exportingRequestBroadcaster, never()).softPauseExporting(any());
+    verify(requestSender, never()).changeExportingState(any());
   }
 
   @Test
   public void shouldDelegatePauseWhenUserHasExporterPausePermission() {
     // given
     grantExporterPausePermission();
-    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    when(requestSender.changeExportingState(any())).thenReturn(emptyPlan());
 
     // when
     final var future = services.pauseExporting(false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(exportingRequestBroadcaster).pauseExporting(PHYSICAL_TENANT_ID);
+    verify(requestSender).changeExportingState(any());
   }
 
   @Test
   public void shouldDelegateResumeWhenUserHasExporterPausePermission() {
     // given
     grantExporterPausePermission();
-    when(exportingRequestBroadcaster.resumeExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    when(requestSender.changeExportingState(any())).thenReturn(emptyPlan());
 
     // when
     final var future = services.resumeExporting(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(exportingRequestBroadcaster).resumeExporting(PHYSICAL_TENANT_ID);
+    verify(requestSender).changeExportingState(any());
   }
 
   @Test
@@ -215,7 +255,7 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(exportingRequestBroadcaster, never()).pauseExporting(any());
+    verify(requestSender, never()).changeExportingState(any());
   }
 
   private void grantExporterPausePermission() {
@@ -245,36 +285,16 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(exportingRequestBroadcaster, never()).resumeExporting(any());
+    verify(requestSender, never()).changeExportingState(any());
   }
 
   @Test
-  public void shouldMapSynchronousIncompleteTopologyExceptionToUnavailable() {
-    // given - the broadcaster validates topology synchronously, throwing before it returns a future
-    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
-        .thenThrow(new IncompleteTopologyException("Topology is incomplete"));
-
-    // when
-    final var future = services.pauseExporting(false, authentication);
-
-    // then
-    assertThat(future)
-        .failsWithin(ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .havingCause()
-        .asInstanceOf(type(ServiceException.class))
-        .extracting(ServiceException::getStatus)
-        .isEqualTo(Status.UNAVAILABLE);
-  }
-
-  @Test
-  public void shouldMapAsyncFailureToServiceException() {
-    // given - the broadcaster dispatches broker requests asynchronously, so failures surface as an
-    // exceptionally-completed future rather than a synchronous throw
-    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
+  public void shouldMapFailedSubmissionToServiceException() {
+    // given - the coordinator rejected the request outright
+    when(requestSender.changeExportingState(any()))
         .thenReturn(
-            CompletableFuture.failedFuture(
-                new IncompleteTopologyException("Topology is incomplete")));
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "nope"))));
 
     // when
     final var future = services.pauseExporting(false, authentication);
@@ -286,29 +306,40 @@ public class ExportingServicesTest {
         .havingCause()
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
-        .isEqualTo(Status.UNAVAILABLE);
+        .isEqualTo(Status.INTERNAL);
   }
 
-  @Test
-  public void shouldMapCompletionExceptionWrappedAsyncFailureToServiceException() {
-    // given - CompletableFuture.allOf inside the broadcaster delivers the cause wrapped in a
-    // CompletionException; the ErrorMapper must still unwrap it to the correct status
-    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new CompletionException(
-                    new IncompleteTopologyException("Topology is incomplete"))));
+  private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> emptyPlan() {
+    return CompletableFuture.completedFuture(
+        Either.right(new ClusterConfigurationChangeResponse(0, Map.of(), Map.of(), List.of())));
+  }
 
-    // when
-    final var future = services.pauseExporting(false, authentication);
-
-    // then
-    assertThat(future)
-        .failsWithin(ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .havingCause()
-        .asInstanceOf(type(ServiceException.class))
-        .extracting(ServiceException::getStatus)
-        .isEqualTo(Status.UNAVAILABLE);
+  private CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> topology(
+      final Map<MemberId, ExportingState> statesByMember) {
+    final Map<MemberId, MemberState> members =
+        statesByMember.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        MemberState.initializeAsActive(
+                            Map.of(
+                                1,
+                                PartitionState.active(
+                                    1,
+                                    DynamicPartitionConfig.init()
+                                        .updateExporting(
+                                            config -> config.withState(entry.getValue())))))));
+    return CompletableFuture.completedFuture(
+        Either.right(
+            new ClusterConfiguration(
+                1,
+                members,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                0,
+                Optional.empty())));
   }
 }

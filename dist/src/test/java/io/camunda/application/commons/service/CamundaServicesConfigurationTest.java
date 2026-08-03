@@ -420,7 +420,8 @@ class CamundaServicesConfigurationTest {
         new ManagementServices(new CamundaLicense(null)),
         readinessProvider(),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
-        secretStoreRegistries);
+        secretStoreRegistries,
+        mock(ClusterConfigurationManagementRequestSender.class));
   }
 
   /**
