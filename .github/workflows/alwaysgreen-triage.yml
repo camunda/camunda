@@ -116,10 +116,10 @@ jobs:
             echo "## AlwaysGreen Triage — disabled"
             echo ""
             echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is"
-            echo "\`disabled\`, so no classification or"
-            echo "dispatch ran. Set it to \`dry-run\` or \`on\` to re-enable."
+            echo "\`disabled\`, so no classification or dispatch ran. Set it to"
+            echo "\`dry-run\` or \`enabled\` in Vault to re-enable."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::notice::AlwaysGreen triage is disabled by repository variable."
+          echo "::notice::AlwaysGreen triage is disabled by the Vault feature flag."
 
 
       - name: Set up Python
@@ -153,7 +153,7 @@ jobs:
       - name: Generate GitHub App Token
         if: ${{ steps.mode.outputs.active == 'true' }}
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
