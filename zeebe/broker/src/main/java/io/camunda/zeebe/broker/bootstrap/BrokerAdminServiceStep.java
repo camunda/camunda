@@ -10,10 +10,17 @@ package io.camunda.zeebe.broker.bootstrap;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.system.management.ExportingStateChanger;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeAwaiter;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 
 /**
  * Sets up one {@link BrokerAdminServiceImpl} per physical tenant and registers each in the broker
@@ -22,6 +29,11 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
  * {@code partitions} actuator's {@code physicalTenant} parameter.
  */
 final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
+
+  // Mirrors ExportingEndpoint: exporting state changes go through the coordinator and are polled
+  // until fully applied, so the change is durable across restarts.
+  private static final Duration EXPORTING_CHANGE_POLL_INTERVAL = Duration.ofMillis(200);
+  private static final Duration EXPORTING_CHANGE_TIMEOUT = Duration.ofSeconds(60);
 
   @Override
   public String getName() {
@@ -35,10 +47,14 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var tenantIds = brokerStartupContext.getPhysicalTenantIds().known();
+    final var exportingStateChanger = createExportingStateChanger(brokerStartupContext);
 
     final var futures =
         tenantIds.stream()
-            .map(tenantId -> startTenantService(brokerStartupContext, tenantId, concurrencyControl))
+            .map(
+                tenantId ->
+                    startTenantService(
+                        brokerStartupContext, tenantId, exportingStateChanger, concurrencyControl))
             .collect(new ActorFutureCollector<>(concurrencyControl));
 
     concurrencyControl.runOnCompletion(
@@ -76,14 +92,40 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
         });
   }
 
+  /**
+   * Builds an {@link ExportingStateChanger} that routes exporting changes through the dynamic
+   * cluster configuration coordinator (the durable path), mirroring {@code ExportingEndpoint}. The
+   * change is cluster-wide today; once physical tenants are represented in the dynamic
+   * configuration, the per-tenant admin services can scope it to their own tenant.
+   */
+  private ExportingStateChanger createExportingStateChanger(final BrokerStartupContext ctx) {
+    final var configurationService = ctx.getClusterConfigurationService();
+    final var requestSender =
+        new ClusterConfigurationManagementRequestSender(
+            ctx.getClusterServices().getCommunicationService(),
+            ClusterConfigurationCoordinatorSupplier.from(
+                configurationService::getCurrentClusterConfiguration),
+            new ProtoBufSerializer());
+    final var changeAwaiter =
+        new ClusterConfigurationChangeAwaiter(
+            requestSender, EXPORTING_CHANGE_POLL_INTERVAL, EXPORTING_CHANGE_TIMEOUT);
+    return state ->
+        changeAwaiter
+            .awaitCompletion(
+                requestSender.changeExportingState(new ExportingStateChangeRequest(state, false)))
+            .join();
+  }
+
   private ActorFuture<BrokerAdminServiceImpl> startTenantService(
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
+      final ExportingStateChanger exportingStateChanger,
       final ConcurrencyControl concurrencyControl) {
 
     final var adminService =
         new BrokerAdminServiceImpl(
-            brokerStartupContext.getPartitionManagers().get(physicalTenantId));
+            brokerStartupContext.getPartitionManagers().get(physicalTenantId),
+            exportingStateChanger);
 
     final var result = concurrencyControl.<BrokerAdminServiceImpl>createFuture();
     final var submitActorFuture =
