@@ -81,7 +81,7 @@ jobs:
     uses: ./.github/workflows/zeebe-aws-os-integration-tests-reusable.yml
     secrets: inherit
     with:
-      ref: ${{ inputs.ref }}
+      ref: ${{ inputs.ref || github.sha }}
       opensearch-version: ${{ matrix.opensearch-version }}
 
   send-slack-notificaion:
