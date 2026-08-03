@@ -36,15 +36,18 @@
   <resultMap id="BatchOperationItemResultMap"
     type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
-      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
-      <arg column="ITEM_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String" name="batchOperationKey"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"
+        name="operationType"/>
+      <arg column="ITEM_KEY" javaType="java.lang.Long" name="itemKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
       <arg column="STATE"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
-      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"
+        name="state"/>
+      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime" name="processedDate"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String" name="errorMessage"/>
     </constructor>
   </resultMap>
 
