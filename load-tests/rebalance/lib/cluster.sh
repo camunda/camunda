@@ -276,27 +276,48 @@ starter_scale() {
 }
 
 # starter_rate <instances per second> — raises or lowers the load the starter
-# asks for.
+# asks for, and confirms the load actually followed.
 #
 # Adding a replica is the wrong instrument: it doubles the rate in one step, and
 # a starter asked for more than the cluster completes grows an unbounded
 # in-flight queue until its heap dies - which happened here within seven minutes
-# of doubling. The rate is a system property rather than an environment
-# variable, so it is edited inside JDK_JAVA_OPTIONS; the rollout that follows
-# also gives the new rate an empty queue to start from.
+# of doubling.
+#
+# The chart sets the rate twice, as LOAD_TESTER_STARTER_RATE and as
+# -Dapp.starter.rate inside JDK_JAVA_OPTIONS. Only the environment variable is
+# read by the current load tester: setting the system property alone rolled the
+# pod out and left it starting instances at the old rate. Both are set, so this
+# works whichever the deployed load tester reads, and the rate the cluster
+# actually sees is then checked rather than assumed.
 starter_rate() {
-  local rate=$1 opts new
+  local rate=$1 opts
   opts=$(kubectl get deploy starter -n "$NS" \
     -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="JDK_JAVA_OPTIONS")].value}' 2>/dev/null)
-  if [[ -z "$opts" || "$opts" != *"-Dapp.starter.rate="* ]]; then
-    warn "  the starter does not carry -Dapp.starter.rate, so its rate cannot be changed"
-    return 1
+  if [[ -n "$opts" && "$opts" == *"-Dapp.starter.rate="* ]]; then
+    kubectl set env deployment/starter -n "$NS" \
+      JDK_JAVA_OPTIONS="$(sed "s/-Dapp.starter.rate=[0-9]*/-Dapp.starter.rate=$rate/" <<<"$opts")" >/dev/null
   fi
-  new=$(sed "s/-Dapp.starter.rate=[0-9]*/-Dapp.starter.rate=$rate/" <<<"$opts")
-  kubectl set env deployment/starter -n "$NS" JDK_JAVA_OPTIONS="$new" >/dev/null
+  kubectl set env deployment/starter -n "$NS" LOAD_TESTER_STARTER_RATE="$rate" >/dev/null
   kubectl rollout status deployment/starter -n "$NS" --timeout=300s >/dev/null 2>&1 || \
     warn "  the starter did not roll out within 300s"
   log "  starter rate set to $rate instances per second"
+
+  # A rate the workload does not follow would make the scenario measure the old
+  # load under a new name, which is worse than not running it.
+  local started created
+  started=$(date +%s)
+  while :; do
+    created=$(prom_query 'sum(rate(zeebe_element_instance_events_total{namespace="$NAMESPACE", action="activated", type="PROCESS"}[2m]))' || echo "")
+    if [[ -n "$created" ]] && compare_num "$created" gt "$(awk -v r="$rate" 'BEGIN { print r * 0.75 }')"; then
+      log "  instances are being started at $(printf '%.1f' "$created") per second"
+      return 0
+    fi
+    if (( $(date +%s) - started >= 300 )); then
+      warn "  asked for $rate per second but the workload is starting ${created:-no} per second"
+      return 1
+    fi
+    sleep 20
+  done
 }
 
 # workload_recover — puts the load back to the baseline and restarts the starter,
