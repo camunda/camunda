@@ -27,6 +27,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
+  private AgentInstancesCfg agentInstances = new AgentInstancesCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -43,6 +44,7 @@ public final class EngineCfg implements ConfigurationEntry {
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
     startup.init(globalConfig, brokerBase);
+    agentInstances.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -157,6 +159,14 @@ public final class EngineCfg implements ConfigurationEntry {
     startup = startupCfg;
   }
 
+  public AgentInstancesCfg getAgentInstances() {
+    return agentInstances;
+  }
+
+  public void setAgentInstances(final AgentInstancesCfg agentInstances) {
+    this.agentInstances = agentInstances;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -188,6 +198,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + processInstanceCreation
         + ", startup="
         + startup
+        + ", agentInstances="
+        + agentInstances
         + '}';
   }
 
@@ -246,6 +258,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessageStartLockReleasePollBatchLimit(
             processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
-        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setAgentInstanceCompletionBatchLimit(agentInstances.getCompletionBatchLimit());
   }
 }

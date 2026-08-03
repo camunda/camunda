@@ -83,6 +83,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY);
     assertThat(configuration.getSecretResolutionRetryBackoffFactor())
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR);
+    assertThat(configuration.getAgentInstanceCompletionBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_AGENT_INSTANCE_COMPLETION_BATCH_LIMIT);
   }
 
   @Test
@@ -124,6 +126,7 @@ final class EngineCfgTest {
     assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
+    assertThat(configuration.getAgentInstanceCompletionBatchLimit()).isEqualTo(50);
   }
 
   void assertListenerCfg(
