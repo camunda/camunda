@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resolves the synchronous response of a {@code POST /messages/correlation} command that was
@@ -45,6 +47,9 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
  * none and does not emit a duplicate response.
  */
 final class DeferredMessageStartCorrelationResponse {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DeferredMessageStartCorrelationResponse.class);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -78,6 +83,11 @@ final class DeferredMessageStartCorrelationResponse {
       return;
     }
     final var requestData = messageCorrelationState.getRequestData(messageKey);
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", messageKey)
+        .addKeyValue("outcome", "correlated")
+        .log("Resolving deferred correlate response");
 
     correlationRecord.reset();
     correlationRecord
@@ -124,6 +134,11 @@ final class DeferredMessageStartCorrelationResponse {
       return;
     }
     final var requestData = messageCorrelationState.getRequestData(messageKey);
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", messageKey)
+        .addKeyValue("outcome", "not_correlated")
+        .log("Resolving deferred correlate response");
 
     correlationRecord.reset();
     correlationRecord

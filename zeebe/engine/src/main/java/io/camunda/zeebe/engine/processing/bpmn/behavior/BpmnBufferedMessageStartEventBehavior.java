@@ -36,8 +36,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class BpmnBufferedMessageStartEventBehavior {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(BpmnBufferedMessageStartEventBehavior.class);
 
   private final MessageState messageState;
   private final ProcessState processState;
@@ -152,6 +157,12 @@ public final class BpmnBufferedMessageStartEventBehavior {
         processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);
     commandSender.sendCorrelationKeyLockRelease(requestKey, holder);
     metrics.lockReleaseSent(ReleaseTrigger.PUSH);
+
+    LOG.atDebug()
+        .addKeyValue("holderProcessInstanceKey", processInstanceKey)
+        .addKeyValue("targetPartition", Protocol.decodePartitionId(origin.getMessageKey()))
+        .addKeyValue("messageKey", origin.getMessageKey())
+        .log("Pushing correlation-key lock release to P_K");
   }
 
   /**
