@@ -26,6 +26,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
@@ -171,12 +172,16 @@ public class EmbeddedOptimizeExtension
   }
 
   public void importAllZeebeEntitiesFromLastIndex() {
+    final List<CompletableFuture<Void>> importFutures =
+        getImportSchedulerManager()
+            .getZeebeImportScheduler()
+            .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
+            .getImportMediators()
+            .stream()
+            .map(ImportMediator::runImport)
+            .toList();
     try {
-      getImportSchedulerManager()
-          .getZeebeImportScheduler()
-          .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
-          .runImportRound(true)
-          .get();
+      CompletableFuture.allOf(importFutures.toArray(new CompletableFuture[0])).get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new OptimizeRuntimeException(e);
     }
