@@ -158,23 +158,32 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.IncidentEntity">
     <constructor>
-      <idArg column="INCIDENT_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <idArg column="INCIDENT_KEY" javaType="java.lang.Long" name="incidentKey"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
+      <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"
+        name="errorType"/>
       <arg column="ERROR_MESSAGE" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="errorMessage"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"/>
-      <arg column="JOB_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="flowNodeId"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"
+        name="flowNodeInstanceKey"/>
+      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" name="creationTime"/>
+      <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"
+        name="state"/>
+      <arg column="JOB_KEY" javaType="java.lang.Long" name="jobKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
     </constructor>
 
   </resultMap>
@@ -248,8 +257,18 @@
     ) t
   </select>
 
+  <resultMap id="processInstanceStatisticsByErrorResultMap"
+    type="io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity">
+    <constructor>
+      <idArg column="ERROR_HASH_CODE" javaType="java.lang.Integer" name="errorHashCode"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String" name="errorMessage"/>
+      <arg column="ACTIVE_INSTANCES_WITH_ERROR_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithErrorCount"/>
+    </constructor>
+  </resultMap>
+
   <select id="processInstanceStatisticsByError" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
-          resultType="io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity">
+          resultMap="processInstanceStatisticsByErrorResultMap">
     SELECT * FROM (
       SELECT
         i.ERROR_MESSAGE_HASH AS ERROR_HASH_CODE,
@@ -326,9 +345,26 @@
     ) t
   </select>
 
+  <resultMap id="processInstanceStatisticsByDefinitionResultMap"
+    type="io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="processDefinitionName"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="processDefinitionVersion"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="ACTIVE_INSTANCES_WITH_ERROR_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithErrorCount"/>
+    </constructor>
+  </resultMap>
+
   <select id="processInstanceStatisticsByDefinition"
           parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByDefinitionDbQuery"
-          resultType="io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity">
+          resultMap="processInstanceStatisticsByDefinitionResultMap">
     SELECT
       pd.PROCESS_DEFINITION_ID AS PROCESS_DEFINITION_ID,
       i.PROCESS_DEFINITION_KEY AS PROCESS_DEFINITION_KEY,
