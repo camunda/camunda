@@ -36,132 +36,132 @@ public final class VariableOutputMappingTransformerTest {
 
   public static Object[][] parametersSuccessfulEvaluationToObject() {
     return new Object[][] {
-      // no mappings
-      {List.of(), Map.of(), "{}"},
-      // direct mapping
-      {List.of(mapping("x", "x")), Map.of("x", asMsgPack("1")), "{'x':1}"},
-      {List.of(mapping("x", "a")), Map.of("x", asMsgPack("1")), "{'a':1}"},
-      {List.of(mapping("_x", "_b")), Map.of("_x", asMsgPack("1")), "{'_b':1}"},
-      {
-        List.of(mapping("x", "a"), mapping("y", "b")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':1, 'b':2}"
-      },
-      {List.of(mapping("x", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':{'y':1}}"},
-      // nested target
-      {List.of(mapping("x", "a.b")), Map.of("x", asMsgPack("1")), "{'a':{'b':1}}"},
-      {
-        List.of(mapping("x", "a.b"), mapping("y", "a.c")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':{'b':1, 'c':2}}"
-      },
-      {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
-      {
-        List.of(mapping("x", "a.b")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{}")),
-        "{'a':{'b':1}}"
-      },
-      // nested source
-      {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
-      {
-        List.of(mapping("x.y", "a"), mapping("x.z", "b")),
-        Map.of("x", asMsgPack("{'y':1, 'z':2}")),
-        "{'a':1, 'b':2}"
-      },
-      {
-        List.of(mapping("x.y", "a.b"), mapping("x.z", "a.c")),
-        Map.of("x", asMsgPack("{'y':1, 'z':2}")),
-        "{'a': {'b':1, 'c':2}}"
-      },
-      // override variable
-      {
-        List.of(mapping("x", "a")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':2}")),
-        "{'a':1}"
-      },
-      // merge target with variable
-      {
-        List.of(mapping("x", "a.b")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'c':2}")),
-        "{'a':{'b':1,'c':2}}"
-      },
-      {
-        List.of(mapping("x", "a.b.c")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':{'d':2}, 'e':3}")),
-        "{'a':{'b':{'c':1, 'd':2}, 'e':3}}"
-      },
-      // sibling preservation at BOTH nesting levels at once
-      {
-        List.of(mapping("x", "a.b.new")),
-        Map.of("x", asMsgPack("9"), "a", asMsgPack("{'b':{'keep':1}, 'top':2}")),
-        "{'a':{'b':{'keep':1, 'new':9}, 'top':2}}"
-      },
-      // a null merge base takes the "replace", not "merge", branch
-      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
-      // `context merge` on a non-context value silently nulls the variable instead of failing
-      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
-      // override nested property
-      {
-        List.of(mapping("x", "a.b")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':2}")),
-        "{'a':{'b':1}}"
-      },
-      {
-        List.of(mapping("x", "a.b"), mapping("x", "a.c")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'d':2}")),
-        "{'a':{'b':1, 'c':1, 'd':2}}"
-      },
-      // evaluate mappings in order
-      {
-        List.of(mapping("x", "a"), mapping("a + 1", "b")),
-        Map.of("x", asMsgPack("1")),
-        "{'a':1, 'b':2}"
-      },
-      // override previous mapping
-      {
-        List.of(mapping("x", "a"), mapping("y", "a")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':2}"
-      },
-      {
-        List.of(mapping("x", "a"), mapping("y", "a.b")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':{'b':2}}"
-      },
-      // same overlap, opposite declaration order: now "a.b" is dropped instead
-      {
-        List.of(mapping("y", "a.b"), mapping("x", "a")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':1}"
-      },
-      // source FEEL expression
-      {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
-      {List.of(mapping("\"foo\"", "a")), Map.of(), "{'a':'foo'}"},
-      {List.of(mapping("[1,2,3]", "a")), Map.of(), "{'a':[1,2,3]}"},
-      {List.of(mapping("x + y", "a")), Map.of("x", asMsgPack("1"), "y", asMsgPack("2")), "{'a':3}"},
-      {
-        List.of(mapping("{x:x, y:y}", "a")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':{'x':1, 'y':2}}"
-      },
-      {
-        List.of(mapping("append(x, y)", "a")),
-        Map.of("x", asMsgPack("[1,2]"), "y", asMsgPack("3")),
-        "{'a':[1,2,3]}"
-      },
+        // no mappings
+        {List.of(), Map.of(), "{}"},
+        // direct mapping
+        {List.of(mapping("x", "x")), Map.of("x", asMsgPack("1")), "{'x':1}"},
+        {List.of(mapping("x", "a")), Map.of("x", asMsgPack("1")), "{'a':1}"},
+        {List.of(mapping("_x", "_b")), Map.of("_x", asMsgPack("1")), "{'_b':1}"},
+        {
+            List.of(mapping("x", "a"), mapping("y", "b")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':1, 'b':2}"
+        },
+        {List.of(mapping("x", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':{'y':1}}"},
+        // nested target
+        {List.of(mapping("x", "a.b")), Map.of("x", asMsgPack("1")), "{'a':{'b':1}}"},
+        {
+            List.of(mapping("x", "a.b"), mapping("y", "a.c")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':{'b':1, 'c':2}}"
+        },
+        {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
+        {
+            List.of(mapping("x", "a.b")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{}")),
+            "{'a':{'b':1}}"
+        },
+        // nested source
+        {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
+        {
+            List.of(mapping("x.y", "a"), mapping("x.z", "b")),
+            Map.of("x", asMsgPack("{'y':1, 'z':2}")),
+            "{'a':1, 'b':2}"
+        },
+        {
+            List.of(mapping("x.y", "a.b"), mapping("x.z", "a.c")),
+            Map.of("x", asMsgPack("{'y':1, 'z':2}")),
+            "{'a': {'b':1, 'c':2}}"
+        },
+        // override variable
+        {
+            List.of(mapping("x", "a")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':2}")),
+            "{'a':1}"
+        },
+        // merge target with variable
+        {
+            List.of(mapping("x", "a.b")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{'c':2}")),
+            "{'a':{'b':1,'c':2}}"
+        },
+        {
+            List.of(mapping("x", "a.b.c")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':{'d':2}, 'e':3}")),
+            "{'a':{'b':{'c':1, 'd':2}, 'e':3}}"
+        },
+        // sibling preservation at BOTH nesting levels at once
+        {
+            List.of(mapping("x", "a.b.new")),
+            Map.of("x", asMsgPack("9"), "a", asMsgPack("{'b':{'keep':1}, 'top':2}")),
+            "{'a':{'b':{'keep':1, 'new':9}, 'top':2}}"
+        },
+        // a null merge base takes the "replace", not "merge", branch
+        {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
+        // `context merge` on a non-context value silently nulls the variable instead of failing
+        {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
+        // override nested property
+        {
+            List.of(mapping("x", "a.b")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{'b':2}")),
+            "{'a':{'b':1}}"
+        },
+        {
+            List.of(mapping("x", "a.b"), mapping("x", "a.c")),
+            Map.of("x", asMsgPack("1"), "a", asMsgPack("{'d':2}")),
+            "{'a':{'b':1, 'c':1, 'd':2}}"
+        },
+        // evaluate mappings in order
+        {
+            List.of(mapping("x", "a"), mapping("a + 1", "b")),
+            Map.of("x", asMsgPack("1")),
+            "{'a':1, 'b':2}"
+        },
+        // override previous mapping
+        {
+            List.of(mapping("x", "a"), mapping("y", "a")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':2}"
+        },
+        {
+            List.of(mapping("x", "a"), mapping("y", "a.b")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':{'b':2}}"
+        },
+        // same overlap, opposite declaration order: now "a.b" is dropped instead
+        {
+            List.of(mapping("y", "a.b"), mapping("x", "a")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':1}"
+        },
+        // source FEEL expression
+        {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
+        {List.of(mapping("\"foo\"", "a")), Map.of(), "{'a':'foo'}"},
+        {List.of(mapping("[1,2,3]", "a")), Map.of(), "{'a':[1,2,3]}"},
+        {List.of(mapping("x + y", "a")), Map.of("x", asMsgPack("1"), "y", asMsgPack("2")), "{'a':3}"},
+        {
+            List.of(mapping("{x:x, y:y}", "a")),
+            Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
+            "{'a':{'x':1, 'y':2}}"
+        },
+        {
+            List.of(mapping("append(x, y)", "a")),
+            Map.of("x", asMsgPack("[1,2]"), "y", asMsgPack("3")),
+            "{'a':[1,2,3]}"
+        },
     };
   }
 
   public static Object[][] parametersEvaluationToFailure() {
     return new Object[][] {
-      {
-        List.of(mapping("assert(x, x != null)", "a.b")),
-        Map.of(),
-        """
+        {
+            List.of(mapping("assert(x, x != null)", "a.b")),
+            Map.of(),
+            """
         Assertion failure on evaluate the expression \
         '{a:if (a != null) then context merge(a,{b: assert(x, x != null)}) else {b: assert(x, x != null)}}': \
         The condition is not fulfilled"""
-      }, // #9543
+        }, // #9543
     };
   }
 
@@ -226,8 +226,7 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -255,7 +254,7 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
+    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -282,8 +281,7 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -307,8 +305,7 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
