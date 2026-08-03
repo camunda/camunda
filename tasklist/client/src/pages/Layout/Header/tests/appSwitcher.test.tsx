@@ -58,10 +58,13 @@ describe('App switcher', () => {
       screen.queryByRole('link', {name: 'Operate'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', {name: 'Tasklist'}),
-    ).not.toBeInTheDocument();
-    expect(
       screen.queryByRole('link', {name: 'Optimize'}),
     ).not.toBeInTheDocument();
+    // The current app is always rendered as a breadcrumb link pointing at the
+    // app root, so a "Tasklist" link exists even without an app switcher.
+    expect(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 });
