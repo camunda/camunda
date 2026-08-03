@@ -106,6 +106,46 @@ class WebAppAuthorizationCheckPortConfigurationTest {
   }
 
   @Test
+  void shouldPerformAuthorizationChecksWithoutMembershipPortUnderNonOidcAuthentication() {
+    // given: neither a MembershipPort nor a LazyTokenClaimsConverter bean, mirroring a bare
+    // Zeebe broker/gateway, which satisfies @ConditionalOnAnyHttpGatewayEnabled without ever
+    // activating consolidated-auth (the only place io.camunda.authentication's component scan --
+    // and therefore both beans -- is registered)
+
+    // when / then: the port still constructs, and a check() call against an already-resolved
+    // CamundaAuthentication -- exactly what the webapp authorization filter drives on every
+    // authenticated request -- does not throw. This is meaningful because the fallback
+    // MembershipPort throws on every method: a passing test here proves check() never invokes it,
+    // not merely that it returns something usable.
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(
+            AuthorizationCheckerProviderConfiguration.class,
+            WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
+              final AuthorizationCheckPort port = ctx.getBean(AuthorizationCheckPort.class);
+              assertThat(port).isInstanceOf(TenantAwareAuthorizationCheckPort.class);
+
+              final RequiredAuthorization<Void> authorization =
+                  RequiredAuthorization.<Void>of(
+                          b ->
+                              b.resourceType(AuthorizationResourceType.COMPONENT)
+                                  .permissionType(PermissionType.ACCESS))
+                      .withResourceId("operate");
+              assertThat(port.check(CamundaAuthentication.of(b -> b.user("alice")), authorization))
+                  .isNotNull();
+            });
+  }
+
+  @Test
   void shouldFallBackToDefaultAuthorizationServiceWhenHostPortAbsent() {
     // given: no host override registered, only CSL's own configurations
 

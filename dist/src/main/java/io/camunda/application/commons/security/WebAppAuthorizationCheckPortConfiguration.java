@@ -13,6 +13,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.authz.PropertyAuthorizationEvaluatorRegistry;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
@@ -36,12 +37,16 @@ import org.springframework.context.annotation.Configuration;
  * before the library's {@code @ImportAutoConfiguration}-imported configuration, per Spring Boot's
  * ordering guarantee.
  *
- * <p>{@link LazyTokenClaimsConverter} is only registered as a bean under OIDC authentication
- * ({@code OidcOverrideBeansConfiguration}). {@code camunda-security-library}'s own {@code
- * AuthorizationService} -- constructed per call by {@link TenantAwareAuthorizationCheckPort} --
- * requires a non-null converter unconditionally, so BASIC/UNPROTECTED hosts fall back to building
- * one directly from the already-available {@link MembershipPort} bean (registered regardless of
- * authentication method) rather than requiring OIDC just to satisfy that constructor.
+ * <p>{@link LazyTokenClaimsConverter} and {@link MembershipPort} are only registered as beans under
+ * the {@code consolidated-auth} profile (via {@code io.camunda.authentication}'s component scan),
+ * which is only auto-activated for webapp profiles with no authentication method explicitly
+ * configured. A bare Zeebe broker/gateway satisfies {@code @ConditionalOnAnyHttpGatewayEnabled}
+ * without ever activating that profile, so this bean must tolerate the absence of both rather than
+ * requiring OIDC/webapp wiring just to construct: it builds its own {@link
+ * LazyTokenClaimsConverter} when none is available, backed by a {@link MembershipPort} that throws
+ * if actually invoked. Construction never calls it, and a host with neither bean never reaches a
+ * check that would (no principal claims, or authorizations disabled), so a real gap here fails
+ * loudly instead of silently reporting empty memberships.
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnAnyHttpGatewayEnabled
@@ -53,7 +58,7 @@ public class WebAppAuthorizationCheckPortConfiguration {
       final AuthorizationCheckerProvider authorizationCheckerProvider,
       final List<PropertyAuthorizationEvaluator<?>> propertyAuthorizationEvaluators,
       final CamundaSecurityLibraryProperties securityProperties,
-      final MembershipPort membershipPort,
+      final ObjectProvider<MembershipPort> membershipPort,
       final ObjectProvider<LazyTokenClaimsConverter> claimsConverter) {
     return new TenantAwareAuthorizationCheckPort(
         authorizationCheckerProvider,
@@ -66,12 +71,47 @@ public class WebAppAuthorizationCheckPortConfiguration {
 
   private static LazyTokenClaimsConverter defaultClaimsConverter(
       final CamundaSecurityLibraryProperties securityProperties,
-      final MembershipPort membershipPort) {
+      final ObjectProvider<MembershipPort> membershipPort) {
     final var oidcConfig = securityProperties.getAuthentication().getOidc();
     return new LazyTokenClaimsConverter(
         oidcConfig.getUsernameClaim(),
         oidcConfig.getClientIdClaim(),
         oidcConfig.isPreferUsernameClaim(),
-        membershipPort);
+        membershipPort.getIfAvailable(UnavailableMembershipPort::new));
+  }
+
+  /**
+   * Stands in for the real {@link MembershipPort} when {@code consolidated-auth} is inactive.
+   * Throws instead of returning empty memberships: a host without a real {@link MembershipPort}
+   * also lacks any check path that would call it (see class javadoc), so reaching one of these
+   * methods indicates that assumption broke rather than a legitimate empty result.
+   */
+  private static final class UnavailableMembershipPort implements MembershipPort {
+
+    @Override
+    public List<String> mappingRuleIds(final MembershipQuery query) {
+      throw unavailable();
+    }
+
+    @Override
+    public List<String> groupIds(final MembershipQuery query) {
+      throw unavailable();
+    }
+
+    @Override
+    public List<String> roleIds(final MembershipQuery query) {
+      throw unavailable();
+    }
+
+    @Override
+    public List<String> tenantIds(final MembershipQuery query) {
+      throw unavailable();
+    }
+
+    private static UnsupportedOperationException unavailable() {
+      return new UnsupportedOperationException(
+          "No MembershipPort bean is available (the consolidated-auth profile is not active); "
+              + "membership-based authorization checks cannot be performed on this host.");
+    }
   }
 }
