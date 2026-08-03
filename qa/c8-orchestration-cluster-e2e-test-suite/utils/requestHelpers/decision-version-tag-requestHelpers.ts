@@ -175,7 +175,7 @@ export async function waitForVersionTagIncident(
   processInstanceKey: string,
 ): Promise<IncidentSummary> {
   const incidents = await searchIncidentByPIK(request, {processInstanceKey});
-  const incident = (incidents as unknown as IncidentSummary[]).find(
+  const incident = incidents.find(
     (i) => i.errorType === 'CALLED_DECISION_ERROR',
   );
   if (!incident) {

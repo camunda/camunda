@@ -51,6 +51,7 @@ export async function searchIncidentByPIK(
 
   return localState['incidents'] as {
     incidentKey: string;
+    errorType: string;
     errorMessage: string;
     processDefinitionId: string;
     processDefinitionKey: string;
