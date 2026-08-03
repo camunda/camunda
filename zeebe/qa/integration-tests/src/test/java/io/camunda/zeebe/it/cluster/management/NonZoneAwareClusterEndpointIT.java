@@ -114,6 +114,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
         // then
         assertThat(response.getPlannedChanges()).isNotEmpty();
         Awaitility.await()
+            .ignoreExceptions()
             .atMost(Duration.ofMinutes(1))
             .untilAsserted(() -> assertThat(actuator.getTopology().getPendingChange()).isNull());
         if (i == 0 && !scenario.delayedReplacementBrokerIds().isEmpty()) {

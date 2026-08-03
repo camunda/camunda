@@ -9,11 +9,9 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -23,7 +21,6 @@ import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
-  private static final int ERROR_CODE_ON_INCONSISTENT_TOPOLOGY = 3;
 
   private final String physicalTenantId;
   private TopologyManagerImpl topologyManager;
@@ -103,11 +100,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             .andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
           brokerShutdownContext.removePartitionManager(physicalTenantId);
-          if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
-            brokerShutdownContext
-                .getClusterConfigurationService()
-                .removeInconsistentConfigurationListener();
-          }
           if (error != null) {
             shutdownFuture.completeExceptionally(error);
           } else {
@@ -121,19 +113,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
     final MemberId memberId = MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId());
-
-    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
-      brokerStartupContext
-          .getClusterConfigurationService()
-          .registerInconsistentConfigurationListener(
-              (newTopology, oldTopology) -> {
-                shutdownOnInconsistentTopology(
-                    memberId,
-                    brokerStartupContext.getSpringBrokerBridge(),
-                    newTopology,
-                    oldTopology);
-              });
-    }
 
     if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
@@ -153,26 +132,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
     return PartitionManager.createRecoveryPartitionManager(
         brokerStartupContext, physicalTenantId, topologyManager);
-  }
-
-  private void shutdownOnInconsistentTopology(
-      final MemberId memberId,
-      final SpringBrokerBridge springBrokerBridge,
-      final ClusterConfiguration newTopology,
-      final ClusterConfiguration oldTopology) {
-    LOGGER.warn(
-        """
-          Received a newer topology which has a different state for this broker.
-          State of this broker in new topology :'{}'
-          State of this broker in old topology: '{}'
-          This usually happens when the topology was changed forcefully when this broker was unreachable or this broker encountered a data loss. Shutting down the broker. Please restart the broker to use the new topology.
-        """,
-        newTopology.getMember(memberId),
-        oldTopology.getMember(memberId));
-    springBrokerBridge.initiateShutdown(
-        ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
-        "Inconsistent cluster topology detected - topology was changed while broker was"
-            + " unreachable or broker encountered data loss");
   }
 
   private boolean isRecovering(

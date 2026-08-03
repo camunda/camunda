@@ -34,6 +34,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -400,6 +401,66 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         mergedConfiguration.getMember(localMemberId), oldConfiguration.getMember(localMemberId));
   }
 
+  /**
+   * New-model counterpart of {@link #isConflictingConfiguration(ClusterConfiguration,
+   * ClusterConfiguration)}. The legacy model has a single partition group, so the local member's
+   * state is checked once; the new model has one {@link PartitionGroupConfiguration} per physical
+   * tenant, so the local member's state is checked in every group it appears in, in either
+   * configuration.
+   */
+  private boolean isConflictingConfiguration(
+      final CurrentClusterConfiguration mergedConfiguration,
+      final CurrentClusterConfiguration oldConfiguration) {
+    final var groupIds = new HashSet<>(oldConfiguration.partitionGroups().keySet());
+    groupIds.addAll(mergedConfiguration.partitionGroups().keySet());
+    return groupIds.stream()
+        .anyMatch(groupId -> isConflictingGroup(groupId, mergedConfiguration, oldConfiguration));
+  }
+
+  private boolean isConflictingGroup(
+      final String groupId,
+      final CurrentClusterConfiguration mergedConfiguration,
+      final CurrentClusterConfiguration oldConfiguration) {
+    final var mergedGroup = mergedConfiguration.partitionGroup(groupId);
+    final var oldGroup = oldConfiguration.partitionGroup(groupId);
+    final var mergedMemberState =
+        mergedGroup == null ? null : mergedGroup.members().get(localMemberId);
+    final var oldMemberState = oldGroup == null ? null : oldGroup.members().get(localMemberId);
+    if (mergedMemberState == null
+        && oldMemberState != null
+        && wasTargetedByCurrentPlan(oldConfiguration, groupId)) {
+      // The member's zero-partition entry was pruned from this group as part of the current
+      // plan's own operations targeting it (e.g. it is leaving this group as one of the plan's
+      // steps). A faster peer's gossip can report that removal before the local apply catches up;
+      // that race is expected, not a forced/unexpected change, so it's not a conflict. Mirrors the
+      // LEFT-member exclusion in isConflictingConfiguration(ClusterConfiguration,
+      // ClusterConfiguration) above. A removal the member was never an operation-target for (e.g. a
+      // force-reconfigure applied by another member on its behalf) still falls through and
+      // conflicts, since {@code wasTargetedByCurrentPlan} only returns true for the former.
+      return false;
+    }
+    return !Objects.equals(mergedMemberState, oldMemberState);
+  }
+
+  /**
+   * Returns {@code true} if the current (unmutated, per-phase) plan has an operation targeting
+   * {@link #localMemberId} within {@code groupId}'s {@link PartitionGroupParallelPhase}s, whether
+   * already completed or still pending. Phases are fixed at plan creation and never mutated, so
+   * this reflects the member's original involvement in the plan regardless of how far it has since
+   * progressed.
+   */
+  private boolean wasTargetedByCurrentPlan(
+      final CurrentClusterConfiguration configuration, final String groupId) {
+    return configuration.phasedChangeState().pending().stream()
+        .flatMap(plan -> plan.phases().stream())
+        .filter(PartitionGroupParallelPhase.class::isInstance)
+        .map(PartitionGroupParallelPhase.class::cast)
+        .map(phase -> phase.groupOperations().get(groupId))
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .anyMatch(operation -> operation.memberId().equals(localMemberId));
+  }
+
   private boolean shouldApplyConfigurationChangeOperation(
       final ClusterConfiguration mergedConfiguration) {
     // Configuration change operation should be applied only once. The operation is removed
@@ -590,9 +651,17 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             final var local = persistedCurrentConfiguration.getConfiguration();
             final var merged = local.merge(receivedConfiguration);
             if (!merged.equals(local)) {
+              final var isConflictingConfiguration = isConflictingConfiguration(merged, local);
               updateLocalCurrentConfiguration(merged)
                   .ifRightOrLeft(
-                      applied -> applyNewConfigurationChangeOperation(),
+                      applied -> {
+                        if (isConflictingConfiguration
+                            && onInconsistentConfigurationDetected != null) {
+                          onInconsistentConfigurationDetected.onInconsistentConfiguration(
+                              applied, local);
+                        }
+                        applyNewConfigurationChangeOperation();
+                      },
                       error ->
                           LOG.warn(
                               "Failed to process cluster configuration received via gossip. '{}'",

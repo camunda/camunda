@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -38,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
@@ -54,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -321,6 +327,274 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     final var config = configuration(manager);
     assertThat(config.globalConfiguration().getMember(MEMBER_1).state()).isEqualTo(State.ACTIVE);
     assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+  }
+
+  @Test
+  void shouldDetectInconsistencyWhenLocalMemberStateDiffersInAnyPartitionGroup() {
+    // given — member 0 replicates partition 1 in the "default" group, and partition 2 in a second
+    // group ("tenanta")
+    final var manager = newManager(MEMBER_0);
+    final var defaultGroup =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig))),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var tenantAGroup =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(2, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var global =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(
+                CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup, "tenanta", tenantAGroup),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    final var newConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
+    final var oldConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
+    manager.registerTopologyChangedListener(
+        new InconsistentConfigurationListener() {
+          @Override
+          public void onInconsistentConfiguration(
+              final ClusterConfiguration newConfiguration,
+              final ClusterConfiguration oldConfiguration) {
+            org.assertj.core.api.Assertions.fail(
+                "Expected CurrentClusterConfiguration overload to be used for inconsistency detection");
+          }
+
+          @Override
+          public void onInconsistentConfiguration(
+              final CurrentClusterConfiguration newConfiguration,
+              final CurrentClusterConfiguration oldConfiguration) {
+            newConfigSeen.set(newConfiguration);
+            oldConfigSeen.set(oldConfiguration);
+          }
+        });
+
+    // when — a force-scale-down is received via gossip: member 0 is stripped out of the "tenanta"
+    // group's configuration without its own participation (the "default" group is untouched)
+    final var forcedTenantAGroup =
+        new PartitionGroupConfiguration(
+            2, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
+    final var received =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                defaultGroup,
+                "tenanta",
+                forcedTenantAGroup),
+            PhasedChangeState.empty());
+    manager.onGossipReceivedCurrent(received);
+
+    // then — the inconsistency listener fires even though only a non-default group changed
+    Awaitility.await("Inconsistency listener is invoked")
+        .untilAsserted(() -> assertThat(newConfigSeen.get()).isNotNull());
+    assertThat(oldConfigSeen.get().partitionGroup("tenanta").members()).containsKey(MEMBER_0);
+    assertThat(newConfigSeen.get().partitionGroup("tenanta").members()).isEmpty();
+  }
+
+  @Test
+  void shouldNotDetectInconsistencyWhenMemberLeavesGroupAsPartOfCurrentPlan() {
+    // given — member 0 replicates partition 1 in the "default" group, and a plan is under way
+    // whose (unmutated) phase 0 has member 0 leaving that group as one of its steps. No partition
+    // group applier is registered, so the manager cannot apply this operation locally itself --
+    // simulating the race where a peer's gossip reports the completion before the local apply
+    // would otherwise catch up.
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-no-appliers.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    final var leaveOperation = new PartitionLeaveOperation(MEMBER_0, 1, 1);
+    final var group =
+        new PartitionGroupConfiguration(
+            2,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig))),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            // The phase has been activated: its operation is copied into the group's own pending
+            // changes, matching what applyPhase does. Without this, maybeAdvancePhase would see the
+            // group as trivially drained (no pending changes) and immediately complete the whole
+            // plan before the gossip-receive below even runs.
+            Optional.of(ClusterChangePlan.init(1, List.of(leaveOperation))),
+            Optional.empty());
+    final var global =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var plan =
+        PhasedChangePlan.init(
+            1,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, List.of(leaveOperation)))),
+            Instant.EPOCH);
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    final var listenerCalled = new AtomicBoolean(false);
+    manager.registerTopologyChangedListener(
+        (newConfiguration, oldConfiguration) -> listenerCalled.set(true));
+
+    // when — a faster peer's gossip reports member 0 already pruned from the group (its
+    // zero-partition entry removed) before the local apply of its own leave operation catches up;
+    // the overall plan (phase 0, unmutated) still lists member 0 as one of the phase's operations
+    final var groupWithoutMember0 =
+        new PartitionGroupConfiguration(
+            3,
+            0,
+            Map.of(
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var received =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, groupWithoutMember0),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+    manager.onGossipReceivedCurrent(received);
+
+    // then — the merge is applied (member 0 is gone from the group), but no inconsistency is
+    // reported, since member 0 was itself an operation-target in the group's current plan
+    Awaitility.await("Configuration is merged")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        configuration(manager)
+                            .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                            .hasMember(MEMBER_0))
+                    .isFalse());
+    assertThat(listenerCalled).describedAs("Inconsistency listener is never invoked").isFalse();
+  }
+
+  @Test
+  void shouldNotDetectInconsistencyWhenNoPartitionGroupChangesForLocalMember() {
+    // given — member 0 replicates partition 1 in the "default" group
+    final var manager = newManager(MEMBER_0);
+    final var defaultGroup =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig))),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var global =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    final var listenerCalled = new AtomicBoolean(false);
+    manager.registerTopologyChangedListener(
+        (newConfiguration, oldConfiguration) -> listenerCalled.set(true));
+
+    // when — a gossip update changes only member 1's state; member 0's state is untouched in every
+    // group
+    final var newBrokerState = new BrokerState(1, Instant.EPOCH, State.LEAVING);
+    final var receivedGlobal =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0,
+                new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1,
+                newBrokerState),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var received =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            receivedGlobal,
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
+            PhasedChangeState.empty());
+    manager.onGossipReceivedCurrent(received);
+
+    // then
+    Awaitility.await("Configuration is merged")
+        .untilAsserted(
+            () ->
+                assertThat(configuration(manager).globalConfiguration().getMember(MEMBER_1).state())
+                    .isEqualTo(State.LEAVING));
+    assertThat(listenerCalled).describedAs("Inconsistency listener is never invoked").isFalse();
   }
 
   @Test
