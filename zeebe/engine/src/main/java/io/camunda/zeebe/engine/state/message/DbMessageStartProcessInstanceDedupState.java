@@ -12,12 +12,11 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
+import io.camunda.zeebe.engine.metrics.MessageStartProcessInstanceDedupMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import org.agrona.collections.MutableBoolean;
 
 /**
@@ -56,7 +55,7 @@ public final class DbMessageStartProcessInstanceDedupState
       new MessageStartProcessInstanceDedupEntry();
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, MessageStartProcessInstanceDedupEntry>
       columnFamily;
-  private final StatefulGauge dedupEntries;
+  private final MessageStartProcessInstanceDedupMetrics dedupMetrics;
 
   public DbMessageStartProcessInstanceDedupState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -66,18 +65,14 @@ public final class DbMessageStartProcessInstanceDedupState
             transactionContext,
             processDefinitionAndMessageKey,
             entry);
-    dedupEntries =
-        StatefulGauge.builder(MessageCorrelationMetricsDoc.CROSS_PARTITION_DEDUP_ENTRIES.getName())
-            .description(
-                MessageCorrelationMetricsDoc.CROSS_PARTITION_DEDUP_ENTRIES.getDescription())
-            .register(zeebeDb.getMeterRegistry());
+    dedupMetrics = new MessageStartProcessInstanceDedupMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // Authoritatively re-seed the gauge from persisted state, discarding any level accumulated by
     // the +1/-1 mutations replayed before this hook runs.
-    dedupEntries.set(columnFamily.count());
+    dedupMetrics.setDedupEntries(columnFamily.count());
   }
 
   @Override
@@ -138,7 +133,7 @@ public final class DbMessageStartProcessInstanceDedupState
     final boolean isNew = !columnFamily.exists(processDefinitionAndMessageKey);
     columnFamily.upsert(processDefinitionAndMessageKey, entry);
     if (isNew) {
-      dedupEntries.increment();
+      dedupMetrics.incrementDedupEntries();
     }
   }
 
@@ -149,7 +144,7 @@ public final class DbMessageStartProcessInstanceDedupState
     final boolean existed = columnFamily.exists(processDefinitionAndMessageKey);
     columnFamily.deleteIfExists(processDefinitionAndMessageKey);
     if (existed) {
-      dedupEntries.decrement();
+      dedupMetrics.decrementDedupEntries();
     }
   }
 }

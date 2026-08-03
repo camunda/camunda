@@ -12,13 +12,12 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
+import io.camunda.zeebe.engine.metrics.MessageStartProcessInstanceAskMetrics;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState.PendingAskKey;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +51,7 @@ public final class DbMessageStartProcessInstanceAskState
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, MessageStartProcessInstanceAsk>
       columnFamily;
   private final TransientPendingMessageStartProcessInstanceAskState transientState;
-  private final StatefulGauge pendingAsks;
+  private final MessageStartProcessInstanceAskMetrics askMetrics;
 
   public DbMessageStartProcessInstanceAskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -62,10 +61,7 @@ public final class DbMessageStartProcessInstanceAskState
     columnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_ASK, transactionContext, key, value);
-    pendingAsks =
-        StatefulGauge.builder(MessageCorrelationMetricsDoc.CROSS_PARTITION_ASKS_PENDING.getName())
-            .description(MessageCorrelationMetricsDoc.CROSS_PARTITION_ASKS_PENDING.getDescription())
-            .register(zeebeDb.getMeterRegistry());
+    askMetrics = new MessageStartProcessInstanceAskMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -84,7 +80,7 @@ public final class DbMessageStartProcessInstanceAskState
         });
     // Authoritatively re-seed the gauge from persisted state, discarding any level accumulated by
     // the +1/-1 mutations replayed before this hook runs.
-    pendingAsks.set(columnFamily.count());
+    askMetrics.setPendingAsks(columnFamily.count());
   }
 
   @Override
@@ -126,7 +122,7 @@ public final class DbMessageStartProcessInstanceAskState
     columnFamily.upsert(key, ask);
     transientState.add(new PendingAskKey(ask.getMessageKey(), ask.getProcessDefinitionKey()), 0L);
     if (isNew) {
-      pendingAsks.increment();
+      askMetrics.incrementPendingAsks();
     }
   }
 
@@ -138,7 +134,7 @@ public final class DbMessageStartProcessInstanceAskState
     columnFamily.deleteIfExists(key);
     transientState.remove(new PendingAskKey(messageKey, processDefinitionKey));
     if (existed) {
-      pendingAsks.decrement();
+      askMetrics.decrementPendingAsks();
     }
   }
 

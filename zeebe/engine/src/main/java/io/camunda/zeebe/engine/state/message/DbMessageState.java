@@ -21,13 +21,12 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
-import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
+import io.camunda.zeebe.engine.metrics.CrossPartitionMessageStateMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 
@@ -176,8 +175,7 @@ public final class DbMessageState implements MutableMessageState {
   private final CrossPartitionMessageStartHolderOrigin crossPartitionStartHolderOrigin;
 
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
-  private final StatefulGauge crossPartitionStartLocks;
-  private final StatefulGauge crossPartitionBufferedMessages;
+  private final CrossPartitionMessageStateMetrics crossPartitionMetrics;
 
   private Long localMessageDeadlineCount = 0L;
 
@@ -286,16 +284,7 @@ public final class DbMessageState implements MutableMessageState {
             crossPartitionStartHolderOrigin);
 
     bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
-    crossPartitionStartLocks =
-        StatefulGauge.builder(MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getName())
-            .description(MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getDescription())
-            .register(zeebeDb.getMeterRegistry());
-    crossPartitionBufferedMessages =
-        StatefulGauge.builder(
-                MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getName())
-            .description(
-                MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getDescription())
-            .register(zeebeDb.getMeterRegistry());
+    crossPartitionMetrics = new CrossPartitionMessageStateMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -306,10 +295,10 @@ public final class DbMessageState implements MutableMessageState {
     }
 
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
-    // Authoritatively re-seed the lock gauge from persisted state, discarding any level accumulated
+    // Authoritatively re-seed the gauges from persisted state, discarding any level accumulated
     // by the +1/-1 mutations replayed before this hook runs.
-    crossPartitionStartLocks.set(crossPartitionStartLockColumnFamily.count());
-    crossPartitionBufferedMessages.set(messageByBusinessIdColumnFamily.count());
+    crossPartitionMetrics.setStartLocks(crossPartitionStartLockColumnFamily.count());
+    crossPartitionMetrics.setBufferedMessages(messageByBusinessIdColumnFamily.count());
   }
 
   @Override
@@ -343,7 +332,7 @@ public final class DbMessageState implements MutableMessageState {
     if (businessIdBuffer.capacity() > 0) {
       businessId.wrapBuffer(businessIdBuffer);
       messageByBusinessIdColumnFamily.insert(businessIdMessageKey, DbNil.INSTANCE);
-      crossPartitionBufferedMessages.increment();
+      crossPartitionMetrics.incrementBufferedMessages();
     }
   }
 
@@ -411,7 +400,7 @@ public final class DbMessageState implements MutableMessageState {
     crossPartitionStartLockColumnFamily.upsert(
         bpmnProcessIdCorrelationKey, crossPartitionStartLock);
     if (isNew) {
-      crossPartitionStartLocks.increment();
+      crossPartitionMetrics.incrementStartLocks();
     }
   }
 
@@ -449,7 +438,7 @@ public final class DbMessageState implements MutableMessageState {
     final boolean existed = crossPartitionStartLockColumnFamily.exists(bpmnProcessIdCorrelationKey);
     crossPartitionStartLockColumnFamily.deleteIfExists(bpmnProcessIdCorrelationKey);
     if (existed) {
-      crossPartitionStartLocks.decrement();
+      crossPartitionMetrics.decrementStartLocks();
     }
   }
 
@@ -547,7 +536,7 @@ public final class DbMessageState implements MutableMessageState {
       final boolean existed = messageByBusinessIdColumnFamily.exists(businessIdMessageKey);
       messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
       if (existed) {
-        crossPartitionBufferedMessages.decrement();
+        crossPartitionMetrics.decrementBufferedMessages();
       }
     }
 
