@@ -152,6 +152,11 @@ const mockQueryAuditLogsEndpoint = createEndpointMock({
 	method: endpoints.queryAuditLogs.method,
 });
 
+const mockGetProcessInstanceCallHierarchyEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstanceCallHierarchy.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -181,4 +186,5 @@ export {
 	mockQueryDecisionInstancesEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
 	mockQueryAuditLogsEndpoint,
+	mockGetProcessInstanceCallHierarchyEndpoint,
 };

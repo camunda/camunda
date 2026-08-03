@@ -648,6 +648,34 @@
 					"message": "No se pudieron recuperar los datos",
 					"additionalInfo": "Actualice la página para intentarlo de nuevo"
 				},
+				"operations": {
+					"loadingMessage": "La instancia {{processInstanceKey}} tiene operaciones programadas",
+					"retryTitle": "Reintentar instancia {{processInstanceKey}}",
+					"cancelTitle": "Cancelar instancia {{processInstanceKey}}",
+					"modifyTitle": "Modificar instancia {{processInstanceKey}}",
+					"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
+					"deleteButtonLabel": "Eliminar",
+					"cancelConfirmationModal": {
+						"heading": "Aplicar operación",
+						"applyButton": "Aplicar",
+						"cancelButton": "Cancelar",
+						"body": "Se cancelará la instancia {{processInstanceKey}}. Si existen instancias llamadas, también se cancelarán.",
+						"hint": "Haga clic en \"Aplicar\" para continuar."
+					},
+					"cancelRootInstanceModal": {
+						"heading": "Cancelar instancia",
+						"bodyBeforeLink": "Para cancelar esta instancia, la instancia raíz",
+						"bodyAfterLink": "debe cancelarse. Cuando se cancela la instancia raíz, todas las instancias llamadas se cancelan automáticamente.",
+						"linkTitle": "Ver instancia raíz {{rootInstanceId}}"
+					},
+					"deleteConfirmationModal": {
+						"heading": "Eliminar instancia",
+						"deleteButton": "Eliminar",
+						"cancelButton": "Cancelar",
+						"body": "Se eliminará la instancia {{processInstanceKey}}.",
+						"hint": "Haga clic en \"Eliminar\" para continuar."
+					}
+				},
 				"panelHeader": {
 					"resultCount_one": "{{count}} resultado",
 					"resultCount_other": "{{count}} resultados",

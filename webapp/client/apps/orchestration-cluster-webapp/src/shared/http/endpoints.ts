@@ -29,6 +29,7 @@ import {
 	type AuditLog,
 	type DecisionInstance,
 	type Variable,
+	type ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -357,6 +358,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryAuditLogs.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceCallHierarchy: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceCallHierarchy.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

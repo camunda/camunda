@@ -651,6 +651,34 @@
 					"message": "Les données n'ont pas pu être récupérées",
 					"additionalInfo": "Actualisez la page pour réessayer"
 				},
+				"operations": {
+					"loadingMessage": "L'instance {{processInstanceKey}} a des opérations planifiées",
+					"retryTitle": "Réessayer l'instance {{processInstanceKey}}",
+					"cancelTitle": "Annuler l'instance {{processInstanceKey}}",
+					"modifyTitle": "Modifier l'instance {{processInstanceKey}}",
+					"deleteTitle": "Supprimer l'instance {{processInstanceKey}}",
+					"deleteButtonLabel": "Supprimer",
+					"cancelConfirmationModal": {
+						"heading": "Appliquer l'opération",
+						"applyButton": "Appliquer",
+						"cancelButton": "Annuler",
+						"body": "L'instance {{processInstanceKey}} va être annulée. Si des instances appelées existent, elles seront également annulées.",
+						"hint": "Cliquez sur \"Appliquer\" pour continuer."
+					},
+					"cancelRootInstanceModal": {
+						"heading": "Annuler l'instance",
+						"bodyBeforeLink": "Pour annuler cette instance, l'instance racine",
+						"bodyAfterLink": "doit être annulée. Lorsque l'instance racine est annulée, toutes les instances appelées sont automatiquement annulées.",
+						"linkTitle": "Voir l'instance racine {{rootInstanceId}}"
+					},
+					"deleteConfirmationModal": {
+						"heading": "Supprimer l'instance",
+						"deleteButton": "Supprimer",
+						"cancelButton": "Annuler",
+						"body": "L'instance {{processInstanceKey}} va être supprimée.",
+						"hint": "Cliquez sur \"Supprimer\" pour continuer."
+					}
+				},
 				"panelHeader": {
 					"resultCount_one": "{{count}} résultat",
 					"resultCount_other": "{{count}} résultats",

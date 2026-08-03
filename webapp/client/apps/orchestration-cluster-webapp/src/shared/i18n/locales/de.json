@@ -648,6 +648,34 @@
 					"message": "Daten konnten nicht abgerufen werden",
 					"additionalInfo": "Laden Sie die Seite neu, um es erneut zu versuchen"
 				},
+				"operations": {
+					"loadingMessage": "Instanz {{processInstanceKey}} hat geplante Operationen",
+					"retryTitle": "Instanz {{processInstanceKey}} wiederholen",
+					"cancelTitle": "Instanz {{processInstanceKey}} abbrechen",
+					"modifyTitle": "Instanz {{processInstanceKey}} ändern",
+					"deleteTitle": "Instanz {{processInstanceKey}} löschen",
+					"deleteButtonLabel": "Löschen",
+					"cancelConfirmationModal": {
+						"heading": "Operation anwenden",
+						"applyButton": "Anwenden",
+						"cancelButton": "Abbrechen",
+						"body": "Instanz {{processInstanceKey}} wird abgebrochen. Falls es aufgerufene Instanzen gibt, werden diese ebenfalls abgebrochen.",
+						"hint": "Klicken Sie auf \"Anwenden\", um fortzufahren."
+					},
+					"cancelRootInstanceModal": {
+						"heading": "Instanz abbrechen",
+						"bodyBeforeLink": "Um diese Instanz abzubrechen, muss die Root-Instanz",
+						"bodyAfterLink": "abgebrochen werden. Wenn die Root-Instanz abgebrochen wird, werden alle aufgerufenen Instanzen automatisch abgebrochen.",
+						"linkTitle": "Root-Instanz {{rootInstanceId}} anzeigen"
+					},
+					"deleteConfirmationModal": {
+						"heading": "Instanz löschen",
+						"deleteButton": "Löschen",
+						"cancelButton": "Abbrechen",
+						"body": "Instanz {{processInstanceKey}} wird gelöscht.",
+						"hint": "Klicken Sie auf \"Löschen\", um fortzufahren."
+					}
+				},
 				"panelHeader": {
 					"resultCount_one": "{{count}} Ergebnis",
 					"resultCount_other": "{{count}} Ergebnisse",
