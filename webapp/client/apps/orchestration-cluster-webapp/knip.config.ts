@@ -11,6 +11,7 @@ import type {KnipConfig} from 'knip';
 const config: KnipConfig = {
 	entry: ['src/vitest-modules/vitest.setup.ts'],
 	ignore: [
+		'src/operate/shared/DecisionViewer/dmn-js.d.ts',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
