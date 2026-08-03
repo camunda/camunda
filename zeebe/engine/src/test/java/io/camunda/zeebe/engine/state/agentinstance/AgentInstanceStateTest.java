@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -170,5 +172,151 @@ public final class AgentInstanceStateTest {
   public void shouldNoOpOnDeleteOfMissingRecord() {
     // given / when / then
     assertThatCode(() -> agentInstanceState.delete(9999L)).doesNotThrowAnyException();
+  }
+
+  @Test
+  public void shouldVisitAgentInstanceKeysInAscendingOrder() {
+    // given
+    final long processInstanceKey = 100L;
+    final long firstAgentInstanceKey = 1L;
+    final long secondAgentInstanceKey = 2L;
+    final long thirdAgentInstanceKey = 3L;
+    insertAgentInstance(thirdAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(firstAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(secondAgentInstanceKey, processInstanceKey);
+
+    // when
+    final List<Long> visited = new ArrayList<>();
+    final var hasMore =
+        agentInstanceState.visitAgentInstanceKeysByProcessInstanceKey(
+            processInstanceKey,
+            -1L,
+            key -> {
+              visited.add(key);
+              return true;
+            });
+
+    // then
+    assertThat(visited)
+        .describedAs("agent instance keys are visited in ascending key order")
+        .containsExactly(firstAgentInstanceKey, secondAgentInstanceKey, thirdAgentInstanceKey);
+    assertThat(hasMore)
+        .describedAs("no more keys remain once the visitor accepted all of them")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldReportHasMoreWhenVisitorStopsEarly() {
+    // given
+    final long processInstanceKey = 100L;
+    final long firstAgentInstanceKey = 1L;
+    final long secondAgentInstanceKey = 2L;
+    insertAgentInstance(firstAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(secondAgentInstanceKey, processInstanceKey);
+
+    // when
+    final List<Long> visited = new ArrayList<>();
+    final var hasMore =
+        agentInstanceState.visitAgentInstanceKeysByProcessInstanceKey(
+            processInstanceKey,
+            -1L,
+            key -> {
+              visited.add(key);
+              return false;
+            });
+
+    // then
+    assertThat(visited)
+        .describedAs("iteration stops as soon as the visitor returns false")
+        .containsExactly(firstAgentInstanceKey);
+    assertThat(hasMore)
+        .describedAs("keys remain unvisited beyond the one the visitor accepted")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResumeIterationAtStartAtAgentInstanceKey() {
+    // given
+    final long processInstanceKey = 100L;
+    final long firstAgentInstanceKey = 1L;
+    final long secondAgentInstanceKey = 2L;
+    final long thirdAgentInstanceKey = 3L;
+    insertAgentInstance(firstAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(secondAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(thirdAgentInstanceKey, processInstanceKey);
+
+    // when
+    final List<Long> visited = new ArrayList<>();
+    final var hasMore =
+        agentInstanceState.visitAgentInstanceKeysByProcessInstanceKey(
+            processInstanceKey,
+            secondAgentInstanceKey,
+            key -> {
+              visited.add(key);
+              return true;
+            });
+
+    // then
+    assertThat(visited)
+        .describedAs("iteration resumes at startAtAgentInstanceKey (inclusive)")
+        .containsExactly(secondAgentInstanceKey, thirdAgentInstanceKey);
+    assertThat(hasMore).isFalse();
+  }
+
+  @Test
+  public void shouldResumeJustAfterADeletedStartAtAgentInstanceKey() {
+    // given
+    final long processInstanceKey = 100L;
+    final long deletedAgentInstanceKey = 1L;
+    final long remainingAgentInstanceKey = 2L;
+    insertAgentInstance(deletedAgentInstanceKey, processInstanceKey);
+    insertAgentInstance(remainingAgentInstanceKey, processInstanceKey);
+    agentInstanceState.delete(deletedAgentInstanceKey);
+
+    // when
+    final List<Long> visited = new ArrayList<>();
+    final var hasMore =
+        agentInstanceState.visitAgentInstanceKeysByProcessInstanceKey(
+            processInstanceKey,
+            deletedAgentInstanceKey,
+            key -> {
+              visited.add(key);
+              return true;
+            });
+
+    // then
+    assertThat(visited)
+        .describedAs("iteration resumes just after a startAtAgentInstanceKey that no longer exists")
+        .containsExactly(remainingAgentInstanceKey);
+    assertThat(hasMore).isFalse();
+  }
+
+  @Test
+  public void shouldNotVisitAnyKeysWhenProcessInstanceHasNoAgentInstances() {
+    // given / when
+    final List<Long> visited = new ArrayList<>();
+    final var hasMore =
+        agentInstanceState.visitAgentInstanceKeysByProcessInstanceKey(
+            9999L,
+            -1L,
+            key -> {
+              visited.add(key);
+              return true;
+            });
+
+    // then
+    assertThat(visited).isEmpty();
+    assertThat(hasMore)
+        .describedAs("no keys to visit means nothing is left to resume from")
+        .isFalse();
+  }
+
+  private void insertAgentInstance(final long agentInstanceKey, final long processInstanceKey) {
+    agentInstanceState.insert(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
   }
 }

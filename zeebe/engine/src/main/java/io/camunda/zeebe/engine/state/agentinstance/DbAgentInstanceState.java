@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongPredicate;
+import org.agrona.collections.MutableBoolean;
 
 public final class DbAgentInstanceState implements MutableAgentInstanceState {
 
@@ -65,6 +67,30 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
           keys.add(key.second().getValue());
         });
     return keys;
+  }
+
+  @Override
+  public boolean visitAgentInstanceKeysByProcessInstanceKey(
+      final long piKey, final long startAtAgentInstanceKey, final LongPredicate visitor) {
+    processInstanceKey.wrapLong(piKey);
+    agentInstanceKey.wrapLong(Math.max(startAtAgentInstanceKey, 0));
+
+    // If startAtAgentInstanceKey is a negative value we should use null instead. This will make
+    // it so we start the iteration at the first agent instance of the process instance.
+    final var startAt = startAtAgentInstanceKey < 0 ? null : processInstanceKeyAndAgentInstanceKey;
+
+    final var hasMore = new MutableBoolean(false);
+    byProcessInstanceKeyColumnFamily.whileEqualPrefix(
+        processInstanceKey,
+        startAt,
+        key -> {
+          final var continueIterating = visitor.test(key.second().getValue());
+          if (!continueIterating) {
+            hasMore.set(true);
+          }
+          return continueIterating;
+        });
+    return hasMore.get();
   }
 
   @Override
