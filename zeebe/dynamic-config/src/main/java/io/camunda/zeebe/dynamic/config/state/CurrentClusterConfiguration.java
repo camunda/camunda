@@ -384,6 +384,29 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Cancels the pending plan: clears the pending change on every sub-configuration that has one
+   * (the global configuration and/or any partition group targeted by the plan's phases so far), and
+   * moves the plan into {@code lastChange} with {@link PhasedChangePlanStatus#CANCELLED}. This is
+   * an unsafe operation and should be used only as a last resort when a plan is stuck — already
+   * applied operations are not reverted, so sub-configurations affected by earlier phases may be
+   * left in an intermediate state.
+   *
+   * @return {@code this} if no plan is pending
+   */
+  public CurrentClusterConfiguration cancelPendingChanges() {
+    if (phasedChangeState.pending().isEmpty()) {
+      return this;
+    }
+    var result = updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
+    for (final var groupId : partitionGroups.keySet()) {
+      result =
+          result.updatePartitionGroupConfig(
+              groupId, PartitionGroupConfiguration::cancelPendingChanges);
+    }
+    return result.completePlan(PhasedChangePlanStatus.CANCELLED);
+  }
+
+  /**
    * Returns the number of members in the cluster that are not {@link BrokerState.State#LEFT} or
    * {@link BrokerState.State#UNINITIALIZED}.
    */

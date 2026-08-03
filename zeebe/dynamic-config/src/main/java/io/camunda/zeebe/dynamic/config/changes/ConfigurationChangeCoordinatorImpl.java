@@ -73,6 +73,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
 
   @Override
   public ActorFuture<ClusterConfiguration> cancelChange(final long changeId) {
+    if (clusterTopologyManager.isUsingNewConfig()) {
+      return cancelChangeNewModel(changeId);
+    }
     final ActorFuture<ClusterConfiguration> future = executor.createFuture();
     executor.run(
         () ->
@@ -357,6 +360,52 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   // ---------------------------------------------------------------------------
   // New multi-partition-group model.
   // ---------------------------------------------------------------------------
+
+  private ActorFuture<ClusterConfiguration> cancelChangeNewModel(final long changeId) {
+    final ActorFuture<ClusterConfiguration> future = executor.createFuture();
+    executor.run(
+        () ->
+            clusterTopologyManager.updateMultiConfiguration(
+                currentConfiguration -> {
+                  if (!validateCancelNewModel(changeId, currentConfiguration, future)) {
+                    return currentConfiguration;
+                  }
+                  LOG.warn("Cancelling configuration change '{}'.", changeId);
+                  final var cancelledConfiguration = currentConfiguration.cancelPendingChanges();
+                  future.complete(cancelledConfiguration.toLegacyDefault());
+                  return cancelledConfiguration;
+                }));
+    return future;
+  }
+
+  private boolean validateCancelNewModel(
+      final long changeId,
+      final CurrentClusterConfiguration currentConfiguration,
+      final ActorFuture<ClusterConfiguration> future) {
+    if (currentConfiguration.isUninitialized()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because the topology is not initialized"));
+      return false;
+    }
+    final var pendingPlan = currentConfiguration.phasedChangeState().pending();
+    if (pendingPlan.isEmpty()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because no change is in progress"));
+      return false;
+    }
+    if (pendingPlan.orElseThrow().id() != changeId) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because it is not the current change"));
+      return false;
+    }
+    return true;
+  }
 
   private ActorFuture<ConfigurationChangeResult> applyOrDryRunNewModel(
       final boolean dryRun, final ConfigurationChangeRequest request) {

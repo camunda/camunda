@@ -717,6 +717,96 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class CancelPendingChanges {
+
+    @Test
+    void shouldReturnSameConfigWhenNoPlanIsPending() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled).isEqualTo(config);
+    }
+
+    @Test
+    void shouldClearPendingChangesOnGlobalConfigurationForGlobalPhase() {
+      // given
+      final var config =
+          CurrentClusterConfiguration.init()
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+      final var changeId = config.phasedChangeState().pending().orElseThrow().id();
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.globalConfiguration().hasPendingChanges()).isFalse();
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+      assertThat(cancelled.phasedChangeState().lastChange()).isPresent();
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().id()).isEqualTo(changeId);
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(PhasedChangePlanStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldClearPendingChangesOnEveryTargetedPartitionGroup() {
+      // given — a plan targeting groups "a" and "b" in a single parallel phase
+      final var config =
+          config(
+                  global(1, Map.of()),
+                  Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+                  PhasedChangeState.empty())
+              .initPlan(
+                  List.of(
+                      new PartitionGroupParallelPhase(
+                          Map.of(
+                              "a",
+                              List.of(new DeleteHistoryOperation(MEMBER_0)),
+                              "b",
+                              List.of(new DeleteHistoryOperation(MEMBER_0))))));
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.partitionGroup("a").hasPendingChanges()).isFalse();
+      assertThat(cancelled.partitionGroup("b").hasPendingChanges()).isFalse();
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(PhasedChangePlanStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldNotClearPendingChangesOnGroupNotYetTargetedByCurrentPhase() {
+      // given — a two-phase plan: phase 0 targets group "a", phase 1 (not yet activated) targets
+      // "b"
+      final var config =
+          config(
+                  global(1, Map.of()),
+                  Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+                  PhasedChangeState.empty())
+              .initPlan(
+                  List.of(
+                      new PartitionGroupParallelPhase(
+                          Map.of("a", List.of(new DeleteHistoryOperation(MEMBER_0)))),
+                      new PartitionGroupParallelPhase(
+                          Map.of("b", List.of(new DeleteHistoryOperation(MEMBER_0))))));
+
+      // when — cancel while phase 0 is still active
+      final var cancelled = config.cancelPendingChanges();
+
+      // then — only the already-activated group "a" is cleared; "b" is untouched, still at its
+      // original version since it was never activated
+      assertThat(cancelled.partitionGroup("a").hasPendingChanges()).isFalse();
+      assertThat(cancelled.partitionGroup("b")).isEqualTo(group(1, Map.of()));
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+    }
+  }
+
+  @Nested
   class ToLegacyDefault {
 
     @Test
