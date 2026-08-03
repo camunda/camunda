@@ -222,6 +222,20 @@ result_query() {
   echo "sum(zeebe_cluster_rebalance_partition_duration_seconds_count{namespace=\"\$NAMESPACE\", result=\"$1\"})"
 }
 
+# Retried briefly, because a scrape has to land before a result the rebalance
+# just produced can be read at all, and these counts are reported rather than
+# asserted so nothing else would have waited for one. A result never seen reads
+# as zero, which is what it means.
 result_count() {
-  prom_query "$(result_query "$1")"
+  local started value
+  started=$(date +%s)
+  while :; do
+    value=$(prom_query "$(result_query "$1")" || echo "")
+    [[ -n "$value" ]] && { echo "$value"; return 0; }
+    if (( $(date +%s) - started >= 45 )); then
+      echo 0
+      return 0
+    fi
+    sleep 5
+  done
 }
