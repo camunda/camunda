@@ -30,7 +30,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
  * pointer of the leaf it was found in.
  *
  * <p>This only detects references; resolving them into activated job variables is a separate, later
- * concern (see the job-join sub-issue tracked under #56563).
+ * concern.
  */
 public final class ClusterVariableSecretReferenceScanner {
 

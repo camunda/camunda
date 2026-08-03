@@ -97,7 +97,7 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
   /**
    * Returns the secret references detected in a SECRET_REFERENCE value: for each {@code
    * camunda.secrets.<name>} occurrence, the reference name and the RFC 6901 JSON pointer of the
-   * value leaf it was found in. Empty for JSON-kind variables. Defaults to an empty list.
+   * value leaf it was found in. Empty for JSON-kind variables.
    *
    * @return the secret references detected in this variable's value
    */
