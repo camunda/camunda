@@ -10,8 +10,9 @@ classifies a failure and dispatches you with the specs already extracted.
 
 ## Turning it on and off
 
-Controlled by the repository variable `ALWAYSGREEN_FIX_AGENT` (Settings → Variables →
-Actions). Changes take effect on the very next run — no PR, no merge, no redeploy.
+A feature flag in Vault: key `ALWAYSGREEN_FIX_AGENT` at
+`secret/data/products/qa/ci/common`. Changes take effect on the next run — no PR, no
+merge, no redeploy.
 
 |   Value   |                               Effect                               |
 |-----------|--------------------------------------------------------------------|
@@ -20,14 +21,21 @@ Actions). Changes take effect on the very next run — no PR, no merge, no redep
 | `on`      | triage dispatches fix agents                                       |
 | *unset*   | treated as `dry-run`                                               |
 
-Unset means `dry-run`, so deleting the variable degrades to safe rather than to live. An
-unrecognised value logs a warning and is also treated as `dry-run`.
+Every unresolvable state resolves to `dry-run` — key absent, Vault unreachable, value
+unrecognised — so a mistake withholds dispatch rather than enabling it. Two corollaries:
+**deleting the key does not disable the agent**, it leaves it classifying, so set `off`
+explicitly; and only exact lowercase `off` stops it, since `OFF` or `disabled` fall back
+to `dry-run`.
 
-`off` blocks a fix agent that has been dispatched but not yet started. It does **not**
-interrupt a run already inside its Claude step — cancel that run explicitly.
+`off` blocks a fix agent that was dispatched but has not started — its `gate` job fails
+the check and the agent job is skipped. It does **not** interrupt a run already inside
+its Claude step; cancel that run from the Actions tab.
 
-In `dry-run` the job summary shows a "Would dispatch" table, so the classification can be
-reviewed without anything being opened.
+In `dry-run` the job summary prints a "Would dispatch" table, so the classification can
+be reviewed without anything being opened.
+
+Because the flag is imported as a Vault secret, its value is masked in logs; the
+workflows therefore report only the derived `enabled`/`dispatch` booleans.
 
 ## The rule that matters most
 

@@ -62,14 +62,44 @@ env:
   FIX_LABEL: alwaysgreen-fix
 
 jobs:
+  # Honours the same flag as triage, so `off` also stops agents already dispatched or
+  # queued and blocks a manual dispatch. A separate job because a Vault read cannot
+  # happen in a job-level `if:`; gating on a job output leaves the agent job visibly
+  # skipped rather than half-run. A run already inside its Claude step is not
+  # interrupted — cancel it.
+  gate:
+    name: Check feature flag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.flag.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/alwaysgreen-flag
+          persist-credentials: false
+      - id: flag
+        uses: ./.github/actions/alwaysgreen-flag
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Report disabled
+        if: ${{ steps.flag.outputs.enabled != 'true' }}
+        run: |
+          {
+            echo "## AlwaysGreen Fix Agent — disabled"
+            echo ""
+            echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is \`off\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::AlwaysGreen fix agent is disabled by the Vault feature flag."
+
   fix:
     name: Fix ${{ inputs.surface }} on ${{ inputs.base_ref }}
+    needs: gate
+    if: ${{ needs.gate.outputs.enabled == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    # Honour the same kill switch as triage, so setting ALWAYSGREEN_FIX_AGENT=off stops
-    # agents that were already dispatched or queued, and blocks a manual dispatch. A
-    # run that has already started its Claude step is not interrupted — cancel it.
-    if: ${{ vars.ALWAYSGREEN_FIX_AGENT != 'off' }}
 
     steps:
       - name: Validate inputs

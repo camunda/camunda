@@ -86,45 +86,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # Kill switch and mode, held in a repository variable so it can be changed in
-      # Settings -> Variables and take effect on the very next run — no PR, no merge.
+      # Checkout first: the flag lives in a local composite action, and the flag
+      # decides whether anything else runs.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      # Kill switch and mode, from ALWAYSGREEN_FIX_AGENT at
+      # secret/data/products/qa/ci/common:
       #
       #   off       nothing runs; the job exits immediately
       #   dry-run   classify and report, dispatch nothing   (default when unset)
       #   on        dispatch fix agents
-      #
-      # Unset defaults to dry-run, so deleting the variable degrades to safe rather
-      # than to live.
       - name: Resolve run mode
         id: mode
-        env:
-          CONFIGURED: ${{ vars.ALWAYSGREEN_FIX_AGENT }}
-          INPUT_DRY_RUN: ${{ inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          mode="${CONFIGURED:-dry-run}"
-          case "$mode" in
-            off|dry-run|on) ;;
-            *)
-              echo "::warning::ALWAYSGREEN_FIX_AGENT='${mode}' is not one of off|dry-run|on; treating as dry-run"
-              mode="dry-run"
-              ;;
-          esac
-
-          enabled=true
-          dispatch=false
-          [ "$mode" = "off" ] && enabled=false
-          # A caller or operator asking for a dry run always wins over mode=on.
-          if [ "$mode" = "on" ] && [ "${INPUT_DRY_RUN}" != "true" ]; then
-            dispatch=true
-          fi
-
-          {
-            echo "mode=${mode}"
-            echo "enabled=${enabled}"
-            echo "dispatch=${dispatch}"
-          } >> "$GITHUB_OUTPUT"
-          echo "mode=${mode} enabled=${enabled} dispatch=${dispatch}"
+        uses: ./.github/actions/alwaysgreen-flag
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          dry-run-override: ${{ inputs.dry_run }}
 
       - name: Report disabled and stop
         if: ${{ steps.mode.outputs.enabled != 'true' }}
@@ -132,17 +115,12 @@ jobs:
           {
             echo "## AlwaysGreen Triage — disabled"
             echo ""
-            echo "\`vars.ALWAYSGREEN_FIX_AGENT\` is \`off\`, so no classification or"
+            echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is"
+            echo "\`off\`, so no classification or"
             echo "dispatch ran. Set it to \`dry-run\` or \`on\` to re-enable."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::notice::AlwaysGreen triage is disabled by repository variable."
 
-      - name: Checkout
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
 
       - name: Set up Python
         if: ${{ steps.mode.outputs.enabled == 'true' }}
@@ -251,7 +229,7 @@ jobs:
               jq -r '.dispatches[] | "| \(.surface) | \(.test_specs | length) | \([.test_specs[] | select(.deterministic)] | length) | `\(.dispatch_key)` |"' \
                 /tmp/alwaysgreen-plan.json
               echo ""
-              echo "Set \`vars.ALWAYSGREEN_FIX_AGENT=on\` to dispatch these."
+              echo "Set \`ALWAYSGREEN_FIX_AGENT\` to \`on\` in Vault to dispatch these."
               echo ""
             else
               echo "> No dispatchable candidates."
