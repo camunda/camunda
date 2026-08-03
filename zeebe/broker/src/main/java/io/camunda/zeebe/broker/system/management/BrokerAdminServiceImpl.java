@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
@@ -41,9 +42,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final PartitionManager partitionManager;
+  private final ExportingStateChanger exportingStateChanger;
 
-  public BrokerAdminServiceImpl(final PartitionManager partitionManager) {
+  public BrokerAdminServiceImpl(
+      final PartitionManager partitionManager, final ExportingStateChanger exportingStateChanger) {
     this.partitionManager = partitionManager;
+    this.exportingStateChanger = exportingStateChanger;
   }
 
   @Override
@@ -58,17 +62,17 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   @Override
   public void pauseExporting() {
-    actor.call(this::pauseExportingOnAllPartitions);
+    exportingStateChanger.changeExportingState(ExportingState.PAUSED);
   }
 
   @Override
   public void softPauseExporting() {
-    actor.call(this::softPauseExportingOnAllPartitions);
+    exportingStateChanger.changeExportingState(ExportingState.SOFT_PAUSED);
   }
 
   @Override
   public void resumeExporting() {
-    actor.call(this::resumeExportingOnAllPartitions);
+    exportingStateChanger.changeExportingState(ExportingState.EXPORTING);
   }
 
   @Override
@@ -233,30 +237,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> softPauseExportingOnAllPartitions() {
-    LOG.info("Soft Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::softPauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> pauseExportingOnAllPartitions() {
-    LOG.info("Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::pauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> resumeExportingOnAllPartitions() {
-    LOG.info("Resuming exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::resumeExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
 }
