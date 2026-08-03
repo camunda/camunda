@@ -240,9 +240,15 @@ workload_alive() {
     return 1
   fi
   restarts=$(awk '{ sum += $4 } END { print sum + 0 }' <<<"$pods")
-  oom=$(kubectl logs -n "$NS" -l app=starter --tail=200 2>/dev/null | grep -ci "outofmemory" || true)
+  # Scoped to the last few minutes, because a label selector also picks up a
+  # replica that has already died: an OutOfMemoryError from one the run has
+  # since replaced would otherwise keep failing this check forever, and every
+  # scenario after it would be reported void while the workload was in fact
+  # running.
+  oom=$(kubectl logs -n "$NS" -l app=starter --since=3m --tail=300 2>/dev/null \
+    | grep -ci "outofmemory" || true)
   if [[ "$oom" -gt 0 ]]; then
-    warn "  the starter reported OutOfMemoryError — the workload is dead and will not recover"
+    warn "  the starter reported OutOfMemoryError in the last three minutes — the workload is dying"
     return 1
   fi
 
