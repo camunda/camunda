@@ -46,7 +46,15 @@ events_csv="${2:-cpu,wall,alloc}"
 additional_options="${3:-}"
 test_type="${4:-}"
 
-IFS=',' read -ra events <<< "$events_csv"
+# Normalize the events list: strip all whitespace so "cpu, wall" behaves like "cpu,wall",
+# then drop any empty tokens (e.g. from a trailing/doubled comma) so an unmatched blank
+# event never reaches the classification loop below.
+events_csv="${events_csv// /}"
+IFS=',' read -ra raw_events <<< "$events_csv"
+events=()
+for event in "${raw_events[@]}"; do
+  [ -n "$event" ] && events+=("$event")
+done
 
 # Determine right container path
 containerPath=/usr/local/camunda/data
@@ -64,7 +72,7 @@ then
   tar -xzvf profiler.tar.gz
 fi
 
-if ! kubectl exec "$node" -- test -f data/libasyncProfiler.so;
+if ! kubectl exec "$node" -- sh -c 'test -f data/libasyncProfiler.so && test -x data/asprof && test -x data/jfrconv';
 then
   # Copy async profiler + jfr converter to pod (both ship in the release's bin/ directory)
   kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":"$containerPath/asprof"
@@ -93,26 +101,50 @@ for event in "${events[@]}"; do
   html_filenames+=("$html_filename")
 done
 
-# Build the asprof event flags for a single combined attach. The first non-wall/alloc
-# event (normally "cpu") is passed via -e; wall and alloc need their own dedicated flags to
-# be combined with another event in the same JFR recording (asprof's "-e a,b,c" comma-list
-# form doesn't support wall combined with another event -- --wall INTERVAL is required
-# instead, see ProfilerOptions.md).
-primary_event="cpu"
-asprof_event_args=()
+# Classify the requested events: "normal" events (cpu, lock, etc.) are combined into a
+# single comma-separated -e argument (asprof supports "-e a,b,c" for this); wall and alloc
+# need their own dedicated flags to be combined with another event in the same JFR
+# recording (asprof's "-e a,b,c" comma-list form doesn't support wall combined with another
+# event -- --wall/--alloc INTERVAL is required instead, see ProfilerOptions.md).
+has_wall=false
+has_alloc=false
+normal_events=()
 for event in "${events[@]}"; do
   case "$event" in
     wall)
-      asprof_event_args+=(--wall "${WALL_INTERVAL:-100ms}")
+      has_wall=true
       ;;
     alloc)
-      asprof_event_args+=(--alloc "${ALLOC_INTERVAL:-2m}")
+      has_alloc=true
       ;;
     *)
-      primary_event="$event"
+      normal_events+=("$event")
       ;;
   esac
 done
+
+asprof_event_args=()
+if [ "${#normal_events[@]}" -gt 0 ]; then
+  # At least one "normal" event was requested: combine them all into -e, and add wall/alloc
+  # (if requested) as extra events via their dedicated flags.
+  primary_event=$(IFS=,; echo "${normal_events[*]}")
+  $has_wall && asprof_event_args+=(--wall "${WALL_INTERVAL:-100ms}")
+  $has_alloc && asprof_event_args+=(--alloc "${ALLOC_INTERVAL:-2m}")
+elif $has_wall; then
+  # Only wall (and maybe alloc) was requested, no "normal" event: use "-e wall" directly
+  # instead of silently defaulting -e to "cpu", which wasn't requested. --wall is only
+  # needed as a substitute for "-e wall" when wall is combined with a *different* primary
+  # event, so it's omitted here since wall itself is the primary event.
+  primary_event="wall"
+  $has_alloc && asprof_event_args+=(--alloc "${ALLOC_INTERVAL:-2m}")
+elif $has_alloc; then
+  # Only alloc was requested: same reasoning as above, "-e alloc" directly.
+  primary_event="alloc"
+else
+  # Unreachable in practice since events_csv is never empty after normalization above, but
+  # fall back to the historical default just in case.
+  primary_event="cpu"
+fi
 
 # Extracting the PID:
 #
