@@ -673,8 +673,7 @@ jobs:
           # optimize_repo is only consumed in the custom build path where orchestration-tag is empty
 
           # Build platform configuration
-          additional_platform_config="--set global.image.tag=${CALCULATED_IMAGE_TAG} \
-            --set orchestration.image.registry=${IMAGE_REGISTRY} \
+          additional_platform_config="--set orchestration.image.registry=${IMAGE_REGISTRY} \
             --set orchestration.image.repository=${CAMUNDA_REPO} \
             --set orchestration.image.tag=${CALCULATED_IMAGE_TAG}"
 
