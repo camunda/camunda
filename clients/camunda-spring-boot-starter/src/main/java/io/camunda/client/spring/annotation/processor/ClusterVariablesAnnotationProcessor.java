@@ -18,6 +18,7 @@ package io.camunda.client.spring.annotation.processor;
 import static io.camunda.client.annotation.AnnotationUtil.isClusterVariables;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.ClusterVariablesValue;
@@ -180,9 +181,10 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
    * each key becomes a variable name and the corresponding value becomes the variable value.
    */
   private List<ClusterVariableEntry> parseVariables(final String json) {
-    if (json != null && json.stripLeading().startsWith("[")) {
+    final JsonNode root = jsonMapper.fromJson(json, JsonNode.class);
+    if (root.isArray()) {
       return new ArrayList<>(
-          Arrays.asList(jsonMapper.fromJson(json, ClusterVariableEntry[].class)));
+          Arrays.asList(jsonMapper.transform(root, ClusterVariableEntry[].class)));
     }
     final List<ClusterVariableEntry> variables = new ArrayList<>();
     jsonMapper
