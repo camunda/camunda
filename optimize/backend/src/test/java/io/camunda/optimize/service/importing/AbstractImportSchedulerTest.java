@@ -158,7 +158,9 @@ class AbstractImportSchedulerTest {
 
     // small backoff so the failing mediator retries a few times without spinning in a tight,
     // zero-delay loop (and flooding the log) for the duration of the test
-    when(failingMediator.getBackoffTimeInMs()).thenReturn(50L);
+    // lenient: whether this gets invoked before the test ends is a timing race against the
+    // background reschedule thread
+    lenient().when(failingMediator.getBackoffTimeInMs()).thenReturn(50L);
     when(successMediator.getBackoffTimeInMs()).thenReturn(0L);
 
     when(failingMediator.runImport()).thenThrow(new RuntimeException("simulated ES failure"));
