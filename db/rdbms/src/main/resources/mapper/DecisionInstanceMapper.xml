@@ -203,37 +203,50 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionInstanceEntity">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <arg column="DECISION_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <arg column="DECISION_INSTANCE_KEY" javaType="java.lang.Long" name="decisionInstanceKey"/>
       <arg column="STATE"
-        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"/>
-      <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="EVALUATION_FAILURE" javaType="java.lang.String"/>
-      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
-      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"
+        name="state"/>
+      <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime" name="evaluationDate"/>
+      <arg column="EVALUATION_FAILURE" javaType="java.lang.String" name="evaluationFailure"/>
+      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"
+        name="evaluationFailureMessage"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"
+        name="flowNodeInstanceKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionDefinitionId"/>
+      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="decisionDefinitionKey"/>
       <arg column="DECISION_DEFINITION_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionDefinitionName"/>
+      <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="decisionDefinitionVersion"/>
       <arg column="TYPE"
-        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"/>
-      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"
+        name="decisionDefinitionType"/>
+      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="rootDecisionDefinitionKey"/>
       <arg column="RESULT" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="result"/>
       <!-- The list is loaded separately (optional). But we still need a value (NULL) here.
        we use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
       <arg column="EVALUATED_INPUTS" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler" name="evaluatedInputs"/>
       <arg column="EVALUATED_OUTPUTS" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler" name="evaluatedOutputs"/>
     </constructor>
   </resultMap>
 
