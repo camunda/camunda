@@ -14,6 +14,7 @@ import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
@@ -60,7 +61,13 @@ const Processes: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const {data} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
+	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
+	const {data} = useSuspenseQuery(
+		queries.queryProcessDefinitions({
+			page: {limit: 1000},
+			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
+		}),
+	);
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(

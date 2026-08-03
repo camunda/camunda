@@ -27,7 +27,11 @@ const ROW_HEIGHTS: Record<NonNullable<SortableTableProps<unknown>['size']>, numb
 	xl: 64,
 };
 
-type PaginatedSortableTableProps<TRow> = Omit<
+// A plain `Omit` collapses `SortableTableProps`'s selection union down to its common members —
+// distribute it over each union member instead, so the selection discriminant survives.
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+type PaginatedSortableTableProps<TRow> = DistributiveOmit<
 	SortableTableProps<TRow>,
 	'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
 > & {

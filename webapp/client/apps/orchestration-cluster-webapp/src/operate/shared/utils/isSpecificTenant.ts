@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+/** The `TenantField` uses the literal `'all'` as its "All tenants" item id (see legacy parity). */
+function isSpecificTenant(tenantId: string | undefined): tenantId is string {
+	return tenantId !== undefined && tenantId !== 'all';
+}
 
-const Container = styled.div`
-	height: 100%;
-	position: relative;
-	padding-top: var(--cds-spacing-09);
-`;
-
-export {Container};
+export {isSpecificTenant};

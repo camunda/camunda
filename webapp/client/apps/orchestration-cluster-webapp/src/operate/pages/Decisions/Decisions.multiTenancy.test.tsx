@@ -8,32 +8,36 @@
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {http, HttpResponse, type PathParams} from 'msw';
-import {endpoints, type QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, type QueryDecisionDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint, mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryDecisionInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
-	createProcessDefinition,
-	createQueryProcessDefinitionsResponse,
-} from '#/shared-test-modules/api-mocks/process-definitions';
+	createDecisionDefinition,
+	createQueryDecisionDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/decision-definitions';
+import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {ProcessesHarness} from './ProcessesHarness';
+import {DecisionsHarness} from './DecisionsHarness';
 
-const PROCESS_DEFINITIONS = HttpResponse.json(
-	createQueryProcessDefinitionsResponse({
-		items: [
-			createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 2}),
-			createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 1}),
-		],
+const DECISION_DEFINITIONS = HttpResponse.json(
+	createQueryDecisionDefinitionsResponse({
+		items: [createDecisionDefinition({name: 'Invoice Approval', decisionDefinitionId: 'invoice-approval', version: 1})],
 	}),
 );
 
-function renderProcessesPage(searchParams?: Record<string, string>) {
+const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+function renderDecisionsPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
-	return renderWithRouter(ProcessesHarness, {
-		path: '/operate/processes',
-		initialEntry: `/operate/processes${query}`,
+	return renderWithRouter(DecisionsHarness, {
+		path: '/operate/decisions',
+		initialEntry: `/operate/decisions${query}`,
 	});
 }
 
@@ -50,11 +54,7 @@ describe('Multi tenancy', () => {
 	beforeEach(() => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(
-				createSystemConfiguration({
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
-				}),
-			),
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
 		);
 	});
 
@@ -64,32 +64,37 @@ describe('Multi tenancy', () => {
 
 	it('should hide the tenant filter when multi tenancy is not enabled', async ({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
 
-		const screen = await renderProcessesPage();
+		const screen = await renderDecisionsPage();
 
-		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByText('Instances States')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).not.toBeInTheDocument();
 	});
 
 	it('should load the tenant value from the URL', async ({worker}) => {
 		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		const screen = await renderProcessesPage({tenantId: '<tenant-A>'});
+		const screen = await renderDecisionsPage({tenantId: '<tenant-A>'});
 
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toHaveTextContent('Tenant A');
 	});
 
 	it('should set the tenant to the URL on change', async ({worker}) => {
 		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		const screen = await renderProcessesPage();
+		const screen = await renderDecisionsPage();
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
 		await screen.getByRole('combobox', {name: 'Select a tenant'}).click();
@@ -98,20 +103,21 @@ describe('Multi tenancy', () => {
 		await expect.poll(() => getSearch().tenantId).toBe('all');
 	});
 
-	it('should clear the process and version filters when the tenant changes', async ({worker}) => {
+	it('should clear the decision and version filters when the tenant changes', async ({worker}) => {
 		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		const screen = await renderProcessesPage({
-			process: 'order-process',
-			version: '2',
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: 'invoice-approval',
+			decisionDefinitionVersion: '1',
 			tenantId: '<default>',
 		});
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
-		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Order Process');
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice Approval');
 
 		await screen.getByRole('combobox', {name: 'Select a tenant'}).click();
 		await screen.getByRole('option', {name: 'Tenant A'}).click();
@@ -119,38 +125,40 @@ describe('Multi tenancy', () => {
 		await expect.poll(() => getSearch()).toEqual({tenantId: '<tenant-A>'});
 	});
 
-	it('should scope the process-definitions request to the selected tenant', async ({worker}) => {
+	it('should scope the decision-definitions request to the selected tenant', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
-			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
-				endpoints.queryProcessDefinitions.getUrl(),
+			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
+				endpoints.queryDecisionDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
+					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
 				},
 			),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderProcessesPage({tenantId: '<tenant-A>'});
+		await renderDecisionsPage({tenantId: '<tenant-A>'});
 
 		await expect.poll(() => requestedFilter).toEqual({tenantId: '<tenant-A>'});
 	});
 
-	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
+	it('should not scope the decision-definitions request when "all tenants" is selected', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
-			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
-				endpoints.queryProcessDefinitions.getUrl(),
+			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
+				endpoints.queryDecisionDefinitions.getUrl(),
 				async ({request}) => {
 					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
+					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
 				},
 			),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderProcessesPage({tenantId: 'all'});
+		await renderDecisionsPage({tenantId: 'all'});
 
 		await expect.poll(() => requestedFilter).toBeUndefined();
 	});

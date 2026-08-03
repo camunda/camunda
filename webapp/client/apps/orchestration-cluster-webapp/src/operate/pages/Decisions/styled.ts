@@ -7,11 +7,24 @@
  */
 
 import styled from 'styled-components';
+import {Link} from '@carbon/react';
 
-const Container = styled.div`
+const Container = styled.section`
 	height: 100%;
-	position: relative;
-	padding-top: var(--cds-spacing-09);
+	display: flex;
+	flex-direction: column;
 `;
 
-export {Container};
+const DecisionName = styled.div`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-04);
+`;
+
+const InstanceLink = styled(Link)`
+	&& {
+		text-decoration: underline;
+	}
+`;
+
+export {Container, DecisionName, InstanceLink};
