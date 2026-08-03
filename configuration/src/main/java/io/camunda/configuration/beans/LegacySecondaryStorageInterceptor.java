@@ -9,9 +9,11 @@ package io.camunda.configuration.beans;
 
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!restore")
 public class LegacySecondaryStorageInterceptor extends SecondaryStorageInterceptor {
 
   public LegacySecondaryStorageInterceptor(final SecondaryStorageReadiness readiness) {
