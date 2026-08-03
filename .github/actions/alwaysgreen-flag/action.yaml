@@ -24,13 +24,13 @@ inputs:
 
 outputs:
   mode:
-    description: off | dry-run | on
+    description: disabled | dry-run | enabled
     value: ${{ steps.resolve.outputs.mode }}
-  enabled:
-    description: 'false when mode is off — callers must skip all remaining work'
-    value: ${{ steps.resolve.outputs.enabled }}
+  active:
+    description: 'false when mode is disabled — callers must skip all remaining work'
+    value: ${{ steps.resolve.outputs.active }}
   dispatch:
-    description: 'true only when mode is on and no dry-run was requested'
+    description: 'true only when mode is enabled and no dry-run was requested'
     value: ${{ steps.resolve.outputs.dispatch }}
 
 runs:
@@ -69,29 +69,31 @@ runs:
         fi
 
         case "$mode" in
-          off|dry-run|on) ;;
+          disabled|dry-run|enabled) ;;
           "")
             echo "::notice::AlwaysGreen flag is unset; defaulting to dry-run."
             mode="dry-run"
             ;;
           *)
-            echo "::warning::AlwaysGreen flag is not one of off|dry-run|on; treating as dry-run."
+            echo "::warning::AlwaysGreen flag is not one of disabled|dry-run|enabled; treating as dry-run."
             mode="dry-run"
             ;;
         esac
 
-        enabled=true
+        active=true
         dispatch=false
-        [ "$mode" = "off" ] && enabled=false
-        if [ "$mode" = "on" ] && [ "${DRY_RUN_OVERRIDE}" != "true" ]; then
+        [ "$mode" = "disabled" ] && active=false
+        if [ "$mode" = "enabled" ] && [ "${DRY_RUN_OVERRIDE}" != "true" ]; then
           dispatch=true
         fi
 
         {
           echo "mode=${mode}"
-          echo "enabled=${enabled}"
+          echo "active=${active}"
           echo "dispatch=${dispatch}"
         } >> "$GITHUB_OUTPUT"
-        # The flag value is a Vault secret and therefore masked, so report only the
-        # derived booleans.
-        echo "AlwaysGreen enabled=${enabled} dispatch=${dispatch}"
+        # The flag value is imported as a Vault secret, so GitHub masks it in this job's
+        # logs. Deliberately avoid printing the words "enabled"/"disabled" here: with a
+        # matching flag value they would render as *** and hide the very state being
+        # reported. Booleans are unaffected.
+        echo "AlwaysGreen mode resolved: active=${active} dispatch=${dispatch}"

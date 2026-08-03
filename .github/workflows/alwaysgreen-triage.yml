@@ -97,9 +97,9 @@ jobs:
       # Kill switch and mode, from ALWAYSGREEN_FIX_AGENT at
       # secret/data/products/qa/ci/common:
       #
-      #   off       nothing runs; the job exits immediately
+      #   disabled  nothing runs; the job exits immediately
       #   dry-run   classify and report, dispatch nothing   (default when unset)
-      #   on        dispatch fix agents
+      #   enabled   dispatch fix agents
       - name: Resolve run mode
         id: mode
         uses: ./.github/actions/alwaysgreen-flag
@@ -110,26 +110,26 @@ jobs:
           dry-run-override: ${{ inputs.dry_run }}
 
       - name: Report disabled and stop
-        if: ${{ steps.mode.outputs.enabled != 'true' }}
+        if: ${{ steps.mode.outputs.active != 'true' }}
         run: |
           {
             echo "## AlwaysGreen Triage — disabled"
             echo ""
             echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is"
-            echo "\`off\`, so no classification or"
+            echo "\`disabled\`, so no classification or"
             echo "dispatch ran. Set it to \`dry-run\` or \`on\` to re-enable."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::notice::AlwaysGreen triage is disabled by repository variable."
 
 
       - name: Set up Python
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
+        if: ${{ steps.mode.outputs.active == 'true' }}
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
       - name: Resolve target run
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
+        if: ${{ steps.mode.outputs.active == 'true' }}
         id: target
         env:
           INPUT_RUN_ID: ${{ inputs.run_id }}
@@ -151,7 +151,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate GitHub App Token
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
+        if: ${{ steps.mode.outputs.active == 'true' }}
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
         with:
@@ -167,7 +167,7 @@ jobs:
           repositories: camunda,c8-cross-component-e2e-tests
 
       - name: Import Slack token
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
+        if: ${{ steps.mode.outputs.active == 'true' }}
         id: slack-secrets
         continue-on-error: true
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -182,7 +182,7 @@ jobs:
 
       - name: Discover and plan
         id: plan
-        if: ${{ steps.mode.outputs.enabled == 'true' }}
+        if: ${{ steps.mode.outputs.active == 'true' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -199,7 +199,7 @@ jobs:
           echo "count=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)" >> "$GITHUB_OUTPUT"
 
       - name: Write job summary
-        if: ${{ always() && steps.mode.outputs.enabled == 'true' }}
+        if: ${{ always() && steps.mode.outputs.active == 'true' }}
         run: |
           set -euo pipefail
           [ -f /tmp/alwaysgreen-plan.json ] || exit 0
@@ -229,7 +229,7 @@ jobs:
               jq -r '.dispatches[] | "| \(.surface) | \(.test_specs | length) | \([.test_specs[] | select(.deterministic)] | length) | `\(.dispatch_key)` |"' \
                 /tmp/alwaysgreen-plan.json
               echo ""
-              echo "Set \`ALWAYSGREEN_FIX_AGENT\` to \`on\` in Vault to dispatch these."
+              echo "Set \`ALWAYSGREEN_FIX_AGENT\` to \`enabled\` in Vault to dispatch these."
               echo ""
             else
               echo "> No dispatchable candidates."
@@ -251,7 +251,7 @@ jobs:
 
       - name: Post Slack summary
         id: slack
-        if: ${{ steps.mode.outputs.enabled == 'true' && steps.slack-secrets.outcome == 'success' && (steps.plan.outputs.count != '0' || inputs.parent_slack_ts != '') }}
+        if: ${{ steps.mode.outputs.active == 'true' && steps.slack-secrets.outcome == 'success' && (steps.plan.outputs.count != '0' || inputs.parent_slack_ts != '') }}
         continue-on-error: true
         env:
           SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
@@ -350,7 +350,7 @@ jobs:
           done
 
       - name: Flag discovery failure
-        if: ${{ steps.mode.outputs.enabled == 'true' && steps.plan.outcome != 'success' }}
+        if: ${{ steps.mode.outputs.active == 'true' && steps.plan.outcome != 'success' }}
         run: |
           echo "::warning::AlwaysGreen discovery failed; no fix agent was dispatched for this run."
           {

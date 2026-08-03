@@ -62,7 +62,7 @@ env:
   FIX_LABEL: alwaysgreen-fix
 
 jobs:
-  # Honours the same flag as triage, so `off` also stops agents already dispatched or
+  # Honours the same flag as triage, so `disabled` also stops agents already dispatched or
   # queued and blocks a manual dispatch. A separate job because a Vault read cannot
   # happen in a job-level `if:`; gating on a job output leaves the agent job visibly
   # skipped rather than half-run. A run already inside its Claude step is not
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      enabled: ${{ steps.flag.outputs.enabled }}
+      active: ${{ steps.flag.outputs.active }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,19 +85,19 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Report disabled
-        if: ${{ steps.flag.outputs.enabled != 'true' }}
+        if: ${{ steps.flag.outputs.active != 'true' }}
         run: |
           {
             echo "## AlwaysGreen Fix Agent — disabled"
             echo ""
-            echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is \`off\`."
+            echo "\`ALWAYSGREEN_FIX_AGENT\` at \`secret/data/products/qa/ci/common\` is \`disabled\`."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::notice::AlwaysGreen fix agent is disabled by the Vault feature flag."
 
   fix:
     name: Fix ${{ inputs.surface }} on ${{ inputs.base_ref }}
     needs: gate
-    if: ${{ needs.gate.outputs.enabled == 'true' }}
+    if: ${{ needs.gate.outputs.active == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
 

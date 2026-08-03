@@ -14,28 +14,29 @@ A feature flag in Vault: key `ALWAYSGREEN_FIX_AGENT` at
 `secret/data/products/qa/ci/common`. Changes take effect on the next run — no PR, no
 merge, no redeploy.
 
-|   Value   |                               Effect                               |
-|-----------|--------------------------------------------------------------------|
-| `off`     | triage exits immediately; queued and future fix agents are skipped |
-| `dry-run` | triage classifies and reports; nothing is dispatched               |
-| `on`      | triage dispatches fix agents                                       |
-| *unset*   | treated as `dry-run`                                               |
+|   Value    |                               Effect                               |
+|------------|--------------------------------------------------------------------|
+| `disabled` | triage exits immediately; queued and future fix agents are skipped |
+| `dry-run`  | triage classifies and reports; nothing is dispatched               |
+| `enabled`  | triage dispatches fix agents                                       |
+| *unset*    | treated as `dry-run`                                               |
 
 Every unresolvable state resolves to `dry-run` — key absent, Vault unreachable, value
 unrecognised — so a mistake withholds dispatch rather than enabling it. Two corollaries:
-**deleting the key does not disable the agent**, it leaves it classifying, so set `off`
-explicitly; and only exact lowercase `off` stops it, since `OFF` or `disabled` fall back
-to `dry-run`.
+**deleting the key does not stop the agent**, it leaves it classifying, so set `disabled`
+explicitly; and matching is exact, so `DISABLED` or `off` fall back to `dry-run`.
 
-`off` blocks a fix agent that was dispatched but has not started — its `gate` job fails
-the check and the agent job is skipped. It does **not** interrupt a run already inside
-its Claude step; cancel that run from the Actions tab.
+`disabled` blocks a fix agent that was dispatched but has not started — its `gate` job
+fails the check and the agent job is skipped. It does **not** interrupt a run already
+inside its Claude step; cancel that run from the Actions tab.
 
 In `dry-run` the job summary prints a "Would dispatch" table, so the classification can
 be reviewed without anything being opened.
 
-Because the flag is imported as a Vault secret, its value is masked in logs; the
-workflows therefore report only the derived `enabled`/`dispatch` booleans.
+The flag is imported as a Vault secret, so GitHub masks its value in the logs of the job
+that reads it. The workflows therefore report the derived booleans as `active` and
+`dispatch`, and avoid printing the words `enabled`/`disabled`, which a matching flag
+value would render as `***`.
 
 ## The rule that matters most
 
