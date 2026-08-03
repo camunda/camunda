@@ -539,25 +539,17 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   }
 
   /**
-   * Reports where the rebalance stands, whole and per partition. Published in one go after every
-   * change rather than piecemeal, so the partition states and the pending counts always describe
-   * the same moment.
+   * Reports where the rebalance stands with each partition. Published in one go after every change
+   * rather than piecemeal, so that every partition's state describes the same moment.
    */
   private void publish(final RebalanceRun rebalance) {
-    final Map<String, Long> pendingPerGroup = new HashMap<>();
+    final Map<PartitionId, PartitionRebalanceState> states = new HashMap<>();
     for (final var partition : rebalance.partitions()) {
-      metrics.setPartitionState(
+      states.put(
           new PartitionId(partition.physicalTenantId(), partition.partitionId()),
           partition.state());
-      pendingPerGroup.merge(
-          partition.physicalTenantId(), isResolved(partition) ? 0L : 1L, Long::sum);
     }
-    pendingPerGroup.forEach(metrics::setPartitionsPending);
-  }
-
-  private static boolean isResolved(final PartitionRebalance partition) {
-    return partition.state() != PartitionRebalanceState.PENDING
-        && partition.state() != PartitionRebalanceState.TRANSFERRING;
+    metrics.setPartitionStates(states);
   }
 
   private void logPlan(final RebalanceRun rebalance) {

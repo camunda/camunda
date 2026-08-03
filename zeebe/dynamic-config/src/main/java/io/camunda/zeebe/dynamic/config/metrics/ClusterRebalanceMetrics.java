@@ -30,10 +30,14 @@ import org.jspecify.annotations.NullMarked;
  * anything to count (see {@link #startCoordinating()}), while the per-partition meters wait for a
  * partition to report on, their label sets not being known in advance.
  *
- * <p>The gauges only mean anything while a rebalance is running, so {@link #clear()} takes them
- * down when one ends and when a member stops coordinating: a gauge left behind would hold its last
- * value for as long as the process lives, drawing the rebalance as though it were still going. The
- * timers are cumulative and are deliberately left alone by both, so that a window covering a
+ * <p>The partition states outlive the rebalance that set them, so that what became of each
+ * partition can be read after the fact rather than only while the rebalance is in flight. A
+ * rebalance is often over within a single scrape - under a second on a small cluster against a
+ * scrape interval of thirty - which left nothing to see at all when they were taken down at the
+ * end. They are replaced wholesale by the next rebalance and taken down by {@link
+ * #stopCoordinating()}, a state this member no longer owns being worse than none.
+ *
+ * <p>The timers are cumulative and are left alone by all of this, so that a window covering a
  * rebalance still accounts for it after the rebalance has ended or the coordinator has moved.
  */
 @NullMarked
@@ -43,7 +47,6 @@ public final class ClusterRebalanceMetrics {
   private final Map<RebalanceOutcome, Timer> elapsed = new EnumMap<>(RebalanceOutcome.class);
   private final Map<PartitionOutcome, Timer> partitionDurations = new HashMap<>();
   private final Map<PartitionId, StatefulGauge> partitionStates = new HashMap<>();
-  private final Map<String, StatefulGauge> partitionsPending = new HashMap<>();
 
   public ClusterRebalanceMetrics(final MeterRegistry registry) {
     this.registry = registry;
@@ -83,24 +86,35 @@ public final class ClusterRebalanceMetrics {
         .record(duration);
   }
 
-  public void setPartitionState(final PartitionId partition, final PartitionRebalanceState state) {
-    partitionStates
-        .computeIfAbsent(partition, this::registerPartitionState)
-        .set(metricValue(state));
+  /**
+   * Publishes where the rebalance stands with every partition it covers, replacing what the last
+   * rebalance left behind. Takes them all at once rather than one at a time so that a partition the
+   * previous rebalance covered and this one does not stops being reported, instead of lingering
+   * with the state it reached under a rebalance that has been superseded.
+   */
+  public void setPartitionStates(final Map<PartitionId, PartitionRebalanceState> states) {
+    final var superseded = partitionStates.entrySet().iterator();
+    while (superseded.hasNext()) {
+      final var partition = superseded.next();
+      if (!states.containsKey(partition.getKey())) {
+        registry.remove(partition.getValue());
+        superseded.remove();
+      }
+    }
+    states.forEach(
+        (partition, state) ->
+            partitionStates
+                .computeIfAbsent(partition, this::registerPartitionState)
+                .set(metricValue(state)));
   }
 
-  public void setPartitionsPending(final String physicalTenantId, final long pending) {
-    partitionsPending
-        .computeIfAbsent(physicalTenantId, this::registerPartitionsPending)
-        .set(pending);
-  }
-
-  /** Stops publishing what a rebalance is doing, there being no rebalance doing it any more. */
-  public void clear() {
+  /**
+   * Stops publishing what became of each partition, this member no longer being the one that
+   * answers for it.
+   */
+  public void stopCoordinating() {
     partitionStates.values().forEach(registry::remove);
     partitionStates.clear();
-    partitionsPending.values().forEach(registry::remove);
-    partitionsPending.clear();
   }
 
   /**
@@ -139,13 +153,6 @@ public final class ClusterRebalanceMetrics {
     return StatefulGauge.builder(ClusterRebalanceMetricsDoc.PARTITION_STATE.getName())
         .description(ClusterRebalanceMetricsDoc.PARTITION_STATE.getDescription())
         .tags(PartitionKeyNames.tags(partition))
-        .register(registry);
-  }
-
-  private StatefulGauge registerPartitionsPending(final String physicalTenantId) {
-    return StatefulGauge.builder(ClusterRebalanceMetricsDoc.PARTITIONS_PENDING.getName())
-        .description(ClusterRebalanceMetricsDoc.PARTITIONS_PENDING.getDescription())
-        .tag(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId)
         .register(registry);
   }
 

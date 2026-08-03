@@ -18,9 +18,10 @@ import java.util.stream.Stream;
  * What the rebalancing coordinator reports about a cluster-wide rebalance. Only the coordinating
  * member publishes these, so a rebalance shows up once for the cluster rather than once per member.
  *
- * <p>The gauges describe the rebalance in flight and are taken down when it ends; the timers
- * accumulate across rebalances and outlive the member's turn at coordinating, so a rebalance can
- * still be accounted for over a window that the coordinator moved during.
+ * <p>The partition states describe the rebalance that last set them and stand until the next one
+ * replaces them; the timers accumulate across rebalances. Both outlive the member's turn at
+ * coordinating, so a rebalance can still be accounted for over a window that the coordinator moved
+ * during.
  */
 @SuppressWarnings("NullableProblems")
 public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
@@ -118,9 +119,13 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
-   * Where the rebalance has got to with one partition, as a single value per partition in the
+   * Where the last rebalance got to with one partition, as a single value per partition in the
    * manner of {@code atomix.role}: {@code 1} pending, {@code 2} transferring, {@code 3}
    * transferred, {@code 4} skipped, {@code 5} failed.
+   *
+   * <p>Outlives the rebalance that set it, so that what became of a partition can be read after the
+   * fact; a rebalance can be over inside a single scrape, and a state only published while one runs
+   * would go unsampled altogether.
    */
   PARTITION_STATE {
     @Override
@@ -135,36 +140,13 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Where the rebalance has got to with a partition: 1 pending, 2 transferring, "
+      return "Where the last rebalance got to with a partition: 1 pending, 2 transferring, "
           + "3 transferred, 4 skipped, 5 failed";
     }
 
     @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
-    }
-  },
-
-  /** How many of a partition group's partitions the rebalance has still to resolve. */
-  PARTITIONS_PENDING {
-    @Override
-    public String getName() {
-      return "zeebe.cluster.rebalance.partition.pending";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.GAUGE;
-    }
-
-    @Override
-    public String getDescription() {
-      return "Number of partitions the rebalance has still to resolve";
-    }
-
-    @Override
-    public KeyName[] getKeyNames() {
-      return new KeyName[] {PartitionKeyNames.PHYSICAL_TENANT};
     }
   };
 

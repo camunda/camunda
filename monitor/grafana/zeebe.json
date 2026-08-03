@@ -29092,7 +29092,7 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 11,
+            "w": 19,
             "x": 5,
             "y": 5604
           },
@@ -29126,104 +29126,6 @@
             }
           ],
           "title": "Cluster balance over time",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Partitions the rebalance has still to resolve, per physical tenant. Transfers run one at a time, so this drains stepwise and reaching zero means the rebalance is done. The gauge is published only while a rebalance is running, so an empty panel means no rebalance is in flight rather than a rebalance with nothing left.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "stepAfter",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "decimals": 0,
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 16,
-            "y": 5604
-          },
-          "id": 742,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "12.1.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "max(zeebe_cluster_rebalance_partition_pending{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\"}) by (physicalTenant)",
-              "instant": false,
-              "legendFormat": "{{physicalTenant}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Partitions left to rebalance",
           "type": "timeseries"
         },
         {
@@ -29339,7 +29241,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Where the rebalance stands with each partition. Transfers are sequenced one at a time, so a healthy rebalance walks a single partition through Transferring while the ones after it wait in Pending and the ones before it hold what became of them. The gauges are taken down when the rebalance ends, so this shows the rebalance in flight and nothing else; why a partition failed is on the rebalance status endpoint, and what became of the partitions of past rebalances is in the transfer outcomes table.",
+          "description": "Where the most recent rebalance got to with each partition, and where the running one has got to while it runs. Transfers are sequenced one at a time, so a healthy rebalance walks a single partition through Transferring while the ones after it wait in Pending and the ones before it hold what became of them. What each partition reached is left standing after the rebalance ends, because a rebalance is often over inside a single scrape and there would otherwise be nothing to see; the next rebalance replaces it, and it goes away if the coordinator moves. Why a partition failed is on the rebalance status endpoint, and the tally across past rebalances is in the transfer outcomes table.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29440,7 +29342,7 @@
               "refId": "A"
             }
           ],
-          "title": "Rebalance state per partition",
+          "title": "Last rebalance state per partition",
           "transformations": [
             {
               "id": "convertFieldType",

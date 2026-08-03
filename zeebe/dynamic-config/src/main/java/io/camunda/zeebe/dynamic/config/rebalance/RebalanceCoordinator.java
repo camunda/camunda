@@ -183,9 +183,8 @@ public final class RebalanceCoordinator
         new RebalanceStatus.Completed(
             rebalance.id(), outcome, rebalance.dryRun(), rebalance.partitions());
     metrics.observeElapsed(outcome, rebalance.elapsed());
-    // The gauges describe a rebalance in flight and there is no longer one, so they come down here
-    // rather than being left holding their last values until the next rebalance overwrites them.
-    metrics.clear();
+    // The partition states are deliberately left standing: what became of each partition is worth
+    // more after the rebalance than during it, and a rebalance can be over inside a single scrape.
     LOG.info("Rebalance {} finished as {} after {}", rebalance.id(), outcome, rebalance.elapsed());
   }
 
@@ -223,7 +222,7 @@ public final class RebalanceCoordinator
     }
     running = null;
     lastCompleted = null;
-    metrics.clear();
+    metrics.stopCoordinating();
   }
 
   /**

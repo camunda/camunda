@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.metrics.ClusterRebalanceMetrics;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.NotCoordinator;
 import io.camunda.zeebe.dynamic.config.rebalance.RebalanceRequestFailedException.RebalanceInProgress;
@@ -31,6 +32,7 @@ final class RebalanceCoordinatorTest {
 
   private static final MemberId LOWEST_ID_MEMBER = MemberId.from("1");
   private static final MemberId OTHER_MEMBER = MemberId.from("2");
+  private static final PartitionId PARTITION = new PartitionId("default", 1);
   private static final PartitionRebalance PLAN =
       new PartitionRebalance(
           "default", 1, LOWEST_ID_MEMBER, OTHER_MEMBER, PartitionRebalanceState.PENDING);
@@ -202,18 +204,18 @@ final class RebalanceCoordinatorTest {
   }
 
   @Test
-  void shouldStopReportingWhatARebalanceIsDoingOnceItHasFinished() {
+  void shouldKeepReportingWhatBecameOfEachPartitionOnceTheRebalanceHasFinished() {
     // given
     final var runner = new BlockedRunner();
     final var coordinator = coordinatingWith(runner);
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
-    metrics.setPartitionsPending("default", 1);
+    metrics.setPartitionStates(Map.of(PARTITION, PartitionRebalanceState.TRANSFERRED));
 
     // when
     runner.finish();
 
     // then
-    assertThat(registry.find("zeebe.cluster.rebalance.partition.pending").gauge()).isNull();
+    assertThat(partitionState()).isEqualTo(3);
   }
 
   @Test
@@ -222,7 +224,7 @@ final class RebalanceCoordinatorTest {
     final var runner = new BlockedRunner();
     final var coordinator = coordinatingWith(runner);
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
-    metrics.setPartitionsPending("default", 1);
+    metrics.setPartitionStates(Map.of(PARTITION, PartitionRebalanceState.TRANSFERRED));
 
     // when
     coordinator.onClusterConfigurationUpdated(
@@ -231,7 +233,7 @@ final class RebalanceCoordinatorTest {
             .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
 
     // then
-    assertThat(registry.find("zeebe.cluster.rebalance.partition.pending").gauge()).isNull();
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.state").gauge()).isNull();
   }
 
   @Test
@@ -275,6 +277,10 @@ final class RebalanceCoordinatorTest {
 
     // then
     assertThat(registry.find("zeebe.cluster.rebalance.elapsed").timers()).isEmpty();
+  }
+
+  private double partitionState() {
+    return registry.get("zeebe.cluster.rebalance.partition.state").gauge().value();
   }
 
   private Timer elapsed(final RebalanceOutcome outcome) {

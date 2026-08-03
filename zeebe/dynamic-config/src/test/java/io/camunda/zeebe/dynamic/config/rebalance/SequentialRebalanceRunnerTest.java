@@ -579,23 +579,6 @@ final class SequentialRebalanceRunnerTest {
     assertThat(registry.find("zeebe.cluster.rebalance.partition.duration").timers()).isEmpty();
   }
 
-  @Test
-  void shouldReportHowManyPartitionsAreStillToResolve() {
-    // given
-    start(configurationWithPartitions(2));
-    transfers.accept();
-
-    // when
-    transfers.report(LeadershipTransferResult.TRANSFERRED);
-
-    // then
-    assertThat(gauge("zeebe.cluster.rebalance.partition.pending")).isEqualTo(1);
-  }
-
-  private double gauge(final String name) {
-    return registry.get(name).gauge().value();
-  }
-
   private double partitionStateGauge(final int partitionId) {
     return registry
         .get("zeebe.cluster.rebalance.partition.state")
