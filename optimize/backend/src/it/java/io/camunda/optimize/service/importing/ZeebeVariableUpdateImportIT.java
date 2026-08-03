@@ -41,42 +41,41 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
 
   @Test
   public void
-      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnSameBatch() {
-    // given
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
-    zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
+      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnSameAndOnDifferentBatch() {
+    // Covers two independent variable-update batching scenarios: scenario 1 imports creation and
+    // update together in one batch; scenario 2 imports them as two separate batches.
+
+    // given (same batch)
+    final long processInstanceKeyA = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
+    zeebeExtension.addVariablesToScope(processInstanceKeyA, UPDATED_VARIABLES, true);
     waitUntilDefinitionWithIdExported(PROCESS_ID);
     waitUntilMinimumVariableDocumentsWithUpdatedIntentForInstanceExportedCount(
-        5, processInstanceKey);
+        5, processInstanceKeyA);
 
-    // when
+    // when (same batch)
     importAllZeebeEntitiesFromScratch();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
-  }
+    // then (same batch)
+    final ProcessInstanceDto savedProcessInstanceA =
+        getProcessInstanceForId(String.valueOf(processInstanceKeyA));
+    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstanceA);
 
-  @Test
-  public void
-      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnDifferentBatch() {
-    // given
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
+    // given (different batch)
+    final long processInstanceKeyB = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
     waitUntilMinimumVariableDocumentsWithCreatedIntentForInstanceExportedCount(
-        5, processInstanceKey);
+        5, processInstanceKeyB);
     importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
+    zeebeExtension.addVariablesToScope(processInstanceKeyB, UPDATED_VARIABLES, true);
     waitUntilMinimumVariableDocumentsWithUpdatedIntentForInstanceExportedCount(
-        5, processInstanceKey);
+        5, processInstanceKeyB);
 
-    // when
+    // when (different batch)
     importAllZeebeEntitiesFromLastIndex();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    // then (different batch)
+    final ProcessInstanceDto savedProcessInstanceB =
+        getProcessInstanceForId(String.valueOf(processInstanceKeyB));
+    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstanceB);
   }
 
   @Test
@@ -314,63 +313,66 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void zeebeVariableImport_updateVariableSeveralTimesInSameBatch() {
-    // given
-    final long processInstanceKey =
+  public void zeebeVariableImport_updateVariableSeveralTimesInSameAndInSeveralBatches() {
+    // Covers two independent variable-update batching scenarios: scenario 1 updates the variable
+    // twice, importing both updates in one batch; scenario 2 updates it twice again on a fresh
+    // instance, importing each update as its own batch (forced via maxImportPageSize=1). Scenario
+    // 2 must run last since it mutates shared configuration, only reset by the next test method's
+    // @BeforeEach.
+
+    // given (same batch)
+    final long processInstanceKeyA =
         deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
     waitUntilMinimumVariableDocumentsWithCreatedIntentForInstanceExportedCount(
-        1, processInstanceKey);
+        1, processInstanceKeyA);
     importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
+    zeebeExtension.addVariablesToScope(processInstanceKeyA, Map.of("var1", "firstUpdate"), true);
+    zeebeExtension.addVariablesToScope(processInstanceKeyA, Map.of("var1", "secondUpdate"), true);
     importAllZeebeEntitiesFromLastIndex();
     waitUntilMinimumVariableDocumentsWithUpdatedIntentForInstanceExportedCount(
-        2, processInstanceKey);
+        2, processInstanceKeyA);
 
-    // when
+    // when (same batch)
     importAllZeebeEntitiesFromLastIndex();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
+    // then (same batch)
+    final ProcessInstanceDto savedProcessInstanceA =
+        getProcessInstanceForId(String.valueOf(processInstanceKeyA));
+    assertThat(savedProcessInstanceA.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
         .containsExactlyInAnyOrder(
             Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
-  }
 
-  @Test
-  public void zeebeVariableImport_updateVariableSeveralTimesInSeveralBatches() {
-    // given
+    // given (several batches)
     embeddedOptimizeExtension
         .getConfigurationService()
         .getConfiguredZeebe()
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
-    final long processInstanceKey =
+    final long processInstanceKeyB =
         deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
     waitUntilMinimumVariableDocumentsWithCreatedIntentForInstanceExportedCount(
-        1, processInstanceKey);
+        1, processInstanceKeyB);
     importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
+    zeebeExtension.addVariablesToScope(processInstanceKeyB, Map.of("var1", "firstUpdate"), true);
     waitUntilMinimumVariableDocumentsWithUpdatedIntentForInstanceExportedCount(
-        1, processInstanceKey);
+        1, processInstanceKeyB);
     importAllZeebeEntitiesFromLastIndex();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
+    zeebeExtension.addVariablesToScope(processInstanceKeyB, Map.of("var1", "secondUpdate"), true);
     waitUntilMinimumVariableDocumentsWithUpdatedIntentForInstanceExportedCount(
-        2, processInstanceKey);
+        2, processInstanceKeyB);
 
-    // when
+    // when (several batches)
     importAllZeebeEntitiesFromLastIndex();
     importAllZeebeEntitiesFromLastIndex();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
+    // then (several batches)
+    final ProcessInstanceDto savedProcessInstanceB =
+        getProcessInstanceForId(String.valueOf(processInstanceKeyB));
+    assertThat(savedProcessInstanceB.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getValue,
