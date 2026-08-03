@@ -128,20 +128,25 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.VariableEntity">
     <constructor>
-      <idArg column="VAR_KEY" javaType="java.lang.Long"/>
+      <idArg column="VAR_KEY" javaType="java.lang.Long" name="variableKey"/>
       <arg column="VAR_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="name"/>
       <arg column="VAR_VALUE" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
-      <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
-      <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="value"/>
+      <arg column="VAR_FULL_VALUE" javaType="java.lang.String" name="fullValue"/>
+      <arg column="IS_PREVIEW" javaType="java.lang.Boolean" name="isPreview"/>
+      <arg column="SCOPE_KEY" javaType="java.lang.Long" name="scopeKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
     </constructor>
   </resultMap>
 

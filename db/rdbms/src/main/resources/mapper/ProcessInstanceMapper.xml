@@ -383,25 +383,35 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
-      <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
-      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="processDefinitionName"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="processDefinitionVersion"/>
+      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"
+        name="processDefinitionVersionTag"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="parentProcessInstanceKey"/>
+      <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"
+        name="parentFlowNodeInstanceKey"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime" name="startDate"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime" name="endDate"/>
+      <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"
+        name="state"/>
+      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean" name="hasIncident"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
-      <arg column="SUSPENDED_DATE" javaType="java.time.OffsetDateTime"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
+      <arg column="TREE_PATH" javaType="java.lang.String" name="treePath"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="SUSPENDED_DATE" javaType="java.time.OffsetDateTime" name="suspendedDate"/>
     </constructor>
     <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
       <id column="TAG_VALUE"/>
