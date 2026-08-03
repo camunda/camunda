@@ -365,16 +365,26 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     final ActorFuture<ClusterConfiguration> future = executor.createFuture();
     executor.run(
         () ->
-            clusterTopologyManager.updateMultiConfiguration(
-                currentConfiguration -> {
-                  if (!validateCancelNewModel(changeId, currentConfiguration, future)) {
-                    return currentConfiguration;
-                  }
-                  LOG.warn("Cancelling configuration change '{}'.", changeId);
-                  final var cancelledConfiguration = currentConfiguration.cancelPendingChanges();
-                  future.complete(cancelledConfiguration.toLegacyDefault());
-                  return cancelledConfiguration;
-                }));
+            clusterTopologyManager
+                .updateMultiConfiguration(
+                    currentConfiguration -> {
+                      if (!validateCancelNewModel(changeId, currentConfiguration, future)) {
+                        return currentConfiguration;
+                      }
+                      LOG.warn("Cancelling configuration change '{}'.", changeId);
+                      return currentConfiguration.cancelPendingChanges();
+                    })
+                .onComplete(
+                    (updatedConfiguration, error) -> {
+                      if (error != null) {
+                        failFuture(future, error);
+                        return;
+                      }
+                      if (!future.isDone()) {
+                        future.complete(updatedConfiguration.toLegacyDefault());
+                      }
+                    },
+                    executor));
     return future;
   }
 
