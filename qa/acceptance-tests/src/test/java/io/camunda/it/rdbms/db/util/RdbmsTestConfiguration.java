@@ -12,6 +12,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import org.mockito.Mockito;
@@ -43,5 +44,10 @@ public class RdbmsTestConfiguration {
   @Bean
   public MeterRegistry meterRegistry() {
     return Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS);
+  }
+
+  @Bean
+  public SecondaryStorageReadiness secondaryStorageReadiness() {
+    return SecondaryStorageReadiness.ALWAYS_READY;
   }
 }
