@@ -777,13 +777,63 @@ public final class ProcessStateTest {
     processState.putProcess(processDefinitionKey, processRecord);
 
     // when
-    processState.updateProcessState(processRecord, PersistedProcessState.DRAINING);
+    processState.markDraining(processRecord);
 
     // then - the process is still retrievable by key and tenant, now in the DRAINING state
     final var drainingProcess =
         processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
     assertThat(drainingProcess).isNotNull();
     assertThat(drainingProcess.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldRememberDeleteHistoryIntentWhileDraining() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when - the deletion that started the draining requested history deletion
+    processState.markDraining(processRecord.setDeleteHistory(true));
+
+    // then - the intent is readable once the definition has drained, much later
+    final var drainingProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(drainingProcess.isDeleteHistory()).isTrue();
+  }
+
+  @Test
+  public void shouldNotRememberDeleteHistoryIntentWhenNotRequested() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when - the deletion did not request history deletion
+    processState.markDraining(processRecord);
+
+    // then
+    final var drainingProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(drainingProcess.isDeleteHistory()).isFalse();
+  }
+
+  @Test
+  public void shouldNotApplyDeleteHistoryIntentToAnotherDefinition() {
+    // given - a draining definition whose history must be deleted
+    final var drainingRecord = creatingProcessRecord(processingState, "drainingProcess");
+    processState.putProcess(drainingRecord.getProcessDefinitionKey(), drainingRecord);
+    processState.markDraining(drainingRecord.setDeleteHistory(true));
+
+    // when - another definition is deployed afterwards
+    final var otherRecord = creatingProcessRecord(processingState, "otherProcess");
+    processState.putProcess(otherRecord.getProcessDefinitionKey(), otherRecord);
+
+    // then - it does not inherit the other definition's history deletion intent
+    final var otherProcess =
+        processState.getProcessByKeyAndTenant(
+            otherRecord.getProcessDefinitionKey(), otherRecord.getTenantId());
+    assertThat(otherProcess.isDeleteHistory()).isFalse();
   }
 
   @Test

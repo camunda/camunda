@@ -88,7 +88,8 @@ public final class BpmnProcessDeletionBehavior {
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
-            .setDeploymentKey(process.getDeploymentKey());
+            .setDeploymentKey(process.getDeploymentKey())
+            .setDeleteHistory(process.isDeleteHistory());
     // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);

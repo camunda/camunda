@@ -34,6 +34,13 @@ public interface MutableProcessState extends ProcessState {
   void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
+   * Marks a definition {@link PersistedProcessState#DRAINING}, remembering from the record whether
+   * its instances' history must be deleted once drained. Updates both the ColumnFamily and the
+   * in-memory cache.
+   */
+  void markDraining(final ProcessRecord processRecord);
+
+  /**
    * Sets the deployment key of a process that was not previously associated with a deployment. This
    * method updates both the ColumnFamily and the in memory cache. Throws an exception if the
    * process is already associated with another deployment.

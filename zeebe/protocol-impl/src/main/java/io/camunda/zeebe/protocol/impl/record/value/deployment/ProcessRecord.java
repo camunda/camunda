@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -34,9 +35,10 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
 
   public ProcessRecord() {
-    super(9);
+    super(10);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -45,7 +47,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(resourceProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(deleteHistoryProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -211,6 +214,22 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   public ProcessRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  /**
+   * Whether the instances' history must be deleted once the definition is gone cluster-wide.
+   * Carried on {@code DRAINING} to be persisted with the draining definition, then back on the
+   * {@code DELETE_COMPLETE} drain report so the deployment partition knows whether to delete it.
+   * Excluded from JSON export — engine-internal coordination.
+   */
+  @JsonIgnore
+  public boolean isDeleteHistory() {
+    return deleteHistoryProp.getValue();
+  }
+
+  public ProcessRecord setDeleteHistory(final boolean deleteHistory) {
+    deleteHistoryProp.setValue(deleteHistory);
     return this;
   }
 }

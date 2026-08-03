@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -24,6 +23,6 @@ public class ProcessDrainingApplier implements TypedEventApplier<ProcessIntent, 
 
   @Override
   public void applyState(final long key, final ProcessRecord value) {
-    processState.updateProcessState(value, PersistedProcessState.DRAINING);
+    processState.markDraining(value);
   }
 }
