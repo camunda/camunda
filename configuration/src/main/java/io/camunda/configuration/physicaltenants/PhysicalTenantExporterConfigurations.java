@@ -65,10 +65,16 @@ import org.springframework.core.env.Environment;
  * stands until #56652 flips the wire-in. To activate (from {@link PhysicalTenantResolver#of}): call
  * {@link PhysicalTenantExporterAssignedValidation#validateRootAssignedAbsent} before the tenant
  * loop, then — after the loop and once every tenant's {@link #apply} has run — {@link
- * PhysicalTenantExporterAssignedValidation#validate} for the whole resolved-by-tenant map, and only
- * then {@link #narrowToAssigned} for each tenant. Validation must precede narrowing: narrowing
- * removes ids, and validation checks assigned ids against the full pre-narrow universe. {@link
- * #apply} itself therefore changes only entry <em>contents</em>, never which ids exist for a
+ * PhysicalTenantExporterAssignedValidation#validate} for the whole resolved-by-tenant map, then
+ * {@link #narrowToAssigned} for each tenant, and finally — once every tenant has been narrowed —
+ * {@link GenericExporterIsolationValidation#validate} over the narrowed map (one domain-agnostic
+ * check covering both the index-write-target and lifecycle-policy isolation domains via the
+ * exporters' {@link io.camunda.zeebe.exporter.api.ExporterConfigMerger#isolationClaims claims}).
+ * Order matters twice: assignment validation must precede narrowing (narrowing removes ids, and
+ * validation checks assigned ids against the full pre-narrow universe), and isolation validation
+ * must follow it (before narrowing every tenant still inherits the whole root catalog, so a single
+ * root-declared generic exporter would claim the same resource in every tenant and false-positive).
+ * {@link #apply} itself therefore changes only entry <em>contents</em>, never which ids exist for a
  * tenant.
  */
 @NullMarked
