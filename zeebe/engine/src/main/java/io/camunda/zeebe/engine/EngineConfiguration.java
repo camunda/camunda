@@ -78,6 +78,7 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL =
       Duration.ofSeconds(30);
   public static final int DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT = 100;
+  public static final int DEFAULT_AGENT_INSTANCE_COMPLETION_BATCH_LIMIT = 20;
 
   /**
    * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
@@ -179,6 +180,7 @@ public final class EngineConfiguration {
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+  private int agentInstanceCompletionBatchLimit = DEFAULT_AGENT_INSTANCE_COMPLETION_BATCH_LIMIT;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -689,6 +691,20 @@ public final class EngineConfiguration {
   public EngineConfiguration setEnableRpaReexportMigration(
       final boolean enableRpaReexportMigration) {
     this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  /**
+   * Maximum number of agent instances completed per {@code AGENT_INSTANCE_BATCH:COMPLETE} cycle
+   * when a process instance with agent instances attached ends.
+   */
+  public int getAgentInstanceCompletionBatchLimit() {
+    return agentInstanceCompletionBatchLimit;
+  }
+
+  public EngineConfiguration setAgentInstanceCompletionBatchLimit(
+      final int agentInstanceCompletionBatchLimit) {
+    this.agentInstanceCompletionBatchLimit = agentInstanceCompletionBatchLimit;
     return this;
   }
 }
