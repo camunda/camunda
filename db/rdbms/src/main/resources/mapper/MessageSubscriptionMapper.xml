@@ -359,11 +359,12 @@
   <resultMap id="processDefinitionStatisticsResultMap"
     type="io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity">
     <constructor>
-    <idArg column="PROCESS_DEFINITION_ID"  javaType="java.lang.String" />
-    <arg column="TENANT_ID"  javaType="java.lang.String" />
-    <arg column="PROCESS_DEFINITION_KEY"  javaType="java.lang.Long" />
-    <arg column="PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS" javaType="java.lang.Long" />
-    <arg column="ACTIVE_SUBSCRIPTIONS" javaType="java.lang.Long" />
+    <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId" />
+    <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId" />
+    <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey" />
+    <arg column="PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS" javaType="java.lang.Long"
+      name="processInstancesWithActiveSubscriptions" />
+    <arg column="ACTIVE_SUBSCRIPTIONS" javaType="java.lang.Long" name="activeSubscriptions" />
     </constructor>
   </resultMap>
 

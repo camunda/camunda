@@ -14,15 +14,19 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingRuleEntity">
     <constructor>
-      <idArg column="MAPPING_RULE_ID" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="MAPPING_RULE_KEY" javaType="long"/>
-      <arg column="CLAIM_NAME" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="CLAIM_VALUE" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="NAME" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <idArg column="MAPPING_RULE_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="mappingRuleId"/>
+      <arg column="MAPPING_RULE_KEY" javaType="java.lang.Long" name="mappingRuleKey"/>
+      <arg column="CLAIM_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="claimName"/>
+      <arg column="CLAIM_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="claimValue"/>
+      <arg column="NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="name"/>
     </constructor>
   </resultMap>
 
