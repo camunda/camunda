@@ -8,6 +8,7 @@
 package packages
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +40,8 @@ func TestVerifyClassFileVersionRejectsWrongVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error for Java %d class file, got nil", helperJavaRelease+4)
 	}
-	if !strings.Contains(err.Error(), "expected Java 21") {
-		t.Fatalf("expected error to mention 'expected Java 21', got: %v", err)
+	expectedMessage := fmt.Sprintf("expected Java %d", helperJavaRelease)
+	if !strings.Contains(err.Error(), expectedMessage) {
+		t.Fatalf("expected error to mention %q, got: %v", expectedMessage, err)
 	}
 }
