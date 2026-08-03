@@ -29241,7 +29241,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Where the most recent rebalance got to with each partition, and where the running one has got to while it runs. Transfers are sequenced one at a time, so a healthy rebalance walks a single partition through Transferring while the ones after it wait in Pending and the ones before it hold what became of them. What each partition reached is left standing after the rebalance ends, because a rebalance is often over inside a single scrape and there would otherwise be nothing to see; the next rebalance replaces it, and it goes away if the coordinator moves. Why a partition failed is on the rebalance status endpoint, and the tally across past rebalances is in the transfer outcomes table.",
+          "description": "Where the most recent rebalance got to with each partition, and where the running one has got to while it runs. Transfers are sequenced one at a time, so a healthy rebalance walks a single partition through Transferring while the ones after it wait in Pending and the ones before it hold what became of them. What each partition reached is left standing after the rebalance ends, because a rebalance is often over inside a single scrape and there would otherwise be nothing to see; the next rebalance replaces it, and it goes away if the coordinator moves. A partition a cancelled rebalance never reached shows Cancelled rather than staying Pending, so a stopped rebalance can be told apart from one still running. Why a partition failed is on the rebalance status endpoint, and the tally across past rebalances is in the transfer outcomes table.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29287,6 +29287,11 @@
                       "color": "light-red",
                       "index": 2,
                       "text": "Failed"
+                    },
+                    "6": {
+                      "color": "light-purple",
+                      "index": 5,
+                      "text": "Cancelled"
                     }
                   },
                   "type": "value"
@@ -29493,7 +29498,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "What became of each partition a rebalance worked on within the dashboard range. TRANSFERRED is the success; every other result names why leadership stayed where it was, so this is the first place to look when a rebalance reports failed partitions. Recorded by the coordinator, so it covers the partitions no leader ever answered for as well as the reasons a leader gave: LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row, LEADER_SILENT and LEADER_UNREACHABLE at the leader itself. Broken down by partition, because one partition failing every time is a different problem from every partition failing once. The coordinator only starts counting an outcome for a partition once it has seen it, so this counts the change over the range but takes a first outcome in full rather than losing it.",
+          "description": "What became of each partition a rebalance worked on within the dashboard range. TRANSFERRED is the success; every other result names why leadership stayed where it was, so this is the first place to look when a rebalance reports failed partitions. CANCELLED means the operator stopped the rebalance before this partition's transfer began. Recorded by the coordinator, so it covers the partitions no leader ever answered for as well as the reasons a leader gave: LAG_TOO_HIGH and REPLICATION_TIMED_OUT point at the follower replication lag panel in the Raft row, LEADER_SILENT and LEADER_UNREACHABLE at the leader itself. Broken down by partition, because one partition failing every time is a different problem from every partition failing once. The coordinator only starts counting an outcome for a partition once it has seen it, so this counts the change over the range but takes a first outcome in full rather than losing it.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29775,7 +29780,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "How long the rebalance spent on each partition it took on, from deciding to act on it to knowing what became of it. Reported by the coordinator, so it includes waiting on a leader that answered slowly or never answered at all. The partitions the plan resolved without asking anyone cost no time and are left out, so that they do not bury the distribution in its lowest bucket; they are still counted in the transfer outcomes table. Counted the same way as that table, so that the first time a partition reaches an outcome it shows up here too.",
+          "description": "How long the rebalance spent on each partition it took on, from deciding to act on it to knowing what became of it. Reported by the coordinator, so it includes waiting on a leader that answered slowly or never answered at all. The partitions the plan resolved without asking anyone, and the ones a cancellation left untouched, cost no time and are left out, so that they do not bury the distribution in its lowest bucket; they are still counted in the transfer outcomes table. Counted the same way as that table, so that the first time a partition reaches an outcome it shows up here too.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -29841,7 +29846,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER\"}, 0))",
+              "expr": "sum by (le) (clamp_min((zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER|CANCELLED\"} - (zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER|CANCELLED\"} offset $__rate_interval)) or zeebe_cluster_rebalance_partition_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", result!~\"ALREADY_BALANCED|NO_DESIRED_LEADER|CANCELLED\"}, 0))",
               "format": "heatmap",
               "instant": false,
               "legendFormat": "{{le}}",
