@@ -16,4 +16,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0004](0004-810-physical-tenant-job-streaming.md)                   | Physical-tenant-aware job streaming: per-group broker services, group-scoped control topics, 8.9-compatible   |
 | [0005](0005-810-job-lease.md)                                       | Job lease: opt-in random opaque fencing token per activation, monotonic, fencing worker lifecycle commands    |
 | [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
+| [0007](0007-810-job-waiting-for-secret-resolution-state.md)         | Persisted `WAITING_FOR_SECRET_RESOLUTION` job state for jobs parked while their secret references resolve     |
 
