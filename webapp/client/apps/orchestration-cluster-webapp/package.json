@@ -73,7 +73,7 @@
 		"@svgr/cli": "8.1.0",
 		"@tanstack/devtools-vite": "0.8.3",
 		"@tanstack/react-devtools": "0.10.9",
-		"@types/lodash": "4.17.24",
+		"@types/lodash": "4.17.25",
 		"@types/node": "26.1.2",
 		"@types/react": "19.2.18",
 		"@types/react-dom": "19.2.4",
