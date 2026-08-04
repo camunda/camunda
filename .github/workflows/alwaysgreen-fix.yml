@@ -269,6 +269,17 @@ jobs:
           git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
           git -C "$ws_dir" checkout "${TARGET_REF}"
 
+      # The manual documents the agent's contract, not the branch's behaviour, and it
+      # only exists on main. Reading it through the workspace monorepo would miss on
+      # every stable-branch dispatch, since that checkout is pinned to base_ref.
+      - name: Stage the fix-agent manual
+        env:
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          set -euo pipefail
+          cp docs/alwaysgreen/FIX-AGENT.md \
+             "$HOME/workspaces/${WORKSPACE_NAME}/FIX-AGENT.md"
+
       - name: Download evidence artifacts
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -319,7 +330,7 @@ jobs:
           prompt=$(cat <<EOF
           You are the Camunda AlwaysGreen fix agent. Workspace: ${ws_dir}
 
-          STEP 0 — read ${ws_dir}/camunda/docs/alwaysgreen/FIX-AGENT.md in full. That is
+          STEP 0 — read ${ws_dir}/FIX-AGENT.md in full. That is
           your operating manual: evidence map, diagnosis order, the PR coverage-block
           contract, and the constraints. Do not skip it.
 
