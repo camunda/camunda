@@ -59,6 +59,11 @@ const mockCreateDecisionInstancesDeletionBatchOperationEndpoint = createEndpoint
 	method: endpoints.createDecisionInstancesDeletionBatchOperation.method,
 });
 
+const mockGetDecisionDefinitionXmlEndpoint = createEndpointMock({
+	endpoint: endpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey: ':decisionDefinitionKey'}),
+	method: endpoints.getDecisionDefinitionXml.method,
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: endpoints.getCurrentUser.method,
@@ -180,5 +185,6 @@ export {
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryAuditLogsEndpoint,
 };

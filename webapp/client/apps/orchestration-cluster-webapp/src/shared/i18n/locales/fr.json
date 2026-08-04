@@ -485,6 +485,16 @@
 			},
 			"decisions": {
 				"title": "Décisions",
+				"diagramHeader": {
+					"title": "Décision",
+					"copyButtonDescription": "ID de décision / Cliquer pour copier"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+					"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version",
+					"noDecisionSelected": "Aucune décision n'est sélectionnée",
+					"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres"
+				},
 				"filters": {
 					"tenant": "Locataire",
 					"decisionSection": "Décision",

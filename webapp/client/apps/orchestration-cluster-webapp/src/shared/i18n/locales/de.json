@@ -482,6 +482,16 @@
 			},
 			"decisions": {
 				"title": "Entscheidungen",
+				"diagramHeader": {
+					"title": "Entscheidung",
+					"copyButtonDescription": "Entscheidungs-ID / Klicken zum Kopieren"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+					"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus",
+					"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+					"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus"
+				},
 				"filters": {
 					"tenant": "Mandant",
 					"decisionSection": "Entscheidung",

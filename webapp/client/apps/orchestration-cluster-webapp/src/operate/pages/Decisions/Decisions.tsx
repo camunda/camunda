@@ -24,6 +24,7 @@ import {WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstancesTable} from './InstancesTable';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {DecisionPanel, type DecisionDefinitionSelection} from './DecisionPanel';
 import type {DecisionsSearch} from './decisionsFilter';
 
 type FiltersFormValues = OptionalFilterValues & {
@@ -83,6 +84,24 @@ const Decisions: React.FC<Props> = ({
 	}, [data, decisionDefinitionId]);
 
 	const selectedDecision = decisionItems.find((item) => item.id === decisionDefinitionId) ?? null;
+
+	const decisionDefinitionSelection = useMemo<DecisionDefinitionSelection>(() => {
+		if (!decisionDefinitionId) {
+			return {kind: 'no-match'};
+		}
+
+		const matches = data.items.filter((def) => def.decisionDefinitionId === decisionDefinitionId);
+
+		if (decisionDefinitionVersion === undefined) {
+			const first = matches[0];
+			return first === undefined
+				? {kind: 'no-match'}
+				: {kind: 'all-versions', definition: {name: first.name, decisionDefinitionId: first.decisionDefinitionId}};
+		}
+
+		const definition = matches.find((def) => def.version === decisionDefinitionVersion);
+		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
+	}, [data, decisionDefinitionId, decisionDefinitionVersion]);
 
 	const hasOptionalFilters =
 		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
@@ -238,7 +257,7 @@ const Decisions: React.FC<Props> = ({
 						)}
 					</Form>
 				}
-				topPanel={<div />}
+				topPanel={<DecisionPanel decisionDefinitionSelection={decisionDefinitionSelection} />}
 				bottomPanel={
 					<InstancesTable
 						search={{
