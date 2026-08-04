@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
@@ -47,6 +48,7 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new AdHocSubProcessValidator());
+    validators.add(new AgentDefinitionValidator());
     validators.add(new BoundaryEventValidator());
     validators.add(new BusinessRuleTaskValidator());
     validators.add(
@@ -82,6 +84,10 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new StartEventValidator());
     validators.add(new SubProcessValidator());
     validators.add(new TimerEventDefinitionValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeAgentDefinition.class)
+            .hasNonEmptyEnumAttribute(
+                ZeebeAgentDefinition::getAgentType, ZeebeConstants.ATTRIBUTE_AGENT_TYPE));
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledElement.class)
             .hasNonEmptyAttribute(
