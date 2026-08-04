@@ -32,10 +32,14 @@ import org.springframework.context.annotation.Configuration;
  * this bean constructs and behaves correctly in every storage mode.
  *
  * <p>{@code @ConditionalOnMissingBean(AuthorizationCheckPort.class)} lets this user configuration
- * win the race against {@code camunda-security-library}'s own default {@code AuthorizationService}
- * wiring (gated the same way): user configurations discovered via {@code @ComponentScan} register
- * before the library's {@code @ImportAutoConfiguration}-imported configuration, per Spring Boot's
- * ordering guarantee.
+ * win the race against {@code camunda-security-library}'s own default {@code
+ * AuthorizationConfiguration#authorizationService} bean (gated the same way): user configurations
+ * discovered via {@code @ComponentScan} register before the library's
+ * {@code @ImportAutoConfiguration}-imported configuration, per Spring Boot's ordering guarantee.
+ * That CSL default builds a single {@code AuthorizationService} from a single {@code
+ * AuthorizationChecker} bean, with no per-physical-tenant fan-out, so it cannot serve this repo's
+ * requirement of one {@code AuthorizationService} per physical tenant; this bean is the required
+ * override, not a redundant duplicate.
  *
  * <p>{@link LazyTokenClaimsConverter} and {@link MembershipPort} are only registered as beans under
  * the {@code consolidated-auth} profile (via {@code io.camunda.authentication}'s component scan),
