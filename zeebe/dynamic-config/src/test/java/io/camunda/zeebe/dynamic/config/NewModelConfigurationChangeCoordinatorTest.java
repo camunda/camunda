@@ -36,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -260,5 +261,95 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(ConcurrentModificationException.class);
+  }
+
+  @Test
+  void shouldCancelOngoingChange() {
+    // given — a plan is pending; its only operation targets member 1, so on member 0 it never
+    // drains on its own
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
+        .join();
+    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+
+    // when
+    final var cancelled = coordinator.cancelChange(changeId).join();
+
+    // then — the returned (legacy-projected) configuration and the real one both reflect the
+    // cancellation: no pending plan, cleared on every sub-config that had one, marked CANCELLED
+    assertThat(cancelled.pendingChanges()).isEmpty();
+    final var config = configuration();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+    assertThat(config.phasedChangeState().lastChange())
+        .hasValueSatisfying(
+            last -> {
+              assertThat(last.id()).isEqualTo(changeId);
+              assertThat(last.status()).isEqualTo(PhasedChangePlanStatus.CANCELLED);
+            });
+  }
+
+  @Test
+  void shouldClearPendingChangesOnAllTargetedGroupsWhenCancelling() {
+    // given — a plan whose first (and only) phase targets the default group and never drains
+    // because its operation targets member 1
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
+        .join();
+    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+
+    // when
+    coordinator.cancelChange(changeId).join();
+
+    // then
+    final var defaultGroup =
+        configuration().partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.hasPendingChanges()).isFalse();
+  }
+
+  @Test
+  void shouldRejectCancelWhenNoChangeIsInProgress() {
+    // given — no pending plan
+    wire(MEMBER_0, twoMemberCluster());
+
+    // when
+    final var cancelFuture = coordinator.cancelChange(1);
+
+    // then
+    assertThat(cancelFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidRequest.class);
+  }
+
+  @Test
+  void shouldRejectCancelWithWrongChangeId() {
+    // given — a plan is pending with some id
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
+        .join();
+    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+
+    // when — cancelling a different id
+    final var cancelFuture = coordinator.cancelChange(changeId + 1);
+
+    // then — rejected, and the pending plan is left untouched
+    assertThat(cancelFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidRequest.class);
+    assertThat(configuration().phasedChangeState().pending()).isPresent();
   }
 }
