@@ -18,6 +18,8 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
@@ -53,6 +55,37 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     final LinkedResourceBuilder builder = new LinkedResourceBuilder(linkedResource, myself);
     linkedResourceBuilderConsumer.accept(builder);
     return myself;
+  }
+
+  /**
+   * Marks this service task as an agent definition.
+   *
+   * @param agentType the agent type declared on the marker
+   * @return the builder object
+   */
+  public B zeebeAgentDefinition(final ZeebeAgentType agentType) {
+    final ZeebeAgentDefinition agentDefinition =
+        myself.getCreateSingleExtensionElement(ZeebeAgentDefinition.class);
+    agentDefinition.setAgentType(agentType);
+    return myself;
+  }
+
+  /**
+   * Marks this service task as a Camunda-native AI agent task.
+   *
+   * @return the builder object
+   */
+  public B zeebeAiAgentTaskDefinition() {
+    return zeebeAgentDefinition(ZeebeAgentType.aiAgentTask);
+  }
+
+  /**
+   * Marks this service task as an external agent.
+   *
+   * @return the builder object
+   */
+  public B zeebeExternalAgentDefinition() {
+    return zeebeAgentDefinition(ZeebeAgentType.external);
   }
 
   private ZeebeLinkedResource createLinkedResourceElement() {

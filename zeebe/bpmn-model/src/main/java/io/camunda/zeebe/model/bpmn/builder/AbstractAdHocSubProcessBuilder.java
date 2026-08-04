@@ -23,6 +23,8 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
 
 public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBuilder<B>>
     extends AbstractSubProcessBuilder<B> implements ZeebeJobWorkerElementBuilder<B> {
@@ -82,6 +84,18 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
   public B zeebeOutputElementExpression(final String outputElementExpression) {
     final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
     adHoc.setOutputElement(asZeebeExpression(outputElementExpression));
+    return myself;
+  }
+
+  /**
+   * Marks this ad-hoc sub-process as a Camunda-native AI agent.
+   *
+   * @return the builder object
+   */
+  public B zeebeAiAgentSubProcessDefinition() {
+    final ZeebeAgentDefinition agentDefinition =
+        getCreateSingleExtensionElement(ZeebeAgentDefinition.class);
+    agentDefinition.setAgentType(ZeebeAgentType.aiAgentSubProcess);
     return myself;
   }
 
