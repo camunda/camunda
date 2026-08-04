@@ -84,6 +84,7 @@
               <exclude>.github/instructions/**/*.md</exclude>
               <exclude>.claude/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
+              <exclude>load-tests/skills/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>
