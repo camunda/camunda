@@ -21,17 +21,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.RoleDefinition;
-import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.multidb.CamundaClientTestFactory;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -55,10 +52,10 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * (https://github.com/camunda/camunda/issues/55892): the endpoint returns authorizations applicable
  * to the authenticated principal — directly or via group/role membership.
  *
- * <p>Note: MAPPING_RULE owner-type tests require OIDC (keycloak) infrastructure and are not covered
- * by this basic-auth test class. See {@code InheritedSimpleMappingAuthorizationIT} for the OIDC
- * test pattern. Authorizations cannot be granted to a tenant as owner — {@code EntityType} has no
- * {@code TENANT} value.
+ * <p>Note: MAPPING_RULE and CLIENT owner-type tests require OIDC (keycloak) infrastructure and are
+ * not covered by this basic-auth test class — see {@link MeAuthorizationsOidcIT} for those.
+ * Authorizations cannot be granted to a tenant as owner — {@code EntityType} has no {@code TENANT}
+ * value.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -72,11 +69,7 @@ class MeAuthorizationsIT {
   private static final String ME = "meAuthorizationsUser";
   private static final String STRANGER = "meAuthorizationsStranger";
   private static final String DIRECT_PROCESS_ID = "meAuthorizationsDirectProcess";
-  private static final String CLIENT_RESOURCE_ID = "meAuthorizationsClientResource";
   private static final String STRANGER_DECISION_ID = "meAuthorizationsStrangerDecision";
-
-  // Injected by the MultiDbTest extension; physical-tenant-aware
-  private static CamundaClientTestFactory clientFactory;
 
   @UserDefinition
   private static final TestUser ME_USER =
@@ -96,12 +89,6 @@ class MeAuthorizationsIT {
               new Permissions(
                   DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of(STRANGER_DECISION_ID))));
 
-  @ClientDefinition
-  private static final TestClient ME_CLIENT =
-      new TestClient(
-          "meAuthorizationsClient",
-          List.of(new Permissions(RESOURCE, CREATE, List.of(CLIENT_RESOURCE_ID))));
-
   @GroupDefinition
   private static final TestGroup ME_GROUP =
       new TestGroup(
@@ -109,14 +96,6 @@ class MeAuthorizationsIT {
           "meAuthorizationsGroup",
           List.of(Permissions.withWildcard(RESOURCE, CREATE)),
           List.of(new Membership(ME, EntityType.USER)));
-
-  @GroupDefinition
-  private static final TestGroup CLIENT_GROUP =
-      new TestGroup(
-          "meAuthorizationsClientGroup",
-          "meAuthorizationsClientGroup",
-          List.of(Permissions.withWildcard(USER_TASK, READ)),
-          List.of(new Membership("meAuthorizationsClient", EntityType.CLIENT)));
 
   @RoleDefinition
   private static final TestRole ME_ROLE =
@@ -169,40 +148,6 @@ class MeAuthorizationsIT {
               assertThat(items)
                   .extracting(item -> item.getResourceType().name())
                   .doesNotContain("DECISION_DEFINITION");
-            });
-  }
-
-  @Test
-  void shouldReturnAuthorizationsForClientDirectlyAndViaGroup() {
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              final CamundaClient client = clientFactory.getCamundaClient(ME_CLIENT.clientId());
-              final SearchResponse<Authorization> response =
-                  client.newOwnAuthorizationSearchRequest().send().join();
-              final var items = response.items();
-
-              // direct client authorization
-              assertThat(items)
-                  .anySatisfy(
-                      item -> {
-                        assertThat(item.getOwnerId()).isEqualTo(ME_CLIENT.clientId());
-                        assertThat(item.getOwnerType().name()).isEqualTo("CLIENT");
-                        assertThat(item.getResourceType().name()).isEqualTo("RESOURCE");
-                        assertThat(item.getResourceId()).isEqualTo(CLIENT_RESOURCE_ID);
-                      });
-              // authorization via group membership
-              assertThat(items)
-                  .anySatisfy(
-                      item -> {
-                        assertThat(item.getOwnerId()).isEqualTo(CLIENT_GROUP.id());
-                        assertThat(item.getOwnerType().name()).isEqualTo("GROUP");
-                        assertThat(item.getResourceType().name()).isEqualTo("USER_TASK");
-                        assertThat(item.getResourceId()).isEqualTo("*");
-                      });
-
-              // should not contain authorizations belonging to a user
-              assertThat(items).noneSatisfy(item -> assertThat(item.getOwnerId()).isEqualTo(ME));
             });
   }
 

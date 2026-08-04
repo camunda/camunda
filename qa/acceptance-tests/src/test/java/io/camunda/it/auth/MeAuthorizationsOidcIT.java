@@ -9,6 +9,7 @@ package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.client.api.search.enums.ResourceType.USER_TASK;
@@ -18,11 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
@@ -39,10 +42,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
- * OIDC variant of the me/authorizations endpoint tests. Covers mapping-rule-owned authorizations,
- * which require keycloak/OIDC to resolve.
+ * OIDC variant of the me/authorizations endpoint tests. Covers mapping-rule-owned and client-owned
+ * authorizations, both of which require keycloak/OIDC to resolve.
  *
- * <p>See {@link MeAuthorizationsIT} for the basic-auth variant (user, client, group, role).
+ * <p>See {@link MeAuthorizationsIT} for the basic-auth variant (user, group, role).
  */
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -53,10 +56,13 @@ class MeAuthorizationsOidcIT {
       new TestStandaloneBroker()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"));
 
   // Injected by the MultiDbTest extension; physical-tenant-aware
   private static CamundaClientTestFactory clientFactory;
+
+  private static final String CLIENT_RESOURCE_ID = "meOidcClientResource";
 
   // A mapping rule whose authorizations we want to see — granted directly to the mapping rule
   @MappingRuleDefinition
@@ -65,7 +71,9 @@ class MeAuthorizationsOidcIT {
           Strings.newRandomValidIdentityId(),
           DEFAULT_MAPPING_RULE_CLAIM_NAME,
           Strings.newRandomValidIdentityId(),
-          List.of(new Permissions(PROCESS_DEFINITION, CREATE, List.of("myMappedProcess"))));
+          List.of(
+              new Permissions(
+                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("myMappedProcess"))));
 
   // A second mapping rule that should never appear in the first one's results
   @MappingRuleDefinition
@@ -93,6 +101,21 @@ class MeAuthorizationsOidcIT {
           "meOidcRole",
           List.of(Permissions.withWildcard(USER_TASK, READ)),
           List.of(new Membership(ME_MAPPING_RULE.id(), EntityType.MAPPING_RULE)));
+
+  // A client whose authorizations we want to see — granted directly to the client
+  @ClientDefinition
+  private static final TestClient ME_CLIENT =
+      new TestClient(
+          "meOidcClient", List.of(new Permissions(RESOURCE, CREATE, List.of(CLIENT_RESOURCE_ID))));
+
+  // Group the client belongs to — its authorizations should appear via group membership
+  @GroupDefinition
+  private static final TestGroup CLIENT_GROUP =
+      new TestGroup(
+          "meOidcClientGroup",
+          "meOidcClientGroup",
+          List.of(Permissions.withWildcard(USER_TASK, READ)),
+          List.of(new Membership("meOidcClient", EntityType.CLIENT)));
 
   @Test
   void shouldReturnAuthorizationsForMappingRuleDirectlyViaGroupAndViaRole() {
@@ -163,6 +186,37 @@ class MeAuthorizationsOidcIT {
                         assertThat(item.getOwnerId()).isEqualTo(ME_MAPPING_RULE.id());
                         assertThat(item.getResourceType().name()).isEqualTo("PROCESS_DEFINITION");
                         assertThat(item.getResourceId()).isEqualTo("myMappedProcess");
+                      });
+            });
+  }
+
+  @Test
+  void shouldReturnAuthorizationsForClientDirectlyAndViaGroup() {
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final CamundaClient client = clientFactory.getCamundaClient(ME_CLIENT.clientId());
+              final SearchResponse<Authorization> response =
+                  client.newOwnAuthorizationSearchRequest().send().join();
+              final var items = response.items();
+
+              // direct client authorization
+              assertThat(items)
+                  .anySatisfy(
+                      item -> {
+                        assertThat(item.getOwnerId()).isEqualTo(ME_CLIENT.clientId());
+                        assertThat(item.getOwnerType().name()).isEqualTo("CLIENT");
+                        assertThat(item.getResourceType().name()).isEqualTo("RESOURCE");
+                        assertThat(item.getResourceId()).isEqualTo(CLIENT_RESOURCE_ID);
+                      });
+              // authorization via group membership
+              assertThat(items)
+                  .anySatisfy(
+                      item -> {
+                        assertThat(item.getOwnerId()).isEqualTo(CLIENT_GROUP.id());
+                        assertThat(item.getOwnerType().name()).isEqualTo("GROUP");
+                        assertThat(item.getResourceType().name()).isEqualTo("USER_TASK");
+                        assertThat(item.getResourceId()).isEqualTo("*");
                       });
             });
   }
