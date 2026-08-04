@@ -1,0 +1,71 @@
+# type: CI Helper - PR
+# owner: @camunda/engineering-operations
+#
+# Builds and pushes the Camunda (orchestration cluster) and, optionally, the Optimize
+# Docker image to the internal Harbor registry when a build label is present on a PR.
+# The image is tagged with the PR number only, e.g. pr-1234. The tag is mutable: each
+# push to the PR overwrites it, so only one tag per PR ever exists (no registry bloat).
+# Consumers MUST use imagePullPolicy: Always to avoid pulling a stale cached image.
+# Labels:
+#   - build-docker-image     -> build everything (backend + frontend + Optimize)
+#   - build-docker-image-oc  -> build only the orchestration cluster backend
+#                               (no frontend, no Optimize)
+# The actual build is delegated to the reusable build-camunda-image.yml workflow.
+---
+name: PR Docker build
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+
+permissions: {}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+concurrency:
+  group: pr-docker-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  calculate-image-tag:
+    name: Calculate image tag
+    # Run when a build label is added, or on new pushes while a build label is present.
+    # Only allow same-repository PRs so fork code cannot enter the secret-consuming build;
+    # fork PRs with these labels are silently skipped.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event.action == 'labeled' && (github.event.label.name == 'build-docker-image' || github.event.label.name == 'build-docker-image-oc')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'build-docker-image') || contains(github.event.pull_request.labels.*.name, 'build-docker-image-oc'))))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
+    steps:
+      - id: image-tag
+        name: Calculate image tag
+        run: |
+          image_tag="pr-${PR_NUMBER}"
+          echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
+          echo "**Built image tag:** \`${image_tag}\` (mutable — overwritten on each push; use imagePullPolicy: Always)" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  build-camunda-image:
+    name: Build & push Camunda Docker images
+    needs: calculate-image-tag
+    uses: ./.github/workflows/build-camunda-image.yml
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+      image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}
+      # "build-docker-image" builds everything; "build-docker-image-oc" backend only.
+      enable-optimize: ${{ contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
+      build-frontend: ${{ contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
+    secrets: inherit
