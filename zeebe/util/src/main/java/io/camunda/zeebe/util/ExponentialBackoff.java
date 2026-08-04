@@ -53,6 +53,10 @@ public final class ExponentialBackoff implements LongUnaryOperator {
     this(maxDelay, minDelay, DEFAULT_BACKOFF_FACTOR, DEFAULT_JITTER_FACTOR);
   }
 
+  public ExponentialBackoff(final long maxDelay, final long minDelay, final double backoffFactor) {
+    this(maxDelay, minDelay, backoffFactor, DEFAULT_JITTER_FACTOR);
+  }
+
   public ExponentialBackoff(
       final long maxDelay,
       final long minDelay,

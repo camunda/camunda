@@ -124,6 +124,12 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
+  // Backoff for retrying to write a record when the log stream is backpressured (e.g. by the
+  // exporter). Kept lower than the general exponential backoff default so that a single stalled
+  // write does not add excessive tail latency to processing.
+  private static final Duration WRITE_RETRY_BACKOFF_MAX_DELAY = Duration.ofMillis(10);
+  private static final Duration WRITE_RETRY_BACKOFF_MIN_DELAY = Duration.ofMillis(1);
+  private static final double WRITE_RETRY_BACKOFF_FACTOR = 1.2;
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
@@ -196,7 +202,11 @@ public final class ProcessingStateMachine {
     // the log stream, so the actor may serve unrelated jobs while backing off.
     writeRetryStrategy =
         new AbortableDelayedRetryStrategy(
-            actor, new ExponentialBackoffRetryDelay(Duration.ofMillis(50), Duration.ofMillis(1)));
+            actor,
+            new ExponentialBackoffRetryDelay(
+                WRITE_RETRY_BACKOFF_MAX_DELAY,
+                WRITE_RETRY_BACKOFF_MIN_DELAY,
+                WRITE_RETRY_BACKOFF_FACTOR));
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     updateStateRetryStrategy =
         new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
