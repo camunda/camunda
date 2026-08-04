@@ -34,6 +34,14 @@ REPO = os.environ.get("ALWAYSGREEN_REPO", "camunda/camunda")
 E2E_REPO = os.environ.get("ALWAYSGREEN_E2E_REPO", "camunda/c8-cross-component-e2e-tests")
 FIX_WORKFLOW = os.environ.get("ALWAYSGREEN_FIX_WORKFLOW", "alwaysgreen-fix.yml")
 FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
+#: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
+KEY_LABEL_PREFIX = "alwaysgreen-key:"
+#: Repos a fix PR can land in, mirroring the fix workflow's own label list.
+FIX_PR_REPOS = [
+    REPO,
+    E2E_REPO,
+    os.environ.get("ALWAYSGREEN_HELM_REPO", "camunda/camunda-platform-helm"),
+]
 
 
 def log(message: str) -> None:
@@ -230,6 +238,41 @@ def covered_fingerprints() -> set[str]:
     return out
 
 
+def open_fix_pr_keys() -> tuple[set[str], bool]:
+    """Dispatch keys that already have an open fix PR, in any repo a fix can land in.
+
+    Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow
+    stamps, not from the PR body: the body's coverage block is written by the agent
+    and cannot be relied on to exist.
+
+    Returns (keys, ok). As with `inflight_keys`, a failed lookup makes the caller
+    suppress rather than risk a duplicate PR.
+    """
+    out: set[str] = set()
+    ok = True
+    for repo in FIX_PR_REPOS:
+        prs, err = gh_json_ex(
+            [
+                "pr", "list", "--repo", repo,
+                "--search", f"label:{FIX_LABEL} is:open",
+                "--limit", "100", "--json", "labels",
+            ],
+            None,
+        )
+        if prs is None:
+            log(f"::warning::open fix PR lookup failed for {repo}: {err.strip()[:200]}")
+            ok = False
+            continue
+        for pr in prs if isinstance(prs, list) else []:
+            for label in pr.get("labels") or []:
+                name = (label.get("name") or "").strip()
+                if name.startswith(KEY_LABEL_PREFIX):
+                    key = name[len(KEY_LABEL_PREFIX) :].strip()
+                    if key:
+                        out.add(key)
+    return out, ok
+
+
 def inflight_keys() -> tuple[set[str], bool]:
     """Dispatch keys of in-progress fix-agent runs.
 
@@ -401,10 +444,16 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
+        pr_keys, pr_keys_ok = open_fix_pr_keys()
+        if not pr_keys_ok:
+            pr_keys = {c.key for c in candidates}
+            log("::warning::open fix PR lookup failed; suppressing dispatch this run")
+
         result = planning.plan_dispatches(
             candidates,
             covered_fingerprints=covered_fingerprints(),
             inflight_keys=keys,
+            open_pr_keys=pr_keys,
             product_bug_fingerprints=product_bug_fingerprints(),
             max_dispatches=args.max_dispatches,
         )

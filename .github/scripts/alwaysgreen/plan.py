@@ -25,6 +25,7 @@ import classify
 SUPPRESSED_NOT_DISPATCHABLE = "surface-not-in-increment"
 SUPPRESSED_IN_FLIGHT = "agent-already-running"
 SUPPRESSED_PR_COVERED = "open-pr-covers-all-specs"
+SUPPRESSED_PR_OPEN = "open-fix-pr-for-surface"
 SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
@@ -92,6 +93,7 @@ def plan_dispatches(
     *,
     covered_fingerprints: set[str],
     inflight_keys: set[str],
+    open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
     max_dispatches: int = 2,
     dispatchable_surfaces: frozenset[str] = classify.DISPATCHABLE_SURFACES,
@@ -112,6 +114,13 @@ def plan_dispatches(
 
         if cand.key in inflight_keys:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_IN_FLIGHT, cand.key))
+            continue
+
+        # An open fix PR for this surface stops a second agent regardless of what the
+        # PR body claims. The coverage block is written by the agent, so a PR that
+        # omitted it would otherwise be invisible here and the failure re-dispatched.
+        if cand.key in open_pr_keys:
+            plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_OPEN, cand.key))
             continue
 
         if not cand.job_level and not cand.specs:
