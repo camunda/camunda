@@ -279,6 +279,11 @@ Load extra context on demand — only when relevant, only if the files exist.
   Please add `@Nullable` and `@NullMarked` annotations in classes where they are missing in order to increase coverage.
   You should do that in a separate `refactor: ` commit.
 
+### Code comments
+
+Before writing an inline comment, name the reader and what they would do differently for having
+read it. If you can't name both, don't write it.
+
 ### Testing conventions
 
 - Test behavior, not implementation — assert on observable outcomes rather than internal state.
