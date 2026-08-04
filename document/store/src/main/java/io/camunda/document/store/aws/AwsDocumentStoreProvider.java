@@ -52,10 +52,11 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
         getDefaultTTL(configuration),
         getBucketPath(configuration),
         executorService,
-        getEndpoint(configuration),
-        getForcePathStyle(configuration),
-        getChunkedEncodingEnabled(configuration),
-        getSupportLegacyMd5(configuration));
+        new AwsClientOptions(
+            getEndpoint(configuration),
+            getForcePathStyle(configuration),
+            getChunkedEncodingEnabled(configuration),
+            getSupportLegacyMd5(configuration)));
   }
 
   private static Long getDefaultTTL(final DocumentStoreConfigurationRecord configuration) {
