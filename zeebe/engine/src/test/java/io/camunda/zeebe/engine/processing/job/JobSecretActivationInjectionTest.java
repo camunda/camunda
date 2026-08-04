@@ -45,19 +45,22 @@ public final class JobSecretActivationInjectionTest {
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "task-type";
 
-  private final SecretActivationResponseCapture secretActivation =
-      new SecretActivationResponseCapture();
-
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withSecretStoreRegistry(
-              new SecretStoreRegistry(
-                  Map.of("default", new NoopSecretStore()), Map.of("default", secretActivation)));
+  @Rule public final EngineRule engine;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  private final SecretActivationResponseCapture secretActivation =
+      new SecretActivationResponseCapture();
+
+  public JobSecretActivationInjectionTest() {
+    engine =
+        EngineRule.singlePartition()
+            .withSecretStoreRegistry(
+                new SecretStoreRegistry(
+                    Map.of("default", new NoopSecretStore()), Map.of("default", secretActivation)));
+  }
 
   @Before
   public void setUp() {

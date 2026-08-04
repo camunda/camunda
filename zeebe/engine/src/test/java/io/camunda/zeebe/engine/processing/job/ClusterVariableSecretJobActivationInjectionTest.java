@@ -40,19 +40,22 @@ public final class ClusterVariableSecretJobActivationInjectionTest {
   private static final String JOB_TYPE = "cv-secret-activation-job";
   private static final String TENANT = "tenant-1";
 
-  private final SecretActivationResponseCapture secretActivation =
-      new SecretActivationResponseCapture();
-
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withSecretStoreRegistry(
-              new SecretStoreRegistry(
-                  Map.of("default", new NoopSecretStore()), Map.of("default", secretActivation)));
+  @Rule public final EngineRule engine;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  private final SecretActivationResponseCapture secretActivation =
+      new SecretActivationResponseCapture();
+
+  public ClusterVariableSecretJobActivationInjectionTest() {
+    engine =
+        EngineRule.singlePartition()
+            .withSecretStoreRegistry(
+                new SecretStoreRegistry(
+                    Map.of("default", new NoopSecretStore()), Map.of("default", secretActivation)));
+  }
 
   @Before
   public void setUp() {
