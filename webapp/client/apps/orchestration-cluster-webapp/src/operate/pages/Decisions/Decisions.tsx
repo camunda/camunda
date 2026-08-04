@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
-import {decisionDefinitionsOptions} from './decisions.queries';
+import {decisionDefinitionSelectionOptions, decisionDefinitionsOptions} from './decisions.queries';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
@@ -24,6 +25,8 @@ import {WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstancesTable} from './InstancesTable';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {DecisionPanel, type DecisionDefinitionSelection} from './DecisionPanel';
+import {useDecisionDefinitionVersions} from './useDecisionDefinitionVersions';
 import type {DecisionsSearch} from './decisionsFilter';
 
 type FiltersFormValues = OptionalFilterValues & {
@@ -60,29 +63,129 @@ const Decisions: React.FC<Props> = ({
 		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
 	);
 
+	const decisionDefinitionSelectionQuery = useQuery({
+		...decisionDefinitionSelectionOptions({
+			decisionDefinitionId,
+			decisionDefinitionVersion,
+			tenantId: specificTenantId,
+		}),
+		enabled: decisionDefinitionId !== undefined,
+	});
+	const decisionDefinitionVersionsQuery = useDecisionDefinitionVersions(decisionDefinitionId, specificTenantId);
+
 	const decisionItems = useMemo<DecisionItem[]>(() => {
 		const seen = new Set<string>();
-		return data.items.reduce<DecisionItem[]>((acc, def) => {
+		const definitions = [
+			...data.items,
+			...(decisionDefinitionSelectionQuery.data?.items ?? []),
+			...(decisionDefinitionVersionsQuery.data ?? []),
+		];
+		const items = definitions.reduce<DecisionItem[]>((acc, def) => {
 			if (!seen.has(def.decisionDefinitionId)) {
 				seen.add(def.decisionDefinitionId);
 				acc.push({id: def.decisionDefinitionId, label: def.name ?? def.decisionDefinitionId});
 			}
 			return acc;
 		}, []);
-	}, [data]);
+		if (decisionDefinitionId !== undefined && !seen.has(decisionDefinitionId)) {
+			items.push({id: decisionDefinitionId, label: decisionDefinitionId});
+		}
+		return items;
+	}, [data, decisionDefinitionId, decisionDefinitionSelectionQuery.data, decisionDefinitionVersionsQuery.data]);
 
 	const versionNumbers = useMemo<(number | undefined)[]>(() => {
 		if (!decisionDefinitionId) {
 			return [];
 		}
-		const versions = data.items
-			.filter((def) => def.decisionDefinitionId === decisionDefinitionId)
-			.sort((a, b) => b.version - a.version)
-			.map((def) => def.version);
+		const definitions = [
+			...data.items,
+			...(decisionDefinitionSelectionQuery.data?.items ?? []),
+			...(decisionDefinitionVersionsQuery.data ?? []),
+		];
+		const versionSet = new Set(
+			definitions.filter((def) => def.decisionDefinitionId === decisionDefinitionId).map((def) => def.version),
+		);
+		if (decisionDefinitionVersion !== undefined) {
+			versionSet.add(decisionDefinitionVersion);
+		}
+		const versions = [...versionSet].sort((a, b) => b - a);
 		return [undefined, ...versions];
-	}, [data, decisionDefinitionId]);
+	}, [
+		data,
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionVersion,
+		decisionDefinitionVersionsQuery.data,
+	]);
 
 	const selectedDecision = decisionItems.find((item) => item.id === decisionDefinitionId) ?? null;
+
+	const decisionDefinitionSelection = useMemo<DecisionDefinitionSelection>(() => {
+		if (!decisionDefinitionId || decisionDefinitionSelectionQuery.status !== 'success') {
+			return {kind: 'no-match'};
+		}
+
+		const matches = decisionDefinitionSelectionQuery.data.items.filter(
+			(definition) =>
+				definition.decisionDefinitionId === decisionDefinitionId &&
+				(decisionDefinitionVersion === undefined || definition.version === decisionDefinitionVersion) &&
+				(specificTenantId === undefined || definition.tenantId === specificTenantId),
+		);
+
+		if (decisionDefinitionVersion === undefined) {
+			const first = matches[0];
+			return first === undefined
+				? {kind: 'no-match'}
+				: {kind: 'all-versions', definition: {name: first.name, decisionDefinitionId: first.decisionDefinitionId}};
+		}
+
+		const definition = matches[0];
+		if (definition === undefined) {
+			return {kind: 'no-match'};
+		}
+		if (new Set(matches.map(({tenantId: definitionTenantId}) => definitionTenantId)).size > 1) {
+			return {
+				kind: 'multiple-tenants',
+				definition: {name: definition.name, decisionDefinitionId: definition.decisionDefinitionId},
+			};
+		}
+		return {kind: 'single-version', definition};
+	}, [
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionSelectionQuery.status,
+		decisionDefinitionVersion,
+		specificTenantId,
+	]);
+
+	useEffect(() => {
+		if (
+			decisionDefinitionId === undefined ||
+			decisionDefinitionSelectionQuery.status !== 'success' ||
+			decisionDefinitionSelectionQuery.fetchStatus !== 'idle' ||
+			decisionDefinitionSelection.kind !== 'no-match'
+		) {
+			return;
+		}
+
+		void navigate({
+			to: '.',
+			search: (prev) => ({...prev, decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}),
+			replace: true,
+		});
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: t('operate.decisions.diagramPanel.decisionNotFoundTitle'),
+			isDismissable: true,
+		});
+	}, [
+		decisionDefinitionId,
+		decisionDefinitionSelection,
+		decisionDefinitionSelectionQuery.fetchStatus,
+		decisionDefinitionSelectionQuery.status,
+		navigate,
+		t,
+	]);
 
 	const hasOptionalFilters =
 		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
@@ -238,7 +341,16 @@ const Decisions: React.FC<Props> = ({
 						)}
 					</Form>
 				}
-				topPanel={<div />}
+				topPanel={
+					<DecisionPanel
+						decisionDefinitionSelection={decisionDefinitionSelection}
+						isDefinitionSelectionLoading={
+							decisionDefinitionId !== undefined &&
+							(decisionDefinitionSelectionQuery.isPending || decisionDefinitionSelectionQuery.fetchStatus !== 'idle')
+						}
+						isDefinitionSelectionError={decisionDefinitionSelectionQuery.isError}
+					/>
+				}
 				bottomPanel={
 					<InstancesTable
 						search={{
