@@ -34,6 +34,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
 import java.io.IOException;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -948,6 +951,52 @@ final class NettyMessagingServiceTest {
       final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
       assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
           .isInstanceOf(TimeoutException.class);
+    }
+
+    @Test
+    void shouldConsumeLegacyHeartbeatRequestFromServerWithoutReplyingOrDisruptingTheConnection() {
+      // given
+      final var subject = nextSubject();
+      final BiFunction<Address, byte[], byte[]> pongHandler = (address, bytes) -> "pong".getBytes();
+      netty2.registerHandler(subject, pongHandler, MoreExecutors.directExecutor());
+
+      final var clientChannel =
+          netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+      Awaitility.await("Until the legacy heartbeat compat handler is installed")
+          .until(() -> clientChannel.pipeline().get("legacy-server-heartbeat") != null);
+
+      final var capturedReplies = new CopyOnWriteArrayList<ProtocolReply>();
+      clientChannel
+          .pipeline()
+          .addAfter(
+              "encoder",
+              "reply-capture",
+              new ChannelOutboundHandlerAdapter() {
+                @Override
+                public void write(
+                    final ChannelHandlerContext ctx,
+                    final Object msg,
+                    final ChannelPromise promise) {
+                  if (msg instanceof final ProtocolReply reply) {
+                    capturedReplies.add(reply);
+                  }
+                  ctx.write(msg, promise);
+                }
+              });
+
+      // when
+      final var heartbeatRequest =
+          new ProtocolRequest(
+              4242L, netty2.address(), HeartbeatHandler.HEARTBEAT_SUBJECT, new byte[0]);
+      clientChannel.pipeline().fireChannelRead(heartbeatRequest);
+
+      // then
+      final var response =
+          netty1.sendAndReceive(netty2.address(), subject, "ping".getBytes()).join();
+      assertThat(response).isEqualTo("pong".getBytes());
+      assertThat(netty1.getChannelPool().getChannel(netty2.address(), subject).join())
+          .isEqualTo(clientChannel);
+      assertThat(capturedReplies).isEmpty();
     }
   }
 }
