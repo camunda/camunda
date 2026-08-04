@@ -62,6 +62,12 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_INTERVAL = Duration.ofSeconds(5);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS = 3;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -85,17 +91,13 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
 
   /**
-   * Base cadence at which {@code P_K} polls {@code P_B} for the completion of a cross-partition
-   * message-start holder instance, and the interval at which a newly observed lock entry is first
-   * polled. Each lock entry then backs off exponentially up to {@link
-   * #DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF} so a long-running holder does not produce
-   * steady-state polling at the base rate.
+   * Coarse cadence at which {@code P_K} reconciles the correlation-key locks it holds for
+   * cross-partition message-start instances against {@code P_B}. This is only a slow-path backstop:
+   * on holder completion or termination {@code P_B} pushes the release to {@code P_K} directly, so
+   * a lock is normally released well before the next reconciliation tick. The poll only recovers
+   * locks whose push was lost, which is why it runs infrequently.
    */
   public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL =
-      Duration.ofSeconds(1);
-
-  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
-  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF =
       Duration.ofSeconds(30);
 
   /** Maximum number of holder instances batched into a single release query to one partition. */
@@ -137,6 +139,12 @@ public final class EngineConfiguration {
   private Duration batchOperationQueryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+  private Duration secretResolutionInterval = DEFAULT_SECRET_RESOLUTION_INTERVAL;
+  private int secretResolutionRetryMaxAttempts = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS;
+  private Duration secretResolutionRetryInitialDelay =
+      DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY;
+  private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
+  private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -169,8 +177,6 @@ public final class EngineConfiguration {
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
   private Duration messageStartLockReleasePollInterval =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
-  private Duration messageStartLockReleasePollMaxBackoff =
-      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 
@@ -391,6 +397,55 @@ public final class EngineConfiguration {
     return this;
   }
 
+  public Duration getSecretResolutionInterval() {
+    return secretResolutionInterval;
+  }
+
+  public EngineConfiguration setSecretResolutionInterval(final Duration secretResolutionInterval) {
+    this.secretResolutionInterval = secretResolutionInterval;
+    return this;
+  }
+
+  public int getSecretResolutionRetryMaxAttempts() {
+    return secretResolutionRetryMaxAttempts;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxAttempts(
+      final int secretResolutionRetryMaxAttempts) {
+    this.secretResolutionRetryMaxAttempts = secretResolutionRetryMaxAttempts;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryInitialDelay() {
+    return secretResolutionRetryInitialDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryInitialDelay(
+      final Duration secretResolutionRetryInitialDelay) {
+    this.secretResolutionRetryInitialDelay = secretResolutionRetryInitialDelay;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryMaxDelay() {
+    return secretResolutionRetryMaxDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxDelay(
+      final Duration secretResolutionRetryMaxDelay) {
+    this.secretResolutionRetryMaxDelay = secretResolutionRetryMaxDelay;
+    return this;
+  }
+
+  public int getSecretResolutionRetryBackoffFactor() {
+    return secretResolutionRetryBackoffFactor;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryBackoffFactor(
+      final int secretResolutionRetryBackoffFactor) {
+    this.secretResolutionRetryBackoffFactor = secretResolutionRetryBackoffFactor;
+    return this;
+  }
+
   public Duration getUsageMetricsExportInterval() {
     return usageMetricsExportInterval;
   }
@@ -592,8 +647,9 @@ public final class EngineConfiguration {
   }
 
   /**
-   * Base cadence at which {@code P_K} polls {@code P_B} for a cross-partition message-start
-   * holder's completion, and the interval at which a newly observed lock entry is first polled.
+   * Coarse cadence at which {@code P_K} reconciles the correlation-key locks it holds for
+   * cross-partition message-start holders against {@code P_B}. A slow-path backstop only: holder
+   * completion is normally pushed from {@code P_B} to {@code P_K} directly.
    */
   public Duration getMessageStartLockReleasePollInterval() {
     return messageStartLockReleasePollInterval;
@@ -602,17 +658,6 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessageStartLockReleasePollInterval(
       final Duration messageStartLockReleasePollInterval) {
     this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
-    return this;
-  }
-
-  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
-  public Duration getMessageStartLockReleasePollMaxBackoff() {
-    return messageStartLockReleasePollMaxBackoff;
-  }
-
-  public EngineConfiguration setMessageStartLockReleasePollMaxBackoff(
-      final Duration messageStartLockReleasePollMaxBackoff) {
-    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
     return this;
   }
 

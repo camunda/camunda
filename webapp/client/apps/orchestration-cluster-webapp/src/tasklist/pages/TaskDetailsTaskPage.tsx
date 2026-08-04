@@ -12,10 +12,9 @@ import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-sch
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {tracking} from '#/shared/tracking';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
-import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/TaskDetailsForm';
-import styles from './TaskDetailsTaskPage.module.scss';
+import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/TaskDetailsVariables';
 
 type Props = {
 	task: UserTask;
@@ -23,9 +22,25 @@ type Props = {
 	search: TasklistIndexSearch;
 	formSchema: string | null;
 	variables: Variable[];
+	totalVariables?: number;
+	hasNextVariablesPage?: boolean;
+	isFetchingNextVariablesPage?: boolean;
+	isNextVariablesPageError?: boolean;
+	onLoadNextVariablesPage?: () => void;
 };
 
-const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search, formSchema, variables}) => {
+const TaskDetailsTaskPage: React.FC<Props> = ({
+	task,
+	currentUser,
+	search,
+	formSchema,
+	variables,
+	totalVariables = variables.length,
+	hasNextVariablesPage = false,
+	isFetchingNextVariablesPage = false,
+	isNextVariablesPageError = false,
+	onLoadNextVariablesPage = () => {},
+}) => {
 	const navigate = useNavigate();
 	const isCamundaForm = formSchema !== null;
 	const customFilter = getStateLocally('tasklist.customFilters')?.[search.filter];
@@ -56,6 +71,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search, formSc
 		assignee: task.assignee,
 		onComplete,
 	});
+	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED';
 
 	if (formSchema !== null) {
 		return (
@@ -71,19 +87,21 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search, formSc
 	}
 
 	return (
-		<div className={styles.container} data-testid="task-tab-content">
-			<div className={styles.content} />
-			<div className={styles.footer}>
-				<CompleteTaskButton
-					status={status}
-					onClick={() => {
-						complete();
-					}}
-					isHidden={isHidden}
-					isDisabled={!isCompletionAllowed}
-				/>
-			</div>
-		</div>
+		<TaskDetailsVariables
+			userTaskKey={task.userTaskKey}
+			variables={variables}
+			totalVariables={totalVariables}
+			isEditingAllowed={isEditingAllowed}
+			isCompletionAllowed={isCompletionAllowed}
+			isCompleted={task.state === 'COMPLETED'}
+			completionStatus={status}
+			isCompletionHidden={isHidden}
+			hasNextPage={hasNextVariablesPage}
+			isFetchingNextPage={isFetchingNextVariablesPage}
+			isNextPageError={isNextVariablesPageError}
+			onLoadNextPage={onLoadNextVariablesPage}
+			onSubmit={complete}
+		/>
 	);
 };
 

@@ -104,7 +104,7 @@
 
   <!-- bulk-insert element instance keys — default: PostgreSQL, H2, MariaDB, MySQL, MSSQL -->
   <insert id="insertElementInstanceKeys"
-    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$AgentInstanceElementInstanceKeysDto">
     INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
     VALUES
     <foreach collection="elementInstanceKeys" item="elementInstanceKey" separator=", ">
@@ -114,7 +114,7 @@
 
   <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
   <insert id="insertElementInstanceKeys"
-    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel"
+    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$AgentInstanceElementInstanceKeysDto"
     databaseId="oracle">
     INSERT ALL
     <foreach collection="elementInstanceKeys" item="elementInstanceKey">
@@ -145,33 +145,33 @@
   -->
   <resultMap id="searchResultMap"
     type="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
-    <id property="agentInstanceKey" column="AGENT_INSTANCE_KEY" javaType="long"/>
-    <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
-    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="long"/>
-    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="long"/>
-    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="long"/>
-    <result property="processDefinitionVersion" column="PROCESS_DEFINITION_VERSION"
-      javaType="java.lang.Integer"/>
-    <result property="versionTag" column="VERSION_TAG" javaType="java.lang.String"/>
-    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
-    <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
-    <result property="status" column="STATUS" javaType="io.camunda.search.entities.AgentInstanceEntity$AgentInstanceStatus"/>
-    <result property="model" column="MODEL" javaType="java.lang.String"/>
-    <result property="provider" column="PROVIDER" javaType="java.lang.String"/>
-    <result property="systemPrompt" column="SYSTEM_PROMPT" javaType="java.lang.String"/>
-    <result property="maxTokens" column="MAX_TOKENS" javaType="long"/>
-    <result property="maxModelCalls" column="MAX_MODEL_CALLS" javaType="java.lang.Integer"/>
-    <result property="maxToolCalls" column="MAX_TOOL_CALLS" javaType="java.lang.Integer"/>
-    <result property="inputTokens" column="INPUT_TOKENS" javaType="long"/>
-    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="long"/>
-    <result property="modelCalls" column="MODEL_CALLS" javaType="java.lang.Integer"/>
-    <result property="toolCalls" column="TOOL_CALLS" javaType="java.lang.Integer"/>
-    <result property="tools" column="TOOLS" javaType="java.lang.String"/>
-    <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="lastUpdatedDate" column="LAST_UPDATED_DATE"
-      javaType="java.time.OffsetDateTime"/>
-    <result property="completionDate" column="COMPLETION_DATE" javaType="java.time.OffsetDateTime"/>
+    <constructor>
+      <idArg column="AGENT_INSTANCE_KEY" javaType="_long" name="agentInstanceKey"/>
+      <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="_long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="_long" name="rootProcessInstanceKey"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="_long" name="processDefinitionKey"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="_int" name="processDefinitionVersion"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String" name="versionTag"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
+      <arg column="STATUS" javaType="io.camunda.search.entities.AgentInstanceEntity$AgentInstanceStatus" name="status"/>
+      <arg column="MODEL" javaType="java.lang.String" name="model"/>
+      <arg column="PROVIDER" javaType="java.lang.String" name="provider"/>
+      <arg column="SYSTEM_PROMPT" javaType="java.lang.String" name="systemPrompt"/>
+      <arg column="MAX_TOKENS" javaType="_long" name="maxTokens"/>
+      <arg column="MAX_MODEL_CALLS" javaType="_int" name="maxModelCalls"/>
+      <arg column="MAX_TOOL_CALLS" javaType="_int" name="maxToolCalls"/>
+      <arg column="INPUT_TOKENS" javaType="_long" name="inputTokens"/>
+      <arg column="OUTPUT_TOKENS" javaType="_long" name="outputTokens"/>
+      <arg column="MODEL_CALLS" javaType="_int" name="modelCalls"/>
+      <arg column="TOOL_CALLS" javaType="_int" name="toolCalls"/>
+      <arg column="TOOLS" javaType="java.lang.String" name="tools"/>
+      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" name="creationDate"/>
+      <arg column="LAST_UPDATED_DATE" javaType="java.time.OffsetDateTime" name="lastUpdatedDate"/>
+      <arg column="COMPLETION_DATE" javaType="java.time.OffsetDateTime" name="completionDate"/>
+    </constructor>
     <collection property="elementInstanceKeys" ofType="java.lang.Long" javaType="java.util.List">
       <id column="ELEMENT_INSTANCE_KEY"/>
     </collection>

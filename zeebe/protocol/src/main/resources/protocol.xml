@@ -221,8 +221,10 @@
 
   <sbe:message name="BrokerInfo" id="201" description="Broker topology information">
     <field name="nodeId" id="1" type="int32"/>
+    <!-- partitionCount is not used anymore, but kept for backward compatibility -->
     <field name="partitionsCount" id="2" type="int32"/>
     <field name="clusterSize" id="3" type="int32"/>
+    <!-- replicationFactor is not used anymore, but kept for backward compatibility -->
     <field name="replicationFactor" id="4" type="int32"/>
     <group name="addresses" id="5">
       <data name="apiName" id="6" type="varDataEncoding"/>

@@ -113,6 +113,10 @@ public final class RaftMemberContext {
     open = false;
     member.close();
     closeReader();
+    if (snapshotChunkReader != null) {
+      snapshotChunkReader.close();
+      snapshotChunkReader = null;
+    }
   }
 
   public boolean isOpen() {
@@ -191,6 +195,11 @@ public final class RaftMemberContext {
   /** Flags the last append to the member as successful. */
   public void appendSucceeded() {
     appendSucceeded(true);
+  }
+
+  /** Whether an append has been successfully replicated to this member during this term. */
+  public boolean hasAckedAppend() {
+    return appendSucceeded;
   }
 
   /**

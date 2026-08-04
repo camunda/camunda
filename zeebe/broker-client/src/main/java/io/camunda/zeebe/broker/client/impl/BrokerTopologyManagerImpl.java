@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
@@ -19,8 +20,11 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +54,8 @@ public final class BrokerTopologyManagerImpl extends Actor
   // Immutable snapshot replaced atomically; keyed by partition group name.
   private volatile Map<String, BrokerClientTopologyImpl> topologyPerGroup = Map.of();
 
-  private volatile ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
+  private volatile CurrentClusterConfiguration clusterConfiguration =
+      CurrentClusterConfiguration.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
   private final BrokerClientTopologyMetrics topologyMetrics;
 
@@ -70,7 +76,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public ClusterConfiguration getClusterConfiguration() {
+  public CurrentClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 
@@ -167,9 +173,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     topologyPerGroup = Map.copyOf(updated);
 
     // temp: only update metrics for default group until we support group-specific metrics
-    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      updateMetrics(newGroupTopology);
-    }
+    updateMetrics(physicalTenantId, newGroupTopology);
   }
 
   private ConfiguredClusterState currentConfiguredState() {
@@ -215,13 +219,14 @@ public final class BrokerTopologyManagerImpl extends Actor
     }
   }
 
-  private void updateMetrics(final BrokerClusterState topology) {
+  private void updateMetrics(final String partitionGroup, final BrokerClusterState topology) {
     final var partitions = topology.getPartitions();
     partitions.forEach(
         partition -> {
           final var leader = topology.getLeaderForPartition(partition);
           if (leader != null) {
-            topologyMetrics.setRoleForPartition(partition, leader, PartitionRoleValues.LEADER);
+            topologyMetrics.setRoleForPartition(
+                new PartitionId(partitionGroup, partition), leader, PartitionRoleValues.LEADER);
           }
 
           final var followers = topology.getFollowersForPartition(partition);
@@ -229,7 +234,9 @@ public final class BrokerTopologyManagerImpl extends Actor
             followers.forEach(
                 broker ->
                     topologyMetrics.setRoleForPartition(
-                        partition, broker, PartitionRoleValues.FOLLOWER));
+                        new PartitionId(partitionGroup, partition),
+                        broker,
+                        PartitionRoleValues.FOLLOWER));
           }
         });
   }
@@ -239,51 +246,70 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (clusterTopology.isUninitialized()) {
       return;
     }
-    clusterConfiguration = clusterTopology;
-    actor.run(() -> applyClusterConfiguration(clusterTopology));
+    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterTopology));
   }
 
-  private void applyClusterConfiguration(final ClusterConfiguration clusterTopology) {
-    // Run the full comparison + listener-notification logic against the default group once.
-    final var oldDefault =
-        topologyPerGroup.getOrDefault(
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, BrokerClientTopologyImpl.uninitialized());
-    final var updatedDefault = updateConfiguredClusterState(clusterTopology, oldDefault);
-    final var newConfiguredState = updatedDefault.configuredClusterState();
+  @Override
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    if (clusterConfiguration.isUninitialized()) {
+      return;
+    }
+    this.clusterConfiguration = clusterConfiguration;
+    actor.run(() -> applyClusterConfiguration(clusterConfiguration));
+  }
 
-    final Map<String, BrokerClientTopologyImpl> allGroups = new HashMap<>(topologyPerGroup);
-    allGroups.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, updatedDefault);
+  private void applyClusterConfiguration(final CurrentClusterConfiguration clusterConfiguration) {
+    // For each known group, update the configured cluster state and notify listeners if anything
+    // changed. The default group is always updated, even if no broker has joined it yet, since the
+    // cluster configuration can be gossiped before the local membership events for that group are
+    // observed.
+    final Set<String> groupIds = new HashSet<>(memberPropertiesPerGroup.keySet());
+    groupIds.add(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
-    // temp: apply the same configured state to all other known groups. This must be revisited when
-    // we add support for group-specific cluster configurations.
-    memberPropertiesPerGroup.keySet().stream()
-        .filter(
-            physicalTenantId ->
-                !physicalTenantId.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
-        .forEach(
-            physicalTenantId -> {
-              final var oldGroup =
-                  topologyPerGroup.getOrDefault(
-                      physicalTenantId, BrokerClientTopologyImpl.uninitialized());
-              allGroups.put(
-                  physicalTenantId,
-                  new BrokerClientTopologyImpl(oldGroup.liveClusterState(), newConfiguredState));
-            });
-
-    topologyPerGroup = Map.copyOf(allGroups);
-    updateMetrics(updatedDefault);
+    final var allGroups =
+        groupIds.stream()
+            .collect(
+                Collectors.toMap(
+                    physicalTenantId -> physicalTenantId,
+                    physicalTenantId -> {
+                      final var oldGroup =
+                          topologyPerGroup.getOrDefault(
+                              physicalTenantId, BrokerClientTopologyImpl.uninitialized());
+                      final var updated =
+                          updateConfiguredClusterState(
+                              physicalTenantId, clusterConfiguration, oldGroup);
+                      updateMetrics(physicalTenantId, updated);
+                      return updated;
+                    }));
+    final Map<String, BrokerClientTopologyImpl> updatedTopologyPerGroup =
+        new HashMap<>(topologyPerGroup);
+    updatedTopologyPerGroup.putAll(allGroups);
+    topologyPerGroup = Map.copyOf(updatedTopologyPerGroup);
   }
 
   private BrokerClientTopologyImpl updateConfiguredClusterState(
-      final ClusterConfiguration clusterTopology, final BrokerClientTopologyImpl oldTopology) {
+      final String groupId,
+      final CurrentClusterConfiguration clusterTopology,
+      final BrokerClientTopologyImpl oldTopology) {
     final var newClusterSize = clusterTopology.clusterSize();
-    final var newPartitionsCount = clusterTopology.partitionCount();
-    final var newReplicationFactor = clusterTopology.minReplicationFactor();
+    final PartitionGroupConfiguration partitionGroupConfiguration =
+        ClusterConfigurationManagerService.USE_NEW_CONFIG
+            ? clusterTopology.partitionGroup(groupId)
+            : clusterTopology.partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (partitionGroupConfiguration == null) {
+      LOG.warn("No partition group configuration found for group {}, skipping update", groupId);
+      return oldTopology;
+    }
+
+    final var newPartitionsCount = partitionGroupConfiguration.partitionCount();
+    final var newReplicationFactor = partitionGroupConfiguration.minReplicationFactor();
     // cluster id is not expected to be null as it is always initialized in the cluster topology.
     // Unless the persisted topology is modified manually, and set to null.
     final var clusterId = clusterTopology.clusterId().orElse("");
     final long newLastChange =
         clusterTopology
+            .phasedChangeState()
             .lastChange()
             .filter(lastChange -> lastChange.id() > oldTopology.getLastCompletedChangeId())
             .map(
@@ -295,11 +321,11 @@ public final class BrokerTopologyManagerImpl extends Actor
             .orElse(oldTopology.getLastCompletedChangeId());
 
     if (oldTopology.configuredClusterState().incarnationNumber()
-        != clusterTopology.incarnationNumber()) {
+        != partitionGroupConfiguration.incarnationNumber()) {
       topologyListeners.forEach(BrokerTopologyListener::clusterIncarnationChanged);
     }
 
-    final var newPartitionStates = buildPartitionStates(clusterTopology);
+    final var newPartitionStates = buildPartitionStates(partitionGroupConfiguration);
 
     if (newClusterSize != oldTopology.getClusterSize()
         || newPartitionsCount != oldTopology.getPartitionsCount()
@@ -312,7 +338,7 @@ public final class BrokerTopologyManagerImpl extends Actor
           newPartitionsCount,
           newReplicationFactor);
 
-      final var partitionIds = clusterTopology.partitionIds().boxed().toList();
+      final var partitionIds = partitionGroupConfiguration.partitionIds().boxed().toList();
 
       final var newClusterInfo =
           new ConfiguredClusterState(
@@ -322,7 +348,7 @@ public final class BrokerTopologyManagerImpl extends Actor
               partitionIds,
               newLastChange,
               clusterId,
-              clusterTopology.incarnationNumber(),
+              partitionGroupConfiguration.incarnationNumber(),
               newPartitionStates);
 
       return new BrokerClientTopologyImpl(oldTopology.liveClusterState(), newClusterInfo);
@@ -332,7 +358,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   private static Map<BrokerMemberId, Map<Integer, PartitionState.State>> buildPartitionStates(
-      final ClusterConfiguration clusterTopology) {
+      final PartitionGroupConfiguration clusterTopology) {
     final Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates = new HashMap<>();
     clusterTopology
         .members()

@@ -44,6 +44,21 @@ const mockQueryBatchOperationsEndpoint = createEndpointMock({
 	method: endpoints.queryBatchOperations.method,
 });
 
+const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
+	method: endpoints.queryDecisionDefinitions.method,
+});
+
+const mockQueryDecisionInstancesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryDecisionInstances.getUrl(),
+	method: endpoints.queryDecisionInstances.method,
+});
+
+const mockCreateDecisionInstancesDeletionBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createDecisionInstancesDeletionBatchOperation.getUrl(),
+	method: endpoints.createDecisionInstancesDeletionBatchOperation.method,
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: endpoints.getCurrentUser.method,
@@ -77,6 +92,16 @@ const mockSaasTokenEndpoint = createEndpointMock({
 const mockGetUserTaskEndpoint = createEndpointMock({
 	endpoint: endpoints.getUserTask.getUrl({userTaskKey: ':userTaskKey'}),
 	method: endpoints.getUserTask.method,
+});
+
+const mockQueryVariablesByUserTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.queryVariablesByUserTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.queryVariablesByUserTask.method,
+});
+
+const mockGetVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.getVariable.getUrl({variableKey: ':variableKey'}),
+	method: endpoints.getVariable.method,
 });
 
 const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
@@ -130,6 +155,8 @@ export {
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockGetUserTaskEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
+	mockGetVariableEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
 	mockAssignTaskEndpoint,
@@ -145,4 +172,7 @@ export {
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
 	mockGetDecisionInstanceEndpoint,
+	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryDecisionInstancesEndpoint,
+	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
 };

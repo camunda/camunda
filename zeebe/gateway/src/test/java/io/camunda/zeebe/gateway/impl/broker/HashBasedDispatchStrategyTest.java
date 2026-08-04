@@ -14,13 +14,17 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
 import io.camunda.zeebe.protocol.impl.PartitionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
+import java.util.Map;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +40,8 @@ final class HashBasedDispatchStrategyTest {
     // when -- No routing state in cluster configuration
     final var topologyManager =
         new TestTopologyManager(
-            new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
 
     // then - the request is dispatched based on the partition count from the topology
     assertThat(
@@ -56,8 +61,7 @@ final class HashBasedDispatchStrategyTest {
     // when -- Routing state is available in cluster configuration
     final var routingState =
         new RoutingState(1, new AllPartitions(3), new HashMod(messagePartitionCount));
-    final var clusterConfiguration =
-        ClusterConfiguration.builder().version(1).routingState(Optional.of(routingState)).build();
+    final var clusterConfiguration = getConfigurationWithRoutingState(routingState);
 
     final var topologyManager =
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
@@ -70,6 +74,69 @@ final class HashBasedDispatchStrategyTest {
             PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), messagePartitionCount));
   }
 
+  private static CurrentClusterConfiguration getConfigurationWithRoutingState(
+      final RoutingState value) {
+    final var partitionGroup = PartitionGroupConfiguration.empty(1).setRoutingState(value);
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionGroup),
+        PhasedChangeState.empty());
+  }
+
+  @Test
+  void shouldDispatchViaTopologyForNonDefaultTenantWithNoOwnPartitionGroupConfig() {
+    // given -- a non-default tenant that has no entry in the cluster configuration's partition
+    // groups (e.g. the tenant only exists in the legacy single-group model)
+    final var businessId = "order-12345";
+    final var dispatchStrategy = new HashBasedDispatchStrategy(businessId, "business id");
+    final var partitionCount = 3;
+    final var tenantB = "tenant-b";
+
+    final var topologyManager =
+        new TestTopologyManager(
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
+
+    // then - falls back to the tenant's own topology partition count instead of throwing
+    assertThat(dispatchStrategy.determinePartition(topologyManager, tenantB))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), partitionCount));
+  }
+
+  @Test
+  void shouldDispatchViaOwnRoutingStateForNonDefaultTenant() {
+    // given -- the default tenant and "tenant-b" each have their own, different routing state
+    final var businessId = "order-12345";
+    final var dispatchStrategy = new HashBasedDispatchStrategy(businessId, "business id");
+    final var partitionCount = 3;
+    final var tenantB = "tenant-b";
+
+    final var defaultRoutingState = new RoutingState(1, new AllPartitions(3), new HashMod(2));
+    final var tenantBRoutingState = new RoutingState(1, new AllPartitions(3), new HashMod(4));
+
+    final var clusterConfiguration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                PartitionGroupConfiguration.empty(1).setRoutingState(defaultRoutingState),
+                tenantB,
+                PartitionGroupConfiguration.empty(1).setRoutingState(tenantBRoutingState)),
+            PhasedChangeState.empty());
+
+    final var topologyManager =
+        new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
+
+    // then - each tenant is dispatched according to its own routing state
+    assertThat(dispatchStrategy.determinePartition(topologyManager, tenantB))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), 4));
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), 2));
+  }
+
   @Test
   void shouldAlwaysRouteToSamePartitionForSameKey() {
     // given
@@ -78,7 +145,8 @@ final class HashBasedDispatchStrategyTest {
 
     final var topologyManager =
         new TestTopologyManager(
-            new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
 
     // when - we create multiple strategies with the same key
     final var strategy1 = new HashBasedDispatchStrategy(businessId, "business id");
@@ -101,7 +169,8 @@ final class HashBasedDispatchStrategyTest {
 
     final var topologyManager =
         new TestTopologyManager(
-            new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
 
     // when
     final var hashBasedStrategy = new HashBasedDispatchStrategy(key, "business id");
@@ -117,7 +186,7 @@ final class HashBasedDispatchStrategyTest {
   }
 
   private record TestTopologyManager(
-      BrokerClusterState topology, ClusterConfiguration clusterConfiguration)
+      BrokerClusterState topology, CurrentClusterConfiguration clusterConfiguration)
       implements BrokerTopologyManager {
 
     @Override
@@ -126,7 +195,7 @@ final class HashBasedDispatchStrategyTest {
     }
 
     @Override
-    public ClusterConfiguration getClusterConfiguration() {
+    public CurrentClusterConfiguration getClusterConfiguration() {
       return clusterConfiguration;
     }
 

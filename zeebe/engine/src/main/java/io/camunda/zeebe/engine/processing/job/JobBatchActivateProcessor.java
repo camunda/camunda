@@ -10,13 +10,15 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
@@ -32,9 +34,11 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -114,11 +118,20 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private List<String> determineTenantIds(
-      final JobBatchRecord value, final AuthorizedTenants authorizedTenantIds) {
+      final JobBatchRecord value, final TenantAccess authorizedTenantIds) {
     if (value.getTenantFilter() == TenantFilter.ASSIGNED) {
-      return authorizedTenantIds.getAuthorizedTenantIds();
+      return authorizedTenantIds.tenantIds();
     }
 
+    return resolveProvidedTenantIds(value);
+  }
+
+  // An empty PROVIDED tenant-ID list is treated as "the default tenant" both here and in
+  // validateTenantAuthorization, so the tenant-authorization check and the tenants actually used
+  // for activation can never diverge (isAuthorizedForTenantIds([]) is vacuously true, so checking
+  // the raw empty list would silently authorize a caller not actually assigned to the default
+  // tenant).
+  private List<String> resolveProvidedTenantIds(final JobBatchRecord value) {
     final var providedTenantIds = value.getTenantIds();
     return providedTenantIds.isEmpty()
         ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -126,7 +139,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateRequest(
-      final TypedRecord<JobBatchRecord> record, final AuthorizedTenants authorizedTenantIds) {
+      final TypedRecord<JobBatchRecord> record, final TenantAccess authorizedTenantIds) {
     final var value = record.getValue();
 
     // Skip tenant authorization check when using ASSIGNED filter
@@ -141,18 +154,17 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateTenantAuthorization(
-      final JobBatchRecord record, final AuthorizedTenants authorizedTenantIds) {
-    final var tenantIds = record.getTenantIds();
-
-    if (!authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)) {
-      return Either.left(
-          new Rejection(
-              RejectionType.UNAUTHORIZED,
-              "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
-                  .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
-    }
-
-    return Either.right(null);
+      final JobBatchRecord value, final TenantAccess authorizedTenantIds) {
+    final var tenantIds = resolveProvidedTenantIds(value);
+    return cslCheck.checkTenantsRequiringPrincipal(
+        tenantIds,
+        authorizedTenantIds,
+        null,
+        () ->
+            new Rejection(
+                RejectionType.UNAUTHORIZED,
+                "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
+                    .formatted(tenantIds, authorizedTenantIds.tenantIds())));
   }
 
   private Either<Rejection, Void> validateCommandFields(final JobBatchRecord record) {
@@ -191,7 +203,46 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
                 raiseIncidentJobTooLargeForMessageSize(
                     largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
+    // snapshot before activateJobBatch: building the response injects the secret values, which
+    // resets the injector and clears the jobs registered for resolution
+    final var jobsWithNonCachedSecrets = jobSecretInjector.jobsWithNonCachedSecrets();
+
     activateJobBatch(record, value, jobBatchKey);
+
+    requestSecretResolution(jobsWithNonCachedSecrets);
+  }
+
+  /**
+   * Requests the background resolution of the secret references that kept the collector from
+   * activating some jobs. Appends one {@code RESOLUTION_REQUESTED} event per reference with the
+   * keys of the jobs waiting on it; its applier records the pending reference and parks the jobs so
+   * a long poll does not collect them again until the secret is resolved.
+   *
+   * <p>Stops appending once the record batch is full instead of letting the append overflow and
+   * roll back the whole activation. The references left out keep their jobs activatable, so the
+   * next activation registers and parks them with a fresh batch budget.
+   */
+  private void requestSecretResolution(
+      final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets) {
+    for (final var waiting : jobsWithNonCachedSecrets.entrySet()) {
+      final var reference = waiting.getKey();
+      final var event =
+          new SecretReferenceRecord()
+              .setStoreId(reference.storeId())
+              .setSecretReference(reference.name());
+      waiting.getValue().forEach(event::addJobKey);
+      // the capacity check needs the length of the whole log entry, whose metadata is only
+      // decorated with the command's authorization, agent and request source info once the entry is
+      // appended. The batch calculation buffer covers that framing on top of the value, the same
+      // way the collector sizes the job records it appends; over-estimating only defers a reference
+      // to the next activation, which keeps its jobs activatable.
+      if (!stateWriter.canWriteEventOfLength(
+          event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+        return;
+      }
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+    }
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
@@ -238,8 +289,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   /** Raises the incident matching the reason the injection dropped the job from the activation. */
   private void raiseIncidentForDroppedJob(final DroppedJob droppedJob) {
     switch (droppedJob) {
-      case OversizedJob oversized -> raiseIncidentJobSecretValuesTooLargeForMessageSize(oversized);
-      case FailedInjectionJob failed -> raiseIncidentJobSecretInjectionFailed(failed);
+      case final OversizedJob oversized ->
+          raiseIncidentJobSecretValuesTooLargeForMessageSize(oversized);
+      case final FailedInjectionJob failed -> raiseIncidentJobSecretInjectionFailed(failed);
     }
   }
 

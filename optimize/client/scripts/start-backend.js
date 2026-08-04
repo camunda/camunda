@@ -95,7 +95,16 @@ const selfManagedEnv = {
 
 const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 
-setVersionInfo().then(setupEnvironment).then(startBackend);
+setVersionInfo()
+  .then(setupEnvironment)
+  .then(startBackend)
+  .catch((err) => {
+    // surface the fail-fast message from setVersionInfo as a clear line, not an unhandled rejection.
+    // startBackend/setupEnvironment reject with a bare exit code rather than an Error, so fall back
+    // to the raw value when there is no message.
+    console.error(err.message ?? err);
+    process.exit(1);
+  });
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -218,43 +227,99 @@ function startDocker() {
 }
 
 function waitForDockerDependencies() {
-  const dependencies = ['http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'];
+  const dependencies = [
+    {url: 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'},
+  ];
 
   if (mode === 'self-managed') {
     dependencies.push(
-      'http://localhost:18080/auth',
-      'http://localhost:9600/ready',
-      'http://localhost:8080/v2/topology'
+      {url: 'http://localhost:18080/auth'},
+      {url: 'http://localhost:9600/ready'},
+      // The C8 REST API requires authentication, so a 401/403 still means the gateway on port 8080
+      // is up and serving requests. A 5xx (e.g. a gateway that is still starting) is not accepted,
+      // so the readiness gate stays meaningful.
+      {url: 'http://localhost:8080/v2/topology', acceptStatuses: [401, 403]}
     );
   }
 
-  return Promise.all(dependencies.map(waitForServerCheck));
+  return Promise.all(
+    dependencies.map(({url, acceptStatuses}) => waitForServerCheck(url, acceptStatuses))
+  );
 }
 
-function waitForServerCheck(url) {
-  return new Promise((resolve) => serverCheck(url, resolve));
+function waitForServerCheck(url, acceptStatuses) {
+  return new Promise((resolve) => serverCheck(url, resolve, acceptStatuses));
 }
 
-function setVersionInfo() {
+function parsePomProperties(pomPath) {
   return new Promise((resolve) => {
-    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (_err, data) => {
-      parseString(data, {explicitArray: false}, (err, data) => {
-        if (err) {
-          return console.error(err);
+    readFile(pomPath, 'utf8', (readErr, data) => {
+      if (readErr) {
+        console.error(`Failed to read ${pomPath}:`, readErr);
+        return resolve({properties: {}, version: undefined});
+      }
+      parseString(data, {explicitArray: false}, (parseErr, parsed) => {
+        if (parseErr) {
+          console.error(parseErr);
+          return resolve({properties: {}, version: undefined});
         }
-
-        backendVersion = data.project.version;
-        const properties = data.project.properties;
-        elasticSearchVersion = properties['elasticsearch.test.version'];
-        opensearchVersion = properties['opensearch.test.version'];
-        camundaVersion = properties['camunda.docker.version'];
-        console.log(
-          `Backend version: ${backendVersion}, Elasticsearch version: ${elasticSearchVersion}, Opensearch version: ${opensearchVersion}, Camunda/Identity version: ${camundaVersion}`
-        );
-        resolve();
+        resolve({
+          properties: parsed?.project?.properties ?? {},
+          version: parsed?.project?.version,
+        });
       });
     });
   });
+}
+
+// Resolves Maven ${...} property placeholders using the given properties map.
+function resolvePlaceholders(value, properties) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  let resolved = value;
+  for (let i = 0; i < 10 && resolved.includes('${'); i++) {
+    resolved = resolved.replace(/\$\{([^}]+)\}/g, (match, key) =>
+      properties[key] !== undefined ? properties[key] : match
+    );
+  }
+  return resolved;
+}
+
+async function setVersionInfo() {
+  const optimizePom = await parsePomProperties(_resolve(__dirname, '..', '..', 'pom.xml'));
+  // Some version properties in optimize/pom.xml reference properties defined in the
+  // parent pom (e.g. ${version.elasticsearch.container}), so we resolve against both.
+  const parentPom = await parsePomProperties(
+    _resolve(__dirname, '..', '..', '..', 'parent', 'pom.xml')
+  );
+  const properties = {...parentPom.properties, ...optimizePom.properties};
+
+  backendVersion = optimizePom.version;
+  elasticSearchVersion = resolvePlaceholders(properties['elasticsearch.test.version'], properties);
+  opensearchVersion = resolvePlaceholders(properties['opensearch.test.version'], properties);
+  camundaVersion = resolvePlaceholders(properties['camunda.docker.version'], properties);
+
+  // Fail fast with a clear message rather than letting an undefined/unresolved version reach
+  // docker-compose, where it surfaces as an opaque image-pull failure.
+  const unresolved = Object.entries({
+    'optimize/pom.xml <version>': backendVersion,
+    'elasticsearch.test.version': elasticSearchVersion,
+    'opensearch.test.version': opensearchVersion,
+    'camunda.docker.version': camundaVersion,
+  })
+    .filter(([, value]) => !value || String(value).includes('${'))
+    .map(([name]) => name);
+  if (unresolved.length > 0) {
+    throw new Error(
+      `Could not resolve version(s) from pom.xml: ${unresolved.join(', ')}. ` +
+        'Ensure optimize/pom.xml and parent/pom.xml are readable and define these properties.'
+    );
+  }
+
+  console.log(
+    `Backend version: ${backendVersion}, Elasticsearch version: ${elasticSearchVersion}, Opensearch version: ${opensearchVersion}, Camunda/Identity version: ${camundaVersion}`
+  );
 }
 
 function stopDocker() {
@@ -273,15 +338,15 @@ function stopDocker() {
   });
 }
 
-function serverCheck(url, onComplete) {
+function serverCheck(url, onComplete, acceptStatuses = []) {
   setTimeout(async () => {
     try {
       const response = await fetch(url);
-      if (!response.ok) {
-        return serverCheck(url, onComplete);
+      if (!response.ok && !acceptStatuses.includes(response.status)) {
+        return serverCheck(url, onComplete, acceptStatuses);
       }
     } catch (_e) {
-      return serverCheck(url, onComplete);
+      return serverCheck(url, onComplete, acceptStatuses);
     }
     onComplete();
   }, 1000);

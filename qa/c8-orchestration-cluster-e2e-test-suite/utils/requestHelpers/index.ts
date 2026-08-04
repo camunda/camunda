@@ -7,6 +7,7 @@
  */
 
 export * from './element-instance-requestHelpers';
+export * from './decision-version-tag-requestHelpers';
 export * from './resource-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
@@ -89,6 +90,7 @@ export {
 } from './decision-requirement-requestHelper';
 export {
   createMammalProcessInstanceAndDeployMammalDecision,
+  searchDecisionInstancesByProcessInstanceKey,
   type DecisionInstance,
 } from './decision-instance-requestHelpers';
 export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';

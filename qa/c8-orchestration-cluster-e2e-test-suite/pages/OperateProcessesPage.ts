@@ -376,6 +376,23 @@ class OperateProcessesPage {
     await this.applyCancelBatchOperationDialogButton.click();
   }
 
+  async selectAllProcessInstances(): Promise<void> {
+    // A single header-checkbox click can be lost under load, leaving no rows
+    // selected so the batch-operation toolbar (and its cancel button) never
+    // appears. Retry until the toolbar is shown, but gate the click on the
+    // checkbox's own checked state (not the toolbar) so a retry never toggles
+    // an already-selected header back off.
+    const selectAll = this.selectAllRowsCheckbox.locator('label');
+    await expect(async () => {
+      if (!(await selectAll.isChecked())) {
+        await selectAll.click();
+      }
+      await expect(this.cancelBatchOperationButton).toBeVisible({
+        timeout: 5000,
+      });
+    }).toPass({timeout: 30000});
+  }
+
   async clickMigrateBatchOperationButton(): Promise<void> {
     await this.migrateBatchOperationButton.click();
   }

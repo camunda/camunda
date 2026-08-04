@@ -33,8 +33,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('Swagger UI Tests', () => {
-  // Skipped due to bug #57502: https://github.com/camunda/camunda/issues/57502
-  test.skip('Swagger UI is accessible and presents the API list', async ({
+  test('Swagger UI is accessible and presents the API list', async ({
     swaggerPage,
   }) => {
     await swaggerPage.gotoSwaggerUI();
@@ -48,8 +47,7 @@ test.describe('Swagger UI Tests', () => {
     await expect(swaggerPage.firstApiTag).toBeVisible({timeout: 60_000});
   });
 
-  // Skipped due to bug #57502: https://github.com/camunda/camunda/issues/57502
-  test.skip('Grouped OpenAPI spec returns valid JSON without external file refs', async ({
+  test('Grouped OpenAPI spec returns valid JSON without external file refs', async ({
     request,
     swaggerPage,
   }) => {
@@ -87,8 +85,7 @@ test.describe('Swagger UI Tests', () => {
     expect(externalFileRefs).toEqual([]);
   });
 
-  // Skipped due to bug #57502: https://github.com/camunda/camunda/issues/57502
-  test.skip('CSRF token is filled in and Swagger UI is accessible with CSRF token', async ({
+  test('CSRF token is filled in and Swagger UI is accessible with CSRF token', async ({
     loginPage,
     operateHomePage,
     page,
@@ -122,8 +119,7 @@ test.describe('Swagger UI Tests', () => {
     expect(curlCommandText).toMatch(/x-csrf-token\s*:\s*(?!null\b)\S+/i);
   });
 
-  // Skipped due to bug #57502: https://github.com/camunda/camunda/issues/57502
-  test.skip('CSRF token is NOT filled in and Swagger UI is accessible', async ({
+  test('CSRF token is NOT filled in and Swagger UI is accessible', async ({
     swaggerPage,
   }) => {
     // go to swagger UI

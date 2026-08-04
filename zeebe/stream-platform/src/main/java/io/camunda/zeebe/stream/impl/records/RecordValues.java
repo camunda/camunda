@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class RecordValues {
 
@@ -21,7 +22,8 @@ public final class RecordValues {
     eventCache = Collections.unmodifiableMap(UnifiedRecordValue.allRecordsMap());
   }
 
-  public UnifiedRecordValue readRecordValue(final LoggedEvent event, final ValueType valueType) {
+  public @Nullable UnifiedRecordValue readRecordValue(
+      final LoggedEvent event, final ValueType valueType) {
     final UnifiedRecordValue value = eventCache.get(valueType);
     if (value != null) {
       value.reset();

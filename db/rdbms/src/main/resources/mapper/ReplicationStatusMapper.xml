@@ -62,11 +62,46 @@
   </select>
 
   <!--
-    Detects whether the connected MySQL instance is AWS Aurora MySQL. Aurora MySQL exposes the
-    aurora_version() function; plain MySQL does not. Safe to run on any MySQL-compatible database; never throws.
+    Checks whether the current database user has the pg_monitor role (directly or via role
+    inheritance) or is a superuser. Without pg_monitor the replay_lag column in
+    pg_stat_replication is always NULL, causing replication lag to silently appear as zero
+    and async replication confirmation to never happen correctly.
+    pg_has_role returns true for superusers even without an explicit pg_monitor grant, so
+    this check covers both cases.
+  -->
+  <select id="hasRequiredPrivileges" resultType="boolean" databaseId="postgresql">
+    SELECT pg_has_role(current_user, 'pg_monitor', 'MEMBER')
+  </select>
+
+  <!--
+    Checks whether the current SQL Server login holds the permission required to read
+    replication status from sys.dm_hadr_database_replica_states:
+      - SQL Server 2022+: VIEW SERVER PERFORMANCE STATE (the new, more granular permission)
+      - SQL Server 2019 and earlier: VIEW SERVER STATE (covers all server-state DMVs)
+    HAS_PERMS_BY_NAME returns NULL when the named permission does not exist in the current
+    SQL Server version, so ISNULL(..., 0) treats an unknown permission as not granted, allowing
+    this query to run safely on any SQL Server version without errors.
+  -->
+  <select id="hasRequiredPrivileges" resultType="boolean" databaseId="mssql">
+    SELECT CASE
+      WHEN HAS_PERMS_BY_NAME(null, null, 'VIEW SERVER STATE') = 1
+        OR ISNULL(HAS_PERMS_BY_NAME(null, null, 'VIEW SERVER PERFORMANCE STATE'), 0) = 1
+      THEN 1 ELSE 0 END
+  </select>
+
+  <!--
+    Detects whether the connected MySQL instance is AWS Aurora MySQL. aurora_version() is a native
+    engine function on Aurora MySQL, not a user routine, so it never appears in
+    information_schema.ROUTINES (unlike PostgreSQL, where aurora_version() is a real catalog
+    function). information_schema.replica_host_status is documented by AWS to exist on every
+    Aurora MySQL cluster regardless of version or Global Database status, so check for that table
+    instead. Safe to run on any MySQL-compatible database; never throws.
   -->
   <select id="isAurora" resultType="boolean" databaseId="mysql">
-    SELECT EXISTS(SELECT 1 FROM information_schema.ROUTINES WHERE ROUTINE_NAME = 'aurora_version')
+    SELECT EXISTS(SELECT 1
+                  FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = 'information_schema'
+                    AND TABLE_NAME = 'REPLICA_HOST_STATUS')
   </select>
 
   <!--

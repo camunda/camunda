@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.state.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState.ExpiredEntryVisitor;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 final class MessageStartProcessInstanceDedupStateTest {
 
+  private static final String DEDUP_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_DEDUP_ENTRIES.getName();
+
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableProcessingState processingState;
   private MutableMessageStartProcessInstanceDedupState state;
 
@@ -170,5 +177,62 @@ final class MessageStartProcessInstanceDedupStateTest {
   void shouldTreatDeleteOfUnknownEntryAsNoOp() {
     // when / then — must not throw
     state.delete(10L, 20L);
+  }
+
+  @Test
+  void shouldTrackDedupEntriesGaugeAcrossPutAndDelete() {
+    // when two distinct dedup entries are stored
+    state.put(10L, 20L, 100L, 1_000L);
+    state.put(10L, 21L, 101L, 2_000L);
+
+    // then the gauge reflects both
+    assertThat(dedupEntriesGauge()).isEqualTo(2.0);
+
+    // when one is deleted
+    state.delete(10L, 20L);
+
+    // then the gauge drops to one
+    assertThat(dedupEntriesGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDoubleCountDedupEntriesGaugeOnReReply() {
+    // given a stored dedup entry
+    state.put(10L, 20L, 100L, 1_000L);
+
+    // when a fresh STARTED reply overwrites the same key (put upserts)
+    state.put(10L, 20L, 101L, 5_000L);
+
+    // then the gauge counts the entry only once
+    assertThat(dedupEntriesGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDecrementDedupEntriesGaugeWhenDeletingAbsentEntry() {
+    // given one stored entry
+    state.put(10L, 20L, 100L, 1_000L);
+
+    // when deleting an entry that was never stored
+    state.delete(10L, 21L);
+
+    // then the gauge is unaffected
+    assertThat(dedupEntriesGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldReseedDedupEntriesGaugeFromStateOnRecovery() {
+    // given two persisted dedup entries
+    state.put(10L, 20L, 100L, 1_000L);
+    state.put(10L, 21L, 101L, 2_000L);
+
+    // when the partition recovers
+    ((DbMessageStartProcessInstanceDedupState) state).onRecovered(null);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(dedupEntriesGauge()).isEqualTo(2.0);
+  }
+
+  private double dedupEntriesGauge() {
+    return zeebeDb.getMeterRegistry().get(DEDUP_GAUGE).gauge().value();
   }
 }

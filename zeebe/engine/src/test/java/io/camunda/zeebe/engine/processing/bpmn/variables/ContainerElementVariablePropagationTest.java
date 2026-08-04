@@ -8,14 +8,18 @@
 package io.camunda.zeebe.engine.processing.bpmn.variables;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -141,6 +145,36 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
+  public void shouldNotPropagateLoopCounterFromMultiInstanceBodyItself() {
+    // given: a plain MI service task directly under the process root - no enclosing sub-process
+    // at all - isolating the MI body's OWN non-propagation from the sub-process-boundary
+    // mechanism exercised above
+    final var processId = "processId";
+    final var jobType = "miBodyIsolationJobType";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(jobType)
+                        .multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("=[1]").zeebeInputElement("item")))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.job().withType(jobType).ofInstance(processInstanceKey).complete();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
+  }
+
+  @Test
   public void shouldNotPropagateLocalVariablesIfNoOutputMappingOnSubProcess() {
     // given
     final var processId = "processId";
@@ -226,6 +260,139 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void shouldWalkUpToNearestOwnerElseCreateAtRoot() {
+    // given: "a" is already owned by the process root; "b" is owned nowhere. Neither is ever
+    // owned by the sub-process in between
+    final var processId = "processId";
+    final var jobType = "walkUpJobType";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType(jobType))
+                        .endEvent())
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("a", 0).create();
+
+    // when: the task completes without any output mapping - the raw job payload propagates
+    ENGINE
+        .job()
+        .withType(jobType)
+        .ofInstance(processInstanceKey)
+        .withVariables(Map.of("a", 1, "b", 2))
+        .complete();
+
+    // then: "a" is updated at the root (nearest - and only - owner); "b" is created at the root
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(processInstanceKey)
+                .limit(3))
+        .extracting(r -> r.getValue().getName(), r -> r.getValue().getValue(), Record::getIntent)
+        .contains(
+            tuple("a", "0", VariableIntent.CREATED),
+            tuple("a", "1", VariableIntent.UPDATED),
+            tuple("b", "2", VariableIntent.CREATED));
+  }
+
+  @Test
+  public void shouldStopPropagationAtNearestOwningSubProcessScope() {
+    // given: the sub-process's own input mapping creates "x" locally, so the walk-up from the
+    // completing task finds it there first and never reaches the process root
+    final var processId = "processId";
+    final var jobType = "boundaryStopJobType";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.zeebeInputExpression("=0", "x")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType(jobType))
+                        .endEvent())
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long subProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sp")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .job()
+        .withType(jobType)
+        .ofInstance(processInstanceKey)
+        .withVariables(Map.of("x", 5))
+        .complete();
+
+    // then: updated at the sub-process's own scope ...
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("x")
+                .withScopeKey(subProcessInstanceKey)
+                .getFirst()
+                .getValue()
+                .getValue())
+        .isEqualTo("5");
+    // ... and never created at the process root
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, "x");
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/35251")
+  public void shouldNotLeakUntouchedLocalSiblingIntoParentScope() {
+    // given: 'a' is set locally on the sub-process with an untouched sibling 'p' that is never
+    // targeted by any output mapping
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.zeebeInputExpression("={p:0}", "a")
+                        .zeebeOutputExpression("1", "a.b")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when: only a.b is mapped - 'p' should stay local, never reach the process root
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var propagatedA =
+        RecordingExporter.records()
+            .limitToProcessInstance(processInstanceKey)
+            .variableRecords()
+            .withScopeKey(processInstanceKey)
+            .withName("a")
+            .getFirst()
+            .getValue()
+            .getValue();
+    assertThat(propagatedA).isEqualTo("{\"b\":1}");
   }
 
   @Test
@@ -535,6 +702,59 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/51496")
+  public void shouldMakeChildVariablesAvailableLocallyOnCallActivityWithoutOutputMapping() {
+    // given: propagateAllChildVariables=false and no output mapping - per the issue, child
+    // variables should still become local to the call activity scope instead of being discarded
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c -> c.zeebeProcessId(childProcessId).zeebePropagateAllChildVariables(false))
+            .endEvent()
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .intermediateThrowEvent("nestedElement")
+            .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final long callActivityInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("call")
+            .getFirst()
+            .getKey();
+
+    // then: LOCAL_VAR must be created at the call activity's own scope, not discarded entirely
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withScopeKey(callActivityInstanceKey)
+                .withName(LOCAL_VAR)
+                .exists())
+        .isTrue();
+    // ... and never propagated to the process root
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
   private static void assertVariableIsNotPropagatedToProcessInstance(

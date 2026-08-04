@@ -664,39 +664,41 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldConvertNonPositiveLoopIterationToNull() {
-    // given — loopIteration == 0 (non-positive sentinel → null)
-    final var recordValue =
-        ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 0)).build();
-    final Record<AgentHistoryRecordValue> record =
-        factory.generateRecord(
-            ValueType.AGENT_HISTORY,
-            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
-    final var entity = new AgentHistoryEntity().setId("1");
-
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    assertThat(entity.getLoopIteration()).isNull();
-  }
-
-  @Test
-  void shouldStorePositiveLoopIterationAsIs() {
-    // given
-    final var recordValue =
+  void shouldStoreProvidedLoopIterationAsIs() {
+    // given — a typical value plus zero/negative ones. The handler mirrors whatever the record
+    // carries: it is not its place to "correct" an out-of-contract value, only the
+    // engine/connector side is expected to guarantee a positive loopIteration in practice.
+    final var typicalRecordValue =
         ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 5)).build();
-    final Record<AgentHistoryRecordValue> record =
+    final var zeroRecordValue =
+        ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 0)).build();
+    final var negativeRecordValue =
+        ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, -1)).build();
+    final Record<AgentHistoryRecordValue> typicalRecord =
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
-            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
-    final var entity = new AgentHistoryEntity().setId("1");
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(typicalRecordValue));
+    final Record<AgentHistoryRecordValue> zeroRecord =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(zeroRecordValue));
+    final Record<AgentHistoryRecordValue> negativeRecord =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(negativeRecordValue));
+    final var typicalEntity = new AgentHistoryEntity().setId("1");
+    final var zeroEntity = new AgentHistoryEntity().setId("2");
+    final var negativeEntity = new AgentHistoryEntity().setId("3");
 
     // when
-    underTest.updateEntity(record, entity);
+    underTest.updateEntity(typicalRecord, typicalEntity);
+    underTest.updateEntity(zeroRecord, zeroEntity);
+    underTest.updateEntity(negativeRecord, negativeEntity);
 
-    // then
-    assertThat(entity.getLoopIteration()).isEqualTo(5);
+    // then — all values are stored as provided, unchanged
+    assertThat(typicalEntity.getLoopIteration()).isEqualTo(5);
+    assertThat(zeroEntity.getLoopIteration()).isEqualTo(0);
+    assertThat(negativeEntity.getLoopIteration()).isEqualTo(-1);
   }
 
   @Test

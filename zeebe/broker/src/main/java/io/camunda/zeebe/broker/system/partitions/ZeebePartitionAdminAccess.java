@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
@@ -166,9 +167,10 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           try {
             adminControl.resumeProcessing();
             if (adminControl.getStreamProcessor() != null && adminControl.shouldProcess()) {
-              adminControl.getStreamProcessor().resumeProcessing();
+              adminControl.getStreamProcessor().resumeProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
             }
-            completed.complete(null);
           } catch (final IOException e) {
             LOG.error("Could not resume processing", e);
             completed.completeExceptionally(e);
@@ -235,6 +237,22 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             future.complete(limits);
           } catch (final Exception e) {
             LOG.error("Failure on getting the limit configuration of flow control.", e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  @Override
+  public ActorFuture<ExporterPhase> getExporterPhase() {
+    final ActorFuture<ExporterPhase> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> {
+          try {
+            future.complete(adminControl.getExporterPhase());
+          } catch (final Exception e) {
+            LOG.error("Failure on getting the exporter phase.", e);
             future.completeExceptionally(e);
           }
         });

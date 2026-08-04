@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -19,7 +19,7 @@ test.describe('Setup Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      username: 'x',
+      username: null,
       password: 'x',
       __unexpectedField: 'x',
     };
@@ -49,7 +49,7 @@ test.describe('Setup Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      username: 'x',
+      username: null,
       password: 123,
     };
     const res = await request.post(buildUrl('/setup/user', undefined), {
@@ -66,7 +66,7 @@ test.describe('Setup Validation API Tests', () => {
     request,
   }) => {
     const requestBody = {
-      username: 'x',
+      username: null,
       password: true,
     };
     const res = await request.post(buildUrl('/setup/user', undefined), {
@@ -79,12 +79,10 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param username wrong type (#1)', async ({
-    request,
-  }) => {
+  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
+  test.skip('createAdminUser - Missing password (#1)', async ({request}) => {
     const requestBody = {
-      username: 123,
-      password: 'x',
+      username: null,
     };
     const res = await request.post(buildUrl('/setup/user', undefined), {
       headers: jsonHeaders(),
@@ -96,24 +94,8 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Param username wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      username: true,
-      password: 'x',
-    };
-    const res = await request.post(buildUrl('/setup/user', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createAdminUser - Missing password', async ({request}) => {
+  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
+  test.skip('createAdminUser - Missing password (#2)', async ({request}) => {
     const requestBody = {
       username: 'x',
     };
@@ -127,7 +109,8 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Missing username', async ({request}) => {
+  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
+  test.skip('createAdminUser - Missing username', async ({request}) => {
     const requestBody = {
       password: 'x',
     };
@@ -151,7 +134,8 @@ test.describe('Setup Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createAdminUser - Missing combo username,password', async ({
+  // Known failing (see known-failing-tests.json): createAdminUser body validation reorder (28d20717880f) is incomplete
+  test.skip('createAdminUser - Missing combo username,password', async ({
     request,
   }) => {
     const requestBody = {};

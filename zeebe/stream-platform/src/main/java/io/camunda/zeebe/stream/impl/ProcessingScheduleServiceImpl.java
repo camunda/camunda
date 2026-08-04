@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -23,6 +26,7 @@ import java.time.InstantSource;
 import java.util.PriorityQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -43,10 +47,10 @@ public class ProcessingScheduleServiceImpl
   private final long interval;
   private final ScheduledTaskMetrics metrics;
   private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
-  private LogStreamWriter logStreamWriter;
-  private ActorControl actorControl;
-  private AbortableRetryStrategy writeRetryStrategy;
-  private CompletableActorFuture<Void> openFuture;
+  private @Nullable LogStreamWriter logStreamWriter;
+  private @Nullable ActorControl actorControl;
+  private @Nullable AbortableRetryStrategy writeRetryStrategy;
+  private @Nullable CompletableActorFuture<Void> openFuture;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -71,7 +75,7 @@ public class ProcessingScheduleServiceImpl
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    return schedule(clock.millis() + delay.toMillis(), task);
+    return schedule(actorControl, clock.millis() + delay.toMillis(), task);
   }
 
   @Override
@@ -90,7 +94,7 @@ public class ProcessingScheduleServiceImpl
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    return schedule(timestamp, task);
+    return schedule(actorControl, timestamp, task);
   }
 
   @Override
@@ -131,7 +135,7 @@ public class ProcessingScheduleServiceImpl
 
     logStreamWriter = writerSupplier.get();
     actorControl = control;
-    openFuture.complete(null);
+    openFuture.complete(unit());
     actorControl.runAtFixedRate(Duration.ofMillis(interval), this::processScheduledTasks);
     return openFuture;
   }
@@ -149,11 +153,13 @@ public class ProcessingScheduleServiceImpl
     while (scheduledTasks.peek() != null && scheduledTasks.peek().scheduledTime <= now) {
       metrics.decrementScheduledTasks();
       final var expiredTask = scheduledTasks.poll();
-      actorControl.submit(expiredTask);
+      requireNonNull(actorControl).submit(expiredTask);
     }
   }
 
-  private ScheduledTask schedule(final long timestamp, final Runnable task) {
+  // actorControl is the same as the field, but guaranteed to be non-null
+  private ScheduledTask schedule(
+      final ActorControl actorControl, final long timestamp, final Runnable task) {
     final var scheduledTask = new ScheduledTaskImpl(timestamp, task);
     actorControl.run(
         () -> {
@@ -161,7 +167,8 @@ public class ProcessingScheduleServiceImpl
           final var delay = timestamp - clock.millis();
           scheduledTasks.add(scheduledTask);
           if (delay < interval / 2) {
-            actorControl.schedule(Duration.ofMillis(delay), this::processScheduledTasks);
+            requireNonNull(actorControl)
+                .schedule(Duration.ofMillis(delay), this::processScheduledTasks);
           }
         });
     return scheduledTask;
@@ -207,13 +214,14 @@ public class ProcessingScheduleServiceImpl
         LOG.trace(
             "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
             currentStreamProcessorPhase);
-        actorControl.submit(toRunnable(task));
+        requireNonNull(actorControl).submit(toRunnable(task));
         return;
       }
 
       final var stagedCache = commandCache.stage();
       final var builder =
-          new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents, stagedCache);
+          new BufferedTaskResultBuilder(
+              requireNonNull(logStreamWriter)::canWriteEvents, stagedCache);
       final var result = task.execute(builder);
       final var recordBatch = result.getRecordBatch();
 
@@ -226,18 +234,19 @@ public class ProcessingScheduleServiceImpl
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
       // write later
       final var writeFuture =
-          writeRetryStrategy.runWithRetry(
-              () -> {
-                LOG.trace("Write scheduled TaskResult to dispatcher!");
-                if (recordBatch.isEmpty()) {
-                  return true;
-                }
+          requireNonNull(writeRetryStrategy)
+              .runWithRetry(
+                  () -> {
+                    LOG.trace("Write scheduled TaskResult to dispatcher!");
+                    if (recordBatch.isEmpty()) {
+                      return true;
+                    }
 
-                return logStreamWriter
-                    .tryWrite(WriteContext.scheduled(), recordBatch.entries())
-                    .isRight();
-              },
-              abortCondition);
+                    return requireNonNull(logStreamWriter)
+                        .tryWrite(WriteContext.scheduled(), recordBatch.entries())
+                        .isRight();
+                  },
+                  abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {
@@ -266,12 +275,13 @@ public class ProcessingScheduleServiceImpl
 
     @Override
     public void cancel() {
-      actorControl.run(
-          () -> {
-            if (scheduledTasks.remove(this)) {
-              metrics.decrementScheduledTasks();
-            }
-          });
+      requireNonNull(actorControl)
+          .run(
+              () -> {
+                if (scheduledTasks.remove(this)) {
+                  metrics.decrementScheduledTasks();
+                }
+              });
     }
 
     @Override

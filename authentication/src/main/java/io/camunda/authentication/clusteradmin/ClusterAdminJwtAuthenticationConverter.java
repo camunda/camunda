@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.security.core.auth.MappingRuleMatcher.MappingRule;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.oidc.OidcPrincipalLoader;
+import io.camunda.security.oidc.OidcClaimExtractor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,11 @@ public final class ClusterAdminJwtAuthenticationConverter
   @Override
   public AbstractAuthenticationToken convert(final Jwt jwt) {
     final Map<String, Object> claims = jwt.getClaims();
-    final String clientId = principalLoader.load(claims).clientId();
+    // A malformed client-id claim only disables client-id matching; matchesGroup/matchesClaim
+    // still evaluate independently, and the name falls back to the subject
+    final String clientId =
+        OidcClaimExtractor.extractOrFallback(
+            () -> principalLoader.load(claims).clientId(), null, "clusterAdminClientId");
     final boolean isClusterAdmin =
         matchesClient(clientId) || matchesGroup(claims) || matchesClaim(claims);
 
@@ -80,8 +85,12 @@ public final class ClusterAdminJwtAuthenticationConverter
     if (groups.isEmpty()) {
       return false;
     }
-    final List<String> tokenGroups = groupsExtractor.extract(claims);
-    return tokenGroups != null && tokenGroups.stream().anyMatch(groups::contains);
+    // A malformed groups claim only disables this OR-branch; matchesClient/matchesClaim still
+    // evaluate independently, so this can never grant access it shouldn't
+    return OidcClaimExtractor.extractOrFallback(
+            () -> groupsExtractor.extract(claims), List.<String>of(), "clusterAdminGroups")
+        .stream()
+        .anyMatch(groups::contains);
   }
 
   private boolean matchesClaim(final Map<String, Object> claims) {

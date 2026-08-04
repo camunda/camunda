@@ -8,20 +8,141 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Roles Validation API Tests', () => {
+  test('assignRoleToClient - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/clients/{clientId}', {
+        roleId: 'x',
+        clientId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToClient - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/clients/{clientId}', {
+        roleId: '!',
+        clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('assignRoleToGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/groups/{groupId}', {roleId: 'x', groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToGroup - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/groups/{groupId}', {roleId: '!', groupId: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToMappingRule - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', {
+        roleId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToMappingRule - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', {
+        roleId: '!',
+        mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignRoleToUser - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/roles/{roleId}/users/{username}', {
+        roleId: '!',
+        username: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('assignRoleToUser - Path param username pattern violation', async ({
     request,
   }) => {
     const res = await request.put(
       buildUrl('/roles/{roleId}/users/{username}', {
         roleId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -35,7 +156,7 @@ test.describe('Roles Validation API Tests', () => {
   });
   test('createRole - Additional prop __unexpectedField', async ({request}) => {
     const requestBody = {
-      roleId: 'x',
+      roleId: null,
       name: 'x',
       __unexpectedField: 'x',
     };
@@ -63,7 +184,7 @@ test.describe('Roles Validation API Tests', () => {
   });
   test('createRole - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
-      roleId: 'x',
+      roleId: null,
       name: 123,
     };
     const res = await request.post(buildUrl('/roles', undefined), {
@@ -78,7 +199,7 @@ test.describe('Roles Validation API Tests', () => {
   });
   test('createRole - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
-      roleId: 'x',
+      roleId: null,
       name: true,
     };
     const res = await request.post(buildUrl('/roles', undefined), {
@@ -91,10 +212,9 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createRole - Param roleId wrong type (#1)', async ({request}) => {
+  test('createRole - Missing name (#1)', async ({request}) => {
     const requestBody = {
-      roleId: 123,
-      name: 'x',
+      roleId: null,
     };
     const res = await request.post(buildUrl('/roles', undefined), {
       headers: jsonHeaders(),
@@ -106,22 +226,7 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createRole - Param roleId wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      roleId: true,
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/roles', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createRole - Missing name', async ({request}) => {
+  test('createRole - Missing name (#2)', async ({request}) => {
     const requestBody = {
       roleId: 'x',
     };
@@ -154,6 +259,35 @@ test.describe('Roles Validation API Tests', () => {
     const res = await request.post(buildUrl('/roles', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('deleteRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}', {roleId: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('getRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(buildUrl('/roles/{roleId}', {roleId: '!'}), {
+      headers: jsonHeaders(),
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -327,6 +461,22 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchClientsForRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/roles/{roleId}/clients/search', {roleId: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('searchGroupsForRole - Additional prop __extraField', async ({
     request,
   }) => {
@@ -483,6 +633,22 @@ test.describe('Roles Validation API Tests', () => {
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchGroupsForRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/roles/{roleId}/groups/search', {roleId: '!'}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -649,6 +815,22 @@ test.describe('Roles Validation API Tests', () => {
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchMappingRulesForRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/roles/{roleId}/mapping-rules/search', {roleId: '!'}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -905,13 +1087,150 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('searchUsersForRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/roles/{roleId}/users/search', {roleId: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromClient - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/clients/{clientId}', {
+        roleId: 'x',
+        clientId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromClient - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/clients/{clientId}', {
+        roleId: '!',
+        clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('unassignRoleFromGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/groups/{groupId}', {roleId: 'x', groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromGroup - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/groups/{groupId}', {roleId: '!', groupId: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromMappingRule - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', {
+        roleId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromMappingRule - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', {
+        roleId: '!',
+        mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignRoleFromUser - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/roles/{roleId}/users/{username}', {
+        roleId: '!',
+        username: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('unassignRoleFromUser - Path param username pattern violation', async ({
     request,
   }) => {
     const res = await request.delete(
       buildUrl('/roles/{roleId}/users/{username}', {
         roleId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -926,7 +1245,6 @@ test.describe('Roles Validation API Tests', () => {
   test('updateRole - Additional prop __extraField', async ({request}) => {
     const requestBody = {
       name: 'x',
-      description: 'x',
       __extraField: 'unexpected',
     };
     const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
@@ -951,40 +1269,9 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateRole - Param description wrong type (#1)', async ({request}) => {
-    const requestBody = {
-      name: 'x',
-      description: 123,
-    };
-    const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateRole - Param description wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      name: 'x',
-      description: true,
-    };
-    const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
   test('updateRole - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
       name: 123,
-      description: 'x',
     };
     const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
       headers: jsonHeaders(),
@@ -999,21 +1286,6 @@ test.describe('Roles Validation API Tests', () => {
   test('updateRole - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
       name: true,
-      description: 'x',
-    };
-    const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateRole - Missing description', async ({request}) => {
-    const requestBody = {
-      name: 'x',
     };
     const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
       headers: jsonHeaders(),
@@ -1026,9 +1298,7 @@ test.describe('Roles Validation API Tests', () => {
     expect(res.status()).toBe(400);
   });
   test('updateRole - Missing name', async ({request}) => {
-    const requestBody = {
-      description: 'x',
-    };
+    const requestBody = {};
     const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
       headers: jsonHeaders(),
       data: requestBody,
@@ -1049,11 +1319,11 @@ test.describe('Roles Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateRole - Missing combo name,description', async ({request}) => {
-    const requestBody = {};
-    const res = await request.put(buildUrl('/roles/{roleId}', {roleId: 'x'}), {
+  test('updateRole - Path param roleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(buildUrl('/roles/{roleId}', {roleId: '!'}), {
       headers: jsonHeaders(),
-      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {

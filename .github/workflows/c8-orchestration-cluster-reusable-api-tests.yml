@@ -34,6 +34,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
+          # Nothing later in this job needs the short-lived GITHUB_TOKEN left
+          # in .git/config (zizmor: artipacked).
+          persist-credentials: false
 
       - name: Set CAMUNDA_DOCKER_IMAGE
         run: |
@@ -214,6 +217,32 @@ jobs:
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
+      # Capture the container logs (incl. camunda.log = the exporter log) and
+      # Elasticsearch state after the tests run, regardless of outcome. These
+      # are not otherwise available in the step log or artifacts, so exporter-
+      # side failures — e.g. a handler throwing during bulk flush, which halts
+      # indexing and makes v2 search/get return empty/404 — can be diagnosed
+      # from the exporter log + ES index doc counts rather than test symptoms.
+      - name: Capture container and Elasticsearch logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p container-logs
+          for c in $(docker ps --format '{{.Names}}' 2>/dev/null || true); do
+            docker logs --timestamps "$c" > "container-logs/${c}.log" 2>&1 || true
+          done
+          docker ps -a > container-logs/docker-ps.txt 2>&1 || true
+          {
+            echo "### _cluster/health"
+            curl -s 'http://localhost:9200/_cluster/health?pretty' || true
+            echo "### _cat/indices"
+            curl -s 'http://localhost:9200/_cat/indices?v&s=index' || true
+          } > container-logs/elasticsearch-state.txt 2>&1 || true
+          curl -s 'http://localhost:9600/actuator/prometheus' 2>/dev/null \
+            | grep -iE 'export|backpressure|flush|zeebe_stream_processor' \
+            > container-logs/camunda-exporter-metrics.txt 2>&1 || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Publish test results to TestRail
         if: always()
         shell: bash
@@ -262,6 +291,15 @@ jobs:
           name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
           if-no-files-found: ignore
+          retention-days: 5
+
+      - name: Upload container logs to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
+          if-no-files-found: warn
           retention-days: 5
 
       - name: Observe build status

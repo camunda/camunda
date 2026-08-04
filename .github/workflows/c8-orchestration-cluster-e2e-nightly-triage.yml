@@ -201,7 +201,10 @@ jobs:
                 patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
               done
             elif [ "$test_type" = "api_es" ]; then
-              patterns+=("json-report-nightly-api-${safe_version}|elasticsearch")
+              # Trailing glob tolerates the mode suffix (e.g. "-profiles") the
+              # API-tests job now appends to the artifact name. Does not collide
+              # with rdbms artifacts (json-report-nightly-api-rdbms-...).
+              patterns+=("json-report-nightly-api-${safe_version}*|elasticsearch")
             elif [ "$test_type" = "api_rdbms" ]; then
               # List the per-database artifact names from the run
               gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
@@ -224,38 +227,43 @@ jobs:
                 rm -rf "$tmp_dir"
                 continue
               fi
-              results=$(find "$tmp_dir" -name 'results.json' -type f | head -1)
-              if [ -z "$results" ]; then
+              mapfile -t results_files < <(find "$tmp_dir" -name 'results.json' -type f | LC_ALL=C sort)
+              if [ "${#results_files[@]}" -eq 0 ]; then
                 rm -rf "$tmp_dir"
                 continue
               fi
-              # Extract failing specs. tasklist_mode is non-null only for e2e; database for api.
-              if [ "$test_type" = "e2e" ]; then
-                jq -c --arg v "$version" --arg mode "$dim" '
-                  [.. | objects | select(.specs?) | .specs[]]
-                  | map(select(.ok == false))
-                  | .[] | {
-                      version: $v,
-                      file: .file,
-                      test_name: .title,
-                      error: (.tests[0].results[-1].error.message // "unknown error"),
-                      test_type: "e2e",
-                      tasklist_mode: $mode
-                    }' "$results" >> "$all_failures" || true
-              else
-                # API tests (ES or RDBMS): set database from dim
-                jq -c --arg v "$version" --arg db "$dim" '
-                  [.. | objects | select(.specs?) | .specs[]]
-                  | map(select(.ok == false))
-                  | .[] | {
-                      version: $v,
-                      file: .file,
-                      test_name: .title,
-                      error: (.tests[0].results[-1].error.message // "unknown error"),
-                      test_type: "api",
-                      database: $db
-                    }' "$results" >> "$all_failures" || true
-              fi
+              # A glob pattern (api_es) can match multiple report artifacts for one
+              # run (e.g. -profiles and -all-in-one), so parse every results.json.
+              # e2e / api_rdbms download one exact artifact, so the loop runs once.
+              for results in "${results_files[@]}"; do
+                # Extract failing specs. tasklist_mode is non-null only for e2e; database for api.
+                if [ "$test_type" = "e2e" ]; then
+                  jq -c --arg v "$version" --arg mode "$dim" '
+                    [.. | objects | select(.specs?) | .specs[]]
+                    | map(select(.ok == false))
+                    | .[] | {
+                        version: $v,
+                        file: .file,
+                        test_name: .title,
+                        error: (.tests[0].results[-1].error.message // "unknown error"),
+                        test_type: "e2e",
+                        tasklist_mode: $mode
+                      }' "$results" >> "$all_failures" || true
+                else
+                  # API tests (ES or RDBMS): set database from dim
+                  jq -c --arg v "$version" --arg db "$dim" '
+                    [.. | objects | select(.specs?) | .specs[]]
+                    | map(select(.ok == false))
+                    | .[] | {
+                        version: $v,
+                        file: .file,
+                        test_name: .title,
+                        error: (.tests[0].results[-1].error.message // "unknown error"),
+                        test_type: "api",
+                        database: $db
+                      }' "$results" >> "$all_failures" || true
+                fi
+              done
               rm -rf "$tmp_dir"
             done
           done
@@ -319,6 +327,11 @@ jobs:
               | select(.file != null and .file != "")
               | select(.file | test("\\.spec\\.[jt]s$"))
             )
+            # Collapse true duplicates: one api_es run can now emit the same failing
+            # spec from two report artifacts (-profiles and -all-in-one), both tagged
+            # database=elasticsearch. Distinct databases (rdbms) and tasklist modes
+            # (e2e) remain separate rows.
+            | unique_by([.version, .file, .test_name, (.database // ""), (.tasklist_mode // "")])
           ' /tmp/all_failures.jsonl > /tmp/failures_normalized.json
 
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"

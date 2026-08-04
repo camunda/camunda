@@ -138,6 +138,30 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-common</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-mcp</artifactId>
     </dependency>
@@ -264,23 +288,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-filesystem</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-s3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-gcs</artifactId>
     </dependency>
 
     <dependency>
@@ -779,6 +788,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -800,11 +814,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
     <dependency>
@@ -1101,6 +1110,7 @@
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-search-domain</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-backup-store-filesystem</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1142,6 +1152,8 @@
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
+            <!-- Kept only for its oauth2-oidc-sdk exclusion, see dependency declaration above -->
+            <dep>io.camunda:zeebe-backup-store-azure</dep>
           </ignoredUnusedDeclaredDependencies>
           <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
                transitively at compile scope via camunda-authentication / operate-webapp. We
@@ -1150,6 +1162,7 @@
           <ignoredUsedUndeclaredDependencies>
             <dep>org.springframework.security:spring-security-web</dep>
             <dep>org.springframework.security:spring-security-config</dep>
+            <dep>io.camunda:zeebe-backup-store-filesystem</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

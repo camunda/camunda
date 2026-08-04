@@ -101,6 +101,12 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
   /** Filter by hasIncident */
   ProcessInstanceFilterBase hasIncident(final Boolean hasIncident);
 
+  /** Filter by suspendedDate */
+  ProcessInstanceFilterBase suspendedDate(final OffsetDateTime suspendedDate);
+
+  /** Filter by suspendedDate using {@link DateTimeProperty} consumer */
+  ProcessInstanceFilterBase suspendedDate(final Consumer<DateTimeProperty> fn);
+
   /** Filter by tenantId */
   ProcessInstanceFilterBase tenantId(final String tenantId);
 

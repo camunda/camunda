@@ -177,26 +177,26 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
     <constructor>
-      <idArg column="MESSAGE_SUBSCRIPTION_KEY" javaType="java.lang.Long" />
+      <idArg column="MESSAGE_SUBSCRIPTION_KEY" javaType="java.lang.Long" name="messageSubscriptionKey" />
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId" />
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey" />
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey" />
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey" />
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String" name="flowNodeId" />
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long" name="flowNodeInstanceKey" />
+      <arg column="MESSAGE_SUBSCRIPTION_STATE" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" name="messageSubscriptionState" />
+      <arg column="MESSAGE_SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionType" name="messageSubscriptionType" />
+      <arg column="DATE_TIME" javaType="java.time.OffsetDateTime" name="dateTime" />
+      <arg column="MESSAGE_NAME" javaType="java.lang.String" name="messageName" />
+      <arg column="CORRELATION_KEY" javaType="java.lang.String" name="correlationKey" />
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId" />
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId" />
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String" name="processDefinitionName" />
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer" name="processDefinitionVersion" />
+      <arg column="TOOL_PROPERTIES" javaType="java.lang.String" name="serializedToolProperties" />
+      <arg column="TOOL_NAME" javaType="java.lang.String" name="toolName" />
+      <arg column="INBOUND_CONNECTOR_TYPE" javaType="java.lang.String" name="inboundConnectorType" />
     </constructor>
-    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
-    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
-    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
-    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
-    <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
-    <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
-    <result column="MESSAGE_SUBSCRIPTION_STATE" property="messageSubscriptionState" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" />
-    <result column="MESSAGE_SUBSCRIPTION_TYPE" property="messageSubscriptionType" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionType" />
-    <result column="DATE_TIME" property="dateTime" javaType="java.time.OffsetDateTime" />
-    <result column="MESSAGE_NAME" property="messageName" javaType="java.lang.String" />
-    <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
-    <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
-    <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
-    <result column="PROCESS_DEFINITION_NAME" property="processDefinitionName" javaType="java.lang.String" />
-    <result column="PROCESS_DEFINITION_VERSION" property="processDefinitionVersion" javaType="java.lang.Integer" />
-    <result column="TOOL_PROPERTIES" property="serializedToolProperties" javaType="java.lang.String" />
-    <result column="TOOL_NAME" property="toolName" javaType="java.lang.String" />
-    <result column="INBOUND_CONNECTOR_TYPE" property="inboundConnectorType" javaType="java.lang.String" />
   </resultMap>
 
 

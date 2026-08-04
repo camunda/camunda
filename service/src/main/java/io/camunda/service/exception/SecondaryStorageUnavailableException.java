@@ -7,6 +7,11 @@
  */
 package io.camunda.service.exception;
 
+/**
+ * Thrown when secondary storage is not configured at all ({@code camunda.database.type=none}). HTTP
+ * 403 — contrast with {@link SecondaryStorageDegradedException}, which is HTTP 503 for a configured
+ * but currently-degraded physical tenant.
+ */
 public class SecondaryStorageUnavailableException extends ServiceException {
   public static final String NO_SECONDARY_STORAGE_MESSAGE =
       "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property.";

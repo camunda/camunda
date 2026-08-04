@@ -117,13 +117,16 @@
 
   <resultMap id="authorizationResultMap"
     type="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
-    <id column="AUTHORIZATION_KEY" property="authorizationKey"/>
-    <id column="OWNER_ID" property="ownerId"/>
-    <id column="OWNER_TYPE" property="ownerType"/>
-    <id column="RESOURCE_TYPE" property="resourceType"/>
-    <id column="RESOURCE_MATCHER" property="resourceMatcher"/>
-    <id column="RESOURCE_ID" property="resourceId"/>
-    <id column="RESOURCE_PROPERTY_NAME" property="resourcePropertyName"/>
+    <constructor>
+      <idArg name="authorizationKey" column="AUTHORIZATION_KEY" javaType="java.lang.Long"/>
+      <idArg name="ownerId" column="OWNER_ID" javaType="java.lang.String"/>
+      <idArg name="ownerType" column="OWNER_TYPE" javaType="java.lang.String"/>
+      <idArg name="resourceType" column="RESOURCE_TYPE" javaType="java.lang.String"/>
+      <idArg name="resourceMatcher" column="RESOURCE_MATCHER" javaType="java.lang.Short"/>
+      <idArg name="resourceId" column="RESOURCE_ID" javaType="java.lang.String"/>
+      <idArg name="resourcePropertyName" column="RESOURCE_PROPERTY_NAME"
+        javaType="java.lang.String"/>
+    </constructor>
     <collection property="permissionTypes"
       ofType="io.camunda.security.api.model.authz.PermissionType"
       javaType="java.util.Set">

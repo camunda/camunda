@@ -20,11 +20,15 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.Ordered;
 
 /**
  * Verifies that exactly one security setup is active per {@code optimize.security.csl.enabled}
@@ -101,6 +105,7 @@ class CslSecurityChainSelectionTest {
           assertThat(context).hasSingleBean(CCSMSecurityConfigurerAdapter.class);
           assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
           assertThat(context).doesNotHaveBean(SecurityPathPort.class);
+          assertThat(context).doesNotHaveBean("externalSharingRequestAdjuster");
         });
   }
 
@@ -118,6 +123,7 @@ class CslSecurityChainSelectionTest {
                   .isInstanceOf(OptimizeSecurityPathAdapter.class);
               assertThat(context.getBean(MembershipPort.class))
                   .isInstanceOf(OptimizeMembershipAdapter.class);
+              assertExternalSharingFilterRegistered(context);
             });
   }
 
@@ -145,6 +151,20 @@ class CslSecurityChainSelectionTest {
               assertThat(context).hasSingleBean(OptimizeCamundaSecurityConfig.class);
               assertThat(context.getBean(MembershipPort.class))
                   .isInstanceOf(OptimizeMembershipAdapter.class);
+              assertExternalSharingFilterRegistered(context);
             });
+  }
+
+  /**
+   * External sharing is served by a request-adjustment filter that each legacy adapter registers
+   * for itself. Both back off in CSL mode, so {@link OptimizeCamundaSecurityConfig} must register
+   * one, ahead of the security chain, which matches on the rewritten URI.
+   */
+  private static void assertExternalSharingFilterRegistered(final ApplicationContext context) {
+    final FilterRegistrationBean<?> registration =
+        context.getBean("externalSharingRequestAdjuster", FilterRegistrationBean.class);
+    assertThat(registration.getFilter()).isInstanceOf(CCSMRequestAdjustmentFilter.class);
+    assertThat(registration.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE);
+    assertThat(registration.getUrlPatterns()).containsExactly("/*");
   }
 }

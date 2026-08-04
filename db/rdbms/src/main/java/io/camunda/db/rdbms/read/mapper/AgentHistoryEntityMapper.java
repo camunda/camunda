@@ -20,6 +20,8 @@ public class AgentHistoryEntityMapper {
     if (dbModel == null) {
       return null;
     }
+    final var contentItems = dbModel.contentItems();
+    final var toolCallValues = dbModel.toolCallValues();
     return new AgentInstanceHistoryEntity(
         dbModel.agentHistoryKey(),
         dbModel.agentInstanceKey(),
@@ -32,8 +34,8 @@ public class AgentHistoryEntityMapper {
         nullToEmpty(dbModel.jobLease()),
         dbModel.loopIteration(),
         dbModel.role(),
-        dbModel.contentItems() != null ? dbModel.contentItems() : List.of(),
-        dbModel.toolCallValues() != null ? dbModel.toolCallValues() : List.of(),
+        contentItems != null ? contentItems : List.of(),
+        toolCallValues != null ? toolCallValues : List.of(),
         toMetrics(dbModel.inputTokens(), dbModel.outputTokens(), dbModel.durationMs()),
         dbModel.commitStatus(),
         dbModel.producedAt());

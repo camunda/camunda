@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -300,6 +301,26 @@ public class ConditionalEvaluationAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(secondProcessId));
+  }
+
+  @Test
+  public void shouldRejectWhenNoPrincipalClaimAndMultiTenancyEnabled() {
+    // given — a command carrying no username/clientId claim at all (not anonymous either); this
+    // is the shape an unauthenticated gateway deployment would produce, and must be rejected
+    // rather than vacuously authorized for the tenant now that multi-tenancy is enabled
+    final var authInfo = AuthorizationUtil.getClaimsFreeAuthInfo();
+
+    // when
+    final var rejection =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 100, "y", 1))
+            .expectRejection()
+            .evaluate(authInfo);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
   }
 
   @Test

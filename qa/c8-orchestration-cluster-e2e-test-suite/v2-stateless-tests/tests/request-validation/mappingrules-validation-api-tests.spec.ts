@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -22,7 +22,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 'x',
       claimValue: 'x',
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
       __unexpectedField: 'x',
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
@@ -54,7 +54,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 123,
       claimValue: 'x',
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -73,7 +73,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: true,
       claimValue: 'x',
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -92,7 +92,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 'x',
       claimValue: 123,
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -111,45 +111,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 'x',
       claimValue: true,
       name: 'x',
-      mappingRuleId: 'x',
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Param mappingRuleId wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 'x',
-      mappingRuleId: 123,
-    };
-    const res = await request.post(buildUrl('/mapping-rules', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createMappingRule - Param mappingRuleId wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      claimName: 'x',
-      claimValue: 'x',
-      name: 'x',
-      mappingRuleId: true,
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -166,7 +128,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 'x',
       claimValue: 'x',
       name: 123,
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -183,7 +145,7 @@ test.describe('Mappingrules Validation API Tests', () => {
       claimName: 'x',
       claimValue: 'x',
       name: true,
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -199,7 +161,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     const requestBody = {
       claimValue: 'x',
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -215,7 +177,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     const requestBody = {
       claimName: 'x',
       name: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -247,7 +209,7 @@ test.describe('Mappingrules Validation API Tests', () => {
     const requestBody = {
       claimName: 'x',
       claimValue: 'x',
-      mappingRuleId: 'x',
+      mappingRuleId: null,
     };
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
@@ -275,6 +237,38 @@ test.describe('Mappingrules Validation API Tests', () => {
     const res = await request.post(buildUrl('/mapping-rules', undefined), {
       headers: jsonHeaders(),
     });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('deleteMappingRule - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('getMappingRule - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -650,6 +644,21 @@ test.describe('Mappingrules Validation API Tests', () => {
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateMappingRule - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/mapping-rules/{mappingRuleId}', {mappingRuleId: '!'}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.

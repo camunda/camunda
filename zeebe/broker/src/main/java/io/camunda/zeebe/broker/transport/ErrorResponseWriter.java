@@ -155,6 +155,12 @@ public final class ErrorResponseWriter implements BufferWriter {
                   "Failed to write client request to partition '%d', because the request limit is exhausted.",
                   partitionId));
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
+      case PARTITION_PAUSED ->
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because it is paused for a"
+                      + " leadership transfer.",
+                  partitionId));
     };
   }
 
@@ -224,7 +230,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   @Override
-  public int write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     errorResponseEncoder.wrapAndApplyHeader(buffer, offset, messageHeaderEncoder);
     errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
 

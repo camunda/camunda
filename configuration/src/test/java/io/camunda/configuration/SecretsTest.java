@@ -282,4 +282,351 @@ class SecretsTest {
       assertThat(secrets.getStores().getAws()).isEmpty();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.gcp-prod.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.gcp-prod.path-prefix=camunda-",
+        "camunda.secrets.stores.gcp.gcp-prod.endpoint=secretmanager.example.com:443",
+        "camunda.secrets.stores.gcp.gcp-minimal.project-id=minimal-project"
+      })
+  class WithGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindGcpStoreProperties() {
+      // given the camunda.secrets.stores.gcp.gcp-prod.* properties are set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named store is present and its fields are bound
+      assertThat(secrets.getStores().getGcp().get("gcp-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+                assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+                assertThat(store.getEndpoint()).isEqualTo("secretmanager.example.com:443");
+              });
+    }
+
+    @Test
+    void shouldDefaultContainerSecretIdToNull() {
+      // given container-secret-id is not set for gcp-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it defaults to the flat one-secret-per-reference mode
+      assertThat(secrets.getStores().getGcp().get("gcp-prod").getContainerSecretId()).isNull();
+    }
+
+    @Test
+    void shouldBindMultipleStoresKeyedById() {
+      // given two gcp stores are configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both store ids are present
+      assertThat(secrets.getStores().getGcp()).containsKeys("gcp-prod", "gcp-minimal");
+    }
+
+    @Test
+    void shouldAllowOptionalPathPrefixAndEndpoint() {
+      // given gcp-minimal has only project-id set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then project-id is bound while the optional fields stay null
+      assertThat(secrets.getStores().getGcp().get("gcp-minimal"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("minimal-project");
+                assertThat(store.getPathPrefix()).isNull();
+                assertThat(store.getEndpoint()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.bundled.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.bundled.container-secret-id=app-config"
+      })
+  class WithGcpContainerSecretIdConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpContainerSecretIdConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindContainerSecretId() {
+      // given container-secret-id is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getGcp().get("bundled").getContainerSecretId())
+          .isEqualTo("app-config");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.project-id= "})
+  class WithBlankGcpProjectId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpProjectId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankProjectId() {
+      // given project-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("project-id must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.endpoint= "})
+  class WithBlankGcpEndpoint {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpEndpoint(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankEndpoint() {
+      // given endpoint is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("endpoint must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.container-secret-id= "})
+  class WithBlankGcpContainerSecretId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpContainerSecretId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankContainerSecretId() {
+      // given container-secret-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("container-secret-id must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.no-project.path-prefix=camunda-"})
+  class WithGcpStoreWithoutProjectId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpStoreWithoutProjectId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAllowOmittedProjectId() {
+      // given a gcp store with no project-id set (see @TestPropertySource): project-id is optional
+      // and resolved from the environment/metadata via Application Default Credentials
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store binds without throwing and project-id stays null
+      assertThat(secrets.getStores().getGcp().get("no-project").getProjectId()).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.badprefix.path-prefix=camunda/"})
+  class WithGcpPathPrefixContainingInvalidChars {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpPathPrefixContainingInvalidChars(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectPathPrefixWithCharsOutsideSecretIdCharset() {
+      // given path-prefix contains a slash, invalid in a GCP secret id (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("path-prefix must contain only [a-zA-Z0-9_-]");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.stores.gcp.badcontainer.container-secret-id=app/config"})
+  class WithGcpContainerSecretIdContainingInvalidChars {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpContainerSecretIdContainingInvalidChars(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectContainerSecretIdWithCharsOutsideSecretIdCharset() {
+      // given container-secret-id contains a slash, invalid in a GCP secret id
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("container-secret-id must contain only [a-zA-Z0-9_-]");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // 256 'a's (4 x 64), one over the 255 GCP secret-id cap
+        "camunda.secrets.stores.gcp.toolong.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdTooLong {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdTooLong(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectEffectiveContainerSecretIdOver255Chars() {
+      // given a 256-char container-secret-id, over the 255 GCP secret-id cap
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("must be at most 255 characters");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // path-prefix (64) + container-secret-id (192) = 256, one over the 255 cap, while each
+        // part alone is within it: exercises the combined "effective" length check
+        "camunda.secrets.stores.gcp.combined.path-prefix="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camunda.secrets.stores.gcp.combined.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdTooLongViaPrefix {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdTooLongViaPrefix(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectWhenPathPrefixPlusContainerSecretIdExceeds255Chars() {
+      // given path-prefix + container-secret-id sum to 256, though neither alone exceeds 255
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws on the combined length
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("must be at most 255 characters");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // path-prefix (63) + container-secret-id (192) = 255, exactly at the cap: must bind cleanly
+        "camunda.secrets.stores.gcp.atlimit.path-prefix="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camunda.secrets.stores.gcp.atlimit.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdAtLimit {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdAtLimit(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAllowEffectiveContainerSecretIdOfExactly255Chars() {
+      // given path-prefix + container-secret-id sum to exactly 255, the GCP secret-id cap
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store binds without throwing
+      assertThat(secrets.getStores().getGcp().get("atlimit").getContainerSecretId()).hasSize(192);
+    }
+  }
+
+  @Nested
+  class WithoutGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyGcpMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the gcp map is empty
+      assertThat(secrets.getStores().getGcp()).isEmpty();
+    }
+  }
 }

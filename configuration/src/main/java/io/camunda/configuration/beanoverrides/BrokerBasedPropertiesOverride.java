@@ -70,6 +70,7 @@ import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.util.Preconditions;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -261,6 +262,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromMessages(override, camunda);
     populateFromUsageMetrics(override, camunda);
     populateFromValidators(override, camunda);
+    populateFromSecretResolution(override, camunda);
 
     override
         .getExperimental()
@@ -618,6 +620,18 @@ public class BrokerBasedPropertiesOverride {
         .getRaft()
         .setPreferSnapshotReplicationThreshold(raft.getPreferSnapshotReplicationThreshold());
     override
+        .getCluster()
+        .getRaft()
+        .setRebalanceReplicationLagThreshold(raft.getRebalance().getReplicationLagThreshold());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceReplicationTimeout(raft.getRebalance().getReplicationTimeout());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceMaxTransferAttempts(raft.getRebalance().getMaxTransferAttempts());
+    override
         .getExperimental()
         .getRaft()
         .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());
@@ -741,6 +755,17 @@ public class BrokerBasedPropertiesOverride {
         camunda.getData().getPrimaryStorage().getBackup();
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setStore(BackupStoreType.valueOf(primaryStorageBackup.getStore().name()));
+    Preconditions.test(
+        primaryStorageBackup.getReadTimeout() != null
+            && !primaryStorageBackup.getReadTimeout().isPositive(),
+        "BackupStore readTimeout must be positive");
+    backupCfg.setReadTimeout(primaryStorageBackup.getReadTimeout());
+
+    Preconditions.test(
+        primaryStorageBackup.getWriteTimeout() != null
+            && !primaryStorageBackup.getWriteTimeout().isPositive(),
+        "BackupStore writeTimeout must be positive");
+    backupCfg.setWriteTimeout(primaryStorageBackup.getWriteTimeout());
 
     populateFromS3(override, camunda);
     populateFromGcs(override, camunda);
@@ -1241,8 +1266,6 @@ public class BrokerBasedPropertiesOverride {
         processInstanceCreation.getMessageStartAskRetryInterval());
     processInstanceCreationCfg.setMessageStartLockReleasePollInterval(
         processInstanceCreation.getMessageStartLockReleasePollInterval());
-    processInstanceCreationCfg.setMessageStartLockReleasePollMaxBackoff(
-        processInstanceCreation.getMessageStartLockReleasePollMaxBackoff());
     processInstanceCreationCfg.setMessageStartLockReleasePollBatchLimit(
         processInstanceCreation.getMessageStartLockReleasePollBatchLimit());
   }
@@ -1254,5 +1277,16 @@ public class BrokerBasedPropertiesOverride {
     jobsCfg.setIncludeVariablesInJobCompletedEvent(job.isIncludeVariablesInJobCompletedEvent());
     jobsCfg.setTimeoutCheckerBatchLimit(job.getTimeoutCheckerBatchLimit());
     jobsCfg.setTimeoutCheckerPollingInterval(job.getTimeoutCheckerPollingInterval());
+  }
+
+  private static void populateFromSecretResolution(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineSecrets = camunda.getProcessing().getEngine().getSecrets();
+    final var secretResolutionCfg = override.getExperimental().getEngine().getSecretResolution();
+    secretResolutionCfg.setInterval(engineSecrets.getInterval());
+    secretResolutionCfg.setRetryMaxAttempts(engineSecrets.getRetryMaxAttempts());
+    secretResolutionCfg.setRetryInitialDelay(engineSecrets.getRetryInitialDelay());
+    secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
+    secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
   }
 }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base, type Cookie} from '@playwright/test';
+import {test as base, expect, type Cookie} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
@@ -230,11 +230,23 @@ const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
       const baseURL =
         process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
       const context = await browser.newContext();
-      const response = await context.request.post(`${baseURL}/login`, {
-        form: loginUser,
-      });
-      const csrfToken = response.headers()['x-csrf-token'] ?? '';
-      const cookies = await context.cookies();
+      let csrfToken = '';
+      let cookies: Cookie[] = [];
+      // loginState is worker-scoped, so a login that silently fails would send
+      // every test on this worker (and its retries) to the login screen. Retry
+      // the login until the session cookie is actually established, and fail
+      // loudly if it never is, instead of proceeding unauthenticated.
+      await expect(async () => {
+        const response = await context.request.post(`${baseURL}/login`, {
+          form: loginUser,
+        });
+        expect(response.status()).toBe(204);
+        csrfToken = response.headers()['x-csrf-token'] ?? '';
+        cookies = await context.cookies();
+        expect(
+          cookies.some((cookie) => cookie.name === 'camunda-session'),
+        ).toBe(true);
+      }).toPass({timeout: 30_000});
       await context.close();
       await use({cookies, csrfToken});
     },

@@ -283,4 +283,84 @@ class PhysicalTenantSecretsOverlayTest {
                 .getPathPrefix())
         .isEqualTo("camunda/");
   }
+
+  @Test
+  void shouldOverlayGcpStorePerTenant() {
+    // given a root gcp store and a tenant that overrides its path-prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project",
+                "camunda.secrets.stores.gcp.shared.path-prefix", "camunda-",
+                "camunda.physical-tenants.tenanta.secrets.stores.gcp.shared.path-prefix",
+                    "tenanta-")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own path-prefix and the synthesized default keeps the root one
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("tenanta-");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("camunda-");
+  }
+
+  @Test
+  void shouldInheritRootGcpStoreWhenTenantHasNoSecretsOverride() {
+    // given only a root gcp store; the tenant overrides no secrets field
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits the root store (non-overridden -> seeded from root bind)
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getProjectId())
+        .isEqualTo("my-gcp-project");
+  }
+
+  @Test
+  void shouldOverrideOnlyTheFieldTenantSetsForGcpStore() {
+    // given root sets both project-id and path-prefix; tenant overrides only path-prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project",
+                "camunda.secrets.stores.gcp.shared.path-prefix", "camunda-",
+                "camunda.physical-tenants.tenanta.secrets.stores.gcp.shared.path-prefix",
+                    "tenanta-")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's path-prefix is overridden but project-id survives the deep merge from root
+    final var store =
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getGcp().get("shared");
+    assertThat(store.getPathPrefix()).isEqualTo("tenanta-");
+    assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+  }
 }

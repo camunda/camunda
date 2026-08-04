@@ -38,8 +38,23 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/v1/external/process/**",
           "/.well-known/oauth-protected-resource/**");
 
+  // Served by CSL's unprotected-paths chain, which sits ahead of every authenticated chain and
+  // installs no authentication filter at all. That is what /cluster/v2/status needs and what
+  // listing it in UNPROTECTED_API_PATHS could not give it: a `permitAll` inside an authenticated
+  // chain still lets the Basic or bearer filter reject a credential it does not recognise, and the
+  // cluster-admin chain recognises only cluster-admin credentials — so a client migrating here from
+  // /v2/status, which sends its ordinary API credentials on every request, would be answered 401 by
+  // a health endpoint. Here the Authorization header is never inspected. The exact path is listed,
+  // so the rest of /cluster/v2/** stays with the cluster-admin chains.
   private static final Set<String> UNPROTECTED_PATHS =
-      Set.of("/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
+      Set.of(
+          "/error",
+          "/actuator/**",
+          "/ready",
+          "/health",
+          "/startup",
+          "/favicon.ico",
+          "/cluster/v2/status");
 
   private static final Set<String> WEBAPP_PATHS =
       Set.of(

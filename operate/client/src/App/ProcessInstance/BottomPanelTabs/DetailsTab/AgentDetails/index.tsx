@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useId, useMemo, useState} from 'react';
 import type {
   AgentInstance,
   AgentInstanceStatus,
@@ -84,6 +84,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   hasMoreTotalItems,
   isError,
 }) => {
+  const headingId = useId();
   const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
     useState(false);
   const [selectedAgentInstanceKey, setSelectedAgentInstanceKey] = useState<
@@ -115,8 +116,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   if (isError || !agentInstance) {
     return (
-      <AgentDetailsContainer>
-        <AgentHeading>AI Agent</AgentHeading>
+      <AgentDetailsContainer aria-labelledby={headingId}>
+        <AgentHeading id={headingId}>AI Agent</AgentHeading>
         <ErrorHint>Unable to load agent information.</ErrorHint>
       </AgentDetailsContainer>
     );
@@ -133,6 +134,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   return (
     <AgentDetailsContainer
+      aria-labelledby={headingId}
       data-testid="agent-details"
       onKeyDown={(e) => {
         // TODO: Workaround for https://github.com/carbon-design-system/carbon/issues/22483.
@@ -145,7 +147,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       }}
     >
       <AgentHeader>
-        <AgentHeading>AI Agent</AgentHeading>
+        <AgentHeading id={headingId}>AI Agent</AgentHeading>
         {selectableAgentInstances.length > 1 ? (
           <AgentSelector
             agents={selectableAgentInstances}

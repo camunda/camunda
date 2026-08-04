@@ -15,15 +15,22 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-/** Utility class for loading OpenAPI specifications from YAML files. */
+/** Utility class for loading and customizing OpenAPI specifications from YAML files. */
 public final class OpenApiYamlLoader {
 
   /** Default OpenAPI specification path on the classpath (used as a development fallback). */
   public static final String DEFAULT_CLASSPATH_SPEC_PATH = "v2/rest-api.yaml";
+
+  /**
+   * Known path prefixes that will not be prefixed with `/v2` in {@link
+   * OpenApiYamlLoader#customizeOpenApiFromYaml(OpenAPI, String)}.
+   */
+  public static final Set<String> KNOWN_ROOTS = Set.of("/cluster/v2/");
 
   /**
    * Default OpenAPI specification path in the distribution.
@@ -68,8 +75,12 @@ public final class OpenApiYamlLoader {
   }
 
   /**
-   * Customizes an OpenAPI specification by loading configuration from a YAML file and applying it
-   * to the target OpenAPI instance.
+   * Loads and customizes the OpenAPI specification at {@code yamlPath}. Customizations:
+   *
+   * <ul>
+   *   <li>Prepends {@code /v2} into the path unless it is under a {@link
+   *       OpenApiYamlLoader#KNOWN_ROOTS well-known root} such as {@code /cluster/v2/}.
+   * </ul>
    *
    * @param targetOpenApi the OpenAPI instance to customize
    * @param yamlPath the path to the YAML file containing the configuration
@@ -87,14 +98,13 @@ public final class OpenApiYamlLoader {
     }
 
     if (yamlOpenApi.getPaths() != null) {
-      final var v2Paths = new io.swagger.v3.oas.models.Paths();
+      final var customizedPaths = new io.swagger.v3.oas.models.Paths();
       yamlOpenApi
           .getPaths()
           .forEach(
-              (pathKey, pathItem) -> {
-                v2Paths.addPathItem("/v2" + pathKey, pathItem);
-              });
-      targetOpenApi.setPaths(v2Paths);
+              (pathKey, pathItem) ->
+                  customizedPaths.addPathItem(prependV2PathSegment(pathKey), pathItem));
+      targetOpenApi.setPaths(customizedPaths);
     }
 
     if (yamlOpenApi.getComponents() != null) {
@@ -102,6 +112,15 @@ public final class OpenApiYamlLoader {
     }
 
     LOG.debug("Successfully customized OpenAPI specification from: {}", yamlPath);
+  }
+
+  private static String prependV2PathSegment(final String pathKey) {
+    for (final var knownRoot : KNOWN_ROOTS) {
+      if (pathKey.startsWith(knownRoot)) {
+        return pathKey;
+      }
+    }
+    return "/v2" + pathKey;
   }
 
   private static SwaggerParseResult loadYamlContent(final String yamlPath) throws IOException {

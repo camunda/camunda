@@ -7,9 +7,15 @@
  */
 package io.camunda.service.authorization;
 
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.BACKUP;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMPONENT;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.EXPORTER;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.SECRET;
 import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
+import static io.camunda.security.api.model.authz.PermissionType.CREATE;
+import static io.camunda.security.api.model.authz.PermissionType.DELETE;
+import static io.camunda.security.api.model.authz.PermissionType.PAUSE;
+import static io.camunda.security.api.model.authz.PermissionType.READ;
 import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
 import static io.camunda.security.api.model.authz.PermissionType.REVEAL;
 
@@ -52,6 +58,15 @@ public abstract class Authorizations {
   public static final RequiredAuthorization<AuthorizationEntity> AUTHORIZATION_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.authorization().read());
 
+  public static final RequiredAuthorization<Object> BACKUP_CREATE_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(BACKUP).permissionType(CREATE));
+
+  public static final RequiredAuthorization<Object> BACKUP_READ_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(BACKUP).permissionType(READ));
+
+  public static final RequiredAuthorization<Object> BACKUP_DELETE_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(BACKUP).permissionType(DELETE));
+
   public static final RequiredAuthorization<BatchOperationEntity>
       BATCH_OPERATION_READ_AUTHORIZATION = RequiredAuthorization.of(a -> a.batchOperation().read());
 
@@ -73,6 +88,9 @@ public abstract class Authorizations {
   public static final RequiredAuthorization<FlowNodeInstanceEntity>
       ELEMENT_INSTANCE_READ_AUTHORIZATION =
           RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final RequiredAuthorization<Object> EXPORTER_PAUSE_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(EXPORTER).permissionType(PAUSE));
 
   public static final RequiredAuthorization<FormEntity> FORM_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.resource().read());
@@ -113,6 +131,9 @@ public abstract class Authorizations {
 
   public static final RequiredAuthorization<Object> SECRET_REVEAL_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.resourceType(SECRET).permissionType(REVEAL));
+
+  public static final RequiredAuthorization<Object> SECRET_READ_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(SECRET).permissionType(READ));
 
   public static final RequiredAuthorization<TenantEntity> TENANT_READER_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.tenant().read());

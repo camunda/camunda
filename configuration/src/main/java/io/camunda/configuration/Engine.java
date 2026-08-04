@@ -40,6 +40,9 @@ public class Engine {
   /** Configuration properties for the engine's BPMN/DMN validators. */
   @NestedConfigurationProperty private EngineValidators validators = new EngineValidators();
 
+  /** Configuration properties for the engine's secret resolution scheduler. */
+  @NestedConfigurationProperty private EngineSecrets secrets = new EngineSecrets();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -100,6 +103,14 @@ public class Engine {
 
   public void setValidators(final EngineValidators validators) {
     this.validators = validators;
+  }
+
+  public EngineSecrets getSecrets() {
+    return secrets;
+  }
+
+  public void setSecrets(final EngineSecrets secrets) {
+    this.secrets = secrets;
   }
 
   public int getMaxProcessDepth() {

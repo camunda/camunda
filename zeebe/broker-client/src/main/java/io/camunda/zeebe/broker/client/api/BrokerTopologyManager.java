@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.client.api;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import org.jspecify.annotations.NonNull;
 
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
@@ -34,7 +34,7 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
    * are part of the cluster, and the partition distribution. Unlike {@link BrokerClusterState} this
    * also includes information about brokers which are currently unreachable.
    */
-  ClusterConfiguration getClusterConfiguration();
+  CurrentClusterConfiguration getClusterConfiguration();
 
   /**
    * Adds the topology listener. For each existing broker-group pair, the listener will be notified

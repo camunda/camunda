@@ -158,8 +158,10 @@ class CurrentClusterConfigurationTest {
               .pendingChanges(Optional.of(pending))
               .build();
 
-      // when
-      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+      // when — fromLegacy() itself is a pure conversion; activatePendingPhase() is the explicit
+      // step a one-time-migration caller takes to start driving the pending plan (mirrors what
+      // PersistedCurrentClusterConfiguration does when upgrading an on-disk v1 file)
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy).activatePendingPhase();
 
       // then — the ops become three phases in order: [global], [default: 2 partition ops], [global]
       final var plan = migrated.phasedChangeState().pending().orElseThrow();
@@ -173,10 +175,120 @@ class CurrentClusterConfigurationTest {
                       CurrentClusterConfiguration.DEFAULT_GROUP,
                       List.of(partitionJoin, partitionLeave))),
               new GlobalPhase(List.of(memberLeave)));
-      // and — the pending change is NOT left on the default group
+      // and — phase 0 (the first global phase) is already activated, like initPlan does
+      assertThat(migrated.globalConfiguration().hasPendingChanges()).isTrue();
+      assertThat(migrated.globalConfiguration().pendingChanges().orElseThrow().pendingOperations())
+          .containsExactly(memberJoin);
+      // and — the pending change is NOT left on the default group, since phase 0 is global
       assertThat(
               migrated.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).pendingChanges())
           .isEmpty();
+    }
+
+    @Test
+    void shouldActivateFirstPhaseOnDefaultGroupWhenItIsAPartitionPhase() {
+      // given — a legacy pending plan whose first (and only) run of operations is partition-scoped
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(ClusterChangePlan.init(2, List.of(join, leave))))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy).activatePendingPhase();
+
+      // then — phase 0 is already activated on the default group, mirroring initPlan's semantics
+      final var defaultGroup = migrated.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+      assertThat(defaultGroup.hasPendingChanges()).isTrue();
+      assertThat(defaultGroup.pendingChanges().orElseThrow().pendingOperations())
+          .containsExactly(join, leave);
+      // and — the global configuration is untouched, since phase 0 targets the default group only
+      assertThat(migrated.globalConfiguration().hasPendingChanges()).isFalse();
+    }
+
+    @Test
+    void shouldAllowActivatingNextPhaseAfterMigration() {
+      // given — a migrated multi-phase plan whose phase 0 is already activated
+      final var memberJoin = new MemberJoinOperation(MEMBER_0);
+      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(
+                  Optional.of(ClusterChangePlan.init(2, List.of(memberJoin, partitionJoin))))
+              .build();
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy).activatePendingPhase();
+
+      // when — advance to phase 1, exactly as would happen for a plan started via initPlan
+      final var advanced = migrated.activateNextPhase();
+
+      // then — phase 1 (the default-group phase) is now activated
+      assertThat(advanced.phasedChangeState().pending().orElseThrow().currentPhaseIndex())
+          .isEqualTo(1);
+      assertThat(
+              advanced.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).pendingChanges())
+          .isPresent();
+    }
+
+    @Test
+    void shouldNotFailMigrationWhenNoPendingPlanExists() {
+      // given — no pending plan at all
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — nothing is activated anywhere
+      assertThat(migrated.phasedChangeState().pending()).isEmpty();
+      assertThat(migrated.globalConfiguration().hasPendingChanges()).isFalse();
+      assertThat(
+              migrated
+                  .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                  .hasPendingChanges())
+          .isFalse();
+    }
+
+    @Test
+    void shouldNotActivateThePendingPlanOnItsOwn() {
+      // given — a legacy pending plan whose first run of operations is partition-scoped
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(ClusterChangePlan.init(2, List.of(join))))
+              .build();
+
+      // when — fromLegacy() alone, without the explicit activatePendingPhase() step
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — the plan is recorded (phase 0 exists) but not activated into the default group.
+      // fromLegacy() must stay a pure, repeatable conversion: it is also called on every gossip
+      // update by BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)
+      // purely for read-only topology reporting. If it activated the phase itself, every such call
+      // would call startConfigurationChange again on a freshly-built (never-"pending") default
+      // group, endlessly restarting an already in-progress plan from scratch — this was a real
+      // regression caught by ExporterEnableTest once a broker/gateway kept re-deriving its topology
+      // from repeated legacy gossip.
+      assertThat(migrated.phasedChangeState().pending()).isPresent();
+      assertThat(
+              migrated
+                  .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                  .hasPendingChanges())
+          .isFalse();
+
+      // and — calling fromLegacy() again on the same input is idempotent (no growing version)
+      final var migratedAgain = CurrentClusterConfiguration.fromLegacy(legacy);
+      assertThat(migratedAgain.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).version())
+          .isEqualTo(migrated.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).version());
     }
 
     @Test
@@ -717,6 +829,96 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class CancelPendingChanges {
+
+    @Test
+    void shouldReturnSameConfigWhenNoPlanIsPending() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled).isEqualTo(config);
+    }
+
+    @Test
+    void shouldClearPendingChangesOnGlobalConfigurationForGlobalPhase() {
+      // given
+      final var config =
+          CurrentClusterConfiguration.init()
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+      final var changeId = config.phasedChangeState().pending().orElseThrow().id();
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.globalConfiguration().hasPendingChanges()).isFalse();
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+      assertThat(cancelled.phasedChangeState().lastChange()).isPresent();
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().id()).isEqualTo(changeId);
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(PhasedChangePlanStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldClearPendingChangesOnEveryTargetedPartitionGroup() {
+      // given — a plan targeting groups "a" and "b" in a single parallel phase
+      final var config =
+          config(
+                  global(1, Map.of()),
+                  Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+                  PhasedChangeState.empty())
+              .initPlan(
+                  List.of(
+                      new PartitionGroupParallelPhase(
+                          Map.of(
+                              "a",
+                              List.of(new DeleteHistoryOperation(MEMBER_0)),
+                              "b",
+                              List.of(new DeleteHistoryOperation(MEMBER_0))))));
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.partitionGroup("a").hasPendingChanges()).isFalse();
+      assertThat(cancelled.partitionGroup("b").hasPendingChanges()).isFalse();
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+      assertThat(cancelled.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(PhasedChangePlanStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldNotClearPendingChangesOnGroupNotYetTargetedByCurrentPhase() {
+      // given — a two-phase plan: phase 0 targets group "a", phase 1 (not yet activated) targets
+      // "b"
+      final var config =
+          config(
+                  global(1, Map.of()),
+                  Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+                  PhasedChangeState.empty())
+              .initPlan(
+                  List.of(
+                      new PartitionGroupParallelPhase(
+                          Map.of("a", List.of(new DeleteHistoryOperation(MEMBER_0)))),
+                      new PartitionGroupParallelPhase(
+                          Map.of("b", List.of(new DeleteHistoryOperation(MEMBER_0))))));
+
+      // when — cancel while phase 0 is still active
+      final var cancelled = config.cancelPendingChanges();
+
+      // then — only the already-activated group "a" is cleared; "b" is untouched, still at its
+      // original version since it was never activated
+      assertThat(cancelled.partitionGroup("a").hasPendingChanges()).isFalse();
+      assertThat(cancelled.partitionGroup("b")).isEqualTo(group(1, Map.of()));
+      assertThat(cancelled.phasedChangeState().pending()).isEmpty();
+    }
+  }
+
+  @Nested
   class ToLegacyDefault {
 
     @Test
@@ -789,6 +991,21 @@ class CurrentClusterConfigurationTest {
       final var projected = config.toLegacyDefault();
       assertThat(projected.members()).isEmpty();
       assertThat(projected.hasPendingChanges()).isFalse();
+    }
+
+    @Test
+    void shouldProjectUninitializedAsUninitialized() {
+      // given — a wrapper that has never been initialized (distinct from
+      // CurrentClusterConfiguration.init())
+      final var config = CurrentClusterConfiguration.uninitialized();
+
+      // when
+      final var projected = config.toLegacyDefault();
+
+      // then — the projection must report uninitialized too; deriving the legacy version from the
+      // sub-configs' own (0) uninitialized sentinel could never equal the legacy sentinel (-1),
+      // so this must be handled explicitly rather than falling through to the generic projection
+      assertThat(projected.isUninitialized()).isTrue();
     }
   }
 

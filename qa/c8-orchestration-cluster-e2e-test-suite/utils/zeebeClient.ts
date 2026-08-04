@@ -54,19 +54,19 @@ const deploy = async (processFilePaths: string[]) => {
 const deployWithSubstitutions = async (
   filePath: string,
   substitutions: Record<string, string>,
-): Promise<void> => {
+) => {
   let content = readFileSync(filePath, 'utf-8');
   for (const [placeholder, replacement] of Object.entries(substitutions)) {
     if (!content.includes(placeholder)) {
       throw new Error(
-        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
       );
     }
     content = content.split(placeholder).join(replacement);
   }
   const name = basename(filePath);
   try {
-    await zeebe.deployResources([{content, name}]);
+    return await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;

@@ -76,7 +76,19 @@ An aggregated status is reported:
 - `DOWN` when no tenant can process work.
 - `DEGRADED` in every other case, i.e. some tenants are degraded or down.
 
-The wire contract stays the same as the existing `/v2/status` so that clients can migrate transparently: unauthenticated, 204 with an empty body while the cluster can process work (`HEALTHY` or `DEGRADED`), 503 when it cannot (`DOWN`).
+The endpoint is unauthenticated, and the status code keeps the operationally decisive distinction: 2xx while the cluster can process work (`HEALTHY` or `DEGRADED`), 503 when it cannot (`DOWN`).
+
+All three values are reported in the response body, so `HEALTHY` and `DEGRADED` are distinguishable:
+
+|   Status   | HTTP |          Body           |
+|------------|------|-------------------------|
+| `HEALTHY`  | 200  | `{"status":"HEALTHY"}`  |
+| `DEGRADED` | 200  | `{"status":"DEGRADED"}` |
+| `DOWN`     | 503  | `{"status":"DOWN"}`     |
+
+An earlier revision of this decision reused `/v2/status`'s exact wire contract — 204 with an empty body for both `HEALTHY` and `DEGRADED` — so that clients could migrate without changing how they read the response. That was rejected: `DEGRADED` exists precisely so an operator can see that part of the cluster needs attention while the cluster still serves traffic, and a status invisible to every caller cannot be acted on. `204 No Content` cannot carry a body, hence 200. Client libraries migrating from `/v2/status` must therefore accept 200 in addition to 204/503.
+
+The body carries the aggregated status and nothing else — no tenant ids, and no tenant count, which would allow unauthenticated tenant enumeration just as well. `DEGRADED` does not itself imply more than one tenant: a single tenant with a healthy leader but degraded secondary storage is `DEGRADED` too.
 
 **D5. New `GET /cluster/v2/topology`: Aggregated topology over all physical tenants.**
 
@@ -96,11 +108,12 @@ The response contains the cluster-level fields (`clusterId`, broker list with ho
 - Secondary storage schema initialization needs rework to not block startup when one physical tenant's database is uninitialized.
 - New `/cluster/v2/status` and `/cluster/v2/topology` endpoints.
 - `v2/status` semantics are changed slightly to only report status for the requested physical tenant.
-  - Client libraries should be updated to use `/cluster/v2/status` instead.
+  - Client libraries should be updated to use `/cluster/v2/status` instead, and to accept its 200-with-body response alongside today's 204/503.
 
 ## Alternatives considered
 
 - **Readiness = all tenants fully healthy.** Rejected: one tenant's DB outage would remove the node from service for all tenants.
 - **Readiness = default tenant only (status quo for gateway indicators).** Rejected: privileges one tenant arbitrarily and hides real outages of others from operators who only watch probes.
 - **Per-tenant readiness probes (e.g. `/actuator/health/readiness/{pt}`).** Rejected: K8s cannot act per tenant on a shared pod, aggregated health is available via `/cluster/v2/status` instead.
+- **`/cluster/v2/status` with an empty 204 body, byte-identical to `/v2/status`.** Rejected, see D4: it makes `DEGRADED` unobservable, which defeats the purpose of having the value.
 

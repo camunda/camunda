@@ -16,6 +16,26 @@ import {sleep} from '../../utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
+// The rendered rows are capped at the 50-row page size, so comparing
+// processInstancesTable.count() across a filter change gives a false result
+// once a result set exceeds one page. The panel heading reports the TOTAL match
+// count (e.g. "Process Instances - 1497 results"); parse that instead when
+// asserting a filter grew or shrank the result set.
+async function readTotalResultsCount(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  const heading = page
+    .getByRole('heading', {name: /\d[\d,]*\s+results?/})
+    .first();
+  await expect(heading).toBeVisible({timeout: 30000});
+  const text = await heading.innerText();
+  const match = text.match(/([\d,]+)\s+results?/);
+  if (match === null) {
+    throw new Error(`Unable to parse results count from heading: "${text}"`);
+  }
+  return Number(match[1].replace(/,/g, ''));
+}
+
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
@@ -363,8 +383,7 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      let totalBefore = await readTotalResultsCount(page);
       const endDate = await operateProcessesPage.endDateCell.innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
@@ -376,27 +395,40 @@ test.describe('Process Instances Filters', () => {
       });
       await operateFiltersPanelPage.clickApply();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeLessThan(totalBefore);
 
-      currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      totalBefore = await readTotalResultsCount(page);
       await operateFiltersPanelPage.clickResetFilters();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeGreaterThan(totalBefore);
     });
 
     await test.step('Filter by Error Message and assert results', async () => {
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      const totalBefore = await readTotalResultsCount(page);
+      // Match the real incident raised by processWithAnError (its message
+      // subscription uses correlationKey "=nonExistingClientId", which cannot
+      // be resolved). Filtering by an error message that no instance has would
+      // yield an empty result set rather than exercising the filter.
       await operateFiltersPanelPage.displayOptionalFilter('Error Message');
       await operateFiltersPanelPage.fillErrorMessageFilter(
-        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
+        "Failed to extract the correlation key for 'nonExistingClientId'",
       );
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+      // The debounced text filter can fail to commit its search on first apply
+      // under load, leaving the count unchanged; the filter is persisted to the
+      // URL, so a reload re-runs it (same recovery the later error-message
+      // steps in this test use).
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() => readTotalResultsCount(page), {timeout: 30000})
+            .toBeLessThan(totalBefore);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Filter by Start Date Range and assert results', async () => {
@@ -678,7 +710,7 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      await operateProcessesPage.selectAllProcessInstances();
 
       await operateProcessesPage.clickCancelBatchOperationButton();
 

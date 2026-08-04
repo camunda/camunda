@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
@@ -41,7 +42,8 @@ final class PartitionDistributorInitializerTest {
         ClusterConfiguration.init()
             .setPartitionDistributorConfig(new PartitionDistributorConfig.RoundRobinConfig());
     final var initializer =
-        new PartitionDistributorInitializer(staticConfigWith(new RoundRobinPartitionDistributor()));
+        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+            staticConfigWith(new RoundRobinPartitionDistributor()));
 
     // when
     final var result = initializer.modify(config).join();
@@ -55,7 +57,8 @@ final class PartitionDistributorInitializerTest {
     // given
     final var config = ClusterConfiguration.init();
     final var initializer =
-        new PartitionDistributorInitializer(staticConfigWith(new RoundRobinPartitionDistributor()));
+        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+            staticConfigWith(new RoundRobinPartitionDistributor()));
 
     // when
     final var result = initializer.modify(config).join();
@@ -71,7 +74,7 @@ final class PartitionDistributorInitializerTest {
     final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
     final var config = ClusterConfiguration.init();
     final var initializer =
-        new PartitionDistributorInitializer(
+        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
             staticConfigWith(new ZoneAwarePartitionDistributor(zoneSpecs)));
 
     // when
@@ -98,7 +101,8 @@ final class PartitionDistributorInitializerTest {
         (members, partitionIds, replicationFactor) -> Set.of();
     final var config = ClusterConfiguration.init();
     final var initializer =
-        new PartitionDistributorInitializer(staticConfigWith(unknownDistributor));
+        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
+            staticConfigWith(unknownDistributor));
 
     // when
     final var result = initializer.modify(config).join();
@@ -106,5 +110,41 @@ final class PartitionDistributorInitializerTest {
     // then
     assertThat(result.partitionDistributorConfig())
         .hasValue(new PartitionDistributorConfig.FixedConfig());
+  }
+
+  @Test
+  void shouldSkipIfAlreadySetOnGlobalConfiguration() {
+    // given
+    final var configuration =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global ->
+                    global.setPartitionDistributorConfig(
+                        new PartitionDistributorConfig.RoundRobinConfig()));
+    final var initializer =
+        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+            staticConfigWith(new ZoneAwarePartitionDistributor(List.of())));
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldDeriveConfigOnGlobalConfigurationWhenAbsent() {
+    // given
+    final var configuration = CurrentClusterConfiguration.init();
+    final var initializer =
+        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+            staticConfigWith(new RoundRobinPartitionDistributor()));
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result.globalConfiguration().partitionDistributorConfig())
+        .hasValue(new PartitionDistributorConfig.RoundRobinConfig());
   }
 }

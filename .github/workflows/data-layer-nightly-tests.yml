@@ -70,7 +70,7 @@ jobs:
           minimus: "true"
 
       - name: Set up JDK 21
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -152,11 +152,27 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   aurora-async-replication:
-    name: "Aurora Async Replication IT"
+    name: "Aurora Async Replication IT (PostgreSQL)"
     concurrency:
-      group: aurora-async-replication-test
+      group: aurora-async-replication-test-postgresql
       cancel-in-progress: false
     uses: ./.github/workflows/aurora-async-replication-test.yml
+    with:
+      db_engine: postgresql
+    secrets: inherit
+    permissions: { }
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+
+  aurora-async-replication-mysql:
+    name: "Aurora Async Replication IT (MySQL)"
+    concurrency:
+      group: aurora-async-replication-test-mysql
+      cancel-in-progress: false
+    uses: ./.github/workflows/aurora-async-replication-test.yml
+    with:
+      db_engine: mysql
     secrets: inherit
     permissions: { }
     if: |

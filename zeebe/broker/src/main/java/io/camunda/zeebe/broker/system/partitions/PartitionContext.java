@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
@@ -57,6 +58,8 @@ public interface PartitionContext {
 
   StreamProcessor getStreamProcessor();
 
+  LogStream getLogStream();
+
   ExporterDirector getExporterDirector();
 
   boolean shouldProcess();
@@ -64,6 +67,8 @@ public interface PartitionContext {
   @Deprecated // currently the implementation forwards this to other components inside the
   // partition; these components will be directly registered as listeners in the future
   void setDiskSpaceAvailable(boolean b);
+
+  void setPausedForTransfer(boolean pausedForTransfer);
 
   TopologyManager getTopologyManager();
 

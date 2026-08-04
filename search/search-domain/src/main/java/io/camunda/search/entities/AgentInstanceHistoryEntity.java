@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +32,7 @@ public record AgentInstanceHistoryEntity(
     String tenantId,
     Long jobKey,
     String jobLease,
-    @Nullable Integer loopIteration,
+    Integer loopIteration,
     AgentInstanceHistoryRole role,
     List<ContentItem> content,
     List<ToolCall> toolCalls,
@@ -50,6 +51,7 @@ public record AgentInstanceHistoryEntity(
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(jobKey, "jobKey");
     Objects.requireNonNull(jobLease, "jobLease");
+    Objects.requireNonNull(loopIteration, "loopIteration");
     Objects.requireNonNull(role, "role");
     Objects.requireNonNull(commitStatus, "commitStatus");
     Objects.requireNonNull(producedAt, "producedAt");

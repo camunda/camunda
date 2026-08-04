@@ -80,7 +80,15 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
       echo "    Skipping #$ISSUE_NUMBER - issue is not closed (state: $STATE)"
       continue
     fi
-    
+
+    # Skip issues closed as not planned (this also covers "closed as duplicate",
+    # since the GitHub REST API reports that as state_reason "not_planned" too)
+    STATE_REASON=$(echo "$ISSUE_INFO" | jq -r '.state_reason // empty')
+    if [ "$STATE_REASON" = "not_planned" ]; then
+      echo "    Skipping #$ISSUE_NUMBER - closed as $STATE_REASON"
+      continue
+    fi
+
     # Check if release comment already exists
     COMMENT_EXISTS=$(gh api "repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100" \
       --paginate \

@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DecisionInstanceSortTest extends AbstractSortTransformerTest {
@@ -25,7 +26,6 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments("key", SortOrder.ASC, s -> s.decisionInstanceKey().asc()),
-        new TestArguments("id", SortOrder.ASC, s -> s.decisionInstanceId().asc()),
         new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionId().asc()),
         new TestArguments(
             "decisionDefinitionId", SortOrder.DESC, s -> s.decisionDefinitionKey().desc()),
@@ -69,6 +69,29 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
               assertThat(t.field().field()).isEqualTo("id");
               assertThat(t.field().order()).isEqualTo(SortOrder.ASC);
             });
+  }
+
+  @ParameterizedTest
+  @EnumSource(SortOrder.class)
+  void shouldSortDecisionInstanceIdByKeyAndExecutionIndex(final SortOrder sortOrder) {
+    // when
+    final var request =
+        SearchQueryBuilders.decisionInstanceSearchQuery(
+            q ->
+                q.sort(
+                    s ->
+                        sortOrder == SortOrder.ASC
+                            ? s.decisionInstanceId().asc()
+                            : s.decisionInstanceId().desc()));
+    final var sort = transformRequest(request);
+
+    // then
+    assertThat(sort)
+        .extracting(searchSort -> searchSort.field().field())
+        .containsExactly("key", "executionIndex", "id");
+    assertThat(sort)
+        .extracting(searchSort -> searchSort.field().order())
+        .containsExactly(sortOrder, sortOrder, SortOrder.ASC);
   }
 
   private record TestArguments(

@@ -7,12 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.secretreference;
 
+import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.function.Supplier;
 
 public final class SecretReferenceProcessors {
 
@@ -22,7 +27,11 @@ public final class SecretReferenceProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final IncidentMetrics incidentMetrics,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final SecretStoreRegistry secretStoreRegistry,
+      final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
@@ -31,7 +40,8 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_FAIL,
-        new SecretReferenceResolutionFailProcessor());
+        new SecretReferenceResolutionFailProcessor(
+            writers, keyGenerator, processingState.getSecretReferenceState()));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_REACTIVATE_JOBS,
@@ -40,6 +50,11 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,
-        new SecretReferenceBatchCreateIncidentsProcessor());
+        new SecretReferenceBatchCreateIncidentsProcessor(
+            writers, keyGenerator, processingState, incidentMetrics));
+
+    final var scheduler =
+        new SecretResolutionScheduler(scheduledTaskStateFactory, secretStoreRegistry, config);
+    typedRecordProcessors.withListener(scheduler);
   }
 }

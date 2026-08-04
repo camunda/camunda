@@ -11,6 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -76,6 +78,7 @@ public class AdminApiRequestHandler
       case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
       case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
+      case GET_EXPORTING_STATE -> getExportingState(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
   }
@@ -135,6 +138,40 @@ public class AdminApiRequestHandler
                     Either.left(
                         errorWriter.internalError(
                             "Failed to get the flow control configuration.")));
+              }
+            });
+
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getExportingState(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Partition %s failed to report its exporting state. Could not find the partition.",
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
+        .getExporterPhase()
+        .onComplete(
+            (phase, t) -> {
+              if (t == null) {
+                responseWriter.setPayload(phase.name().getBytes(StandardCharsets.UTF_8));
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to get the exporting state on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to get the exporting state on partition %s", partitionId)));
               }
             });
 
@@ -296,7 +333,10 @@ public class AdminApiRequestHandler
                       return;
                     }
 
-                    final var primaryMember = config.getPrimaryMemberForPartition(partitionId);
+                    final var primaryMember =
+                        config
+                            .partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                            .getPrimaryForPartition(partitionId);
                     if (primaryMember.isEmpty()) {
                       LOG.debug(
                           "No primary member found for partition {}, skipping step-down",

@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
+import io.camunda.zeebe.engine.metrics.CrossPartitionMessageStateMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -160,7 +161,21 @@ public final class DbMessageState implements MutableMessageState {
 
   private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamily;
 
+  /**
+   * <pre> holder process instance key -> (bpmnProcessId, correlationKey, tenantId, messageKey)
+   *
+   * Origin entry for a cross-partition message-start holder on {@code P_B}. Keyed by the holder
+   * instance key, it stores everything needed to push a {@code RELEASE} to {@code P_K} when the
+   * holder completes/terminates: the lock coordinates and the {@code messageKey} whose partition
+   * bits address {@code P_K}. Present only on {@code P_B}.
+   */
+  private final ColumnFamily<DbLong, CrossPartitionMessageStartHolderOrigin>
+      crossPartitionStartHolderOriginColumnFamily;
+
+  private final CrossPartitionMessageStartHolderOrigin crossPartitionStartHolderOrigin;
+
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
+  private final CrossPartitionMessageStateMetrics crossPartitionMetrics;
 
   private Long localMessageDeadlineCount = 0L;
 
@@ -260,7 +275,16 @@ public final class DbMessageState implements MutableMessageState {
             processInstanceKey,
             correlationKey);
 
+    crossPartitionStartHolderOrigin = new CrossPartitionMessageStartHolderOrigin();
+    crossPartitionStartHolderOriginColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN,
+            transactionContext,
+            processInstanceKey,
+            crossPartitionStartHolderOrigin);
+
     bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
+    crossPartitionMetrics = new CrossPartitionMessageStateMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -271,6 +295,10 @@ public final class DbMessageState implements MutableMessageState {
     }
 
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
+    // Authoritatively re-seed the gauges from persisted state, discarding any level accumulated
+    // by the +1/-1 mutations replayed before this hook runs.
+    crossPartitionMetrics.setStartLocks(crossPartitionStartLockColumnFamily.count());
+    crossPartitionMetrics.setBufferedMessages(messageByBusinessIdColumnFamily.count());
   }
 
   @Override
@@ -304,6 +332,7 @@ public final class DbMessageState implements MutableMessageState {
     if (businessIdBuffer.capacity() > 0) {
       businessId.wrapBuffer(businessIdBuffer);
       messageByBusinessIdColumnFamily.insert(businessIdMessageKey, DbNil.INSTANCE);
+      crossPartitionMetrics.incrementBufferedMessages();
     }
   }
 
@@ -367,8 +396,12 @@ public final class DbMessageState implements MutableMessageState {
     // upsert because cross-partition STARTED replies can be retried (P_B's success-only dedup
     // re-replies the same processInstanceKey); writing the same holder twice is a no-op overwrite
     // rather than an error.
+    final boolean isNew = !crossPartitionStartLockColumnFamily.exists(bpmnProcessIdCorrelationKey);
     crossPartitionStartLockColumnFamily.upsert(
         bpmnProcessIdCorrelationKey, crossPartitionStartLock);
+    if (isNew) {
+      crossPartitionMetrics.incrementStartLocks();
+    }
   }
 
   @Override
@@ -402,7 +435,11 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
+    final boolean existed = crossPartitionStartLockColumnFamily.exists(bpmnProcessIdCorrelationKey);
     crossPartitionStartLockColumnFamily.deleteIfExists(bpmnProcessIdCorrelationKey);
+    if (existed) {
+      crossPartitionMetrics.decrementStartLocks();
+    }
   }
 
   @Override
@@ -422,6 +459,47 @@ public final class DbMessageState implements MutableMessageState {
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
+  }
+
+  @Override
+  public void putCrossPartitionStartHolderOrigin(
+      final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final String tenantId,
+      final long messageKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+    ensureGreaterThan("message key", messageKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    crossPartitionStartHolderOrigin
+        .setBpmnProcessId(bpmnProcessId)
+        .setCorrelationKey(correlationKey)
+        .setTenantId(tenantId)
+        .setMessageKey(messageKey);
+    // upsert because the cross-partition STARTED reply can be re-applied on retry; writing the same
+    // holder origin twice is a no-op overwrite rather than an error.
+    crossPartitionStartHolderOriginColumnFamily.upsert(
+        this.processInstanceKey, crossPartitionStartHolderOrigin);
+  }
+
+  @Override
+  public CrossPartitionMessageStartHolderOrigin getCrossPartitionStartHolderOrigin(
+      final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    return crossPartitionStartHolderOriginColumnFamily.get(this.processInstanceKey);
+  }
+
+  @Override
+  public void removeCrossPartitionStartHolderOrigin(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    crossPartitionStartHolderOriginColumnFamily.deleteIfExists(this.processInstanceKey);
   }
 
   @Override
@@ -452,7 +530,14 @@ public final class DbMessageState implements MutableMessageState {
       // deleteIfExists (not deleteExisting): the business-id index was added after buffered
       // messages already carried a business id, so a message published before the index existed
       // (upgraded RocksDB state) has no entry here. Removing it must not throw on the missing key.
+      // Decrement the gauge only when a row was actually present, so the upgraded-state case and
+      // any
+      // repeated removal cannot drive the level negative.
+      final boolean existed = messageByBusinessIdColumnFamily.exists(businessIdMessageKey);
       messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
+      if (existed) {
+        crossPartitionMetrics.decrementBufferedMessages();
+      }
     }
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());

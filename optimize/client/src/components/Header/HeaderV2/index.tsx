@@ -80,7 +80,9 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
     docsUrl: getBaseDocsUrl(),
     timezone,
     logoutHidden,
-    onLogout: () => history.replace('/logout'),
+    onLogout: () => {
+      history.replace('/logout');
+    },
   });
 
   const showLicenseTag = !noActions && licenseType !== 'saas';

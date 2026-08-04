@@ -27,4 +27,12 @@ public interface ExecutableJobWorkerElement extends ExecutableFlowElement {
    * references a secret.
    */
   Map<String, Set<SecretReference>> getSecretReferences();
+
+  /**
+   * Returns the input-mapping cluster-variable references detected at deploy time, keyed by the
+   * JSON pointer (RFC 6901) where each reference is injected. Every job-worker element is a flow
+   * node, so this mirrors {@link ExecutableFlowNode#getClusterVariableReferences()}. Empty when no
+   * input mapping references a cluster variable.
+   */
+  Map<String, Set<ClusterVariableReference>> getClusterVariableReferences();
 }

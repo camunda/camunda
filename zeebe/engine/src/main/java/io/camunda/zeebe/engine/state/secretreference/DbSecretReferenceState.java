@@ -18,6 +18,8 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -91,6 +93,14 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
   }
 
   @Override
+  public boolean isWaiting(final String storeId, final String secretReference, final long jobKey) {
+    this.storeId.wrapString(storeId);
+    this.secretReference.wrapString(secretReference);
+    this.jobKey.wrapLong(jobKey);
+    return waitingJobsBySecretRefColumnFamily.exists(secretRefAndJobKey);
+  }
+
+  @Override
   public void visitJobsBySecretReference(
       final String storeId, final String secretReference, final LongPredicate visitor) {
     this.storeId.wrapString(storeId);
@@ -113,6 +123,12 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
                     key.second().inner().first().toString(),
                     key.second().inner().second().toString());
     waitingJobsByJobKeyColumnFamily.whileEqualPrefix(this.jobKey, kvVisitor);
+  }
+
+  @Override
+  public void visitPendingSecretReferences(final BiConsumer<String, String> visitor) {
+    pendingSecretReferencesColumnFamily.forEach(
+        (key, value) -> visitor.accept(key.first().toString(), key.second().toString()));
   }
 
   @Override
@@ -155,5 +171,12 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
     this.jobKey.wrapLong(jobKey);
     waitingJobsByJobKeyColumnFamily.deleteIfExists(jobKeyAndSecretRef);
     waitingJobsBySecretRefColumnFamily.deleteIfExists(secretRefAndJobKey);
+  }
+
+  @Override
+  public void removeAllSecretReferencesByJobKey(final long jobKey) {
+    for (final Map.Entry<String, String> entry : collectSecretReferencesByJob(jobKey)) {
+      removeWaitingJob(entry.getKey(), entry.getValue(), jobKey);
+    }
   }
 }

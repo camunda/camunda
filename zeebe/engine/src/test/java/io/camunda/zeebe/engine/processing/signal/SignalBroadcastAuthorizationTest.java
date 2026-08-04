@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -18,7 +19,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -47,6 +50,7 @@ public class SignalBroadcastAuthorizationTest {
           .withIdentitySetup()
           .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               cfg -> {
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
@@ -58,6 +62,8 @@ public class SignalBroadcastAuthorizationTest {
 
   @Before
   public void before() {
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, DEFAULT_USER.getUsername());
+
     engine
         .deployment()
         .withXmlResource(
@@ -95,6 +101,7 @@ public class SignalBroadcastAuthorizationTest {
     // given
     createProcessInstance();
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
     addPermissionsToUser(
@@ -116,6 +123,7 @@ public class SignalBroadcastAuthorizationTest {
     // given
     createProcessInstance();
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
 
     // when
     final var rejection =
@@ -135,6 +143,7 @@ public class SignalBroadcastAuthorizationTest {
     // given
     createProcessInstance();
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
 
@@ -148,6 +157,72 @@ public class SignalBroadcastAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectWhenNoPrincipalClaimAndMultiTenancyEnabled() {
+    // given — a command carrying no username/clientId claim at all (not anonymous either); this
+    // is the shape an unauthenticated gateway deployment would produce, and must be rejected
+    // rather than vacuously authorized for the tenant now that multi-tenancy is enabled
+    createProcessInstance();
+    final var authInfo = AuthorizationUtil.getClaimsFreeAuthInfo();
+
+    // when
+    final var rejection =
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(authInfo);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
+  }
+
+  @Test
+  public void shouldRejectWhenUserNotAssignedToTenant() {
+    // given
+    final String tenant = "restricted-tenant";
+    final String tenantProcessId = "tenantProcessId";
+
+    engine.tenant().newTenant().withTenantId(tenant).withName("Restricted Tenant").create();
+    assignUserToTenant(tenant, DEFAULT_USER.getUsername());
+
+    final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
+    addPermissionsToUser(
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            "tenant-process.bpmn",
+            Bpmn.createExecutableProcess(tenantProcessId)
+                .startEvent()
+                .signal(s -> s.name(SIGNAL_NAME))
+                .endEvent()
+                .done())
+        .withTenantId(tenant)
+        .deploy(DEFAULT_USER.getUsername());
+
+    // when
+    final var rejection =
+        engine
+            .signal()
+            .withSignalName(SIGNAL_NAME)
+            .withTenantId(tenant)
+            .expectRejection()
+            .broadcast(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
+  }
+
+  private void assignUserToTenant(final String tenantId, final String username) {
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
   }
 
   private UserRecordValue createUser() {

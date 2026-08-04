@@ -7,16 +7,32 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
+import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
+import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
+import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 /**
  * Opt-in configuration that adopts CSL for Optimize. See <a
@@ -31,6 +47,12 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
  * {@link SecurityPathPort#webappPaths()}: the stock webapp chain becomes the catch-all that sorts
  * below the bearer API chain. No custom webapp chain bean is needed.
  *
+ * <p>{@link WebSessionConfiguration} is imported explicitly because the umbrella does not include
+ * it: it carries the session lifecycle beans (repository, mapper, attribute converter, expiry
+ * sweep) that persist through {@link OptimizeSessionStoreAdapter}. It self-activates on {@code
+ * camunda.security.session.persistent.enabled}, so without that property CSL keeps its in-memory
+ * sessions and nothing here changes.
+ *
  * <p>Required application config:
  *
  * <ul>
@@ -43,7 +65,10 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 @Configuration
 @ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
+@Import(WebSessionConfiguration.class)
 public class OptimizeCamundaSecurityConfig {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeCamundaSecurityConfig.class);
 
   @Bean
   public SecurityPathPort securityPathPort() {
@@ -56,6 +81,59 @@ public class OptimizeCamundaSecurityConfig {
   @Bean
   public MembershipPort membershipPort() {
     return new OptimizeMembershipAdapter();
+  }
+
+  /**
+   * Keeps external sharing working under CSL. The legacy adapters each register their own
+   * request-adjustment filter, and both back off in CSL mode, so without this bean the {@code
+   * /external/api/**} rewrite and the static share resources stop resolving.
+   *
+   * <p>{@link CCSMRequestAdjustmentFilter} serves both editions here despite its name: all it does
+   * is strip the servlet context path, rewrite {@code /external/api/**} to {@code /api/external/**}
+   * and serve the static share resources. The CCSaaS-only cluster-id stripping its SaaS counterpart
+   * adds is not needed, because in CSL mode the cluster id is the servlet context path (see <a
+   * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>).
+   *
+   * <p>Registered at highest precedence so the rewrite lands before the Spring Security filter
+   * chain, which matches on the (wrapped) request URI.
+   */
+  @Bean
+  public FilterRegistrationBean<CCSMRequestAdjustmentFilter> externalSharingRequestAdjuster() {
+    LOG.debug("Registering filter 'externalSharingRequestAdjuster' (CSL)...");
+    final FilterRegistrationBean<CCSMRequestAdjustmentFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(new CCSMRequestAdjustmentFilter());
+    registration.addUrlPatterns("/*");
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    return registration;
+  }
+
+  /**
+   * Converts a CSL login session ({@code OAuth2AuthenticationToken}) into a {@code
+   * CamundaAuthentication}. CSL ships the converter but registers no converter beans of its own, so
+   * without this the delegating converter finds no match and every request that resolves the
+   * current user fails with a 500.
+   */
+  @Bean
+  public CamundaAuthenticationConverter<Authentication> oidcUserAuthenticationConverter(
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
+      final LazyTokenClaimsConverter tokenClaimsConverter,
+      final HttpServletRequest request) {
+    return new OidcUserAuthenticationConverter(
+        authorizedClientRepository, accessTokenDecoderFactory, tokenClaimsConverter, request);
+  }
+
+  /**
+   * The same for bearer tokens ({@code JwtAuthenticationToken}) on the API chain, so the public API
+   * does not hit the identical failure. Optimize needs both because one {@code
+   * CamundaAuthenticationProvider} serves both chains.
+   */
+  @Bean
+  public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
+      final LazyTokenClaimsConverter tokenClaimsConverter,
+      final OidcClaimsProvider oidcClaimsProvider) {
+    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
   }
 
   /** Overrides CSL's default OIDC entry point; see {@link OptimizeOidcAuthenticationEntryPoint}. */

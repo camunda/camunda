@@ -364,7 +364,6 @@ components:
       schema:
         type: integer
         format: int32
-
   responses:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.

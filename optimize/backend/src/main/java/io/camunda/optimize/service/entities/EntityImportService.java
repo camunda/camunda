@@ -68,6 +68,7 @@ public class EntityImportService {
     validateCompletenessOrFail(entitiesToImport);
     validateNoInstantPreviewEntities(entitiesToImport);
     validateNoAgenticControlEntities(entitiesToImport);
+    validateNoBusinessValueEntities(entitiesToImport);
     return importValidatedEntities(collectionId, entitiesToImport);
   }
 
@@ -250,6 +251,17 @@ public class EntityImportService {
                 (DASHBOARD.equals(exportDto.getExportEntityType())
                     && ((DashboardDefinitionExportDto) exportDto).isAgenticControlDashboard()))) {
       throw new OptimizeValidationException("Cannot import agentic control dashboards.");
+    }
+  }
+
+  private void validateNoBusinessValueEntities(
+      final Set<OptimizeEntityExportDto> entitiesToImport) {
+    if (entitiesToImport.stream()
+        .anyMatch(
+            exportDto ->
+                (DASHBOARD.equals(exportDto.getExportEntityType())
+                    && ((DashboardDefinitionExportDto) exportDto).isBusinessValueDashboard()))) {
+      throw new OptimizeValidationException("Cannot import business value dashboards.");
     }
   }
 }

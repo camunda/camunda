@@ -127,7 +127,10 @@ final class RecoveryModeBackupAccessIT {
     assertThat(backupsBeforeRecovery).isNotEmpty();
 
     // when — transition the cluster to RECOVERING mode
-    final var toRecovering = clusterActuator.updateMode("RECOVERING", false);
+    final long toRecovering;
+    try (final var client = cluster.newClientBuilder().build()) {
+      toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+    }
     Awaitility.await("cluster transitions to RECOVERING")
         .timeout(Duration.ofSeconds(60))
         .untilAsserted(

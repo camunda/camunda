@@ -68,3 +68,13 @@ affects/8.9:
   '(-8.9)'
 affects/8.10:
   '(-8.10)'
+discovered-by/load-tests:
+  '(Load Tests\+)'
+discovered-by/chaos-day:
+  '(Chaos Days\+)'
+discovered-by/gameday:
+  '(Game Day\+)'
+qa/automation-found:
+  '(QA Automation Found\+)'
+discovered-by/manual-testing:
+  '(Manual Testing\+)'

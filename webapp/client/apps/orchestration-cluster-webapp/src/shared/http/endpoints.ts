@@ -17,6 +17,9 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
+	type QueryDecisionDefinitionsRequestBody,
+	type QueryDecisionInstancesRequestBody,
+	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
@@ -24,6 +27,7 @@ import {
 	type ProcessDefinition,
 	type AuditLog,
 	type DecisionInstance,
+	type Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -185,6 +189,30 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionInstances: (body: QueryDecisionInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDecisionInstancesDeletionBatchOperation: (body: CreateDecisionInstancesDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	getIncidentProcessInstanceStatisticsByDefinition: (
 		body: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	) =>
@@ -225,6 +253,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryVariablesByUserTask.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getVariable: ({variableKey}: Pick<Variable, 'variableKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getVariable.getUrl({variableKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getVariable.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 

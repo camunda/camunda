@@ -102,7 +102,7 @@ public class JobCommandPreconditionValidator {
     final long jobKey = command.getKey();
     final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var storedJob =
-        authorizedTenants.isAnonymous()
+        authorizedTenants.wildcard()
             ? jobState.getJob(jobKey)
             : jobState.getJob(jobKey, authorizedTenants);
 

@@ -183,24 +183,24 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     <constructor>
-      <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="FLOW_NODE_SCOPE_KEY" javaType="java.lang.Long"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="FLOW_NODE_NAME" javaType="java.lang.String"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
-      <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
-      <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
-      <arg column="NUM_SUBPROCESS_INCIDENTS" javaType="java.lang.Long"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+      <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long" name="flowNodeInstanceKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="FLOW_NODE_SCOPE_KEY" javaType="java.lang.Long" name="flowNodeScopeKey"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime" name="startDate"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime" name="endDate"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String" name="flowNodeId"/>
+      <arg column="FLOW_NODE_NAME" javaType="java.lang.String" name="flowNodeName"/>
+      <arg column="TREE_PATH" javaType="java.lang.String" name="treePath"/>
+      <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType" name="type"/>
+      <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState" name="state"/>
+      <arg column="INCIDENT_KEY" javaType="java.lang.Long" name="incidentKey"/>
+      <arg column="NUM_SUBPROCESS_INCIDENTS" javaType="java.lang.Long" name="numSubprocessIncidents"/>
+      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean" name="hasIncident"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer" name="partitionId"/>
     </constructor>
   </resultMap>
 

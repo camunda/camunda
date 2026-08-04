@@ -156,6 +156,9 @@ public class Raft {
    */
   private int preferSnapshotReplicationThreshold = 100;
 
+  /** Coordinated leadership transfer (rebalancing) options. */
+  private final Rebalance rebalance = new Rebalance();
+
   /**
    * Defines whether segment files are pre-allocated to their full size on creation or not. If true,
    * when a new segment is created on demand, disk space will be reserved for its full maximum size.
@@ -370,6 +373,10 @@ public class Raft {
     this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
   }
 
+  public Rebalance getRebalance() {
+    return rebalance;
+  }
+
   public boolean isPreallocateSegmentFiles() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".preallocate-segment-files",
@@ -398,5 +405,63 @@ public class Raft {
   public void setSegmentPreallocationStrategy(
       final PreAllocationStrategy segmentPreallocationStrategy) {
     this.segmentPreallocationStrategy = segmentPreallocationStrategy;
+  }
+
+  /** Coordinated leadership transfer (rebalancing) options under {@code ....raft.rebalance}. */
+  public static class Rebalance {
+    /**
+     * The maximum replication lag a desired leader may have for the current leader to attempt a
+     * transfer. Above it the partition is skipped with {@code LAG_TOO_HIGH}. Lag is the remaining
+     * Raft entries to replicate plus any pending snapshot, in bytes.
+     */
+    private DataSize replicationLagThreshold = DataSize.ofMegabytes(8);
+
+    /**
+     * How long the current leader waits (paused, declining writes) for the desired leader to finish
+     * replicating. If exceeded, the transfer is cancelled with {@code REPLICATION_TIMED_OUT}.
+     */
+    private Duration replicationTimeout = Duration.ofSeconds(10);
+
+    /**
+     * The maximum number of TimeoutNow requests the current leader sends (including the initial
+     * request) before reporting {@code TIMEOUT_NOW_EXHAUSTED}.
+     */
+    private int maxTransferAttempts = 3;
+
+    public DataSize getReplicationLagThreshold() {
+      return replicationLagThreshold;
+    }
+
+    public void setReplicationLagThreshold(final DataSize replicationLagThreshold) {
+      if (replicationLagThreshold == null || replicationLagThreshold.toBytes() < 0) {
+        throw new IllegalArgumentException("replicationLagThreshold must be non-negative");
+      }
+      this.replicationLagThreshold = replicationLagThreshold;
+    }
+
+    public Duration getReplicationTimeout() {
+      return replicationTimeout;
+    }
+
+    public void setReplicationTimeout(final Duration replicationTimeout) {
+      if (replicationTimeout == null
+          || replicationTimeout.isNegative()
+          || replicationTimeout.isZero()) {
+        throw new IllegalArgumentException("replicationTimeout must be positive");
+      }
+      this.replicationTimeout = replicationTimeout;
+    }
+
+    public int getMaxTransferAttempts() {
+      return maxTransferAttempts;
+    }
+
+    public void setMaxTransferAttempts(final int maxTransferAttempts) {
+      if (maxTransferAttempts <= 0) {
+        throw new IllegalArgumentException(
+            "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
+      }
+      this.maxTransferAttempts = maxTransferAttempts;
+    }
   }
 }

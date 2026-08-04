@@ -200,6 +200,7 @@ class BpmnJS {
         selectedElementIds.forEach((elementId) => {
           this.#addMarker(elementId, 'op-selected');
           if (hasOuterBorderOnSelection) {
+            this.#ensureOutline(elementId);
             this.#addMarker(elementId, 'op-selected-frame');
           }
           this.selectedElement = elementRegistry?.getGraphics(elementId);
@@ -227,6 +228,7 @@ class BpmnJS {
       selectedElementIds.forEach((elementId) => {
         this.#removeMarker(elementId, 'op-selected-frame');
         if (hasOuterBorderOnSelection) {
+          this.#ensureOutline(elementId);
           this.#addMarker(elementId, 'op-selected-frame');
         }
       });
@@ -327,6 +329,16 @@ class BpmnJS {
       canvas?.addMarker(elementId, className);
     } else {
       throw new Error(`Element "${elementId}" not found`);
+    }
+  };
+
+  #ensureOutline = (elementId: string) => {
+    const element = this.#navigatedViewer
+      ?.get('elementRegistry')
+      ?.get(elementId);
+
+    if (element !== undefined) {
+      this.#navigatedViewer?.get('outline')?.createOutline(element);
     }
   };
 

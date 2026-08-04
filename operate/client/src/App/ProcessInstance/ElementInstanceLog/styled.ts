@@ -31,6 +31,20 @@ const Container = styled.div`
 
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
+  gap: var(--cds-spacing-03);
+
+  /* Improves responsiveness for smaller screen sizes by shrinking the title into an ellipse.
+  Important for the ElementInstanceLog where space can be very limited when the user shrinks it. */
+  h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cds--stack-horizontal {
+    flex-shrink: 0;
+  }
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
@@ -45,4 +59,15 @@ const PanelBody = styled.div`
   position: relative;
 `;
 
-export {PanelHeader, Container, ErrorMessage, PanelBody};
+const SearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+
+  .cds--search {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+export {PanelHeader, Container, ErrorMessage, PanelBody, SearchRow};

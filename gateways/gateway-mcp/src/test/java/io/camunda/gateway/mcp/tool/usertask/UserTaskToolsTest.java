@@ -840,6 +840,160 @@ class UserTaskToolsTest extends OperationalToolsTest {
   }
 
   @Nested
+  class CompleteUserTask {
+
+    @Test
+    void shouldCompleteUserTaskByKey() {
+      // given
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask")
+                  .arguments(Map.of("userTaskKey", 5L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
+
+      verify(userTaskServices).completeUserTask(eq(5L), eq(Map.of()), eq(""), any());
+    }
+
+    @Test
+    void shouldCompleteUserTaskWithVariablesAndAction() {
+      // given
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask")
+                  .arguments(
+                      Map.of(
+                          "userTaskKey",
+                          5L,
+                          "completionOptions",
+                          Map.of("variables", Map.of("approved", true), "action", "customAction")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
+
+      verify(userTaskServices)
+          .completeUserTask(eq(5L), eq(Map.of("approved", true)), eq("customAction"), any());
+    }
+
+    @Test
+    void shouldFailCompleteUserTaskOnException() {
+      // given
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new ServiceException("Expected failure", Status.NOT_FOUND)));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask")
+                  .arguments(Map.of("userTaskKey", 5L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailCompleteUserTaskOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailCompleteUserTaskOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailCompleteUserTaskOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask")
+                  .arguments(Map.of("userTaskKey", -3L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must be a positive number."));
+    }
+  }
+
+  @Nested
   class SearchUserTaskVariables {
 
     @Test

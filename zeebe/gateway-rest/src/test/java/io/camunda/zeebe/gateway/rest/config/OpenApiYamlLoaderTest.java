@@ -334,4 +334,38 @@ class OpenApiYamlLoaderTest {
     assertThat(auditLog.getProperties()).containsKey("id");
     assertThat(((Schema<?>) auditLog.getProperties().get("id")).getType()).isEqualTo("string");
   }
+
+  @Test
+  void shouldNotPrefixWellKnownRootPathsWithV2() throws IOException {
+    // given
+    final var validYaml =
+        // language=yaml
+        """
+        openapi: "3.0.3"
+        info:
+          title: Test API
+          version: "1.0"
+        tags:
+          - name: Authentication
+          - name: Authorization
+        paths:
+          /cluster/v2/status:
+            get:
+              responses:
+                "200":
+                  description: Success
+        """;
+
+    final var yamlFile = tempDir.resolve("test-root-path-api.yaml");
+    Files.writeString(yamlFile, validYaml);
+
+    final var customized = new OpenAPI();
+    customized.setOpenapi("3.0.1");
+
+    // when
+    OpenApiYamlLoader.customizeOpenApiFromYaml(customized, yamlFile.toString());
+
+    // then
+    assertThat(customized.getPaths()).containsOnlyKeys("/cluster/v2/status");
+  }
 }

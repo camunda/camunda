@@ -11,7 +11,7 @@ import {test, expect, request as playwrightRequest} from '@playwright/test';
 import {encode} from '../../../../../utils/http';
 import {
   startIsolatedEnvironmentWaitStatesOff,
-  stopIsolatedEnvironment,
+  stopIsolatedEnvironmentWaitStates,
 } from '../../../../../utils/dockerComposeControl';
 
 const ISOLATED_BASE_URL =
@@ -38,7 +38,7 @@ test.describe.serial('Wait States Flag Off', () => {
   });
 
   test.afterAll(async () => {
-    await stopIsolatedEnvironment();
+    await stopIsolatedEnvironmentWaitStates();
   });
 
   test('wait-states/search returns no rows for an instance that would otherwise be waiting on a job', async ({

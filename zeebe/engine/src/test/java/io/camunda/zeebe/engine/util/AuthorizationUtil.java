@@ -62,4 +62,10 @@ public class AuthorizationUtil {
             List.of(authorizedTenantIds)));
     return auth;
   }
+
+  public static AuthInfo getClaimsFreeAuthInfo() {
+    final var auth = new AuthInfo();
+    auth.setClaims(Map.of());
+    return auth;
+  }
 }

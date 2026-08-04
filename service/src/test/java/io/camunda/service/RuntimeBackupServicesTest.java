@@ -10,12 +10,14 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.core.authz.AuthorizationChecker;
@@ -160,11 +162,9 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
-  public void takeBackupShouldCompleteExceptionallyWhenUserHasNoAuthorizations() {
+  public void takeBackupShouldCompleteExceptionallyWhenUserHasNoCreatePermission() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Collections.emptySet());
+    grantBackupPermissions(PermissionType.READ, PermissionType.DELETE);
 
     // when
     final var future = manualModeServices.takeBackup(42L, authentication);
@@ -175,11 +175,24 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
+  public void takeBackupShouldDelegateWhenUserHasCreatePermission() {
+    // given
+    grantBackupPermissions(PermissionType.CREATE);
+    when(backupApi.takeBackup(PHYSICAL_TENANT_ID, 42L))
+        .thenReturn(CompletableFuture.completedFuture(42L));
+
+    // when
+    final var future = manualModeServices.takeBackup(42L, authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+    verify(backupApi).takeBackup(PHYSICAL_TENANT_ID, 42L);
+  }
+
+  @Test
   public void getBackupStatusShouldDelegateWhenAuthorized() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.READ));
+    grantBackupPermissions(PermissionType.READ);
     final var status = new BackupStatus(42L, State.COMPLETED, Optional.empty(), List.of());
     when(backupApi.getStatus(PHYSICAL_TENANT_ID, 42L))
         .thenReturn(CompletableFuture.completedFuture(status));
@@ -208,9 +221,7 @@ public class RuntimeBackupServicesTest {
   @Test
   public void getBackupStatusShouldCompleteExceptionallyWhenUserHasNoReadPermission() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Collections.emptySet());
+    grantBackupPermissions(PermissionType.CREATE, PermissionType.DELETE);
 
     // when
     final var future = manualModeServices.getBackupStatus(42L, authentication);
@@ -259,6 +270,34 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
+  public void listBackupsShouldDelegateWhenUserHasReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.READ);
+    when(backupApi.listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    final var future = manualModeServices.listBackups(null, authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+    verify(backupApi).listBackups(PHYSICAL_TENANT_ID, BackupApi.WILDCARD);
+  }
+
+  @Test
+  public void listBackupsShouldCompleteExceptionallyWhenUserHasNoReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.CREATE, PermissionType.DELETE);
+
+    // when
+    final var future = manualModeServices.listBackups(null, authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.FORBIDDEN);
+    verify(backupApi, never()).listBackups(any(), any());
+  }
+
+  @Test
   public void deleteBackupShouldDelegate() {
     // given
     when(backupApi.deleteBackup(PHYSICAL_TENANT_ID, 42L))
@@ -273,11 +312,9 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
-  public void deleteBackupShouldCompleteExceptionallyWhenUserHasNoUpdatePermission() {
+  public void deleteBackupShouldCompleteExceptionallyWhenUserHasNoDeletePermission() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.READ));
+    grantBackupPermissions(PermissionType.READ, PermissionType.CREATE);
 
     // when
     final var future = manualModeServices.deleteBackup(42L, authentication);
@@ -326,6 +363,36 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
+  public void getRuntimeStateShouldDelegateWhenUserHasReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.READ);
+    when(backupApi.getCheckpointState(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(new CheckpointStateResponse()));
+    when(backupApi.getBackupRanges(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+
+    // when
+    final var future = manualModeServices.getRuntimeState(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void getRuntimeStateShouldCompleteExceptionallyWhenUserHasNoReadPermission() {
+    // given
+    grantBackupPermissions(PermissionType.CREATE, PermissionType.DELETE);
+
+    // when
+    final var future = manualModeServices.getRuntimeState(authentication);
+
+    // then
+    assertServiceExceptionStatus(future, Status.FORBIDDEN);
+    verify(backupApi, never()).getCheckpointState(any());
+    verify(backupApi, never()).getBackupRanges(any());
+  }
+
+  @Test
   public void getRuntimeStateShouldFailFastWhenRangesFail() {
     // given
     when(backupApi.getCheckpointState(PHYSICAL_TENANT_ID))
@@ -364,11 +431,9 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
-  public void syncRuntimeStateShouldCompleteExceptionallyWhenUserHasNoUpdatePermission() {
+  public void syncRuntimeStateShouldCompleteExceptionallyWhenUserHasNoCreatePermission() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.READ));
+    grantBackupPermissions(PermissionType.READ, PermissionType.DELETE);
 
     // when
     final var future = manualModeServices.syncRuntimeState(authentication);
@@ -393,11 +458,9 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
-  public void deleteRuntimeStateShouldCompleteExceptionallyWhenUserHasNoUpdatePermission() {
+  public void deleteRuntimeStateShouldCompleteExceptionallyWhenUserHasNoDeletePermission() {
     // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Set.of(PermissionType.READ));
+    grantBackupPermissions(PermissionType.READ, PermissionType.CREATE);
 
     // when
     final var future = manualModeServices.deleteRuntimeState(authentication);
@@ -405,6 +468,19 @@ public class RuntimeBackupServicesTest {
     // then
     assertServiceExceptionStatus(future, Status.FORBIDDEN);
     verify(backupApi, never()).deleteRuntimeState(any());
+  }
+
+  /**
+   * Enables authorizations and grants the given permissions on the {@code BACKUP} resource type
+   * only, so that a check against any other resource type resolves to "no permissions".
+   */
+  private void grantBackupPermissions(final PermissionType... permissions) {
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Collections.emptySet());
+    when(authorizationChecker.collectPermissionTypes(
+            any(), eq(AuthorizationResourceType.BACKUP), any()))
+        .thenReturn(Set.of(permissions));
   }
 
   private void assertServiceExceptionStatus(

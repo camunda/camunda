@@ -9,7 +9,6 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Set;
@@ -24,7 +23,7 @@ import java.util.Set;
  * <p>Ideally, a modifier should only update the configuration of the local member to avoid any
  * concurrent conflicting changes from other members.
  */
-public interface ClusterConfigurationModifier {
+public interface ClusterConfigurationModifier<T extends InitializableClusterConfiguration> {
 
   default ExecutionFilter filter() {
     return new ExecutionFilter(false, null);
@@ -36,7 +35,7 @@ public interface ClusterConfigurationModifier {
    * @param configuration current configuration
    * @return modified configuration
    */
-  ActorFuture<ClusterConfiguration> modify(ClusterConfiguration configuration);
+  ActorFuture<T> modify(T configuration);
 
   record ExecutionFilter(boolean coordinatorOnly, MemberId localMemberId) {
     public boolean canRunInitializer(final Collection<MemberId> clusterMembers) {
@@ -49,12 +48,13 @@ public interface ClusterConfigurationModifier {
       return coordinator.equals(localMemberId);
     }
 
-    public boolean canRunInitializer(final ClusterConfiguration configuration) {
-      return canRunInitializer(configuration.members().keySet());
+    public boolean canRunInitializer(final InitializableClusterConfiguration configuration) {
+      return canRunInitializer(configuration.getMembers());
     }
   }
 
-  abstract class CoordinatorOnly implements ClusterConfigurationModifier {
+  abstract class CoordinatorOnly<T extends InitializableClusterConfiguration>
+      implements ClusterConfigurationModifier<T> {
 
     private final ExecutionFilter filter;
 

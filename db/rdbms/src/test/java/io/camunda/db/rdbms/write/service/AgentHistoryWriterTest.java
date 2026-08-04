@@ -24,6 +24,7 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistor
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class AgentHistoryWriterTest {
 
@@ -89,9 +90,13 @@ class AgentHistoryWriterTest {
     // when
     writer.create(model);
 
-    // then — jobLease is truncated in-place to the column size limit
-    assertThat(model.jobLease()).hasSize(10);
-    assertThat(longLease).startsWith(model.jobLease());
+    // then — the queued model (a new instance) carries the truncated value; the original is
+    // untouched since AgentHistoryDbModel is immutable
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queuedModel = (AgentHistoryDbModel) captor.getValue().parameter();
+    assertThat(queuedModel.jobLease()).hasSize(10);
+    assertThat(longLease).startsWith(queuedModel.jobLease());
   }
 
   private AgentHistoryDbModel buildModel(final long key, final String jobLease) {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -21,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -47,7 +49,8 @@ public record ClusterConfiguration(
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
     long incarnationNumber,
-    Optional<PartitionDistributorConfig> partitionDistributorConfig) {
+    Optional<PartitionDistributorConfig> partitionDistributorConfig)
+    implements InitializableClusterConfiguration {
 
   public static final int INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
@@ -103,8 +106,14 @@ public record ClusterConfiguration(
         Optional.empty());
   }
 
+  @Override
   public boolean isUninitialized() {
     return version == UNINITIALIZED_VERSION;
+  }
+
+  @Override
+  public Set<MemberId> getMembers() {
+    return members.keySet();
   }
 
   public static ClusterConfiguration init() {

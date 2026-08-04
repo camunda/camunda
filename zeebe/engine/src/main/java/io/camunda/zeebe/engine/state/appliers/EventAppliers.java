@@ -179,15 +179,20 @@ public final class EventAppliers implements EventApplier {
   private void registerSecretReferenceEventAppliers(final MutableProcessingState state) {
     register(
         SecretReferenceIntent.RESOLUTION_REQUESTED,
-        new SecretReferenceResolutionRequestedApplier(state.getSecretReferenceState()));
+        new SecretReferenceResolutionRequestedApplier(
+            state.getSecretReferenceState(), state.getJobState()));
     register(
         SecretReferenceIntent.RESOLUTION_COMPLETED,
         new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
-    register(SecretReferenceIntent.RESOLUTION_FAILED, NOOP_EVENT_APPLIER);
+    register(
+        SecretReferenceIntent.RESOLUTION_FAILED,
+        new SecretReferenceResolutionFailedApplier(state.getSecretReferenceState()));
     register(
         SecretReferenceIntent.BATCH_JOBS_REACTIVATED,
         new SecretReferenceBatchJobsReactivatedApplier(state));
-    register(SecretReferenceIntent.BATCH_INCIDENTS_CREATED, NOOP_EVENT_APPLIER);
+    register(
+        SecretReferenceIntent.BATCH_INCIDENTS_CREATED,
+        new SecretReferenceBatchIncidentsCreatedApplier(state.getSecretReferenceState()));
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
@@ -271,6 +276,8 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
     register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
+    register(ProcessIntent.DELETE_COMPLETED, new ProcessDeleteCompletedApplier(state));
+    register(ProcessIntent.FULLY_DELETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
@@ -479,14 +486,17 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.CANCELED, 1, new JobCanceledV1Applier(state));
     register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
     register(JobIntent.CANCELED, 3, new JobCanceledV3Applier(state));
+    register(JobIntent.CANCELED, 4, new JobCanceledV4Applier(state));
     register(JobIntent.COMPLETED, 1, new JobCompletedV1Applier(state));
     register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
+    register(JobIntent.COMPLETED, 4, new JobCompletedV4Applier(state));
     register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
     register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
     register(JobIntent.CREATED, 3, new JobCreatedV3Applier(state));
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
+    register(JobIntent.ERROR_THROWN, 3, new JobErrorThrownV3Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
     register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
     register(JobIntent.FAILED, 3, new JobFailedV3Applier(state));
@@ -614,7 +624,8 @@ public final class EventAppliers implements EventApplier {
         new MessageStartProcessInstanceStartedV1Applier(
             state.getMessageStartProcessInstanceDedupState(),
             state.getMessageStartProcessInstanceAskState(),
-            state.getMessageState()));
+            state.getMessageState(),
+            state.getPartitionId()));
     register(
         MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
         new MessageStartProcessInstanceExpiredDedupDeletedV1Applier(
@@ -634,15 +645,19 @@ public final class EventAppliers implements EventApplier {
   }
 
   /**
-   * Appliers for the pull-based correlation-key lock release lookup. Both event intents are
-   * introduced together with this feature and have no prior stream history, so a single V1 applier
-   * per intent is sufficient.
+   * Appliers for the cross-partition correlation-key lock release. The release is normally pushed
+   * by {@code P_B} on holder completion; these query/reconciliation intents are the backstop half.
+   * Both event intents are introduced together with this feature and have no prior stream history,
+   * so a single V1 applier per intent is sufficient.
    *
    * <ul>
    *   <li>{@code QUERIED}: acknowledgement event on {@code P_B} with no state effect.
    *   <li>{@code RELEASED}: applied on {@code P_K} for each holder reported gone; removes the
    *       active process-instance lock and the cross-partition lock marker for that correlation
    *       key. The buffered-message pick-up is not done here but in the RELEASE command processor.
+   *   <li>{@code PUSHED}: applied on {@code P_B} when a holder completes/terminates and its {@code
+   *       RELEASE} was pushed to {@code P_K}; drops the holder-origin entry {@code P_B} kept for
+   *       it.
    * </ul>
    */
   private void registerMessageStartCorrelationKeyLockReleaseAppliers(
@@ -651,6 +666,9 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartCorrelationKeyLockReleaseIntent.RELEASED,
         new MessageStartCorrelationKeyLockReleaseReleasedV1Applier(state.getMessageState()));
+    register(
+        MessageStartCorrelationKeyLockReleaseIntent.PUSHED,
+        new MessageStartCorrelationKeyLockReleasePushedV1Applier(state.getMessageState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

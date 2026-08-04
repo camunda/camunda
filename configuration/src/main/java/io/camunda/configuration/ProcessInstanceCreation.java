@@ -12,7 +12,6 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
-import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
 
 import java.time.Duration;
 
@@ -56,20 +55,12 @@ public class ProcessInstanceCreation {
 
   /**
    * Base poll interval for the cross-partition correlation-key lock-release scheduler on {@code
-   * P_K}. {@code P_K} polls {@code P_B} for the completion of each remotely-created holder
-   * instance; this value drives the scheduler's tick frequency and the base interval before
-   * back-off applies.
+   * P_K}. {@code P_K} reconciles the completion of each remotely-created holder instance with
+   * {@code P_B}; this value drives the scheduler's tick frequency. It is only a slow-path backstop,
+   * since holder completion is normally pushed from {@code P_B} directly.
    */
   private Duration messageStartLockReleasePollInterval =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
-
-  /**
-   * Upper bound on the per-lock exponential back-off of the cross-partition correlation-key
-   * lock-release poll on {@code P_K}, so a long-running holder is not polled at the base rate
-   * indefinitely.
-   */
-  private Duration messageStartLockReleasePollMaxBackoff =
-      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
 
   /**
    * Upper bound on the number of holders batched into a single cross-partition correlation-key
@@ -120,15 +111,6 @@ public class ProcessInstanceCreation {
   public void setMessageStartLockReleasePollInterval(
       final Duration messageStartLockReleasePollInterval) {
     this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
-  }
-
-  public Duration getMessageStartLockReleasePollMaxBackoff() {
-    return messageStartLockReleasePollMaxBackoff;
-  }
-
-  public void setMessageStartLockReleasePollMaxBackoff(
-      final Duration messageStartLockReleasePollMaxBackoff) {
-    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
   }
 
   public int getMessageStartLockReleasePollBatchLimit() {

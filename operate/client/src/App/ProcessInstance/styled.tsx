@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
+import {INSTANCE_HISTORY_MIN_WIDTH} from 'modules/constants';
 
 const BottomPanel = styled.div`
   height: 100%;
@@ -15,6 +16,13 @@ const BottomPanel = styled.div`
   position: relative;
   z-index: 1;
   border-top: 1px solid var(--cds-border-subtle-01);
+
+  /* Prevents the ElementInstanceLog from shrinking below its minimum width when
+  users resize the browser window (configured dragging min-widths only apply during dragging).
+  Applying the style to the ElementInstanceLog "Container" class sadly does not work. */
+  & .HorizontalPanel:first-child {
+    min-width: ${INSTANCE_HISTORY_MIN_WIDTH}px;
+  }
 `;
 
 const BottomPanelStacked = styled.div`

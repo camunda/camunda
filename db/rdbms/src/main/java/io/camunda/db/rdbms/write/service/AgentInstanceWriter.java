@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
+import io.camunda.db.rdbms.sql.AgentInstanceMapper.AgentInstanceElementInstanceKeysDto;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -33,18 +34,19 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
   }
 
   public void create(final AgentInstanceDbModel agentInstance) {
-    agentInstance.truncateDefinitionFields(
-        vendorDatabaseProperties.userCharColumnSize(),
-        vendorDatabaseProperties.charColumnMaxBytes());
+    final var truncated =
+        agentInstance.truncateDefinitionFields(
+            vendorDatabaseProperties.userCharColumnSize(),
+            vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.AGENT_INSTANCE,
             WriteStatementType.INSERT,
-            agentInstance.agentInstanceKey(),
+            truncated.agentInstanceKey(),
             "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
-            agentInstance));
+            truncated));
 
-    insertElementInstanceKeys(agentInstance);
+    insertElementInstanceKeys(truncated);
   }
 
   public void update(final AgentInstanceDbModel agentInstance) {
@@ -97,7 +99,8 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               WriteStatementType.INSERT,
               agentInstance.agentInstanceKey(),
               "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
-              agentInstance));
+              new AgentInstanceElementInstanceKeysDto(
+                  agentInstance.agentInstanceKey(), agentInstance.elementInstanceKeys())));
     }
   }
 

@@ -32,13 +32,7 @@ async function main() {
   const repoRoot = path.resolve(__dirname, '..', '..');
   const generatorRoot = path.resolve(__dirname, '..');
   const generatedDir = path.join(generatorRoot, 'generated');
-  const qaTestsDir = path.join(
-    repoRoot,
-    'tests',
-    'api',
-    'v2',
-    'request-validation',
-  );
+  const qaTestsDir = path.join(repoRoot, 'tests', 'request-validation');
 
   if (!fs.existsSync(generatedDir)) {
     console.error('[sync-tests] No generated output found at', generatedDir);

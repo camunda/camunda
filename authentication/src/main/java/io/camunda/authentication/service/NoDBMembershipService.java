@@ -10,6 +10,7 @@ package io.camunda.authentication.service;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
@@ -43,8 +44,13 @@ public class NoDBMembershipService implements MembershipPort {
     if (!isGroupsClaimConfigured) {
       return List.of();
     }
-    final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
-    return extracted != null ? extracted.stream().distinct().toList() : List.of();
+    return OidcClaimExtractor.extractOrFallback(
+            () -> oidcGroupsExtractor.extract(query.tokenClaims()),
+            List.<String>of(),
+            "membership.groupIds.noDb")
+        .stream()
+        .distinct()
+        .toList();
   }
 
   @Override

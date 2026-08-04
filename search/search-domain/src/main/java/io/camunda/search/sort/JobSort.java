@@ -80,6 +80,11 @@ public record JobSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public JobSort.Builder creationTime() {
+      currentOrdering = new FieldSorting("creationTime", null);
+      return this;
+    }
+
     public JobSort.Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;

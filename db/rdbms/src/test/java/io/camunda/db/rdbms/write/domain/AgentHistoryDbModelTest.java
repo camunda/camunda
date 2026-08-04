@@ -37,8 +37,10 @@ class AgentHistoryDbModelTest {
   @Test
   void shouldDeserializeContentFromJson() {
     // given — simulate a model hydrated from the DB: only the JSON form is populated
-    final var model = new AgentHistoryDbModel();
-    model.content("[{\"contentType\":\"TEXT\",\"text\":\"hello\",\"documentReference\":null}]");
+    final var model =
+        new AgentHistoryDbModel.Builder(
+                "[{\"contentType\":\"TEXT\",\"text\":\"hello\",\"documentReference\":null}]", null)
+            .build();
 
     // when
     final List<ContentItem> deserialized = model.contentItems();
@@ -65,8 +67,11 @@ class AgentHistoryDbModelTest {
   @Test
   void shouldDeserializeToolCallsFromJson() {
     // given — simulate a model hydrated from the DB: only the JSON form is populated
-    final var model = new AgentHistoryDbModel();
-    model.toolCalls("[{\"toolCallId\":\"call-1\",\"toolName\":\"myTool\",\"elementId\":\"el-1\"}]");
+    final var model =
+        new AgentHistoryDbModel.Builder(
+                null,
+                "[{\"toolCallId\":\"call-1\",\"toolName\":\"myTool\",\"elementId\":\"el-1\"}]")
+            .build();
 
     // when
     final List<ToolCall> deserialized = model.toolCallValues();
@@ -121,17 +126,22 @@ class AgentHistoryDbModelTest {
   }
 
   @Test
-  void shouldInvalidateCacheOnMyBatisSetter() {
-    // given — model with both forms populated (cache primed)
-    final var item = new ContentItem(ContentType.TEXT, "original", null, null);
-    final var model = new AgentHistoryDbModel.Builder().contentItems(List.of(item)).build();
-    assertThat(model.contentItems().getFirst().text()).isEqualTo("original");
+  void shouldDeriveContentAndToolCallsFreshOnEveryCall() {
+    // given
+    final var item = new ContentItem(ContentType.TEXT, "hello", null, null);
+    final var toolCall = new ToolCall("call-1", "myTool", "el-1", null);
+    final var model =
+        new AgentHistoryDbModel.Builder()
+            .contentItems(List.of(item))
+            .toolCallValues(List.of(toolCall))
+            .build();
 
-    // when — the JSON form is replaced (simulates the model being re-hydrated from the DB)
-    model.content("[{\"contentType\":\"TEXT\",\"text\":\"replaced\",\"documentReference\":null}]");
-
-    // then — the cached list is invalidated and the next read re-derives from the new JSON
-    assertThat(model.contentItems()).hasSize(1);
-    assertThat(model.contentItems().getFirst().text()).isEqualTo("replaced");
+    // then — equal content, but freshly deserialized each time (no cache)
+    assertThat(model.contentItems())
+        .isEqualTo(model.contentItems())
+        .isNotSameAs(model.contentItems());
+    assertThat(model.toolCallValues())
+        .isEqualTo(model.toolCallValues())
+        .isNotSameAs(model.toolCallValues());
   }
 }

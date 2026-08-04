@@ -76,9 +76,9 @@
     <!-- testing config -->
     <mockito.version>5.23.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <mockserver.version>7.4.0</mockserver.version>
+    <mockserver.version>7.5.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
-    <google-java-format.plugin.version>1.35.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.36.1</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -373,7 +373,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.9.0</version>
           <configuration>
             <java>
               <includes>

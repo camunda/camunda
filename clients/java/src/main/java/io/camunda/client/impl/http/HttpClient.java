@@ -58,6 +58,7 @@ public final class HttpClient implements AutoCloseable {
   private final ModalCloseable connectionManager;
   private final ObjectMapper jsonMapper;
   private final URI address;
+  private final URI clusterApiAddress;
   private final RequestConfig defaultRequestConfig;
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
@@ -68,6 +69,7 @@ public final class HttpClient implements AutoCloseable {
       final ModalCloseable connectionManager,
       final ObjectMapper jsonMapper,
       final URI address,
+      final URI clusterApiAddress,
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
@@ -76,6 +78,7 @@ public final class HttpClient implements AutoCloseable {
     this.connectionManager = connectionManager;
     this.jsonMapper = jsonMapper;
     this.address = address;
+    this.clusterApiAddress = clusterApiAddress;
     this.defaultRequestConfig = defaultRequestConfig;
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
@@ -158,6 +161,32 @@ public final class HttpClient implements AutoCloseable {
         null,
         requestConfig,
         MAX_RETRY_ATTEMPTS,
+        successPredicate,
+        transformer,
+        result,
+        null);
+  }
+
+  /**
+   * Sends a GET to the cluster-scoped API ({@code /cluster/v2}), which reports on the cluster as a
+   * whole and is therefore not resolved against the physical-tenant-scoped base path.
+   */
+  public <HttpT, RespT> void getClusterApi(
+      final String path,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.GET,
+        clusterApiAddress,
+        path,
+        Collections.emptyMap(),
+        null,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        responseType,
         successPredicate,
         transformer,
         result,
@@ -391,6 +420,34 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
+    sendRequest(
+        httpMethod,
+        address,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        maxRetries,
+        responseType,
+        successPredicate,
+        transformer,
+        result,
+        callback);
+  }
+
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final URI baseAddress,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Class<HttpT> responseType,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result,
+      final ApiCallback<HttpT, RespT> callback) {
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -400,6 +457,7 @@ public final class HttpClient implements AutoCloseable {
           }
           sendRequest(
               httpMethod,
+              baseAddress,
               path,
               queryParams,
               body,
@@ -413,7 +471,7 @@ public final class HttpClient implements AutoCloseable {
         };
 
     final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(baseAddress, path));
     if (request == null) {
       return;
     }
@@ -518,10 +576,10 @@ public final class HttpClient implements AutoCloseable {
     return true;
   }
 
-  private URI buildRequestURI(final String path) {
+  private URI buildRequestURI(final URI baseAddress, final String path) {
     final URI target;
     try {
-      target = new URIBuilder(address).appendPath(path).build();
+      target = new URIBuilder(baseAddress).appendPath(path).build();
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }

@@ -146,6 +146,16 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
+  @GetMapping(path = "/business-value")
+  public AuthorizedDashboardDefinitionResponseDto getBusinessValueDashboard(
+      final HttpServletRequest request) {
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getBusinessValueDashboard();
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    return dashboardDefinition;
+  }
+
   @PutMapping(path = "/{id}")
   public void updateDashboard(
       @PathVariable("id") final String dashboardId,

@@ -105,6 +105,26 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
         .hasStatus(HttpStatus.UNAUTHORIZED);
   }
 
+  @Test
+  public void shouldAllowClusterStatusWithCredentialsUnknownToTheClusterAdminStore() {
+    // given / when — a DB-backed user's credentials, which the isolated cluster-admin store does
+    // not know. Clients migrating here from /v2/status send whatever they are configured with, so
+    // the endpoint must ignore the Authorization header rather than reject it.
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .headers(
+                basicAuth(
+                    TestUserDetailsService.DEMO_USERNAME, TestUserDetailsService.DEMO_USERNAME))
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — no authentication filter runs on this chain, so the header is never inspected
+    assertThat(result)
+        .as("a foreign credential must not turn the public cluster status into a 401")
+        .hasStatus(HttpStatus.OK);
+  }
+
   private static HttpHeaders basicAuth(final String username, final String password) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add(

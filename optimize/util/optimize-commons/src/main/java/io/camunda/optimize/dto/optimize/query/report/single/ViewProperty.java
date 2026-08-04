@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_AUTOMATION_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INPUT_TOKENS_PROPERTY;
@@ -33,6 +34,8 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
   public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
+  public static final ViewProperty AUTOMATION_RATE =
+      new ViewProperty(VIEW_AUTOMATION_RATE_PROPERTY);
   public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
   public static final ViewProperty INPUT_TOKENS = new ViewProperty(VIEW_INPUT_TOKENS_PROPERTY);
   public static final ViewProperty OUTPUT_TOKENS = new ViewProperty(VIEW_OUTPUT_TOKENS_PROPERTY);

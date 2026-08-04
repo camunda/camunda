@@ -12,6 +12,7 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record AuditLogDbModel(
@@ -106,15 +107,13 @@ public record AuditLogDbModel(
   }
 
   public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
-    if (TruncateUtil.shouldTruncate(entityDescription(), sizeLimit, byteLimit)) {
-
-      return copy(
-          fn ->
-              ((Builder) fn)
-                  .entityDescription(
-                      TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)));
+    final var truncatedEntityDescription =
+        TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit);
+    if (Objects.equals(truncatedEntityDescription, entityDescription())) {
+      return this;
     }
-    return this;
+
+    return copy(fn -> ((Builder) fn).entityDescription(truncatedEntityDescription));
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {

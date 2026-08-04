@@ -11,6 +11,9 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariableReference;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ClusterVariableReference.DetectedClusterVariable;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
@@ -74,14 +77,20 @@ import java.util.stream.Collectors;
  *       })
  *   }
  * </pre>
+ *
+ * <p><b>Input mappings</b> are not combined into a single context expression. Each mapping is kept
+ * as its own parsed source expression plus its split target path, so that mappings can be evaluated
+ * one by one in modeling order at runtime, with each mapping's result visible to subsequent
+ * mappings (see {@link InputMapping} and {@code BpmnVariableMappingBehavior}).
  */
 public final class VariableMappingTransformer {
 
   private static final String EXPRESSION_MARKER = "=";
 
   /**
-   * Transforms the input mappings into the FEEL expression that produces the local variables and,
-   * in the same pass, detects the secret references they use (see {@link #detectSecretReferences}).
+   * Transforms the input mappings, keeping each mapping as its own source expression plus target
+   * path so they can be evaluated one by one in modeling order at runtime and, in the same pass,
+   * detects the secret references they use (see {@link #detectSecretReferences}).
    */
   public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
@@ -89,10 +98,32 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(inputMappings, expressionLanguage);
     final var context = asContext(mappings);
-    final var contextExpression =
-        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
-    final var expression = parseExpression(contextExpression, expressionLanguage);
-    return new InputMappings(expression, detectSecretReferences(context));
+
+    final var transformedMappings =
+        mappings.stream()
+            .map(
+                mapping ->
+                    new InputMapping(
+                        toInputSourceExpression(mapping.source, expressionLanguage),
+                        splitPathExpression(mapping.target)))
+            .toList();
+    return new InputMappings(
+        transformedMappings,
+        detectSecretReferences(context),
+        detectClusterVariableReferences(context));
+  }
+
+  private static Expression toInputSourceExpression(
+      final Expression source, final ExpressionLanguage expressionLanguage) {
+    if (source instanceof StaticExpression) {
+      // A static input source is treated as a string literal, byte-identical to the previous
+      // combined FEEL context expression (including the #16043 double-quote escaping): e.g. source
+      // "1" stays the string "1" instead of being type-inferred to the number 1. FEEL and null
+      // sources are left untouched.
+      final var escaped = source.getExpression().replaceAll("\"", "\\\\\"");
+      return expressionLanguage.parseExpression(EXPRESSION_MARKER + "\"" + escaped + "\"");
+    }
+    return source;
   }
 
   public Expression transformOutputMappings(
@@ -169,6 +200,66 @@ public final class VariableMappingTransformer {
     path.add(key);
     path.addAll(detected.path());
     return new DetectedSecret(path, detected.secret());
+  }
+
+  /**
+   * Detects the cluster variables referenced by the built mapping context, keyed by the JSON
+   * pointer (RFC 6901) of the leaf each reference belongs to — the leaf's target path plus the
+   * reference's FEEL context path. Mirrors {@link #detectSecretReferences} for cluster-variable
+   * references (see {@link ClusterVariableReference} for what counts).
+   */
+  private static Map<String, Set<ClusterVariableReference>> detectClusterVariableReferences(
+      final MappingContext context) {
+    final var clusterVariablesByPointer =
+        new LinkedHashMap<String, Set<ClusterVariableReference>>();
+    for (final var detected : context.visit(clusterVariableCollector())) {
+      clusterVariablesByPointer
+          .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
+          .add(detected.clusterVariable());
+    }
+    return clusterVariablesByPointer;
+  }
+
+  /**
+   * Visitor that collects the cluster-variable references of a mapping context as a flat list, each
+   * carrying the path segments of its leaf: the target path (built up from the context keys as the
+   * visit descends) plus the reference's FEEL context path within the source. A nested context is
+   * descended; a leaf holds the source expression to scan.
+   */
+  private static MappingContextVisitor<List<DetectedClusterVariable>> clusterVariableCollector() {
+    return new MappingContextVisitor<>() {
+      @Override
+      public List<DetectedClusterVariable> onEntry(
+          final String targetKey, final Expression source) {
+        return ClusterVariableReference.parse(source).stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedClusterVariable> onContext(
+          final List<List<DetectedClusterVariable>> entries) {
+        return entries.stream().flatMap(List::stream).collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedClusterVariable> onContextEntry(
+          final String targetKey,
+          final List<DetectedClusterVariable> contextValue,
+          final List<String> contextPath) {
+        return contextValue.stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+    };
+  }
+
+  private static DetectedClusterVariable prependKey(
+      final String key, final DetectedClusterVariable detected) {
+    final var path = new ArrayList<String>();
+    path.add(key);
+    path.addAll(detected.path());
+    return new DetectedClusterVariable(path, detected.clusterVariable());
   }
 
   /**

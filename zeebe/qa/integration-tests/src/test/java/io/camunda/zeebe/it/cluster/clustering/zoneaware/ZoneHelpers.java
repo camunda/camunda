@@ -40,11 +40,7 @@ public class ZoneHelpers {
         .start();
   }
 
-  /**
-   * Starts a broker with id in a zone without adding it to the topology. The {@link
-   * TestStandaloneBroker#start} is run in a virtual thread as it returns only after it is able to
-   * join the topology
-   */
+  /** Starts a broker with id in a zone without adding it to the topology. */
   public static TestStandaloneBroker startBrokerInZone(
       final TestCluster cluster,
       final String zone,
@@ -69,7 +65,7 @@ public class ZoneHelpers {
                   cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
                 });
 
-    Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
+    broker.start();
 
     return broker;
   }

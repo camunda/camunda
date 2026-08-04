@@ -7,8 +7,11 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.api.model.config.SessionConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,7 +125,9 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
     assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("cloud-secret");
     assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("https://weblogin.example.com/");
-    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
+    // OR-set: the resource audience for public-API/M2M bearer tokens plus the webapp client id so
+    // the login id_token (whose only aud is the client id) is also accepted. Mirrors the operator.
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,cloud-client");
     assertThat(env.getProperty(OIDC + "organization-id")).isEqualTo("org-42");
     assertThat(env.getProperty(OIDC + "redirect-uri"))
         .isEqualTo("{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=cluster-7");
@@ -194,7 +199,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldBridgeOnlyClientAudienceInAuth0ModeIgnoringPublicApiAudience() {
+  void shouldBridgeClientAudienceAndClientIdInAuth0ModeIgnoringPublicApiAudience() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
@@ -205,7 +210,39 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
 
-    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
+    // The resource audience (bearer path) and the client id (login id_token aud) both survive; the
+    // CCSM-only public-API audience does not.
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,cloud-client");
+  }
+
+  @Test
+  void shouldAddClientIdToAudiencesForLoginWhenNoResourceAudienceInAuth0Mode() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
+    // No CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE configured: the login id_token must still be accepted, so
+    // the client id alone is bridged into the audiences set.
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("cloud-client");
+  }
+
+  @Test
+  void shouldNotWarnDeprecationForClientIdWhenAddedAsAudience() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
+    legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    // The client id is bridged to client-id (its deprecation warning is emitted there); reusing it
+    // as an audience must not emit a second "deprecated -> audiences" warning.
+    logs.assertDoesNotContain(
+        entry ->
+            entry.getMessage().contains("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID")
+                && entry.getMessage().contains(OIDC + "audiences"),
+        "client id must not be reported as deprecated in favour of the audiences property");
   }
 
   @Test
@@ -341,5 +378,50 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     processor.postProcessEnvironment(env, null);
 
     assertThat(env.getProperty("contextPath")).isEqualTo("/explicit");
+  }
+
+  @Test
+  void shouldEnablePersistentSessionsOnElasticsearch() {
+    // given the default database, which is Elasticsearch
+    final StandardEnvironment env = environmentWith(cslEnabledConfig());
+
+    // when
+    processor.postProcessEnvironment(env, null);
+
+    // then the CSL session store is active, so sessions survive a restart and are shared
+    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY)).isEqualTo("true");
+  }
+
+  @Test
+  void shouldNotEnablePersistentSessionsOnOpenSearch() {
+    // given
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(CAMUNDA_OPTIMIZE_DATABASE, OPENSEARCH_DATABASE_PROPERTY);
+    final StandardEnvironment env = environmentWith(legacy);
+
+    // when
+    processor.postProcessEnvironment(env, null);
+
+    // then CSL keeps its in-memory sessions: enabling persistence without an OpenSearch store
+    // would leave CSL's session repository without a SessionStorePort and fail startup
+    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY)).isNull();
+    logs.assertContains(
+        entry -> entry.getMessage().contains("Persistent web sessions are not enabled"),
+        "expected a warning that sessions are kept in memory on OpenSearch");
+  }
+
+  @Test
+  void shouldLetOperatorTurnOffPersistentSessionsOnElasticsearch() {
+    // given an operator who explicitly opted out
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY, "false");
+    final StandardEnvironment env = environmentWith(legacy);
+
+    // when
+    processor.postProcessEnvironment(env, null);
+
+    // then the bridged default does not override them
+    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY))
+        .isEqualTo("false");
   }
 }

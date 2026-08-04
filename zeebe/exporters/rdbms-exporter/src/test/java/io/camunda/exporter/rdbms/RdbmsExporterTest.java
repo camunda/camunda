@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -37,6 +38,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.exporter.rdbms.replication.LsnReplicationController;
 import io.camunda.exporter.rdbms.replication.ReplicationController;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -553,6 +556,31 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldReleaseAllocatedResourcesWhenOpenFails() throws Exception {
+    // given - open() allocates the replication controller (which schedules a background poll task)
+    // and only afterwards schedules the flush task; make that scheduling fail so open() throws
+    // after the controller and the execution-queue listeners have already been allocated
+    createExporter(b -> b, true, false, null);
+    when(controller.scheduleCancellableTask(any(), any()))
+        .thenThrow(new RuntimeException("scheduling failed"));
+
+    // when
+    assertThatThrownBy(() -> exporter.open(controller)).isInstanceOf(RuntimeException.class);
+
+    // then - close() must run its full cleanup so a retried open starts from a clean state: the
+    // replication controller (and its background poll task) is released and the pending writes are
+    // flushed. The flush task and background task manager are allocated only after the failing
+    // step, so there is nothing to release for those here.
+    verify(replicationController).close();
+    verify(rdbmsWriters).close();
+    // reset() runs twice, and that is expected: once at the start of open() (so re-registering
+    // listeners/hooks on a reopen never duplicates them) and once again inside close() as part of
+    // teardown. reset() is idempotent, so running it on both the open and close paths is harmless;
+    // we pin the count only to document the two distinct call sites.
+    verify(executionQueue, times(2)).reset();
+  }
+
+  @Test
   void shouldNotRequestReplayWhenBrokerAndRdbmsPositionAreEqual() {
     // given - broker position equals RDBMS position
     final long position = 1000L;
@@ -563,6 +591,60 @@ class RdbmsExporterTest {
 
     // then - no replay should be requested
     verify(controller, never()).requestReplay(Mockito.anyLong());
+  }
+
+  @Test
+  void shouldNotAckBrokerDirectlyWhenBrokerBehindRdbmsOnOpen() {
+    // given - broker position (100) is behind the RDBMS position (150). Under async replication the
+    // RDBMS position reflects what is flushed to the primary DB, not what the replicas have
+    // confirmed. Acking the broker straight to the RDBMS position would let the journal drop
+    // records that were never replicated (see #51588).
+    final long brokerPosition = 100L;
+    final long rdbmsPosition = 150L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+
+    // when
+    exporter.open(controller);
+
+    // then - the broker ack is delegated to the replication controller, which only advances the
+    // broker once replication is confirmed; the exporter must not ack the broker directly
+    verify(controller, never()).updateLastExportedRecordPosition(anyLong());
+    verify(replicationController).onFlush(rdbmsPosition);
+  }
+
+  @Test
+  void shouldNotAckBrokerPastUnconfirmedReplicationWithRealLsnControllerOnOpen() {
+    // given - broker (100) is behind the RDBMS position (150) and a REAL LsnReplicationController
+    // is
+    // wired in instead of a mock. Its replicas report no confirmed LSN, so nothing is replication-
+    // confirmed. This exercises the end-to-end #51588 guard: mocking the controller only proves the
+    // exporter delegates to onFlush; this proves the LSN controller then holds the broker back.
+    final long brokerPosition = 100L;
+    final long rdbmsPosition = 150L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+
+    final var lsnProvider = mock(ReplicationLogStatusProvider.class);
+    when(lsnProvider.getCurrent()).thenReturn(200L);
+    when(lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+    final var replicationConfig = new ExporterConfiguration.ReplicationConfiguration();
+    replicationConfig.setPollingInterval(Duration.ofSeconds(5));
+    replicationConfig.setMaxLag(Duration.ofSeconds(10));
+    replicationConfig.setMinSyncReplicas(1);
+    final var clock = mock(InstantSource.class);
+    when(clock.millis()).thenReturn(0L);
+    final var realLsnController =
+        new LsnReplicationController(controller, lsnProvider, replicationConfig, 0, clock, metrics);
+    when(replicationControllerFactory.createReplicationController(any()))
+        .thenReturn(realLsnController);
+
+    // when
+    exporter.open(controller);
+
+    // then - the RDBMS position is only enqueued in the LSN controller, never acked to the broker.
+    // The periodic replication check never runs (its scheduled task is mocked and never fires) and
+    // no replica has confirmed the LSN, so the broker must not be advanced past the unreplicated
+    // position (see #51588).
+    verify(controller, never()).updateLastExportedRecordPosition(anyLong());
   }
 
   @Test
@@ -815,6 +897,23 @@ class RdbmsExporterTest {
         .when(rdbmsWriters)
         .flush(true);
     doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
+
+    // mirror the real RdbmsWriters.close(): final flush followed by an execution-queue reset
+    try {
+      doAnswer(
+              (invocation) -> {
+                try {
+                  executionQueue.flush();
+                } finally {
+                  executionQueue.reset();
+                }
+                return null;
+              })
+          .when(rdbmsWriters)
+          .close();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
 
     final var builder =
         new RdbmsExporter.Builder()

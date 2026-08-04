@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
@@ -24,17 +26,19 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   private final int partitionId;
-  private LoggedEvent rawEvent;
-  private RecordMetadata metadata;
-  private UnifiedRecordValue value;
+  private @Nullable LoggedEvent rawEvent;
+  private @Nullable RecordMetadata metadata;
+  private @Nullable UnifiedRecordValue value;
 
   public TypedRecordImpl(final int partitionId) {
     this.partitionId = partitionId;
   }
 
+  @SuppressWarnings("NullAway.Init")
   public void wrap(
       final LoggedEvent rawEvent, final RecordMetadata metadata, final UnifiedRecordValue value) {
     this.rawEvent = rawEvent;
@@ -43,28 +47,28 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   }
 
   @JsonIgnore
-  public RecordMetadata getMetadata() {
+  public @Nullable RecordMetadata getMetadata() {
     return metadata;
   }
 
   @Override
   public long getPosition() {
-    return rawEvent.getPosition();
+    return requireNonNull(rawEvent).getPosition();
   }
 
   @Override
   public long getSourceRecordPosition() {
-    return rawEvent.getSourceEventPosition();
+    return requireNonNull(rawEvent).getSourceEventPosition();
   }
 
   @Override
   public long getTimestamp() {
-    return rawEvent.getTimestamp();
+    return requireNonNull(rawEvent).getTimestamp();
   }
 
   @Override
   public Intent getIntent() {
-    return metadata.getIntent();
+    return requireNonNull(metadata).getIntent();
   }
 
   @Override
@@ -74,106 +78,106 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
 
   @Override
   public RecordType getRecordType() {
-    return metadata.getRecordType();
+    return requireNonNull(metadata).getRecordType();
   }
 
   @Override
   public RejectionType getRejectionType() {
-    return metadata.getRejectionType();
+    return requireNonNull(metadata).getRejectionType();
   }
 
   @Override
   public String getRejectionReason() {
-    return metadata.getRejectionReason();
+    return requireNonNull(metadata).getRejectionReason();
   }
 
   @Override
   public String getBrokerVersion() {
-    return metadata.getBrokerVersion().toString();
+    return requireNonNull(metadata).getBrokerVersion().toString();
   }
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return metadata.getAuthorization().toDecodedMap();
+    return requireNonNull(metadata).getAuthorization().toDecodedMap();
   }
 
   @Override
   public Agent getAgent() {
-    return metadata.getAgent();
+    return requireNonNull(metadata).getAgent();
   }
 
   @Override
   public ChannelType getRequestChannelType() {
-    return metadata.getRequestChannelType();
+    return requireNonNull(metadata).getRequestChannelType();
   }
 
   @Override
   public String getRequestToolName() {
-    return metadata.getRequestToolName();
+    return requireNonNull(metadata).getRequestToolName();
   }
 
   @Override
   public int getRecordVersion() {
-    return metadata.getRecordVersion();
+    return requireNonNull(metadata).getRecordVersion();
   }
 
   @Override
   public ValueType getValueType() {
-    return metadata.getValueType();
+    return requireNonNull(metadata).getValueType();
   }
 
   @Override
   public long getOperationReference() {
-    return metadata.getOperationReference();
+    return requireNonNull(metadata).getOperationReference();
   }
 
   @Override
   public long getBatchOperationReference() {
-    return metadata.getBatchOperationReference();
+    return requireNonNull(metadata).getBatchOperationReference();
   }
 
   @Override
   public Record copyOf() {
-    return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
+    return CopiedRecords.createCopiedRecord(getPartitionId(), requireNonNull(rawEvent));
   }
 
   @Override
   public long getKey() {
-    return rawEvent.getKey();
+    return requireNonNull(rawEvent).getKey();
   }
 
   @Override
   public UnifiedRecordValue getValue() {
-    return value;
+    return requireNonNull(value);
   }
 
   @Override
   public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
+    return requireNonNull(metadata).getAuthorization();
   }
 
   @Override
   @JsonIgnore
   public int getRequestStreamId() {
-    return metadata.getRequestStreamId();
+    return requireNonNull(metadata).getRequestStreamId();
   }
 
   @Override
   @JsonIgnore
   public long getRequestId() {
-    return metadata.getRequestId();
+    return requireNonNull(metadata).getRequestId();
   }
 
   @Override
   @JsonIgnore
   public int getLength() {
-    return metadata.getLength() + value.getLength();
+    return requireNonNull(metadata).getLength() + requireNonNull(value).getLength();
   }
 
   @Override
   @JsonIgnore
   public int getRawLength() {
-    return rawEvent.getLength();
+    return requireNonNull(rawEvent).getLength();
   }
 
   @Override
@@ -187,7 +191,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
         + "metadata="
         + metadata
         + ", value="
-        + StringUtil.limitString(value.toString(), 1024)
+        + StringUtil.limitString(requireNonNull(value).toString(), 1024)
         + '}';
   }
 }

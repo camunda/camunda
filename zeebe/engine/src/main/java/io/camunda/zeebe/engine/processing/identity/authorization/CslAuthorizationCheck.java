@@ -12,17 +12,18 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsResolver;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +32,16 @@ import org.slf4j.LoggerFactory;
  * Encapsulates the shared CSL skip-logic and authorization check used across engine command
  * processors.
  *
- * <p>Every engine command site that checks CSL authorization duplicates the same 15-line block:
- * internal-command skip → anonymous skip → security-disabled skip → no-principal check → claims
- * conversion → {@link AuthorizationCheckPort#check}. This class captures that block in one place.
+ * <p>Every engine command site that checks CSL authorization duplicates the same block:
+ * internal-command skip → anonymous skip → no-principal check → claims conversion → {@link
+ * AuthorizationCheckPort#check}. This class captures that block in one place.
  *
  * <p>Use {@link #check} for single-check sites (one {@link RequiredAuthorization} per command). Use
  * {@link #resolveForCheck} for multi-check sites (e.g. UserTask processors) that run several CSL
  * checks after the skip-logic resolves the principal.
+ *
+ * <p>Tenant-membership checks are delegated to {@link CslTenantCheck}; this class exposes them
+ * under their original method names so existing callers are unaffected.
  */
 @NullMarked
 public final class CslAuthorizationCheck {
@@ -47,6 +51,7 @@ public final class CslAuthorizationCheck {
   private final AuthorizationCheckPort authzService;
   private final TokenClaimsAuthenticationResolver claimsConverter;
   private final EngineSecurityConfig securityConfig;
+  private final CslTenantCheck tenantCheck;
 
   public CslAuthorizationCheck(
       final AuthorizationCheckPort authzService,
@@ -55,6 +60,7 @@ public final class CslAuthorizationCheck {
     this.authzService = authzService;
     this.claimsConverter = claimsConverter;
     this.securityConfig = securityConfig;
+    tenantCheck = new CslTenantCheck(claimsConverter, securityConfig);
   }
 
   /**
@@ -64,7 +70,7 @@ public final class CslAuthorizationCheck {
    *
    * <ul>
    *   <li>{@code right(empty)} — skip-logic says allow; no CSL check needed (internal command,
-   *       anonymous user, security disabled, or no-principal when authorizations are disabled).
+   *       anonymous user, or no-principal when authorizations are disabled).
    *   <li>{@code right(present)} — caller must run the CSL check with this {@link
    *       CamundaAuthentication}.
    *   <li>{@code left(rejection)} — no principal present and authorizations are enabled; the
@@ -86,12 +92,6 @@ public final class CslAuthorizationCheck {
           "Skipping authorization check for anonymous user on command {}", command.getIntent());
       return Either.right(Optional.empty());
     }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
-      LOG.trace(
-          "Skipping authorization check for command {}: security disabled", command.getIntent());
-      return Either.right(Optional.empty());
-    }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
       if (!securityConfig.isAuthorizationsEnabled()) {
@@ -108,35 +108,22 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Resolves the {@link AuthorizedTenants} for a command from its authorization claims, reusing
-   * this component's claims converter and security configuration. Centralizes the converter here so
-   * command processors depend only on {@code CslAuthorizationCheck} instead of threading the
-   * converter through their construction chains.
+   * Resolves the {@link TenantAccess} for a command from its authorization claims. Delegates to
+   * {@link CslTenantCheck#resolveAuthorizedTenants}.
    */
-  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    return AuthorizedTenantsResolver.resolve(authorizations, securityConfig, claimsConverter);
+  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+    return tenantCheck.resolveAuthorizedTenants(authorizations);
   }
 
   public boolean isMultiTenancyChecksEnabled() {
-    return securityConfig.isMultiTenancyChecksEnabled();
+    return tenantCheck.isMultiTenancyChecksEnabled();
   }
 
   /**
    * Tenant-assignment check for command sites that must verify tenant membership independently of a
    * resource {@link #check} — e.g. a command-level tenant gate, or a site whose RBAC check runs at
-   * a different granularity (one tenant, many resource checks).
-   *
-   * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
-   * are disabled the check is a no-op; when no username or clientId claim is present the check is
-   * also a no-op (mirrors {@link #resolveForCheck} — a no-principal command is either an internal
-   * command already exempted upstream, or authorizations are disabled and the primary permission
-   * check already let it through; either way there is no principal to hold a tenant assignment
-   * requirement against). Otherwise the authorized tenants are resolved from the command's claims
-   * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
-   *
-   * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
-   * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
-   * tenant", or {@code NOT_FOUND} to mask an existing resource — and the message.
+   * a different granularity (one tenant, many resource checks). Delegates to {@link
+   * CslTenantCheck#checkTenant}; see that method's javadoc for the full skip-logic contract.
    *
    * @param value the value to return on success (mirrors {@link #check}; enables {@code flatMap}
    *     composition with it)
@@ -148,26 +135,35 @@ public final class CslAuthorizationCheck {
       final String tenantId,
       final T value,
       final Rejection notAssignedRejection) {
-    if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return Either.right(value);
-    }
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      return Either.right(value);
-    }
-    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
-      return Either.right(value);
-    }
-    return Either.left(notAssignedRejection);
+    return tenantCheck.checkTenant(command, tenantId, value, notAssignedRejection);
   }
 
   /**
-   * Combines {@link #check} and {@link #checkTenant} into the single call most command sites need:
-   * RBAC permission first, tenant membership second. Mirrors the priority {@code main}'s {@code
-   * AuthorizationCheckBehavior} aggregation gives when both checks would fail on the same command
-   * (permission rejection wins) — so a principal with no permission at all always sees {@code
-   * FORBIDDEN}, never a tenant-shaped rejection that could hint at the resource's existence.
+   * Tenant-assignment check across a list of tenant IDs at once, for command sites that call it
+   * directly with no preceding {@link #check}. Delegates to {@link
+   * CslTenantCheck#checkTenantsRequiringPrincipal}; see that method's javadoc for the full
+   * skip-logic contract, including why it has no no-principal skip (unlike {@link #checkTenant}).
+   *
+   * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
+   *     {@link #resolveAuthorizedTenants} from the same command's claims
+   * @param notAssignedRejection supplies the rejection to return when the principal is not assigned
+   *     to all of {@code tenantIds}; only invoked on that failure path
+   */
+  public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
+      final List<String> tenantIds,
+      final TenantAccess authorizedTenants,
+      final T value,
+      final Supplier<Rejection> notAssignedRejection) {
+    return tenantCheck.checkTenantsRequiringPrincipal(
+        tenantIds, authorizedTenants, value, notAssignedRejection);
+  }
+
+  /**
+   * Combines {@link #check} and {@link CslTenantCheck#checkTenant} into the single call most
+   * command sites need: RBAC permission first, tenant membership second. When both checks would
+   * fail on the same command, permission rejection wins — so a principal with no permission at all
+   * always sees {@code FORBIDDEN}, never a tenant-shaped rejection that could hint at the
+   * resource's existence.
    *
    * <p>Only runs the tenant check once the permission check passes; a permission failure never
    * bothers a tenant lookup, and vice versa a resource-not-permitted-here principal never learns
@@ -231,7 +227,7 @@ public final class CslAuthorizationCheck {
    * distributed commands: on target partitions they appear as internal (no request metadata) but
    * still carry the originating user's claims and must be subject to authorization checks.
    *
-   * <p>All other skip conditions (anonymous user, security disabled, no principal) still apply.
+   * <p>All other skip conditions (anonymous user, no principal) still apply.
    */
   public <T> Either<Rejection, T> checkForDistributedCommand(
       final TypedRecord<?> command,
@@ -245,8 +241,7 @@ public final class CslAuthorizationCheck {
    * Authorization check for contexts where no {@link TypedRecord} is available, only the raw claims
    * map (e.g. job-stream activation where claims come from {@link
    * io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties}). Applies the same
-   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, security disabled, no
-   * principal.
+   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, no principal.
    */
   public <T> Either<Rejection, T> checkWithClaims(
       final Map<String, Object> claims,
@@ -264,10 +259,6 @@ public final class CslAuthorizationCheck {
       final Rejection noPrincipalRejection,
       final Function<AuthorizationRejection, Rejection> denialMapper) {
     if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return Either.right(value);
-    }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(value);
     }
     if (claims.get(Authorization.AUTHORIZED_USERNAME) == null

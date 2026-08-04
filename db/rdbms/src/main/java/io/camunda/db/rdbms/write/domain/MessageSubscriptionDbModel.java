@@ -14,241 +14,65 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionT
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
-public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionDbModel> {
-  private Long messageSubscriptionKey;
-  private String processDefinitionId;
-  private Long processDefinitionKey;
-  private Long processInstanceKey;
-  private Long rootProcessInstanceKey;
-  private String flowNodeId;
-  private Long flowNodeInstanceKey;
-  private MessageSubscriptionState messageSubscriptionState;
-  private MessageSubscriptionType messageSubscriptionType;
-  private OffsetDateTime dateTime;
-  private String messageName;
-  private String correlationKey;
-  private String tenantId;
-  private int partitionId;
-  private String processDefinitionName;
-  private Integer processDefinitionVersion;
-  private String serializedToolProperties;
-  private Map<String, String> toolProperties;
-  private String toolName;
-  private String inboundConnectorType;
-
-  public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
-    this.messageSubscriptionKey = messageSubscriptionKey;
-  }
-
-  public MessageSubscriptionDbModel(
-      final Long messageSubscriptionKey,
-      final String processDefinitionId,
-      final Long processDefinitionKey,
-      final Long processInstanceKey,
-      final Long rootProcessInstanceKey,
-      final String flowNodeId,
-      final Long flowNodeInstanceKey,
-      final MessageSubscriptionState messageSubscriptionState,
-      final MessageSubscriptionType messageSubscriptionType,
-      final OffsetDateTime dateTime,
-      final String messageName,
-      final String correlationKey,
-      final String tenantId,
-      final int partitionId,
-      final String processDefinitionName,
-      final Integer processDefinitionVersion,
-      final Map<String, String> toolProperties,
-      final String toolName,
-      final String inboundConnectorType) {
-    this.messageSubscriptionKey = messageSubscriptionKey;
-    this.processDefinitionId = processDefinitionId;
-    this.processDefinitionKey = processDefinitionKey;
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    this.processInstanceKey = processInstanceKey;
-    this.flowNodeId = flowNodeId;
-    this.flowNodeInstanceKey = flowNodeInstanceKey;
-    this.messageSubscriptionState = messageSubscriptionState;
-    this.messageSubscriptionType = messageSubscriptionType;
-    this.dateTime = dateTime;
-    this.messageName = messageName;
-    this.correlationKey = correlationKey;
-    this.tenantId = tenantId;
-    this.partitionId = partitionId;
-    this.processDefinitionName = processDefinitionName;
-    this.processDefinitionVersion = processDefinitionVersion;
-    serializedToolProperties = MapSerializer.serialize(toolProperties);
-    this.toolProperties = toolProperties;
-    this.toolName = toolName;
-    this.inboundConnectorType = inboundConnectorType;
-  }
-
-  public Long messageSubscriptionKey() {
-    return messageSubscriptionKey;
-  }
-
-  public void messageSubscriptionKey(final Long messageSubscriptionKey) {
-    this.messageSubscriptionKey = messageSubscriptionKey;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public Long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void processDefinitionKey(final Long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public Long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public void processInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public Long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public String flowNodeId() {
-    return flowNodeId;
-  }
-
-  public void flowNodeId(final String flowNodeId) {
-    this.flowNodeId = flowNodeId;
-  }
-
-  public Long flowNodeInstanceKey() {
-    return flowNodeInstanceKey;
-  }
-
-  public void flowNodeInstanceKey(final Long flowNodeInstanceKey) {
-    this.flowNodeInstanceKey = flowNodeInstanceKey;
-  }
-
-  public MessageSubscriptionState messageSubscriptionState() {
-    return messageSubscriptionState;
-  }
-
-  public void messageSubscriptionState(final MessageSubscriptionState messageSubscriptionState) {
-    this.messageSubscriptionState = messageSubscriptionState;
-  }
-
-  public MessageSubscriptionType messageSubscriptionType() {
-    return messageSubscriptionType;
-  }
-
-  public void messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
-    this.messageSubscriptionType = messageSubscriptionType;
-  }
-
-  public String processDefinitionName() {
-    return processDefinitionName;
-  }
-
-  public void processDefinitionName(final String processDefinitionName) {
-    this.processDefinitionName = processDefinitionName;
-  }
-
-  public Integer processDefinitionVersion() {
-    return processDefinitionVersion;
-  }
-
-  public void processDefinitionVersion(final Integer processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public String serializedToolProperties() {
-    return serializedToolProperties;
-  }
-
-  public void setSerializedToolProperties(final String serializedToolProperties) {
-    this.serializedToolProperties = serializedToolProperties;
-    toolProperties = MapSerializer.deserialize(serializedToolProperties);
-  }
+public record MessageSubscriptionDbModel(
+    Long messageSubscriptionKey,
+    String processDefinitionId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    Long rootProcessInstanceKey,
+    String flowNodeId,
+    Long flowNodeInstanceKey,
+    MessageSubscriptionState messageSubscriptionState,
+    MessageSubscriptionType messageSubscriptionType,
+    OffsetDateTime dateTime,
+    String messageName,
+    String correlationKey,
+    String tenantId,
+    int partitionId,
+    String processDefinitionName,
+    Integer processDefinitionVersion,
+    String serializedToolProperties,
+    String toolName,
+    String inboundConnectorType)
+    implements Copyable<MessageSubscriptionDbModel> {
 
   public Map<String, String> toolProperties() {
-    return toolProperties;
+    return MapSerializer.deserialize(serializedToolProperties);
   }
 
-  public String toolName() {
-    return toolName;
-  }
-
-  public void toolName(final String toolName) {
-    this.toolName = toolName;
-  }
-
-  public String inboundConnectorType() {
-    return inboundConnectorType;
-  }
-
-  public void inboundConnectorType(final String inboundConnectorType) {
-    this.inboundConnectorType = inboundConnectorType;
-  }
-
-  public OffsetDateTime dateTime() {
-    return dateTime;
-  }
-
-  public void dateTime(final OffsetDateTime dateTime) {
-    this.dateTime = dateTime;
-  }
-
-  public String messageName() {
-    return messageName;
-  }
-
-  public void messageName(final String messageName) {
-    this.messageName = messageName;
-  }
-
-  public String correlationKey() {
-    return correlationKey;
-  }
-
-  public void correlationKey(final String correlationKey) {
-    this.correlationKey = correlationKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public int partitionId() {
-    return partitionId;
-  }
-
-  public MessageSubscriptionDbModel partitionId(final int partitionId) {
-    this.partitionId = partitionId;
-    return this;
-  }
-
-  public void truncateToolFields(final int sizeLimit, final Integer byteLimit) {
-    if (TruncateUtil.shouldTruncate(toolName, sizeLimit, byteLimit)) {
-      toolName = TruncateUtil.truncateValue(toolName, sizeLimit, byteLimit);
+  public MessageSubscriptionDbModel truncateToolFields(
+      final int sizeLimit, final Integer byteLimit) {
+    final var truncatedToolName = TruncateUtil.truncateValue(toolName, sizeLimit, byteLimit);
+    final var truncatedInboundConnectorType =
+        TruncateUtil.truncateValue(inboundConnectorType, sizeLimit, byteLimit);
+    if (Objects.equals(truncatedToolName, toolName)
+        && Objects.equals(truncatedInboundConnectorType, inboundConnectorType)) {
+      return this;
     }
-    if (TruncateUtil.shouldTruncate(inboundConnectorType, sizeLimit, byteLimit)) {
-      inboundConnectorType = TruncateUtil.truncateValue(inboundConnectorType, sizeLimit, byteLimit);
-    }
+
+    return new MessageSubscriptionDbModel(
+        messageSubscriptionKey,
+        processDefinitionId,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        flowNodeId,
+        flowNodeInstanceKey,
+        messageSubscriptionState,
+        messageSubscriptionType,
+        dateTime,
+        messageName,
+        correlationKey,
+        tenantId,
+        partitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        serializedToolProperties,
+        truncatedToolName,
+        truncatedInboundConnectorType);
   }
 
   @Override
@@ -259,8 +83,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     return copyFunction.apply(toBuilder()).build();
   }
 
-  public ObjectBuilder<MessageSubscriptionDbModel> toBuilder() {
-    return new Builder()
+  public Builder toBuilder() {
+    return new Builder(serializedToolProperties)
         .messageSubscriptionKey(messageSubscriptionKey)
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
@@ -277,7 +101,6 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .partitionId(partitionId)
         .processDefinitionName(processDefinitionName)
         .processDefinitionVersion(processDefinitionVersion)
-        .toolProperties(toolProperties)
         .toolName(toolName)
         .inboundConnectorType(inboundConnectorType);
   }
@@ -299,9 +122,20 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private int partitionId;
     private String processDefinitionName;
     private Integer processDefinitionVersion;
-    private Map<String, String> toolProperties;
+    private String serializedToolProperties;
     private String toolName;
     private String inboundConnectorType;
+
+    public Builder() {}
+
+    // Seeds the raw serialized column value for toBuilder()/copy(), so a copy that never touches
+    // toolProperties() carries the original string through unparsed instead of round-tripping it
+    // through Jackson. Package-private, not a public setter: a second public setter aliasing the
+    // same field as toolProperties(Map) would let callers silently drop one write (e.g.
+    // builder.serializedToolProperties(x).toolProperties(y) loses x).
+    Builder(final String serializedToolProperties) {
+      this.serializedToolProperties = serializedToolProperties;
+    }
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -360,7 +194,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     }
 
     public Builder toolProperties(final Map<String, String> toolProperties) {
-      this.toolProperties = toolProperties;
+      serializedToolProperties = MapSerializer.serialize(toolProperties);
       return this;
     }
 
@@ -418,7 +252,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           partitionId,
           processDefinitionName,
           processDefinitionVersion,
-          toolProperties,
+          serializedToolProperties,
           toolName,
           inboundConnectorType);
     }

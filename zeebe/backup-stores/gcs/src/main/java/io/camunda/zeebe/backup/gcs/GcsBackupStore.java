@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.cloud.ServiceOptions;
+import com.google.cloud.http.HttpTransportOptions;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -321,11 +325,52 @@ public final class GcsBackupStore implements BackupStore {
         .build();
   }
 
+  /**
+   * Transport options capping how long a single request may stall, or empty to leave the
+   * google-http-client defaults in place. Slow storage backends can stall a response past its
+   * default of 20s, or stall a content upload indefinitely, which fails the whole backup.
+   */
+  static Optional<HttpTransportOptions> transportOptions(final GcsBackupConfig config) {
+    if (config.readTimeout().isEmpty() && config.writeTimeout().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var optionsBuilder = HttpTransportOptions.newBuilder();
+    config.readTimeout().ifPresent(timeout -> optionsBuilder.setReadTimeout(toMillis(timeout)));
+    // HttpTransportOptions has no write timeout, even though the underlying request supports one.
+    return Optional.of(
+        config
+            .writeTimeout()
+            .map(timeout -> writeTimeoutOptions(optionsBuilder, toMillis(timeout)))
+            .orElseGet(optionsBuilder::build));
+  }
+
+  private static HttpTransportOptions writeTimeoutOptions(
+      final HttpTransportOptions.Builder optionsBuilder, final int writeTimeoutMillis) {
+    return new HttpTransportOptions(optionsBuilder) {
+      @Override
+      public HttpRequestInitializer getHttpRequestInitializer(
+          final ServiceOptions<?, ?> serviceOptions) {
+        final var delegate = super.getHttpRequestInitializer(serviceOptions);
+        return request -> {
+          delegate.initialize(request);
+          request.setWriteTimeout(writeTimeoutMillis);
+        };
+      }
+    };
+  }
+
+  private static int toMillis(final Duration timeout) {
+    return Math.toIntExact(timeout.toMillis());
+  }
+
   public static Storage buildClient(final GcsBackupConfig config) {
     final var builder =
         StorageOptions.newBuilder()
             .setHost(config.connection().host())
             .setCredentials(config.connection().auth().credentials());
+
+    transportOptions(config).ifPresent(builder::setTransportOptions);
 
     // Without authentication, we need to set the project ID explicitly
     if (config.connection().auth() instanceof None(final String projectId)) {

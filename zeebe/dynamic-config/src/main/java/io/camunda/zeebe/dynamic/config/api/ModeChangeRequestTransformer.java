@@ -21,9 +21,11 @@ import java.util.Map.Entry;
 
 public final class ModeChangeRequestTransformer implements ConfigurationChangeRequest {
 
+  private final String physicalTenantId;
   private final Mode mode;
 
-  public ModeChangeRequestTransformer(final Mode mode) {
+  public ModeChangeRequestTransformer(final String physicalTenantId, final Mode mode) {
+    this.physicalTenantId = physicalTenantId;
     this.mode = mode;
   }
 

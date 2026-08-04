@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,8 +27,11 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *
  * <p>This processor writes the {@link
  * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} follow-up event whose applier
- * does the bookkeeping cleanup (pending-ask state removal). The message stays buffered on {@code
- * P_K}, preserving the same semantics as when a local start-event subscription is missing.
+ * keeps the pending-ask entry and backs it off — incrementing its rejection count, never removing
+ * it. The message stays buffered on {@code P_K} and its ask is re-sent to {@code P_B} under capped
+ * exponential back-off by the pending-ask scheduler until the subscription reaches {@code P_B} (the
+ * reply then flips to {@code STARTED}) or the buffered message reaches its TTL (ADR 0002 D2/D3),
+ * preserving the same semantics as when a local start-event subscription is missing.
  *
  * <p>When the delegating command was a synchronous {@code correlate} (rather than a {@code
  * publish}), the client is still awaiting a response; this processor additionally flushes the
@@ -42,14 +47,17 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
 
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
   private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
 
   public MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageCorrelationState messageCorrelationState,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
+    this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, responseWriter, messageCorrelationState, messageState);
@@ -60,6 +68,7 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
     final var reply = record.getValue();
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, reply);
+    metrics.crossPartitionReply(ReplyOutcome.REJECTED_NO_SUBSCRIPTION);
 
     deferredCorrelationResponse.writeNotCorrelatedResponse(
         reply,

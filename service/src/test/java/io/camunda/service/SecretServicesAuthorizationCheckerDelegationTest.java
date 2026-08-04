@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -22,9 +23,11 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.SecretServices.ResolvedSecret;
 import io.camunda.service.SecretServices.SecretErrorCode;
 import io.camunda.service.SecretServices.SecretResolutionError;
+import io.camunda.service.SecretTestSupport.TestSecretStore;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -96,13 +99,17 @@ class SecretServicesAuthorizationCheckerDelegationTest {
       final String physicalTenantId,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig) {
+    // a store holding the reference, so an authorized reveal shows up as a resolved value rather
+    // than as NOT_FOUND
+    final var store = new TestSecretStore().holds("token", "token-value");
     return new SecretServices(
         physicalTenantId,
         mock(BrokerClient.class),
         mock(SecurityContextProvider.class),
         authorizationChecker,
         authorizationsConfig,
-        mock(ApiServicesExecutorProvider.class),
+        new SecretStoreRegistry(Map.of("main", store)),
+        SecretTestSupport.sameThreadExecutorProvider(),
         null);
   }
 }

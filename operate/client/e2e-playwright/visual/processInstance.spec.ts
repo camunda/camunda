@@ -558,4 +558,47 @@ test.describe('process instance page', () => {
 
     await expect(page).toHaveScreenshot();
   });
+
+  test('instance history panel at its minimum width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        // 10% is smaller than the configured minimum width, which will override it.
+        JSON.stringify({'process-instance-bottom-panel': [10, 90]}),
+      );
+    });
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+        incidents: runningInstance.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+
+    await expect(processInstancePage.instanceHistory).toBeVisible();
+    await expect(
+      processInstancePage.instanceHistory.getByRole('heading', {
+        name: 'Instance History',
+      }),
+    ).toBeVisible();
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page).toHaveScreenshot();
+  });
 });

@@ -13,6 +13,7 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,10 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.max-quorum-response-timeout=10s",
         "camunda.cluster.raft.min-step-down-failure-count=5",
         "camunda.cluster.raft.prefer-snapshot-replication-threshold=110",
-        "camunda.cluster.raft.preallocate-segment-files=false"
+        "camunda.cluster.raft.preallocate-segment-files=false",
+        "camunda.cluster.raft.rebalance.replication-lag-threshold=16MB",
+        "camunda.cluster.raft.rebalance.replication-timeout=30s",
+        "camunda.cluster.raft.rebalance.max-transfer-attempts=5"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -99,6 +103,14 @@ public class ClusterRaftTest {
           .returns(5, ExperimentalRaftCfg::getMinStepDownFailureCount)
           .returns(110, ExperimentalRaftCfg::getPreferSnapshotReplicationThreshold)
           .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
+    }
+
+    @Test
+    void shouldSetRebalance() {
+      assertThat(brokerCfg.getCluster().getRaft())
+          .returns(DataSize.ofMegabytes(16), RaftCfg::getRebalanceReplicationLagThreshold)
+          .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout)
+          .returns(5, RaftCfg::getRebalanceMaxTransferAttempts);
     }
   }
 

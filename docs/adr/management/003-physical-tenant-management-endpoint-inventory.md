@@ -42,6 +42,7 @@ Restore endpoints are not fully implemented yet but should follow the same patte
 
 |                Endpoint                 |                       Behavior                       |
 |-----------------------------------------|------------------------------------------------------|
+| `GET /v2/exporting`                     | Aggregate exporting status of the physical tenant.   |
 | `POST /v2/exporting/pause?soft=`        | Pause exporting.                                     |
 | `POST /v2/exporting/resume`             | Resume exporting.                                    |
 | `POST /v2/backups/runtime`              | Trigger runtime backup.                              |

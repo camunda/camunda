@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -48,7 +50,8 @@ public record CurrentClusterConfiguration(
     long version,
     GlobalConfiguration globalConfiguration,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    PhasedChangeState phasedChangeState) {
+    PhasedChangeState phasedChangeState)
+    implements InitializableClusterConfiguration {
 
   public static final long INITIAL_VERSION = 0;
   public static final String DEFAULT_GROUP = "default";
@@ -65,8 +68,28 @@ public record CurrentClusterConfiguration(
         INITIAL_VERSION, GlobalConfiguration.uninitialized(), Map.of(), PhasedChangeState.empty());
   }
 
+  @Override
   public boolean isUninitialized() {
     return globalConfiguration.isUninitialized();
+  }
+
+  @Override
+  public Set<MemberId> getMembers() {
+    return globalConfiguration.members().keySet();
+  }
+
+  public int getClusterSize() {
+    return (int)
+        globalConfiguration.members().values().stream()
+            .filter(
+                brokerState ->
+                    brokerState.state() != BrokerState.State.LEFT
+                        && brokerState.state() != BrokerState.State.UNINITIALIZED)
+            .count();
+  }
+
+  public Optional<String> clusterId() {
+    return globalConfiguration.clusterId();
   }
 
   /**
@@ -103,6 +126,18 @@ public record CurrentClusterConfiguration(
    *       since recovery is now per-group.
    * </ul>
    *
+   * <p>This is a pure, side-effect-free conversion: the returned pending plan (if any) is built at
+   * phase 0 but is <em>not</em> activated into the default group — the default group's own {@code
+   * pendingChanges} stays empty. Activating phase 0 (via {@link #applyPhase}) is deliberately left
+   * to the caller, because this factory is invoked both for genuine one-time migrations (e.g.
+   * {@code PersistedCurrentClusterConfiguration} upgrading an on-disk v1 file, exactly once per
+   * broker) and for repeated, read-only re-derivations of a legacy view (e.g. {@code
+   * BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)}, invoked on
+   * every gossip update). Auto-activating here would re-run {@code startConfigurationChange} on a
+   * freshly-built (and therefore never-"pending") default group on every such repeated call,
+   * endlessly restarting an already in-progress plan from scratch. Callers that are performing a
+   * genuine one-time migration should call {@link #activatePendingPhase()} explicitly afterwards.
+   *
    * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
    */
   public static CurrentClusterConfiguration fromLegacy(final ClusterConfiguration legacy) {
@@ -135,11 +170,26 @@ public record CurrentClusterConfiguration(
             Optional.empty(),
             Optional.empty());
 
+    final PhasedChangeState phasedChangeState = toPhasedChangeState(legacy);
     return new CurrentClusterConfiguration(
         INITIAL_VERSION,
         globalConfiguration,
         Map.of(DEFAULT_GROUP, defaultGroup),
-        toPhasedChangeState(legacy));
+        phasedChangeState);
+  }
+
+  /**
+   * Activates the current pending plan's phase (see {@link #applyPhase}) if one is pending,
+   * otherwise returns this configuration unchanged. Mirrors what {@link #initPlan(List)} does for a
+   * freshly-started plan; intended for one-time migration call sites (see {@link
+   * #fromLegacy(ClusterConfiguration)}) that need to take over driving an already-pending plan
+   * rather than starting a new one.
+   *
+   * @throws IllegalStateException if the pending phase targets a sub-configuration that already has
+   *     a change in progress
+   */
+  public CurrentClusterConfiguration activatePendingPhase() {
+    return phasedChangeState.pending().map(this::applyPhase).orElse(this);
   }
 
   /**
@@ -161,8 +211,19 @@ public record CurrentClusterConfiguration(
    * {@code lastChange} is derived from the {@link PhasedChangeState}. Cross-sub-config change
    * details cannot be represented losslessly in the flat legacy plan, so this projection is
    * intended for display and equivalence checks, not for driving legacy change execution.
+   *
+   * <p>Uninitialized is projected explicitly: {@link #isUninitialized()} is driven by {@code
+   * globalConfiguration}'s own uninitialized sentinel version, which is {@code 0} — distinct from
+   * the legacy {@link ClusterConfiguration}'s sentinel version of {@code -1}. Deriving the legacy
+   * version as {@code Math.max(globalConfiguration.version(), defaultGroup.version())} would
+   * therefore never equal the legacy sentinel, so callers of {@code
+   * ClusterConfiguration#isUninitialized()} on the projection could never observe {@code true}.
    */
   public ClusterConfiguration toLegacyDefault() {
+    if (isUninitialized()) {
+      return ClusterConfiguration.uninitialized();
+    }
+
     final PartitionGroupConfiguration defaultGroup =
         partitionGroups.getOrDefault(DEFAULT_GROUP, PartitionGroupConfiguration.empty(version));
 
@@ -361,6 +422,29 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Cancels the pending plan: clears the pending change on every sub-configuration that has one
+   * (the global configuration and/or any partition group targeted by the plan's phases so far), and
+   * moves the plan into {@code lastChange} with {@link PhasedChangePlanStatus#CANCELLED}. This is
+   * an unsafe operation and should be used only as a last resort when a plan is stuck — already
+   * applied operations are not reverted, so sub-configurations affected by earlier phases may be
+   * left in an intermediate state.
+   *
+   * @return {@code this} if no plan is pending
+   */
+  public CurrentClusterConfiguration cancelPendingChanges() {
+    if (phasedChangeState.pending().isEmpty()) {
+      return this;
+    }
+    var result = updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
+    for (final var groupId : partitionGroups.keySet()) {
+      result =
+          result.updatePartitionGroupConfig(
+              groupId, PartitionGroupConfiguration::cancelPendingChanges);
+    }
+    return result.completePlan(PhasedChangePlanStatus.CANCELLED);
+  }
+
+  /**
    * Returns the number of members in the cluster that are not {@link BrokerState.State#LEFT} or
    * {@link BrokerState.State#UNINITIALIZED}.
    */
@@ -552,5 +636,14 @@ public record CurrentClusterConfiguration(
       case LEAVING -> BrokerState.State.LEAVING;
       case LEFT -> BrokerState.State.LEFT;
     };
+  }
+
+  public int getPartitionCount(final String partitionGroup) {
+    final var group = partitionGroups.get(partitionGroup);
+    if (group == null) {
+      return 0;
+    } else {
+      return group.partitionCount();
+    }
   }
 }

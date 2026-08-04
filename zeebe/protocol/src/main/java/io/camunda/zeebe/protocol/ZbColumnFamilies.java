@@ -349,7 +349,19 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
   // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
   // therefore monotonically increasing, so key order == FIFO insertion order)
-  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL);
+  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL),
+
+  // holder processInstanceKey -> (bpmnProcessId, correlationKey, tenantId, messageKey).
+  // Origin entry for a cross-partition message-start holder, written on P_B so it can push a
+  // RELEASE to P_K (addressed by messageKey's partition bits) when the holder completes/terminates.
+  // Present only on P_B — the symmetric STARTED on P_K writes nothing here. See
+  // CrossPartitionMessageStartHolderOrigin and the STARTED / PUSHED appliers for the full
+  // write/delete lifecycle and the migration rationale.
+  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

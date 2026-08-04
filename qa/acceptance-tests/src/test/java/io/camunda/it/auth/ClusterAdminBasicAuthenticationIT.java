@@ -9,6 +9,7 @@ package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -29,7 +30,9 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 /**
  * Full-stack integration tests for the cluster-admin Basic-auth chain ({@code /cluster/v2/**}),
  * exercised against the real {@link
- * io.camunda.zeebe.gateway.rest.controller.DummyClusterTopologyController} endpoint.
+ * io.camunda.zeebe.gateway.rest.controller.DummyClusterTopologyController} endpoint — plus the one
+ * carve-out from that chain, the unauthenticated {@link
+ * io.camunda.zeebe.gateway.rest.controller.ClusterStatusController}.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -115,21 +118,27 @@ public class ClusterAdminBasicAuthenticationIT {
     // when — the public cluster status endpoint is hit with no credentials
     final HttpResponse<String> response = send(clusterUri(PATH_CLUSTER_STATUS), null);
 
-    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
-    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
-    assertThat(response.body()).isEmpty();
+    // then — reachable unauthenticated, reporting the aggregated status and nothing else, so an
+    // unauthenticated caller cannot enumerate the cluster's physical tenants
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(new ObjectMapper().readTree(response.body()).properties())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getKey()).isEqualTo("status");
+              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
+            });
   }
 
   @Test
-  void shouldRejectWrongPasswordOnPublicStatusEndpoint() throws Exception {
-    // when — the public status endpoint is hit with a wrong password
+  void shouldAllowPublicStatusEndpointWithAWrongPassword() throws Exception {
+    // when — the public status endpoint is hit with a wrong password for a known cluster-admin user
     final HttpResponse<String> response =
         send(clusterUri(PATH_CLUSTER_STATUS), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
 
-    // then — permitAll only waives a missing credential; a bad one is still rejected by the Basic
-    // auth filter before the authorization decision is reached, matching /v2/status
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    // then — the status endpoint has its own chain with no Basic auth filter, so the credential is
+    // never verified. A health check must not fail because the caller sent a stale password.
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
@@ -142,6 +151,17 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — cluster-admin users exist only for /cluster/v2/**
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
+  void shouldAllowClusterStatusWithCredentialsUnknownToTheClusterAdminStore() throws Exception {
+    // when — a real DB-backed user's credentials, which the isolated cluster-admin store does not
+    // know. Clients migrating here from /v2/status send whatever they are configured with.
+    final HttpResponse<String> response =
+        send(clusterUri(PATH_CLUSTER_STATUS), basicAuth(DB_USERNAME, DB_PASSWORD));
+
+    // then — the status chain runs no authentication filter, so the header is never inspected
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   private HttpResponse<String> send(final URI uri, final String authorizationHeader)

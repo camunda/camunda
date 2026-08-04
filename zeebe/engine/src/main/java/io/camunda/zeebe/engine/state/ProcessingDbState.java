@@ -135,7 +135,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMessageState messageState;
   private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableMessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
+  private final DbMessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
   private final DbMessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final DbMessageCorrelationState messageCorrelationState;
@@ -259,6 +259,7 @@ public class ProcessingDbState implements MutableProcessingState {
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
     messageStartProcessInstanceAskState.onRecovered(context);
+    messageStartProcessInstanceDedupState.onRecovered(context);
   }
 
   @Override

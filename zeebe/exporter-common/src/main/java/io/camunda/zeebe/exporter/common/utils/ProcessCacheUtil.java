@@ -115,6 +115,7 @@ public final class ProcessCacheUtil {
       final var extensionProperties =
           ProcessModelReader.extractExtensionProperties(
               flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
+      final var adHocActivityIds = reader.extractAdHocActivityIds();
       return new CachedProcessEntity(
           name,
           version,
@@ -122,7 +123,8 @@ public final class ProcessCacheUtil {
           callActivityIds,
           flowNodesMap,
           hasUserTasks,
-          extensionProperties);
+          extensionProperties,
+          adHocActivityIds);
     }
     return new CachedProcessEntity(name, version, versionTag, List.of(), Map.of(), true, Map.of());
   }

@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.changes.AwaitModeChangeApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -105,10 +106,10 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var metadata1 = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     final var clusterConfigurationService = mock(ClusterConfigurationService.class);
-    when(clusterConfigurationService.getPartitionDistribution())
+    when(clusterConfigurationService.getPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(Set.of(metadata1, metadata2)));
     when(clusterConfigurationService.getCurrentClusterConfiguration())
-        .thenReturn(ClusterConfiguration.uninitialized());
+        .thenReturn(CurrentClusterConfiguration.uninitialized());
 
     final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);

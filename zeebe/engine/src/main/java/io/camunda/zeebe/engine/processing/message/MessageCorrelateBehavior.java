@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.function.Predicate;
@@ -88,6 +91,7 @@ public final class MessageCorrelateBehavior {
   private final SubscriptionCommandSender commandSender;
   private final RoutingInfo routingInfo;
   private final int partitionId;
+  private final MessageCorrelationMetrics metrics;
 
   private final MessageStartProcessInstanceRequestRecord askRecord =
       new MessageStartProcessInstanceRequestRecord();
@@ -103,7 +107,8 @@ public final class MessageCorrelateBehavior {
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final MessageCorrelationMetrics metrics) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
@@ -115,6 +120,7 @@ public final class MessageCorrelateBehavior {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.routingInfo = routingInfo;
     this.partitionId = partitionId;
+    this.metrics = metrics;
   }
 
   public void correlateToMessageStartEvents(
@@ -151,7 +157,8 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
+          final var correlation = evaluateStartEventCorrelation(messageData, subscriptionRecord);
+          if (correlation.isRight()) {
             final var processInstanceKey =
                 triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
             if (processInstanceKey > 0) {
@@ -169,8 +176,14 @@ public final class MessageCorrelateBehavior {
               // through to the NOT_FOUND rejection so the correlate does not hang.
               delegatedCrossPartition.set(true);
             }
-          } else if (blockedProcessIds != null) {
-            blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
+          } else {
+            // A live holder blocks this start, so the message stays buffered. The reason carries
+            // the gate that fired (correlation key takes precedence). Recorded only on this real
+            // mutation path (never in the collect* dry-run mirrors, which would double-count).
+            metrics.messageStartBlocked(correlation.getLeft());
+            if (blockedProcessIds != null) {
+              blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
+            }
           }
         });
     return delegatedCrossPartition.get();
@@ -194,8 +207,9 @@ public final class MessageCorrelateBehavior {
           }
 
           // Mirror the same uniqueness gates as the real correlation path so authorization is only
-          // checked for subscriptions that would actually correlate.
-          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
+          // checked for subscriptions that would actually correlate. The block reason is irrelevant
+          // here — this dry run writes no state and records no metric.
+          if (evaluateStartEventCorrelation(messageData, subscriptionRecord).isRight()) {
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
@@ -295,21 +309,37 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * Returns {@code true} when this start-event subscription should correlate for the given message:
-   * only one instance per (process definition, correlation key) is created — an empty correlation
-   * key allows multiple instances — and, when the businessId uniqueness feature is enabled and the
-   * message carries a businessId, no active root PI on this partition may already hold that
-   * businessId for this process definition.
+   * Evaluates whether this start-event subscription may correlate for the given message. Returns
+   * {@link Either#right} when it may — only one instance per (process definition, correlation key)
+   * is created (an empty correlation key allows multiple instances) and, when the businessId
+   * uniqueness feature is enabled and the message carries a businessId, no active root PI on this
+   * partition already holds that businessId for this process definition. Otherwise returns {@link
+   * Either#left} with the {@link BlockReason} of the gate that fired: the correlation key takes
+   * precedence, so the businessId gate is only probed when the key is free.
    */
-  private boolean shouldCorrelateStartEvent(
+  private Either<BlockReason, Void> evaluateStartEventCorrelation(
       final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
-    final var correlationKeyFree =
-        messageData.correlationKey().capacity() == 0
-            || !messageState.existActiveProcessInstance(
-                messageData.tenantId(),
-                subscriptionRecord.getBpmnProcessIdBuffer(),
-                messageData.correlationKey());
-    return correlationKeyFree && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
+    if (isCorrelationKeyHeld(messageData, subscriptionRecord)) {
+      return Either.left(BlockReason.CORRELATION_KEY);
+    }
+    if (isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
+      return Either.left(BlockReason.BUSINESS_ID);
+    }
+    return Either.rightVoid();
+  }
+
+  /**
+   * Returns {@code true} when the message carries a non-empty correlation key that an active root
+   * PI already holds for this process definition on this partition — only one instance per (process
+   * definition, correlation key) is created, while an empty correlation key allows multiple.
+   */
+  private boolean isCorrelationKeyHeld(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    return messageData.correlationKey().capacity() != 0
+        && messageState.existActiveProcessInstance(
+            messageData.tenantId(),
+            subscriptionRecord.getBpmnProcessIdBuffer(),
+            messageData.correlationKey());
   }
 
   /**
@@ -421,6 +451,8 @@ public final class MessageCorrelateBehavior {
 
     stateWriter.appendFollowUpEvent(
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);
+
+    metrics.crossPartitionAskSent();
 
     commandSender.sendStartProcessInstanceRequest(
         routingInfo.partitionForCorrelationKey(messageData.businessId()),

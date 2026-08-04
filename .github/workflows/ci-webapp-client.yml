@@ -18,21 +18,27 @@ jobs:
   typecheck:
     name: "Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -48,21 +54,27 @@ jobs:
   eslint:
     name: "ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -78,21 +90,27 @@ jobs:
   knip:
     name: "Knip"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -108,21 +126,27 @@ jobs:
   prettier:
     name: "Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
@@ -138,21 +162,27 @@ jobs:
   build:
     name: "Build"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build packages
         run: npm run build
       - name: Observe build status
@@ -170,7 +200,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.61.1
@@ -179,17 +209,23 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Unit tests
         run: npm run test:unit -w @camunda/orchestration-cluster-webapp
       - name: Upload blob report
@@ -226,13 +262,17 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
@@ -265,7 +305,7 @@ jobs:
     env:
       TEST_TYPE: Accessibility
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.61.1
@@ -274,17 +314,23 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
@@ -322,13 +368,17 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - name: Setup npm cache
+        uses: ./.github/actions/setup-npm-cache
+        with:
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:

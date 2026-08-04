@@ -14,6 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,6 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -780,6 +784,90 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that decision evaluation records are serialized with businessId on current version")
           .containsExactly("order-123");
+    }
+
+    @Test
+    void shouldIndexClusterVariableRecordWithoutMetadataKindAndSecretReferencesOnPreviousVersion()
+        throws IOException {
+      // given
+      final var metadata = Map.of("credentialType", "OAUTH2");
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.CLUSTER_VARIABLE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ClusterVariableRecord()
+                              .setName("cluster-variable")
+                              .setMetadata(
+                                  new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)))
+                              .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                              .addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that cluster variable records are NOT serialized with metadata, kind, or"
+                  + " secretReferences on previous version")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value)
+                      .doesNotContainKeys("metadata", "kind", "secretReferences"));
+    }
+
+    @Test
+    void shouldIndexClusterVariableRecordWithMetadataKindAndSecretReferencesOnCurrentVersion()
+        throws IOException {
+      // given
+      final var metadata = Map.of("credentialType", "OAUTH2");
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.CLUSTER_VARIABLE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ClusterVariableRecord()
+                              .setName("cluster-variable")
+                              .setMetadata(
+                                  new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)))
+                              .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                              .addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that cluster variable records are serialized with metadata, kind, and"
+                  + " secretReferences on current version")
+          .allSatisfy(
+              value -> {
+                final var valueMap = (Map<String, Object>) value;
+                assertThat(valueMap).containsKey("metadata");
+                assertThat((Map<String, Object>) valueMap.get("metadata"))
+                    .containsExactlyInAnyOrderEntriesOf(metadata);
+                assertThat(valueMap.get("kind")).isEqualTo("SECRET_REFERENCE");
+                assertThat((List<Map<String, Object>>) valueMap.get("secretReferences"))
+                    .containsExactly(
+                        Map.of(
+                            "storeId", "store",
+                            "secretReference", "secret",
+                            "path", "/customHeaders"));
+              });
     }
   }
 }

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -34,8 +35,10 @@ import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -84,7 +87,7 @@ class PartitionManagerStepTest {
 
     private ActorFuture<BrokerStartupContext> startupFuture;
     private ActorScheduler actorScheduler;
-    private ClusterConfiguration mockClusterConfiguration;
+    private CurrentClusterConfiguration mockClusterConfiguration;
 
     @BeforeEach
     void setUp() {
@@ -105,12 +108,15 @@ class PartitionManagerStepTest {
           PHYSICAL_TENANT_ID, mock(JobStreamService.class));
       final ClusterConfigurationService clusterConfigurationService =
           mock(ClusterConfigurationService.class);
-      when(clusterConfigurationService.getPartitionDistribution())
+      when(clusterConfigurationService.getPartitionDistribution(any()))
           .thenReturn(PartitionDistribution.NO_PARTITIONS);
-      mockClusterConfiguration = mock(ClusterConfiguration.class);
+      mockClusterConfiguration = mock(CurrentClusterConfiguration.class);
       when(clusterConfigurationService.getInitialClusterConfiguration())
           .thenReturn(mockClusterConfiguration);
-      when(mockClusterConfiguration.getMember(any())).thenReturn(MemberState.uninitialized());
+      final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.PROCESSING);
+      final var partitionGroup =
+          PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);
+      when(mockClusterConfiguration.partitionGroup(any())).thenReturn(partitionGroup);
 
       testBrokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
 
@@ -182,8 +188,10 @@ class PartitionManagerStepTest {
     @Test
     void shouldStartRecoveryPartitionManager() {
       // given
-      final var memberState = MemberState.uninitialized().toRecovering();
-      when(mockClusterConfiguration.getMember(any())).thenReturn(memberState);
+      final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.RECOVERING);
+      final var partitionGroup =
+          PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);
+      when(mockClusterConfiguration.partitionGroup(any())).thenReturn(partitionGroup);
 
       // when
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);

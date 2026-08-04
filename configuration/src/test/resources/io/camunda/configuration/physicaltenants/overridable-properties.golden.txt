@@ -56,6 +56,7 @@ data.primary-storage.backup.gcs.buffer-size
 data.primary-storage.backup.gcs.host
 data.primary-storage.backup.gcs.max-concurrent-transfers
 data.primary-storage.backup.offset
+data.primary-storage.backup.read-timeout
 data.primary-storage.backup.required
 data.primary-storage.backup.retention.window
 data.primary-storage.backup.s3.access-key
@@ -73,6 +74,7 @@ data.primary-storage.backup.s3.ssec-key
 data.primary-storage.backup.s3.support-legacy-md5
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
+data.primary-storage.backup.write-timeout
 data.primary-storage.directory
 data.primary-storage.disk.free-space.processing
 data.primary-storage.disk.free-space.replication
@@ -196,10 +198,12 @@ data.secondary-storage.rdbms.batch-operation-cache
 data.secondary-storage.rdbms.batch-operation-item-insert-block-size
 data.secondary-storage.rdbms.connection-pool.connection-timeout
 data.secondary-storage.rdbms.connection-pool.idle-timeout
+data.secondary-storage.rdbms.connection-pool.keepalive-time
 data.secondary-storage.rdbms.connection-pool.leak-detection-threshold
 data.secondary-storage.rdbms.connection-pool.max-lifetime
 data.secondary-storage.rdbms.connection-pool.maximum-pool-size
 data.secondary-storage.rdbms.connection-pool.minimum-idle
+data.secondary-storage.rdbms.connection-pool.validation-timeout
 data.secondary-storage.rdbms.database-vendor-id
 data.secondary-storage.rdbms.ddl-lock-wait-timeout
 data.secondary-storage.rdbms.export-batch-operation-items-on-creation
@@ -255,7 +259,6 @@ process-instance-creation.message-start-dedup-expiration-sweep-batch-limit
 process-instance-creation.message-start-dedup-expiration-sweep-interval
 process-instance-creation.message-start-lock-release-poll-batch-limit
 process-instance-creation.message-start-lock-release-poll-interval
-process-instance-creation.message-start-lock-release-poll-max-backoff
 processing.enable-async-message-ttl-checker
 processing.enable-async-timer-duedate-checker
 processing.enable-foreign-key-checks
@@ -288,6 +291,11 @@ processing.engine.job.timeout-checker-polling-interval
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
+processing.engine.secrets.interval
+processing.engine.secrets.retry-backoff-factor
+processing.engine.secrets.retry-initial-delay
+processing.engine.secrets.retry-max-attempts
+processing.engine.secrets.retry-max-delay
 processing.engine.usage-metrics.export-interval
 processing.engine.validators.results-output-max-size
 processing.flow-control.request.aimd.backoff-ratio
@@ -326,6 +334,7 @@ processing.scheduled-tasks-check-interval
 processing.skip-positions
 secrets.stores.aws
 secrets.stores.file
+secrets.stores.gcp
 security.authentication
 security.authentication.authentication-refresh-interval
 security.authentication.oidc.additional-jwk-set-uris

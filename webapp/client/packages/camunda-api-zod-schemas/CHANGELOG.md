@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.0.86
+
+### 🩹 Fixes
+
+- Mark `AgentInstanceHistoryItem.loopIteration` as non-nullable in the response schema ([#57399](https://github.com/camunda/camunda/issues/57399))
+
+### ❤️ Contributors
+
+- [@christoph-fricke](https://github.com/christoph-fricke)
+
+## v0.0.85
+
+### 🚀 Enhancements
+
+- Add `creationTime` as a sortable field to the 8.10 jobs search schema, enabling jobs (including execution/task listeners) to be sorted by their creation time ([#58500](https://github.com/camunda/camunda/issues/58500))
+
+### ❤️ Contributors
+
+- [@aleksander-dytko](https://github.com/aleksander-dytko)
+
 ## v0.0.84
 
 ### 🚀 Enhancements
@@ -1116,4 +1136,3 @@ Accidental empty release
 ### ❤️ Contributors
 
 - Vinicius Goulart
-

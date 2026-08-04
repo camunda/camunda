@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -43,9 +45,11 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *   <li>{@link MessageStartProcessInstanceRequestIntent#STARTED} so the existing applier clears the
  *       pending-ask entry on {@code P_K} (stopping the retry scheduler) and, when the holder
  *       carries a non-empty {@code (correlationKey, businessId)}, additionally records the holder
- *       instance on a parallel CF. That holder-instance discriminator is what lets the pull-based
- *       release loop poll {@code P_B} (derived from the holder instance key) for the holder's
- *       completion, so the correlation-key lock can be released once the holder is gone.
+ *       instance on a parallel CF. That holder-instance discriminator is what lets {@code P_K}'s
+ *       reconciliation poll query {@code P_B} (derived from the holder instance key) for the
+ *       holder's completion as a backstop, so the correlation-key lock can still be released once
+ *       the holder is gone even if {@code P_B}'s completion push was lost. The primary release is
+ *       that push; the poll is only the safety net.
  *   <li>{@link MessageIntent#EXPIRED} for the buffered message itself. The cross-partition
  *       handshake consumed the publish; leaving it in the buffer would let the next polling cycle
  *       re-evaluate it, which is unnecessary work (correlation has already happened) and would
@@ -71,6 +75,7 @@ public final class MessageStartProcessInstanceRequestStartProcessor
 
   private final StateWriter stateWriter;
   private final MessageState messageState;
+  private final MessageCorrelationMetrics metrics;
   private final DeferredMessageStartCorrelationResponse deferredCorrelationResponse;
   private final MessageStartEventSubscriptionRecord correlatedSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
@@ -80,9 +85,11 @@ public final class MessageStartProcessInstanceRequestStartProcessor
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageState messageState,
-      final MessageCorrelationState messageCorrelationState) {
+      final MessageCorrelationState messageCorrelationState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
     this.messageState = messageState;
+    this.metrics = metrics;
     deferredCorrelationResponse =
         new DeferredMessageStartCorrelationResponse(
             stateWriter, responseWriter, messageCorrelationState, messageState);
@@ -92,12 +99,14 @@ public final class MessageStartProcessInstanceRequestStartProcessor
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
 
+    metrics.crossPartitionReply(ReplyOutcome.STARTED);
+
     // Look up the buffered message once: both the CORRELATED applier and the EXPIRED applier need
     // it (CORRELATED writes a foreign-key reference into MESSAGE_KEY; EXPIRED removes the buffered
     // entry). A missing message can happen for two distinct reasons:
     //   1. The buffer TTL fired between the original publish and the (late) reply — legitimate
-    //      data loss inherent to the pull-based design; the PI on P_B is already created and the
-    //      pending-ask just needs to be cleared on P_K.
+    //      data loss inherent to the asynchronous cross-partition design; the PI on P_B is already
+    //      created and the pending-ask just needs to be cleared on P_K.
     //   2. The reply is a re-delivery: a previous reply's EXPIRED applier already removed the
     //      message; the CORRELATED applier has also run and the message correlation marker is
     //      present.

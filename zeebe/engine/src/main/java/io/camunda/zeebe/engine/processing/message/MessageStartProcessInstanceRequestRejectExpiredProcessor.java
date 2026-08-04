@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -33,9 +35,12 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final StateWriter stateWriter;
+  private final MessageCorrelationMetrics metrics;
 
-  public MessageStartProcessInstanceRequestRejectExpiredProcessor(final StateWriter stateWriter) {
+  public MessageStartProcessInstanceRequestRejectExpiredProcessor(
+      final StateWriter stateWriter, final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
+    this.metrics = metrics;
   }
 
   @Override
@@ -44,5 +49,6 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
         record.getKey(),
         MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED,
         record.getValue());
+    metrics.crossPartitionReply(ReplyOutcome.REJECTED_EXPIRED);
   }
 }

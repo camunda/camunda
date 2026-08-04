@@ -39,6 +39,19 @@
             },
             "metadata": {
               "enabled": false
+            },
+            "secretReferences": {
+              "properties": {
+                "storeId": {
+                  "type": "keyword"
+                },
+                "secretReference": {
+                  "type": "keyword"
+                },
+                "path": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }

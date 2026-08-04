@@ -9,6 +9,7 @@
 import React, {useEffect} from 'react';
 import {Route} from 'react-router-dom';
 import {addHandler, removeHandler} from 'request';
+import {storePostLoginRedirect} from 'postLoginRedirect';
 import {IS_NAV_V2_ENABLED} from 'feature-flags';
 
 import {Header} from '..';
@@ -19,6 +20,9 @@ export function PrivateRoute({component: Component, ...rest}) {
   useEffect(() => {
     const handleResponse = async (response) => {
       if (response.status === 401) {
+        // stash the current route so it can be restored after the login round trip (ADR-0038:
+        // https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md)
+        storePostLoginRedirect();
         // reload to reinitialize the login flow on timeout
         window.location.reload();
       }

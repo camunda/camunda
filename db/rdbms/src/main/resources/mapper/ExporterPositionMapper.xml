@@ -9,9 +9,20 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.ExporterPositionMapper">
 
+  <resultMap id="exporterPositionResultMap"
+    type="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
+    <constructor>
+      <idArg column="PARTITION_ID" javaType="_int" name="partitionId"/>
+      <arg column="EXPORTER" javaType="java.lang.String" name="exporter"/>
+      <arg column="LAST_EXPORTED_POSITION" javaType="java.lang.Long" name="lastExportedPosition"/>
+      <arg column="CREATED" javaType="java.time.LocalDateTime" name="created"/>
+      <arg column="LAST_UPDATED" javaType="java.time.LocalDateTime" name="lastUpdated"/>
+    </constructor>
+  </resultMap>
+
   <select id="findOne"
     parameterType="java.lang.Integer"
-    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
+    resultMap="exporterPositionResultMap">
       SELECT
         PARTITION_ID,
         EXPORTER,
@@ -25,7 +36,7 @@
 
   <select id="findOneForUpdate"
     parameterType="java.lang.Integer"
-    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
+    resultMap="exporterPositionResultMap"
     databaseId="mssql">
       SELECT
         PARTITION_ID,
@@ -40,7 +51,7 @@
 
   <select id="findOneForUpdate"
     parameterType="java.lang.Integer"
-    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
+    resultMap="exporterPositionResultMap">
       SELECT
         PARTITION_ID,
         EXPORTER,

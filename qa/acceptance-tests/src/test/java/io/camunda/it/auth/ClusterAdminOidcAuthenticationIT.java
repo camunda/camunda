@@ -9,6 +9,7 @@ package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -22,6 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -60,6 +62,8 @@ public class ClusterAdminOidcAuthenticationIT {
   private static final String CLIENT_BY_GROUP = "cluster-admin-by-group";
   private static final String CLIENT_BY_CLAIM = "cluster-admin-by-claim";
   private static final String CLIENT_STRANGER = "stranger";
+  // Emits a groups claim as a number instead of a string/array, so extraction fails.
+  private static final String CLIENT_MALFORMED_GROUP = "malformed-group";
   private static final String CONFIGURED_GROUP = "cluster-admins";
 
   private static final ObjectMapper JSON = new ObjectMapper();
@@ -154,20 +158,44 @@ public class ClusterAdminOidcAuthenticationIT {
     // when — the public cluster status endpoint is hit with no bearer token
     final HttpResponse<String> response = get(statusUri(), null);
 
-    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
-    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
-    assertThat(response.body()).isEmpty();
+    // then — reachable unauthenticated, reporting the aggregated status and nothing else, so an
+    // unauthenticated caller cannot enumerate the cluster's physical tenants
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertThat(JSON.readTree(response.body()).properties())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getKey()).isEqualTo("status");
+              assertThat(entry.getValue().asText()).isIn("HEALTHY", "DEGRADED");
+            });
   }
 
   @Test
-  void shouldRejectMalformedTokenOnPublicStatusEndpoint() throws Exception {
-    // when — the public status endpoint is hit with a malformed bearer token
+  void shouldAllowPublicStatusEndpointWithAMalformedToken() throws Exception {
+    // when — a malformed bearer token, which /cluster/v2/topology answers with 401. Clients
+    // migrating here from /v2/status send their own access token, which this chain could not
+    // validate anyway, so it must be ignored rather than decoded.
     final HttpResponse<String> response = get(statusUri(), "Bearer not-a-valid-jwt");
 
-    // then — permitAll only waives a missing token; a bad one is still rejected by the bearer
-    // filter before the authorization decision is reached, matching /v2/status
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    // then — the status endpoint has its own chain with no resource-server filter
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+  }
+
+  @Test
+  void shouldForbidInsteadOfErrorWhenGroupsClaimIsMalformed() throws Exception {
+    // given — a valid token whose groups claim really is a number instead of a string/array, so
+    // extraction fails. Asserted explicitly: a claim Keycloak emitted as a string would still be
+    // denied with 403 and let this test pass without exercising the extraction failure at all
+    final String token = accessToken(CLIENT_MALFORMED_GROUP);
+    assertThat(claimsOf(token).path(GROUPS_CLAIM).isNumber()).isTrue();
+
+    // when
+    final HttpResponse<String> response = get(clusterUri(), bearer(token));
+
+    // then — the failure is handled, not surfaced as a 500: the token matches no dimension and is
+    // denied with a clean 403 (problem+json), exactly like a token that matches nothing
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_FORBIDDEN);
+    assertThat(response.body()).contains("\"status\":403");
   }
 
   @Test
@@ -203,6 +231,7 @@ public class ClusterAdminOidcAuthenticationIT {
             client(CLIENT_BY_ID),
             client(CLIENT_BY_GROUP, hardcodedClaim(GROUPS_CLAIM, CONFIGURED_GROUP)),
             client(CLIENT_BY_CLAIM, hardcodedClaim(GENERIC_CLAIM_NAME, GENERIC_CLAIM_VALUE)),
+            client(CLIENT_MALFORMED_GROUP, hardcodedClaim(GROUPS_CLAIM, "123", "int")),
             client(CLIENT_STRANGER)));
     try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
       admin.realms().create(realm);
@@ -225,6 +254,11 @@ public class ClusterAdminOidcAuthenticationIT {
 
   private static ProtocolMapperRepresentation hardcodedClaim(
       final String claimName, final String claimValue) {
+    return hardcodedClaim(claimName, claimValue, "String");
+  }
+
+  private static ProtocolMapperRepresentation hardcodedClaim(
+      final String claimName, final String claimValue, final String jsonType) {
     final ProtocolMapperRepresentation mapper = new ProtocolMapperRepresentation();
     mapper.setName(claimName + "-mapper");
     mapper.setProtocol("openid-connect");
@@ -233,7 +267,7 @@ public class ClusterAdminOidcAuthenticationIT {
         Map.of(
             "claim.name", claimName,
             "claim.value", claimValue,
-            "jsonType.label", "String",
+            "jsonType.label", jsonType,
             "access.token.claim", "true",
             "id.token.claim", "true"));
     return mapper;
@@ -256,6 +290,10 @@ public class ClusterAdminOidcAuthenticationIT {
     final HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     return JSON.readTree(response.body()).get("access_token").asText();
+  }
+
+  private static JsonNode claimsOf(final String token) throws Exception {
+    return JSON.readTree(Base64.getUrlDecoder().decode(token.split("\\.")[1]));
   }
 
   private static HttpResponse<String> get(final URI uri, final String authorizationHeader)

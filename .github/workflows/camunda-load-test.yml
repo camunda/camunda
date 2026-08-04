@@ -16,6 +16,8 @@
 #   You must also set the image pull secret to "harbor-registry" in the helm values.
 
 name: Camunda load test
+run-name: "Camunda load test: ${{ inputs.name }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -337,55 +339,15 @@ jobs:
 
       - name: Validate Docker image tags exist
         if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
+        # Add -x to trace the call to the script and make it easier to reproduce it locally.
+        shell: bash --noprofile --norc -exo pipefail {0}
         run: |
-          validate_image() {
-            local image="$1"
-            local max_retries=3
-            local retry_delay=5
-            local attempt=1
-
-            while true; do
-              echo "Validating Docker image ${image} (attempt ${attempt}/${max_retries})"
-              manifest_output=$(docker manifest inspect "${image}" 2>&1 >/dev/null)
-              status=$?
-
-              if [ "${status}" -eq 0 ]; then
-                echo "Docker image ${image} exists"
-                return 0
-              fi
-
-              # Distinguish missing tag from transient errors
-              if echo "${manifest_output}" | grep -qiE "manifest unknown|no such manifest|not found"; then
-                echo "::error::Docker image ${image} does not exist on Docker Hub"
-                return 1
-              fi
-
-              if [ "${attempt}" -ge "${max_retries}" ]; then
-                echo "::error::Failed to validate Docker image ${image} after ${max_retries} attempts: ${manifest_output}"
-                return "${status}"
-              fi
-
-              echo "Transient error (attempt ${attempt}/${max_retries}), retrying in ${retry_delay}s..."
-              sleep "${retry_delay}"
-              attempt=$((attempt + 1))
-            done
-          }
-
-          if [[ -n "${ORCHESTRATION_TAG}" ]]; then
-            validate_image "camunda/camunda:${ORCHESTRATION_TAG}" || exit 1
-          fi
-
-          if [[ "${ENABLE_OPTIMIZE}" == "true" && -n "${OPTIMIZE_TAG}" ]]; then
-            validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
-          fi
-
-          if [[ -n "${IDENTITY_TAG}" ]]; then
-            validate_image "camunda/identity:${IDENTITY_TAG}" || exit 1
-          fi
-
-          if [[ -n "${CONNECTORS_TAG}" ]]; then
-            validate_image "camunda/connectors:${CONNECTORS_TAG}" || exit 1
-          fi
+          .github/scripts/load-test-validate-docker-image-tags.sh \
+            "${ORCHESTRATION_TAG}" \
+            "${OPTIMIZE_TAG}" \
+            "${IDENTITY_TAG}" \
+            "${CONNECTORS_TAG}" \
+            "${ENABLE_OPTIMIZE}"
 
   build-camunda-image:
     name: Build Camunda
@@ -396,6 +358,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -448,7 +412,7 @@ jobs:
           repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
           revision: ${{ inputs.ref }}
           push: true
-          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          version: ${{ env.CALCULATED_IMAGE_TAG }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
@@ -458,7 +422,7 @@ jobs:
           repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
           revision: ${{ inputs.ref }}
           push: true
-          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          version: ${{ env.CALCULATED_IMAGE_TAG }}
           distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
           dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
@@ -485,6 +449,7 @@ jobs:
       # intermittent failures pushing the load-test images; see discussion in
       # https://camunda.slack.com/archives/C5AHF1D8T/p1784723160353049
       JIB_HTTP_TIMEOUT: 60000
+      IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -500,12 +465,8 @@ jobs:
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
-        env:
-          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
-        env:
-          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -603,33 +564,7 @@ jobs:
             kubernetes-cluster: ${{ env.CLUSTER }}
 
       - name: Print tool versions
-        run: |
-          helm_v=$(helm version --short 2>&1 || true)
-          kubectl_v=$(kubectl version --client -o json 2>/dev/null | jq -r '.clientVersion.gitVersion' || true)
-          tsh_v=$(tsh version --client --format=json 2>/dev/null | jq -r '.version' || tsh version 2>&1 | head -1)
-          git_v=$(git --version)
-          openssl_v=$(openssl version)
-          awk_v=$(awk --version 2>/dev/null | head -1 || awk -W version 2>&1 | head -1)
-          jq_v=$(jq --version)
-
-          {
-            echo "## Tool versions"
-            echo ""
-            echo "| Tool | Version |"
-            echo "|------|---------|"
-            echo "| helm | \`${helm_v}\` |"
-            echo "| kubectl | \`${kubectl_v}\` |"
-            echo "| tsh | \`${tsh_v}\` |"
-            echo "| git | \`${git_v}\` |"
-            echo "| openssl | \`${openssl_v}\` |"
-            echo "| awk | \`${awk_v}\` |"
-            echo "| jq | \`${jq_v}\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          echo "::group::Tool versions"
-          printf '%-10s %s\n' helm "${helm_v}" kubectl "${kubectl_v}" tsh "${tsh_v}" \
-            git "${git_v}" openssl "${openssl_v}" awk "${awk_v}" jq "${jq_v}"
-          echo "::endgroup::"
+        run: .github/scripts/load-test-print-tool-versions.sh
 
       - name: Scaffold load-test folder
         run: |
@@ -642,86 +577,36 @@ jobs:
           ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
 
       - name: Install latest Camunda Platform
+        shell: bash --noprofile --norc -exo pipefail {0}
         env:
-          BUILD_METRICS_EXPORTER_RESULT: ${{ needs.build-metrics-exporter-image.result }}
-          CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
-          IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
           INSTALL_TARGET: ${{ inputs.stable-vms && 'install-stable' || 'install' }}
+          CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          RESOLVED_IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
+          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
           OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
-        run: |
-          cd "load-tests/setup/${NAMESPACE}"
-
-          # Build load test configuration
-          load_test_config="--set global.image.tag=${CALCULATED_IMAGE_TAG} \
-                            --set global.image.repository=${IMAGE_REPOSITORY} \
-                            --set global.image.pullSecrets[0].name=harbor-registry \
-                            --set global.performReadBenchmarks=${PERFORM_READ_BENCHMARKS}"
-
-          # Enable the load-tester Optimize report-evaluation meter via chart extraConfig
-          # (binds to the Spring property load-tester.optimize.report-evaluation-enabled; off by default).
-          if [[ "${ENABLE_OPTIMIZE_METRICS}" == "true" ]]; then
-            load_test_config="$load_test_config --set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true"
-          fi
-
-          # Append custom load test inputs
-          load_test_config="$load_test_config ${LOAD_TEST_LOAD}"
-
-          # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
-          # optimize_repo is only consumed in the custom build path where orchestration-tag is empty
-
-          # Build platform configuration
-          additional_platform_config="--set global.image.tag=${CALCULATED_IMAGE_TAG} \
-            --set orchestration.image.registry=${IMAGE_REGISTRY} \
-            --set orchestration.image.repository=${CAMUNDA_REPO} \
-            --set orchestration.image.tag=${CALCULATED_IMAGE_TAG}"
-
-          additional_load_test_setup_configuration=""
-
-          # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
-          if [[ "${ENABLE_OPTIMIZE}" == "true" ]]; then
-            if [[ -n "${OPTIMIZE_TAG}" ]]; then
-              # Explicit optimize tag provided: use it directly (Docker Hub image)
-              additional_platform_config+=" --set optimize.image.tag=${OPTIMIZE_TAG}"
-            elif [[ -z "${ORCHESTRATION_TAG}" ]]; then
-              # Custom build without explicit optimize tag: use the built image from internal registry
-              additional_platform_config+=" \
-                --set optimize.image.registry=${IMAGE_REGISTRY} \
-                --set optimize.image.repository=${OPTIMIZE_REPO} \
-                --set optimize.image.tag=${CALCULATED_IMAGE_TAG}"
-            fi
-          fi
-
-          # Append identity image config if a dedicated tag is provided
-          if [[ -n "${IDENTITY_TAG}" ]]; then
-            additional_platform_config+=" --set identity.image.tag=${IDENTITY_TAG}"
-          fi
-
-          # Append connectors image config if a dedicated tag is provided
-          if [[ -n "${CONNECTORS_TAG}" ]]; then
-            additional_platform_config+=" --set connectors.image.tag=${CONNECTORS_TAG}"
-          fi
-
-          # Append user-provided helm values if present
-          if [[ -n "${PLATFORM_HELM_VALUES}" ]]; then
-            additional_platform_config+=" ${PLATFORM_HELM_VALUES}"
-          fi
-
-          # Pin the metrics-exporter image to the tag built by build-metrics-exporter-image.
-          # If the image has been skipped, keep using the "latest" tag, which
-          # is assuming to be always published by the dedicated CI running on
-          # the main branch.
-          if [[ "${BUILD_METRICS_EXPORTER_RESULT}" == "success" ]]; then
-            additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${CALCULATED_IMAGE_TAG}"
-          fi
-
-          make "${INSTALL_TARGET}" \
-            scenario="${SCENARIO}" \
-            chaos="${ENABLE_CHAOS}" \
-            physical_tenants="${PHYSICAL_TENANTS}" \
-            additional_platform_configuration="$additional_platform_config" \
-            additional_load_test_configuration="$load_test_config" \
-            additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
+          METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
+        run: |-
+          .github/scripts/load-test-install-camunda-platform.sh \
+            "${NAMESPACE}" \
+            "${INSTALL_TARGET}" \
+            "${CALCULATED_IMAGE_TAG}" \
+            "${IMAGE_REPOSITORY}" \
+            "${RESOLVED_IMAGE_REGISTRY}" \
+            "${CAMUNDA_REPO}" \
+            "${OPTIMIZE_REPO}" \
+            "${PERFORM_READ_BENCHMARKS}" \
+            "${ENABLE_OPTIMIZE}" \
+            "${ENABLE_OPTIMIZE_METRICS}" \
+            "${METRICS_EXPORTER_BUILT}" \
+            "${ENABLE_CHAOS}" \
+            "${PHYSICAL_TENANTS}" \
+            --optimize-tag "${OPTIMIZE_TAG}" \
+            --orchestration-tag "${ORCHESTRATION_TAG}" \
+            --identity-tag "${IDENTITY_TAG}" \
+            --connectors-tag "${CONNECTORS_TAG}" \
+            --load-test-load "${LOAD_TEST_LOAD}" \
+            --platform-helm-values "${PLATFORM_HELM_VALUES}" \
+            --scenario "${SCENARIO}"
 
       - name: Annotate namespace with workflow run URL
         run: |
@@ -730,27 +615,9 @@ jobs:
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
 
-      - name: Summarize platform deployment
-        if: success()
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Camunda platform \`${NAME}\` values
-            \`\`\`yaml
-            $(helm get values "${NAMESPACE}" -n "${NAMESPACE}")
-            \`\`\`
-          EOF
-
       - name: Summarize load test deployment
         if: success()
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            # Load test
-            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${NAMESPACE})
-            ## Load test \`${NAME}\` values
-            \`\`\`yaml
-            $(helm get values "${NAMESPACE}-test" -n "${NAMESPACE}")
-            \`\`\`
-          EOF
+        run: .github/scripts/load-test-summary.sh "${NAMESPACE}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
         if: always()

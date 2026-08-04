@@ -186,6 +186,7 @@ const InstancesTable: React.FC = observer(() => {
       return {
         auditLogs: data.pages.flatMap((page) => page.items),
         totalCount: data.pages.at(0)?.page.totalItems ?? 0,
+        hasMoreTotalItems: data.pages.at(0)?.page.hasMoreTotalItems ?? false,
       };
     },
   });
@@ -284,7 +285,11 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container>
-      <BasePanelHeader title="Operations Log" count={data?.totalCount} />
+      <BasePanelHeader
+        title="Operations Log"
+        count={data?.totalCount}
+        hasMoreTotalItems={data?.hasMoreTotalItems}
+      />
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}

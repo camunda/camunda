@@ -414,12 +414,12 @@ jobs:
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Setup Java 21
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: "temurin"
           java-version: "25"
@@ -633,7 +633,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda

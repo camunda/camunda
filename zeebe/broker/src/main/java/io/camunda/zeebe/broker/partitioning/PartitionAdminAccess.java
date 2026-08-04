@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
@@ -46,4 +47,11 @@ public interface PartitionAdminAccess {
   ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg);
 
   ActorFuture<FlowControlLimits> getFlowControlConfiguration();
+
+  /**
+   * The exporter phase currently persisted for this partition. Every replica answers from its own
+   * persisted state, so callers can verify that a pause took effect on all replicas and not only on
+   * the leader.
+   */
+  ActorFuture<ExporterPhase> getExporterPhase();
 }

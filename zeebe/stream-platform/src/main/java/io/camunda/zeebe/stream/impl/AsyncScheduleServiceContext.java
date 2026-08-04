@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -35,8 +37,19 @@ class AsyncScheduleServiceContext {
     asyncActors = createAsyncActors();
   }
 
+  /**
+   * @param taskGroup
+   * @return the actor
+   * @throws IllegalStateException if the async actor is not registerd for that {@param taskGroup}
+   */
   public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncTaskGroup taskGroup) {
-    return asyncActors.get(taskGroup);
+    final var actor = asyncActors.get(taskGroup);
+    if (actor == null) {
+      throw new IllegalStateException(
+          "Cannot find an AsyncActor for task group %s".formatted(taskGroup));
+    } else {
+      return actor;
+    }
   }
 
   public ActorFuture<Void> submitActors(final ConcurrencyControl concurrencyControl) {
@@ -46,14 +59,14 @@ class AsyncScheduleServiceContext {
                 actorSchedulingService.submitActor(
                     entry.getValue(), entry.getKey().getSchedulingHints()))
         .collect(new ActorFutureCollector<>(concurrencyControl))
-        .thenApply(results -> null, concurrencyControl);
+        .thenApply(results -> unit(), concurrencyControl);
   }
 
   public ActorFuture<Void> closeActors(final ConcurrencyControl concurrencyControl) {
     return asyncActors.values().stream()
         .map(AsyncProcessingScheduleServiceActor::closeAsync)
         .collect(new ActorFutureCollector<>(concurrencyControl))
-        .thenApply(results -> null, concurrencyControl);
+        .thenApply(results -> unit(), concurrencyControl);
   }
 
   private EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {

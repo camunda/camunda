@@ -15,7 +15,7 @@ import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Header} from './Header';
-import {formatEvaluationDate} from './utils';
+import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 
 const DECISION_INSTANCE_ID = '123567';
 

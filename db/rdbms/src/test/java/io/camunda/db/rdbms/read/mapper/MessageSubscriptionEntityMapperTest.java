@@ -44,7 +44,8 @@ public class MessageSubscriptionEntityMapperTest {
     final var entity = MessageSubscriptionEntityMapper.toEntity(model);
 
     // Then
-    assertThat(entity).usingRecursiveComparison().isEqualTo(model);
+    assertThat(entity).usingRecursiveComparison().ignoringFields("toolProperties").isEqualTo(model);
+    assertThat(entity.toolProperties()).isEqualTo(model.toolProperties());
   }
 
   @Test

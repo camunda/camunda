@@ -17,7 +17,9 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
@@ -40,6 +42,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
@@ -106,6 +109,13 @@ public final class DbProcessState implements MutableProcessState {
       processDefinitionKeyByProcessIdAndVersionTagColumnFamily;
 
   private final VersionManager versionManager;
+
+  private final DbInt pendingDeletionPartitionId;
+  private final DbCompositeKey<DbLong, DbInt> pendingDeletionKey;
+
+  /** [process definition key | partition id] => [DbNil] */
+  private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil>
+      pendingProcessDeletionsPerPartitionColumnFamily;
 
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -177,6 +187,15 @@ public final class DbProcessState implements MutableProcessState {
     versionManager =
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
+
+    pendingDeletionPartitionId = new DbInt();
+    pendingDeletionKey = new DbCompositeKey<>(processDefinitionKey, pendingDeletionPartitionId);
+    pendingProcessDeletionsPerPartitionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PENDING_PROCESS_DELETIONS_PER_PARTITION,
+            transactionContext,
+            pendingDeletionKey,
+            DbNil.INSTANCE);
 
     processByTenantAndKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
@@ -677,6 +696,40 @@ public final class DbProcessState implements MutableProcessState {
     }
     // does not exist in persistence and in memory state
     return null;
+  }
+
+  @Override
+  public void addPendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    pendingProcessDeletionsPerPartitionColumnFamily.insert(pendingDeletionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    pendingProcessDeletionsPerPartitionColumnFamily.deleteExisting(pendingDeletionKey);
+  }
+
+  @Override
+  public boolean hasPendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    return pendingProcessDeletionsPerPartitionColumnFamily.exists(pendingDeletionKey);
+  }
+
+  @Override
+  public boolean hasPendingDeletion(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final var hasPending = new MutableBoolean();
+    pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        ignored -> {
+          hasPending.set(true);
+          return false;
+        });
+    return hasPending.get();
   }
 
   record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}

@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useCallback, useMemo} from 'react';
 import {createFileRoute, useSearch} from '@tanstack/react-router';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {TaskDetailsTaskPage} from '#/tasklist/pages/TaskDetailsTaskPage';
 import {TaskDetailsTaskErrorPage} from '#/tasklist/pages/TaskDetailsTaskErrorPage';
@@ -26,6 +27,7 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/')({
 		const task = await queryClient.ensureQueryData(queries.getUserTask(userTaskKey));
 
 		if (task.formKey === null) {
+			await queryClient.ensureInfiniteQueryData(queries.queryAllVariablesByUserTask(userTaskKey));
 			return {formSchema: null, variables: []};
 		}
 
@@ -55,6 +57,27 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/')({
 		const {formSchema, variables} = Route.useLoaderData();
 		const {data: task} = useSuspenseQuery(queries.getUserTask(userTaskKey));
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
+		const isVariablesView = formSchema === null;
+		const {
+			data: variablesData,
+			fetchNextPage,
+			hasNextPage,
+			isFetchingNextPage,
+			isFetchNextPageError,
+		} = useInfiniteQuery({
+			...queries.queryAllVariablesByUserTask(userTaskKey),
+			enabled: isVariablesView,
+			refetchInterval: isVariablesView && task.assignee === null ? 5000 : undefined,
+			refetchOnWindowFocus: isVariablesView && task.assignee === null,
+			refetchOnReconnect: isVariablesView && task.assignee === null,
+		});
+		const allVariables = useMemo(() => variablesData?.pages.flatMap((page) => page.items) ?? [], [variablesData]);
+		const totalVariables = Math.max(variablesData?.pages.at(-1)?.page.totalItems ?? 0, allVariables.length);
+		const onLoadNextVariablesPage = useCallback(() => {
+			if (hasNextPage && !isFetchingNextPage) {
+				void fetchNextPage();
+			}
+		}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
 		return (
 			<TaskDetailsTaskPage
@@ -62,7 +85,12 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/')({
 				currentUser={currentUser}
 				search={search}
 				formSchema={formSchema}
-				variables={variables}
+				variables={isVariablesView ? allVariables : variables}
+				totalVariables={totalVariables}
+				hasNextVariablesPage={hasNextPage}
+				isFetchingNextVariablesPage={isFetchingNextPage}
+				isNextVariablesPageError={isFetchNextPageError}
+				onLoadNextVariablesPage={onLoadNextVariablesPage}
 			/>
 		);
 	},

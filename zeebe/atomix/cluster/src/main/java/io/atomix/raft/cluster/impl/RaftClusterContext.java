@@ -245,7 +245,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return true if the given member is part of the cluster, false otherwise
    */
   public boolean isMember(final MemberId memberId) {
-    return localMember.memberId().equals(memberId) || remoteMemberContexts.containsKey(memberId);
+    // Configuration-derived rather than context-derived: remoteMemberContexts keeps a removed
+    // member alive as a replication target until the removal commits (see updateConfiguration),
+    // but such a member must not become a valid leadership-transfer target (its only caller,
+    // LeaderRole.onTransfer) during that window - membership-blind votes could actually elect it
+    // into a configuration that no longer includes it.
+    return localMember.memberId().equals(memberId)
+        || (configuration != null && configuration.hasMember(memberId));
   }
 
   /**
@@ -363,6 +369,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     updateConfiguration(configuration);
     final var newType = localMember.getType();
     if (initialType.ordinal() < newType.ordinal()) {
+      // Promotions transition at append, unlike demotions/removals which transition at commit
+      // (see commitCurrentConfiguration). Delaying PASSIVE->ACTIVE to commit has a liveness
+      // counterexample: if the promoted member holds the longest log and the leader dies before
+      // C-new commits, C-new's majority may require the promoted member's vote, and the
+      // log-up-to-date check (dissertation §4.1) makes every other member unelectable - so it
+      // must be able to stand for election under its appended configuration. Likewise, deferring
+      // INACTIVE->PASSIVE would stall log catch-up, since only PassiveRole accepts appends.
       raft.transition(localMember.getType());
     }
 
@@ -382,14 +395,32 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       localMember.update(Type.INACTIVE, time);
     }
 
-    // Close and remove contexts which are not needed anymore
     final var membersToRemove =
         remoteMemberContexts.values().stream()
             .map(RaftMemberContext::getMember)
             .filter(Predicate.not(membersInNewConfiguration::contains))
             .toList();
-    for (final var member : membersToRemove) {
-      removeMemberContext(member);
+    if (configuration.force()) {
+      // A forced configuration is authoritative without waiting for a commit: the orchestrator
+      // that issues it (ReconfigurationHelper.triggerForceConfigure) wins its election before this
+      // server would ever reach commitCurrentConfiguration, so deferring pruning to commit would
+      // keep presumably-dead members as replication targets of the new leader.
+      for (final var member : membersToRemove) {
+        removeMemberContext(member);
+      }
+    } else {
+      // raft.pdf §6: servers removed by a reconfiguration may only be shut down once the new
+      // configuration commits. Keep their contexts and replication targets alive here - they are
+      // fully pruned in commitCurrentConfiguration() once the outcome is decided - so the leader
+      // keeps replicating and heartbeating to a removed member while its fate is still undecided,
+      // keeping it reachable and its election timer quiet. Only the active-voting bookkeeping,
+      // which election/quorum logic reads at append time, is updated immediately.
+      for (final var member : membersToRemove) {
+        final var context = remoteMemberContexts.get(member.memberId());
+        if (context != null && remoteActiveMembers.remove(context)) {
+          hasRemoteActiveMembers = !remoteActiveMembers.isEmpty();
+        }
+      }
     }
 
     // Add or update contexts for members in the new configuration
@@ -451,6 +482,22 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     final var storedConfiguration = raft.getMetaStore().loadConfiguration();
     if (storedConfiguration == null || storedConfiguration.index() < configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
+    }
+
+    // Members kept alive as replication targets while the configuration was appended but not yet
+    // committed (see updateConfiguration) can finally be shut down now (raft.pdf §6). This is
+    // idempotent reconciliation: a forced configuration is already pruned by the time this runs,
+    // and every caller (the commit-index hook, an already-committed configure(), the initial
+    // config, PassiveRole/InactiveRole onConfigure, force-configure) may invoke this repeatedly for
+    // the same configuration.
+    final var membersInConfiguration = configuration.allMembers();
+    final var membersToRemove =
+        remoteMemberContexts.values().stream()
+            .map(RaftMemberContext::getMember)
+            .filter(Predicate.not(membersInConfiguration::contains))
+            .toList();
+    for (final var member : membersToRemove) {
+      removeMemberContext(member);
     }
 
     // Apply the configuration to the local server state.

@@ -739,6 +739,21 @@ public final class TestHelper {
                 .execute());
   }
 
+  public static void waitForProcessInstancesToBeSuspended(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessInstanceFilter> fn,
+      final int expectedCount) {
+    waitForItemsPaginated(
+        "should wait for process instances to be suspended",
+        expectedCount,
+        page ->
+            camundaClient
+                .newProcessInstanceSearchRequest()
+                .page(page)
+                .filter(fn.andThen(f -> f.state(ProcessInstanceState.SUSPENDED)))
+                .execute());
+  }
+
   public static void waitForProcessInstance(
       final CamundaClient client,
       final Consumer<ProcessInstanceFilter> filter,

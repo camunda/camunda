@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 
-const AgentDetailsContainer = styled.div`
+const AgentDetailsContainer = styled.article`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-03);

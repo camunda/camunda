@@ -46,6 +46,7 @@ public final class DatabaseConstants {
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String UPDATE_LOG_ENTRY_INDEX_NAME = "update-log";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
+  public static final String WEB_SESSION_INDEX_NAME = "web-session";
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";

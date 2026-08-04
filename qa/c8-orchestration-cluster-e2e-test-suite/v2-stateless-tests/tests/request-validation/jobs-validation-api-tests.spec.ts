@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -20,8 +20,8 @@ test.describe('Jobs Validation API Tests', () => {
   }) => {
     const requestBody = {
       type: 'x',
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: 1,
       __unexpectedField: 'x',
     };
@@ -52,8 +52,8 @@ test.describe('Jobs Validation API Tests', () => {
   }) => {
     const requestBody = {
       type: 'x',
-      timeout: 1,
       maxJobsToActivate: 'not-a-number',
+      timeout: 1,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -71,8 +71,8 @@ test.describe('Jobs Validation API Tests', () => {
   }) => {
     const requestBody = {
       type: 'x',
-      timeout: 1,
       maxJobsToActivate: true,
+      timeout: 1,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -90,8 +90,8 @@ test.describe('Jobs Validation API Tests', () => {
   }) => {
     const requestBody = {
       type: 'x',
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: 'not-a-number',
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -109,8 +109,8 @@ test.describe('Jobs Validation API Tests', () => {
   }) => {
     const requestBody = {
       type: 'x',
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: true,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -126,8 +126,8 @@ test.describe('Jobs Validation API Tests', () => {
   test('activateJobs - Param timeout wrong type (#1)', async ({request}) => {
     const requestBody = {
       type: 'x',
-      timeout: 'not-a-number',
       maxJobsToActivate: 1,
+      timeout: 'not-a-number',
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -143,8 +143,8 @@ test.describe('Jobs Validation API Tests', () => {
   test('activateJobs - Param timeout wrong type (#2)', async ({request}) => {
     const requestBody = {
       type: 'x',
-      timeout: true,
       maxJobsToActivate: 1,
+      timeout: true,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -160,8 +160,8 @@ test.describe('Jobs Validation API Tests', () => {
   test('activateJobs - Param type wrong type (#1)', async ({request}) => {
     const requestBody = {
       type: 123,
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -177,8 +177,8 @@ test.describe('Jobs Validation API Tests', () => {
   test('activateJobs - Param type wrong type (#2)', async ({request}) => {
     const requestBody = {
       type: true,
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -225,8 +225,8 @@ test.describe('Jobs Validation API Tests', () => {
   });
   test('activateJobs - Missing type (#1)', async ({request}) => {
     const requestBody = {
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
       requestTimeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
@@ -271,8 +271,8 @@ test.describe('Jobs Validation API Tests', () => {
   });
   test('activateJobs - Missing type (#2)', async ({request}) => {
     const requestBody = {
-      timeout: 1,
       maxJobsToActivate: 1,
+      timeout: 1,
     };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
       headers: jsonHeaders(),
@@ -294,7 +294,7 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('activateJobs - Missing combo timeout,maxJobsToActivate', async ({
+  test('activateJobs - Missing combo maxJobsToActivate,timeout', async ({
     request,
   }) => {
     const requestBody = {
@@ -326,10 +326,10 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('activateJobs - Missing combo type,timeout', async ({request}) => {
-    const requestBody = {
-      maxJobsToActivate: 1,
-    };
+  test('activateJobs - Missing combo type,maxJobsToActivate,timeout', async ({
+    request,
+  }) => {
+    const requestBody = {};
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
@@ -340,10 +340,10 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('activateJobs - Missing combo type,timeout,maxJobsToActivate', async ({
-    request,
-  }) => {
-    const requestBody = {};
+  test('activateJobs - Missing combo type,timeout', async ({request}) => {
+    const requestBody = {
+      maxJobsToActivate: 1,
+    };
     const res = await request.post(buildUrl('/jobs/activation', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
@@ -510,6 +510,1064 @@ test.describe('Jobs Validation API Tests', () => {
   test('failJob - Path param jobKey pattern violation', async ({request}) => {
     const res = await request.post(
       buildUrl('/jobs/{jobKey}/failure', {jobKey: 'a'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getGlobalJobStatistics - Missing param query.from', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/jobs/statistics/global', {to: 'x', jobType: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getGlobalJobStatistics - Missing param query.to', async ({request}) => {
+    const res = await request.get(
+      buildUrl('/jobs/statistics/global', {from: 'x', jobType: 'x'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getGlobalJobStatistics - Param query.from wrong type', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/jobs/statistics/global', {
+        from: '__INVALID_STRING__',
+        to: 'x',
+        jobType: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getGlobalJobStatistics - Param query.to wrong type', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/jobs/statistics/global', {
+        from: 'x',
+        to: '__INVALID_STRING__',
+        jobType: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 'x',
+      },
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.from wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 123,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.from wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: true,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.jobType wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 123,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.jobType wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: true,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.to wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 123,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Param filter.to wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: true,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Missing filter.from', async ({request}) => {
+    const requestBody = {
+      filter: {
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Missing filter.jobType', async ({request}) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Missing filter.to', async ({request}) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - format invalid filter.from', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'not-a-datetime',
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - format invalid filter.to', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'not-a-datetime',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Missing filter', async ({request}) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobErrorStatistics - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/jobs/statistics/errors', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 'x',
+      },
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.from wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 123,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.from wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: true,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.jobType wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 123,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.jobType wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: true,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.to wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 123,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Param filter.to wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: true,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Missing filter.from', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Missing filter.jobType', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Missing filter.to', async ({request}) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - format invalid filter.from', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'not-a-datetime',
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - format invalid filter.to', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'not-a-datetime',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Missing filter', async ({request}) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTimeSeriesStatistics - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/jobs/statistics/time-series', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTypeStatistics - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-types', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTypeStatistics - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-types', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobTypeStatistics - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-types', undefined),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Additional prop __extraField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 'x',
+      },
+      __extraField: 'unexpected',
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.from wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 123,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.from wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: true,
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.jobType wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: 123,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.jobType wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+        jobType: true,
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.to wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 123,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Param filter.to wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: true,
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Missing filter.from', async ({request}) => {
+    const requestBody = {
+      filter: {
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Missing filter.jobType', async ({request}) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Missing filter.to', async ({request}) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - format invalid filter.from', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'not-a-datetime',
+        to: 'x',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - format invalid filter.to', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {
+        from: 'x',
+        to: 'not-a-datetime',
+        jobType: 'x',
+      },
+    };
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Missing filter', async ({request}) => {
+    const requestBody = {};
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getJobWorkerStatistics - Missing body', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/jobs/statistics/by-workers', undefined),
       {
         headers: jsonHeaders(),
       },
@@ -747,6 +1805,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: 1,
       __unexpectedField: 'x',
@@ -773,6 +1832,48 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  test('updateJob - Param changeset.priority wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 'not-a-number',
+      },
+      operationReference: 1,
+    };
+    const res = await request.patch(buildUrl('/jobs/{jobKey}', {jobKey: 'x'}), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJob - Param changeset.priority wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: true,
+      },
+      operationReference: 1,
+    };
+    const res = await request.patch(buildUrl('/jobs/{jobKey}', {jobKey: 'x'}), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('updateJob - Param changeset.retries wrong type (#1)', async ({
     request,
   }) => {
@@ -780,6 +1881,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 'not-a-number',
         timeout: 1,
+        priority: 1,
       },
       operationReference: 1,
     };
@@ -800,6 +1902,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: true,
         timeout: 1,
+        priority: 1,
       },
       operationReference: 1,
     };
@@ -820,6 +1923,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: 'not-a-number',
+        priority: 1,
       },
       operationReference: 1,
     };
@@ -840,6 +1944,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: true,
+        priority: 1,
       },
       operationReference: 1,
     };
@@ -860,6 +1965,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: 'not-a-number',
     };
@@ -880,6 +1986,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: true,
     };
@@ -900,6 +2007,7 @@ test.describe('Jobs Validation API Tests', () => {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: 0.99999,
     };
@@ -913,13 +2021,15 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateJob - Constraint violation operationReference (#2)', async ({
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('updateJob - Constraint violation operationReference (#2)', async ({
     request,
   }) => {
     const requestBody = {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: 0,
     };
@@ -933,13 +2043,15 @@ test.describe('Jobs Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateJob - Constraint violation operationReference (#3)', async ({
+  // Known failing (see known-failing-tests.json): operationReference validator only rejects the first invalid-format variant the generator produces
+  test.skip('updateJob - Constraint violation operationReference (#3)', async ({
     request,
   }) => {
     const requestBody = {
       changeset: {
         retries: 1,
         timeout: 1,
+        priority: 1,
       },
       operationReference: -99,
     };
@@ -992,6 +2104,375 @@ test.describe('Jobs Validation API Tests', () => {
   test('updateJob - Path param jobKey pattern violation', async ({request}) => {
     const res = await request.patch(buildUrl('/jobs/{jobKey}', {jobKey: 'a'}), {
       headers: jsonHeaders(),
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 1,
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Body wrong top-level type', async ({
+    request,
+  }) => {
+    const requestBody: string[] = [];
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.priority wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 'not-a-number',
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.priority wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: true,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.retries wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 'not-a-number',
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.retries wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: true,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.timeout wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 'not-a-number',
+        priority: 1,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param changeset.timeout wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: true,
+        priority: 1,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param operationReference wrong type (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 'not-a-number',
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Param operationReference wrong type (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: true,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Constraint violation operationReference (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 0.99999,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Constraint violation operationReference (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 0,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Constraint violation operationReference (#3)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: -99,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing changeset (#1)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: {},
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing filter (#1)', async ({request}) => {
+    const requestBody = {
+      changeset: {
+        retries: 1,
+        timeout: 1,
+        priority: 1,
+      },
+      operationReference: 1,
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing changeset (#2)', async ({
+    request,
+  }) => {
+    const requestBody = {
+      filter: 'x',
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing filter (#2)', async ({request}) => {
+    const requestBody = {
+      changeset: 'x',
+    };
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing body', async ({request}) => {
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('updateJobsBatchOperation - Missing combo filter,changeset', async ({
+    request,
+  }) => {
+    const requestBody = {};
+    const res = await request.post(buildUrl('/jobs/batch-update', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {

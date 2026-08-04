@@ -25,87 +25,96 @@ import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Props = {
   selectedCount: number;
+  isSelectedCountTruncated?: boolean;
 };
 
-const Toolbar: React.FC<Props> = observer(({selectedCount}) => {
-  const displaySuccessNotification = useBatchOperationSuccessNotification();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const deleteRequestBody =
-    useDeleteDecisionInstancesBatchOperationRequestBody();
+const Toolbar: React.FC<Props> = observer(
+  ({selectedCount, isSelectedCountTruncated = false}) => {
+    const displaySuccessNotification = useBatchOperationSuccessNotification();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const deleteRequestBody =
+      useDeleteDecisionInstancesBatchOperationRequestBody();
 
-  const deleteMutation = useDeleteDecisionInstancesBatchOperation({
-    onSuccess: ({batchOperationKey, batchOperationType}) => {
-      displaySuccessNotification(batchOperationType, batchOperationKey);
-      tracking.track({
-        eventName: 'batch-operation',
-        operationType: 'DELETE_DECISION_INSTANCE',
-      });
-      decisionInstancesSelectionStore.resetState();
-    },
-    onError: (error) => {
-      handleOperationError(error.response?.status);
-    },
-  });
+    const deleteMutation = useDeleteDecisionInstancesBatchOperation({
+      onSuccess: ({batchOperationKey, batchOperationType}) => {
+        displaySuccessNotification(batchOperationType, batchOperationKey);
+        tracking.track({
+          eventName: 'batch-operation',
+          operationType: 'DELETE_DECISION_INSTANCE',
+        });
+        decisionInstancesSelectionStore.resetState();
+      },
+      onError: (error) => {
+        handleOperationError(error.response?.status);
+      },
+    });
 
-  if (selectedCount === 0) {
-    return null;
-  }
+    if (selectedCount === 0) {
+      return null;
+    }
 
-  return (
-    <>
-      <TableToolbar size="sm">
-        <TableBatchActions
-          shouldShowBatchActions
-          totalSelected={selectedCount}
-          onCancel={decisionInstancesSelectionStore.resetState}
-          translateWithId={(id) => {
-            switch (id) {
-              case 'carbon.table.batch.cancel':
-                return 'Discard';
-              case 'carbon.table.batch.items.selected':
-                return `${selectedCount} items selected`;
-              case 'carbon.table.batch.item.selected':
-                return `${selectedCount} item selected`;
-              case 'carbon.table.batch.selectAll':
-                return 'Select all items';
-              default:
-                return id;
-            }
-          }}
-        >
-          <TableBatchAction
-            renderIcon={TrashCan}
-            onClick={() => setShowDeleteModal(true)}
+    return (
+      <>
+        <TableToolbar size="sm">
+          <TableBatchActions
+            shouldShowBatchActions
+            totalSelected={selectedCount}
+            onCancel={decisionInstancesSelectionStore.resetState}
+            translateWithId={(id) => {
+              switch (id) {
+                case 'carbon.table.batch.cancel':
+                  return 'Discard';
+                case 'carbon.table.batch.items.selected':
+                  return `${selectedCount}${
+                    isSelectedCountTruncated ? '+' : ''
+                  } items selected`;
+                case 'carbon.table.batch.item.selected':
+                  return `${selectedCount} item selected`;
+                case 'carbon.table.batch.selectAll':
+                  return 'Select all items';
+                default:
+                  return id;
+              }
+            }}
           >
-            Delete
-          </TableBatchAction>
-        </TableBatchActions>
-      </TableToolbar>
+            <TableBatchAction
+              renderIcon={TrashCan}
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete
+            </TableBatchAction>
+          </TableBatchActions>
+        </TableToolbar>
 
-      <Modal
-        open={showDeleteModal}
-        preventCloseOnClickOutside
-        modalHeading="Apply operation"
-        primaryButtonText="Delete"
-        danger
-        secondaryButtonText="Cancel"
-        onRequestSubmit={() => {
-          deleteMutation.mutate(deleteRequestBody);
-          setShowDeleteModal(false);
-        }}
-        onRequestClose={() => setShowDeleteModal(false)}
-        onSecondarySubmit={() => {
-          setShowDeleteModal(false);
-          decisionInstancesSelectionStore.resetState();
-        }}
-        size="md"
-      >
-        <p>
-          {`${pluralSuffix(selectedCount, 'instance')} selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.`}
-        </p>
-      </Modal>
-    </>
-  );
-});
+        <Modal
+          open={showDeleteModal}
+          preventCloseOnClickOutside
+          modalHeading="Apply operation"
+          primaryButtonText="Delete"
+          danger
+          secondaryButtonText="Cancel"
+          onRequestSubmit={() => {
+            deleteMutation.mutate(deleteRequestBody);
+            setShowDeleteModal(false);
+          }}
+          onRequestClose={() => setShowDeleteModal(false)}
+          onSecondarySubmit={() => {
+            setShowDeleteModal(false);
+            decisionInstancesSelectionStore.resetState();
+          }}
+          size="md"
+        >
+          <p>
+            {`${
+              isSelectedCountTruncated
+                ? `${selectedCount}+ instances`
+                : pluralSuffix(selectedCount, 'instance')
+            } selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.`}
+          </p>
+        </Modal>
+      </>
+    );
+  },
+);
 
 export {Toolbar};

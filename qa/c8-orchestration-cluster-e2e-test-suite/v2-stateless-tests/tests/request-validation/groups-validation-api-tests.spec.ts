@@ -8,20 +8,110 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2025-09-22T18:40:25.704Z
- * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
+ * Generated At: 2026-07-28T14:59:54.260Z
+ * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Groups Validation API Tests', () => {
+  test('assignClientToGroup - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/clients/{clientId}', {
+        groupId: 'x',
+        clientId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignClientToGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/clients/{clientId}', {
+        groupId: '',
+        clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignMappingRuleToGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', {
+        groupId: '',
+        mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignMappingRuleToGroup - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', {
+        groupId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('assignUserToGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.put(
+      buildUrl('/groups/{groupId}/users/{username}', {
+        groupId: '',
+        username: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('assignUserToGroup - Path param username pattern violation', async ({
     request,
   }) => {
     const res = await request.put(
       buildUrl('/groups/{groupId}/users/{username}', {
         groupId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -35,7 +125,7 @@ test.describe('Groups Validation API Tests', () => {
   });
   test('createGroup - Additional prop __unexpectedField', async ({request}) => {
     const requestBody = {
-      groupId: 'x',
+      groupId: null,
       name: 'x',
       __unexpectedField: 'x',
     };
@@ -61,39 +151,9 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createGroup - Param groupId wrong type (#1)', async ({request}) => {
-    const requestBody = {
-      groupId: 123,
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/groups', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('createGroup - Param groupId wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      groupId: true,
-      name: 'x',
-    };
-    const res = await request.post(buildUrl('/groups', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
   test('createGroup - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
-      groupId: 'x',
+      groupId: null,
       name: 123,
     };
     const res = await request.post(buildUrl('/groups', undefined), {
@@ -108,8 +168,22 @@ test.describe('Groups Validation API Tests', () => {
   });
   test('createGroup - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
-      groupId: 'x',
+      groupId: null,
       name: true,
+    };
+    const res = await request.post(buildUrl('/groups', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('createGroup - Missing name (#1)', async ({request}) => {
+    const requestBody = {
+      groupId: null,
     };
     const res = await request.post(buildUrl('/groups', undefined), {
       headers: jsonHeaders(),
@@ -135,7 +209,7 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('createGroup - Missing name', async ({request}) => {
+  test('createGroup - Missing name (#2)', async ({request}) => {
     const requestBody = {
       groupId: 'x',
     };
@@ -155,6 +229,38 @@ test.describe('Groups Validation API Tests', () => {
       headers: jsonHeaders(),
       data: requestBody,
     });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('deleteGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('getGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/groups/{groupId}', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -319,6 +425,21 @@ test.describe('Groups Validation API Tests', () => {
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchClientsForGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/clients/search', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -605,6 +726,21 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  test('searchMappingRulesForGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/mapping-rules/search', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('searchRolesForGroup - Additional prop __unexpectedField', async ({
     request,
   }) => {
@@ -735,6 +871,21 @@ test.describe('Groups Validation API Tests', () => {
       {
         headers: jsonHeaders(),
         data: requestBody,
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchRolesForGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/roles/search', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -881,13 +1032,118 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
+  test('searchUsersForGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/groups/{groupId}/users/search', {groupId: ''}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignClientFromGroup - Path param clientId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/clients/{clientId}', {
+        groupId: 'x',
+        clientId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignClientFromGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/clients/{clientId}', {
+        groupId: '',
+        clientId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignMappingRuleFromGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', {
+        groupId: '',
+        mappingRuleId: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignMappingRuleFromGroup - Path param mappingRuleId pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', {
+        groupId: 'x',
+        mappingRuleId: '!',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('unassignUserFromGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/users/{username}', {
+        groupId: '',
+        username: 'x',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('unassignUserFromGroup - Path param username pattern violation', async ({
     request,
   }) => {
     const res = await request.delete(
       buildUrl('/groups/{groupId}/users/{username}', {
         groupId: 'x',
-        username: '!INVALID!',
+        username: '!',
       }),
       {
         headers: jsonHeaders(),
@@ -902,7 +1158,6 @@ test.describe('Groups Validation API Tests', () => {
   test('updateGroup - Additional prop __extraField', async ({request}) => {
     const requestBody = {
       name: 'x',
-      description: 'x',
       __extraField: 'unexpected',
     };
     const res = await request.put(
@@ -933,46 +1188,9 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateGroup - Param description wrong type (#1)', async ({request}) => {
-    const requestBody = {
-      name: 'x',
-      description: 123,
-    };
-    const res = await request.put(
-      buildUrl('/groups/{groupId}', {groupId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateGroup - Param description wrong type (#2)', async ({request}) => {
-    const requestBody = {
-      name: 'x',
-      description: true,
-    };
-    const res = await request.put(
-      buildUrl('/groups/{groupId}', {groupId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
   test('updateGroup - Param name wrong type (#1)', async ({request}) => {
     const requestBody = {
       name: 123,
-      description: 'x',
     };
     const res = await request.put(
       buildUrl('/groups/{groupId}', {groupId: 'x'}),
@@ -990,24 +1208,6 @@ test.describe('Groups Validation API Tests', () => {
   test('updateGroup - Param name wrong type (#2)', async ({request}) => {
     const requestBody = {
       name: true,
-      description: 'x',
-    };
-    const res = await request.put(
-      buildUrl('/groups/{groupId}', {groupId: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('updateGroup - Missing description', async ({request}) => {
-    const requestBody = {
-      name: 'x',
     };
     const res = await request.put(
       buildUrl('/groups/{groupId}', {groupId: 'x'}),
@@ -1023,9 +1223,7 @@ test.describe('Groups Validation API Tests', () => {
     expect(res.status()).toBe(400);
   });
   test('updateGroup - Missing name', async ({request}) => {
-    const requestBody = {
-      description: 'x',
-    };
+    const requestBody = {};
     const res = await request.put(
       buildUrl('/groups/{groupId}', {groupId: 'x'}),
       {
@@ -1052,13 +1250,14 @@ test.describe('Groups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('updateGroup - Missing combo name,description', async ({request}) => {
-    const requestBody = {};
+  // Known failing (see known-failing-tests.json): empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix
+  test.skip('updateGroup - Path param groupId length-min violation', async ({
+    request,
+  }) => {
     const res = await request.put(
-      buildUrl('/groups/{groupId}', {groupId: 'x'}),
+      buildUrl('/groups/{groupId}', {groupId: ''}),
       {
         headers: jsonHeaders(),
-        data: requestBody,
       },
     );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.

@@ -507,7 +507,8 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
   public enum FlowControlOutcome {
     ACCEPTED("accepted"),
     WRITE_RATE_LIMIT_EXHAUSTED("writeRateLimitExhausted"),
-    REQUEST_LIMIT_EXHAUSTED("requestLimitExhausted");
+    REQUEST_LIMIT_EXHAUSTED("requestLimitExhausted"),
+    PARTITION_PAUSED("partitionPaused");
 
     private final String value;
 

@@ -710,6 +710,10 @@ test.describe('Process Instance Modifications', () => {
             await operateProcessInstancePage.clickInstanceHistoryElement(
               activityCollectMoney,
             );
+            // Selecting a flow node (and reloading in onFailure) resets the
+            // bottom panel to the Details tab, so the variables list is not
+            // rendered until the Variables tab is (re)selected.
+            await operateProcessInstancePage.clickVariablesTab();
             await expect(
               operateProcessInstancePage.existingVariableByName(
                 'testLocalVariable',
@@ -722,6 +726,7 @@ test.describe('Process Instance Modifications', () => {
             ).toContain('"addedValue"');
 
             await operateProcessInstancePage.navigateToRootScope();
+            await operateProcessInstancePage.clickVariablesTab();
             await expect(
               operateProcessInstancePage.existingVariableByName(
                 'testNewMeowVariable',

@@ -38,6 +38,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -72,6 +73,20 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
+  /** The versioned base context path of the cluster-scoped REST API */
+  public static final String CLUSTER_API_PATH = "/cluster/v2";
+
+  private static final String PHYSICAL_TENANT_PATH_SEGMENT = "/physical-tenants/";
+
+  /**
+   * Matches a physical tenant segment closing the REST address, e.g. {@code
+   * https://host/physical-tenants/riskproduction}. The id itself is restricted to the characters
+   * the gateway accepts, so an unrelated path ending in a {@code physical-tenants} directory is not
+   * mistaken for one.
+   */
+  private static final Pattern TRAILING_PHYSICAL_TENANT_PATH =
+      Pattern.compile(Pattern.quote(PHYSICAL_TENANT_PATH_SEGMENT) + "[a-zA-Z0-9]+$");
+
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -93,12 +108,14 @@ public class HttpClientFactory {
             .setDefaultRequestConfig(defaultRequestConfig)
             .build();
     final URI gatewayAddress = buildGatewayAddress();
+    final URI clusterApiAddress = buildClusterApiAddress();
 
     return new HttpClient(
         client,
         connectionManager,
         JSON_MAPPER,
         gatewayAddress,
+        clusterApiAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
         TimeValue.ofSeconds(15),
@@ -132,21 +149,13 @@ public class HttpClientFactory {
   }
 
   private URI buildGatewayAddress() {
-    String basePath = config.getRestAddress().toString();
-
-    // we need to strip the last / otherwise we'll have an empty path segment which Spring
-    // interprets as a different route
-    if (basePath.endsWith("/")) {
-      basePath = basePath.substring(0, basePath.length() - 1);
-    }
-
     try {
-      final URIBuilder builder = new URIBuilder(basePath);
+      final URIBuilder builder = new URIBuilder(baseAddress());
       final String physicalTenantId = config.getPhysicalTenantId();
       if (config.prefixPhysicalTenantPath()
           && physicalTenantId != null
           && !physicalTenantId.trim().isEmpty()) {
-        builder.appendPath("/physical-tenants/" + physicalTenantId.trim());
+        builder.appendPath(PHYSICAL_TENANT_PATH_SEGMENT + physicalTenantId.trim());
       }
       builder.appendPath(REST_API_PATH);
 
@@ -154,6 +163,36 @@ public class HttpClientFactory {
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * The cluster-scoped API is never physical-tenant scoped: it reports on the cluster as a whole,
+   * so it is served next to, not below, the per-tenant {@link #REST_API_PATH} base.
+   *
+   * <p>The gateway registers the tenant-prefixed route only for the per-tenant roots, and
+   * deliberately excludes the cluster-scoped controllers from it. A REST address that already
+   * carries the prefix — the verbatim form used with {@link
+   * io.camunda.client.CamundaClientBuilder#prefixPhysicalTenantPath(boolean)} — would therefore
+   * yield an unroutable cluster path, so the segment is dropped again here.
+   */
+  private URI buildClusterApiAddress() {
+    try {
+      return new URIBuilder(clusterBaseAddress()).appendPath(CLUSTER_API_PATH).build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String clusterBaseAddress() {
+    return TRAILING_PHYSICAL_TENANT_PATH.matcher(baseAddress()).replaceFirst("");
+  }
+
+  private String baseAddress() {
+    final String basePath = config.getRestAddress().toString();
+
+    // we need to strip the last / otherwise we'll have an empty path segment which Spring
+    // interprets as a different route
+    return basePath.endsWith("/") ? basePath.substring(0, basePath.length() - 1) : basePath;
   }
 
   private HttpAsyncClientBuilder defaultClientBuilder(

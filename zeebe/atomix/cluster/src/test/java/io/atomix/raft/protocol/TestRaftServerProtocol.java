@@ -44,6 +44,12 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> timeoutNowHandler;
+  private Function<
+          LeadershipTransferInitiateRequest, CompletableFuture<LeadershipTransferInitiateResponse>>
+      leadershipTransferInitiateHandler;
+  private Function<
+          LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+      leadershipTransferResultHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -160,6 +166,30 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final MemberId memberId, final LeadershipTransferInitiateRequest request) {
+    return getServer(memberId)
+        .thenCompose(
+            listener -> intercept(listener, request, LeadershipTransferInitiateRequest.class))
+        .thenCompose(listener -> listener.leadershipTransferInitiate(request))
+        .thenCompose(
+            response -> transformResponse(response, LeadershipTransferInitiateResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final MemberId memberId, final LeadershipTransferResultRequest request) {
+    return getServer(memberId)
+        .thenCompose(
+            listener -> intercept(listener, request, LeadershipTransferResultRequest.class))
+        .thenCompose(listener -> listener.leadershipTransferResult(request))
+        .thenCompose(
+            response -> transformResponse(response, LeadershipTransferResultResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return getServer(memberId)
         .thenCompose(listener -> intercept(listener, request, PollRequest.class))
@@ -213,6 +243,33 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTimeoutNowHandler() {
     timeoutNowHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferInitiateHandler(
+      final Function<
+              LeadershipTransferInitiateRequest,
+              CompletableFuture<LeadershipTransferInitiateResponse>>
+          handler) {
+    leadershipTransferInitiateHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferInitiateHandler() {
+    leadershipTransferInitiateHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferResultHandler(
+      final Function<
+              LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+          handler) {
+    leadershipTransferResultHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferResultHandler() {
+    leadershipTransferResultHandler = null;
   }
 
   @Override
@@ -370,6 +427,24 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
     }
   }
 
+  CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    if (leadershipTransferInitiateHandler != null) {
+      return leadershipTransferInitiateHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final LeadershipTransferResultRequest request) {
+    if (leadershipTransferResultHandler != null) {
+      return leadershipTransferResultHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
   CompletableFuture<InstallResponse> install(final InstallRequest request) {
     if (installHandler != null) {
       return intercept(null, request, InstallRequest.class)
@@ -459,6 +534,30 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
             interceptor
                 .apply((T) request)
                 .thenCompose(ignore -> CompletableFuture.completedFuture(listener)));
+  }
+
+  /**
+   * Intercepts the delivery of a request to a specific receiver, with the receiver's member id as
+   * the first argument. If the interceptor returns a failed future, the request is not delivered to
+   * the receiver. Otherwise, the request is forwarded to the receiver. Unlike the other overloads,
+   * this combines receiver visibility with the ability to block the request, which the {@link
+   * Consumer}/{@link BiConsumer} variants cannot do and the {@link Function} variant cannot see the
+   * receiver for. Named distinctly from {@code interceptRequest} rather than added as another
+   * overload: a same-arity {@link BiConsumer} overload already exists, and javac's overload
+   * resolution for implicitly-typed two-arg lambdas can find call sites ambiguous between the two
+   * even when only one is structurally compatible with the lambda body.
+   */
+  public <T> void interceptDelivery(
+      final Class<T> requestType,
+      final BiFunction<MemberId, T, CompletableFuture<Void>> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          final var receiver = listener != null ? listener.memberId : memberId;
+          return interceptor
+              .apply(receiver, (T) request)
+              .thenCompose(ignore -> CompletableFuture.completedFuture(listener));
+        });
   }
 
   public <T extends RaftResponse> void interceptResponse(

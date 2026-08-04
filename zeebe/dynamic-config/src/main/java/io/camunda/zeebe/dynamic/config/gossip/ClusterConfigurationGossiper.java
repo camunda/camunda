@@ -57,7 +57,7 @@ public final class ClusterConfigurationGossiper
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
   // New-model handler; when set, received gossip is delivered as a CurrentClusterConfiguration
   // (field 2, or migrated from field 1) instead of through the legacy handler.
-  private Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
+  private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
   private final TopologyMetrics topologyMetrics;
 
   public ClusterConfigurationGossiper(
@@ -67,6 +67,7 @@ public final class ClusterConfigurationGossiper
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
       final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
+      final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler,
       final TopologyMetrics topologyMetrics) {
     this.executor = executor;
     this.communicationService = communicationService;
@@ -74,6 +75,7 @@ public final class ClusterConfigurationGossiper
     this.config = config;
     this.serializer = serializer;
     this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
+    this.currentConfigurationUpdateHandler = currentConfigurationUpdateHandler;
     this.topologyMetrics = topologyMetrics;
   }
 
@@ -211,8 +213,13 @@ public final class ClusterConfigurationGossiper
     gossipState.setClusterConfiguration(legacyView);
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
-    notifyListeners(legacyView);
+    notifyListeners(updatedConfiguration);
     topologyMetrics.updateFromTopology(legacyView);
+  }
+
+  private void notifyListeners(final CurrentClusterConfiguration updatedConfiguration) {
+    configurationUpdateListeners.forEach(
+        listener -> listener.onClusterConfigurationUpdated(updatedConfiguration));
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {
@@ -243,15 +250,6 @@ public final class ClusterConfigurationGossiper
   }
 
   /**
-   * Sets the handler invoked with the received {@link CurrentClusterConfiguration} (new model).
-   * Setting it switches the receive path from the legacy handler to this one.
-   */
-  public void setCurrentConfigurationUpdateHandler(
-      final Consumer<CurrentClusterConfiguration> handler) {
-    executor.run(() -> currentConfigurationUpdateHandler = handler);
-  }
-
-  /**
    * New-model counterpart of {@link #updateClusterConfiguration}; dual-writes both gossip fields.
    */
   public void updateCurrentClusterConfiguration(
@@ -274,6 +272,22 @@ public final class ClusterConfigurationGossiper
             (response, error) -> {
               if (error == null) {
                 responseFuture.complete(response.getClusterConfiguration());
+              } else {
+                responseFuture.completeExceptionally(error);
+              }
+            },
+            executor::run);
+    return responseFuture;
+  }
+
+  public ActorFuture<CurrentClusterConfiguration> queryCurrentClusterConfiguration(
+      final MemberId memberId) {
+    final ActorFuture<CurrentClusterConfiguration> responseFuture = executor.createFuture();
+    sendSyncRequest(memberId)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error == null) {
+                responseFuture.complete(response.getCurrentClusterConfiguration());
               } else {
                 responseFuture.completeExceptionally(error);
               }

@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
@@ -66,6 +67,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -490,7 +493,11 @@ final class NewModelManagementApiEndpointsTest {
                     Map.of(1, PartitionState.active(1, partitionConfig)))));
 
     // when — switch to recovery mode
-    handler.modeChange(new ModeChangeRequest(Mode.RECOVERING, false)).join();
+    handler
+        .modeChange(
+            new ModeChangeRequest(
+                CurrentClusterConfiguration.DEFAULT_GROUP, Mode.RECOVERING, false))
+        .join();
 
     // then — the plan is applied and the local member is now in recovery mode
     final var config = manager.getMultiConfiguration().join();
@@ -586,8 +593,32 @@ final class NewModelManagementApiEndpointsTest {
         .hasMessageContaining("recovery mode");
   }
 
-  // cancelTopologyChange on the new model is implemented separately (issue #58398); not covered
-  // here.
+  @Test
+  void shouldCancelTopologyChangeEndToEnd() {
+    // given — a pending plan whose operation targets a member other than the local one, so it
+    // never drains on its own
+    wire(
+        singleActiveMember()
+            .addMember(ID_1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(ID_0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(ID_1))))))
+        .join();
+    final var changeId =
+        manager.getMultiConfiguration().join().phasedChangeState().pending().orElseThrow().id();
+
+    // when — cancelled via the management API endpoint
+    final var response = handler.cancelTopologyChange(new CancelChangeRequest(changeId)).join();
+
+    // then — no pending change remains, on both the response and the real configuration
+    assertThat(response.pendingChanges()).isEmpty();
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.phasedChangeState().lastChange())
+        .hasValueSatisfying(
+            last -> assertThat(last.status()).isEqualTo(PhasedChangePlanStatus.CANCELLED));
+  }
 
   @Test
   void shouldGetTopology() {

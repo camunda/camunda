@@ -20,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState.PendingAskVisitor;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,8 @@ public final class PendingMessageStartAskCheckSchedulerTest {
   private ProcessingScheduleService mockScheduleService;
   private ReadonlyStreamProcessorContext mockContext;
   private StreamClock mockClock;
+  private SimpleMeterRegistry meterRegistry;
+  private MessageCorrelationMetrics metrics;
   private PendingMessageStartAskCheckScheduler scheduler;
 
   @BeforeEach
@@ -57,6 +61,8 @@ public final class PendingMessageStartAskCheckSchedulerTest {
     mockScheduleService = mock(ProcessingScheduleService.class);
     mockContext = mock(ReadonlyStreamProcessorContext.class);
     mockClock = mock(StreamClock.class);
+    meterRegistry = new SimpleMeterRegistry();
+    metrics = new MessageCorrelationMetrics(meterRegistry);
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     when(mockContext.getClock()).thenReturn(mockClock);
@@ -64,7 +70,14 @@ public final class PendingMessageStartAskCheckSchedulerTest {
 
     scheduler =
         new PendingMessageStartAskCheckScheduler(
-            mockCommandSender, mockState, mockRoutingInfo, () -> RETRY_INTERVAL);
+            mockCommandSender, mockState, mockRoutingInfo, () -> RETRY_INTERVAL, metrics);
+  }
+
+  private double retryCount() {
+    return meterRegistry
+        .get("zeebe.message.start.cross.partition.asks.retries.total")
+        .counter()
+        .count();
   }
 
   /**
@@ -184,6 +197,34 @@ public final class PendingMessageStartAskCheckSchedulerTest {
 
       // then
       verify(mockState).updateLastSentTime(1L, 100L, NOW);
+    }
+
+    @Test
+    void shouldRecordRetryMetricPerSentAsk() {
+      // given two due asks
+      scheduler.onRecovered(mockContext);
+      stubPendingAsks(
+          NOW - BASE_MILLIS, createAsk(1L, 100L, "business-a"), createAsk(2L, 200L, "business-b"));
+      when(mockRoutingInfo.partitionForCorrelationKey(any())).thenReturn(2);
+
+      // when
+      scheduler.run();
+
+      // then every scheduler send is counted as a retry (M8)
+      assertThat(retryCount()).isEqualTo(2.0);
+    }
+
+    @Test
+    void shouldNotRecordRetryMetricWhenNoAskIsDue() {
+      // given a fresh ask that is not yet due
+      scheduler.onRecovered(mockContext);
+      stubPendingAsks(NOW, createAsk(1L, 100L, "my-business-id"));
+
+      // when
+      scheduler.run();
+
+      // then no retry is counted
+      assertThat(retryCount()).isEqualTo(0.0);
     }
 
     @Test
@@ -369,7 +410,8 @@ public final class PendingMessageStartAskCheckSchedulerTest {
               mockCommandSender,
               mockState,
               mockRoutingInfo,
-              () -> Duration.ofMillis(Long.MAX_VALUE / 3));
+              () -> Duration.ofMillis(Long.MAX_VALUE / 3),
+              metrics);
       hugeBaseScheduler.onRecovered(mockContext);
       // a rejected ask (count 6) last sent long ago, evaluated at a normal clock value
       stubPendingAsks(0L, createAsk(1L, 100L, "b", 6L));

@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;

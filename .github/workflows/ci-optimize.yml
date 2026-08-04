@@ -16,6 +16,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -31,6 +36,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -148,7 +158,7 @@ jobs:
         with:
           name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
           path: |
-            **/failsafe-reports/**/*.xml
+            **/failsafe-reports/**
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -239,7 +249,7 @@ jobs:
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
-            **/failsafe-reports/**/*.xml
+            **/failsafe-reports/**
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -272,7 +282,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
@@ -312,7 +322,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   hadolint:
-    if: inputs.runBeTests
+    if: inputs.runDockerfileChecks
     name: "Tool / Dockerfile / Hadolint"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -327,11 +337,11 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
           ignore: DL3018,DL3008
@@ -341,6 +351,67 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "hadolint/${{ matrix.dockerfile }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  validate-base-image:
+    if: inputs.runDockerfileChecks && github.event_name != 'push' && github.event_name != 'schedule'
+    name: "Tool / Dockerfile / Validate Base Image"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 5
+    env:
+      TEST_TYPE: Tool
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Check for Fork
+        uses: ./.github/actions/is-fork
+        id: is-fork
+      - if: steps.is-fork.outputs.is-fork != 'true'
+        uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      # Same class of check as camunda.Dockerfile gets in the docker-checks job
+      # (.github/workflows/ci.yml), but here it's a metadata-only resolve since this job never
+      # builds the image. The pinned digest is content-addressable, so we must resolve it by digest
+      # exactly as BuildKit does for `FROM ${BASE_IMAGE}@${BASE_DIGEST}`. `docker buildx imagetools
+      # inspect` mirrors that resolution path; plain `docker manifest inspect` on the tag@digest
+      # form instead false-fails as soon as the rolling Minimus 25-dev tag advances off the pinned
+      # digest, even though that digest is still perfectly pullable. This job runs only on
+      # pull_request/merge_group, where it gates a Renovate digest bump before it lands. On push
+      # to main/stable the digest is already resolved as a side effect of the real image build in
+      # deploy-optimize-docker-snapshot (.github/workflows/ci.yml) - mirroring how docker-checks
+      # covers camunda.Dockerfile - so running this standalone resolve on push/schedule would be
+      # redundant, hence it is scoped out of push/schedule events.
+      - name: Validate base image digest is resolvable
+        if: steps.is-fork.outputs.is-fork != 'true'
+        run: |
+          set -euo pipefail
+          base_image=$(grep -m1 '^ARG BASE_IMAGE=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          base_digest=$(grep -m1 '^ARG BASE_DIGEST=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          echo "Resolving ${base_image}@${base_digest}"
+          docker buildx imagetools inspect "${base_image}@${base_digest}" > /dev/null
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "validate-base-image/${{ matrix.dockerfile }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -355,7 +426,7 @@ jobs:
       TEST_TYPE: E2E
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -515,7 +586,7 @@ jobs:
     env:
       TEST_TYPE: E2E
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata

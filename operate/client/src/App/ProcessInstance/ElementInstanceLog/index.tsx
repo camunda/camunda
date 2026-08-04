@@ -9,12 +9,19 @@
 import {observer} from 'mobx-react';
 import {useSearchParams} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
+import {
+  Container,
+  PanelHeader,
+  ErrorMessage,
+  PanelBody,
+  SearchRow,
+} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
+import {SortOrderToggle} from './SortOrderToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
 import {FilteredElementInstancesList} from './FilteredElementInstancesList';
 import {SearchForm, SEARCH_PARAM_KEY} from './SearchForm';
@@ -122,7 +129,12 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean; showHeader?: boolean}> =
       <Layout
         isPanel={isPanel}
         showHeader={showHeader}
-        searchInput={<SearchForm />}
+        searchInput={
+          <SearchRow>
+            <SearchForm />
+            <SortOrderToggle />
+          </SearchRow>
+        }
       >
         <PanelBody>
           <ErrorBoundary

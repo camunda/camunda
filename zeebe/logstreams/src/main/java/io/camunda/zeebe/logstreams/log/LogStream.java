@@ -59,6 +59,15 @@ public interface LogStream extends AutoCloseable {
   FlowControl getFlowControl();
 
   /**
+   * Freezes write admission and drains in-flight writers for a leadership transfer. Safe to call
+   * repeatedly.
+   */
+  void pauseWrites();
+
+  /** Resumes write admission after a leadership transfer. Safe to call repeatedly. */
+  void resumeWrites();
+
+  /**
    * Registers a listener that will be notified when new records are available to read from the
    * logstream.
    *

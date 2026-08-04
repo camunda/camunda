@@ -48,6 +48,7 @@ class HttpClientTest {
             mockConnectionManager,
             new ObjectMapper(),
             URI.create("http://localhost:12345/v2"),
+            URI.create("http://localhost:12345/cluster/v2"),
             RequestConfig.custom().build(),
             1024 * 1024,
             TimeValue.ofMilliseconds(100),

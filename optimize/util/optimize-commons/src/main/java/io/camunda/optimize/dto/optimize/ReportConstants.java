@@ -24,6 +24,7 @@ public final class ReportConstants {
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
   public static final String VIEW_PERCENTAGE_PROPERTY = "percentage";
+  public static final String VIEW_AUTOMATION_RATE_PROPERTY = "automationRate";
   public static final String VIEW_RAW_DATA_PROPERTY = "rawData";
   public static final String VIEW_INPUT_TOKENS_PROPERTY = "inputTokens";
   public static final String VIEW_OUTPUT_TOKENS_PROPERTY = "outputTokens";

@@ -22,10 +22,8 @@ class BatchOperationEntityMapperTest {
 
   @Test
   void shouldMapDbModelToEntity() {
-    final var errorDbModel = new BatchOperationDbModel.BatchOperationErrorDbModel();
-    errorDbModel.partitionId(1);
-    errorDbModel.type("ERROR_TYPE");
-    errorDbModel.message("stacktrace");
+    final var errorDbModel =
+        new BatchOperationDbModel.BatchOperationErrorDbModel(1, "ERROR_TYPE", "stacktrace");
 
     final var dbModel =
         new BatchOperationDbModel.Builder()
@@ -82,10 +80,8 @@ class BatchOperationEntityMapperTest {
 
   @Test
   void shouldMapErrorDbModelToErrorEntity() {
-    final var errorDbModel = new BatchOperationDbModel.BatchOperationErrorDbModel();
-    errorDbModel.partitionId(42);
-    errorDbModel.type("SOME_ERROR");
-    errorDbModel.message("trace");
+    final var errorDbModel =
+        new BatchOperationDbModel.BatchOperationErrorDbModel(42, "SOME_ERROR", "trace");
 
     final var errorEntity = BatchOperationEntityMapper.toErrorEntity(errorDbModel);
 

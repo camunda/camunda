@@ -14,6 +14,7 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 	mockAssignTaskEndpoint,
@@ -23,6 +24,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 
 const currentUser = createCurrentUser({username: 'demo'});
 const unassignedTask = createUserTask({
@@ -51,6 +53,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
 		}),
 	);
 });

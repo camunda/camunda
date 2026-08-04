@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:82568b09f2ac0b999cd775194af7cc510e83c717a5b8c42ab5522869e18f739c"
+ARG BASE_DIGEST="sha256:49864e7dff223a22d6f043ca9827439c253080ad6d3d9f6f3288d953dbe8139f"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -50,7 +50,7 @@ ARG JATTACH_CHECKSUM_ARM64
 
 # hadolint ignore=DL4006,DL3018
 RUN --mount=type=cache,target=/root/.jattach,rw \
-    apk add -q --no-cache curl 2>/dev/null && \
+    apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
       CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
@@ -58,7 +58,9 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" -o jattach.tgz && \
+    curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
+      "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
+      -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
     tar -xzf "jattach.tgz" && \
     chmod +x jattach && \
@@ -82,7 +84,10 @@ RUN mkdir camunda-zeebe && \
     tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
 
 ARG TARGETARCH
-# Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+# Extract the target-arch RocksDB native lib into a system library dir and strip ALL
+# native libs from the JNI jar (~60 MB). At runtime RocksDB.loadLibrary() resolves the
+# lib via System.loadLibrary from /usr/java/packages/lib (default java.library.path entry
+# on Linux) before ever falling back to unpacking it from the jar.
 # hadolint ignore=DL3003
 RUN \
     # Map Docker TARGETARCH to the RocksDB native lib filename suffix
@@ -95,14 +100,16 @@ RUN \
     fi && \
     # Locate the jar (version-agnostic)
     ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    [ -n "$ROCKSDB_JAR" ] && [ -f "$ROCKSDB_JAR" ] || { echo "rocksdbjni jar not found under camunda-zeebe/lib" >&2; exit 1; } && \
+    SO="librocksdbjni-${ROCKSDB_ARCH}.so" && \
     UNPACK=$(mktemp -d) && \
-    # Unpack, remove all native libs except the one we need, validate, repack
     ( cd "$UNPACK" && jar xf "$OLDPWD/$ROCKSDB_JAR" ) && \
-    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
-      ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
-    # Verify only shared lib is left
-    count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
-    [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    [ -f "$UNPACK/$SO" ] || { echo "Native lib $SO not found in jar" >&2; exit 1; } && \
+    # Copy the one native lib we need into a dir installed into the final image
+    mkdir -p /camunda/rocksdb-lib && \
+    cp "$UNPACK/$SO" "/camunda/rocksdb-lib/$SO" && \
+    # Drop all native libs and repack; the .so is now served from the system lib dir
+    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) -delete && \
     rm "$ROCKSDB_JAR" && \
     ( cd "$UNPACK" && jar cMf "$OLDPWD/$ROCKSDB_JAR" . ) && \
     rm -rf "$UNPACK"
@@ -180,6 +187,9 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
+# Install the RocksDB native lib into the default Linux java.library.path entry so
+# RocksDB.loadLibrary() resolves it via System.loadLibrary without unpacking the jar.
+COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 

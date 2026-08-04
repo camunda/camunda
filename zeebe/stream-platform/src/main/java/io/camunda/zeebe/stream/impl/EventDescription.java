@@ -12,15 +12,16 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.jspecify.annotations.Nullable;
 
 public class EventDescription {
   private static final int WRITE_ACQUIRE_LOCK_TIMEOUT = 1;
   private static final int READ_ACQUIRE_LOCK_TIMEOUT = 100;
   private static final String FAILED_TO_ACQUIRE_LOCK = "failed to acquire lock";
   private long position;
-  private Intent intent;
-  private ValueType valueType;
-  private String status;
+  private @Nullable Intent intent;
+  private @Nullable ValueType valueType;
+  private String status = "";
   private final Lock lock = new ReentrantLock();
 
   public EventDescription(final String status) {

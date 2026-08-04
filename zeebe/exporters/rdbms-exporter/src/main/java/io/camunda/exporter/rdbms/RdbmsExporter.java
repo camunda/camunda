@@ -7,6 +7,11 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static org.slf4j.event.Level.DEBUG;
+import static org.slf4j.event.Level.INFO;
+import static org.slf4j.event.Level.TRACE;
+import static org.slf4j.event.Level.WARN;
+
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
@@ -30,8 +35,10 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public final class RdbmsExporter {
@@ -90,22 +97,36 @@ public final class RdbmsExporter {
     this.historyDeletionService = historyDeletionService;
     this.replicationControllerFactory = replicationControllerFactory;
 
-    logInfo(
+    log(
+        INFO,
         "RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
         flushInterval,
         queueSize);
   }
 
   public void open(final Controller controller) {
+    try {
+      doOpen(controller);
+    } catch (final RuntimeException e) {
+      // open() may fail after allocating resources (replication controller, scheduled flush task,
+      // background task manager). Release them via close() before propagating so a retried open
+      // starts from a clean state instead of leaking the partial allocation.
+      close();
+      throw e;
+    }
+  }
+
+  private void doOpen(final Controller controller) {
     this.controller = controller;
     rdbmsWriters.getExecutionQueue().reset();
-    logInfo(
+    log(
+        INFO,
         "Opening exporter with broker position {}, last flushed position {}",
         controller.getLastExportedRecordPosition(),
         lastFlushedPosition);
 
     if (!rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId)) {
-      logWarn("Schema is not yet ready for use");
+      log(WARN, "Schema is not yet ready for use");
       throw new ExporterException("Schema is not ready for use");
     }
 
@@ -117,18 +138,27 @@ public final class RdbmsExporter {
     // further than what's been acknowledged - e.g. under async LSN-based replication
     // (LsnReplicationController), acking is intentionally delayed until replication is confirmed.
     lastPosition = Math.max(controller.getLastExportedRecordPosition(), lastFlushedPosition);
+    replicationController = replicationControllerFactory.createReplicationController(controller);
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
       if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
-        logInfo(
+        log(
+            INFO,
             "Updating broker position {} to last exported position in rdbms {}",
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
-        updatePositionInBroker();
+        // Advance the broker through the replication controller instead of acking it directly: the
+        // RDBMS position only reflects what was flushed to the primary DB, not what replicas have
+        // confirmed. Under async replication acking the broker straight to this position would let
+        // the journal drop records that were never replicated (see #51588). The controller acks the
+        // broker according to its replication policy (immediately for NONE, once confirmed for
+        // LSN).
+        replicationController.onFlush(lastPosition);
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-        logInfo(
+        log(
+            INFO,
             "Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
@@ -147,7 +177,6 @@ public final class RdbmsExporter {
     }
     lastFlushedPosition = lastPosition;
 
-    replicationController = replicationControllerFactory.createReplicationController(controller);
     rdbmsWriters
         .getExporterPositionService()
         .registerLockPositionHook(partitionId, () -> lastFlushedPosition);
@@ -173,37 +202,26 @@ public final class RdbmsExporter {
             partitionId, historyCleanupService, historyDeletionService, LOG);
     backgroundTaskManager.start();
 
-    logInfo("Exporter opened with last exported position {}", lastPosition);
+    log(INFO, "Exporter opened with last exported position {}", lastPosition);
   }
 
   public void close() {
     try {
-      if (currentFlushTask != null) {
-        currentFlushTask.cancel();
-      }
-      if (backgroundTaskManager != null) {
-        backgroundTaskManager.close();
-        backgroundTaskManager = null;
-      }
-
-      try {
-        rdbmsWriters.flush(true);
-      } catch (final Exception e) {
-        logWarn("Failed to execute final flush on close for partition {}", partitionId);
-        throw e;
-      }
-
-      rdbmsWriters.getExecutionQueue().reset();
-
-      if (replicationController != null) {
-        replicationController.close();
-        replicationController = null;
-      }
+      CloseHelper.closeAll(
+          () -> {
+            if (currentFlushTask != null) {
+              currentFlushTask.cancel();
+            }
+          },
+          backgroundTaskManager,
+          rdbmsWriters,
+          replicationController);
     } catch (final Exception e) {
-      logWarn("Failed to flush records before closing exporter.", e);
+      log(WARN, "Failed to flush records before closing exporter.", e);
     }
 
-    logInfo(
+    log(
+        INFO,
         "Exporter closed at positions Broker {}, RDBMS {}",
         lastPosition,
         exporterRdbmsPosition == null ? null : exporterRdbmsPosition.lastExportedPosition());
@@ -217,7 +235,8 @@ public final class RdbmsExporter {
               partitionId));
     }
 
-    logTrace(
+    log(
+        TRACE,
         "Process record {}-{} - {}:{}",
         record.getPartitionId(),
         record.getPosition(),
@@ -234,17 +253,20 @@ public final class RdbmsExporter {
     if (!alreadyProcessed && registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
-          logTrace("Exporting record {} with handler {}", record.getValue(), handler.getClass());
+          log(TRACE, "Exporting record {} with handler {}", record.getValue(), handler.getClass());
           handler.export(record);
           exported = true;
           shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
-          logTrace(
-              "Handler {} can not export record {}", handler.getClass(), record.getValueType());
+          log(
+              TRACE,
+              "Handler {} can not export record {}",
+              handler.getClass(),
+              record.getValueType());
         }
       }
     } else if (!alreadyProcessed) {
-      logTrace("No registered handler found for {}", record.getValueType());
+      log(TRACE, "No registered handler found for {}", record.getValueType());
     }
 
     if (!alreadyProcessed) {
@@ -260,9 +282,11 @@ public final class RdbmsExporter {
         }
       }
       // causes a flush check after each processed record. Depending on the queue size and
-      // configuration, the writers ExecutionQueue may or may not flush here. When retrying an
-      // already-processed record we force the flush so the queue that failed to flush before is
-      // drained instead of lingering.
+      // configuration, the writers ExecutionQueue may or may not flush here. When a flush fails
+      // transiently, lastPosition has already advanced, so the broker redelivers the same record as
+      // a retry (alreadyProcessed). We force the flush to drain the batch that failed before,
+      // instead of letting it linger until the next interval flush. For re-deliveries with an empty
+      // queue this is a harmless no-op.
       try {
         final boolean shouldFlush =
             alreadyProcessed || flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
@@ -271,7 +295,8 @@ public final class RdbmsExporter {
           resetIntervalFlush();
         }
       } catch (final ExporterPositionMismatchException e) {
-        logWarn(
+        log(
+            WARN,
             "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
         throw new ExporterException(
             String.format(
@@ -281,14 +306,16 @@ public final class RdbmsExporter {
             e,
             ExporterException.Compensation.REOPEN);
       } catch (final Exception e) {
-        logWarn(
+        log(
+            WARN,
             "Failed to flush record for positions {} to {} to the database.",
             lastFlushedPosition + 1,
             lastPosition);
         throw e;
       }
     } else {
-      logTrace(
+      log(
+          TRACE,
           "Record with key {} and original partitionId {} could not be exported {}.",
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
@@ -320,14 +347,9 @@ public final class RdbmsExporter {
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
   }
 
-  private void updatePositionInBroker() {
-    logTrace("Updating position to {} in broker", lastPosition);
-    controller.updateLastExportedRecordPosition(lastPosition);
-  }
-
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-      logTrace("Updating position to {} in rdbms", lastPosition);
+      log(TRACE, "Updating position to {} in rdbms", lastPosition);
       exporterRdbmsPosition =
           new ExporterPositionModel(
               exporterRdbmsPosition.partitionId(),
@@ -352,7 +374,8 @@ public final class RdbmsExporter {
     try {
       exporterRdbmsPosition = rdbmsWriters.getExporterPositionService().findOne(partitionId);
     } catch (final Exception e) {
-      logWarn(
+      log(
+          WARN,
           "Failed to initialize exporter position because Database is not ready, retrying ... {}",
           e.getMessage());
       throw e;
@@ -367,9 +390,9 @@ public final class RdbmsExporter {
               LocalDateTime.now(),
               LocalDateTime.now());
       rdbmsWriters.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
-      logDebug("Initialize position in rdbms");
+      log(DEBUG, "Initialize position in rdbms");
     } else {
-      logDebug("Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
+      log(DEBUG, "Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
     }
   }
 
@@ -382,7 +405,8 @@ public final class RdbmsExporter {
     try {
       flushExecutionQueue();
     } catch (final Exception e) {
-      logWarn(
+      log(
+          WARN,
           "Failed to flush records for positions {} to {} to the database",
           lastFlushedPosition + 1,
           lastPosition);
@@ -396,27 +420,17 @@ public final class RdbmsExporter {
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
   public void flushExecutionQueue() {
     if (flushAfterEachRecord()) {
-      logWarn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
+      log(WARN, "Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
     rdbmsWriters.getMetrics().recordQueueFlush(FlushTrigger.FLUSH_INTERVAL);
     rdbmsWriters.flush(true);
   }
 
-  private void logTrace(final String message, final Object... args) {
-    LOG.trace(withLogContext(message), withLogContextArgs(args));
-  }
-
-  private void logDebug(final String message, final Object... args) {
-    LOG.debug(withLogContext(message), withLogContextArgs(args));
-  }
-
-  private void logInfo(final String message, final Object... args) {
-    LOG.info(withLogContext(message), withLogContextArgs(args));
-  }
-
-  private void logWarn(final String message, final Object... args) {
-    LOG.warn(withLogContext(message), withLogContextArgs(args));
+  private void log(final Level level, final String message, final Object... args) {
+    if (LOG.isEnabledForLevel(level)) {
+      LOG.atLevel(level).log(withLogContext(message), withLogContextArgs(args));
+    }
   }
 
   private String withLogContext(final String message) {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -19,7 +21,7 @@ import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
@@ -28,7 +30,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final ZeebeDb zeebeDb;
   private final TransactionContext transactionContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private final InterPartitionCommandSender partitionCommandSender;
+  private final @Nullable InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
   private final ControllableStreamClock clock;
   private final MeterRegistry meterRegistry;
@@ -38,7 +40,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
-      final InterPartitionCommandSender partitionCommandSender,
+      final @Nullable InterPartitionCommandSender partitionCommandSender,
       final KeyGeneratorControls keyGeneratorControls,
       final ControllableStreamClock clock,
       final MeterRegistry meterRegistry) {
@@ -48,8 +50,8 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
-    this.clock = Objects.requireNonNull(clock, "must specify a stream clock");
-    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a metrics registry");
+    this.clock = requireNonNull(clock, "must specify a stream clock");
+    this.meterRegistry = requireNonNull(meterRegistry, "must specify a metrics registry");
   }
 
   @Override
@@ -83,7 +85,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   }
 
   @Override
-  public InterPartitionCommandSender getPartitionCommandSender() {
+  public @Nullable InterPartitionCommandSender getPartitionCommandSender() {
     return partitionCommandSender;
   }
 

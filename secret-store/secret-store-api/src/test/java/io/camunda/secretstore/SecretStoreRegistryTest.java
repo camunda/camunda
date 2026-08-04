@@ -8,6 +8,7 @@
 package io.camunda.secretstore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -80,5 +81,30 @@ class SecretStoreRegistryTest {
 
     // then - one cache per store, keyed by the same ID
     assertThat(caches).containsKeys("store-a", "store-b");
+  }
+
+  @Test
+  void shouldCacheAStoreTheProvidedCachesDoNotCover() {
+    // given caches covering only one of the two configured stores
+    final var cache = new InMemorySecretCache();
+
+    // when
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", NOOP, "store-b", new NoopSecretStore()), Map.of("store-a", cache));
+
+    // then the uncovered store is cached too, so a caller never has to handle a missing cache
+    assertThat(registry.getCaches().get("store-a")).isSameAs(cache);
+    assertThat(registry.getCaches().get("store-b")).isNotNull();
+  }
+
+  @Test
+  void shouldNotAllowTheCachesToBeModified() {
+    // given
+    final var registry = new SecretStoreRegistry(Map.of("default", NOOP));
+
+    // when / then the one-cache-per-store invariant cannot be broken from the outside
+    assertThatThrownBy(() -> registry.getCaches().remove("default"))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 }

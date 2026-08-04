@@ -53,6 +53,7 @@ public class GatewayClusterConfigurationService extends Actor
             new ProtoBufSerializer(),
             config,
             this::updateClusterTopology,
+            null, // This should be handled in a follow up.
             topologyMetrics);
   }
 

@@ -21,18 +21,12 @@ import java.util.Set;
 public final class FixedPartitionDistributorBuilder {
   private final Map<PartitionId, Set<FixedDistributionMember>> partitions = new HashMap<>();
 
-  private final String partitionGroupName;
-
   /**
    * Creates a new builder with the specific partition group name. The group name will be used to
    * generated {@link PartitionId} from raw integers. This effectively scopes the distributor to a
    * given partition group - you should not use the distributor with a different partition group.
-   *
-   * @param partitionGroupName the name of the partition group for which the distributor is built
    */
-  public FixedPartitionDistributorBuilder(final String partitionGroupName) {
-    this.partitionGroupName = partitionGroupName;
-  }
+  public FixedPartitionDistributorBuilder() {}
 
   /**
    * Assigns a member, with a given priority, to the given partition. Members assigned to a
@@ -47,11 +41,8 @@ public final class FixedPartitionDistributorBuilder {
    * @return this builder for chaining
    */
   public FixedPartitionDistributorBuilder assignMember(
-      final int partitionId, final int nodeId, final int priority) {
-    return assignMember(
-        new PartitionId(partitionGroupName, partitionId),
-        MemberId.from(String.valueOf(nodeId)),
-        priority);
+      final PartitionId partitionId, final int nodeId, final int priority) {
+    return assignMember(partitionId, MemberId.from(String.valueOf(nodeId)), priority);
   }
 
   /**

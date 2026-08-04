@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import java.util.LinkedHashSet;
 import java.util.regex.MatchResult;
@@ -33,9 +34,6 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 final class SecretReferenceLiteralValidator implements ModelElementValidator<ZeebeInput> {
-
-  private static final Pattern SECRET_REFERENCE =
-      Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
 
   // Matches one whole double-quoted string literal, so only quoted text is scanned for a reference.
   // As a regex (after Java unescaping): "(?:\\.|[^"\\])*"
@@ -75,7 +73,7 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
     // a static value is a literal in full; a FEEL expression is a literal only where it is quoted
     final String literalText = expression.isStatic() ? source : stringLiterals(source.substring(1));
 
-    final var matcher = SECRET_REFERENCE.matcher(literalText);
+    final var matcher = SecretReference.REFERENCE_PATTERN.matcher(literalText);
     final var references = new LinkedHashSet<String>();
     while (matcher.find()) {
       references.add(matcher.group());

@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.JobEntity;
 
 public enum JobSearchColumn implements SearchColumn<JobEntity> {
+  CREATION_TIME("creationTime"),
   DEADLINE("deadline"),
   DENIED_REASON("deniedReason"),
   ELEMENT_ID("elementId"),

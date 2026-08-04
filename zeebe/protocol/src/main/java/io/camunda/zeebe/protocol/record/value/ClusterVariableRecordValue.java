@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -34,6 +35,8 @@ import org.immutables.value.Value;
  *   <li>{@link #getScope()} – the current scope of the cluster variable.
  *   <li>{@link #getMetadata()} – the metadata attached to this cluster variable.
  *   <li>{@link #getKind()} – the kind of value stored in this cluster variable.
+ *   <li>{@link #getSecretReferences()} – the secret references detected in a SECRET_REFERENCE
+ *       value.
  * </ul>
  *
  * @see RecordValue;
@@ -89,5 +92,38 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
   @Value.Default
   default ClusterVariableKind getKind() {
     return ClusterVariableKind.JSON;
+  }
+
+  /**
+   * Returns the secret references detected in a SECRET_REFERENCE value: for each {@code
+   * camunda.secrets.<name>} occurrence, the reference name and the RFC 6901 JSON pointer of the
+   * value leaf it was found in. Empty for JSON-kind variables.
+   *
+   * @return the secret references detected in this variable's value
+   */
+  List<ClusterVariableSecretReferenceValue> getSecretReferences();
+
+  /**
+   * A secret reference detected in a SECRET_REFERENCE cluster variable value. Carries the reference
+   * identifier and the JSON pointer of the leaf it occurs in, never the resolved secret value.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableClusterVariableSecretReferenceValue.Builder.class)
+  interface ClusterVariableSecretReferenceValue {
+
+    /**
+     * @return the identifier of the secret store that holds the referenced secret (empty for now)
+     */
+    String getStoreId();
+
+    /**
+     * @return the secret name, e.g. {@code token} for {@code camunda.secrets.token}; not the value
+     */
+    String getSecretReference();
+
+    /**
+     * @return the RFC 6901 JSON pointer of the value leaf the reference was found in
+     */
+    String getPath();
   }
 }

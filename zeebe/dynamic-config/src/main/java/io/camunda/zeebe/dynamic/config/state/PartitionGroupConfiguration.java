@@ -21,6 +21,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -58,6 +59,7 @@ public record PartitionGroupConfiguration(
     Optional<ClusterChangePlan> pendingChanges,
     Optional<CompletedChange> lastChange) {
 
+  public static final long INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
 
   public PartitionGroupConfiguration {
@@ -387,5 +389,42 @@ public record PartitionGroupConfiguration(
       final Map<MemberId, BrokerPartitionState> updatedMembers) {
     return new PartitionGroupConfiguration(
         version, incarnationNumber, updatedMembers, routingState, pendingChanges, lastChange);
+  }
+
+  public int partitionCount() {
+    return members.values().stream()
+        .flatMap(broker -> broker.partitions().keySet().stream())
+        .distinct()
+        .toList()
+        .size();
+  }
+
+  public Optional<MemberId> getPrimaryForPartition(final int partitionId) {
+    return members.entrySet().stream()
+        .filter(entry -> entry.getValue().hasPartition(partitionId))
+        .max(
+            Comparator.comparingInt(
+                e -> Objects.requireNonNull(e.getValue().getPartition(partitionId)).priority()))
+        .map(Entry::getKey);
+  }
+
+  public int minReplicationFactor() {
+    // return minimum replication factor. During a configuration change, replication factor might
+    // increase temporarily.
+    return members.values().stream()
+        .flatMap(m -> m.partitions().entrySet().stream())
+        .collect(Collectors.groupingBy(Entry::getKey, Collectors.counting()))
+        .values()
+        .stream()
+        .reduce(Math::min)
+        .map(Long::intValue)
+        .orElse(0);
+  }
+
+  public IntStream partitionIds() {
+    return members.values().stream()
+        .flatMapToInt(m -> m.partitions().keySet().stream().mapToInt(i -> i))
+        .sorted()
+        .distinct();
   }
 }

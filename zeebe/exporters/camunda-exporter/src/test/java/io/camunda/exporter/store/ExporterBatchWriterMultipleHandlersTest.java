@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.ExporterBatchWriter.Builder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-/** Integration test with actual exporter handlers */
+/** Tests generic multi-handler flush ordering using synthetic {@link TestExportHandler} fakes. */
 public class ExporterBatchWriterMultipleHandlersTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -408,6 +409,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
     private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private final ExporterBatchWriter batchWriter =
         ExporterBatchWriter.Builder.begin(
+                new TargetIndexLocator(),
                 new CamundaExporterMetrics(
                     meterRegistry, InstantSource.fixed(Instant.ofEpochMilli(20L))))
             .withHandler(

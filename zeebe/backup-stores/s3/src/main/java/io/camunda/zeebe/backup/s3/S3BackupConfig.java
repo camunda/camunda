@@ -32,6 +32,11 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
  * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
  *     a connection pool to a remote service.
+ * @param readTimeout Timeout for reading a response from an already-established connection. A
+ *     single request exceeding this timeout fails and may be retried, as long as {@code
+ *     apiCallTimeout} is not exhausted. If empty, the AWS SDK default of 30s is used.
+ * @param writeTimeout Timeout for writing a request to an already-established connection, with the
+ *     same retry semantics as {@code readTimeout}. If empty, the AWS SDK default of 30s is used.
  * @param ssecKey Optional base64-encoded 32-byte AES-256 key. When present, all objects are written
  *     and read using server-side encryption with a caller-provided key (SSE-C).
  * @see <a
@@ -54,7 +59,9 @@ public record S3BackupConfig(
     Integer maxConcurrentConnections,
     Duration connectionAcquisitionTimeout,
     boolean supportLegacyMd5,
-    Optional<String> ssecKey) {
+    Optional<String> ssecKey,
+    Optional<Duration> readTimeout,
+    Optional<Duration> writeTimeout) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -85,9 +92,7 @@ public record S3BackupConfig(
             "basePath must not start or end with '/' but was: %s".formatted(prefix));
       }
     }
-    if (ssecKey.isPresent()) {
-      SseCKey.decodeAndValidate(ssecKey.get());
-    }
+    ssecKey.ifPresent(SseCKey::decodeAndValidate);
   }
 
   @Override
@@ -118,6 +123,10 @@ public record S3BackupConfig(
         + supportLegacyMd5
         + ", ssecKey="
         + ssecKey.map(key -> "<redacted>")
+        + ", readTimeout="
+        + readTimeout
+        + ", writeTimeout="
+        + writeTimeout
         + '}';
   }
 
@@ -133,6 +142,8 @@ public record S3BackupConfig(
     private String basePath;
     private boolean supportLegacyMd5 = false;
     private String ssecKey;
+    private Duration readTimeout;
+    private Duration writeTimeout;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -200,6 +211,16 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withReadTimeout(final Duration readTimeout) {
+      this.readTimeout = readTimeout;
+      return this;
+    }
+
+    public Builder withWriteTimeout(final Duration writeTimeout) {
+      this.writeTimeout = writeTimeout;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -213,7 +234,9 @@ public record S3BackupConfig(
           maxConcurrentConnections,
           connectionAcquisitionTimeout,
           supportLegacyMd5,
-          Optional.ofNullable(ssecKey));
+          Optional.ofNullable(ssecKey),
+          Optional.ofNullable(readTimeout),
+          Optional.ofNullable(writeTimeout));
     }
   }
 

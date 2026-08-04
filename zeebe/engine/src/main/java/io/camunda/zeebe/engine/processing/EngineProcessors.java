@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
@@ -70,6 +71,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
@@ -100,6 +102,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
@@ -164,6 +167,8 @@ public final class EngineProcessors {
         new ProcessDefinitionMetrics(
             typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var messageCorrelationMetrics =
+        new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -260,6 +265,7 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics,
+            messageCorrelationMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             cslCheck);
 
@@ -309,7 +315,8 @@ public final class EngineProcessors {
         routingInfo,
         authzService,
         claimsConverter,
-        securityConfig);
+        securityConfig,
+        messageCorrelationMetrics);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -361,14 +368,14 @@ public final class EngineProcessors {
         cslCheck,
         incidentMetrics);
     addResourceDeletionProcessors(
+        partitionId,
         typedRecordProcessors,
         writers,
         processingState,
         commandDistributionBehavior,
         bpmnBehaviors,
         permissionsBehavior,
-        claimsConverter,
-        securityConfig,
+        cslCheck,
         processDefinitionMetrics);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
@@ -510,7 +517,14 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState,
+        incidentMetrics,
+        scheduledTaskStateFactory,
+        secretStoreRegistry,
+        config);
 
     return typedRecordProcessors;
   }
@@ -599,6 +613,7 @@ public final class EngineProcessors {
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
+      final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final CslAuthorizationCheck cslCheck) {
     return new BpmnBehaviorsImpl(
@@ -615,6 +630,7 @@ public final class EngineProcessors {
         expressionLanguageMetrics,
         config,
         incidentMetrics,
+        messageCorrelationMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         cslCheck);
   }
@@ -749,7 +765,8 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final AuthorizationCheckPort authzService,
       final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final MessageCorrelationMetrics messageCorrelationMetrics) {
     MessageEventProcessors.addMessageProcessors(
         partitionId,
         bpmnBehaviors,
@@ -765,7 +782,8 @@ public final class EngineProcessors {
         routingInfo,
         authzService,
         claimsConverter,
-        securityConfig);
+        securityConfig,
+        messageCorrelationMetrics);
   }
 
   private static void addDecisionProcessors(
@@ -785,14 +803,14 @@ public final class EngineProcessors {
   }
 
   private static void addResourceDeletionProcessors(
+      final int partitionId,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig,
+      final CslAuthorizationCheck cslCheck,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
@@ -802,11 +820,16 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             bpmnBehaviors,
             permissionsBehavior,
-            claimsConverter,
-            securityConfig,
+            cslCheck,
             processDefinitionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+
+    final var deleteCompleteProcessor =
+        new ProcessDeleteCompleteProcessor(
+            partitionId, writers, processingState, commandDistributionBehavior);
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS, ProcessIntent.DELETE_COMPLETE, deleteCompleteProcessor);
   }
 
   private static void addResourceFetchProcessors(

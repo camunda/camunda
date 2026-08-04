@@ -15,6 +15,7 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.oidc.OidcPrincipalLoader;
 import io.camunda.security.core.oidc.OidcPrincipalLoader.OidcPrincipals;
+import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
@@ -111,13 +112,14 @@ public sealed interface AuthenticationHandler {
               IS_CAMUNDA_GROUPS_ENABLED,
               !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
       if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
-        try {
-          context = context.withValue(GROUPS_CLAIMS, oidcGroupsExtractor.extract(claims));
-        } catch (final Exception e) {
-          LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);
-          return Either.left(
-              Status.UNAUTHENTICATED.augmentDescription("Failed to load OIDC groups"));
-        }
+        // A malformed groups claim contributes no groups instead of rejecting the token, so it
+        // degrades exactly like a missing claim — the same way the REST membership path handles it.
+        // Authorization then fails closed on the reduced set of groups.
+        context =
+            context.withValue(
+                GROUPS_CLAIMS,
+                OidcClaimExtractor.extractOrFallback(
+                    () -> oidcGroupsExtractor.extract(claims), List.of(), "grpcGroups"));
       }
 
       final OidcPrincipals principals;

@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -14,6 +18,9 @@ public interface SecretReferenceState {
 
   /** Returns true if the secret is pending resolution. */
   boolean isPending(String storeId, String secretReference);
+
+  /** Returns true if the job is still waiting for the given (storeId, secretReference) pair. */
+  boolean isWaiting(String storeId, String secretReference, long jobKey);
 
   /**
    * Visits all job keys waiting for the given (storeId, secretReference) pair. The visitor receives
@@ -27,4 +34,25 @@ public interface SecretReferenceState {
    * false} to stop early.
    */
   void visitSecretReferencesByJob(long jobKey, BiPredicate<String, String> visitor);
+
+  /**
+   * Visits all pending secret references. The visitor receives (storeId, secretReference) for each
+   * entry.
+   */
+  void visitPendingSecretReferences(BiConsumer<String, String> visitor);
+
+  /**
+   * Collects all (storeId, secretReference) pairs that the given job is waiting for, via {@link
+   * #visitSecretReferencesByJob}.
+   */
+  default List<Map.Entry<String, String>> collectSecretReferencesByJob(final long jobKey) {
+    final List<Map.Entry<String, String>> refs = new ArrayList<>();
+    visitSecretReferencesByJob(
+        jobKey,
+        (storeId, secretReference) -> {
+          refs.add(Map.entry(storeId, secretReference));
+          return true;
+        });
+    return refs;
+  }
 }

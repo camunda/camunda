@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
@@ -38,6 +39,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
@@ -45,6 +47,7 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -133,6 +136,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  private final RebalanceMetrics rebalanceMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
@@ -150,6 +154,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private LeadershipTransferPauseControl leadershipTransferPauseControl;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -193,6 +198,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
+    rebalanceMetrics = new RebalanceMetrics(name, meterRegistry);
 
     this.electionConfig = electionConfig;
     if (electionConfig.isPriorityElectionEnabled()) {
@@ -374,6 +380,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onTimeoutNow(request), TimeoutNowResponse::builder));
+    protocol.registerLeadershipTransferInitiateHandler(
+        request ->
+            handleRequestOnContext(
+                request,
+                () -> role.onLeadershipTransferInitiate(request),
+                LeadershipTransferInitiateResponse::builder));
     protocol.registerAppendV1Handler(
         request ->
             handleRequestOnContext(
@@ -883,6 +895,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
 
+    // Stop the current role before closing the log. A running role may have queued tasks on the
+    // thread context that append to the log, for example a leader coming out of joint consensus.
+    // Such tasks bail out once the role is no longer running, but if they run against a closed
+    // journal, they write into unmapped memory and crash the JVM.
+    try {
+      role.stop().get();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.error("Interrupted while stopping role {} on close", role.role(), e);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to stop role {} on close", role.role(), e);
+    }
+
     // Close the log.
     try {
       raftLog.close();
@@ -912,6 +937,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
     protocol.unregisterTimeoutNowHandler();
+    protocol.unregisterLeadershipTransferInitiateHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
@@ -1024,6 +1050,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * The broker-supplied control the leader uses to freeze/unfreeze the partition during a
+   * coordinated leadership transfer, or {@code null} when none is registered.
+   */
+  public LeadershipTransferPauseControl getLeadershipTransferPauseControl() {
+    return leadershipTransferPauseControl;
+  }
+
+  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
+    leadershipTransferPauseControl = control;
+  }
+
+  /**
    * Returns the state last voted for candidate.
    *
    * @return The state last voted for candidate.
@@ -1133,6 +1171,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftRoleMetrics getRaftRoleMetrics() {
     return raftRoleMetrics;
+  }
+
+  public RebalanceMetrics getRebalanceMetrics() {
+    return rebalanceMetrics;
   }
 
   /**
@@ -1301,6 +1343,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public int getMinStepDownFailureCount() {
     return partitionConfig.getMinStepDownFailureCount();
+  }
+
+  public long getRebalanceReplicationLagThreshold() {
+    return partitionConfig.getRebalanceReplicationLagThreshold();
+  }
+
+  public Duration getRebalanceReplicationTimeout() {
+    return partitionConfig.getRebalanceReplicationTimeout();
+  }
+
+  public int getRebalanceMaxTransferAttempts() {
+    return partitionConfig.getRebalanceMaxTransferAttempts();
   }
 
   public Duration getMaxQuorumResponseTimeout() {

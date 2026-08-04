@@ -469,7 +469,8 @@ public class SubscriptionCommandSender {
    * Sends the {@link MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED} reply from
    * {@code P_B} back to {@code P_K} after the businessId uniqueness check on {@code P_B} found an
    * active holder. {@code P_K} keeps the message buffered (TTL continues) and waits for the
-   * pull-based release introduced in a later increment.
+   * cross-partition lock release — pushed by {@code P_B} when the holder completes, reconciled by a
+   * coarse {@code P_K} poll as a backstop.
    */
   public boolean sendStartProcessInstanceUniquenessRejected(
       final MessageStartProcessInstanceRequestRecord request) {

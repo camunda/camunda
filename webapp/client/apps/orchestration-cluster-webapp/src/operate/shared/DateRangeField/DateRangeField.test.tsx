@@ -102,26 +102,15 @@ describe('<DateRangeField />', () => {
 		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
 
 		await screen.getByLabelText('Start Date Range').click();
+		// Times before dates, on purpose. Setting a date leaves flatpickr with a deferred range
+		// commit that only runs once focus leaves the date input, and that commit fills any time
+		// field it finds empty with the default. Writing the times first means the fields are
+		// never empty when it runs, so it cannot overwrite them — the ordering is what makes this
+		// deterministic. Dates first needs a retry to survive that race (INC-6825, INC-6762).
+		await screen.getByTestId('fromTime').fill('12:30:00');
+		await screen.getByTestId('toTime').fill('17:15:00');
 		await screen.getByLabelText('From date').fill('2022-01-01');
 		await screen.getByLabelText('To date').fill('2022-12-01');
-		// Typing a date asynchronously resets the time fields to their defaults via the
-		// calendar's onChange (ported 1:1 from legacy). Under CI/parallel-test CPU pressure
-		// that reset can race a same-tick time fill, so retry the fill until it sticks —
-		// a real user's fill is never fast enough to hit this window.
-		await expect.element(screen.getByLabelText('From date')).toHaveValue('2022-01-01');
-		await expect.element(screen.getByLabelText('To date')).toHaveValue('2022-12-01');
-		await expect
-			.poll(async () => {
-				await screen.getByTestId('fromTime').fill('12:30:00');
-				return (screen.getByTestId('fromTime').element() as HTMLInputElement).value;
-			})
-			.toBe('12:30:00');
-		await expect
-			.poll(async () => {
-				await screen.getByTestId('toTime').fill('17:15:00');
-				return (screen.getByTestId('toTime').element() as HTMLInputElement).value;
-			})
-			.toBe('17:15:00');
 		await applyDateRange(screen);
 
 		await expect

@@ -25,7 +25,7 @@ final class FixedPartitionDistributorTest {
   void shouldFailOnMissingPartition() {
     // given
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME).assignMember(2, 0, 1).build();
+        new FixedPartitionDistributorBuilder().assignMember(partition(2), 0, 1).build();
     final var clusterMembers = Set.of(node(0));
     final var sortedPartitionIds = List.of(partition(1), partition(2));
 
@@ -40,7 +40,7 @@ final class FixedPartitionDistributorTest {
   void shouldFailOnUnknownMember() {
     // given
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME).assignMember(1, 0, 1).build();
+        new FixedPartitionDistributorBuilder().assignMember(partition(1), 0, 1).build();
     final var clusterMembers = Set.of(node(1));
     final var sortedPartitionIds = List.of(partition(1), partition(2));
 
@@ -57,7 +57,7 @@ final class FixedPartitionDistributorTest {
   void shouldFailOnMissingReplica() {
     // given
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME).assignMember(1, 0, 1).build();
+        new FixedPartitionDistributorBuilder().assignMember(partition(1), 0, 1).build();
     final var clusterMembers = Set.of(node(0));
     final var sortedPartitionIds = List.of(partition(1), partition(2));
 
@@ -84,11 +84,11 @@ final class FixedPartitionDistributorTest {
                 2,
                 node(0)));
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
-            .assignMember(1, 0, 1)
-            .assignMember(1, 1, 2)
-            .assignMember(2, 0, 2)
-            .assignMember(2, 1, 1)
+        new FixedPartitionDistributorBuilder()
+            .assignMember(partition(1), 0, 1)
+            .assignMember(partition(1), 1, 2)
+            .assignMember(partition(2), 0, 2)
+            .assignMember(partition(2), 1, 1)
             .build();
     final var clusterMembers = Set.of(node(0), node(1));
     final var sortedPartitionIds = List.of(partition(1), partition(2));
@@ -111,9 +111,9 @@ final class FixedPartitionDistributorTest {
             new PartitionMetadata(partition(1), Set.of(node(0)), Map.of(node(0), 2), 2, node(0)),
             new PartitionMetadata(partition(2), Set.of(node(0)), Map.of(node(0), 2), 2, node(0)));
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
-            .assignMember(1, 0, 2)
-            .assignMember(2, 0, 2)
+        new FixedPartitionDistributorBuilder()
+            .assignMember(partition(1), 0, 2)
+            .assignMember(partition(2), 0, 2)
             .build();
     final var clusterMembers = Set.of(node(0), node(1));
     final var sortedPartitionIds = List.of(partition(1), partition(2));
@@ -137,10 +137,10 @@ final class FixedPartitionDistributorTest {
             new PartitionMetadata(
                 partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2, node(1), 2), 2, null));
     final var distributor =
-        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+        new FixedPartitionDistributorBuilder()
             // two members with the same priority
-            .assignMember(1, 0, 2)
-            .assignMember(1, 1, 2)
+            .assignMember(partition(1), 0, 2)
+            .assignMember(partition(1), 1, 2)
             .build();
     final var clusterMembers = Set.of(node(0), node(1));
     final var sortedPartitionIds = List.of(partition(1));
@@ -155,8 +155,113 @@ final class FixedPartitionDistributorTest {
         .containsExactlyInAnyOrderElementsOf(expectedDistribution);
   }
 
+  @Test
+  void shouldDistributePartitionsIndependentlyAcrossMultipleTenants() {
+    // given -- two tenants, each with a partition numbered 1, assigned to different members
+    final var expectedDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition("tenanta", 1), Set.of(node(0)), Map.of(node(0), 1), 1, node(0)),
+            new PartitionMetadata(
+                partition("tenantb", 1), Set.of(node(1)), Map.of(node(1), 1), 1, node(1)));
+    final var distributor =
+        new FixedPartitionDistributorBuilder()
+            .assignMember(partition("tenanta", 1), 0, 1)
+            .assignMember(partition("tenantb", 1), 1, 1)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1));
+    final var sortedPartitionIds = List.of(partition("tenanta", 1), partition("tenantb", 1));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 1);
+
+    // then -- each tenant's partition is distributed to its own configured members only
+    assertThat(distribution)
+        .as("should distribute each tenant's partitions independently")
+        .containsExactlyInAnyOrderElementsOf(expectedDistribution);
+  }
+
+  @Test
+  void shouldDistributeSamePartitionNumberDifferentlyPerTenant() {
+    // given -- tenant A and tenant B both configure partition 1 and 2, but with different
+    // members and priorities per tenant
+    final var expectedDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition("tenantA", 1),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 1, node(1), 2),
+                2,
+                node(1)),
+            new PartitionMetadata(
+                partition("tenantA", 2),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 2, node(1), 1),
+                2,
+                node(0)),
+            new PartitionMetadata(
+                partition("tenantB", 1),
+                Set.of(node(2), node(3)),
+                Map.of(node(2), 2, node(3), 1),
+                2,
+                node(2)),
+            new PartitionMetadata(
+                partition("tenantB", 2),
+                Set.of(node(2), node(3)),
+                Map.of(node(2), 1, node(3), 2),
+                2,
+                node(3)));
+    final var distributor =
+        new FixedPartitionDistributorBuilder()
+            .assignMember(partition("tenantA", 1), 0, 1)
+            .assignMember(partition("tenantA", 1), 1, 2)
+            .assignMember(partition("tenantA", 2), 0, 2)
+            .assignMember(partition("tenantA", 2), 1, 1)
+            .assignMember(partition("tenantB", 1), 2, 2)
+            .assignMember(partition("tenantB", 1), 3, 1)
+            .assignMember(partition("tenantB", 2), 2, 1)
+            .assignMember(partition("tenantB", 2), 3, 2)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1), node(2), node(3));
+    final var sortedPartitionIds =
+        List.of(
+            partition("tenantA", 1),
+            partition("tenantA", 2),
+            partition("tenantB", 1),
+            partition("tenantB", 2));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions of each tenant according to its own configuration")
+        .containsExactlyInAnyOrderElementsOf(expectedDistribution);
+  }
+
+  @Test
+  void shouldFailOnMissingPartitionWhenOnlyConfiguredForAnotherTenant() {
+    // given -- partition 1 is only configured for tenantA, but tenantB also requests partition 1
+    final var distributor =
+        new FixedPartitionDistributorBuilder().assignMember(partition("tenantA", 1), 0, 1).build();
+    final var clusterMembers = Set.of(node(0));
+    final var sortedPartitionIds = List.of(partition("tenantA", 1), partition("tenantB", 1));
+
+    // when - then
+    assertThatCode(() -> distributor.distributePartitions(clusterMembers, sortedPartitionIds, 1))
+        .as("should fail because tenantB's partition 1 was not configured")
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Expected to distribute partition 1, but no members configured for it");
+  }
+
   private PartitionId partition(final int id) {
     return new PartitionId(PARTITION_GROUP_NAME, id);
+  }
+
+  private PartitionId partition(final String tenant, final int id) {
+    return new PartitionId(tenant, id);
   }
 
   private MemberId node(final int id) {

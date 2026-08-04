@@ -12,17 +12,17 @@
 
   <resultMap id="waitStateResultMap" type="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
     <constructor>
-      <idArg column="WAIT_STATE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ELEMENT_ID" javaType="java.lang.String"/>
-      <arg column="ELEMENT_TYPE" javaType="java.lang.String"/>
-      <arg column="WAIT_STATE_TYPE" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="DETAILS" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+      <idArg column="WAIT_STATE_KEY" javaType="java.lang.Long" name="waitStateKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long" name="elementInstanceKey"/>
+      <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
+      <arg column="ELEMENT_TYPE" javaType="java.lang.String" name="elementType"/>
+      <arg column="WAIT_STATE_TYPE" javaType="java.lang.String" name="waitStateType"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="DETAILS" javaType="java.lang.String" name="details"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer" name="partitionId"/>
     </constructor>
   </resultMap>
 

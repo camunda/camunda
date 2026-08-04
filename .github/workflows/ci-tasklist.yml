@@ -82,7 +82,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool /  Front End - Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -91,7 +91,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -102,6 +102,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -118,7 +120,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -127,7 +129,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -138,6 +140,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run lint:eslint
         name: ESLint
       - name: Observe build status
@@ -154,7 +158,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Stylelint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -162,7 +166,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -173,6 +177,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run lint:stylelint
         name: Stylelint
       - name: Observe build status
@@ -189,7 +195,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -198,7 +204,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -209,6 +215,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "2"
       - run: npm run lint:prettier
         name: Prettier
       - name: Observe build status
@@ -233,7 +241,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -260,7 +268,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End - Visual Regression"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
@@ -271,7 +279,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
@@ -284,6 +292,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Playwright tests
@@ -308,7 +318,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -319,7 +329,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
@@ -332,6 +342,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "3"
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
@@ -455,11 +467,11 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: camunda.Dockerfile

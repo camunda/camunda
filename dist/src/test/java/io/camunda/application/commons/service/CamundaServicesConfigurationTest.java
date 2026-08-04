@@ -16,10 +16,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -43,7 +48,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -104,7 +111,9 @@ class CamundaServicesConfigurationTest {
         buildRegistry(
             twoTenants(),
             new AuthorizationCheckerProvider(
-                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)));
+                sharedAuthorizationChecker, Map.of(TENANT_A, checkerA, TENANT_B, checkerB)),
+            new SecretStoreRegistries(
+                Map.of(TENANT_A, registryHolding("token"), TENANT_B, registryHolding("token"))));
 
     // when / then: tenant A's checker grants REVEAL -- the reference resolves, using only tenant
     // A's checker.
@@ -241,6 +250,41 @@ class CamundaServicesConfigurationTest {
   }
 
   @Test
+  void shouldWireDistinctSecretStoreRegistryPerPhysicalTenantIntoSecretServices() {
+    // given: each physical tenant has its own store registry, keyed by tenant ID
+    final var registryA = new SecretStoreRegistry(Map.of());
+    final var registryB = new SecretStoreRegistry(Map.of());
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of(TENANT_A, registryA, TENANT_B, registryB)));
+
+    // then: each tenant's SecretServices holds exactly its own tenant's registry, so the
+    // store-backed resolve/list (#58497) can never read another tenant's stores
+    assertThat(registry.secretServices(TENANT_A).getSecretStoreRegistry()).isSameAs(registryA);
+    assertThat(registry.secretServices(TENANT_B).getSecretStoreRegistry()).isSameAs(registryB);
+  }
+
+  @Test
+  void shouldFallBackToEmptySecretStoreRegistryWhenTenantAbsentFromRegistries() {
+    // given: the registries hold no entry for any tenant (a tenant with no configured stores
+    // still gets a noop-store registry from SecretStoreConfiguration, so absence only happens
+    // when the secrets bean saw a different tenant set than this wiring)
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of()));
+
+    // then: SecretServices still receives a (store-less) registry instead of null, mirroring the
+    // fallback of SecretStoreRegistries#forPhysicalTenant
+    final var fallback = registry.secretServices(TENANT_A).getSecretStoreRegistry();
+    assertThat(fallback).isNotNull();
+    assertThat(fallback.getStores()).isEmpty();
+  }
+
+  @Test
   void shouldWireExactlyOneEntryWhenOnlyTheDefaultPhysicalTenantExists() {
     // given: a single-PT/default-only deployment
     final var defaultChecker = mock(AuthorizationChecker.class);
@@ -317,9 +361,45 @@ class CamundaServicesConfigurationTest {
     return tenants;
   }
 
+  /** A store registry whose single store holds the given secret names, each with a dummy value. */
+  private static SecretStoreRegistry registryHolding(final String... names) {
+    final var held = Set.of(names);
+    final var store =
+        new SecretStore() {
+          @Override
+          public Map<String, SecretResolutionResult> resolve(final Set<String> requested) {
+            return requested.stream()
+                .collect(
+                    Collectors.toMap(
+                        name -> name,
+                        name ->
+                            held.contains(name)
+                                ? new SecretResolutionResult.Resolved("value-of-" + name)
+                                : new SecretResolutionResult.Failed(
+                                    io.camunda.secretstore.SecretErrorCode.NOT_FOUND,
+                                    "unknown",
+                                    null)));
+          }
+
+          @Override
+          public List<String> list() {
+            return List.copyOf(held);
+          }
+        };
+    return new SecretStoreRegistry(Map.of("main", store));
+  }
+
   private ServiceRegistry buildRegistry(
       final Map<String, Camunda> tenants,
       final AuthorizationCheckerProvider authorizationCheckerProvider) {
+    return buildRegistry(
+        tenants, authorizationCheckerProvider, new SecretStoreRegistries(Map.of()));
+  }
+
+  private ServiceRegistry buildRegistry(
+      final Map<String, Camunda> tenants,
+      final AuthorizationCheckerProvider authorizationCheckerProvider,
+      final SecretStoreRegistries secretStoreRegistries) {
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(tenants);
 
@@ -336,7 +416,21 @@ class CamundaServicesConfigurationTest {
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),
-        new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()));
+        readinessProvider(),
+        new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
+        secretStoreRegistries);
+  }
+
+  /**
+   * The readiness bean is taken as an {@link ObjectProvider} so it is resolved only when the
+   * cluster-status predicate runs — injecting it eagerly would close a bean cycle through the
+   * search schema initializer.
+   */
+  @SuppressWarnings("unchecked")
+  private static ObjectProvider<SecondaryStorageReadiness> readinessProvider() {
+    final ObjectProvider<SecondaryStorageReadiness> provider = mock(ObjectProvider.class);
+    when(provider.getObject()).thenReturn(SecondaryStorageReadiness.ALWAYS_READY);
+    return provider;
   }
 
   /** A physical tenant config with {@code security.authorizations.enabled} set as given. */

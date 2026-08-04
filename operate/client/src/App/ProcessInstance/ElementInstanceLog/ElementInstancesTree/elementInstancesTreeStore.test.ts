@@ -13,31 +13,14 @@ import type {
   QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {waitFor} from '@testing-library/react';
+import {
+  createMockElementInstance,
+  MOCK_PROCESS_INSTANCE_KEY as mockProcessInstanceKey,
+} from './mocks';
 
-const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey1 = '2251799813685630';
 const mockChildScopeKey2 = '2251799813685640';
 const mockGrandchildScopeKey = '2251799813685650';
-
-const createMockElementInstance = (
-  overrides: Partial<ElementInstance> = {},
-): ElementInstance => ({
-  elementInstanceKey: '2251799813685630',
-  elementId: 'task_1',
-  elementName: 'Task 1',
-  type: 'SERVICE_TASK',
-  state: 'ACTIVE',
-  startDate: '2023-01-01T10:00:00.000Z',
-  processDefinitionKey: '2251799813685623',
-  processDefinitionId: 'test-process',
-  processInstanceKey: mockProcessInstanceKey,
-  hasIncident: false,
-  tenantId: '<default>',
-  endDate: null,
-  rootProcessInstanceKey: null,
-  incidentKey: null,
-  ...overrides,
-});
 
 const createMockResponse = (
   items: ElementInstance[],

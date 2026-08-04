@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -78,7 +80,8 @@ public final class MessageCorrelationCorrelateProcessor
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final MessageCorrelationMetrics metrics) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -104,7 +107,8 @@ public final class MessageCorrelationCorrelateProcessor
             bannedInstanceState,
             businessIdUniquenessEnabled,
             routingInfo,
-            partitionId);
+            partitionId,
+            metrics);
   }
 
   @Override
@@ -114,12 +118,21 @@ public final class MessageCorrelationCorrelateProcessor
     // Check tenant authorization if not an internal command
     if (!command.isInternalCommand()) {
       final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
-      if (!authorizedTenants.isAuthorizedForTenantId(messageCorrelationRecord.getTenantId())) {
-        final var message =
-            "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
-                .formatted(messageCorrelationRecord.getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
+      final var tenantCheck =
+          cslCheck.checkTenantsRequiringPrincipal(
+              List.of(messageCorrelationRecord.getTenantId()),
+              authorizedTenants,
+              messageCorrelationRecord,
+              () ->
+                  new Rejection(
+                      RejectionType.FORBIDDEN,
+                      "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
+                          .formatted(messageCorrelationRecord.getTenantId())));
+      if (tenantCheck.isLeft()) {
+        final var rejection = tenantCheck.getLeft();
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
         return;
       }
     }

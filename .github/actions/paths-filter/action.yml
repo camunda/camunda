@@ -131,6 +131,15 @@ outputs:
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
+  optimize-dockerfile-changes:
+    description: Output whether Optimize's Dockerfile-only tooling checks (hadolint, base image validation) should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
+      }}
   camunda-docker-tests:
     description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
     value: >-

@@ -227,6 +227,16 @@ The [`observe-build-status` action](#metrics-collection) reads this env var as t
 
 See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, including how to override per-job and how to wire matrix-driven values.
 
+##### Code-ownership-based attribution for failed jobs
+
+`TEST_OWNER` is a static, job-level label, so a job that runs tests belonging to several teams attributes all of its failures to a single owner. To route auto-created incidents to the team that actually owns the failing code, the `observe-build-status` action resolves the owner of the failing test classes from `.codeowners` when a job **fails**:
+
+1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports), excluding skipped, passing and flaky-but-passed retries.
+2. Each failing class is mapped to its source file and then to its owning team via `codeowners-cli` (reusing the resolvers in `.ci/scripts/ci/setup-medic-lookup.sh`).
+3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER`.
+
+This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
+
 ### Legacy CI
 
 "Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](#workflow-inclusion-criteria), such as running under 10 minutes.
