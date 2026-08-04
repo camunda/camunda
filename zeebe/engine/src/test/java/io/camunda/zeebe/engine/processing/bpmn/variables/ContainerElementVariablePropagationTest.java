@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -142,6 +143,57 @@ public final class ContainerElementVariablePropagationTest {
     // then
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void shouldMergeNestedTargetWhenPropagatingLocalVariablesFromMultiInstanceSubProcess() {
+    // given: a pre-existing "container" variable at the process instance scope, and the MI
+    // sub-process's own output mapping targets a nested path inside it, so the merge must
+    // preserve the pre-existing sibling key rather than overwrite the whole object
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.multiInstance(
+                            mi ->
+                                mi.zeebeInputCollectionExpression("= [1]")
+                                    .zeebeInputElement("inputElement")
+                                    .zeebeOutputCollection("output")
+                                    .zeebeOutputElementExpression("outputElement"))
+                        .zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent("nestedElement")
+                        .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+                        .endEvent())
+            .zeebeOutputExpression(LOCAL_VAR, "container.nested")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("container", Map.of("existing", 1)))
+            .create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
+    final var mergedContainer =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
+            .withName("container")
+            .getFirst()
+            .getValue()
+            .getValue();
+    JsonUtil.assertEquality(mergedContainer, "{\"existing\":1,\"nested\":\"bar\"}");
   }
 
   @Test
