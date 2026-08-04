@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -162,6 +163,54 @@ class PhasedChangePlanTest {
       // when / then — higher plan ID wins
       assertThat(olderPlan.merge(newerPlan)).isSameAs(newerPlan);
       assertThat(newerPlan.merge(olderPlan)).isSameAs(newerPlan);
+    }
+
+    @Test
+    void shouldPreferFullerPhaseWhenSameIdAndOneSideIsATrailingSubsetOfTheOther() {
+      // given — same plan id; one side is a lossy re-derivation (e.g. via
+      // CurrentClusterConfiguration#fromLegacy) that only knows about the two operations still
+      // remaining after the first two of an original four completed
+      final var join1 = new PartitionJoinOperation(MEMBER_1, 1, 1);
+      final var join2 = new PartitionJoinOperation(MEMBER_1, 2, 1);
+      final var join3 = new PartitionJoinOperation(MEMBER_2, 1, 1);
+      final var join4 = new PartitionJoinOperation(MEMBER_2, 2, 1);
+      final var fullPlan =
+          PhasedChangePlan.init(
+              7L,
+              List.of(
+                  new PartitionGroupParallelPhase(
+                      Map.of("groupA", List.of(join1, join2, join3, join4)))),
+              Instant.EPOCH);
+      final var staleReconstruction =
+          PhasedChangePlan.init(
+              7L,
+              List.of(new PartitionGroupParallelPhase(Map.of("groupA", List.of(join3, join4)))),
+              Instant.EPOCH);
+
+      // when / then — the fuller (non-lossy) side wins regardless of merge direction
+      assertThat(fullPlan.merge(staleReconstruction).phases()).isEqualTo(fullPlan.phases());
+      assertThat(staleReconstruction.merge(fullPlan).phases()).isEqualTo(fullPlan.phases());
+    }
+
+    @Test
+    void shouldThrowWhenSameIdAndPhasesDifferButNeitherIsATrailingSubsetOfTheOther() {
+      // given — same plan id, but the operations are genuinely incompatible (not a shrink of one
+      // another), which must still surface as a loud failure rather than silently pick a side
+      final var join1 = new PartitionJoinOperation(MEMBER_1, 1, 1);
+      final var join2 = new PartitionJoinOperation(MEMBER_2, 1, 1);
+      final var planA =
+          PhasedChangePlan.init(
+              7L,
+              List.of(new PartitionGroupParallelPhase(Map.of("groupA", List.of(join1)))),
+              Instant.EPOCH);
+      final var planB =
+          PhasedChangePlan.init(
+              7L,
+              List.of(new PartitionGroupParallelPhase(Map.of("groupA", List.of(join2)))),
+              Instant.EPOCH);
+
+      // when / then
+      assertThatThrownBy(() -> planA.merge(planB)).isInstanceOf(IllegalStateException.class);
     }
   }
 
