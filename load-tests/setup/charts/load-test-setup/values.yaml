@@ -258,6 +258,9 @@ opensearch:
 
   majorVersion: "2.19.0"
 
+  image:
+    tag: 2.19.0
+
   replicas: 3
 
   config:
