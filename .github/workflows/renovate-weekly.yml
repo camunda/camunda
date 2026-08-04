@@ -39,7 +39,7 @@ jobs:
           # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
           # job timeout; validation normally completes in well under a minute.
           timeout_minutes: 2
-          command: npx --yes --package "renovate@latest" -c "renovate-config-validator --strict"
+          command: npx --yes --package "renovate@latest" -- renovate-config-validator --strict .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
         continue-on-error: true
