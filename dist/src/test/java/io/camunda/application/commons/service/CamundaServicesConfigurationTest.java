@@ -39,6 +39,7 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -413,6 +414,7 @@ class CamundaServicesConfigurationTest {
         authorizationCheckerProvider,
         new GatewayRestConfiguration(),
         mock(BrokerTopologyManager.class),
+        mock(ClusterConfigurationManagementRequestSender.class),
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),

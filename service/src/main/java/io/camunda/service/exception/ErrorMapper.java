@@ -36,9 +36,11 @@ import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +109,24 @@ public class ErrorMapper {
         "Unauthorized to perform operation '%s' on resource '%s'"
             .formatted(authorization.permissionType(), authorization.resourceType()),
         FORBIDDEN);
+  }
+
+  public static ServiceException createForbiddenException(
+      final List<? extends RequiredAuthorization<?>> authorizations) {
+    if (authorizations.size() == 1) {
+      return createForbiddenException(authorizations.getFirst());
+    }
+
+    final var operations =
+        authorizations.stream()
+            .map(
+                authorization ->
+                    "'%s' on '%s'"
+                        .formatted(authorization.permissionType(), authorization.resourceType()))
+            .distinct()
+            .collect(Collectors.joining(" or "));
+    return new ServiceException(
+        "Unauthorized to perform any of the operations: %s".formatted(operations), FORBIDDEN);
   }
 
   private static ServiceError mapErrorToServiceError(final Throwable error) {

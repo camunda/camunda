@@ -35,6 +35,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.RecoveryServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RuntimeBackupServices;
@@ -83,6 +84,7 @@ public record DefaultServiceRegistry(
     Map<String, MessageSubscriptionServices> messageSubscriptionByTenant,
     Map<String, ProcessDefinitionServices> processDefinitionByTenant,
     Map<String, ProcessInstanceServices> processInstanceByTenant,
+    Map<String, RecoveryServices> recoveryByTenant,
     Map<String, ResourceServices> resourceByTenant,
     Map<String, RoleServices> roleByTenant,
     Map<String, SecretServices> secretByTenant,
@@ -243,6 +245,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public RecoveryServices recoveryServices(final String physicalTenantId) {
+    return byTenant(recoveryByTenant, physicalTenantId);
+  }
+
+  @Override
   public ResourceServices resourceServices(final String physicalTenantId) {
     return byTenant(resourceByTenant, physicalTenantId);
   }
@@ -368,6 +375,7 @@ public record DefaultServiceRegistry(
     private final Map<String, ProcessDefinitionServices> processDefinitionByTenant =
         new HashMap<>();
     private final Map<String, ProcessInstanceServices> processInstanceByTenant = new HashMap<>();
+    private final Map<String, RecoveryServices> recoveryByTenant = new HashMap<>();
     private final Map<String, ResourceServices> resourceByTenant = new HashMap<>();
     private final Map<String, RoleServices> roleByTenant = new HashMap<>();
     private final Map<String, SecretServices> secretByTenant = new HashMap<>();
@@ -529,6 +537,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder recoveryServices(final String tenantId, final RecoveryServices service) {
+      recoveryByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder resourceServices(final String tenantId, final ResourceServices service) {
       resourceByTenant.put(tenantId, service);
       return this;
@@ -618,6 +631,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(messageSubscriptionByTenant),
           Map.copyOf(processDefinitionByTenant),
           Map.copyOf(processInstanceByTenant),
+          Map.copyOf(recoveryByTenant),
           Map.copyOf(resourceByTenant),
           Map.copyOf(roleByTenant),
           Map.copyOf(secretByTenant),

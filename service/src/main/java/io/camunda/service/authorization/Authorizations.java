@@ -11,13 +11,16 @@ import static io.camunda.security.api.model.authz.AuthorizationResourceType.BACK
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMPONENT;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.EXPORTER;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.SECRET;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.SYSTEM;
 import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
 import static io.camunda.security.api.model.authz.PermissionType.CREATE;
 import static io.camunda.security.api.model.authz.PermissionType.DELETE;
 import static io.camunda.security.api.model.authz.PermissionType.PAUSE;
 import static io.camunda.security.api.model.authz.PermissionType.READ;
 import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
+import static io.camunda.security.api.model.authz.PermissionType.RESTORE;
 import static io.camunda.security.api.model.authz.PermissionType.REVEAL;
+import static io.camunda.security.api.model.authz.PermissionType.UPDATE;
 
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
@@ -66,6 +69,9 @@ public abstract class Authorizations {
 
   public static final RequiredAuthorization<Object> BACKUP_DELETE_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.resourceType(BACKUP).permissionType(DELETE));
+
+  public static final RequiredAuthorization<Object> BACKUP_RESTORE_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(BACKUP).permissionType(RESTORE));
 
   public static final RequiredAuthorization<BatchOperationEntity>
       BATCH_OPERATION_READ_AUTHORIZATION = RequiredAuthorization.of(a -> a.batchOperation().read());
@@ -134,6 +140,9 @@ public abstract class Authorizations {
 
   public static final RequiredAuthorization<Object> SECRET_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.resourceType(SECRET).permissionType(READ));
+
+  public static final RequiredAuthorization<Object> SYSTEM_UPDATE_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(SYSTEM).permissionType(UPDATE));
 
   public static final RequiredAuthorization<TenantEntity> TENANT_READER_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.tenant().read());
