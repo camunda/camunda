@@ -23,7 +23,6 @@ const DMN_TEMPLATE = './resources/decideUpgradeEligibility.dmn';
 const PROCESS_TEMPLATE = './resources/decideUpgradeEligibilityProcess.bpmn';
 const FORM = './resources/decideUpgradeEligibilityCheck.form';
 
-export const BUSINESS_RULE_TASK_ID = 'Activity_1wwz77k';
 export const REVIEW_USER_TASK_ID = 'Activity_1851bui';
 
 /** Matches rule 1 (VIP, score >= 25) - the only rule that differs per version. */
