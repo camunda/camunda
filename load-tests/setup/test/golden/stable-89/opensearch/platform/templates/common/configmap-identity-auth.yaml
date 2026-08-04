@@ -3,10 +3,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: c8-golden-stable-89-opensearch-identity-env-vars
+  name: c8-golden-stable-89-opensearch-camunda-platform-identity-env-vars
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-stable-89-opensearch
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform

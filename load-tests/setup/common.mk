@@ -250,12 +250,6 @@ else ifeq ($(secondary_storage),oracle)
 	@echo "Installing Oracle database for namespace $(namespace)..."
 	# Deploy Oracle Free 23c via plain Kubernetes manifests (oracle.yaml) since no maintained public chart is available
 	kubectl apply --namespace $(namespace) -f databases/oracle.yaml
-else ifeq ($(secondary_storage),opensearch)
-	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
-	helm upgrade --install opensearch opensearch/opensearch \
-		--version "2.31.0" \
-		--namespace $(namespace) \
-		$(platform_values)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif

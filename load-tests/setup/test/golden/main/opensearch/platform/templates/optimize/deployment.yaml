@@ -6,7 +6,7 @@ metadata:
   name: optimize
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-main-opensearch
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -24,7 +24,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: c8-golden-main-opensearch
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -33,7 +33,7 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: opensearch
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: c8-golden-main-opensearch
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
@@ -159,9 +159,9 @@ spec:
               value: "false"
           envFrom:
             - configMapRef:
-                name: c8-golden-main-opensearch-identity-env-vars
+                name: c8-golden-main-opensearch-camunda-platform-identity-env-vars
             - configMapRef:
-                name: c8-golden-main-opensearch-documentstore-env-vars
+                name: c8-golden-main-opensearch-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

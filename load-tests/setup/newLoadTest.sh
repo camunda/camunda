@@ -285,6 +285,8 @@ EOF
 opensearch:
   enabled: $opensearchEnabled
 
+  nodeSelector:
+    topology.kubernetes.io/zone: "$availability_zone"
 EOF
 
   if [[ -n "$es_uri" ]]; then

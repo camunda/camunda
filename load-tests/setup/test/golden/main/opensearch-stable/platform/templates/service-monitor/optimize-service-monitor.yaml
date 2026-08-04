@@ -3,10 +3,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: c8-golden-main-opensearch-stable-optimize
+  name: c8-golden-main-opensearch-stable-camunda-platform-optimize
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-main-opensearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform

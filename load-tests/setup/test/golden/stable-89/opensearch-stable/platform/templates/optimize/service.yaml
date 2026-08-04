@@ -6,7 +6,7 @@ metadata:
   name: optimize
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-stable-89-opensearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -29,7 +29,7 @@ spec:
       protocol: TCP
   selector:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-stable-89-opensearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform

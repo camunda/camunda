@@ -11,6 +11,8 @@ This Helm Chart sets up the surrounding infrastructure for a Camunda load test n
   restarts.
 * An optional **ECK-managed Elasticsearch** cluster (`elasticsearch.enabled=true`), for load tests
   that use Elasticsearch as secondary storage.
+* An optional **[OpenSearch](https://opensearch-project.github.io/helm-charts/)** cluster
+  (`opensearch.enabled=true`), for load tests that use OpenSearch as secondary storage.
 * An optional **Keycloak instance**, backed by its own **PostgreSQL cluster** (`keycloak.enabled`,
   default: `true`). See the [Keycloak](#keycloak) section below for details.
 * An optional **metrics-exporter** deployment to query the report internal
@@ -31,6 +33,7 @@ is not made to be generally reusable.
 |-----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------------------------------------------------|
 | [`camunda-load-tests`](https://github.com/camunda/camunda-load-tests-helm)                                                                    | `load-tester`                       | `load-tester.enabled` (default: `true`)                        |
 | [`prometheus-elasticsearch-exporter`](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter) | `prometheus-elasticsearch-exporter` | `prometheus-elasticsearch-exporter.enabled` (default: `false`) |
+| [`opensearch`](https://opensearch-project.github.io/helm-charts/)                                                                             | `opensearch`                        | `opensearch.enabled` (default: `false`)                        |
 
 ## Prometheus Exporter for Elasticsearch/OpenSearch
 

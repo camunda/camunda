@@ -6,7 +6,7 @@ metadata:
   name: camunda
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -21,7 +21,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -34,7 +34,7 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: opensearch
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
@@ -104,7 +104,7 @@ spec:
             
           envFrom:
             - configMapRef:
-                name: c8-golden-stable-88-opensearch-stable-documentstore-env-vars
+                name: c8-golden-stable-88-opensearch-stable-camunda-platform-documentstore-env-vars
           ports:
             - containerPort: 8080
               name: http

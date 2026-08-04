@@ -6,7 +6,7 @@ metadata:
   name: connectors
   labels:
     app: camunda-platform
-    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: c8-golden-main-opensearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
@@ -24,7 +24,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/name: camunda-platform
       app.kubernetes.io/instance: c8-golden-main-opensearch-stable
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
@@ -33,7 +33,7 @@ spec:
     metadata:
       labels:
         app: camunda-platform
-        app.kubernetes.io/name: opensearch
+        app.kubernetes.io/name: camunda-platform
         app.kubernetes.io/instance: c8-golden-main-opensearch-stable
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
@@ -77,9 +77,9 @@ spec:
               value: stackdriver
           envFrom:
             - configMapRef:
-                name: c8-golden-main-opensearch-stable-identity-env-vars
+                name: c8-golden-main-opensearch-stable-camunda-platform-identity-env-vars
             - configMapRef:
-                name: c8-golden-main-opensearch-stable-documentstore-env-vars
+                name: c8-golden-main-opensearch-stable-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m
