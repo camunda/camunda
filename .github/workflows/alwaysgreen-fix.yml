@@ -117,9 +117,17 @@ jobs:
             sm-smoke-e2e|saas-smoke-e2e) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
-          # The e2e suite directory the specs live in.
+          # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
+          # when main moves to 8.11.
           if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          # The e2e suite directory. SM specs live under an SM- prefix, SaaS specs under
+          # the bare version, and pages/ mirrors tests/ exactly.
+          if [ "$SURFACE" = "sm-smoke-e2e" ]; then suite="SM-${version}"; else suite="${version}"; fi
+          {
+            echo "version=${version}"
+            echo "suite=${suite}"
+            echo "chart=camunda-platform-${version}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout main for tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -319,6 +327,8 @@ jobs:
           BASE_REF: ${{ inputs.base_ref }}
           SURFACE: ${{ inputs.surface }}
           VERSION: ${{ steps.target.outputs.version }}
+          SUITE: ${{ steps.target.outputs.suite }}
+          CHART: ${{ steps.target.outputs.chart }}
           FAILING_RUN_URL: ${{ inputs.failing_run_url }}
           TRIAGE_RUN_URL: ${{ inputs.triage_run_url }}
           BLAME_AUTHOR: ${{ steps.ctx.outputs.blame_author }}
@@ -335,6 +345,10 @@ jobs:
           contract, and the constraints. Do not skip it.
 
           Failing surface: ${SURFACE}   Branch to fix against: ${BASE_REF}   Version: ${VERSION}
+          Edit only these version directories:
+            c8-cross-component-e2e-tests: tests/${SUITE}/ and pages/${SUITE}/
+            camunda-platform-helm:        charts/${CHART}/
+          A sibling version directory that is passing must not be touched.
           Failing AlwaysGreen run: ${FAILING_RUN_URL}
           Triage run: ${TRIAGE_RUN_URL}
           Breaking change: PR #${BLAME_PR} by ${BLAME_AUTHOR}
