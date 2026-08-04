@@ -17,7 +17,7 @@ import {
 	TableSelectAll,
 	TableSelectRow,
 } from '@carbon/react';
-import {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer} from './styled';
+import {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer, BareEmptyStateContainer} from './styled';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
 
@@ -39,6 +39,9 @@ type BaseProps<TRow> = {
 	size?: TableSize;
 	isFetching?: boolean;
 	emptyState?: React.ReactNode;
+	// Renders the empty state on its own, without the table/column headers, instead of inside a
+	// full-width table row. Opt-in because most tables keep their headers visible when empty.
+	hideHeaderWhenEmpty?: boolean;
 	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
@@ -68,6 +71,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		size = 'md',
 		isFetching = false,
 		emptyState,
+		hideHeaderWhenEmpty = false,
 		onSort,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
@@ -77,6 +81,16 @@ function SortableTable<TRow>(props: Props<TRow>) {
 	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
 	const columnCount = columns.length + (selection !== undefined ? 1 : 0);
+
+	if (rows.length === 0 && emptyState !== undefined && hideHeaderWhenEmpty) {
+		const emptyContent = <BareEmptyStateContainer>{emptyState}</BareEmptyStateContainer>;
+
+		if (hasScrollHandlers) {
+			return <ScrollContainer data-testid={dataTestId}>{emptyContent}</ScrollContainer>;
+		}
+
+		return <TableContainer data-testid={dataTestId}>{emptyContent}</TableContainer>;
+	}
 
 	const tableBody = (
 		<TableBody>

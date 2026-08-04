@@ -27,6 +27,8 @@ import type {
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
 	Variable,
+	QueryDecisionDefinitionsRequestBody,
+	QueryDecisionDefinitionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -49,6 +51,7 @@ const queryKeys = {
 		['userTaskAuditLogs', userTaskKey, body] as const,
 	auditLog: (auditLogKey: string) => ['auditLog', auditLogKey] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
@@ -333,6 +336,18 @@ const queries = {
 			queryKey: queryKeys.getIncidentProcessInstanceStatisticsByError(body),
 			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
 				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryDecisionDefinitions(body),
+			queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
+				const {response, error} = await request(endpoints.queryDecisionDefinitions(body));
 				if (error !== null) {
 					throw error;
 				}

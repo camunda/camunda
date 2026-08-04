@@ -57,8 +57,10 @@ const gridRowLayout = css<ContainerProps>`
 const Container = styled.div<ContainerProps>`
 	display: grid;
 	height: 100%;
+	box-sizing: border-box;
 	position: relative;
 	overflow: auto;
+	padding-top: var(--cds-spacing-09);
 
 	${gridColumnLayout}
 	${gridRowLayout}
