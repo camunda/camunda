@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.immutable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -36,10 +35,16 @@ public interface SecretReferenceState {
   void visitSecretReferencesByJob(long jobKey, BiPredicate<String, String> visitor);
 
   /**
-   * Visits all pending secret references. The visitor receives (storeId, secretReference) for each
-   * entry.
+   * Visits pending (storeId, secretReference) entries starting at {@code startAt} (inclusive, if it
+   * still exists) or from the beginning if {@code startAt} is {@code null}. The visitor returns
+   * {@code true} to continue or {@code false} to stop early.
+   *
+   * @return the cursor identifying where iteration stopped, to pass as {@code startAt} on the next
+   *     call to resume fairly; {@code null} if the visitor was never told to stop (i.e. iteration
+   *     reached the end of the column family)
    */
-  void visitPendingSecretReferences(BiConsumer<String, String> visitor);
+  PendingRefCursor visitPendingSecretReferences(
+      PendingRefCursor startAt, BiPredicate<String, String> visitor);
 
   /**
    * Collects all (storeId, secretReference) pairs that the given job is waiting for, via {@link
@@ -55,4 +60,7 @@ public interface SecretReferenceState {
         });
     return refs;
   }
+
+  /** Resume point for {@link #visitPendingSecretReferences}, identifying the last-visited entry. */
+  record PendingRefCursor(String storeId, String secretReference) {}
 }

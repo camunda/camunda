@@ -40,7 +40,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -532,8 +532,8 @@ final class SecretResolutionSchedulerTest {
   private void stubPending(final String storeId, final String secretRef) {
     doAnswer(
             inv -> {
-              final var visitor = (BiConsumer<String, String>) inv.getArgument(0);
-              visitor.accept(storeId, secretRef);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
+              visitor.test(storeId, secretRef);
               return null;
             })
         .when(secretReferenceState)
@@ -543,9 +543,11 @@ final class SecretResolutionSchedulerTest {
   private void stubPending(final String storeId, final String... secretRefs) {
     doAnswer(
             inv -> {
-              final var visitor = (BiConsumer<String, String>) inv.getArgument(0);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
               for (final String secretRef : secretRefs) {
-                visitor.accept(storeId, secretRef);
+                if (!visitor.test(storeId, secretRef)) {
+                  break;
+                }
               }
               return null;
             })
@@ -556,8 +558,12 @@ final class SecretResolutionSchedulerTest {
   private void stubPending(final Map<String, String> refsByStore) {
     doAnswer(
             inv -> {
-              final var visitor = (BiConsumer<String, String>) inv.getArgument(0);
-              refsByStore.forEach(visitor::accept);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
+              for (final var entry : refsByStore.entrySet()) {
+                if (!visitor.test(entry.getKey(), entry.getValue())) {
+                  break;
+                }
+              }
               return null;
             })
         .when(secretReferenceState)

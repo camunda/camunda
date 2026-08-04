@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -268,7 +269,7 @@ public final class DbSecretReferenceStateTest {
     // when
     final var collected = new ArrayList<String>();
     state.visitPendingSecretReferences(
-        (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
+        null, (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
 
     // then
     assertThat(collected)
@@ -285,10 +286,67 @@ public final class DbSecretReferenceStateTest {
     // when
     final var collected = new ArrayList<String>();
     state.visitPendingSecretReferences(
-        (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
+        null, (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
 
     // then
     assertThat(collected).containsExactly("store-a:ref-2");
+  }
+
+  @Test
+  void shouldStopVisitingPendingSecretReferencesWhenVisitorReturnsFalse() {
+    // given
+    state.addPendingSecretReference("store-a", "ref-1");
+    state.addPendingSecretReference("store-a", "ref-2");
+    state.addPendingSecretReference("store-a", "ref-3");
+
+    // when
+    final var visited = new ArrayList<String>();
+    state.visitPendingSecretReferences(
+        null,
+        (storeId, secretRef) -> {
+          visited.add(secretRef);
+          return visited.size() < 2;
+        });
+
+    // then — iteration stops after the second entry; the third is never visited
+    assertThat(visited).containsExactly("ref-1", "ref-2");
+  }
+
+  @Test
+  void shouldReturnResumeCursorMatchingEntryWhereVisitorStoppedAndResumeFromIt() {
+    // given — 4 pending refs across 2 stores, so the resume point is unambiguous
+    state.addPendingSecretReference("store-a", "ref-1");
+    state.addPendingSecretReference("store-a", "ref-2");
+    state.addPendingSecretReference("store-b", "ref-3");
+    state.addPendingSecretReference("store-b", "ref-4");
+
+    // when — stop after the second entry
+    final var firstPass = new ArrayList<String>();
+    final var cursor =
+        state.visitPendingSecretReferences(
+            null,
+            (storeId, secretRef) -> {
+              firstPass.add(storeId + ":" + secretRef);
+              return firstPass.size() < 2;
+            });
+
+    // then — the returned cursor identifies the entry the visitor stopped at
+    assertThat(firstPass).containsExactly("store-a:ref-1", "store-a:ref-2");
+    assertThat(cursor).isEqualTo(new SecretReferenceState.PendingRefCursor("store-a", "ref-2"));
+
+    // when — resuming from that cursor
+    final var secondPass = new ArrayList<String>();
+    final var secondCursor =
+        state.visitPendingSecretReferences(
+            cursor,
+            (storeId, secretRef) -> {
+              secondPass.add(storeId + ":" + secretRef);
+              return true;
+            });
+
+    // then — resumption is inclusive of the cursor entry and visits the remainder in order
+    assertThat(secondPass).containsExactly("store-a:ref-2", "store-b:ref-3", "store-b:ref-4");
+    assertThat(secondCursor).isNull();
   }
 
   @Test
