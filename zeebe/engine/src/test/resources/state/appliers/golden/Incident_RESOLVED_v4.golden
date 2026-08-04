@@ -58,8 +58,8 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
       return; // not a job-related incident
     }
     if (value.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR) {
-      // the job was parked when the incident was raised, so it is reactivated instead of taking the
-      // FAILED/ERROR_THROWN path below; job state reactivates it only if it is still waiting
+      // job state reactivates the job only if it is still parked, so a job that this error type was
+      // raised for without parking it (a failed secret value injection) is left alone
       jobState.makeActivatableAfterSecretResolution(jobKey);
       return;
     }

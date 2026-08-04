@@ -23,8 +23,11 @@ while leaving its job state at `ACTIVATABLE`. The waiting condition therefore ex
 absence of an index entry, which has three consequences:
 
 - `DbJobState.updateJobPriority` re-inserts a job into the activatable index when its state is
-  `ACTIVATABLE`, so an `UpdateJob` command that changes the priority of a parked job un-parks it.
-  The job is then handed out with unresolved placeholders in its variables.
+  `ACTIVATABLE`, so an `UpdateJob` command that changes the priority of a parked job un-parks it. The
+  job is then collected by every following activation, which skips it again for its still-uncached
+  reference, requests the resolution a second time and parks it again. Each of those skips also
+  consumes one of the activation's skip budget (`MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION`),
+  so an un-parked job can truncate batches for the jobs behind it.
 - The reactivation path (`MutableJobState.makeActivatableAfterSecretResolution`) can only document
   its precondition ("call this on a parked job") in Javadoc. Nothing in the state can be checked, so
   a caller that reactivates an already-reactivated job silently upserts an index entry instead of
@@ -49,6 +52,7 @@ WAITING_FOR_SECRET_RESOLUTION((byte) 5)
 |              From               |               To                |                                       Written by                                       |
 |---------------------------------|---------------------------------|----------------------------------------------------------------------------------------|
 | `ACTIVATABLE`                   | `WAITING_FOR_SECRET_RESOLUTION` | `SecretReferenceResolutionRequestedApplier` (parking, together with the index removal) |
+| `WAITING_FOR_SECRET_RESOLUTION` | `WAITING_FOR_SECRET_RESOLUTION` | the same applier, for a job that waits on a second reference of the same activation    |
 | `WAITING_FOR_SECRET_RESOLUTION` | `ACTIVATABLE`                   | `SecretReferenceBatchJobsReactivatedApplier` (all references resolved)                 |
 | `WAITING_FOR_SECRET_RESOLUTION` | `ACTIVATABLE`                   | `IncidentResolvedV4Applier` (a `SECRET_RESOLUTION_ERROR` incident is resolved)         |
 | `WAITING_FOR_SECRET_RESOLUTION` | (job deleted)                   | `JobCanceledV4Applier`, when the element instance or process instance is terminated    |
@@ -56,11 +60,16 @@ WAITING_FOR_SECRET_RESOLUTION((byte) 5)
 Parking is the only writer of the new state, and reactivation is its only exit besides deletion. A
 job is never activated, failed, or completed out of it.
 
-### The reactivation precondition is enforced by the state, not documented
+### Both ends of the transition are enforced by the state, not documented
 
-`makeActivatableAfterSecretResolution` acts only on a job in `WAITING_FOR_SECRET_RESOLUTION` and
-returns silently otherwise. This replaces both the Javadoc precondition and the caller-side state
-check in `IncidentResolvedV4Applier`.
+Job state owns the pair: `parkForSecretResolution` acts only on a job that is up for activation, and
+`makeActivatableAfterSecretResolution` acts only on a job in `WAITING_FOR_SECRET_RESOLUTION`. Each
+returns silently otherwise. The reactivation guard replaces both the Javadoc precondition and the
+caller-side state check in `IncidentResolvedV4Applier`.
+
+The error type alone does not mean a job is parked: `SECRET_RESOLUTION_ERROR` is also the incident of
+a job whose secret value injection failed, which stays activatable. The guard is what makes the
+applier's unconditional call correct for both.
 
 The guard is a silent skip rather than an exception because a job can legitimately be reactivated
 twice. A job waiting on two references A and B, both of which resolve, is reactivated by the
@@ -77,7 +86,8 @@ parked job, so the state alone cannot express it.
 
 |                     Command                     |                           On a parked job                           |
 |-------------------------------------------------|---------------------------------------------------------------------|
-| `CompleteJob`, `FailJob`, `ThrowError`, `Yield` | rejected, `INVALID_STATE`, naming the state in the rejection reason |
+| `CompleteJob`, `FailJob`, `ThrowError`          | rejected, `INVALID_STATE`, naming the state in the rejection reason |
+| `Yield`                                         | rejected, `INVALID_STATE` (unchanged, it needs `ACTIVATED`)         |
 | `UpdateJob` (retries, priority)                 | accepted                                                            |
 | `UpdateJob` (timeout)                           | rejected, the job has no deadline while parked (unchanged)          |
 | `CancelJob`, process instance termination       | accepted, the job is deleted                                        |
@@ -106,13 +116,9 @@ An older broker reading state written by a newer one would fail on `Enum.valueOf
 follows the general no-downgrade rule for 8.10 state. Reading older state is unaffected: no existing
 entry carries the new name.
 
-The two pieces of applier logic that change (`SecretReferenceResolutionRequestedApplier` and the
-`SECRET_RESOLUTION_ERROR` branch of `IncidentResolvedV4Applier`) are updated in place, with their
-golden files regenerated, instead of being registered as new versions. Both were merged after the
-`8.10.0-alpha4` candidates were branched: the parking applier is contained in no release tag at all,
-and the incident branch was added to `IncidentResolvedV4Applier` (whose other branches did ship in
-those candidates) after that branch point. No released build ever applied either of them, so no
-cluster can have replayed them.
+The applier logic this changes is updated in place, with the golden files regenerated, instead of
+being registered as new versions: the whole secret resolution flow is 8.10 development that no minor
+release has shipped yet, so there is no released replay behaviour to preserve.
 
 ## Alternatives considered
 
