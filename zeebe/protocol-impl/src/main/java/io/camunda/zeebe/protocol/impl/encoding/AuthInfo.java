@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -123,7 +124,12 @@ public class AuthInfo extends UnpackedObject {
     return getEncodedLength();
   }
 
-  /** Marks this instance as frozen. A frozen AuthInfo rejects mutation and caches decoded maps. */
+  /**
+   * Marks this instance as frozen. A frozen AuthInfo rejects mutation and caches decoded maps.
+   *
+   * <p>Only freeze an instance that owns its underlying buffer: frozen instances are shared by
+   * reference, so freezing a view over foreign memory lets it outlive that memory.
+   */
   public AuthInfo freeze() {
     frozen = true;
     return this;
@@ -159,7 +165,10 @@ public class AuthInfo extends UnpackedObject {
       result = getClaims();
     }
     if (frozen) {
-      cachedDecodedMap = result;
+      // a frozen instance is shared by reference, so the cached map must not be mutable by any
+      // single holder
+      cachedDecodedMap = Collections.unmodifiableMap(result);
+      return cachedDecodedMap;
     }
     return result;
   }
@@ -186,7 +195,9 @@ public class AuthInfo extends UnpackedObject {
     if (claims == null || claims.isEmpty()) {
       return empty();
     }
-    return new AuthInfo().setClaims(Map.copyOf(claims)).freeze();
+    // no defensive copy of the map: setClaims encodes it to msgpack right away, which already
+    // snapshots it. Map.copyOf would also reject null claim values, which msgpack encodes as nil.
+    return new AuthInfo().setClaims(claims).freeze();
   }
 
   public boolean hasAnyClaims() {

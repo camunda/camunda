@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -178,6 +179,17 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldAcceptNullClaimValueInOfClaims() {
+      // claims decoded from msgpack can carry a nil value, which becomes a Java null
+      final Map<String, Object> claims = new HashMap<>();
+      claims.put("user", null);
+
+      final AuthInfo result = AuthInfo.ofClaims(claims);
+
+      assertThat(result.getClaims()).containsEntry("user", null);
+    }
+
+    @Test
     void shouldReturnFrozenAuthInfoWithClaims() {
       final Map<String, Object> claims = Map.of("user", "admin", "role", "operator");
 
@@ -314,6 +326,19 @@ final class AuthInfoTest {
 
       assertThat(first).isNotSameAs(second);
       assertThat(first).isEqualTo(second);
+    }
+
+    @Test
+    void shouldRejectMutationOfCachedDecodedMap() {
+      final AuthInfo authInfo = new AuthInfo();
+      authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+      authInfo.setClaims(Map.of("key", "value"));
+      authInfo.freeze();
+
+      final var claims = authInfo.toDecodedMap();
+
+      assertThatThrownBy(() -> claims.put("key", "other"))
+          .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
