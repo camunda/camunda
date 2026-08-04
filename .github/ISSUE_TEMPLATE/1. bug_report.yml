@@ -83,6 +83,7 @@ body:
         - <!-- Chaos Days+ -->
         - <!-- Game Day+ -->
         - <!-- QA Automation Found+ -->
+        - <!-- Manual Testing+ -->
       default: 0
     validations:
       required: false
