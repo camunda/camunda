@@ -12,6 +12,7 @@ import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
 import io.atomix.utils.net.Address;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -269,6 +270,32 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       heartbeatRequestEncoder.wrapAndApplyHeader(heartbeatRequestBuffer, 0, messageHeaderEncoder);
       heartbeatRequestEncoder.sentAt(System.currentTimeMillis());
       return heartbeatRequestBuffer.byteArray();
+    }
+  }
+
+  /**
+   * Compatibility handler for an 8.7 server sharing a connection with an 8.8 client during a
+   * rolling upgrade.
+   *
+   * <p>Before heartbeats became client-initiated, the TCP server sent unsolicited heartbeats as a
+   * {@link ProtocolRequest}. An 8.8 client connected to such a legacy server never installs a
+   * {@link Server} handler and expects only {@link ProtocolReply} messages, so the request would
+   * otherwise reach the {@code MessageDispatcher} and fail with a {@code ClassCastException}.
+   *
+   * <p>This handler consumes the legacy heartbeat without replying. An 8.7 server doesn't expect
+   * any reply for heartbeats, and would error if it received one.
+   */
+  static final class LegacyServerHeartbeatHandler extends ChannelInboundHandlerAdapter {
+
+    @Override
+    public void channelRead(final ChannelHandlerContext context, final Object message) {
+      if (message instanceof final ProtocolRequest request
+          && HEARTBEAT_SUBJECT.equals(request.subject())) {
+        ReferenceCountUtil.release(message);
+        return;
+      }
+
+      context.fireChannelRead(message);
     }
   }
 }

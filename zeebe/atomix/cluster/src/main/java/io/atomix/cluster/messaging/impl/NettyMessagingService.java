@@ -1162,6 +1162,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
           protocolVersion,
           context.channel().remoteAddress());
       super.activateProtocolVersion(context, connection, protocolVersion, isClient);
+      // Installed unconditionally, before heartbeat setup negotiation, so a legacy (pre-8.8)
+      // server's unsolicited heartbeat request is recognized even if negotiation hasn't completed
+      // yet, or never will because the legacy peer doesn't understand it.
+      context
+          .pipeline()
+          .addBefore(
+              MESSAGE_DISPATCHER_NAME,
+              "legacy-server-heartbeat",
+              new HeartbeatHandler.LegacyServerHeartbeatHandler());
       if (heartbeatsEnabled) {
         context
             .pipeline()
