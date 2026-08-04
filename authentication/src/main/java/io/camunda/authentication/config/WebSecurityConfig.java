@@ -11,18 +11,13 @@ import io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfigura
 import io.camunda.authentication.clusteradmin.ClusterAdminConverterConfiguration;
 import io.camunda.authentication.clusteradmin.ClusterAdminOidcSecurityConfiguration;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
-import io.camunda.authentication.config.spi.AuthorizationRepositoryAdapter;
 import io.camunda.authentication.config.spi.BasicAuthUserDetailsAdapter;
-import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter;
 import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.authentication.pt.PhysicalTenantSecurityConfiguration;
-import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
-import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.core.port.out.BasicAuthUserDetailsPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
@@ -31,14 +26,12 @@ import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
 import io.camunda.service.registry.ServiceRegistry;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.observation.SecurityObservationSettings;
@@ -114,48 +107,6 @@ public class WebSecurityConfig {
   @ConditionalOnMissingBean(BasicAuthUserDetailsPort.class)
   public BasicAuthUserDetailsPort basicAuthUserDetailsPort(final ServiceRegistry serviceRegistry) {
     return new BasicAuthUserDetailsAdapter(serviceRegistry);
-  }
-
-  /**
-   * Host {@link AuthorizationRepositoryPort} backed by the per-physical-tenant authorization
-   * readers. Only registered when secondary storage is enabled — without it there is no live
-   * authorization data to consult and CSL's webapp authorization filter has nothing meaningful to
-   * enforce.
-   *
-   * <p>The adapter selects the reader for the in-context physical tenant on each lookup from {@link
-   * PhysicalTenantSearchClientReaders}, the same per-tenant readers wrapper the data plane
-   * consumes.
-   */
-  @Bean
-  @ConditionalOnSecondaryStorageEnabled
-  @ConditionalOnMissingBean(AuthorizationRepositoryPort.class)
-  public AuthorizationRepositoryPort authorizationRepositoryPort(
-      @Lazy final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
-    return new AuthorizationRepositoryAdapter(physicalTenantSearchClientReaders);
-  }
-
-  /**
-   * Host {@link ResourcePermissionPort} that wraps CSL's {@code ResourcePermissionService} and adds
-   * a single OC-specific carve-out: a grant on the legacy {@code identity} component is treated as
-   * access to the {@code admin} webapp. Wildcard matching, exact-id matching, and every
-   * non-COMPONENT check pass straight through to CSL. Drop this bean (and the adapter) when the
-   * legacy alias is retired.
-   *
-   * <p>Gated on secondary storage being enabled because the wrapped service needs an {@link
-   * AuthorizationRepositoryPort} backed by live authorization data. Without secondary storage CSL's
-   * webapp authorization filter has nothing to enforce and skips itself anyway.
-   *
-   * <p>The {@code authorizations.enabled} flag is forwarded to the wrapped service so it grants all
-   * when authorization is disabled, consistent with CSL's default and the data plane.
-   */
-  @Bean
-  @ConditionalOnSecondaryStorageEnabled
-  @ConditionalOnMissingBean(ResourcePermissionPort.class)
-  public ResourcePermissionPort resourcePermissionPort(
-      final AuthorizationRepositoryPort authorizationRepository,
-      final CamundaSecurityLibraryProperties securityProperties) {
-    return new IdentityToAdminComponentAliasAdapter(
-        authorizationRepository, securityProperties.getAuthorizations().isEnabled());
   }
 
   /** Wires OC's RFC 9728 protected-resource-metadata customiser onto the OIDC chains. */

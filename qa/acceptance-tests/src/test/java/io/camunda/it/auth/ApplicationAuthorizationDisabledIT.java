@@ -41,14 +41,15 @@ import org.junit.jupiter.params.provider.ValueSource;
  * enabled.
  *
  * <p>Runs as a {@link MultiDbTest} even though no authorization records are read when
- * authorizations are disabled. The webapp authorization filter under test is only wired when
- * secondary storage is enabled: the host {@code resourcePermissionPort} and {@code
- * authorizationRepositoryPort} beans are {@code @ConditionalOnSecondaryStorageEnabled}, and CSL's
- * {@code WebAppAuthorizationCheckFilter} is {@code @ConditionalOnBean(ResourcePermissionPort)}.
- * Without a real backend the filter would never be created and this test would pass for the wrong
- * reason (filter absent rather than correctly passing through), missing a future regression where
- * the filter is present but stops honouring the flag. A real backend wires the security chain
- * exactly as in production; {@code LOCAL} is the lightest such backend.
+ * authorizations are disabled. The host's {@code AuthorizationCheckPort} bean (and CSL's {@code
+ * WebAppAuthorizationCheckFilter}, which is {@code @ConditionalOnBean(AuthorizationCheckPort)}) is
+ * wired whenever an HTTP gateway is enabled, regardless of storage mode, so a real backend is not
+ * needed to materialise the filter. It is needed to exercise the actual physical-tenant-aware
+ * authorization check the same way production does; without it this test would pass for the wrong
+ * reason (a stub check that never consults real data rather than a real check that correctly passes
+ * through), missing a future regression where the check is present but stops honouring the flag. A
+ * real backend wires the security chain exactly as in production; {@code LOCAL} is the lightest
+ * such backend.
  *
  * <p>This test can only be run against RDBMS when all applications, such as Operate, are also
  * running on RDBMS.

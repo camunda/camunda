@@ -14,9 +14,11 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
+import io.camunda.security.api.model.authz.AuthorizationRejection;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.ResourceAccessProvider;
-import io.camunda.security.core.port.in.ResourcePermissionPort;
-import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
@@ -64,25 +66,35 @@ public class OidcFlowTestContext {
   }
 
   /**
-   * Permissive {@link ResourcePermissionPort} so CSL's webapp authorization filter does not deny
-   * access. Slice tests don't wire OC's authorization data store; without an override CSL's default
-   * {@code ResourcePermissionService} would resolve no permissions for the authenticated test
-   * principal and redirect every webapp request to {@code /<webapp>/forbidden}.
+   * Permissive {@link AuthorizationCheckPort} so CSL's webapp authorization filter does not deny
+   * access. Slice tests don't wire OC's authorization data store; without an override the host's
+   * production {@link AuthorizationCheckPort} would resolve no permissions for the authenticated
+   * test principal and redirect every webapp request to {@code /<webapp>/forbidden}.
    */
   @Bean
-  public ResourcePermissionPort resourcePermissionPort() {
-    return (authentication, resourceType, resourceId, permissionType) -> true;
-  }
+  public AuthorizationCheckPort authorizationCheckPort() {
+    return new AuthorizationCheckPort() {
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
 
-  /**
-   * Empty {@link AuthorizationRepositoryPort} so the host's {@code AuthorizationRepositoryAdapter}
-   * (gated on secondary storage being enabled, which is the slice-test default) backs off via
-   * {@code @ConditionalOnMissingBean} and doesn't try to autowire an {@code AuthorizationReader}
-   * the slice context doesn't pull in.
-   */
-  @Bean
-  public AuthorizationRepositoryPort authorizationRepositoryPort() {
-    return (authentication, resourceType) -> java.util.Set.of();
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final Map<String, Object> claims, final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
+
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization,
+          final T resource) {
+        return Either.right(null);
+      }
+    };
   }
 
   // CSL's default JsonProblemDetailAuthFailureHandler requires an ObjectMapper; slice tests don't

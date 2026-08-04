@@ -18,9 +18,11 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
+import io.camunda.security.api.model.authz.AuthorizationRejection;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.ResourceAccessProvider;
-import io.camunda.security.core.port.in.ResourcePermissionPort;
-import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -139,30 +141,36 @@ public class WebSecurityConfigTestContext {
   }
 
   /**
-   * Empty {@link AuthorizationRepositoryPort} so {@link WebSecurityConfig} wires the {@code
-   * WebAppAuthorizationCheckFilter} into the webapp chain (its own filter bean is gated on {@link
-   * ResourcePermissionPort}, which the host config builds from this repository port). Tests rely on
-   * the filter calling {@link CamundaAuthenticationProvider#getCamundaAuthentication()} so the
-   * host's {@code HttpSessionBasedAuthenticationHolder} initialises the session-level refresh
-   * attribute.
-   */
-  @Bean
-  public AuthorizationRepositoryPort createAuthorizationRepositoryPort() {
-    return (authentication, resourceType) -> java.util.Set.of();
-  }
-
-  /**
-   * Test-scoped {@link ResourcePermissionPort} that answers {@code true} unconditionally so the
-   * filter passes through after {@link CamundaAuthenticationProvider#getCamundaAuthentication()}
-   * has fired the {@code HttpSessionBasedAuthenticationHolder.set(...)} call that initialises the
-   * session-level refresh attribute the {@code SessionAuthenticationRefreshTest} suite asserts on.
-   * Overrides the host {@code ResourcePermissionService} (which is annotated
-   * {@code @ConditionalOnMissingBean(ResourcePermissionPort.class)}). Tests that need a real
+   * Permissive {@link AuthorizationCheckPort} so the filter passes through after {@link
+   * CamundaAuthenticationProvider#getCamundaAuthentication()} has fired the {@code
+   * HttpSessionBasedAuthenticationHolder.set(...)} call that initialises the session-level refresh
+   * attribute the {@code SessionAuthenticationRefreshTest} suite asserts on. Tests that need a real
    * authorization decision should override this bean.
    */
   @Bean
-  public ResourcePermissionPort resourcePermissionPort() {
-    return (authentication, resourceType, resourceId, permissionType) -> true;
+  public AuthorizationCheckPort authorizationCheckPort() {
+    return new AuthorizationCheckPort() {
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
+
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final Map<String, Object> claims, final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
+
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization,
+          final T resource) {
+        return Either.right(null);
+      }
+    };
   }
 
   /**
