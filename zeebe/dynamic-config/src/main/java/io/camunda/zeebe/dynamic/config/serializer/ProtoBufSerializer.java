@@ -1667,22 +1667,40 @@ public class ProtoBufSerializer
         .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
         .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
 
+    final var response = clusterConfigurationChangeResponse.response();
+    if (response != null) {
+      builder
+          .setCurrentConfiguration(
+              encodeCurrentClusterConfigurationProto(response.currentConfiguration()))
+          .setExpectedConfiguration(
+              encodeCurrentClusterConfigurationProto(response.expectedConfiguration()));
+    }
+
     return builder;
   }
 
   public ClusterConfigurationChangeResponse decodeTopologyChangeResponse(
       final Requests.TopologyChangeResponse topologyChangeResponse) {
-    return new ClusterConfigurationChangeResponse(
-        topologyChangeResponse.getChangeId(),
+    final var legacyResponse =
         new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
             decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
             decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
             topologyChangeResponse.getPlannedChangesList().stream()
                 .map(this::decodeOperation)
-                .toList()),
-        // The new multi-partition-group configuration is not yet carried over the wire; wired up
-        // in a follow-up change to TopologyChangeResponse.
-        null);
+                .toList());
+
+    final var response =
+        topologyChangeResponse.hasCurrentConfiguration()
+                && topologyChangeResponse.hasExpectedConfiguration()
+            ? new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
+                decodeCurrentClusterConfiguration(
+                    topologyChangeResponse.getExpectedConfiguration()),
+                legacyResponse.plannedChanges())
+            : null;
+
+    return new ClusterConfigurationChangeResponse(
+        topologyChangeResponse.getChangeId(), legacyResponse, response);
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {
