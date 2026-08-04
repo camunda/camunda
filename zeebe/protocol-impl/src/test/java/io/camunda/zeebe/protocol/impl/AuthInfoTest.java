@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -376,9 +377,7 @@ final class AuthInfoTest {
       final int length = authInfo.getLength();
       final var buffer = new UnsafeBuffer(new byte[length]);
       final int written = authInfo.write(buffer, 0);
-      final var bb = authInfo.toDirectBuffer();
 
-      assertThat(bb.capacity()).isEqualTo(length);
       assertThat(written).isEqualTo(length);
     }
 
@@ -424,7 +423,7 @@ final class AuthInfoTest {
       final var regular = new AuthInfo();
 
       assertThat(empty.getLength()).isEqualTo(regular.getLength());
-      assertThat(empty.toDirectBuffer()).isEqualTo(regular.toDirectBuffer());
+      assertThat(BufferUtil.createCopy(empty)).isEqualTo(BufferUtil.createCopy(regular));
     }
 
     @Test

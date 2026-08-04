@@ -247,9 +247,17 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .valueType(valueType)
         .intent(intent.value())
         .channelType(channelType)
-        .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength())
-        .putToolName(toolName, 0, toolName.capacity());
+        .putValue(value, 0, value.capacity());
+
+    // breaks the chain: variable-length fields must be written in schema order, and the encoder
+    // itself is needed to serialize the authorization in place
+    BufferUtil.writeLengthPrefixed(
+        authorization,
+        bodyEncoder,
+        ExecuteCommandRequestEncoder.authorizationHeaderLength(),
+        ExecuteCommandRequestEncoder.BYTE_ORDER);
+
+    bodyEncoder.putToolName(toolName, 0, toolName.capacity());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
