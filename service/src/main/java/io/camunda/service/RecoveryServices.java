@@ -27,7 +27,9 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -35,6 +37,8 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
 
   private static final List<RequiredAuthorization<Object>> MODE_CHANGE_AUTHORIZATIONS =
       List.of(BACKUP_RESTORE_AUTHORIZATION, SYSTEM_UPDATE_AUTHORIZATION);
+  private static final List<RequiredAuthorization<Object>> RESTORE_AUTHORIZATIONS =
+      List.of(BACKUP_RESTORE_AUTHORIZATION);
 
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   private final AuthorizationChecker authorizationChecker;
@@ -62,37 +66,42 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> changeMode(
       final Mode mode, final boolean dryRun, final CamundaAuthentication authentication) {
-    final var missingAuthorizations =
-        MODE_CHANGE_AUTHORIZATIONS.stream()
-            .takeWhile(authorization -> !hasPermission(authorization, authentication))
-            .toList();
-    if (missingAuthorizations.size() == MODE_CHANGE_AUTHORIZATIONS.size()) {
-      return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(missingAuthorizations));
-    }
-
-    return clusterConfigurationRequestSender.modeChange(
-        new ModeChangeRequest(getPhysicalTenantId(), mode, dryRun));
+    return withAnyPermission(
+        MODE_CHANGE_AUTHORIZATIONS,
+        authentication,
+        () ->
+            clusterConfigurationRequestSender.modeChange(
+                new ModeChangeRequest(getPhysicalTenantId(), mode, dryRun)));
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(
       final RestoreRequest restoreRequest, final CamundaAuthentication authentication) {
-    if (missingPermission(BACKUP_RESTORE_AUTHORIZATION, authentication)) {
-      return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION));
-    }
-
-    return clusterConfigurationRequestSender.restore(restoreRequest);
+    return withAnyPermission(
+        RESTORE_AUTHORIZATIONS,
+        authentication,
+        () -> clusterConfigurationRequestSender.restore(restoreRequest));
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> restoreStatus(
       final CamundaAuthentication authentication) {
-    if (missingPermission(BACKUP_RESTORE_AUTHORIZATION, authentication)) {
+    return withAnyPermission(
+        RESTORE_AUTHORIZATIONS, authentication, clusterConfigurationRequestSender::getTopology);
+  }
+
+  private <T> CompletableFuture<T> withAnyPermission(
+      final List<RequiredAuthorization<Object>> requiredAuthorizations,
+      final CamundaAuthentication authentication,
+      final Supplier<CompletableFuture<T>> operation) {
+    final var missingAuthorizations =
+        requiredAuthorizations.stream()
+            .filter(authorization -> !hasPermission(authorization, authentication))
+            .toList();
+    if (missingAuthorizations.size() == requiredAuthorizations.size()) {
       return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION));
+          ErrorMapper.createForbiddenException(missingAuthorizations));
     }
 
-    return clusterConfigurationRequestSender.getTopology();
+    return operation.get();
   }
 
   private boolean hasPermission(

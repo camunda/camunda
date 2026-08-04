@@ -50,9 +50,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class RecoveryServicesTest {
 
   private static final String PHYSICAL_TENANT_ID = "testtenant";
-  private static final String FORBIDDEN_MESSAGE =
+  private static final String MODE_CHANGE_FORBIDDEN_MESSAGE =
       "Unauthorized to perform any of the operations: "
           + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
+  private static final String RESTORE_FORBIDDEN_MESSAGE =
+      "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'";
 
   private RecoveryServices services;
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender =
@@ -145,7 +147,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -158,7 +160,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -179,7 +181,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -254,7 +256,7 @@ public class RecoveryServicesTest {
     final var future = services.restore(restoreRequest(), authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).restore(any());
   }
 
@@ -268,7 +270,7 @@ public class RecoveryServicesTest {
     final var future = services.restore(restoreRequest(), authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).restore(any());
   }
 
@@ -344,7 +346,7 @@ public class RecoveryServicesTest {
     final var future = services.restoreStatus(authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).getTopology();
   }
 
@@ -358,7 +360,7 @@ public class RecoveryServicesTest {
     final var future = services.restoreStatus(authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).getTopology();
   }
 
@@ -412,7 +414,8 @@ public class RecoveryServicesTest {
                     new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
   }
 
-  private static void assertForbidden(final CompletableFuture<?> future) {
+  private static void assertForbidden(
+      final CompletableFuture<?> future, final String expectedMessage) {
     assertThat(future)
         .failsWithin(ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
@@ -421,7 +424,7 @@ public class RecoveryServicesTest {
         .satisfies(
             exception -> {
               assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-              assertThat(exception.getMessage()).isEqualTo(FORBIDDEN_MESSAGE);
+              assertThat(exception.getMessage()).isEqualTo(expectedMessage);
             });
   }
 }

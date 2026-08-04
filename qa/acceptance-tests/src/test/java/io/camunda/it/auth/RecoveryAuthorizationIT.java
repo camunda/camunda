@@ -76,9 +76,11 @@ class RecoveryAuthorizationIT {
   private static final String RESTORE_PATH = "v2/restore";
   private static final String RESTORE_BODY = "{\"backupIds\": [1]}";
 
-  private static final String FORBIDDEN_DETAIL =
+  private static final String MODE_CHANGE_FORBIDDEN_DETAIL =
       "Unauthorized to perform any of the operations: "
           + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
+  private static final String RESTORE_FORBIDDEN_DETAIL =
+      "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'";
 
   @Test
   void shouldRejectUnauthenticatedRequest(
@@ -98,7 +100,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
-    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
+    assertThat(response.body()).contains(MODE_CHANGE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -110,7 +112,7 @@ class RecoveryAuthorizationIT {
     // then it is forbidden: a grant on the BACKUP resource type only reaches the mode change when
     // it is the RESTORE permission
     assertThat(response.statusCode()).isEqualTo(403);
-    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
+    assertThat(response.body()).contains(MODE_CHANGE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -162,6 +164,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -171,8 +174,9 @@ class RecoveryAuthorizationIT {
     final var response = restore(client, SYSTEM_UPDATE_USER);
 
     // then it is forbidden: being allowed to change the cluster mode must not imply being allowed
-    // to consume a backup
+    // to consume a backup, and the error names the permission that is actually required
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -194,6 +198,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -204,6 +209,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
   }
 
   @Test

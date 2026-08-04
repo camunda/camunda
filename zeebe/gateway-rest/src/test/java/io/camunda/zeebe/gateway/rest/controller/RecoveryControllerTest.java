@@ -174,9 +174,7 @@ public class RecoveryControllerTest extends RestControllerTest {
     Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new ServiceException(
-                    "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
-                    ServiceException.Status.FORBIDDEN)));
+                ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION)));
 
     // when / then
     webClient
@@ -186,7 +184,18 @@ public class RecoveryControllerTest extends RestControllerTest {
         .bodyValue("{\"backupIds\": [100]}")
         .exchange()
         .expectStatus()
-        .isForbidden();
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 403,
+              "title": "FORBIDDEN",
+              "detail": "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
+              "instance": "/v2/restore"
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -252,12 +261,26 @@ public class RecoveryControllerTest extends RestControllerTest {
     Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new ServiceException(
-                    "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
-                    ServiceException.Status.FORBIDDEN)));
+                ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION)));
 
     // when / then
-    webClient.get().uri("/v2/restore").exchange().expectStatus().isForbidden();
+    webClient
+        .get()
+        .uri("/v2/restore")
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 403,
+              "title": "FORBIDDEN",
+              "detail": "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
+              "instance": "/v2/restore"
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
