@@ -14,6 +14,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import io.camunda.document.store.DocumentStorePaths;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 
@@ -41,7 +42,7 @@ public class LocalStorageDocumentStoreProvider implements DocumentStoreProvider 
     }
 
     try {
-      return Path.of(pathString);
+      return DocumentStorePaths.storageDirectory(pathString);
     } catch (final Exception e) {
       throw new IllegalArgumentException(
           "Failed to configure document store with id '"

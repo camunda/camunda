@@ -10,6 +10,7 @@ package io.camunda.document.store.aws;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import io.camunda.document.store.DocumentStorePaths;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
@@ -78,7 +79,8 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   private static String getBucketPath(final DocumentStoreConfigurationRecord configuration) {
-    String bucketPath = Objects.requireNonNullElse(configuration.properties().get(BUCKET_PATH), "");
+    final String bucketPath =
+        Objects.requireNonNullElse(configuration.properties().get(BUCKET_PATH), "");
 
     if (INVALID_CHARACTERS.matcher(bucketPath).find()) {
       throw new IllegalArgumentException(
@@ -89,11 +91,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
               + " is invalid. Must not contain \\ character'");
     }
 
-    if (!bucketPath.isEmpty() && !bucketPath.endsWith("/")) {
-      bucketPath = bucketPath + "/";
-    }
-
-    return bucketPath;
+    return DocumentStorePaths.keyPrefix(bucketPath);
   }
 
   private static URI getEndpoint(final DocumentStoreConfigurationRecord configuration) {

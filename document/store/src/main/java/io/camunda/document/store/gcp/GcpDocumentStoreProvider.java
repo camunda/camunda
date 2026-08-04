@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 public class GcpDocumentStoreProvider implements DocumentStoreProvider {
 
@@ -25,6 +26,14 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
   private static final String PREFIX_PROPERTY = "PREFIX";
 
   private static final String DEFAULT_PREFIX = "temp/";
+
+  /**
+   * The prefix this provider prepends to a document id, used verbatim — unlike AWS and Azure it
+   * gains no trailing separator, so {@code "tenant"} and {@code "tenant-b-"} share a key space.
+   */
+  public static String effectivePrefix(final @Nullable String configuredPrefix) {
+    return configuredPrefix == null ? DEFAULT_PREFIX : configuredPrefix;
+  }
 
   @Override
   public DocumentStore createDocumentStore(
@@ -64,7 +73,6 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   private String getPrefixProperty(final DocumentStoreConfigurationRecord configuration) {
-    return Optional.ofNullable(configuration.properties().get(PREFIX_PROPERTY))
-        .orElse(DEFAULT_PREFIX);
+    return effectivePrefix(configuration.properties().get(PREFIX_PROPERTY));
   }
 }

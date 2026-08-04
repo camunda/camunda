@@ -10,6 +10,7 @@ package io.camunda.document.store.azure;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import io.camunda.document.store.DocumentStorePaths;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -64,7 +65,7 @@ public class AzureBlobDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   private static String getContainerPath(final DocumentStoreConfigurationRecord configuration) {
-    String containerPath =
+    final String containerPath =
         Objects.requireNonNullElse(configuration.properties().get(CONTAINER_PATH), "");
 
     if (INVALID_CHARACTERS.matcher(containerPath).find()) {
@@ -76,10 +77,6 @@ public class AzureBlobDocumentStoreProvider implements DocumentStoreProvider {
               + " is invalid. Must not contain \\ character'");
     }
 
-    if (!containerPath.isEmpty() && !containerPath.endsWith("/")) {
-      containerPath = containerPath + "/";
-    }
-
-    return containerPath;
+    return DocumentStorePaths.keyPrefix(containerPath);
   }
 }
