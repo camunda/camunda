@@ -41,10 +41,7 @@ public class AwsDocumentStoreProviderTest {
                       eq(bucketTtl),
                       eq(""),
                       any(),
-                      eq((URI) null),
-                      eq((Boolean) null),
-                      eq((Boolean) null),
-                      eq((Boolean) null)))
+                      eq(AwsClientOptions.sdkDefaults())))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -140,20 +137,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<URI> endpointCaptor = ArgumentCaptor.forClass(URI.class);
-      final ArgumentCaptor<Boolean> pathStyleCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(),
-                      any(),
-                      any(),
-                      any(),
-                      endpointCaptor.capture(),
-                      pathStyleCaptor.capture(),
-                      any(),
-                      any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -167,8 +157,9 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(endpointCaptor.getValue()).isEqualTo(URI.create("http://minio.local:9000"));
-      assertThat(pathStyleCaptor.getValue()).isNull();
+      assertThat(optionsCaptor.getValue().endpointOverride())
+          .isEqualTo(URI.create("http://minio.local:9000"));
+      assertThat(optionsCaptor.getValue().forcePathStyle()).isNull();
     }
   }
 
@@ -177,12 +168,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<Boolean> pathStyleCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), pathStyleCaptor.capture(), any(), any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -197,7 +189,7 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(pathStyleCaptor.getValue()).isFalse();
+      assertThat(optionsCaptor.getValue().forcePathStyle()).isFalse();
     }
   }
 
@@ -230,12 +222,13 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
-      final ArgumentCaptor<Boolean> chunkedCaptor = ArgumentCaptor.forClass(Boolean.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
       mockedFactory
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), any(), chunkedCaptor.capture(), any()))
+                      any(), any(), any(), any(), optionsCaptor.capture()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -250,7 +243,7 @@ public class AwsDocumentStoreProviderTest {
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(chunkedCaptor.getValue()).isFalse();
+      assertThat(optionsCaptor.getValue().chunkedEncodingEnabled()).isFalse();
     }
   }
 }
