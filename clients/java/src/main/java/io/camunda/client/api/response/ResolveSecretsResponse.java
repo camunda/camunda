@@ -17,6 +17,7 @@ package io.camunda.client.api.response;
 
 import io.camunda.client.api.search.enums.SecretErrorCode;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The per-reference outcome of a resolve secrets command.
@@ -42,6 +43,21 @@ public interface ResolveSecretsResponse {
    * @return the references that could not be resolved, never null, unmodifiable
    */
   List<ResolutionError> getErrors();
+
+  /**
+   * Looks up a single resolved value by reference, so that a caller does not have to scan {@link
+   * #getResolved()} itself. A map is deliberately not exposed instead, since {@code Map.toString()}
+   * would print every value and undo the masking {@link ResolvedSecret} carries.
+   *
+   * @param reference the requested secret reference
+   * @return the resolved value, or empty if the reference was not resolved
+   */
+  default Optional<String> getValue(final String reference) {
+    return getResolved().stream()
+        .filter(resolved -> resolved.getReference().equals(reference))
+        .map(ResolvedSecret::getValue)
+        .findFirst();
+  }
 
   /** A reference that was resolved, together with its value. */
   interface ResolvedSecret {

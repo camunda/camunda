@@ -14,28 +14,41 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.SecretErrorCode;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 /**
  * Covers the secret client commands against a real gateway: the wire format, the transport and the
- * per-reference outcome mapping. It does not cover real secret resolution, because the backend is
- * mocked in phase 1 and only resolves an explicit allow-list (see {@code
- * SecretServices#MOCK_RESOLVABLE_REFERENCES}). Authorization enforcement is covered separately by
- * {@code SecretAuthorizationIT}.
+ * per-reference outcome mapping, resolved from a real file-based secret store (#58497).
+ * Authorization enforcement is covered separately by {@code SecretAuthorizationIT}.
  */
 @MultiDbTest
 public class SecretCommandIT {
 
-  // Resolvable by the mocked backend, mirroring SecretServices#MOCK_RESOLVABLE_REFERENCES. That
-  // constant is private, so the allow-list is repeated here; changing it fails these tests.
+  private static final String TOKEN_VALUE = "token-file-value";
+
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withFileBasedSecretStore(
+              directory -> {
+                Files.writeString(directory.resolve("token"), TOKEN_VALUE, StandardCharsets.UTF_8);
+                Files.writeString(directory.resolve("a"), "a-file-value", StandardCharsets.UTF_8);
+                Files.writeString(directory.resolve("b"), "b-file-value", StandardCharsets.UTF_8);
+              });
+
+  // Held by the store (one file per secret, the file name being the bare secret name).
   private static final String KNOWN_REFERENCE = "camunda.secrets.token";
 
   private static final List<String> ALL_KNOWN_REFERENCES =
       List.of(KNOWN_REFERENCE, "camunda.secrets.a", "camunda.secrets.b");
 
-  // Valid but not part of the mocked allow-list, so it resolves to NOT_FOUND.
+  // Valid but no file of that name exists in the store, so it resolves to NOT_FOUND.
   private static final String UNKNOWN_REFERENCE = "camunda.secrets.doesnotexist";
 
   /**
@@ -60,7 +73,7 @@ public class SecretCommandIT {
     assertThat(response.getErrors()).isEmpty();
     assertThat(response.getResolved()).hasSize(1);
     assertThat(response.getResolved().get(0).getReference()).isEqualTo(KNOWN_REFERENCE);
-    assertThat(response.getResolved().get(0).getValue()).isNotBlank();
+    assertThat(response.getResolved().get(0).getValue()).isEqualTo(TOKEN_VALUE);
   }
 
   @Test
@@ -120,7 +133,7 @@ public class SecretCommandIT {
     // when
     final var response = camundaClient.newListSecretsCommand().send().join();
 
-    // then the references the mocked backend knows are returned, names only
+    // then the references the store knows are returned, names only
     assertThat(response.getReferences()).containsExactlyInAnyOrderElementsOf(ALL_KNOWN_REFERENCES);
   }
 }

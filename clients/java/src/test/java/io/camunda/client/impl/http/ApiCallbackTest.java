@@ -198,6 +198,34 @@ class ApiCallbackTest {
   }
 
   @Test
+  void shouldRedactResponseBodyWhenSensitiveAndServerReturnsErrorStatusWithAResponseBody()
+      throws Exception {
+    // given a sensitive command whose server sent a response body alongside an error status,
+    // which case ApiCallback treats as malformed since only a problem body is expected there
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            null,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES,
+            true);
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(500);
+    when(apiResponse.entity()).thenReturn(ApiEntity.of("super-secret-value"));
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    assertThat(response.isCompletedExceptionally()).isTrue();
+    final Throwable error =
+        org.assertj.core.api.Assertions.catchThrowable(response::get).getCause();
+    assertThat(error.getMessage()).doesNotContain("super-secret-value").contains("redacted");
+  }
+
+  @Test
   void shouldFailWithStatusCodeTransformerWhenRetryPredicateIsFalse() {
     // given
     when(successPredicate.test(400)).thenReturn(false);

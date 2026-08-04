@@ -61,6 +61,10 @@ final class PhysicalTenantRestPathTest {
                 .join());
   }
 
+  private static void sendResolveSecretsCommand(final CamundaClient client) {
+    send(() -> client.newResolveSecretsCommand().reference("secrets.some-secret").send().join());
+  }
+
   private static void send(final Runnable request) {
     try {
       request.run();
@@ -132,6 +136,18 @@ final class PhysicalTenantRestPathTest {
     // then
     verify(
         postRequestedFor(urlEqualTo("/physical-tenants/riskproduction/v2/messages/publication")));
+  }
+
+  @Test
+  void shouldPrefixRestBasePathOfResolveSecretsCommand(final WireMockRuntimeInfo mockInfo) {
+    // given
+    try (final CamundaClient client = client(mockInfo, true)) {
+      // when
+      sendResolveSecretsCommand(client);
+    }
+
+    // then
+    verify(postRequestedFor(urlEqualTo("/physical-tenants/riskproduction/v2/secrets/resolve")));
   }
 
   @Test

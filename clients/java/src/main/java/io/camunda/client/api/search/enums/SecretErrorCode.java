@@ -23,5 +23,7 @@ public enum SecretErrorCode {
   ACCESS_DENIED,
   /** The reference is malformed. */
   INVALID_REFERENCE,
+  /** The configured store could not return a value for the reference. */
+  UNREADABLE,
   UNKNOWN_ENUM_VALUE;
 }

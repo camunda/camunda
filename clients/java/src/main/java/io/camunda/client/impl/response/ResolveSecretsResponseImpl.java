@@ -51,15 +51,29 @@ public class ResolveSecretsResponseImpl implements ResolveSecretsResponse {
   }
 
   /**
-   * An absent code is reported as {@link SecretErrorCode#UNKNOWN_ENUM_VALUE} rather than as null,
-   * so that a caller switching on the code never has to null-check it. The field is required by the
-   * API contract, so this only guards against a cluster or proxy that omits it anyway.
+   * An absent or unrecognized code is reported as {@link SecretErrorCode#UNKNOWN_ENUM_VALUE} rather
+   * than thrown, so that a spec addition the client does not know about yet is reported per
+   * reference instead of failing the whole batch with a {@code RuntimeException}.
    */
   private static SecretErrorCode errorCode(
       final io.camunda.client.protocol.rest.SecretErrorCode code) {
-    return code == null
-        ? SecretErrorCode.UNKNOWN_ENUM_VALUE
-        : EnumUtil.convert(code, SecretErrorCode.class);
+    if (code == null) {
+      return SecretErrorCode.UNKNOWN_ENUM_VALUE;
+    }
+    switch (code) {
+      case NOT_FOUND:
+        return SecretErrorCode.NOT_FOUND;
+      case ACCESS_DENIED:
+        return SecretErrorCode.ACCESS_DENIED;
+      case INVALID_REFERENCE:
+        return SecretErrorCode.INVALID_REFERENCE;
+      case UNREADABLE:
+        return SecretErrorCode.UNREADABLE;
+      case UNKNOWN_DEFAULT_OPEN_API:
+      default:
+        EnumUtil.logUnknownEnumValue(code, "secret error code", SecretErrorCode.values());
+        return SecretErrorCode.UNKNOWN_ENUM_VALUE;
+    }
   }
 
   private Set<String> resolvedReferences() {
