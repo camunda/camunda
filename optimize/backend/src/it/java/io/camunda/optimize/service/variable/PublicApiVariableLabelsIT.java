@@ -37,95 +37,101 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void shouldReturn400WithFieldNameWhenDefinitionKeyIsNull() {
-    // given
-    final DefinitionVariableLabelsDto request = new DefinitionVariableLabelsDto(null, List.of());
+  public void shouldReturn400And404ForInvalidDefinitionKeysAnd200ForValidRequestAndDefinition() {
+    // Covers four independent validation/lookup scenarios: null definitionKey rejected with
+    // 400, blank definitionKey rejected with 400, a valid request against an existing
+    // definition succeeds with 200, and a well-formed but non-existent definitionKey is
+    // rejected with 404. Each scenario is fully independent (distinct definitionKey/request),
+    // so no reset is needed between them.
 
-    // when
-    final Response response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildModifyVariableLabelsRequest(request)
-            .withBearerToken(TEST_ACCESS_TOKEN)
-            .execute();
+    // given (null definitionKey)
+    {
+      final DefinitionVariableLabelsDto request = new DefinitionVariableLabelsDto(null, List.of());
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
-    assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
-  }
+      // when (null definitionKey)
+      final Response response =
+          embeddedOptimizeExtension
+              .getRequestExecutor()
+              .buildModifyVariableLabelsRequest(request)
+              .withBearerToken(TEST_ACCESS_TOKEN)
+              .execute();
 
-  @Test
-  public void shouldReturn400WithFieldNameWhenDefinitionKeyIsBlank() {
-    // given
-    final DefinitionVariableLabelsDto request = new DefinitionVariableLabelsDto("  ", List.of());
+      // then (null definitionKey)
+      assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
+      assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
+      assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
+    }
 
-    // when
-    final Response response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildModifyVariableLabelsRequest(request)
-            .withBearerToken(TEST_ACCESS_TOKEN)
-            .execute();
+    // given (blank definitionKey)
+    {
+      final DefinitionVariableLabelsDto request = new DefinitionVariableLabelsDto("  ", List.of());
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
-    assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
-  }
+      // when (blank definitionKey)
+      final Response response =
+          embeddedOptimizeExtension
+              .getRequestExecutor()
+              .buildModifyVariableLabelsRequest(request)
+              .withBearerToken(TEST_ACCESS_TOKEN)
+              .execute();
 
-  @Test
-  public void shouldReturn200WhenRequestIsValid() {
-    // given
-    final String definitionKey = "my-process";
-    embeddedOptimizeExtension
-        .getBean(ProcessDefinitionWriter.class)
-        .importProcessDefinitions(
-            List.of(
-                ProcessDefinitionOptimizeDto.builder()
-                    .id("my-process:1")
-                    .key(definitionKey)
-                    .version("1")
-                    .name(definitionKey)
-                    .bpmn20Xml("<definitions/>")
-                    .build()));
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+      // then (blank definitionKey)
+      assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
+      assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
+      assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
+    }
 
-    final LabelDto label = new LabelDto("book availability", "bookAvailable", VariableType.BOOLEAN);
-    final DefinitionVariableLabelsDto request =
-        new DefinitionVariableLabelsDto(definitionKey, List.of(label));
+    // given (valid request against an existing definition)
+    {
+      final String definitionKey = "my-process";
+      embeddedOptimizeExtension
+          .getBean(ProcessDefinitionWriter.class)
+          .importProcessDefinitions(
+              List.of(
+                  ProcessDefinitionOptimizeDto.builder()
+                      .id("my-process:1")
+                      .key(definitionKey)
+                      .version("1")
+                      .name(definitionKey)
+                      .bpmn20Xml("<definitions/>")
+                      .build()));
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // when
-    final Response response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildModifyVariableLabelsRequest(request)
-            .withBearerToken(TEST_ACCESS_TOKEN)
-            .execute();
+      final LabelDto label =
+          new LabelDto("book availability", "bookAvailable", VariableType.BOOLEAN);
+      final DefinitionVariableLabelsDto request =
+          new DefinitionVariableLabelsDto(definitionKey, List.of(label));
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-  }
+      // when (valid request against an existing definition)
+      final Response response =
+          embeddedOptimizeExtension
+              .getRequestExecutor()
+              .buildModifyVariableLabelsRequest(request)
+              .withBearerToken(TEST_ACCESS_TOKEN)
+              .execute();
 
-  @Test
-  public void shouldReturn404WhenDefinitionKeyIsValidButDefinitionDoesNotExist() {
-    // given
-    final DefinitionVariableLabelsDto request =
-        new DefinitionVariableLabelsDto("nonexistent-process", List.of());
+      // then (valid request against an existing definition)
+      assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
 
-    // when — validation passes, service throws NotFoundException
-    final Response response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildModifyVariableLabelsRequest(request)
-            .withBearerToken(TEST_ACCESS_TOKEN)
-            .execute();
+    // given (definitionKey valid but definition does not exist)
+    {
+      final DefinitionVariableLabelsDto request =
+          new DefinitionVariableLabelsDto("nonexistent-process", List.of());
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(NOT_FOUND_ERROR_CODE);
+      // when — validation passes, service throws NotFoundException
+      final Response response =
+          embeddedOptimizeExtension
+              .getRequestExecutor()
+              .buildModifyVariableLabelsRequest(request)
+              .withBearerToken(TEST_ACCESS_TOKEN)
+              .execute();
+
+      // then (definitionKey valid but definition does not exist)
+      assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+      final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
+      assertThat(errorResponse.getErrorCode()).isEqualTo(NOT_FOUND_ERROR_CODE);
+    }
   }
 }
