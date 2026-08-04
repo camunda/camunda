@@ -123,12 +123,12 @@ behind them:
   mirrors `tests/` exactly.
 - The Helm chart directory is `charts/camunda-platform-<version>/`.
 
-| Dispatch | e2e specs and pages | Helm chart |
-|---|---|---|
-| `sm-smoke-e2e` on `main` | `tests/SM-8.10/`, `pages/SM-8.10/` | `charts/camunda-platform-8.10/` |
-| `saas-smoke-e2e` on `main` | `tests/8.10/`, `pages/8.10/` | `charts/camunda-platform-8.10/` |
-| `sm-smoke-e2e` on `stable/8.9` | `tests/SM-8.9/`, `pages/SM-8.9/` | `charts/camunda-platform-8.9/` |
-| `saas-smoke-e2e` on `stable/8.9` | `tests/8.9/`, `pages/8.9/` | `charts/camunda-platform-8.9/` |
+|             Dispatch             |        e2e specs and pages         |           Helm chart            |
+|----------------------------------|------------------------------------|---------------------------------|
+| `sm-smoke-e2e` on `main`         | `tests/SM-8.10/`, `pages/SM-8.10/` | `charts/camunda-platform-8.10/` |
+| `saas-smoke-e2e` on `main`       | `tests/8.10/`, `pages/8.10/`       | `charts/camunda-platform-8.10/` |
+| `sm-smoke-e2e` on `stable/8.9`   | `tests/SM-8.9/`, `pages/SM-8.9/`   | `charts/camunda-platform-8.9/`  |
+| `saas-smoke-e2e` on `stable/8.9` | `tests/8.9/`, `pages/8.9/`         | `charts/camunda-platform-8.9/`  |
 
 `stable/8.8` and `stable/8.7` follow the same pattern.
 

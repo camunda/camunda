@@ -408,8 +408,14 @@ jobs:
             repo="${DEFAULT_REPO}"
             [ -n "$owner" ] && [ -n "$name" ] && repo="${owner}/${name}"
 
-            gh pr edit "$num" --repo "$repo" \
-              --add-label "${FIX_LABEL}" --add-label "${KEY_LABEL}" 2>/dev/null || true
+            # The key label is what triage reads to suppress re-dispatch, so a silent
+            # failure here means duplicate fix PRs on the next push. Keep stderr and say
+            # so loudly; still non-fatal, because a labelled-but-unreviewed PR is worth
+            # more than a failed run.
+            if ! gh pr edit "$num" --repo "$repo" \
+                   --add-label "${FIX_LABEL}" --add-label "${KEY_LABEL}"; then
+              echo "::warning::could not label ${repo}#${num} with ${KEY_LABEL} — triage will re-dispatch this key until the label is applied"
+            fi
 
             # Only camunda/camunda PRs are branch-scoped; the e2e and chart repos have
             # no per-version branches. Repair rather than trust: an unset --base
