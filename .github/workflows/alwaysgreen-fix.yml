@@ -209,10 +209,15 @@ jobs:
       - name: Ensure labels exist
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
         run: |
           for repo in camunda/camunda camunda/c8-cross-component-e2e-tests camunda/camunda-platform-helm; do
             gh label create "${FIX_LABEL}" --repo "$repo" --color "1D76DB" \
               --description "Bot-opened fix PR for an AlwaysGreen failure" 2>/dev/null || true
+            # Triage suppresses a surface that already has an open fix PR. It reads this
+            # label rather than the PR body, whose coverage block the agent may omit.
+            gh label create "${KEY_LABEL}" --repo "$repo" --color "C5DEF5" \
+              --description "AlwaysGreen fix PR for dispatch key ${KEY_LABEL#alwaysgreen-key:}" 2>/dev/null || true
           done
 
       - name: Set up Go
@@ -360,6 +365,7 @@ jobs:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BLAME_REVIEWER: ${{ steps.ctx.outputs.blame_reviewer }}
           DEFAULT_REPO: ${{ github.repository }}
+          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
         run: |
           set -euo pipefail
           [ -f /tmp/fix-meta.json ] || { echo "no fix-meta.json"; exit 0; }
@@ -371,7 +377,8 @@ jobs:
             repo="${DEFAULT_REPO}"
             [ -n "$owner" ] && [ -n "$name" ] && repo="${owner}/${name}"
 
-            gh pr edit "$num" --repo "$repo" --add-label "${FIX_LABEL}" 2>/dev/null || true
+            gh pr edit "$num" --repo "$repo" \
+              --add-label "${FIX_LABEL}" --add-label "${KEY_LABEL}" 2>/dev/null || true
 
             # Requesting review can legitimately fail: the blamed author may not be a
             # collaborator on the repo the fix landed in. The manual requires the author

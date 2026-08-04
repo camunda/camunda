@@ -24,6 +24,7 @@ def _cand(surface=classify.SURFACE_SM_E2E, base_ref="main", specs=None, job_leve
 def _plan(cands, **kw):
     kw.setdefault("covered_fingerprints", set())
     kw.setdefault("inflight_keys", set())
+    kw.setdefault("open_pr_keys", set())
     kw.setdefault("product_bug_fingerprints", set())
     return plan.plan_dispatches(cands, **kw)
 
@@ -188,3 +189,24 @@ def test_merge_preserves_text_after_the_block():
 def test_render_is_sorted_for_stable_diffs():
     rendered = plan.render_coverage_block({"cccccccc", "aaaaaaaa", "bbbbbbbb"})
     assert rendered.index("aaaaaaaa") < rendered.index("bbbbbbbb") < rendered.index("cccccccc")
+
+
+def test_open_fix_pr_blocks_the_same_surface():
+    cand = _cand(surface=classify.SURFACE_SM_E2E)
+    result = _plan([cand], open_pr_keys={"main:sm-smoke-e2e"})
+    assert result.dispatches == []
+    assert [s.reason for s in result.suppressed] == [plan.SUPPRESSED_PR_OPEN]
+
+
+def test_open_fix_pr_on_another_surface_does_not_block():
+    cand = _cand(surface=classify.SURFACE_SM_E2E)
+    result = _plan([cand], open_pr_keys={"main:saas-smoke-e2e"})
+    assert len(result.dispatches) == 1
+
+
+def test_open_fix_pr_blocks_even_when_the_body_claims_nothing():
+    # The coverage block is agent-written, so an empty one must not let a second
+    # agent through while the first PR is still open.
+    cand = _cand(surface=classify.SURFACE_SM_E2E)
+    result = _plan([cand], covered_fingerprints=set(), open_pr_keys={"main:sm-smoke-e2e"})
+    assert result.dispatches == []
