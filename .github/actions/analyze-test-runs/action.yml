@@ -20,13 +20,6 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Test Summary
-    uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
-    if: ${{ inputs.skipSummary == 'false' }}
-    with:
-      paths: |
-        **/target/failsafe-reports/TEST-*.xml
-        **/target/surefire-reports/TEST-*.xml
   - name: Find flaky tests
     id: find-flakes
     shell: bash
@@ -85,3 +78,11 @@ runs:
         cat $unfinished >> $GITHUB_STEP_SUMMARY
       fi
       exit 0
+  - name: Test Summary
+    uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
+    if: ${{ always() && inputs.skipSummary == 'false' }}
+    continue-on-error: true
+    with:
+      paths: |
+        **/target/failsafe-reports/TEST-*.xml
+        **/target/surefire-reports/TEST-*.xml
