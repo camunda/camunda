@@ -281,7 +281,7 @@ For Names for Legacy tests should be prefixed with `[Legacy] <componentName>` so
 
 Renovate supports many package ecosystems of which we use e.g. Maven, NPM, Docker and Helm. It can scan multiple branches (e.g. `main`, `stable/8.5`) inside of one repository and raise PRs independently for those.
 
-Renovate is configured via a [JSON configuration file on the `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json). In general we allow Renovate to run and **create PRs at any time** to avoid lagging behind with updates.
+Renovate is configured via a [JSON5](https://json5.org/) [configuration file on the `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json5). In general we allow Renovate to run and **create PRs at any time** to avoid lagging behind with updates.
 
 We also want Renovate to **automatically merge** dependency updates when CI is green and automated tests are passing. Assuming a nearly complete test coverage the efficiency gains outweigh the risks. This is achieved by Renovate requesting to put every Pull Requests into the [GitHub Merge Queue](#github-merge-queue) - GitHub will then ensure that [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) pass before merging the PR.
 
@@ -299,7 +299,7 @@ Related resources:
 * [Renovate documentation](https://docs.renovatebot.com/)
 * [Dependency Dashboard (GH issue)](https://github.com/camunda/camunda/issues/12605)
 * [Renovate Dashboard](https://developer.mend.io/github/camunda/camunda)
-* [Renovate configuration file on `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json)
+* [Renovate configuration file on `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json5)
 
 ### FAQ
 
@@ -323,7 +323,7 @@ Related resources:
 
 > A: Click on the most recent run in the [Renovate Dashboard](https://developer.mend.io/github/camunda/camunda) and make sure to show debug information.
 
-**Q: Why are updates for dependency XYZ ignored in the [Renovate configuration file](https://github.com/camunda/camunda/blob/main/.github/renovate.json)?**
+**Q: Why are updates for dependency XYZ ignored in the [Renovate configuration file](https://github.com/camunda/camunda/blob/main/.github/renovate.json5)?**
 
 > A: The reasons for manually ignoring certain updates should be described in the comments. Using `git annotate` to figure out who put the ignore can also be a way to get more details.
 
