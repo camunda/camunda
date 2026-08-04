@@ -463,6 +463,42 @@ public final class MappingIncidentTest {
   }
 
   @Test
+  public void shouldNotCreateIncidentWhenOutputMappingSourceIsMissing() {
+    // given: no assert() - a missing source is lenient and resolves to null
+    final var process =
+        Bpmn.createExecutableProcess("process-missing-output-source")
+            .startEvent()
+            .serviceTask(
+                "task", t -> t.zeebeJobType("test").zeebeOutputExpression("missing", "bar"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-missing-output-source").create();
+    ENGINE.job().withType("test").ofInstance(processInstanceKey).complete();
+
+    // then
+    final var variable =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("bar")
+            .getFirst();
+    Assertions.assertThat(variable.getValue()).hasValue("null");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
   public void shouldResolveMultipleIncidents() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
