@@ -287,7 +287,7 @@ runs:
           - '.github/conftest-*.rego'
 
         renovate-config-change:
-          - '**/renovate.json'
+          - '**/renovate.json5'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes

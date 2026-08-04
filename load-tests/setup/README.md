@@ -520,7 +520,7 @@ The `clean` job works regardless and cleans up both the platform and load-test d
 
 The Camunda Platform Helm Chart version pinned in each versioned setup folder is tracked and
 automatically updated by [Renovate](https://docs.renovatebot.com/). A custom regex manager in
-`.github/renovate.json` reads a structured annotation comment immediately before the
+`.github/renovate.json5` reads a structured annotation comment immediately before the
 `camunda_platform_helm_chart_version` assignment in each `newLoadTest.sh`.
 
 ### Annotation format
@@ -557,7 +557,7 @@ When adding a versioned setup folder for a new stable branch (e.g. `stable-8X/`)
 2. The `camunda_platform_helm_chart_version` value should match the actual Helm
    Chart version for that specific Camunda version.
 
-There should not be any need to update `.github/renovate.json` when a new version is added.
+There should not be any need to update `.github/renovate.json5` when a new version is added.
 
 ## Load testing Camunda SaaS
 

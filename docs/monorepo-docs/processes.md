@@ -83,7 +83,7 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
   - Minor and patch updates should almost always be resolved in this way, without an extra ticket.
 - Explore AI-assistance to get breaking changes fixed.
 - If needed, create follow-up tickets for major upgrades or big refactoring tasks, and ensure that those tickets are scheduled within their team's planning.
-- Improve [our Renovate configuration](https://github.com/camunda/camunda/blob/main/.github/renovate.json) to make sure updates are as smooth as possible, e.g. by:
+- Improve [our Renovate configuration](https://github.com/camunda/camunda/blob/main/.github/renovate.json5) to make sure updates are as smooth as possible, e.g. by:
   - Applying appropriate grouping of similar dependencies (all React components, similar Maven plugins) to reduce the number of PRs.
   - Allow auto-merging if possible.
 - Complete the above steps within 3 weeks of the DRI assignment.
