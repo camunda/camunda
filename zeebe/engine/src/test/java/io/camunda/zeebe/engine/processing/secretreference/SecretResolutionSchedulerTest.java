@@ -11,10 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -69,6 +71,7 @@ final class SecretResolutionSchedulerTest {
     when(context.getScheduleService()).thenReturn(scheduleService);
     when(context.getClock()).thenReturn(clock);
     lenient().when(clock.millis()).thenReturn(0L);
+    lenient().when(resultBuilder.appendCommandRecord(any(), any())).thenReturn(true);
 
     final Supplier<ScheduledTaskState> stateFactory = () -> scheduledTaskState;
     final var registry =
@@ -273,7 +276,8 @@ final class SecretResolutionSchedulerTest {
     stubPending("my-store", "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
-    // then — store called only once; no command or cache write
+    // then — store called only once; the cooldown store's ref is excluded during collection, so
+    // resolveStore is never invoked for it in cycle 2; no command or cache write
     verify(secretStore, times(1)).resolve(any());
     verify(resultBuilder, never()).appendCommandRecord(any(), any());
     verify(secretCache, never()).put(any(), any());
@@ -331,7 +335,7 @@ final class SecretResolutionSchedulerTest {
     scheduler.resolveSecrets(resultBuilder);
 
     // when — store no longer has pending refs
-    doNothing().when(secretReferenceState).visitPendingSecretReferences(any());
+    doReturn(null).when(secretReferenceState).visitPendingSecretReferences(any(), any());
     when(clock.millis()).thenReturn(Long.MAX_VALUE);
     scheduler.resolveSecrets(resultBuilder);
 
@@ -342,6 +346,64 @@ final class SecretResolutionSchedulerTest {
     verify(scheduleService, times(3)).runDelayedAsync(delayCaptor.capture(), any(), any());
     assertThat(delayCaptor.getAllValues().get(2))
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+  }
+
+  @Test
+  void shouldNotResetRetryStateForStoreExcludedByCapAcrossCycle() throws Exception {
+    // given — batch limit of 2; store-a and store-b both fail and enter retry cooldown in the
+    // same (uncapped) cycle
+    final var storeA = mock(SecretStore.class);
+    final var storeB = mock(SecretStore.class);
+    final var registry =
+        new SecretStoreRegistry(Map.of("store-a", storeA, "store-b", storeB), Map.of());
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
+    final var localScheduler =
+        new SecretResolutionScheduler(() -> scheduledTaskState, registry, config);
+    localScheduler.onRecovered(context);
+
+    when(storeA.resolve(Set.of("ref-a1"))).thenThrow(new SecretStoreUnavailableException("down"));
+    when(storeB.resolve(Set.of("ref-b1"))).thenThrow(new SecretStoreUnavailableException("down"));
+    // cycle 1 (t=0): both stores' single pending ref fit exactly within the cap — nothing capped
+    // — so both fail and enter cooldown (attempts=1, nextAttemptAt=1000)
+    final var cycle1Refs = new LinkedHashMap<String, String>();
+    cycle1Refs.put("store-a", "ref-a1");
+    cycle1Refs.put("store-b", "ref-b1");
+    stubPending(cycle1Refs);
+    when(clock.millis()).thenReturn(0L, 500L, 500L);
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // when — cycle 2 (t=500): both store-a and store-b are still within their cooldown window
+    // (cooldown entered at t=0 with a 1000ms backoff, cycle 2 runs at t=500), so cooldown-aware
+    // collection skips BOTH stores entirely — pendingByStore ends up empty and
+    // cooldownSkippedStores = {store-a, store-b}, not "cap consumed by store-a" as under the old
+    // per-entry-cap-only behavior
+    doAnswer(
+            inv -> {
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
+              if (!visitor.test("store-a", "ref-a1")) {
+                return null;
+              }
+              if (!visitor.test("store-a", "ref-a2")) {
+                return null;
+              }
+              visitor.test("store-b", "ref-b1");
+              return null;
+            })
+        .when(secretReferenceState)
+        .visitPendingSecretReferences(any(), any());
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — cycle 3 (t=500, still short of store-b's t=1000 cooldown deadline): store-b's ref is
+    // offered again, but because cycle 2's read left cooldownSkippedStores non-empty, the
+    // retainAll prune did NOT run in cycle 2, so store-b's retry state survived into cycle 3 and
+    // it is still correctly treated as cooling down — collection excludes it again and resolveStore
+    // is never invoked. Had the prune incorrectly run in cycle 2 (wiping store-b's backoff as if it
+    // had no pending refs), store-b would be treated as fresh here and resolved immediately instead
+    // of honoring the cooldown. store-b's only legitimate resolve() call across all three cycles is
+    // the one from cycle 1 (which put it into cooldown in the first place).
+    stubPending("store-b", "ref-b1");
+    localScheduler.resolveSecrets(resultBuilder);
+    verify(storeB, times(1)).resolve(any());
   }
 
   @Test
@@ -391,6 +453,7 @@ final class SecretResolutionSchedulerTest {
         new SecretResolutionScheduler(
             () -> scheduledTaskState, registry, new EngineConfiguration());
     localScheduler.onRecovered(context);
+    reset(scheduleService);
 
     stubPending(Map.of("store-a", "ref-a", "store-b", "ref-b"));
     when(storeA.resolve(Set.of("ref-a"))).thenThrow(new IllegalStateException("boom"));
@@ -408,8 +471,8 @@ final class SecretResolutionSchedulerTest {
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
     assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("store-b");
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("ref-b");
-    // scheduler.onRecovered (setUp) + localScheduler.onRecovered + localScheduler's own reschedule
-    verify(scheduleService, times(3)).runDelayedAsync(any(), any(), any());
+    // only this cycle's reschedule remains after the reset above
+    verify(scheduleService).runDelayedAsync(any(), any(), any());
   }
 
   @Test
@@ -483,6 +546,322 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
+  void shouldCapRefsCollectedForASingleStoreToBatchLimit() throws Exception {
+    // given — batch limit of 2, but 3 refs pending in one store
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState,
+            new SecretStoreRegistry(
+                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            config);
+    localScheduler.onRecovered(context);
+    stubPending("my-store", "ref-1", "ref-2", "ref-3");
+    when(secretStore.resolve(Set.of("ref-1", "ref-2")))
+        .thenReturn(
+            Map.of(
+                "ref-1", new SecretResolutionResult.Resolved("value-1"),
+                "ref-2", new SecretResolutionResult.Resolved("value-2")));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — only the first 2 refs (the batch limit) were resolved; the 3rd stays pending
+    final var refsCaptor = ArgumentCaptor.forClass(Set.class);
+    verify(secretStore).resolve(refsCaptor.capture());
+    assertThat(refsCaptor.getAllValues()).containsExactly(Set.of("ref-1", "ref-2"));
+  }
+
+  @Test
+  void shouldCapAcrossMultipleStoresNotPerStore() throws Exception {
+    // given — global batch limit of 3; two stores contribute pending refs, so the cap applies
+    // across both stores combined, not per store individually
+    final var storeA = mock(SecretStore.class);
+    final var storeB = mock(SecretStore.class);
+    final var cacheA = mock(SecretCache.class);
+    final var cacheB = mock(SecretCache.class);
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeA, "store-b", storeB),
+            Map.of("store-a", cacheA, "store-b", cacheB));
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(3);
+    final var localScheduler =
+        new SecretResolutionScheduler(() -> scheduledTaskState, registry, config);
+    localScheduler.onRecovered(context);
+
+    doAnswer(
+            inv -> {
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
+              if (!visitor.test("store-a", "ref-a1")) {
+                return null;
+              }
+              if (!visitor.test("store-a", "ref-a2")) {
+                return null;
+              }
+              if (!visitor.test("store-b", "ref-b1")) {
+                return null;
+              }
+              visitor.test("store-b", "ref-b2");
+              return null;
+            })
+        .when(secretReferenceState)
+        .visitPendingSecretReferences(any(), any());
+    when(storeA.resolve(Set.of("ref-a1", "ref-a2")))
+        .thenReturn(
+            Map.of(
+                "ref-a1", new SecretResolutionResult.Resolved("v1"),
+                "ref-a2", new SecretResolutionResult.Resolved("v2")));
+    when(storeB.resolve(Set.of("ref-b1")))
+        .thenReturn(Map.of("ref-b1", new SecretResolutionResult.Resolved("v3")));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — store-a's 2 refs plus only the first of store-b's 2 refs (3 total, the cap);
+    // store-b's second ref ("ref-b2") is left pending for the next cycle
+    final var storeARefsCaptor = ArgumentCaptor.forClass(Set.class);
+    final var storeBRefsCaptor = ArgumentCaptor.forClass(Set.class);
+    verify(storeA).resolve(storeARefsCaptor.capture());
+    verify(storeB).resolve(storeBRefsCaptor.capture());
+    assertThat(storeARefsCaptor.getAllValues()).containsExactly(Set.of("ref-a1", "ref-a2"));
+    assertThat(storeBRefsCaptor.getAllValues()).containsExactly(Set.of("ref-b1"));
+  }
+
+  @Test
+  void shouldRescheduleImmediatelyWhenPendingRefsExceedBatchLimit() throws Exception {
+    // given — batch limit of 2, but 3 refs pending
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState,
+            new SecretStoreRegistry(
+                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            config);
+    localScheduler.onRecovered(context);
+    reset(scheduleService);
+    stubPending("my-store", "ref-1", "ref-2", "ref-3");
+    when(secretStore.resolve(any()))
+        .thenReturn(
+            Map.of(
+                "ref-1", new SecretResolutionResult.Resolved("value-1"),
+                "ref-2", new SecretResolutionResult.Resolved("value-2")));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — rescheduled with zero delay instead of the normal interval
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getValue()).isEqualTo(Duration.ZERO);
+  }
+
+  @Test
+  void shouldNotRescheduleImmediatelyWhenPendingRefsAreWithinBatchLimit() throws Exception {
+    // given — batch limit of 2, exactly 2 refs pending (nothing left over)
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState,
+            new SecretStoreRegistry(
+                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            config);
+    localScheduler.onRecovered(context);
+    reset(scheduleService);
+    stubPending("my-store", "ref-1", "ref-2");
+    when(secretStore.resolve(Set.of("ref-1", "ref-2")))
+        .thenReturn(
+            Map.of(
+                "ref-1", new SecretResolutionResult.Resolved("value-1"),
+                "ref-2", new SecretResolutionResult.Resolved("value-2")));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — the normal scheduling interval is used, since nothing was capped
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getValue())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+  }
+
+  @Test
+  void shouldNotRescheduleImmediatelyWhenCappedStoreIsInRetryCooldown() throws Exception {
+    // given — batch limit of 1, but 2 refs pending for a store that is also in retry cooldown;
+    // the cooldown-aware collection must exclude the cooldown store's refs entirely rather than
+    // let them consume the cap, otherwise the scheduler could busy-spin re-scanning state at zero
+    // delay until the cooldown expires by wall clock
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(1);
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState,
+            new SecretStoreRegistry(
+                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            config);
+    localScheduler.onRecovered(context);
+    reset(scheduleService);
+    when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
+
+    // when — first cycle: store fails, enters retry cooldown
+    stubPending("my-store", "ref-1", "ref-2");
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // when — second cycle: still within the cooldown window; the cooldown store's ref is excluded
+    // from collection entirely, so nothing is capped and nothing is resolved
+    stubPending("my-store", "ref-1", "ref-2");
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — the store was only attempted once; the second cycle skipped it during collection
+    verify(secretStore, times(1)).resolve(any());
+
+    // then — the reschedule after the second cycle uses the cooldown-aware delay, not Duration.ZERO
+    // (nothing was capped this cycle, so it falls through to computeNextDelay)
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(1))
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY)
+        .isNotEqualTo(Duration.ZERO);
+  }
+
+  @Test
+  void shouldResumeCollectionFromCursorOnNextCycle() throws Exception {
+    // given — cycle 1's collection stops early and reports a resume cursor at the last entry the
+    // visitor was offered before being told to stop
+    final var cycle1Cursor = new SecretReferenceState.PendingRefCursor("my-store", "ref-1");
+    doAnswer(
+            inv -> {
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
+              visitor.test("my-store", "ref-1");
+              return cycle1Cursor;
+            })
+        .when(secretReferenceState)
+        .visitPendingSecretReferences(any(), any());
+
+    // when — cycle 1
+    scheduler.resolveSecrets(resultBuilder);
+
+    // and — cycle 2
+    stubPending("my-store", "ref-2");
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then — cycle 2 resumed from exactly where cycle 1 left off, not from the beginning; this is
+    // the fairness fix that lets later stores (in key order) eventually get served instead of a
+    // fresh scan always restarting at the start of the column family
+    final var cursorCaptor = ArgumentCaptor.forClass(SecretReferenceState.PendingRefCursor.class);
+    verify(secretReferenceState, times(2))
+        .visitPendingSecretReferences(cursorCaptor.capture(), any());
+    assertThat(cursorCaptor.getAllValues().get(0)).isNull();
+    assertThat(cursorCaptor.getAllValues().get(1)).isEqualTo(cycle1Cursor);
+  }
+
+  @Test
+  void shouldNotLetCooldownStoreConsumeCapBudgetFromHealthyStore() throws Exception {
+    // given — batch limit of 2; store-a is already in retry cooldown with 3 pending refs, store-b
+    // is healthy with 2 pending refs. Under the old (collection-time-cooldown-unaware) behavior,
+    // the batch limit would have been entirely consumed by store-a's refs, starving store-b.
+    final var storeA = mock(SecretStore.class);
+    final var storeB = mock(SecretStore.class);
+    final var cacheB = mock(SecretCache.class);
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeA, "store-b", storeB), Map.of("store-b", cacheB));
+    final var config = new EngineConfiguration().setSecretResolutionBatchLimit(2);
+    final var localScheduler =
+        new SecretResolutionScheduler(() -> scheduledTaskState, registry, config);
+    localScheduler.onRecovered(context);
+
+    // cycle 1 (t=0): drive store-a into retry cooldown
+    when(storeA.resolve(Set.of("ref-a1"))).thenThrow(new SecretStoreUnavailableException("down"));
+    stubPending("store-a", "ref-a1");
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // when — cycle 2 (t=0, still within store-a's cooldown window): store-a now has 3 pending
+    // refs (offered first, in key order) and store-b has 2 pending refs
+    doAnswer(
+            inv -> {
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
+              if (!visitor.test("store-a", "ref-a1")) {
+                return new SecretReferenceState.PendingRefCursor("store-a", "ref-a1");
+              }
+              if (!visitor.test("store-a", "ref-a2")) {
+                return new SecretReferenceState.PendingRefCursor("store-a", "ref-a2");
+              }
+              if (!visitor.test("store-a", "ref-a3")) {
+                return new SecretReferenceState.PendingRefCursor("store-a", "ref-a3");
+              }
+              if (!visitor.test("store-b", "ref-b1")) {
+                return new SecretReferenceState.PendingRefCursor("store-b", "ref-b1");
+              }
+              if (!visitor.test("store-b", "ref-b2")) {
+                return new SecretReferenceState.PendingRefCursor("store-b", "ref-b2");
+              }
+              return null;
+            })
+        .when(secretReferenceState)
+        .visitPendingSecretReferences(any(), any());
+    when(storeB.resolve(Set.of("ref-b1", "ref-b2")))
+        .thenReturn(
+            Map.of(
+                "ref-b1", new SecretResolutionResult.Resolved("v1"),
+                "ref-b2", new SecretResolutionResult.Resolved("v2")));
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — store-b's refs were not starved by store-a's cooldown refs consuming the cap
+    final var storeBRefsCaptor = ArgumentCaptor.forClass(Set.class);
+    verify(storeB).resolve(storeBRefsCaptor.capture());
+    assertThat(storeBRefsCaptor.getValue()).isEqualTo(Set.of("ref-b1", "ref-b2"));
+    // store-a was never retried while cooling down — its only resolve() call is from cycle 1
+    verify(storeA, times(1)).resolve(any());
+  }
+
+  @Test
+  void shouldStopProcessingFurtherStoresWhenTaskResultBatchIsFull() throws Exception {
+    // given — appendCommandRecord reports the task result batch as full
+    final var storeA = mock(SecretStore.class);
+    final var storeB = mock(SecretStore.class);
+    final var cacheA = mock(SecretCache.class);
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeA, "store-b", storeB), Map.of("store-a", cacheA));
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState, registry, new EngineConfiguration());
+    localScheduler.onRecovered(context);
+
+    final var refsByStore = new LinkedHashMap<String, String>();
+    refsByStore.put("store-a", "ref-a");
+    refsByStore.put("store-b", "ref-b");
+    stubPending(refsByStore);
+    when(storeA.resolve(Set.of("ref-a")))
+        .thenReturn(Map.of("ref-a", new SecretResolutionResult.Resolved("value-a")));
+    when(resultBuilder.appendCommandRecord(any(), any())).thenReturn(false);
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then — store-a was attempted (its append hit the full batch), store-b never reached
+    verify(storeA).resolve(Set.of("ref-a"));
+    verify(storeB, never()).resolve(any());
+  }
+
+  @Test
+  void shouldRescheduleImmediatelyWhenTaskResultBatchIsFull() throws Exception {
+    // given
+    stubPending("my-store", "db-password");
+    when(secretStore.resolve(Set.of("db-password")))
+        .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
+    when(resultBuilder.appendCommandRecord(any(), any())).thenReturn(false);
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then — rescheduled with zero delay instead of the normal interval
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    // two calls: onRecovered's initial schedule (in setUp), then this cycle's reschedule
+    verify(scheduleService, times(2)).runDelayedAsync(delayCaptor.capture(), any(), any());
+    assertThat(delayCaptor.getAllValues().get(1)).isEqualTo(Duration.ZERO);
+  }
+
+  @Test
   void shouldNotScheduleSecondChainWhenResumedWhileTaskStillPending() throws Exception {
     // given — setUp already scheduled once via onRecovered
 
@@ -532,41 +911,44 @@ final class SecretResolutionSchedulerTest {
   private void stubPending(final String storeId, final String secretRef) {
     doAnswer(
             inv -> {
-              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
-              visitor.test(storeId, secretRef);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
+              if (!visitor.test(storeId, secretRef)) {
+                return new SecretReferenceState.PendingRefCursor(storeId, secretRef);
+              }
               return null;
             })
         .when(secretReferenceState)
-        .visitPendingSecretReferences(any());
+        .visitPendingSecretReferences(any(), any());
   }
 
   private void stubPending(final String storeId, final String... secretRefs) {
     doAnswer(
             inv -> {
-              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
               for (final String secretRef : secretRefs) {
                 if (!visitor.test(storeId, secretRef)) {
-                  break;
+                  return new SecretReferenceState.PendingRefCursor(storeId, secretRef);
                 }
               }
               return null;
             })
         .when(secretReferenceState)
-        .visitPendingSecretReferences(any());
+        .visitPendingSecretReferences(any(), any());
   }
 
   private void stubPending(final Map<String, String> refsByStore) {
     doAnswer(
             inv -> {
-              final var visitor = (BiPredicate<String, String>) inv.getArgument(0);
+              final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
               for (final var entry : refsByStore.entrySet()) {
                 if (!visitor.test(entry.getKey(), entry.getValue())) {
-                  break;
+                  return new SecretReferenceState.PendingRefCursor(
+                      entry.getKey(), entry.getValue());
                 }
               }
               return null;
             })
         .when(secretReferenceState)
-        .visitPendingSecretReferences(any());
+        .visitPendingSecretReferences(any(), any());
   }
 }
