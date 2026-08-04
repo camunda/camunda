@@ -53,6 +53,10 @@ public final class ExponentialBackoff implements LongUnaryOperator {
     this(maxDelay, minDelay, DEFAULT_BACKOFF_FACTOR, DEFAULT_JITTER_FACTOR);
   }
 
+  public ExponentialBackoff(final long maxDelay, final long minDelay, final double backoffFactor) {
+    this(maxDelay, minDelay, backoffFactor, DEFAULT_JITTER_FACTOR);
+  }
+
   public ExponentialBackoff(
       final long maxDelay,
       final long minDelay,
@@ -81,6 +85,13 @@ public final class ExponentialBackoff implements LongUnaryOperator {
     if (minDelay > maxDelay) {
       throw new IllegalArgumentException(
           "minDelay (" + minDelay + "ms) must be <= maxDelay (" + maxDelay + "ms)");
+    }
+    if (backoffFactor <= 1.0) {
+      throw new IllegalArgumentException(
+          "backoffFactor ("
+              + backoffFactor
+              + ") must be > 1.0, otherwise the delay does not increase and backoff degenerates"
+              + " into a tight retry loop");
     }
   }
 
