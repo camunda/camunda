@@ -167,6 +167,10 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
         snapshotId
             .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow().getProcessedPosition())
             .orElse(null);
+    final var exportedPositionInSnapshot =
+        snapshotId
+            .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow().getExportedPosition())
+            .orElse(null);
     final var clockFuture = streamProcessor.getClock();
 
     final var partitionHealth = getPartitionHealth().get(partition.getPartitionId());
@@ -198,7 +202,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                   exporterPhase,
                   exporterPosition,
                   clock,
-                  HealthTree.fromHealthReport(partitionHealth));
+                  HealthTree.fromHealthReport(partitionHealth),
+                  exportedPositionInSnapshot);
           partitionStatus.complete(status);
         });
   }

@@ -142,7 +142,8 @@ public interface PartitionsActuator {
       String streamProcessorPhase,
       Long exportedPosition,
       String exporterPhase,
-      ClockStatus clock) {}
+      ClockStatus clock,
+      Long exportedPositionInSnapshot) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   record ClockStatus(Instant instant, String modificationType, Map<String, Object> modification) {}
