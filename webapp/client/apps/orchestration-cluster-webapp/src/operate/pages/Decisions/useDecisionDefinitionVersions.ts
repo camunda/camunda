@@ -50,6 +50,7 @@ function useDecisionDefinitionVersions(decisionDefinitionId?: string, tenantId?:
 							after = nextCursor;
 						}
 					},
+		staleTime: 'static',
 	});
 }
 
