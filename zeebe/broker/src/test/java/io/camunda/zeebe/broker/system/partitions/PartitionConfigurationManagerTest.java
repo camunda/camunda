@@ -468,7 +468,7 @@ final class PartitionConfigurationManagerTest {
   }
 
   @Nested
-  final class SetExporterState {
+  final class SetExportingState {
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -502,7 +502,7 @@ final class PartitionConfigurationManagerTest {
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
       // when
-      partitionConfigurationManager.setExporterState(exportingState).join();
+      partitionConfigurationManager.setExportingState(exportingState).join();
 
       // then
       assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
@@ -521,7 +521,7 @@ final class PartitionConfigurationManagerTest {
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
 
       // when
-      partitionConfigurationManager.setExporterState(ExportingState.PAUSED).join();
+      partitionConfigurationManager.setExportingState(ExportingState.PAUSED).join();
 
       // then
       assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
@@ -538,7 +538,7 @@ final class PartitionConfigurationManagerTest {
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
       // when - then
-      assertThat(partitionConfigurationManager.setExporterState(ExportingState.PAUSED))
+      assertThat(partitionConfigurationManager.setExportingState(ExportingState.PAUSED))
           .failsWithin(Duration.ofMillis(100))
           .withThrowableOfType(ExecutionException.class)
           .withMessageContaining("force fail");
@@ -552,7 +552,7 @@ final class PartitionConfigurationManagerTest {
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
       // when - then
-      assertThat(partitionConfigurationManager.setExporterState(ExportingState.UNKNOWN))
+      assertThat(partitionConfigurationManager.setExportingState(ExportingState.UNKNOWN))
           .failsWithin(Duration.ofMillis(100))
           .withThrowableOfType(ExecutionException.class)
           .withMessageContaining("Expected exporting state to be a valid value");
