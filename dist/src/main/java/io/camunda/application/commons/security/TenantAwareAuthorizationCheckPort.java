@@ -68,6 +68,8 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
     }
     final Either<AuthorizationRejection, Void> aliasResult =
         authorizationService.check(authentication, withIdentityAlias(authorization));
+    // If both checks fail, return the original rejection: it names the requested "admin"
+    // component, whereas aliasResult's would reference the internal "identity" alias.
     return aliasResult.isRight() ? aliasResult : result;
   }
 
