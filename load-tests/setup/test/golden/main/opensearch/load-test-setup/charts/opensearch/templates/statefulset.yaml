@@ -44,7 +44,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: opensearch-master
       annotations:
-        configchecksum: 49bbaccaee19563ffb25229fc0facc9f40e6147f420865799c5976d572d5ff4
+        configchecksum: 89855becf2be7b6b233833897fb810286d7665303a93b08c303727a1cfdd528
     spec:
       securityContext:
         fsGroup: 1000
