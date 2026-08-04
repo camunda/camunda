@@ -56,7 +56,8 @@ public final class CallActivityTest {
                   true,
                   ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR,
                   true,
-                  false));
+                  false,
+                  true));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";

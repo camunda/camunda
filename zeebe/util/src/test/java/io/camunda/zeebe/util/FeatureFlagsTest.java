@@ -24,6 +24,7 @@ class FeatureFlagsTest {
     assertThat(sut.enableMessageTTLCheckerAsync()).isFalse();
     assertThat(sut.enablePartitionScaling()).isFalse();
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
+    assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
   }
 
   @Test
@@ -36,5 +37,6 @@ class FeatureFlagsTest {
     assertThat(sut.enableMessageTTLCheckerAsync()).isTrue();
     assertThat(sut.enablePartitionScaling()).isTrue();
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
+    assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
   }
 }
