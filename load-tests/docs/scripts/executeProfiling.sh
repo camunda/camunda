@@ -85,6 +85,9 @@ kubectl cp "$node:$containerPath/$filename" "$node-$filename"
 
 # Clean up
 # Comment out the following lines to make exeuction faster next time
-kubectl exec "$node" -- rm "$containerPath/asprof" "$containerPath/libasyncProfiler.so" "$containerPath/$filename"
-rm profiler.tar.gz
-rm -r async-profiler-4.0-linux-x64/
+# These are best-effort: a cleanup failure (e.g. a file already removed,
+# a permission hiccup, or a transient exec error) must not fail the whole
+# profiling run, so failures here are swallowed rather than propagated.
+kubectl exec "$node" -- rm -f "$containerPath/asprof" "$containerPath/libasyncProfiler.so" "$containerPath/$filename" || true
+rm -f profiler.tar.gz
+rm -rf async-profiler-4.0-linux-x64/
