@@ -21,6 +21,8 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {Notifications} from '#/shared/notifications/components/Notifications';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionsHarness} from './DecisionsHarness';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -50,6 +52,7 @@ describe('<Decisions />', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+		notificationsStore.reset();
 	});
 
 	it('should render the filter sections', async ({worker}) => {
@@ -104,6 +107,27 @@ describe('<Decisions />', () => {
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 		await expect.poll(getSearch).toMatchObject({decisionDefinitionId: 'invoice-approval'});
 		expect(getSearch().decisionDefinitionVersion).toBeUndefined();
+	});
+
+	it('clears the decision filter and shows an error toast when the decision id has no match', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<>
+					<DecisionsHarness />
+					<Notifications />
+				</>
+			),
+			{path: '/operate/decisions', initialEntry: '/operate/decisions?decisionDefinitionId=does-not-exist'},
+		);
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+
+		await expect.element(screen.getByText('Decision could not be found')).toBeVisible();
+		await expect.poll(() => getSearch().decisionDefinitionId).toBeUndefined();
 	});
 
 	describe('instance state checkboxes', () => {

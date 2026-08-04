@@ -490,7 +490,8 @@
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
 					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
 					"noDecisionSelected": "No hay ninguna decisión seleccionada",
-					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros"
+					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
+					"decisionNotFoundTitle": "No se pudo encontrar la decisión"
 				},
 				"filters": {
 					"tenant": "Inquilino",

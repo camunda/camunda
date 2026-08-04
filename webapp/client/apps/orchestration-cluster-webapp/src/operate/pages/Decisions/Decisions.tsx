@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
@@ -15,6 +15,7 @@ import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionsOptions} from './decisions.queries';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
@@ -102,6 +103,22 @@ const Decisions: React.FC<Props> = ({
 		const definition = matches.find((def) => def.version === decisionDefinitionVersion);
 		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
 	}, [data, decisionDefinitionId, decisionDefinitionVersion]);
+
+	useEffect(() => {
+		if (decisionDefinitionId === undefined || decisionDefinitionSelection.kind !== 'no-match') {
+			return;
+		}
+
+		void navigate({
+			to: '.',
+			search: (prev) => ({...prev, decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}),
+		});
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: t('operate.decisions.diagramPanel.decisionNotFoundTitle'),
+			isDismissable: true,
+		});
+	}, [decisionDefinitionId, decisionDefinitionSelection, navigate, t]);
 
 	const hasOptionalFilters =
 		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);

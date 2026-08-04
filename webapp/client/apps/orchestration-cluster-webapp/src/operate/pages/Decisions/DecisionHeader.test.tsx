@@ -24,7 +24,10 @@ describe('<DecisionHeader />', () => {
 			<DecisionHeader
 				decisionDefinitionSelection={{
 					kind: 'single-version',
-					definition: createDecisionDefinition({name: 'Invoice Classification', decisionDefinitionId: 'invoice-classification'}),
+					definition: createDecisionDefinition({
+						name: 'Invoice Classification',
+						decisionDefinitionId: 'invoice-classification',
+					}),
 				}}
 			/>,
 		);
