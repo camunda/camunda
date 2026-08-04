@@ -660,7 +660,9 @@
 						"applyButton": "Aplicar",
 						"cancelButton": "Cancelar",
 						"body": "Se cancelará la instancia {{processInstanceKey}}. Si existen instancias llamadas, también se cancelarán.",
-						"hint": "Haga clic en \"Aplicar\" para continuar."
+						"hint": "Haga clic en \"Aplicar\" para continuar.",
+						"verificationLoading": "Comprobando si esta instancia se puede cancelar...",
+						"verificationError": "No se pudo comprobar si esta instancia se puede cancelar. Cierre este diálogo e inténtelo de nuevo."
 					},
 					"cancelRootInstanceModal": {
 						"heading": "Cancelar instancia",

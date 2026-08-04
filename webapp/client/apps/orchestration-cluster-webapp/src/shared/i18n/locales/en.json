@@ -674,7 +674,9 @@
 						"applyButton": "Apply",
 						"cancelButton": "Cancel",
 						"body": "About to cancel Instance {{processInstanceKey}}. In case there are called instances, these will be canceled too.",
-						"hint": "Click \"Apply\" to proceed."
+						"hint": "Click \"Apply\" to proceed.",
+						"verificationLoading": "Checking whether this instance can be canceled...",
+						"verificationError": "Cancellation availability could not be checked. Close this dialog and try again."
 					},
 					"cancelRootInstanceModal": {
 						"heading": "Cancel Instance",

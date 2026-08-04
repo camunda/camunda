@@ -7,8 +7,10 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {Modal, Link} from '@carbon/react';
+import {InlineLoading, InlineNotification, Link, Modal} from '@carbon/react';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getBootConfig} from '#/shared/config/getBootConfig';
+import {mergePathname} from '#/shared/http/mergePathname';
 import {useCallHierarchy} from './Operations.queries';
 
 type Props = {
@@ -20,10 +22,12 @@ type Props = {
 
 const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onConfirm, onCancel}) => {
 	const {t} = useTranslation();
-	const {data: callHierarchy} = useCallHierarchy(processInstanceKey, {enabled: open});
+	const {data: callHierarchy, isError, isPending} = useCallHierarchy(processInstanceKey, {enabled: open});
 	const rootInstanceId = callHierarchy?.[0]?.processInstanceKey;
 
 	if (rootInstanceId) {
+		const rootInstancePath = mergePathname(getBootConfig().contextPath, `/operate/processes/${rootInstanceId}`);
+
 		return (
 			<Modal
 				open={open}
@@ -37,7 +41,7 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 				<p>
 					{t('operate.shared.operations.cancelRootInstanceModal.bodyBeforeLink')}{' '}
 					<Link
-						href={`/operate/processes/${rootInstanceId}`}
+						href={rootInstancePath}
 						title={t('operate.shared.operations.cancelRootInstanceModal.linkTitle', {rootInstanceId})}
 					>
 						{rootInstanceId}
@@ -55,6 +59,7 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 			modalHeading={t('operate.shared.operations.cancelConfirmationModal.heading')}
 			primaryButtonText={t('operate.shared.operations.cancelConfirmationModal.applyButton')}
 			secondaryButtonText={t('operate.shared.operations.cancelConfirmationModal.cancelButton')}
+			primaryButtonDisabled={isPending || isError}
 			onRequestSubmit={onConfirm}
 			onRequestClose={onCancel}
 			size="md"
@@ -62,6 +67,17 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 		>
 			<p>{t('operate.shared.operations.cancelConfirmationModal.body', {processInstanceKey})}</p>
 			<p>{t('operate.shared.operations.cancelConfirmationModal.hint')}</p>
+			{isPending && (
+				<InlineLoading description={t('operate.shared.operations.cancelConfirmationModal.verificationLoading')} />
+			)}
+			{isError && (
+				<InlineNotification
+					kind="error"
+					hideCloseButton
+					role="alert"
+					title={t('operate.shared.operations.cancelConfirmationModal.verificationError')}
+				/>
+			)}
 		</Modal>
 	);
 };

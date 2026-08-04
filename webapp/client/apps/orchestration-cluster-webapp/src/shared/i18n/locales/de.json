@@ -660,7 +660,9 @@
 						"applyButton": "Anwenden",
 						"cancelButton": "Abbrechen",
 						"body": "Instanz {{processInstanceKey}} wird abgebrochen. Falls es aufgerufene Instanzen gibt, werden diese ebenfalls abgebrochen.",
-						"hint": "Klicken Sie auf \"Anwenden\", um fortzufahren."
+						"hint": "Klicken Sie auf \"Anwenden\", um fortzufahren.",
+						"verificationLoading": "Es wird geprüft, ob diese Instanz abgebrochen werden kann...",
+						"verificationError": "Es konnte nicht geprüft werden, ob diese Instanz abgebrochen werden kann. Schließen Sie diesen Dialog und versuchen Sie es erneut."
 					},
 					"cancelRootInstanceModal": {
 						"heading": "Instanz abbrechen",

@@ -8,6 +8,7 @@
 
 import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
+import {userEvent} from 'vitest/browser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
@@ -73,7 +74,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /retry instance/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /retry instance/i}));
 
 		expect(onExecute).toHaveBeenCalled();
 	});
@@ -90,8 +91,10 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /cancel instance/i}).click();
-		await screen.getByRole('button', {name: 'Apply', exact: true}).click();
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
+		const applyButton = screen.getByRole('button', {name: 'Apply', exact: true});
+		await expect.element(applyButton).toBeEnabled();
+		await userEvent.click(applyButton);
 
 		expect(onExecute).toHaveBeenCalled();
 	});
@@ -107,8 +110,8 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /delete instance/i}).click();
-		await screen.getByRole('button', {name: /^delete$/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /delete instance/i}));
+		await userEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
 		expect(onExecute).toHaveBeenCalled();
 	});
@@ -124,7 +127,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /modify instance/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /modify instance/i}));
 
 		expect(onExecute).toHaveBeenCalled();
 	});
@@ -166,12 +169,61 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /cancel instance/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 
 		const modalText = `About to cancel Instance ${PROCESS_INSTANCE_KEY}. In case there are called instances, these will be canceled too.`;
 		await expect.element(screen.getByText(modalText)).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeVisible();
+	});
+
+	it('should disable cancellation while the call hierarchy is loading', async ({worker}) => {
+		worker.use(
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json([]),
+				delay: 'infinite',
+			}),
+		);
+		const onExecute = vi.fn();
+
+		const screen = await render(
+			<Operations
+				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute}]}
+				processInstanceKey={PROCESS_INSTANCE_KEY}
+			/>,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
+
+		await expect.element(screen.getByText('Checking whether this instance can be canceled...')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).toBeDisabled();
+		expect(onExecute).not.toHaveBeenCalled();
+	});
+
+	it('should disable cancellation when the call hierarchy cannot be loaded', async ({worker}) => {
+		worker.use(
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json({}, {status: 500}),
+			}),
+		);
+		const onExecute = vi.fn();
+
+		const screen = await render(
+			<Operations
+				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute}]}
+				processInstanceKey={PROCESS_INSTANCE_KEY}
+			/>,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
+
+		await expect
+			.element(screen.getByRole('alert'))
+			.toHaveTextContent('Cancellation availability could not be checked. Close this dialog and try again.');
+		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).toBeDisabled();
+		expect(onExecute).not.toHaveBeenCalled();
 	});
 
 	it('should show delete confirmation modal', async () => {
@@ -183,7 +235,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /delete instance/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /delete instance/i}));
 
 		const modalText = `About to delete Instance ${PROCESS_INSTANCE_KEY}.`;
 		await expect.element(screen.getByText(modalText)).toBeVisible();
@@ -209,10 +261,11 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('button', {name: /cancel instance/i}).click();
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 		await expect.element(screen.getByText(/to cancel this instance, the root instance/i)).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: '3'})).toHaveAttribute('href', '/operate/processes/3');
 		expect(screen.getByRole('button', {name: 'Cancel', exact: true}).elements()).toHaveLength(0);
 		expect(screen.getByRole('button', {name: 'Apply', exact: true}).elements()).toHaveLength(0);
 	});
