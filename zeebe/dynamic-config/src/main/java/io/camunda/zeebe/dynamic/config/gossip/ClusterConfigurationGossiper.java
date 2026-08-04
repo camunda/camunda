@@ -339,7 +339,15 @@ public final class ClusterConfigurationGossiper
     executor.run(
         () -> {
           configurationUpdateListeners.add(listener);
-          if (gossipState.getClusterConfiguration() != null) {
+          // Prefer the new-model view (field 2): it carries every partition group, whereas the
+          // legacy view (field 1) is always a single-group projection (see
+          // CurrentClusterConfiguration#toLegacyDefault) and would silently hide every
+          // non-default physical tenant group from a listener backfilled through it. Fall back to
+          // the legacy field only when the new-model one hasn't been populated yet.
+          final var currentConfiguration = gossipState.getCurrentClusterConfiguration();
+          if (currentConfiguration != null) {
+            listener.onClusterConfigurationUpdated(currentConfiguration);
+          } else if (gossipState.getClusterConfiguration() != null) {
             listener.onClusterConfigurationUpdated(gossipState.getClusterConfiguration());
           }
         });
