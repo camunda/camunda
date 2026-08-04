@@ -12,18 +12,15 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +37,8 @@ import org.slf4j.LoggerFactory;
  * {@link #resolveForCheck} for multi-check sites (e.g. UserTask processors) that run several CSL
  * checks after the skip-logic resolves the principal.
  *
- * <p>Tenant-membership checks are delegated to {@link CslTenantCheck}; this class exposes them
- * under their original method names so existing callers are unaffected.
+ * <p>Tenant-membership checks live in {@link CslTenantCheck}; this class only combines them with a
+ * preceding RBAC {@link #check} in {@link #checkAuthorizationAndTenant}.
  */
 @NullMarked
 public final class CslAuthorizationCheck {
@@ -108,57 +105,6 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Resolves the {@link TenantAccess} for a command from its authorization claims. Delegates to
-   * {@link CslTenantCheck#resolveAuthorizedTenants}.
-   */
-  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    return tenantCheck.resolveAuthorizedTenants(authorizations);
-  }
-
-  public boolean isMultiTenancyChecksEnabled() {
-    return tenantCheck.isMultiTenancyChecksEnabled();
-  }
-
-  /**
-   * Tenant-assignment check for command sites that must verify tenant membership independently of a
-   * resource {@link #check} — e.g. a command-level tenant gate, or a site whose RBAC check runs at
-   * a different granularity (one tenant, many resource checks). Delegates to {@link
-   * CslTenantCheck#checkTenant}; see that method's javadoc for the full skip-logic contract.
-   *
-   * @param value the value to return on success (mirrors {@link #check}; enables {@code flatMap}
-   *     composition with it)
-   * @param notAssignedRejection the rejection to return when the principal is not assigned to
-   *     {@code tenantId}
-   */
-  public <T> Either<Rejection, T> checkTenant(
-      final TypedRecord<?> command,
-      final String tenantId,
-      final T value,
-      final Rejection notAssignedRejection) {
-    return tenantCheck.checkTenant(command, tenantId, value, notAssignedRejection);
-  }
-
-  /**
-   * Tenant-assignment check across a list of tenant IDs at once, for command sites that call it
-   * directly with no preceding {@link #check}. Delegates to {@link
-   * CslTenantCheck#checkTenantsRequiringPrincipal}; see that method's javadoc for the full
-   * skip-logic contract, including why it has no no-principal skip (unlike {@link #checkTenant}).
-   *
-   * @param authorizedTenants the tenants the command's principal is authorized for, as resolved by
-   *     {@link #resolveAuthorizedTenants} from the same command's claims
-   * @param notAssignedRejection supplies the rejection to return when the principal is not assigned
-   *     to all of {@code tenantIds}; only invoked on that failure path
-   */
-  public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
-      final List<String> tenantIds,
-      final TenantAccess authorizedTenants,
-      final T value,
-      final Supplier<Rejection> notAssignedRejection) {
-    return tenantCheck.checkTenantsRequiringPrincipal(
-        tenantIds, authorizedTenants, value, notAssignedRejection);
-  }
-
-  /**
    * Combines {@link #check} and {@link CslTenantCheck#checkTenant} into the single call most
    * command sites need: RBAC permission first, tenant membership second. When both checks would
    * fail on the same command, permission rejection wins — so a principal with no permission at all
@@ -182,7 +128,7 @@ public final class CslAuthorizationCheck {
       final String tenantId,
       final Rejection tenantNotAssignedRejection) {
     return check(command, required, value, noPrincipalRejection)
-        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+        .flatMap(v -> tenantCheck.checkTenant(command, tenantId, v, tenantNotAssignedRejection));
   }
 
   /**
@@ -199,7 +145,7 @@ public final class CslAuthorizationCheck {
       final String tenantId,
       final Rejection tenantNotAssignedRejection) {
     return check(command, required, value, noPrincipalRejection, denialMapper)
-        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+        .flatMap(v -> tenantCheck.checkTenant(command, tenantId, v, tenantNotAssignedRejection));
   }
 
   /**
