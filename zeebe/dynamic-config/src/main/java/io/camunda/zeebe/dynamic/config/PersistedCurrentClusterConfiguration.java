@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * The multi-partition-group counterpart of {@link PersistedClusterConfiguration}. Reads and writes
@@ -41,6 +41,7 @@ import org.jspecify.annotations.NonNull;
  *
  * First-boot migration after an upgrade is therefore automatic and requires no separate step.
  */
+@NullMarked
 public final class PersistedCurrentClusterConfiguration {
 
   static final byte VERSION_LEGACY = 1;
@@ -49,12 +50,12 @@ public final class PersistedCurrentClusterConfiguration {
 
   private final Path configurationFile;
   private final ClusterConfigurationSerializer serializer;
-  private @NonNull CurrentClusterConfiguration configuration;
+  private CurrentClusterConfiguration configuration;
 
   private PersistedCurrentClusterConfiguration(
       final Path configurationFile,
       final ClusterConfigurationSerializer serializer,
-      final @NonNull CurrentClusterConfiguration configuration) {
+      final CurrentClusterConfiguration configuration) {
     this.configurationFile = configurationFile;
     this.serializer = serializer;
     this.configuration = configuration;
