@@ -20,6 +20,7 @@ public class SecretResolutionCfg implements ConfigurationEntry {
   private Duration retryMaxDelay = EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
   private int retryBackoffFactor =
       EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
+  private int batchResolutionLimit = EngineConfiguration.DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -48,6 +49,11 @@ public class SecretResolutionCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(
           "Secret resolution retryBackoffFactor must be at least 1 but was %d"
               .formatted(retryBackoffFactor));
+    }
+    if (batchResolutionLimit < 1) {
+      throw new IllegalArgumentException(
+          "Secret resolution batchResolutionLimit must be at least 1 but was %d"
+              .formatted(batchResolutionLimit));
     }
   }
 
@@ -91,6 +97,14 @@ public class SecretResolutionCfg implements ConfigurationEntry {
     this.retryBackoffFactor = retryBackoffFactor;
   }
 
+  public int getBatchResolutionLimit() {
+    return batchResolutionLimit;
+  }
+
+  public void setBatchResolutionLimit(final int batchResolutionLimit) {
+    this.batchResolutionLimit = batchResolutionLimit;
+  }
+
   @Override
   public String toString() {
     return "SecretResolutionCfg{"
@@ -104,6 +118,8 @@ public class SecretResolutionCfg implements ConfigurationEntry {
         + retryMaxDelay
         + ", retryBackoffFactor="
         + retryBackoffFactor
+        + ", batchResolutionLimit="
+        + batchResolutionLimit
         + '}';
   }
 }

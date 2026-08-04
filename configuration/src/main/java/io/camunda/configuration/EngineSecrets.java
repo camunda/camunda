@@ -20,12 +20,14 @@ public class EngineSecrets {
   public static final Duration DEFAULT_RETRY_INITIAL_DELAY = Duration.ofSeconds(1);
   public static final Duration DEFAULT_RETRY_MAX_DELAY = Duration.ofSeconds(30);
   public static final int DEFAULT_RETRY_BACKOFF_FACTOR = 2;
+  public static final int DEFAULT_BATCH_RESOLUTION_LIMIT = 20;
 
   private Duration interval = DEFAULT_INTERVAL;
   private int retryMaxAttempts = DEFAULT_RETRY_MAX_ATTEMPTS;
   private Duration retryInitialDelay = DEFAULT_RETRY_INITIAL_DELAY;
   private Duration retryMaxDelay = DEFAULT_RETRY_MAX_DELAY;
   private int retryBackoffFactor = DEFAULT_RETRY_BACKOFF_FACTOR;
+  private int batchResolutionLimit = DEFAULT_BATCH_RESOLUTION_LIMIT;
 
   /**
    * Cadence at which the secret resolution scheduler polls for pending secret references. This
@@ -100,5 +102,21 @@ public class EngineSecrets {
 
   public void setRetryBackoffFactor(final int retryBackoffFactor) {
     this.retryBackoffFactor = retryBackoffFactor;
+  }
+
+  /**
+   * Maximum number of pending secret references resolved per scheduling cycle. Remaining refs are
+   * picked up in subsequent cycles. This configuration can be accessed via the environment
+   * variable: <br>
+   * {@code camunda.processing.engine.secrets.batch-resolution-limit}.
+   *
+   * <p>Defaults to {@code 20}.
+   */
+  public int getBatchResolutionLimit() {
+    return batchResolutionLimit;
+  }
+
+  public void setBatchResolutionLimit(final int batchResolutionLimit) {
+    this.batchResolutionLimit = batchResolutionLimit;
   }
 }

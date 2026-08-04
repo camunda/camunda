@@ -68,6 +68,7 @@ public final class EngineConfiguration {
       Duration.ofSeconds(1);
   public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
   public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
+  public static final int DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT = 20;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -145,6 +146,7 @@ public final class EngineConfiguration {
       DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY;
   private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
   private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
+  private int secretResolutionBatchLimit = DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -443,6 +445,20 @@ public final class EngineConfiguration {
   public EngineConfiguration setSecretResolutionRetryBackoffFactor(
       final int secretResolutionRetryBackoffFactor) {
     this.secretResolutionRetryBackoffFactor = secretResolutionRetryBackoffFactor;
+    return this;
+  }
+
+  public int getSecretResolutionBatchLimit() {
+    return secretResolutionBatchLimit;
+  }
+
+  public EngineConfiguration setSecretResolutionBatchLimit(final int secretResolutionBatchLimit) {
+    if (secretResolutionBatchLimit < 1) {
+      throw new IllegalArgumentException(
+          "secretResolutionBatchLimit must be at least 1 but was %d"
+              .formatted(secretResolutionBatchLimit));
+    }
+    this.secretResolutionBatchLimit = secretResolutionBatchLimit;
     return this;
   }
 
