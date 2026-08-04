@@ -711,6 +711,10 @@ jobs:
           status: failure
           evidence: ${{ steps.classify.outputs.evidence || 'Helm chart Integration Tests failed.' }}
           pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
+          # merge_group is never a draft (a draft cannot enter the queue), and a
+          # pull_request event carries its own flag — so the draft gate costs no
+          # API call here and needs no extra token scope.
+          pr_is_draft: ${{ github.event.merge_group && 'false' || github.event.pull_request.draft }}
           # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
           # as alwaysgreen-streak-detector.yml.
           slack_channel: "C0AK0AVKRL0"
@@ -1143,7 +1147,12 @@ jobs:
       - format-identifier
       - helm-deploy-status
       - trigger-saas-e2e
-    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    # Same draft gate as the Slack alert above, for the same reason: unfinished work
+    # is expected to fail, and dispatching a fix agent at it wastes an agent run and
+    # can open a PR against a moving target. No-op until a pull_request trigger is
+    # added — merge_group is never a draft and push carries no PR.
+    if: ${{ always() && contains(needs.*.result, 'failure')
+            && !github.event.pull_request.draft }}
     uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
     secrets: inherit
     with:

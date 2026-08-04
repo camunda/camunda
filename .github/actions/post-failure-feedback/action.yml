@@ -38,6 +38,21 @@ inputs:
       (refs/heads/gh-readonly-queue/<base>/pr-<N>-<sha>). Empty to skip the PR comment.
     required: false
     default: ""
+  pr_is_draft:
+    description: >
+      Draft state of `pr` when the caller already knows it — on a pull_request
+      trigger pass ${{ github.event.pull_request.draft }}, on merge_group pass
+      "false" (a draft cannot enter a merge queue). Empty means resolve it via
+      the API, which needs github_token.
+    required: false
+    default: ""
+  skip_on_draft:
+    description: >
+      Skip the Slack message when `pr` is a draft PR. The job summary and the PR
+      comment are still posted, so the author keeps the verdict in place. Set to
+      "false" to alert on drafts too.
+    required: false
+    default: "true"
   cookbook_url:
     description: "Debugging cookbook link"
     required: false
@@ -82,6 +97,8 @@ runs:
         FB_EVIDENCE: ${{ inputs.evidence }}
         FB_REPO: ${{ inputs.repo || github.repository }}
         FB_PR: ${{ inputs.pr }}
+        FB_PR_IS_DRAFT: ${{ inputs.pr_is_draft }}
+        FB_SKIP_ON_DRAFT: ${{ inputs.skip_on_draft }}
         FB_COOKBOOK_URL: ${{ inputs.cookbook_url }}
         FB_SLACK_CHANNEL: ${{ inputs.slack_channel }}
         SLACK_BOT_TOKEN: ${{ inputs.slack_bot_token }}
