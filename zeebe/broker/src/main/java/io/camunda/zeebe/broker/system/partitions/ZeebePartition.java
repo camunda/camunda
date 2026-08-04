@@ -575,7 +575,7 @@ public final class ZeebePartition extends Actor
         timeout);
     rollbackTransferPause();
     result.completeExceptionally(
-        new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
+        new TimeoutException("Timed out establishing the leadership-transfer write freeze"));
   }
 
   /**

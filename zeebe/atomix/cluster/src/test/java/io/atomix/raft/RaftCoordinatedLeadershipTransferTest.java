@@ -129,7 +129,8 @@ public class RaftCoordinatedLeadershipTransferTest {
               @Override
               public CompletableFuture<Long> freeze(final Duration timeout) {
                 return CompletableFuture.failedFuture(
-                    new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
+                    new TimeoutException(
+                        "Timed out establishing the leadership-transfer write freeze"));
               }
 
               @Override
