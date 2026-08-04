@@ -10,11 +10,15 @@ package io.camunda.document.store;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration;
+import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
+import io.camunda.document.api.DocumentStoreProvider;
 import io.camunda.document.store.inmemory.InMemoryDocumentStore;
 import io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 
@@ -130,5 +134,37 @@ public class SimpleDocumentStoreRegistryTest {
     final var executor = ((TestDocumentStoreProvider.DummyDocumentStore) store).executorService();
     assertThat(executor).isInstanceOf(ThreadPoolExecutor.class);
     assertThat(((ThreadPoolExecutor) executor).getMaximumPoolSize()).isEqualTo(10);
+  }
+
+  @Test
+  public void shouldNotExposeCredentialsInConfigurationErrorMessage() {
+    // given
+    final DocumentStoreConfigurationRecord configurationRecord =
+        new DocumentStoreConfigurationRecord(
+            "azure-store",
+            UnregisteredDocumentStoreProvider.class,
+            Map.of("CONTAINER", "documents", "CONNECTION_STRING", "AccountKey=super-secret-key"));
+    final DocumentStoreConfiguration configuration =
+        new DocumentStoreConfiguration("azure-store", null, List.of(configurationRecord));
+
+    // when
+    // then
+    assertThatThrownBy(() -> new SimpleDocumentStoreRegistry(() -> configuration))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("azure-store")
+        .hasMessageContaining("documents")
+        .hasMessageContaining("<redacted>")
+        .hasMessageNotContaining("super-secret-key");
+  }
+
+  /** Deliberately absent from {@code META-INF/services}, so the registry fails to resolve it. */
+  private static final class UnregisteredDocumentStoreProvider implements DocumentStoreProvider {
+
+    @Override
+    public DocumentStore createDocumentStore(
+        final DocumentStoreConfigurationRecord configuration,
+        final ExecutorService executorService) {
+      throw new UnsupportedOperationException("not reachable");
+    }
   }
 }
