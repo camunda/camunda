@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
 import {createFileRoute, Outlet, redirect, useRouterState, type RegisteredRouter} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {SessionWatcher} from '#/shared/auth/components/SessionWatcher';
@@ -57,11 +56,6 @@ const Route = createFileRoute('/_auth')({
 	),
 });
 
-const PageContent = styled.main`
-	padding-top: var(--cds-spacing-09);
-	height: 100%;
-`;
-
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 
 const componentIndexes = {
@@ -98,9 +92,7 @@ function RouteComponent() {
 			<SessionWatcher />
 			<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
 				<Header currentUser={currentUser} license={license} />
-				<PageContent>
-					<Outlet />
-				</PageContent>
+				<Outlet />
 			</C3Provider>
 		</>
 	);

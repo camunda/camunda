@@ -13,8 +13,10 @@ import {CodeSnippet} from '@carbon/react';
 const PageContainer = styled.section`
 	display: grid;
 	height: 100%;
+	box-sizing: border-box;
 	position: relative;
 	overflow: auto;
+	padding-top: var(--cds-spacing-09);
 	grid-template-columns: auto minmax(0, 1fr);
 	grid-template-rows: 1fr;
 `;

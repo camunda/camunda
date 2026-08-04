@@ -15,6 +15,7 @@ const PageContainer = styled.main`
 	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
+	padding-top: var(--cds-spacing-09);
 	overflow: hidden;
 	background-color: var(--cds-layer);
 `;
