@@ -44,7 +44,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: opensearch-master
       annotations:
-        configchecksum: 2bb238ff7b6ab116c9d7c0aeb7fd86ea4207298b0dba1f88c8b89087bb197a4
+        configchecksum: 49bbaccaee19563ffb25229fc0facc9f40e6147f420865799c5976d572d5ff4
     spec:
       securityContext:
         fsGroup: 1000
@@ -121,6 +121,12 @@ spec:
         - |
           #!/usr/bin/env bash
           cp -r /tmp/configfolder/*  /tmp/config/
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
         resources:
           {}
         volumeMounts:
