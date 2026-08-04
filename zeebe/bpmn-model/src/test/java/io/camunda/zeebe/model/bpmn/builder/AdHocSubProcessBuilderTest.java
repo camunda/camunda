@@ -341,6 +341,26 @@ class AdHocSubProcessBuilderTest {
         .isEqualTo(ZeebeAgentType.aiAgentSubProcess);
   }
 
+  @Test
+  void shouldSetModelerTemplate() {
+    // given / when
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .zeebeModelerTemplate("io.camunda.connectors.MyTemplate")
+                        .task("A"))
+            .endEvent()
+            .done();
+
+    // then
+    final AdHocSubProcess adHocSubProcess = process.getModelElementById("ad-hoc");
+    assertThat(adHocSubProcess.getModelerTemplate()).isEqualTo("io.camunda.connectors.MyTemplate");
+  }
+
   private Collection<ZeebeExecutionListener> getExecutionListeners(
       final ModelElementInstance elementInstance) {
     return elementInstance

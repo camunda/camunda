@@ -75,6 +75,17 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     return myself;
   }
 
+  /**
+   * Sets the zeebe:modelerTemplate attribute of the build ad-hoc sub-process.
+   *
+   * @param modelerTemplate the element template id to set
+   * @return the builder object
+   */
+  public B zeebeModelerTemplate(final String modelerTemplate) {
+    ((AdHocSubProcess) element).setModelerTemplate(modelerTemplate);
+    return myself;
+  }
+
   public B zeebeOutputCollection(final String outputCollection) {
     final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
     adHoc.setOutputCollection(outputCollection);

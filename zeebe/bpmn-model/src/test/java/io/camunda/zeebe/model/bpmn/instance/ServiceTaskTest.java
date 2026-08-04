@@ -16,6 +16,7 @@
 
 package io.camunda.zeebe.model.bpmn.instance;
 
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -38,6 +39,7 @@ public class ServiceTaskTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption("implementation", false, false, "##WebService"),
-        new AttributeAssumption("operationRef"));
+        new AttributeAssumption("operationRef"),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "modelerTemplate", false, false));
   }
 }

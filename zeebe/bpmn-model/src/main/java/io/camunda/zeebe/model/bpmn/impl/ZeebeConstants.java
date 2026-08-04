@@ -75,6 +75,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_CONDITION = "condition";
 
   public static final String ATTRIBUTE_AGENT_TYPE = "agentType";
+  public static final String ATTRIBUTE_MODELER_TEMPLATE = "modelerTemplate";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";

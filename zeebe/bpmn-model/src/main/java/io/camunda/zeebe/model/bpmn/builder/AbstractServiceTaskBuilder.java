@@ -47,6 +47,17 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     return myself;
   }
 
+  /**
+   * Sets the zeebe:modelerTemplate attribute of the build service task.
+   *
+   * @param modelerTemplate the element template id to set
+   * @return the builder object
+   */
+  public B zeebeModelerTemplate(final String modelerTemplate) {
+    element.setModelerTemplate(modelerTemplate);
+    return myself;
+  }
+
   public B zeebeLinkedResources(
       final Consumer<LinkedResourceBuilder> linkedResourceBuilderConsumer) {
     final ZeebeLinkedResource linkedResource = createLinkedResourceElement();

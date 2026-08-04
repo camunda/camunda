@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
@@ -286,5 +287,20 @@ public class ServiceTaskBuilderTest {
         .singleElement()
         .extracting(ZeebeAgentDefinition::getAgentType)
         .isEqualTo(ZeebeAgentType.external);
+  }
+
+  @Test
+  void shouldSetModelerTemplate() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeModelerTemplate("io.camunda.connectors.MyTemplate"))
+            .endEvent()
+            .done();
+
+    // then
+    final ServiceTask serviceTask = instance.getModelElementById("task");
+    assertThat(serviceTask.getModelerTemplate()).isEqualTo("io.camunda.connectors.MyTemplate");
   }
 }
