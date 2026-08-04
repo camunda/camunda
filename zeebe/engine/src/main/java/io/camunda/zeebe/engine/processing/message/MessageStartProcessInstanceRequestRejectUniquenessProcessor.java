@@ -74,6 +74,8 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
+    metrics.stopRoundTrip(
+        reply.getMessageKey(), reply.getProcessDefinitionKey(), ReplyOutcome.REJECTED_UNIQUENESS);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_UNIQUENESS);

@@ -72,6 +72,10 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
+    metrics.stopRoundTrip(
+        reply.getMessageKey(),
+        reply.getProcessDefinitionKey(),
+        ReplyOutcome.REJECTED_NO_SUBSCRIPTION);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_NO_SUBSCRIPTION);

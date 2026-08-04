@@ -104,16 +104,8 @@ public final class MessageStartProcessInstanceRequestStartProcessor
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
 
-    metrics.crossPartitionReply(ReplyOutcome.STARTED);
-    metrics.completeCrossPartitionAskStarted(
-        reply.getMessageKey(), reply.getProcessDefinitionKey());
-
-    LOG.atDebug()
-        .addKeyValue("messageKey", reply.getMessageKey())
-        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
-        .addKeyValue("outcome", ReplyOutcome.STARTED.getLabel())
-        .addKeyValue("processInstanceKey", reply.getProcessInstanceKey())
-        .log("Applied cross-partition message-start reply");
+    metrics.stopRoundTrip(
+        reply.getMessageKey(), reply.getProcessDefinitionKey(), ReplyOutcome.STARTED);
 
     // Look up the buffered message once: both the CORRELATED applier and the EXPIRED applier need
     // it (CORRELATED writes a foreign-key reference into MESSAGE_KEY; EXPIRED removes the buffered
@@ -165,8 +157,21 @@ public final class MessageStartProcessInstanceRequestStartProcessor
       expiredMessageRecord.wrap(storedMessage.getMessage());
       stateWriter.appendFollowUpEvent(
           reply.getMessageKey(), MessageIntent.EXPIRED, expiredMessageRecord);
+    }
+
+    metrics.crossPartitionReply(ReplyOutcome.STARTED);
+    metrics.completeCrossPartitionAskStarted(
+        reply.getMessageKey(), reply.getProcessDefinitionKey());
+    if (storedMessage != null) {
       metrics.expireCrossPartitionAsks(reply.getMessageKey());
     }
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", reply.getMessageKey())
+        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
+        .addKeyValue("outcome", ReplyOutcome.STARTED.getLabel())
+        .addKeyValue("processInstanceKey", reply.getProcessInstanceKey())
+        .log("Applied cross-partition message-start reply");
 
     // (iv) If the cross-partition start was triggered by a synchronous correlate command (rather
     // than an asynchronous publish), flush the deferred CORRELATED response to the waiting client.

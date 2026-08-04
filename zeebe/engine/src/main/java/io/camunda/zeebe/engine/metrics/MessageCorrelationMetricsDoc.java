@@ -496,6 +496,70 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * Round-trip latency of a single cross-partition message-start ask on {@code P_K}: the time from
+   * the most recent ask <em>send</em> (the initial dispatch or any scheduler retry) until the
+   * matching reply is processed here, tagged by that reply outcome. Where {@link
+   * #CROSS_PARTITION_ASK_DURATION} (M7) measures the whole ask lifetime — first dispatch to a
+   * terminal, blending the technical round-trip with the retry/back-off waits and the business-id
+   * contention wait — this isolates just the technical {@code P_K → P_B → P_K} leg of the latest
+   * attempt (last-send-wins: a superseded retry never received a reply, so the delivered reply is
+   * measured against the last send). Subtracting this from M7 leaves the retry/back-off plus
+   * contention component, making the blocked-start latency decomposable. Each send/reply attempt is
+   * measured, so a repeatedly-rejected ask contributes one sample per reply. Samples are in-memory
+   * and best-effort: a local expiry (the buffered message hits its TTL on {@code P_K} with no
+   * reply) discards the in-flight sample unmeasured, and all samples are dropped on leader change
+   * (see {@link MessageCorrelationMetrics}).
+   */
+  CROSS_PARTITION_ASK_ROUND_TRIP {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(100),
+      Duration.ofMillis(500),
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(30),
+      Duration.ofMinutes(1),
+      Duration.ofMinutes(5),
+      Duration.ofMinutes(10),
+      Duration.ofMinutes(30),
+      Duration.ofHours(1),
+      Duration.ofHours(5),
+      Duration.ofHours(10),
+    };
+
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.asks.round.trip.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Round-trip latency of a cross-partition message-start ask on the correlation-key partition (P_K), from the last send to the matching reply, tagged by reply outcome.";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {MessageCorrelationKeyNames.OUTCOME};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
    * Release-to-start latency on {@code P_B = hash(businessId)}: the time between a business id
    * being freed by a completing/terminating holder and a cross-partition message-start that was
    * blocked on that business id (uniqueness-rejected and retrying) actually starting here. It

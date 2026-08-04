@@ -29,6 +29,8 @@ final class MessageCorrelationMetricsTest {
 
   private static final String ASK_DURATION_METRIC =
       "zeebe.message.start.cross.partition.asks.duration";
+  private static final String ROUND_TRIP_METRIC =
+      "zeebe.message.start.cross.partition.asks.round.trip.duration";
   private static final String RELEASE_TO_START_METRIC =
       "zeebe.message.start.cross.partition.release.to.start.duration";
 
@@ -224,6 +226,147 @@ final class MessageCorrelationMetricsTest {
     // then a subsequent terminal is a no-op — the stale sample is gone (M7)
     metrics.completeCrossPartitionAskStarted(1L, 100L);
     assertThat(registry.find(ASK_DURATION_METRIC).timers()).isEmpty();
+  }
+
+  @Test
+  void shouldRecordRoundTripTaggedByReplyOutcome() {
+    // given an ask has been sent
+    metrics.startRoundTrip(1L, 100L);
+
+    // when its reply lands on P_K
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+
+    // then the round trip is recorded under the reply outcome tag (M17)
+    final var timer = registry.find(ROUND_TRIP_METRIC).tag("outcome", "started").timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldRecordEachSendReplyAttemptOfARepeatedlyRejectedAsk() {
+    // given an ask that is rejected on uniqueness, retried, and finally started
+    metrics.startRoundTrip(1L, 100L);
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.REJECTED_UNIQUENESS);
+    metrics.startRoundTrip(1L, 100L);
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+
+    // then every send/reply attempt contributes one sample under its own outcome (M17)
+    assertThat(
+            registry.get(ROUND_TRIP_METRIC).tag("outcome", "rejected_uniqueness").timer().count())
+        .isEqualTo(1L);
+    assertThat(registry.get(ROUND_TRIP_METRIC).tag("outcome", "started").timer().count())
+        .isEqualTo(1L);
+  }
+
+  @Test
+  void shouldMeasureRoundTripAgainstTheLastSendWhenRetriedBeforeAReply() {
+    // given an ask is (re)sent twice — a retry supersedes the first send — before any reply
+    metrics.startRoundTrip(1L, 100L);
+    metrics.startRoundTrip(1L, 100L);
+
+    // when a single reply lands
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+
+    // then exactly one sample is recorded (last-send-wins) and nothing is left to record (M17)
+    assertThat(registry.get(ROUND_TRIP_METRIC).tag("outcome", "started").timer().count())
+        .isEqualTo(1L);
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+    assertThat(registry.get(ROUND_TRIP_METRIC).tag("outcome", "started").timer().count())
+        .isEqualTo(1L);
+  }
+
+  @Test
+  void shouldNotRecordRoundTripWhenNoSampleIsTracked() {
+    // when a reply is processed for an ask whose send was never tracked (e.g. after a leader
+    // change)
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+
+    // then no round-trip timer is ever registered (M17)
+    assertThat(registry.find(ROUND_TRIP_METRIC).timers()).isEmpty();
+  }
+
+  @Test
+  void shouldDiscardRoundTripOnLocalExpiryWithoutRecording() {
+    // given a message fanned out to two process definitions, each dispatched — at dispatch an ask
+    // holds both an ask-duration (M7) and a round-trip (M17) sample
+    metrics.startCrossPartitionAsk(1L, 100L);
+    metrics.startRoundTrip(1L, 100L);
+    metrics.startCrossPartitionAsk(1L, 200L);
+    metrics.startRoundTrip(1L, 200L);
+
+    // when the buffered message expires locally with no reply
+    metrics.expireCrossPartitionAsks(1L);
+
+    // then no round trip is recorded — an incomplete round trip is not a latency (M17)
+    assertThat(registry.find(ROUND_TRIP_METRIC).timers()).isEmpty();
+    // and the samples are gone: a late reply after expiry is a no-op
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+    metrics.stopRoundTrip(1L, 200L, ReplyOutcome.STARTED);
+    assertThat(registry.find(ROUND_TRIP_METRIC).timers()).isEmpty();
+  }
+
+  @Test
+  void shouldDiscardOnlyTheExpiredMessageRoundTrips() {
+    // given dispatched asks for two different messages (each with paired M7 + M17 samples)
+    metrics.startCrossPartitionAsk(1L, 100L);
+    metrics.startRoundTrip(1L, 100L);
+    metrics.startCrossPartitionAsk(2L, 100L);
+    metrics.startRoundTrip(2L, 100L);
+
+    // when only the first message expires locally
+    metrics.expireCrossPartitionAsks(1L);
+
+    // then the other message's reply is still measured (M17)
+    metrics.stopRoundTrip(2L, 100L, ReplyOutcome.STARTED);
+    assertThat(registry.get(ROUND_TRIP_METRIC).tag("outcome", "started").timer().count())
+        .isEqualTo(1L);
+  }
+
+  @Test
+  void shouldDiscardRoundTripOnExpiryEvenWithoutAPairedAskDurationSample() {
+    // given a round-trip sample re-armed by a scheduler retry that has no matching ask-duration
+    // (M7) sample — the ask-duration sample is only ever created at the original dispatch, so after
+    // a leader change replays the pending-ask state the retry recreates only the round-trip (M17)
+    metrics.startRoundTrip(1L, 100L);
+
+    // when the buffered message expires locally with no reply
+    metrics.expireCrossPartitionAsks(1L);
+
+    // then the orphaned round-trip sample is still discarded — the discard is keyed off the message
+    // alone, independent of the M7 map (M17)
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+    assertThat(registry.find(ROUND_TRIP_METRIC).timers()).isEmpty();
+  }
+
+  @Test
+  void shouldRecordRoundTripPerProcessDefinitionOfTheSameMessage() {
+    // given a single message fanned out to two process definitions, each sent
+    metrics.startRoundTrip(1L, 100L);
+    metrics.startRoundTrip(1L, 200L);
+
+    // when each receives its own reply
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+    metrics.stopRoundTrip(1L, 200L, ReplyOutcome.REJECTED_UNIQUENESS);
+
+    // then both are measured independently under their own outcomes (M17)
+    assertThat(registry.get(ROUND_TRIP_METRIC).tag("outcome", "started").timer().count())
+        .isEqualTo(1L);
+    assertThat(
+            registry.get(ROUND_TRIP_METRIC).tag("outcome", "rejected_uniqueness").timer().count())
+        .isEqualTo(1L);
+  }
+
+  @Test
+  void shouldClearRoundTripSamplesOnRecovery() {
+    // given an outstanding send
+    metrics.startRoundTrip(1L, 100L);
+
+    // when recovery drops the in-memory samples of the previous leadership term
+    metrics.onRecovered(null);
+
+    // then a subsequent reply is a no-op — the stale sample is gone (M17)
+    metrics.stopRoundTrip(1L, 100L, ReplyOutcome.STARTED);
+    assertThat(registry.find(ROUND_TRIP_METRIC).timers()).isEmpty();
   }
 
   @Test
