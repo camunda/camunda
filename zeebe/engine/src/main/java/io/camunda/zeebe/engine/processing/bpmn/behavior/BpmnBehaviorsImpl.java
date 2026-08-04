@@ -87,6 +87,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck) {
 
     final var tenantClusterScope =
@@ -190,7 +191,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionProcessor, processingState, variableBehavior, eventTriggerBehavior);
+            expressionProcessor,
+            processingState,
+            variableBehavior,
+            eventTriggerBehavior,
+            evaluateDuplicateOutputMappingTargetsInOrder);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(

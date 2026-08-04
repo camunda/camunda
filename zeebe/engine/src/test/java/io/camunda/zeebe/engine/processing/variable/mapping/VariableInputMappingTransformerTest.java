@@ -15,7 +15,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
@@ -200,7 +200,7 @@ final class VariableInputMappingTransformerTest {
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
     // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new InputMappingResultBuilder();
+    final var resultBuilder = new MappingResultBuilder();
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -233,7 +233,7 @@ final class VariableInputMappingTransformerTest {
                     .isTrue());
 
     // when
-    final var resultBuilder = new InputMappingResultBuilder();
+    final var resultBuilder = new MappingResultBuilder();
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -275,7 +275,7 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final ExpressionLanguage language) {
     final var inputMappings = transformer.transformInputMappings(mappings, language);
-    final var resultBuilder = new InputMappingResultBuilder();
+    final var resultBuilder = new MappingResultBuilder();
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {

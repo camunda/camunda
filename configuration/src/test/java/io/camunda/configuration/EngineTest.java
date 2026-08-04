@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.FeatureFlagsCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,41 @@ public class EngineTest {
     @Test
     void shouldSetMaxProcessDepthFromNew() {
       assertThat(brokerCfg.getExperimental().getEngine()).returns(5, EngineCfg::getMaxProcessDepth);
+    }
+  }
+
+  @Nested
+  class WithNothingSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNothingSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldEvaluateDuplicateOutputMappingTargetsInOrderByDefault() {
+      assertThat(brokerCfg.getExperimental().getFeatures())
+          .returns(true, FeatureFlagsCfg::isEvaluateDuplicateOutputMappingTargetsInOrder);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.processing.engine.evaluate-duplicate-output-mapping-targets-in-order=false"
+      })
+  class WithEvaluateDuplicateOutputMappingTargetsInOrderConfigured {
+    final BrokerBasedProperties brokerCfg;
+
+    WithEvaluateDuplicateOutputMappingTargetsInOrderConfigured(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetEvaluateDuplicateOutputMappingTargetsInOrder() {
+      assertThat(brokerCfg.getExperimental().getFeatures())
+          .returns(false, FeatureFlagsCfg::isEvaluateDuplicateOutputMappingTargetsInOrder);
     }
   }
 }
