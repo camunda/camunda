@@ -307,8 +307,8 @@ Load extra context on demand — only when relevant, only if the files exist.
   - `relates to #1234` or a bare `#1234` when this is one of several PRs for the issue (an epic, or work
     split across releases) — satisfies the gate but does NOT close the issue.
   - No tracked issue (hotfix, dep bump, CI/refactor)? Tick `- [ ] This PR does not need a linked issue`.
-  When opening the PR yourself (CLI/API), reproduce this section — GitHub only auto-fills the template in
-  the web UI, so an agent-authored body must include it explicitly.
+    When opening the PR yourself (CLI/API), reproduce this section — GitHub only auto-fills the template in
+    the web UI, so an agent-authored body must include it explicitly.
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
 - Keep descriptions brief and concise

@@ -138,18 +138,18 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
   action ships with **zero runtime dependencies** — the committed bundle is
   entirely our own code.
 
-|      File       |                                      Role                                      |
-|-----------------|--------------------------------------------------------------------------------|
-| `src/types.ts`  | The `ParsedRef → ResolvedRef → PolicyDecision` contract + `Resolver` interface |
-| `src/parser/`   | Pure section-scoped reference extraction (shared with the generator)           |
-| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo, backport-hop PR fetch) |
-| `src/policy/`   | Pure PASS/FAIL decision from resolved refs + opt-out state                     |
-| `src/title/`    | Pure title lint (commitlint active rules) + bot-author exemption               |
-| `src/gate/`     | Orchestrates link (+ backport hop) + title into one `GateOutcome`              |
-| `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)       |
+|      File       |                                          Role                                           |
+|-----------------|-----------------------------------------------------------------------------------------|
+| `src/types.ts`  | The `ParsedRef → ResolvedRef → PolicyDecision` contract + `Resolver` interface          |
+| `src/parser/`   | Pure section-scoped reference extraction (shared with the generator)                    |
+| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo, backport-hop PR fetch)          |
+| `src/policy/`   | Pure PASS/FAIL decision from resolved refs + opt-out state                              |
+| `src/title/`    | Pure title lint (commitlint active rules) + bot-author exemption                        |
+| `src/gate/`     | Orchestrates link (+ backport hop) + title into one `GateOutcome`                       |
+| `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)                |
 | `src/labels/`   | `no-issue` label sync, mirroring the PR-issue-link check (pure logic + `fetch` adapter) |
-| `src/gha.ts`    | Minimal `@actions/core` replacement                                            |
-| `src/lint.ts`   | The gate entrypoint (warn-only)                                                |
+| `src/gha.ts`    | Minimal `@actions/core` replacement                                                     |
+| `src/lint.ts`   | The gate entrypoint (warn-only)                                                         |
 
 ## Security model
 
