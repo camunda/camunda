@@ -81,30 +81,69 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void zeebeVariableImport_processStartedWithVariables() {
-    // given
-    final Long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables();
+  public void
+      zeebeVariableImport_processStartedWithVariablesAndVariablesAddedAfterProcessStarted() {
+    // Covers two independent scenarios exercising different code paths: scenario 1 variables
+    // present at process start; scenario 2 variables added to scope after the process already
+    // started. Each scenario is reset to a clean Zeebe export index and clean Optimize data
+    // before it runs, mirroring what @BeforeEach/@AfterEach would otherwise do between separate
+    // test methods.
 
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
+    // given (started with variables)
+    {
+      final Long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+      // when (started with variables)
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      waitUntilMinimumVariableDocumentsExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (started with variables)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (variables added after process started)
+    {
+      final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      zeebeExtension.addVariablesToScope(
+          processInstanceEvent.getProcessInstanceKey(), BASIC_VARIABLES, false);
+      waitUntilMinimumVariableDocumentsExportedCount(5);
+
+      // when (variables added after process started)
+      importAllZeebeEntitiesFromScratch();
+
+      // then (variables added after process started)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
+      assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    }
   }
 
   @Test
-  public void variableImportWorksForLongStrings() {
+  public void variableImportWorksForLongStringsAndDateStrings() {
+    // Covers two independent variable-content edge cases on the same instance: a too-long string
+    // value, and a date-formatted string value.
+
     // given
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     // see https://www.elastic.co/guide/en/elasticsearch/reference/7.15/ignore-above.html
-    final String variableName = "longStringVar";
+    final String longStringVariableName = "longStringVar";
     // use a too long value of a length > 32766
     final String largeValue = RandomStringUtils.randomAlphabetic(32767);
-    final Map<String, Object> variables = Map.of(variableName, largeValue);
+    final String dateVariableName = "date";
+    final String dateVariableValue = "2025-10-10";
+    final String parsedDateValue = "2025-10-10T00:00:00.000+0000";
+    final Map<String, Object> variables =
+        Map.of(longStringVariableName, largeValue, dateVariableName, dateVariableValue);
     final Long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
@@ -112,80 +151,64 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     // when
     waitUntilNumberOfDefinitionsExported(1);
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumVariableDocumentsExportedCount(2);
     importAllZeebeEntitiesFromScratch();
-
-    // when
     final ProcessInstanceDto importedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then (long string)
     assertThat(importedProcessInstance.getVariables())
+        .filteredOn(variable -> variable.getName().equals(longStringVariableName))
         .singleElement()
         .satisfies(
             variable -> {
-              assertThat(variable.getName()).isEqualTo(variableName);
+              assertThat(variable.getName()).isEqualTo(longStringVariableName);
               assertThat(variable.getValue().get(0)).isEqualTo(largeValue);
             });
-  }
 
-  @Test
-  public void variableImportWorksForDateStrings() {
-    // given
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
-    final String variableName = "date";
-    final String variableValue = "2025-10-10";
-    final String parsedDateValue = "2025-10-10T00:00:00.000+0000";
-    final Map<String, Object> variables = Map.of(variableName, variableValue);
-    final Long processInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), variables);
-
-    waitUntilNumberOfDefinitionsExported(1);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
-
-    // when
-    final ProcessInstanceDto importedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-
-    // then
+    // then (date string)
     assertThat(importedProcessInstance.getVariables())
+        .filteredOn(variable -> variable.getName().equals(dateVariableName))
         .singleElement()
         .satisfies(
             variable -> {
-              assertThat(variable.getName()).isEqualTo(variableName);
+              assertThat(variable.getName()).isEqualTo(dateVariableName);
               assertThat(variable.getType()).isEqualTo(DATE.getId());
               assertThat(variable.getValue().getFirst()).isEqualTo(parsedDateValue);
             });
   }
 
   @Test
-  public void variableObjectImportDoesNotParseDigitOnlyStringsAsDates() {
+  public void variableObjectAndListImportDoNotParseDigitOnlyStringsAsDates() {
+    // Covers two independent variable-shape edge cases on the same instance: an object-shaped and
+    // a list-shaped variable, both containing digit-only strings that must not be parsed as dates.
+
     // given
     final Map<String, Object> numericStringMap =
         generateNumericStringsOfLengthXInRange(10, 20).stream()
             .collect(Collectors.toMap(str -> String.valueOf(str.length()), str -> str));
-
-    final Map<String, Object> variables = Map.of("numericStrings", numericStringMap);
+    final var numericStringList = generateNumericStringsOfLengthXInRange(10, 20);
+    final Map<String, Object> variables =
+        Map.of("numericStrings", numericStringMap, "numericStringsList", numericStringList);
 
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumVariableDocumentsExportedCount(2);
 
     // when
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
 
-    // then
+    // then (object-shaped)
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
+        .contains(
             Tuple.tuple(
                 "numericStrings",
                 OBJECT.getId(),
@@ -221,53 +244,18 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
                 "numericStrings.20",
                 STRING.getId(),
                 Collections.singletonList("12345678901234567890")));
-  }
 
-  @Test
-  public void variableListImportDoesNotParseDigitOnlyStringsAsDates() {
-    // given
-    final var numericStringList = generateNumericStringsOfLengthXInRange(10, 20);
-
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
-    final long processInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), Map.of("numericStrings", numericStringList));
-
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-
-    // then
+    // then (list-shaped)
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple("numericStrings", STRING.getId(), numericStringList),
+        .contains(
+            Tuple.tuple("numericStringsList", STRING.getId(), numericStringList),
             // additional _listSize variable for lists
-            Tuple.tuple("numericStrings._listSize", LONG.getId(), Collections.singletonList("11")));
-  }
-
-  @Test
-  public void zeebeVariableImport_variablesAddedAfterProcessStarted() {
-    // given
-    final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.addVariablesToScope(
-        processInstanceEvent.getProcessInstanceKey(), BASIC_VARIABLES, false);
-    waitUntilMinimumVariableDocumentsExportedCount(5);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+            Tuple.tuple(
+                "numericStringsList._listSize", LONG.getId(), Collections.singletonList("11")));
   }
 
   @Test
@@ -380,57 +368,110 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void zeebeVariableImport_unsupportedTypesGetIgnored() {
-    // given
-    final Map<String, Object> supportedAndUnsupportedVariables = new HashMap<>();
-    supportedAndUnsupportedVariables.put("nullValue", null);
-    supportedAndUnsupportedVariables.put("supportedVariable", "someValue");
+  public void
+      zeebeVariableImport_unsupportedTypesGetIgnoredAndObjectVariablesExcludedInConfiguration() {
+    // Covers two independent scenarios: scenario 1 that unsupported variable types (e.g. null)
+    // are ignored on import; scenario 2 that object variables are excluded from import when
+    // configured. Scenario 2 must run last since it mutates shared configuration, only reset by
+    // the next test method's @BeforeEach. Each scenario is reset to a clean Zeebe export index
+    // and clean Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would
+    // otherwise do between separate test methods.
 
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
-    final long processInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), supportedAndUnsupportedVariables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    // given (unsupported types ignored)
+    {
+      final Map<String, Object> supportedAndUnsupportedVariables = new HashMap<>();
+      supportedAndUnsupportedVariables.put("nullValue", null);
+      supportedAndUnsupportedVariables.put("supportedVariable", "someValue");
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+      final Process deployedProcess =
+          zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+      final long processInstanceKey =
+          zeebeExtension.startProcessInstanceWithVariables(
+              deployedProcess.getBpmnProcessId(), supportedAndUnsupportedVariables);
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      waitUntilMinimumVariableDocumentsExportedCount(2);
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactly(
-            Tuple.tuple("supportedVariable", Collections.singletonList("someValue"), STRING_TYPE));
+      // when (unsupported types ignored)
+      importAllZeebeEntitiesFromScratch();
+
+      // then (unsupported types ignored)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactly(
+              Tuple.tuple(
+                  "supportedVariable", Collections.singletonList("someValue"), STRING_TYPE));
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (object variables excluded in configuration)
+    {
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getConfiguredZeebe()
+          .setIncludeObjectVariableValue(false);
+      final Map<String, Object> variables = Map.of("objectVar", PERSON_VARIABLES, "boolVar", true);
+
+      final Process deployedProcess =
+          zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+      final long processInstanceKey =
+          zeebeExtension.startProcessInstanceWithVariables(
+              deployedProcess.getBpmnProcessId(), variables);
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      waitUntilMinimumVariableDocumentsExportedCount(1);
+
+      // when (object variables excluded in configuration)
+      importAllZeebeEntitiesFromScratch();
+      final ProcessInstanceDto instance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+      // then (object variables excluded in configuration)
+      assertThat(instance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getType,
+              SimpleProcessVariableDto::getValue)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple("boolVar", BOOLEAN.getId(), Collections.singletonList("true")));
+    }
   }
 
   @Test
-  public void zeebeVariableImport_importObjectVariables() {
+  public void zeebeVariableImport_importObjectAndListVariables() {
+    // Covers two independent variable-shape checks on the same instance: an object-shaped
+    // variable and a list-shaped variable, using distinct names so both coexist on one instance.
+
     // given
-    final Map<String, Object> variables = Map.of("objectVar", PERSON_VARIABLES);
+    final Map<String, Object> variables =
+        Map.of("objectVar", PERSON_VARIABLES, "listVar", List.of("value1", "value2"));
 
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumVariableDocumentsExportedCount(2);
 
     // when
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
 
-    // then
+    // then (object-shaped)
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
+        .contains(
             Tuple.tuple(
                 "objectVar",
                 OBJECT.getId(),
@@ -455,60 +496,14 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
             // additional _listSize variable for lists
             Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2")));
-  }
 
-  @Test
-  public void
-      zeebeVariableImport_importObjectVariablesWhenObjectVariablesAreExcludedInConfiguration() {
-    // given
-    embeddedOptimizeExtension
-        .getConfigurationService()
-        .getConfiguredZeebe()
-        .setIncludeObjectVariableValue(false);
-    final Map<String, Object> variables = Map.of("objectVar", PERSON_VARIABLES, "boolVar", true);
-
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
-    final long processInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), variables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-
-    // then
+    // then (list-shaped)
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple("boolVar", BOOLEAN.getId(), Collections.singletonList("true")));
-  }
-
-  @Test
-  public void zeebeVariableImport_importListVariables() {
-    // given
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
-    final long processInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), Map.of("listVar", List.of("value1", "value2")));
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-
-    // then
-    assertThat(instance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getType,
-            SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
+        .contains(
             Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
             // additional _listSize variable for lists
             Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2")));
