@@ -164,6 +164,11 @@ test.describe('AI agent details', () => {
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.statusSection.getByLabel(
+        'Assistant message',
+      ),
+    ).toBeVisible();
 
     const messageExpandButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
@@ -172,6 +177,7 @@ test.describe('AI agent details', () => {
         .getByRole('button', {name: 'Expand'});
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await messageExpandButton.scrollIntoViewIfNeeded();
     await messageExpandButton.focus();
     await messageExpandButton.click();
 
@@ -240,6 +246,11 @@ test.describe('AI agent details', () => {
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.statusSection.getByLabel(
+        'Assistant message',
+      ),
+    ).toBeVisible();
 
     const viewDocumentsButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
@@ -247,6 +258,7 @@ test.describe('AI agent details', () => {
         .getByRole('button', {name: 'View documents'});
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await viewDocumentsButton.scrollIntoViewIfNeeded();
     await viewDocumentsButton.focus();
     await viewDocumentsButton.click();
 
