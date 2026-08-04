@@ -76,3 +76,5 @@ discovered-by/gameday:
   '(Game Day\+)'
 qa/automation-found:
   '(QA Automation Found\+)'
+discovered-by/manual-testing:
+  '(Manual Testing\+)'
