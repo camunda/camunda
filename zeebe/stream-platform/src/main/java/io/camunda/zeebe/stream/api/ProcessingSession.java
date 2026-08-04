@@ -43,7 +43,8 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // no explicit copy needed: RecordMetadata.authorization() already copies via copyFrom()
+      // no explicit copy needed: a frozen AuthInfo owns its buffer and is safe to share by
+      // reference; an unfrozen one is copied by RecordMetadata.authorization()
       appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
     }
   }

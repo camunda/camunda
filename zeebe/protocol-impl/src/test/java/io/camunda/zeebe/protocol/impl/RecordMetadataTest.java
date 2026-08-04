@@ -63,6 +63,29 @@ final class RecordMetadataTest {
     assertThat(storedAuth.getClaims()).isEqualTo(Map.of("key", "value"));
   }
 
+  @Test
+  void shouldOwnAuthInfoBufferAfterWrap() {
+    // given -- encoded metadata carrying an authorization
+    final var source = new RecordMetadata();
+    final var authInfo = new AuthInfo();
+    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    authInfo.setClaims(Map.of("key", "value"));
+    source.authorization(authInfo);
+    final var buffer = new UnsafeBuffer(new byte[source.getLength()]);
+    source.write(buffer, 0);
+
+    final var metadata = new RecordMetadata();
+    metadata.wrap(buffer, 0, buffer.capacity());
+
+    // when -- the memory the metadata was decoded from is recycled
+    buffer.setMemory(0, buffer.capacity(), (byte) 0);
+
+    // then -- the wrapped authorization is unaffected, so it is safe to share by reference
+    final var storedAuth = metadata.getAuthorization();
+    assertThat(storedAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(storedAuth.getClaims()).isEqualTo(Map.of("key", "value"));
+  }
+
   private void encodeDecode(final RecordMetadata metadata) {
     // encode
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[metadata.getLength()]);

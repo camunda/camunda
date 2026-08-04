@@ -126,7 +126,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       if (authorization.isFrozen()) {
         authorization = new AuthInfo();
       }
-      authorization.wrap(authBuffer);
+      // the decoded buffer is only a view over memory owned by the caller (a journal segment or an
+      // inter-partition message). Freezing lets the instance be shared by reference, outliving that
+      // memory, so we must take ownership of the bytes first. One copy here replaces the per-
+      // assignment copy that AuthInfo.of() would otherwise do for every follow-up record.
+      authorization.wrap(BufferUtil.cloneBuffer(authBuffer));
       authorization.freeze();
     } else {
       decoder.skipAuthorization();
