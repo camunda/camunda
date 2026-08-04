@@ -12,9 +12,9 @@ import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -272,7 +272,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       final var batchResult = session.flushStatements();
       for (final BatchResult singleBatchResult : batchResult) {
-        if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
+        if (hasUnexpectedZeroRowUpdate(singleBatchResult.getUpdateCounts())
             && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
           THROTTLED_LOG.warn(
               "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
@@ -383,5 +383,25 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   static boolean shouldIgnoreWhenNoRowsAffected(final String statementId) {
     return IGNORE_EMPTY_UPDATES.stream().anyMatch(p -> p.matcher(statementId).matches());
+  }
+
+  /**
+   * Returns whether any statement in this batch reported affecting 0 rows, treating {@link
+   * Statement#SUCCESS_NO_INFO} (-2) anywhere in the batch as "the driver can't tell" rather than "0
+   * rows" - once JDBC batch rewriting is enabled (rewriteBatchedStatements/useBulkStmts), or in
+   * other driver-specific circumstances unrelated to that setting, the driver can return {@code
+   * SUCCESS_NO_INFO} for every statement in the batch instead of a real per-statement count. Scans
+   * once and short-circuits as soon as {@code SUCCESS_NO_INFO} is seen, since none of the counts in
+   * that batch can be trusted at that point.
+   */
+  static boolean hasUnexpectedZeroRowUpdate(final int[] updateCounts) {
+    var anyZero = false;
+    for (final int count : updateCounts) {
+      if (count == Statement.SUCCESS_NO_INFO) {
+        return false;
+      }
+      anyZero |= count == 0;
+    }
+    return anyZero;
   }
 }

@@ -15,6 +15,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   private static final boolean DEFAULT_AUTO_DDL = true;
+  private static final boolean DEFAULT_REWRITE_BATCHED_STATEMENTS = true;
 
   /** If true, the database schema is automatically created and updated on application startup. */
   private boolean autoDdl = DEFAULT_AUTO_DDL;
@@ -70,6 +71,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
    */
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+
+  /**
+   * If true, enables JDBC batch statement rewriting on the RDBMS connection so that same-statement
+   * batches collapse into a single multi-values round trip instead of one round trip per statement.
+   * Has no effect for database vendors other than MySQL/MariaDB.
+   */
+  private boolean rewriteBatchedStatements = DEFAULT_REWRITE_BATCHED_STATEMENTS;
 
   @NestedConfigurationProperty private RdbmsHistory history = new RdbmsHistory();
 
@@ -165,6 +173,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setBatchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
     this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
+  }
+
+  public boolean isRewriteBatchedStatements() {
+    return rewriteBatchedStatements;
+  }
+
+  public void setRewriteBatchedStatements(final boolean rewriteBatchedStatements) {
+    this.rewriteBatchedStatements = rewriteBatchedStatements;
   }
 
   @Override

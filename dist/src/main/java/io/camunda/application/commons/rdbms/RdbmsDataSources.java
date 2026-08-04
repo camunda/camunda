@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.slf4j.Logger;
@@ -41,6 +42,9 @@ import org.springframework.boot.jdbc.DatabaseDriver;
 public final class RdbmsDataSources implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsDataSources.class);
+  private static final String MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY =
+      "rewriteBatchedStatements";
+  private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
 
   private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
@@ -150,10 +154,13 @@ public final class RdbmsDataSources implements AutoCloseable {
     ds.setJdbcUrl(rdbms.getUrl());
     ds.setUsername(rdbms.getUsername());
     ds.setPassword(rdbms.getPassword());
-    final var driverClassName = DatabaseDriver.fromJdbcUrl(rdbms.getUrl()).getDriverClassName();
+    final var driver = DatabaseDriver.fromJdbcUrl(rdbms.getUrl());
+    final var driverClassName = driver.getDriverClassName();
     if (driverClassName != null) {
       ds.setDriverClassName(driverClassName);
     }
+    enableVendorBatchStatements(rdbms, driver, ds);
+
     final var pool = rdbms.getConnectionPool();
     ds.setMaximumPoolSize(pool.getMaximumPoolSize());
     ds.setMinimumIdle(pool.getMinimumIdle());
@@ -166,6 +173,45 @@ public final class RdbmsDataSources implements AutoCloseable {
     ds.setMetricRegistry(meterRegistry);
     ds.setAutoCommit(false);
     return ds;
+  }
+
+  private static void enableVendorBatchStatements(
+      final Rdbms rdbms, final DatabaseDriver driver, final HikariDataSource ds) {
+    if (rdbms.isRewriteBatchedStatements()) {
+      final var vendor = unwrapVendorDriver(driver, rdbms.getUrl());
+      if (vendor == DatabaseDriver.MYSQL
+          && !urlSpecifiesProperty(rdbms.getUrl(), MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY)) {
+        ds.addDataSourceProperty(MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY, "true");
+      } else if (vendor == DatabaseDriver.MARIADB
+          && !urlSpecifiesProperty(rdbms.getUrl(), MARIADB_USE_BULK_STMTS_PROPERTY)) {
+        ds.addDataSourceProperty(MARIADB_USE_BULK_STMTS_PROPERTY, "true");
+      }
+    }
+  }
+
+  /**
+   * Resolves the underlying database vendor for driver-specific connection properties, unwrapping
+   * the AWS Advanced JDBC Wrapper's {@code jdbc:aws-wrapper:<vendor>://...} URL scheme. Without
+   * this, {@link DatabaseDriver#fromJdbcUrl} resolves such URLs to {@link
+   * DatabaseDriver#AWS_WRAPPER} rather than the wrapped vendor, so vendor-specific properties like
+   * batch statement rewriting would never be applied for Aurora failover-aware connections.
+   */
+  private static DatabaseDriver unwrapVendorDriver(final DatabaseDriver driver, final String url) {
+    if (driver != DatabaseDriver.AWS_WRAPPER) {
+      return driver;
+    }
+    return DatabaseDriver.fromJdbcUrl(url.replaceFirst("(?i)^jdbc:aws-wrapper:", "jdbc:"));
+  }
+
+  /**
+   * Checks whether the given JDBC URL already explicitly sets the given query parameter, so that an
+   * operator's own choice in the connection URL is never silently overridden by a driver-specific
+   * property added here.
+   */
+  private static boolean urlSpecifiesProperty(final String url, final String propertyName) {
+    return Pattern.compile("[?&]" + Pattern.quote(propertyName) + "=", Pattern.CASE_INSENSITIVE)
+        .matcher(url)
+        .find();
   }
 
   @VisibleForTesting

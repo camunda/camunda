@@ -19,6 +19,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import java.sql.Connection;
+import java.sql.Statement;
+import java.util.stream.Stream;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -26,7 +28,9 @@ import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
@@ -561,6 +565,26 @@ class DefaultExecutionQueueTest {
       final String statementId, final boolean expected) {
     assertThat(DefaultExecutionQueue.shouldIgnoreWhenNoRowsAffected(statementId))
         .isEqualTo(expected);
+  }
+
+  static Stream<Arguments> updateCountsCases() {
+    return Stream.of(
+        Arguments.of("all zero", new int[] {0}, true),
+        Arguments.of("zero among real counts", new int[] {1, 0, 2}, true),
+        Arguments.of("no zero", new int[] {1, 2}, false),
+        Arguments.of("empty batch", new int[] {}, false),
+        Arguments.of("SUCCESS_NO_INFO only", new int[] {Statement.SUCCESS_NO_INFO}, false),
+        Arguments.of(
+            "SUCCESS_NO_INFO before a zero", new int[] {Statement.SUCCESS_NO_INFO, 0}, false),
+        Arguments.of(
+            "SUCCESS_NO_INFO after a zero", new int[] {0, Statement.SUCCESS_NO_INFO}, false));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("updateCountsCases")
+  void shouldTreatSuccessNoInfoAsUnknownNotZero(
+      final String caseName, final int[] updateCounts, final boolean expected) {
+    assertThat(DefaultExecutionQueue.hasUnexpectedZeroRowUpdate(updateCounts)).isEqualTo(expected);
   }
 
   @Test

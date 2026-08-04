@@ -233,6 +233,7 @@ data.secondary-storage.rdbms.process-cache
 data.secondary-storage.rdbms.query.max-total-hits
 data.secondary-storage.rdbms.queue-memory-limit
 data.secondary-storage.rdbms.queue-size
+data.secondary-storage.rdbms.rewrite-batched-statements
 data.secondary-storage.rdbms.url
 data.secondary-storage.rdbms.urls
 data.secondary-storage.rdbms.username
