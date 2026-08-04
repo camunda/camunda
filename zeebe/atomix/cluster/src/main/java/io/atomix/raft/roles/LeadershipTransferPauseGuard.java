@@ -130,6 +130,7 @@ final class LeadershipTransferPauseGuard {
 
   /** Exits paused mode unconditionally, e.g. on a role transition. */
   void clear() {
+    raft.checkThread();
     if (watchdog != null) {
       watchdog.cancel();
       watchdog = null;
