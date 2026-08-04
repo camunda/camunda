@@ -1250,7 +1250,12 @@ jobs:
       - format-identifier
       - helm-deploy-status
       - trigger-saas-e2e
-    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    # Unfinished work is expected to fail: dispatching a fix agent at a draft PR wastes
+    # an agent run and can open a PR against a moving target. No-op until a
+    # pull_request trigger is added — merge_group is never a draft and push carries no
+    # PR. Mirrors the gate on main (#59386).
+    if: ${{ always() && contains(needs.*.result, 'failure')
+            && !github.event.pull_request.draft }}
     uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
     secrets: inherit
     with:
