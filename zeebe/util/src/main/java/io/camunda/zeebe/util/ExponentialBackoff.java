@@ -86,6 +86,13 @@ public final class ExponentialBackoff implements LongUnaryOperator {
       throw new IllegalArgumentException(
           "minDelay (" + minDelay + "ms) must be <= maxDelay (" + maxDelay + "ms)");
     }
+    if (backoffFactor <= 1.0) {
+      throw new IllegalArgumentException(
+          "backoffFactor ("
+              + backoffFactor
+              + ") must be > 1.0, otherwise the delay does not increase and backoff degenerates"
+              + " into a tight retry loop");
+    }
   }
 
   @Override
