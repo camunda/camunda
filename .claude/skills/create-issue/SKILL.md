@@ -14,6 +14,16 @@ missing parent links, wrong component labels, and skipped required fields.
 gh auth status  # must succeed
 ```
 
+If this fails (e.g. "the token in default is invalid"), do not abort - the `gh` CLI's stored
+token can go invalid on its own even while other tools keep working. Switch to the equivalent
+`mcp__github__*` tools for the rest of this skill's flow instead of the `gh` examples shown below:
+`mcp__github__search_issues` for the dedup check in Step 1.5, `mcp__github__issue_write` (method
+`create`/`update`) for the `gh issue create` calls in Steps 6-7, `mcp__github__sub_issue_write` for
+the parent sub-issue registration, and `mcp__github__list_issue_types` plus the `type` parameter on
+`issue_write` for setting the native GitHub Issue Type - `issue_write` accepts `type` directly,
+which is simpler than the GraphQL-mutation approach shown in Step 7, so prefer it when working from
+MCP tools.
+
 ## Procedure
 
 ### Step 1 — Read available templates
@@ -38,6 +48,28 @@ its `labels:` field to infer the `kind/` label.
 | Tech debt, cleanup             | `6. tech debt.yml`         | `kind/tech-debt`       |
 
 If the issue type is ambiguous, ask the user to pick one before proceeding.
+
+### Step 1.5 - Check for existing issues
+
+Before drafting anything, search for likely duplicates. Build a query from the issue's
+likely title keywords and search with `mcp__github__search_issues` (owner `camunda`, repo
+`camunda`):
+
+```
+mcp__github__search_issues(owner="camunda", repo="camunda", query="<title keywords> repo:camunda/camunda")
+```
+
+Broad queries can exceed the tool's max-output-token limit. When that happens, the tool saves
+its result to a file instead of returning it inline and the response says so - do not try to
+read that file whole. Grep it for the compact per-issue fields instead:
+
+```bash
+grep -oE '"number":[0-9]+,"state":"[a-z]+","title":"[^"]*"' <saved-result-file>
+```
+
+If a close match turns up, surface it to the user before proceeding - show the issue number,
+state, and title, and ask whether to link the new work to it, comment on the existing issue
+instead, or proceed with a new issue anyway. Do not silently create a near-duplicate.
 
 ### Step 2 — Read the template and collect field values
 
