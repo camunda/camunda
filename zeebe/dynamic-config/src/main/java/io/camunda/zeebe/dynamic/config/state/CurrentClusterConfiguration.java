@@ -126,6 +126,18 @@ public record CurrentClusterConfiguration(
    *       since recovery is now per-group.
    * </ul>
    *
+   * <p>This is a pure, side-effect-free conversion: the returned pending plan (if any) is built at
+   * phase 0 but is <em>not</em> activated into the default group — the default group's own {@code
+   * pendingChanges} stays empty. Activating phase 0 (via {@link #applyPhase}) is deliberately left
+   * to the caller, because this factory is invoked both for genuine one-time migrations (e.g.
+   * {@code PersistedCurrentClusterConfiguration} upgrading an on-disk v1 file, exactly once per
+   * broker) and for repeated, read-only re-derivations of a legacy view (e.g. {@code
+   * BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)}, invoked on
+   * every gossip update). Auto-activating here would re-run {@code startConfigurationChange} on a
+   * freshly-built (and therefore never-"pending") default group on every such repeated call,
+   * endlessly restarting an already in-progress plan from scratch. Callers that are performing a
+   * genuine one-time migration should call {@link #activatePendingPhase()} explicitly afterwards.
+   *
    * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
    */
   public static CurrentClusterConfiguration fromLegacy(final ClusterConfiguration legacy) {
@@ -158,11 +170,26 @@ public record CurrentClusterConfiguration(
             Optional.empty(),
             Optional.empty());
 
+    final PhasedChangeState phasedChangeState = toPhasedChangeState(legacy);
     return new CurrentClusterConfiguration(
         INITIAL_VERSION,
         globalConfiguration,
         Map.of(DEFAULT_GROUP, defaultGroup),
-        toPhasedChangeState(legacy));
+        phasedChangeState);
+  }
+
+  /**
+   * Activates the current pending plan's phase (see {@link #applyPhase}) if one is pending,
+   * otherwise returns this configuration unchanged. Mirrors what {@link #initPlan(List)} does for a
+   * freshly-started plan; intended for one-time migration call sites (see {@link
+   * #fromLegacy(ClusterConfiguration)}) that need to take over driving an already-pending plan
+   * rather than starting a new one.
+   *
+   * @throws IllegalStateException if the pending phase targets a sub-configuration that already has
+   *     a change in progress
+   */
+  public CurrentClusterConfiguration activatePendingPhase() {
+    return phasedChangeState.pending().map(this::applyPhase).orElse(this);
   }
 
   /**
@@ -184,8 +211,19 @@ public record CurrentClusterConfiguration(
    * {@code lastChange} is derived from the {@link PhasedChangeState}. Cross-sub-config change
    * details cannot be represented losslessly in the flat legacy plan, so this projection is
    * intended for display and equivalence checks, not for driving legacy change execution.
+   *
+   * <p>Uninitialized is projected explicitly: {@link #isUninitialized()} is driven by {@code
+   * globalConfiguration}'s own uninitialized sentinel version, which is {@code 0} — distinct from
+   * the legacy {@link ClusterConfiguration}'s sentinel version of {@code -1}. Deriving the legacy
+   * version as {@code Math.max(globalConfiguration.version(), defaultGroup.version())} would
+   * therefore never equal the legacy sentinel, so callers of {@code
+   * ClusterConfiguration#isUninitialized()} on the projection could never observe {@code true}.
    */
   public ClusterConfiguration toLegacyDefault() {
+    if (isUninitialized()) {
+      return ClusterConfiguration.uninitialized();
+    }
+
     final PartitionGroupConfiguration defaultGroup =
         partitionGroups.getOrDefault(DEFAULT_GROUP, PartitionGroupConfiguration.empty(version));
 
