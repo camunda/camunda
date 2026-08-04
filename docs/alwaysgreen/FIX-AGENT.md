@@ -113,6 +113,18 @@ The SM smoke suite is **shared** with the SM nightly, which has its own fix agen
 change there must not regress the nightly for the same version, and a competing
 `failing-test-fix` PR may already exist — check before editing.
 
+## Which branch the PR targets
+
+A `camunda/camunda` PR must be opened with `--base <base_ref>` — the branch that failed,
+supplied in the prompt. `gh pr create` with no `--base` targets the repository default
+branch, so a `stable/8.9` fix opened that way carries the entire stable-to-main delta, and
+merging it would push stable-only code onto `main`. The workflow re-checks the base
+afterwards and retargets a wrong one, but it warns when it has to.
+
+This applies to `camunda/camunda` only. `c8-cross-component-e2e-tests` and
+`camunda-platform-helm` have no per-version branches — their PRs take their own default
+branch, and the version lives in the path (`tests/SM-8.9/`, `charts/camunda-platform-8.9/`).
+
 ## The PR coverage block — mandatory
 
 Every PR you open must carry, in its body:
