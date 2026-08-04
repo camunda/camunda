@@ -272,9 +272,26 @@ public final class DbJobState implements JobState, MutableJobState {
       return;
     }
     final JobRecord record = getJob(key);
+    if (record == null) {
+      // the state says the job is parked, so its record must exist; guarded anyway because an
+      // exception in an event applier fails the partition
+      return;
+    }
     updateJobState(key, State.ACTIVATABLE);
     makeJobActivatableByPriority(
         record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+  }
+
+  @Override
+  public void parkForSecretResolution(final long key, final JobRecord record) {
+    final State state = getState(key);
+    if (state != State.ACTIVATABLE && state != State.WAITING_FOR_SECRET_RESOLUTION) {
+      // only a job that is up for activation can be withheld from it; parking a job a worker or a
+      // failure already owns would take its state away from it
+      return;
+    }
+    updateJobState(key, State.WAITING_FOR_SECRET_RESOLUTION);
+    makeJobNotActivatable(key, record);
   }
 
   /**

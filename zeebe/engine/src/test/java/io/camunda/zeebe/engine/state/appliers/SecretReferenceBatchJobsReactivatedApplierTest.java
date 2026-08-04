@@ -55,8 +55,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
     jobState.insertJobRecordActivatable(jobKey, jobRecord);
     jobState.makeJobActivatableByPriority(
         jobRecord.getTypeBuffer(), jobKey, jobRecord.getTenantId(), jobRecord.getPriority());
-    jobState.updateJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
-    jobState.makeJobNotActivatable(jobKey, jobRecord);
+    jobState.parkForSecretResolution(jobKey, jobRecord);
     return jobRecord;
   }
 

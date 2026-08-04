@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -40,11 +39,9 @@ public final class SecretReferenceResolutionRequestedApplier
   }
 
   /**
-   * Records the job as waiting for the secret reference, moves it to {@code
-   * WAITING_FOR_SECRET_RESOLUTION} and removes it from the activatable index, so a long poll does
-   * not collect it again while it waits for the resolution. A job that no longer exists is skipped
-   * entirely, leaving no waiting entry behind for it. Parking a job that already waits on another
-   * reference of the same activation is idempotent.
+   * Records the job as waiting for the secret reference and parks it, so a long poll does not
+   * collect it again while it waits for the resolution. A job that no longer exists is skipped
+   * entirely, leaving no waiting entry behind for it.
    */
   private void parkWaitingJob(
       final String storeId, final String secretReference, final long jobKey) {
@@ -53,7 +50,6 @@ public final class SecretReferenceResolutionRequestedApplier
       return;
     }
     secretReferenceState.addWaitingJob(storeId, secretReference, jobKey);
-    jobState.updateJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
-    jobState.makeJobNotActivatable(jobKey, job);
+    jobState.parkForSecretResolution(jobKey, job);
   }
 }

@@ -382,6 +382,20 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldNotParkJobForSecretResolutionWhenItIsNotUpForActivation() {
+    // given - a job a worker already holds
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    createAndActivateJobRecord(jobKey, jobRecord);
+
+    // when
+    jobState.parkForSecretResolution(jobKey, jobRecord);
+
+    // then - the activation keeps the job, parking it would take its state away from the worker
+    assertJobState(jobKey, State.ACTIVATED);
+  }
+
+  @Test
   public void shouldMakeWaitingJobActivatableAfterSecretResolution() {
     // given - a job parked while its secret references are resolved
     final long jobKey = 1L;
@@ -866,8 +880,7 @@ public final class JobStateTest {
     jobState.insertJobRecordActivatable(key, record);
     jobState.makeJobActivatableByPriority(
         record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
-    jobState.updateJobState(key, State.WAITING_FOR_SECRET_RESOLUTION);
-    jobState.makeJobNotActivatable(key, record);
+    jobState.parkForSecretResolution(key, record);
   }
 
   private JobRecord newJobRecord() {
