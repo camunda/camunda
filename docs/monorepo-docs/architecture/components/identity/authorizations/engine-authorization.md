@@ -83,7 +83,7 @@ This step supplements the primary result:
 
 As a final fallback, if the request carries resource properties (e.g. user task properties like assignee and candidate information) and the caller already has tenant access, the system checks whether the authenticated user matches any of the resource's properties.
 
-This uses the `PropertyAuthorizationEvaluatorRegistry`, which dispatches to type-specific evaluators. Currently the only evaluator is `UserTaskPropertyAuthorizationEvaluator`, which checks:
+This is handled by `UserTaskAuthorizationCheck`, which checks:
 - Is the user the **assignee** of the task?
 - Is the user in the **candidate users** list?
 - Does the user belong to a **candidate group**?

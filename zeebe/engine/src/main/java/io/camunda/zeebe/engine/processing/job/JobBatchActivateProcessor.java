@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
@@ -118,9 +118,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private List<String> determineTenantIds(
-      final JobBatchRecord value, final AuthorizedTenants authorizedTenantIds) {
+      final JobBatchRecord value, final TenantAccess authorizedTenantIds) {
     if (value.getTenantFilter() == TenantFilter.ASSIGNED) {
-      return authorizedTenantIds.getAuthorizedTenantIds();
+      return authorizedTenantIds.tenantIds();
     }
 
     return resolveProvidedTenantIds(value);
@@ -139,7 +139,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateRequest(
-      final TypedRecord<JobBatchRecord> record, final AuthorizedTenants authorizedTenantIds) {
+      final TypedRecord<JobBatchRecord> record, final TenantAccess authorizedTenantIds) {
     final var value = record.getValue();
 
     // Skip tenant authorization check when using ASSIGNED filter
@@ -154,7 +154,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateTenantAuthorization(
-      final JobBatchRecord value, final AuthorizedTenants authorizedTenantIds) {
+      final JobBatchRecord value, final TenantAccess authorizedTenantIds) {
     final var tenantIds = resolveProvidedTenantIds(value);
     return cslCheck.checkTenantsRequiringPrincipal(
         tenantIds,
@@ -164,7 +164,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             new Rejection(
                 RejectionType.UNAUTHORIZED,
                 "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
-                    .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
+                    .formatted(tenantIds, authorizedTenantIds.tenantIds())));
   }
 
   private Either<Rejection, Void> validateCommandFields(final JobBatchRecord record) {

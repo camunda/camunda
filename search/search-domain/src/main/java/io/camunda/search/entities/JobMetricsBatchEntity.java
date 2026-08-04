@@ -7,6 +7,7 @@
  */
 package io.camunda.search.entities;
 
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Objects;

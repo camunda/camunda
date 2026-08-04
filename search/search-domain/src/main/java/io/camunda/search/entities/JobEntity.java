@@ -10,6 +10,7 @@ package io.camunda.search.entities;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;

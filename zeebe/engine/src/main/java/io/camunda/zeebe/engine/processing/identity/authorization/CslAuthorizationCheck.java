@@ -12,11 +12,11 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
  * Encapsulates the shared CSL skip-logic and authorization check used across engine command
  * processors.
  *
- * <p>Every engine command site that checks CSL authorization duplicates the same 15-line block:
- * internal-command skip → anonymous skip → security-disabled skip → no-principal check → claims
- * conversion → {@link AuthorizationCheckPort#check}. This class captures that block in one place.
+ * <p>Every engine command site that checks CSL authorization duplicates the same block:
+ * internal-command skip → anonymous skip → no-principal check → claims conversion → {@link
+ * AuthorizationCheckPort#check}. This class captures that block in one place.
  *
  * <p>Use {@link #check} for single-check sites (one {@link RequiredAuthorization} per command). Use
  * {@link #resolveForCheck} for multi-check sites (e.g. UserTask processors) that run several CSL
@@ -70,7 +70,7 @@ public final class CslAuthorizationCheck {
    *
    * <ul>
    *   <li>{@code right(empty)} — skip-logic says allow; no CSL check needed (internal command,
-   *       anonymous user, security disabled, or no-principal when authorizations are disabled).
+   *       anonymous user, or no-principal when authorizations are disabled).
    *   <li>{@code right(present)} — caller must run the CSL check with this {@link
    *       CamundaAuthentication}.
    *   <li>{@code left(rejection)} — no principal present and authorizations are enabled; the
@@ -92,12 +92,6 @@ public final class CslAuthorizationCheck {
           "Skipping authorization check for anonymous user on command {}", command.getIntent());
       return Either.right(Optional.empty());
     }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
-      LOG.trace(
-          "Skipping authorization check for command {}: security disabled", command.getIntent());
-      return Either.right(Optional.empty());
-    }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
       if (!securityConfig.isAuthorizationsEnabled()) {
@@ -114,10 +108,10 @@ public final class CslAuthorizationCheck {
   }
 
   /**
-   * Resolves the {@link AuthorizedTenants} for a command from its authorization claims. Delegates
-   * to {@link CslTenantCheck#resolveAuthorizedTenants}.
+   * Resolves the {@link TenantAccess} for a command from its authorization claims. Delegates to
+   * {@link CslTenantCheck#resolveAuthorizedTenants}.
    */
-  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
     return tenantCheck.resolveAuthorizedTenants(authorizations);
   }
 
@@ -157,7 +151,7 @@ public final class CslAuthorizationCheck {
    */
   public <T> Either<Rejection, T> checkTenantsRequiringPrincipal(
       final List<String> tenantIds,
-      final AuthorizedTenants authorizedTenants,
+      final TenantAccess authorizedTenants,
       final T value,
       final Supplier<Rejection> notAssignedRejection) {
     return tenantCheck.checkTenantsRequiringPrincipal(
@@ -166,9 +160,8 @@ public final class CslAuthorizationCheck {
 
   /**
    * Combines {@link #check} and {@link CslTenantCheck#checkTenant} into the single call most
-   * command sites need: RBAC permission first, tenant membership second. Mirrors the priority
-   * {@code main}'s {@code AuthorizationCheckBehavior} aggregation gives when both checks would fail
-   * on the same command (permission rejection wins) — so a principal with no permission at all
+   * command sites need: RBAC permission first, tenant membership second. When both checks would
+   * fail on the same command, permission rejection wins — so a principal with no permission at all
    * always sees {@code FORBIDDEN}, never a tenant-shaped rejection that could hint at the
    * resource's existence.
    *
@@ -234,7 +227,7 @@ public final class CslAuthorizationCheck {
    * distributed commands: on target partitions they appear as internal (no request metadata) but
    * still carry the originating user's claims and must be subject to authorization checks.
    *
-   * <p>All other skip conditions (anonymous user, security disabled, no principal) still apply.
+   * <p>All other skip conditions (anonymous user, no principal) still apply.
    */
   public <T> Either<Rejection, T> checkForDistributedCommand(
       final TypedRecord<?> command,
@@ -248,8 +241,7 @@ public final class CslAuthorizationCheck {
    * Authorization check for contexts where no {@link TypedRecord} is available, only the raw claims
    * map (e.g. job-stream activation where claims come from {@link
    * io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties}). Applies the same
-   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, security disabled, no
-   * principal.
+   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, no principal.
    */
   public <T> Either<Rejection, T> checkWithClaims(
       final Map<String, Object> claims,
@@ -267,10 +259,6 @@ public final class CslAuthorizationCheck {
       final Rejection noPrincipalRejection,
       final Function<AuthorizationRejection, Rejection> denialMapper) {
     if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return Either.right(value);
-    }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(value);
     }
     if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
