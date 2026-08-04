@@ -41,8 +41,8 @@ public @interface ConditionalOnSecondaryStorageDisabled {
             "Secondary storage is disabled ({}={}). Some features such as webapps will not start "
                 + "unless a secondary storage is configured. See {} config.",
             DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
-            DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
-            DatabaseType.NONE);
+            DatabaseType.NONE,
+            DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
       }
       return disabled;
     }
