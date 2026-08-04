@@ -15,9 +15,9 @@ import io.camunda.secretstore.SecretCache;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
@@ -41,13 +41,16 @@ import org.mockito.stubbing.Answer;
  * <p>Usage: construct one instance per test, register it as the {@code SecretCache} in the {@code
  * SecretStoreRegistry} passed to {@code EngineRule#withSecretStoreRegistry}, and call {@link
  * #install(CommandResponseWriter)} from a {@code @Before} method with {@code
- * engine.getCommandResponseWriter()}. Field-declaration order matters: this instance must be
- * declared textually before the {@code @Rule EngineRule} field that references it in its own
- * initializer, since Java runs field initializers in declaration order.
+ * engine.getCommandResponseWriter()}. If the {@code @Rule EngineRule} field references this
+ * instance, assign it in the test class's constructor rather than in the field's own initializer:
+ * all instance field initializers run before any constructor-body statement (JLS 12.5) regardless
+ * of field declaration order, so a constructor-body assignment always sees this field already
+ * constructed — which also lets {@code public} {@code @Rule} fields be declared before this {@code
+ * private} one, satisfying Checkstyle's {@code DeclarationOrder} check.
  */
 public final class SecretActivationResponseCapture implements SecretCache {
 
-  private final Map<String, String> cachedSecrets = new HashMap<>();
+  private final Map<String, String> cachedSecrets = new ConcurrentHashMap<>();
   private volatile boolean failResolution;
   private volatile JobBatchRecord activationResponse;
 
