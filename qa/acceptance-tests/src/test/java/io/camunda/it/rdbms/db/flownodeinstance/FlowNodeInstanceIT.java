@@ -17,11 +17,14 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
@@ -265,6 +268,225 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().flowNodeInstanceKey())
         .isEqualTo(instance.flowNodeInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldWriteInnerInstanceNameWhenNull(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // a null name is persisted as SQL NULL (the reader coalesces NULL to "" via nullToEmpty), so
+    // the green updateNameIfNull can safely key off "FLOW_NODE_NAME IS NULL"
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName(null));
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .updateName(instance.flowNodeInstanceKey(), "List users");
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("List users");
+  }
+
+  @TestTemplate
+  public void shouldNotOverwriteAlreadySetName(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName("Existing"));
+
+    // when
+    rdbmsWriters.getFlowNodeInstanceWriter().updateName(instance.flowNodeInstanceKey(), "New");
+    rdbmsWriters.flush();
+
+    // then
+    // an already-set name must survive a second write (the multi-entry / re-activation case)
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("Existing");
+  }
+
+  @TestTemplate
+  public void shouldKeepInnerInstanceNameOnMigration(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // a flow node instance whose inner-instance name was already resolved to "List users"
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters,
+            b -> b.flowNodeName("List users").type(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE));
+
+    // when
+    // ELEMENT_MIGRATED handling writes the full model via update(); the migrated model carries no
+    // resolved inner-instance name (null). The update mapper must not clobber the existing name.
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("List users");
+  }
+
+  @TestTemplate
+  public void shouldClearNormalElementNameOnMigrationWhenNull(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName("Old").type(FlowNodeType.SERVICE_TASK));
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+    rdbmsWriters.flush();
+
+    // then
+    // a null name during migration must still clear an ordinary (non-inner-instance) element's
+    // name; the null-skip guard is scoped to AD_HOC_SUB_PROCESS_INNER_INSTANCE and must not
+    // overreach to other flow node types
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldUpdateNameOnMigrationWhenProvided(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName("Old"));
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName("New")));
+    rdbmsWriters.flush();
+
+    // then
+    // a legitimate non-null name update must not be blocked by the null-skip guard
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("New");
+  }
+
+  @TestTemplate
+  public void shouldKeepFirstEntryNameWhenMultipleActivateBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName(null));
+
+    // when
+    // two entry elements activate before a single flush: first-writer-wins
+    rdbmsWriters.getFlowNodeInstanceWriter().updateName(instance.flowNodeInstanceKey(), "first");
+    rdbmsWriters.getFlowNodeInstanceWriter().updateName(instance.flowNodeInstanceKey(), "second");
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("first");
+  }
+
+  /**
+   * Same first-writer-wins outcome as {@link
+   * #shouldKeepFirstEntryNameWhenMultipleActivateBeforeFlush}, but over the other of the two write
+   * paths: there the row is already inserted, so the name goes through the SQL {@code
+   * updateNameIfNull} statement; here the row's insert is still queued, so the name folds into the
+   * pending {@code BatchInsertDto} in memory and no update statement is ever issued.
+   */
+  @TestTemplate
+  public void shouldKeepFirstEntryNameWhenMergedIntoPendingInsert(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // deliberately not flushed: the insert has to stay queued for the merge path to be reached
+    final var instance = FlowNodeInstanceFixtures.createRandomized(b -> b.flowNodeName(null));
+    rdbmsWriters.getFlowNodeInstanceWriter().create(instance);
+
+    // when
+    // two entry elements activate before the inner instance's own insert is flushed
+    rdbmsWriters.getFlowNodeInstanceWriter().updateName(instance.flowNodeInstanceKey(), "first");
+    rdbmsWriters.getFlowNodeInstanceWriter().updateName(instance.flowNodeInstanceKey(), "second");
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName())
+        .describedAs("the first resolved name must survive the merge into the still-queued insert")
+        .isEqualTo("first");
+  }
+
+  /**
+   * RDBMS analogue of the ES/OS same-batch regression behind #58803: on ES/OS, one shared cached
+   * entity per id let the inner instance's own completion clobber the name resolved by the entry
+   * child's activation when both landed in the same flush. On RDBMS both writes instead target the
+   * same still-queued insert independently — this pins that merging a name resolution and a
+   * completion into that one pending insert preserves both, rather than the second merge
+   * overwriting the first.
+   */
+  @TestTemplate
+  public void shouldKeepNameAndApplyFinishWhenBothMergeIntoPendingInsert(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // deliberately not flushed: the insert has to stay queued for both merges to be reached
+    final var instance = FlowNodeInstanceFixtures.createRandomized(b -> b.flowNodeName(null));
+    rdbmsWriters.getFlowNodeInstanceWriter().create(instance);
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .updateName(instance.flowNodeInstanceKey(), "List users");
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .finish(instance.flowNodeInstanceKey(), FlowNodeState.COMPLETED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName())
+        .describedAs(
+            "the resolved name must survive merging into the same pending insert as finish()")
+        .isEqualTo("List users");
+    assertThat(actual.state())
+        .describedAs(
+            "finish() merging into the pending insert must still apply the completed state")
+        .isEqualTo(FlowNodeState.COMPLETED);
   }
 
   private static void compareFlowNodeInstance(
