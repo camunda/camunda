@@ -20,8 +20,10 @@ import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-/** */
+@NullMarked
 public class AuthInfo extends UnpackedObject {
 
   private final EnumProperty<AuthDataFormat> formatProp =
@@ -32,7 +34,7 @@ public class AuthInfo extends UnpackedObject {
   // fields  for caching
   private transient boolean frozen;
   private transient int cachedLength = -1;
-  private transient Map<String, Object> cachedDecodedMap;
+  private transient @Nullable Map<String, Object> cachedDecodedMap;
 
   public AuthInfo() {
     super(3);
@@ -146,14 +148,6 @@ public class AuthInfo extends UnpackedObject {
     }
   }
 
-  public DirectBuffer toDirectBuffer() {
-    final var bytes = new byte[getLength()];
-    final var buffer = new UnsafeBuffer(bytes);
-    write(buffer, 0);
-
-    return buffer;
-  }
-
   public Map<String, Object> toDecodedMap() {
     if (frozen && cachedDecodedMap != null) {
       return cachedDecodedMap;
@@ -178,7 +172,7 @@ public class AuthInfo extends UnpackedObject {
    * @return Creates a new AuthInfo if the argument is not frozen by copying it. The returned value
    *     is always frozen
    */
-  public static AuthInfo of(final AuthInfo info) {
+  public static @Nullable AuthInfo of(final @Nullable AuthInfo info) {
     if (info == null) {
       return null;
     }
@@ -191,7 +185,7 @@ public class AuthInfo extends UnpackedObject {
     return auth.freeze();
   }
 
-  public static AuthInfo ofClaims(final Map<String, Object> claims) {
+  public static AuthInfo ofClaims(@Nullable final Map<String, Object> claims) {
     if (claims == null || claims.isEmpty()) {
       return empty();
     }

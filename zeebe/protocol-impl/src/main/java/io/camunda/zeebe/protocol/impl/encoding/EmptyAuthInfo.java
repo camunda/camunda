@@ -11,6 +11,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * An immutable, singleton-safe empty {@link AuthInfo}. This subclass is frozen at construction and
@@ -18,6 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * change. By overriding {@link #write}, it avoids the shared {@code MsgPackWriter} in the parent
  * class, eliminating a data race when multiple threads call {@code write()} on the singleton.
  */
+@NullMarked
 final class EmptyAuthInfo extends AuthInfo {
 
   private static final EmptyAuthInfo INSTANCE = new EmptyAuthInfo();
@@ -29,8 +31,8 @@ final class EmptyAuthInfo extends AuthInfo {
   private EmptyAuthInfo() {
     super();
     length = super.getLength();
-    // Cannot use super.toDirectBuffer() because it calls write(buffer, 0) which dispatches
-    // to our override, but cachedBuffer is still null. Use super.write() directly instead.
+    // must use super.write() directly: any helper going through write(buffer, 0) would dispatch to
+    // our override, and cachedBuffer is still null at this point.
     final var bytes = new byte[length];
     final var buf = new UnsafeBuffer(bytes);
     super.write(buf, 0);
@@ -45,11 +47,6 @@ final class EmptyAuthInfo extends AuthInfo {
   @Override
   public int getLength() {
     return length;
-  }
-
-  @Override
-  public DirectBuffer toDirectBuffer() {
-    return cachedBuffer;
   }
 
   @Override
