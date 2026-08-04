@@ -220,9 +220,16 @@ def test_suite_recovered_from_rootdir():
     assert classify.suite_from_rootdir(root) == "SM-8.10"
 
 
+def test_suite_recovered_from_saas_rootdir():
+    # The SaaS run executes in the e2e repo checkout, which has no `dist` segment.
+    root = "/home/runner/_work/c8-cross-component-e2e-tests/c8-cross-component-e2e-tests/tests/8.10"
+    assert classify.suite_from_rootdir(root) == "8.10"
+
+
 def test_suite_is_none_when_rootdir_unhelpful():
     assert classify.suite_from_rootdir("") is None
     assert classify.suite_from_rootdir("/some/other/dir") is None
+    assert classify.suite_from_rootdir("/w/repo/tests/unit") is None
 
 
 def test_compiled_basename_maps_to_source_path():

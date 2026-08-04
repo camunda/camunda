@@ -234,15 +234,17 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
 # Spec → source path
 # ---------------------------------------------------------------------------
 
-_ROOTDIR_SUITE_RE = re.compile(r"/dist/tests/(?P<suite>(?:SM-|c8Run-)?\d+\.\d+)/?$")
+_ROOTDIR_SUITE_RE = re.compile(r"/tests/(?P<suite>(?:SM-)?\d+\.\d+)/?$")
 
 
 def suite_from_rootdir(root_dir: str | None) -> str | None:
     """Extract the test-suite directory (e.g. `SM-8.10`) from `config.rootDir`.
 
-    The helm chart points Playwright at the published npm package, so the report's
-    `file` fields are bare basenames like `smoke-tests.spec.js`. `rootDir` carries
-    the resolved suite directory and is the reliable way to recover it.
+    Both surfaces report bare basenames like `smoke-tests.spec.js`: the helm chart
+    points Playwright at the published npm package (`.../dist/tests/SM-8.10`) and
+    the SaaS run executes in the e2e repo checkout (`.../tests/8.10`). `rootDir` is
+    the reliable way to recover the suite in either layout. AlwaysGreen runs only
+    SM and SaaS, so no c8Run prefix is matched.
     """
     if not root_dir:
         return None
