@@ -263,6 +263,7 @@ public final class EngineProcessors {
             config,
             incidentMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
+            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
@@ -609,6 +610,7 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck) {
     return new BpmnBehaviorsImpl(
         processingState,
@@ -625,6 +627,7 @@ public final class EngineProcessors {
         config,
         incidentMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
+        evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck);
   }
 
