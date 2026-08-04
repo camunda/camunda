@@ -67,9 +67,7 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
       return result;
     }
     final Either<AuthorizationRejection, Void> aliasResult =
-        authorizationService.check(
-            authentication,
-            authorization.withResourceIds(List.of(COMPONENT_IDENTITY_LEGACY_ALIAS)));
+        authorizationService.check(authentication, withIdentityAlias(authorization));
     return aliasResult.isRight() ? aliasResult : result;
   }
 
@@ -103,5 +101,14 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
         && authorization.permissionType() == PermissionType.ACCESS
         && authorization.resourceIds() != null
         && authorization.resourceIds().contains(COMPONENT_ADMIN);
+  }
+
+  private static <T> RequiredAuthorization<T> withIdentityAlias(
+      final RequiredAuthorization<T> authorization) {
+    final List<String> aliasedResourceIds =
+        authorization.resourceIds().stream()
+            .map(id -> COMPONENT_ADMIN.equals(id) ? COMPONENT_IDENTITY_LEGACY_ALIAS : id)
+            .toList();
+    return authorization.withResourceIds(aliasedResourceIds);
   }
 }

@@ -153,6 +153,58 @@ class TenantAwareAuthorizationCheckPortTest {
     verify(authorizationChecker, never()).isAuthorized(any(), any(), any());
   }
 
+  @Test
+  void shouldPreserveOtherResourceIdsWhenApplyingIdentityAlias() {
+    // given: a multi-id requirement (admin + operate); only the legacy identity alias is granted
+    when(authorizationChecker.isAuthorized(any(), any(), any())).thenReturn(false);
+    when(authorizationChecker.isAuthorized(
+            argThat(
+                scope ->
+                    scope != null && COMPONENT_IDENTITY_LEGACY_ALIAS.equals(scope.getResourceId())),
+            any(),
+            any()))
+        .thenReturn(true);
+
+    // when
+    final Either<AuthorizationRejection, Void> result =
+        authorizationCheckPort.check(
+            authentication,
+            componentAccess(COMPONENT_ADMIN)
+                .withResourceIds(List.of(COMPONENT_ADMIN, COMPONENT_OPERATE)));
+
+    // then: the alias must only substitute admin -> identity, not discard operate; since operate
+    // is not granted, the overall check must still be denied
+    assertThat(result.isLeft()).isTrue();
+  }
+
+  @Test
+  void shouldGrantAccessViaAliasWhenAllOtherResourceIdsAreAlsoGranted() {
+    // given: a multi-id requirement (admin + operate); identity alias and operate are both granted
+    when(authorizationChecker.isAuthorized(any(), any(), any())).thenReturn(false);
+    when(authorizationChecker.isAuthorized(
+            argThat(
+                scope ->
+                    scope != null && COMPONENT_IDENTITY_LEGACY_ALIAS.equals(scope.getResourceId())),
+            any(),
+            any()))
+        .thenReturn(true);
+    when(authorizationChecker.isAuthorized(
+            argThat(scope -> scope != null && COMPONENT_OPERATE.equals(scope.getResourceId())),
+            any(),
+            any()))
+        .thenReturn(true);
+
+    // when
+    final Either<AuthorizationRejection, Void> result =
+        authorizationCheckPort.check(
+            authentication,
+            componentAccess(COMPONENT_ADMIN)
+                .withResourceIds(List.of(COMPONENT_ADMIN, COMPONENT_OPERATE)));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
   private static RequiredAuthorization<Void> componentAccess(final String resourceId) {
     return RequiredAuthorization.<Void>of(
             b ->
