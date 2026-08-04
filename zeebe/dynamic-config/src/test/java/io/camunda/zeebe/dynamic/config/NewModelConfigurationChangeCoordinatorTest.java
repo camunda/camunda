@@ -200,6 +200,26 @@ final class NewModelConfigurationChangeCoordinatorTest {
   }
 
   @Test
+  void shouldFailDryRunWithValidationError() {
+    // given — member 0 leaving a partition it doesn't host (only partition 1 is assigned) is
+    // rejected by the real PartitionGroupConfigurationChangeAppliersImpl dispatch table during
+    // simulation
+    wire(MEMBER_0, twoMemberCluster());
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)));
+
+    // when
+    final var simulationResult = coordinator.simulateOperations(request);
+
+    // then — rejected during validation; no plan is started
+    assertThat(simulationResult)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidRequest.class);
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+  }
+
+  @Test
   void shouldCompleteWithoutChangesWhenNoOperationsGenerated() {
     // given
     wire(MEMBER_0, twoMemberCluster());
