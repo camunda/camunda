@@ -9,6 +9,9 @@ package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
@@ -200,6 +203,64 @@ class SecretStoreConfigurationTest {
         .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldThrowWhenFileAndGcpStoresCombinedExceedOne() {
+    // given one file store and one gcp store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.gcp.gcp-store.project-id", "my-project"));
+
+    // when / then — the per-tenant cap is enforced before any GCP client is built
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldCloseAlreadyBuiltStoresWhenALaterTenantFailsToBuild() {
+    // given two tenants each with a single file store; the second store's construction blows up,
+    // simulating a store that fails to build after an earlier tenant's store was already created.
+    // Counting constructions (not tenants) keeps this deterministic regardless of tenant iteration
+    // order: whichever tenant is processed first builds successfully, the second one fails.
+    try (var construction =
+        mockConstruction(
+            FileBasedSecretStore.class,
+            (mock, context) -> {
+              if (context.getCount() == 2) {
+                throw new IllegalStateException("second tenant's store failed to build");
+              }
+            })) {
+      final var resolver =
+          resolverFor(
+              Map.of(
+                  "camunda.physical-tenants.tenanta.secrets.stores.file.main.path",
+                  "/etc/tenanta/secrets",
+                  "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                  "tenanta-admin",
+                  "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                  "tenanta",
+                  "camunda.physical-tenants.tenantb.secrets.stores.file.other.path",
+                  "/etc/tenantb/secrets",
+                  "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                  "tenantb-admin",
+                  "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                  "tenantb"));
+
+      // when / then — the build fails and the failure propagates (Mockito wraps the construction
+      // failure, but it is still a RuntimeException the rollback path catches)
+      assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+          .isInstanceOf(RuntimeException.class)
+          .hasRootCauseInstanceOf(IllegalStateException.class);
+
+      // then — the first tenant's already-built store is rolled back (closed) so its client does
+      // not leak
+      verify(construction.constructed().get(0)).close();
+    }
   }
 
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {
