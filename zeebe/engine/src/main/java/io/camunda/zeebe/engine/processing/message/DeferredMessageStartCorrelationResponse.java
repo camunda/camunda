@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
@@ -49,6 +50,7 @@ final class DeferredMessageStartCorrelationResponse {
   private final TypedResponseWriter responseWriter;
   private final MessageCorrelationState messageCorrelationState;
   private final MessageState messageState;
+  private final MessageCorrelationMetrics metrics;
   private final MessageCorrelationRecord correlationRecord = new MessageCorrelationRecord();
   private final MessageRecord expiredMessageRecord = new MessageRecord();
 
@@ -56,11 +58,13 @@ final class DeferredMessageStartCorrelationResponse {
       final StateWriter stateWriter,
       final TypedResponseWriter responseWriter,
       final MessageCorrelationState messageCorrelationState,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final MessageCorrelationMetrics metrics) {
     this.stateWriter = stateWriter;
     this.responseWriter = responseWriter;
     this.messageCorrelationState = messageCorrelationState;
     this.messageState = messageState;
+    this.metrics = metrics;
   }
 
   /**
@@ -161,5 +165,6 @@ final class DeferredMessageStartCorrelationResponse {
     expiredMessageRecord.reset();
     expiredMessageRecord.wrap(storedMessage.getMessage());
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, expiredMessageRecord);
+    metrics.expireCrossPartitionAsks(messageKey);
   }
 }

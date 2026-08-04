@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import java.time.Duration;
 
 /**
  * Documents the meters that instrument the Business-ID message-start correlation feature: the
@@ -432,6 +433,122 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Duration a cross-partition message-start ask stays outstanding on {@code P_K}: from the moment
+   * the ask is first dispatched until it reaches a terminal outcome, tagged by that outcome. {@code
+   * started} is the round-trip to a {@code P_B} success reply (including every intervening retry
+   * and back-off), the number spike #58900 investigates as the blocked cross-partition start
+   * latency; {@code expired} is the ask whose buffered message hit its TTL on {@code P_K} before
+   * any success — the whole-window-blocked outcome. Rejections do not stop the timer: the ask is
+   * retried and the blocked time keeps accruing until it either starts or expires. Samples are
+   * in-memory and best-effort — they are dropped on leader change (see {@link
+   * MessageCorrelationMetrics}).
+   */
+  CROSS_PARTITION_ASK_DURATION {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(100),
+      Duration.ofMillis(500),
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(30),
+      Duration.ofMinutes(1),
+      Duration.ofMinutes(5),
+      Duration.ofMinutes(10),
+      Duration.ofMinutes(30),
+      Duration.ofHours(1),
+      Duration.ofHours(5),
+      Duration.ofHours(10),
+    };
+
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.asks.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Duration a cross-partition message-start ask stays outstanding on the correlation-key partition (P_K), from first dispatch to a started or expired terminal.";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {MessageCorrelationKeyNames.OUTCOME};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /**
+   * Release-to-start latency on {@code P_B = hash(businessId)}: the time between a business id
+   * being freed by a completing/terminating holder and a cross-partition message-start that was
+   * blocked on that business id (uniqueness-rejected and retrying) actually starting here. It
+   * isolates the uniqueness back-pressure component of the cross-partition start latency under
+   * contention — {@link #CROSS_PARTITION_ASK_DURATION} measures the whole ask round-trip on {@code
+   * P_K}, whereas this measures only the wait for the contended business id to be released. Only
+   * asks that were actually blocked are measured (tracked by message key), so uncontended
+   * business-id reuse never pollutes the histogram. Best-effort and in-memory: it is bounded to the
+   * most recent contended business ids, misses holders freed without a completion transition
+   * (banned or migrated), and is dropped on leader change (see {@link MessageCorrelationMetrics}).
+   */
+  RELEASE_TO_START_DURATION {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(100),
+      Duration.ofMillis(500),
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(30),
+      Duration.ofMinutes(1),
+      Duration.ofMinutes(5),
+      Duration.ofMinutes(10),
+      Duration.ofMinutes(30),
+      Duration.ofHours(1),
+      Duration.ofHours(5),
+      Duration.ofHours(10),
+    };
+
+    @Override
+    public String getName() {
+      return "zeebe.message.start.cross.partition.release.to.start.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Latency on the business-id partition (P_B) between a business id being freed by a completing holder and a cross-partition message-start blocked on it actually starting.";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   public enum MessageCorrelationKeyNames implements KeyName {
@@ -548,6 +665,22 @@ public enum MessageCorrelationMetricsDoc implements ExtendedMeterDocumentation {
     private final String label;
 
     BlockReason(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
+    }
+  }
+
+  /** Terminal outcome of a cross-partition message-start ask ({@code outcome} tag). */
+  public enum AskOutcome {
+    STARTED("started"),
+    EXPIRED("expired");
+
+    private final String label;
+
+    AskOutcome(final String label) {
       this.label = label;
     }
 

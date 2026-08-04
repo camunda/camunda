@@ -64,6 +64,7 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final MessageCorrelationMetrics metrics;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -87,6 +88,7 @@ public final class MessageCorrelationCorrelateProcessor
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.cslCheck = cslCheck;
+    this.metrics = metrics;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -233,6 +235,7 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Message Correlate command cannot have a TTL. As a result the message expires immediately.
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
+    metrics.expireCrossPartitionAsks(messageKey);
   }
 
   private MessageData createMessageData(

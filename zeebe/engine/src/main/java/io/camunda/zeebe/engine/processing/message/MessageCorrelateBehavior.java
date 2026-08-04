@@ -453,6 +453,8 @@ public final class MessageCorrelateBehavior {
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);
 
     metrics.crossPartitionAskSent();
+    metrics.startCrossPartitionAsk(
+        messageData.messageKey(), subscriptionRecord.getProcessDefinitionKey());
 
     commandSender.sendStartProcessInstanceRequest(
         routingInfo.partitionForCorrelationKey(messageData.businessId()),

@@ -60,6 +60,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final CslAuthorizationCheck cslCheck;
   private final RoutingInfo routingInfo;
   private final VariableBehavior variableBehavior;
+  private final MessageCorrelationMetrics metrics;
 
   public MessagePublishProcessor(
       final int partitionId,
@@ -89,6 +90,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
     this.variableBehavior = variableBehavior;
+    this.metrics = metrics;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -197,6 +199,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
       stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
+      metrics.expireCrossPartitionAsks(messageKey);
     }
   }
 
