@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -41,8 +42,6 @@ public final class JobWaitingForSecretResolutionTest {
   private static final String JOB_TYPE = "task-type";
   private static final String SECRET_NAME = "token";
 
-  private final Map<String, String> cachedSecrets = new HashMap<>();
-
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
@@ -54,6 +53,8 @@ public final class JobWaitingForSecretResolutionTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  private final Map<String, String> cachedSecrets = new HashMap<>();
 
   @Test
   public void shouldParkJobInWaitingState() {
@@ -111,6 +112,36 @@ public final class JobWaitingForSecretResolutionTest {
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(rejection.getRejectionReason()).contains(State.WAITING_FOR_SECRET_RESOLUTION.name());
+  }
+
+  @Test
+  public void shouldRejectYieldOfWaitingJob() {
+    // given
+    deploy();
+    final long jobKey = parkedJob();
+
+    // when
+    final Record<JobRecordValue> rejection = engine.job().withKey(jobKey).expectRejection().yield();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains(State.WAITING_FOR_SECRET_RESOLUTION.name());
+  }
+
+  @Test
+  public void shouldRejectTimeoutUpdateOfWaitingJob() {
+    // given - a parked job has no deadline, because it was never handed to a worker
+    deploy();
+    final long jobKey = parkedJob();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        engine.job().withKey(jobKey).withTimeout(1000L).expectRejection().updateTimeout();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(JobUpdateBehaviour.NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
   }
 
   @Test
