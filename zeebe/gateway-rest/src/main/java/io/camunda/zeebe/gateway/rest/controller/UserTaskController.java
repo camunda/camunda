@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.USER_TASK;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
@@ -38,8 +39,10 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,12 +56,15 @@ public class UserTaskController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public UserTaskController(
       final ServiceRegistry serviceRegistry,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/completion")
@@ -119,12 +125,23 @@ public class UserTaskController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var userTask =
-          serviceRegistry
-              .userTaskServices(physicalTenantId)
-              .getByKey(userTaskKey, authenticationProvider.getCamundaAuthentication());
+          serviceRegistry.userTaskServices(physicalTenantId).getByKey(userTaskKey, authentication);
+      final var response = SearchQueryResponseMapper.toUserTask(userTask);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response,
+            UserTaskResult::getUserTaskKey,
+            USER_TASK,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            UserTaskResult::setUpdatedBy,
+            UserTaskResult::setUpdatedAt,
+            UserTaskResult::getCreationDate);
+      }
 
-      return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask));
+      return ResponseEntity.ok().body(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -199,10 +216,22 @@ public class UserTaskController {
       final String physicalTenantId, final UserTaskQuery query) {
     final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     try {
-      final var result =
-          userTaskServices.search(query, authenticationProvider.getCamundaAuthentication());
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = userTaskServices.search(query, authentication);
+      final var response = SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result);
+      if (gatewayRestConfiguration.getUpdateMetadata().isEnabled()) {
+        UpdateMetadataMapper.addUpdateMetadata(
+            response.getItems(),
+            UserTaskResult::getUserTaskKey,
+            USER_TASK,
+            serviceRegistry.auditLogServices(physicalTenantId),
+            authentication,
+            UserTaskResult::setUpdatedBy,
+            UserTaskResult::setUpdatedAt,
+            UserTaskResult::getCreationDate);
+      }
 
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+      return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

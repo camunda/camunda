@@ -13,11 +13,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = {ProcessInstanceController.class, TopologyController.class})
@@ -57,5 +60,13 @@ public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
         .isOk();
 
     verify(topologyServices).getTopology();
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

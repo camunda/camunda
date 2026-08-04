@@ -14,11 +14,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -114,5 +117,13 @@ public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

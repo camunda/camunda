@@ -19,6 +19,7 @@ import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -36,16 +37,19 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +62,10 @@ import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -232,6 +239,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean AuditLogServices auditLogServices;
+  @Autowired GatewayRestConfiguration gatewayRestConfiguration;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor ArgumentCaptor<IncidentQuery> incidentQueryCaptor;
 
@@ -242,6 +251,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .thenReturn(processInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @AfterEach
+  void resetUpdateMetadataFlag() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(false);
   }
 
   private static void assertJsonNonExtensible(final String expected, final byte[] actualBytes) {
@@ -747,6 +761,70 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // Verify that the service was called with the valid key
     verify(processInstanceServices)
         .getByKey(eq(validProcesInstanceKey), any(CamundaAuthentication.class));
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
+  public void shouldOmitUpdateMetadataKeysEntirelyWhenFlagDisabled() {
+    // given - the flag defaults to disabled
+    final var validProcesInstanceKey = 123L;
+    when(processInstanceServices.getByKey(
+            eq(validProcesInstanceKey), any(CamundaAuthentication.class)))
+        .thenReturn(PROCESS_INSTANCE_ENTITY);
+
+    // when / then - the properties must be absent, not serialized as null
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, validProcesInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .doesNotExist()
+        .jsonPath("$.updatedAt")
+        .doesNotExist();
+
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
+  public void shouldPopulateUpdateMetadataWhenFlagEnabled() {
+    // given
+    final var validProcesInstanceKey = 123L;
+    when(processInstanceServices.getByKey(
+            eq(validProcesInstanceKey), any(CamundaAuthentication.class)))
+        .thenReturn(PROCESS_INSTANCE_ENTITY);
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey(String.valueOf(validProcesInstanceKey))
+            .entityType(
+                io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE)
+            .operationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.CANCEL)
+            .timestamp(OffsetDateTime.parse("2026-01-05T10:00:00Z"))
+            .actorId("demo")
+            .result(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .category(io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.ADMIN)
+            .build();
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, validProcesInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo("demo")
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2026-01-05T10:00:00.000Z");
   }
 
   @Test
@@ -1350,5 +1428,13 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

@@ -2816,7 +2816,18 @@
                   "type": "number"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -2893,7 +2904,18 @@
             "type": "number"
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
+          }
+        ]
       }
     },
     {
@@ -4277,7 +4299,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -5053,7 +5086,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -5174,7 +5218,18 @@
             "type": "string"
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
+          }
+        ]
       }
     },
     {
@@ -7348,7 +7403,18 @@
                   "wrapper": true
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -7508,7 +7574,18 @@
             "wrapper": true
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
+          }
+        ]
       }
     },
     {
@@ -7645,7 +7722,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -9510,7 +9598,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -9676,7 +9775,18 @@
             "type": "string"
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
+          }
+        ]
       }
     },
     {
@@ -9976,7 +10086,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -10085,7 +10206,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -10164,7 +10296,18 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
             }
           },
           {
@@ -10234,7 +10377,18 @@
             "type": "string"
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
+          }
+        ]
       }
     }
   ]

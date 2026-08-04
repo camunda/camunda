@@ -13,6 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -23,20 +24,27 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -86,12 +94,19 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean AuditLogServices auditLogServices;
+  @Autowired GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupServices() {
     when(serviceRegistry.decisionDefinitionServices(any())).thenReturn(decisionDefinitionServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @AfterEach
+  void resetUpdateMetadataFlag() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(false);
   }
 
   @Test
@@ -467,6 +482,45 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
+  public void shouldPopulateUpdateMetadataWhenFlagEnabled() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    final DecisionDefinitionEntity decisionDefinitionEntity =
+        new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "drN", 2, "t");
+    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any()))
+        .thenReturn(decisionDefinitionEntity);
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("0")
+            .entityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.DECISION)
+            .operationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.CREATE)
+            .timestamp(OffsetDateTime.parse("2026-01-05T10:00:00Z"))
+            .actorId("demo")
+            .result(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .category(io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.ADMIN)
+            .build();
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+
+    // when/then
+    webClient
+        .get()
+        .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo("demo")
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2026-01-05T10:00:00.000Z");
   }
 
   @Test
@@ -576,5 +630,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         Pair.of(
             DECISION_DEFINITIONS_GET_XML_URL,
             (service, key) -> service.getDecisionDefinitionXml(eq(key), any())));
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

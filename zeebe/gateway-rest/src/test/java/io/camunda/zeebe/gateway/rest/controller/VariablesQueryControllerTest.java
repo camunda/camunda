@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.VariableFilter;
@@ -23,12 +24,16 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +43,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -153,7 +161,14 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   @MockitoBean VariableServices variableServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean AuditLogServices auditLogServices;
+  @Autowired GatewayRestConfiguration gatewayRestConfiguration;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
+
+  @AfterEach
+  void resetUpdateMetadataFlag() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(false);
+  }
 
   @BeforeEach
   void setupServices() {
@@ -450,6 +465,37 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(EXPECT_SINGLE_VARIABLE_RESPONSE, JsonCompareMode.STRICT);
 
     verify(variableServices).getByKey(eq(VALID_VARIABLE_KEY), any());
+    verify(serviceRegistry, never()).auditLogServices(any());
+  }
+
+  @Test
+  void shouldPopulateUpdateMetadataWhenFlagEnabled() {
+    gatewayRestConfiguration.getUpdateMetadata().setEnabled(true);
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
+    final var auditLog =
+        new AuditLogEntity.Builder()
+            .auditLogKey("1-2")
+            .entityKey("0")
+            .entityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.VARIABLE)
+            .operationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.UPDATE)
+            .timestamp(OffsetDateTime.parse("2026-01-05T10:00:00Z"))
+            .actorId("demo")
+            .result(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .category(io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.ADMIN)
+            .build();
+    when(auditLogServices.search(any(), any())).thenReturn(SearchQueryResult.of(auditLog));
+
+    webClient
+        .get()
+        .uri("/v2/variables/" + VALID_VARIABLE_KEY)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.updatedBy")
+        .isEqualTo("demo")
+        .jsonPath("$.updatedAt")
+        .isEqualTo("2026-01-05T10:00:00.000Z");
   }
 
   @Test
@@ -545,5 +591,13 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(variableServices).search(eq(new VariableQuery.Builder().filter(filter).build()), any());
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      return new GatewayRestConfiguration();
+    }
   }
 }

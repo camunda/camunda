@@ -80,6 +80,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmptyResult'
 
+  # ── Valid: non-required property opted out via x-feature-gated ────
+  /valid-feature-gated/get:
+    get:
+      tags: [Test]
+      operationId: validFeatureGated
+      summary: Get a feature-gated thing (valid)
+      description: The non-required property is marked x-feature-gated.
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidFeatureGatedResult'
+
   # ── Invalid: one property not in required ─────────────────────────
   /invalid-missing-one/get:
     get:
@@ -162,6 +177,20 @@ components:
   schemas:
 
     # ── Valid: flat object, all required ──────────────────────────────
+    ValidFeatureGatedResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name.
+        gatedField:
+          type: string
+          nullable: true
+          description: Absent unless its feature flag is enabled, so it cannot be required.
+          x-feature-gated: true
+
     ValidFlatResult:
       type: object
       required:
