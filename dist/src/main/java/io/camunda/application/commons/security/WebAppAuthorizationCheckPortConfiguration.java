@@ -58,26 +58,31 @@ public class WebAppAuthorizationCheckPortConfiguration {
       final AuthorizationCheckerProvider authorizationCheckerProvider,
       final List<PropertyAuthorizationEvaluator<?>> propertyAuthorizationEvaluators,
       final CamundaSecurityLibraryProperties securityProperties,
-      final ObjectProvider<MembershipPort> membershipPort,
       final ObjectProvider<LazyTokenClaimsConverter> claimsConverter) {
     return new TenantAwareAuthorizationCheckPort(
         authorizationCheckerProvider,
         new PropertyAuthorizationEvaluatorRegistry(propertyAuthorizationEvaluators),
         securityProperties.getAuthorizations().isEnabled(),
         securityProperties.getMultiTenancy().isChecksEnabled(),
-        claimsConverter.getIfAvailable(
-            () -> defaultClaimsConverter(securityProperties, membershipPort)));
+        claimsConverter.getIfAvailable(() -> defaultClaimsConverter(securityProperties)));
   }
 
+  /**
+   * Only reached when no {@link LazyTokenClaimsConverter} bean exists at all. CSL's {@code
+   * CamundaAuthenticationBeansConfiguration.lazyTokenClaimsConverter} is
+   * {@code @ConditionalOnBean(MembershipPort.class)}, and every host in this repo that registers a
+   * real {@link MembershipPort} also activates that CSL bean (see class javadoc), so this fallback
+   * never runs with a real {@link MembershipPort} available — the hardcoded {@link
+   * UnavailableMembershipPort} here is safe.
+   */
   private static LazyTokenClaimsConverter defaultClaimsConverter(
-      final CamundaSecurityLibraryProperties securityProperties,
-      final ObjectProvider<MembershipPort> membershipPort) {
+      final CamundaSecurityLibraryProperties securityProperties) {
     final var oidcConfig = securityProperties.getAuthentication().getOidc();
     return new LazyTokenClaimsConverter(
         oidcConfig.getUsernameClaim(),
         oidcConfig.getClientIdClaim(),
         oidcConfig.isPreferUsernameClaim(),
-        membershipPort.getIfAvailable(UnavailableMembershipPort::new));
+        new UnavailableMembershipPort());
   }
 
   /**
