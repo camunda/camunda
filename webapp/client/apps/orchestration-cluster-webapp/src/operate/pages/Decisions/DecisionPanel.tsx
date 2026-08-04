@@ -18,13 +18,20 @@ import {Section} from './styled';
 type DecisionDefinitionSelection =
 	| {kind: 'no-match'}
 	| {kind: 'single-version'; definition: DecisionDefinition}
-	| {kind: 'all-versions'; definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>};
+	| {kind: 'all-versions'; definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>}
+	| {kind: 'multiple-tenants'; definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>};
 
 type Props = {
 	decisionDefinitionSelection: DecisionDefinitionSelection;
+	isDefinitionSelectionLoading?: boolean;
+	isDefinitionSelectionError?: boolean;
 };
 
-const DecisionPanel: React.FC<Props> = ({decisionDefinitionSelection}) => {
+const DecisionPanel: React.FC<Props> = ({
+	decisionDefinitionSelection,
+	isDefinitionSelectionLoading = false,
+	isDefinitionSelectionError = false,
+}) => {
 	const {t} = useTranslation();
 	const selectedDefinitionKey =
 		decisionDefinitionSelection.kind === 'single-version'
@@ -42,10 +49,10 @@ const DecisionPanel: React.FC<Props> = ({decisionDefinitionSelection}) => {
 	const {data: xml, isFetching: isXmlFetching, isError: isXmlError} = useDecisionDefinitionXml(selectedDefinitionKey);
 
 	const getStatus = () => {
-		if (isXmlFetching) {
+		if (isDefinitionSelectionLoading || isXmlFetching) {
 			return 'loading';
 		}
-		if (isXmlError) {
+		if (isDefinitionSelectionError || isXmlError) {
 			return 'error';
 		}
 		if (decisionDefinitionSelection.kind !== 'single-version') {
@@ -54,23 +61,30 @@ const DecisionPanel: React.FC<Props> = ({decisionDefinitionSelection}) => {
 		return 'content';
 	};
 
+	const getEmptyMessage = () => {
+		switch (decisionDefinitionSelection.kind) {
+			case 'all-versions':
+				return {
+					message: t('operate.decisions.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+					additionalInfo: t('operate.decisions.diagramPanel.selectSingleVersion'),
+				};
+			case 'multiple-tenants':
+				return {
+					message: t('operate.decisions.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+					additionalInfo: t('operate.decisions.diagramPanel.selectSingleTenant'),
+				};
+			default:
+				return {
+					message: t('operate.decisions.diagramPanel.noDecisionSelected'),
+					additionalInfo: t('operate.decisions.diagramPanel.selectDecisionInFilters'),
+				};
+		}
+	};
+
 	return (
 		<Section aria-label="Decision Panel">
 			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection} />
-			<DiagramShell
-				status={getStatus()}
-				emptyMessage={
-					decisionDefinitionSelection.kind === 'all-versions'
-						? {
-								message: t('operate.decisions.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-								additionalInfo: t('operate.decisions.diagramPanel.selectSingleVersion'),
-							}
-						: {
-								message: t('operate.decisions.diagramPanel.noDecisionSelected'),
-								additionalInfo: t('operate.decisions.diagramPanel.selectDecisionInFilters'),
-							}
-				}
-			>
+			<DiagramShell status={getStatus()} emptyMessage={getEmptyMessage()}>
 				<DecisionViewer xml={xml ?? null} decisionViewId={selectedDefinitionId ?? null} />
 			</DiagramShell>
 		</Section>

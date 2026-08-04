@@ -503,6 +503,8 @@
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Decision \"{{name}}\"",
 					"selectSingleVersion": "To see a Decision Table or a Literal Expression, select a single Version",
+					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one Tenant",
+					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
 					"noDecisionSelected": "There is no Decision selected",
 					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
 					"decisionNotFoundTitle": "Decision could not be found"

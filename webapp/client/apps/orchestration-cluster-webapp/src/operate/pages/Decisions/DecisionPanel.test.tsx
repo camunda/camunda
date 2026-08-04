@@ -41,6 +41,19 @@ describe('<DecisionPanel />', () => {
 			.toBeVisible();
 	});
 
+	it('shows an empty message when the selected version exists in multiple tenants', async () => {
+		const screen = await renderDecisionPanel({
+			decisionDefinitionSelection: {
+				kind: 'multiple-tenants',
+				definition: {name: 'Invoice Classification', decisionDefinitionId: 'invoice-classification'},
+			},
+		});
+
+		await expect
+			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
+			.toBeVisible();
+	});
+
 	it('renders the decision diagram for a single selected version', async ({worker}) => {
 		worker.use(mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}));
 
