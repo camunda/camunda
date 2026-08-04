@@ -1930,11 +1930,14 @@ jobs:
     name: "Security / Dependency Vulnerability Gate"
     # Runs on all PRs (including forks) that change dependency manifests.
     # Skip backport PRs: code already gated on main. Skip the backport bot.
+    # Skip release merge-backs since release branches never add new dependencies
+    # but cause HTTP 502 errors on GH due to many pom.xml changes.
     # Depends on pr-maven-snapshot to ensure the head snapshot is indexed
     # before the Dependency Review API is called.
     if: >-
       needs.detect-changes.outputs.deps-changed == 'true'
       && github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'release-')
       && !startsWith(github.head_ref, 'backport')
       && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
     needs: [ detect-changes, pr-maven-snapshot ]
