@@ -382,6 +382,7 @@ import io.camunda.client.impl.search.request.MappingRulesByRoleSearchRequestImpl
 import io.camunda.client.impl.search.request.MappingRulesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesSearchRequestImpl;
 import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImpl;
+import io.camunda.client.impl.search.request.OwnAuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
@@ -1586,6 +1587,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuthorizationsSearchRequest newAuthorizationSearchRequest() {
     return new AuthorizationsSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AuthorizationsSearchRequest newOwnAuthorizationSearchRequest() {
+    return new OwnAuthorizationsSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

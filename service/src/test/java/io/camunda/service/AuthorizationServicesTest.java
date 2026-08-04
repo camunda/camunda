@@ -15,14 +15,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -63,7 +66,22 @@ public class AuthorizationServicesTest {
         CamundaAuthentication.of(b -> b.user("foo").group("groupId").tenant("<default>"));
     final var callerQuery =
         AuthorizationQuery.of(q -> q.filter(f -> f.resourceType("PROCESS_DEFINITION")));
-    final var expectedResult = mock(SearchQueryResult.class);
+    final var expectedResult =
+        new SearchQueryResult<>(
+            1,
+            false,
+            List.of(
+                new AuthorizationEntity(
+                    1L,
+                    "foo",
+                    "USER",
+                    "PROCESS_DEFINITION",
+                    null,
+                    "myProcess",
+                    null,
+                    Set.of(PermissionType.READ_PROCESS_DEFINITION))),
+            null,
+            null);
     when(client.searchAuthorizations(any())).thenReturn(expectedResult);
 
     // when
@@ -116,7 +134,16 @@ public class AuthorizationServicesTest {
                 q.filter(f -> f.resourceType("RESOURCE"))
                     .sort(s -> s.ownerId().asc())
                     .page(p -> p.size(5)));
-    when(client.searchAuthorizations(any())).thenReturn(mock(SearchQueryResult.class));
+    final var expectedResult =
+        new SearchQueryResult<>(
+            1,
+            false,
+            List.of(
+                new AuthorizationEntity(
+                    2L, "foo", "USER", "RESOURCE", null, "*", null, Set.of(PermissionType.CREATE))),
+            null,
+            null);
+    when(client.searchAuthorizations(any())).thenReturn(expectedResult);
 
     // when
     services.searchOwnAuthorizations(callerQuery, authentication);

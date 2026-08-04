@@ -2904,6 +2904,26 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AuthorizationsSearchRequest newAuthorizationSearchRequest();
 
   /**
+   * Search the current authenticated principal's own authorization records. Unlike {@link
+   * #newAuthorizationSearchRequest()}, this endpoint requires no {@code AUTHORIZATION:READ}
+   * permission — it returns only authorizations that apply to the caller (directly or via group,
+   * role, or mapping rule membership).
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newOwnAuthorizationSearchRequest()
+   *  .filter((f) -> f.resourceType("PROCESS_DEFINITION"))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the own authorizations search request
+   */
+  AuthorizationsSearchRequest newOwnAuthorizationSearchRequest();
+
+  /**
    * Command to delete an authorization
    *
    * <p>Example usage:

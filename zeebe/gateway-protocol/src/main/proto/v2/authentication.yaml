@@ -35,9 +35,9 @@ paths:
       x-required-permissions: []
       summary: Search own authorizations
       description: >-
-        Search for the current authenticated user's own authorization records — including
-        authorizations granted directly to the user, as well as those granted via a group, role, or
-        mapping rule the user belongs to.
+        Search for the current authenticated principal's own authorization records — including
+        authorizations granted directly to the user or client, as well as those granted via a group,
+        role, or mapping rule the principal belongs to.
       security:
         - bearerAuth: []
       requestBody:

@@ -65,8 +65,9 @@ public class AuthenticationController {
   }
 
   /**
-   * Returns the current authenticated user's own authorization records — those granted directly to
-   * the user, as well as those reachable via a group, role, or mapping rule the user belongs to.
+   * Returns the current authenticated principal's own authorization records — those granted
+   * directly to the user or client, as well as those reachable via a group, role, or mapping rule
+   * the principal belongs to.
    *
    * <p>Unlike {@code POST /v2/authorizations/search}, this endpoint requires no {@code
    * AUTHORIZATION:READ} permission: seeing which authorizations apply to yourself is always
