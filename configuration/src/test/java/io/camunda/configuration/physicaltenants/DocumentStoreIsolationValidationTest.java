@@ -7,16 +7,27 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Document.AwsStore;
+import io.camunda.configuration.Document.AzureStore;
+import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.InMemoryStore;
+import io.camunda.configuration.Document.LocalStore;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,25 +94,23 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldTreatTrailingSlashAsEquivalentToNoSlash() {
-    // given normalizer strips trailing slashes, so "shared" and "shared/" resolve to the same
-    // location
+    // given the provider coerces a trailing slash, so both resolve to the key prefix "shared/"
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", awsCamunda("my-bucket", "shared", "us-east-1"),
             "tenantb", awsCamunda("my-bucket", "shared/", "us-east-1"));
 
-    // when / then error reports normalized value "shared", not "shared/"
+    // when / then
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(() -> validation.validate(resolved))
-        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("share the same document store location")
         .withMessageContaining("tenanta")
-        .withMessageContaining("tenantb")
-        .withMessageNotContaining("shared/");
+        .withMessageContaining("tenantb");
   }
 
   @Test
   void shouldNormalizeNullBucketPath() {
-    // given normalize maps null → "" and "" → "", so they collide
+    // given null and "" are both "no path"
     final Map<String, Camunda> resolved = new LinkedHashMap<>();
     resolved.put("tenanta", awsCamunda("docs", null, "eu-west-1"));
     resolved.put("tenantb", awsCamunda("docs", "", "eu-west-1"));
@@ -116,7 +125,7 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldNeverCollideOnInMemoryStores() {
-    // given in-memory stores are ephemeral and process-local, excluded from collision detection
+    // given
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", inMemoryCamunda("mem-store"),
@@ -138,8 +147,7 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldFailWhenTenantInheritsRootLocationAndCollidesWithDefault() {
-    // given a non-default tenant that omits a document override inherits the root location;
-    // the resolved config is identical to the default tenant's — a collision must be rejected
+    // given a tenant that omits a document override inherits the root location
     final Camunda defaultTenant = awsCamunda("shared-bucket", "root/path", "us-east-1");
     final Camunda tenantA = awsCamunda("shared-bucket", "root/path", "us-east-1");
     final Map<String, Camunda> resolved = tenants("default", defaultTenant, "tenanta", tenantA);
@@ -152,18 +160,564 @@ class DocumentStoreIsolationValidationTest {
         .withMessageContaining("tenanta");
   }
 
+  @Test
+  void shouldFailWhenGcpTenantOmitsPrefixAndOtherSetsTheProviderDefault() {
+    // given an unset prefix is not "no prefix": GcpDocumentStoreProvider substitutes "temp/"
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("shared-bucket", null),
+            "tenantb", gcpCamunda("shared-bucket", "temp/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldFailWhenGcpPrefixIsAStringPrefixOfAnother() {
+    // given document ids are caller-supplied, so tenant-a asking its own store for "-b-invoice"
+    // resolves to tenant-b's "tenant-b-invoice" — no separator or traversal character involved
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("camunda-shared", "tenant"),
+            "tenantb", gcpCamunda("camunda-shared", "tenant-b-"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
+  }
+
+  @Test
+  void shouldFailWhenAGcpPrefixIsAnotherWithoutItsTrailingSeparator() {
+    // given "temp" is not a folder, so it encloses every key of "temp/" — the separator that would
+    // bound it belongs to the enclosed prefix, and a document id supplies it just as easily
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("camunda-shared", "temp"),
+            "tenantb", gcpCamunda("camunda-shared", "temp/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
+  }
+
+  @Test
+  void shouldFailWhenAGcpTenantOwnsTheBucketRootAndAnotherASlashFreePrefix() {
+    // given GCP takes the prefix verbatim, so nothing separates the root from "tenant-b-": the root
+    // tenant reaches tenant-b's "tenant-b-invoice" by asking its own store for that very id, with
+    // no
+    // separator involved — unlike an AWS or Azure root, whose folders are always slash-terminated
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("camunda-shared", ""),
+            "tenantb", gcpCamunda("camunda-shared", "tenant-b-"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
+  }
+
+  @Test
+  void shouldFailWhenAGcpPrefixContinuesAFolderPrefixWithoutASeparator() {
+    // given an enclosing prefix that ends at a separator is not enough on its own: "docs/" plus the
+    // document id "archivex" reaches tenant-b's "docs/archivex", because GCP does not coerce
+    // "docs/archive" into a folder of its own
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("camunda-shared", "docs/"),
+            "tenantb", gcpCamunda("camunda-shared", "docs/archive"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
+  }
+
+  @Test
+  void shouldPassWhenAwsBucketPathsShareAStringPrefixButNotADirectory() {
+    // given the coerced slash makes "tenant/" and "tenant-b-/" — neither encloses the other
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("camunda-shared", "tenant", "us-east-1"),
+            "tenantb", awsCamunda("camunda-shared", "tenant-b-", "us-east-1"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenAwsBucketPathIsNestedBelowASeparator() {
+    // given the coerced "tenant-a/" ends at a separator, so only a document id carrying '/' could
+    // reach the nested path — the boundary holds for every ordinary id
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("camunda-shared", "tenant-a", "us-east-1"),
+            "tenantb", awsCamunda("camunda-shared", "tenant-a/nested", "us-east-1"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenOneTenantOwnsTheBucketRootAndAnotherAFolderInside() {
+    // given the root ends at a separator as much as a folder does, so this layout — supported by
+    // DocumentIsolationAzureIT — stays legal
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("camunda-shared", null, "us-east-1"),
+            "tenantb", awsCamunda("camunda-shared", "tenant-b", "us-east-1"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassForTheContainerRootAndFolderLayoutOfDocumentIsolationAzureIT() {
+    // given the layout that IT asserts isolation for: two tenants at container roots, and two more
+    // in folders inside those same containers
+    final String endpoint = "http://localhost:10000/devstoreaccount1";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", azureEndpointCamunda(endpoint, "container-a", null),
+            "tenantc", azureEndpointCamunda(endpoint, "container-a", "tenantc/"),
+            "tenantb", azureEndpointCamunda(endpoint, "container-b", null),
+            "default", azureEndpointCamunda(endpoint, "container-b", "default/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenAwsEndpointsDiffer() {
+    // given the endpoint is part of the namespace, so same-named buckets on two S3-compatible
+    // backends are separate locations
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("docs", "shared/", "us-east-1", "https://minio-a.internal"),
+            "tenantb", awsCamunda("docs", "shared/", "us-east-1", "https://minio-b.internal"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenLocalPathsAreNested() {
+    // given LocalStorageDocumentStore rejects '/', '\' and '..', so the parent cannot descend
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", localCamunda("/var/camunda/docs"),
+            "tenantb", localCamunda("/var/camunda/docs/tenant-b"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenOneTenantSpreadsDocumentsAcrossOverlappingStores() {
+    // given overlap within a single tenant is not a cross-tenant leak
+    final Camunda tenantA = gcpCamunda("camunda-shared", "tenant-a/");
+    final Map<String, GcpStore> stores = new LinkedHashMap<>(tenantA.getDocument().getGcp());
+    final GcpStore nested = new GcpStore();
+    nested.setBucketName("camunda-shared");
+    nested.setPrefix("tenant-a/nested/");
+    stores.put("secondary", nested);
+    tenantA.getDocument().setGcp(stores);
+    final Map<String, Camunda> resolved =
+        tenants("tenanta", tenantA, "tenantb", gcpCamunda("camunda-shared", "tenant-b/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenGcpPrefixesDifferOnlyByCase() {
+    // given GCS object names are case-sensitive
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", gcpCamunda("shared-bucket", "TenantA/"),
+            "tenantb", gcpCamunda("shared-bucket", "tenanta/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenAwsBucketPathsDifferOnlyByCase() {
+    // given S3 object keys are case-sensitive
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("shared-bucket", "Tenant-A/", "us-east-1"),
+            "tenantb", awsCamunda("shared-bucket", "tenant-a/", "us-east-1"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldFailWhenAzureReachesTheSameAccountViaConnectionStringAndEndpoint() {
+    // given the account is the location, not the credential mechanism used to reach it; the
+    // endpoint's case and trailing slash are not part of it either
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", azureConnectionStringCamunda(connectionString("acct"), "docs", "shared/"),
+            "tenantb",
+                azureEndpointCamunda("https://ACCT.blob.core.windows.net/", "docs", "shared/"));
+
+    // when / then the account key behind the connection string stays out of the message
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb")
+        .withMessageNotContaining("a2V5");
+  }
+
+  @Test
+  void shouldFailWhenAzureReachesTheSameAccountViaEmulatorShorthandAndEndpoint() {
+    // given UseDevelopmentStorage=true is shorthand for the well-known emulator account
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureConnectionStringCamunda("UseDevelopmentStorage=true", "docs", "shared/"),
+            "tenantb",
+                azureEndpointCamunda("http://127.0.0.1:10000/devstoreaccount1", "docs", "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldFailWhenAzurePathStyleBlobEndpointsDifferOnlyByAccountPath() {
+    // given the SDK reads the path of a path-style BlobEndpoint as a container name and the store
+    // then overrides it, so both address cdn.example.com/docs/shared/ and the path isolates nothing
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureConnectionStringCamunda(
+                    connectionString("accta") + ";BlobEndpoint=https://cdn.example.com/accta",
+                    "docs",
+                    "shared/"),
+            "tenantb",
+                azureConnectionStringCamunda(
+                    connectionString("acctb") + ";BlobEndpoint=https://cdn.example.com/acctb",
+                    "docs",
+                    "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldFailWhenAnAzureEndpointIsSetBesideTheConnectionStringThatOverridesIt() {
+    // given AzureBlobDocumentStoreProvider takes the connection-string branch whenever one is set
+    // and never reads the endpoint, so tenant-a addresses acct, not the account its endpoint names
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureCamunda(
+                    connectionString("acct"),
+                    "https://other-acct.blob.core.windows.net",
+                    "docs",
+                    "shared/"),
+            "tenantb", azureConnectionStringCamunda(connectionString("acct"), "docs", "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("share the same document store location")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldPassWhenAnIgnoredAzureEndpointNamesAnotherTenantsAccount() {
+    // given the same precedence seen from the other side: tenant-a's endpoint is dead
+    // configuration,
+    // so naming tenant-b's account in it is not a shared location
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureCamunda(
+                    connectionString("accta"),
+                    "https://acctb.blob.core.windows.net",
+                    "docs",
+                    "shared/"),
+            "tenantb",
+                azureEndpointCamunda("https://acctb.blob.core.windows.net", "docs", "shared/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassWhenAzureConnectionStringsNameDifferentAccounts() {
+    // given
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", azureConnectionStringCamunda(connectionString("accta"), "docs", "shared/"),
+            "tenantb", azureConnectionStringCamunda(connectionString("acctb"), "docs", "shared/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldFailWithoutLeakingTheSasWhenAzureEndpointsDifferOnlyByTheirToken() {
+    // given a SAS token is a credential, not a location, so these name one account and must collide
+    // without the signature reaching the error message
+    final String signature = "c2lnbmF0dXJlLXZhbHVl";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureEndpointCamunda(
+                    "https://acct.blob.core.windows.net?sv=2024-01-01&sig=" + signature,
+                    "docs",
+                    "shared/"),
+            "tenantb",
+                azureEndpointCamunda(
+                    "https://acct.blob.core.windows.net?sv=2025-01-01&sig=other",
+                    "docs",
+                    "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("share the same document store location")
+        .withMessageNotContaining(signature);
+  }
+
+  @Test
+  void shouldFailWithoutLeakingTheSasWhenAnAzureEndpointIsNotAParseableUrl() {
+    // given a token that needed escaping makes the whole endpoint unparseable, which is the value
+    // most likely to carry a credential — so the fallback must still reduce it to the account
+    final String signature = "unescaped-signature-value";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureEndpointCamunda(
+                    "https://acct.blob.core.windows.net/?sv=2024 01&sig=" + signature,
+                    "docs",
+                    "shared/"),
+            "tenantb",
+                azureEndpointCamunda(
+                    "https://acct.blob.core.windows.net?sv=2025-01-01&sig=other",
+                    "docs",
+                    "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("share the same document store location")
+        .withMessageNotContaining(signature);
+  }
+
+  @Test
+  void shouldFailWithoutLeakingUserInfoWhenAnAzureEndpointIsNotAParseableUrl() {
+    // given user info in front of the host is a credential too, and the parser cannot strip it from
+    // a URL it rejects
+    final String password = "user-info-password";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureEndpointCamunda(
+                    "https://user:" + password + "@acct.blob.core.windows.net/?sv=2024 01",
+                    "docs",
+                    "shared/"),
+            "tenantb",
+                azureEndpointCamunda("https://acct.blob.core.windows.net", "docs", "shared/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("share the same document store location")
+        .withMessageNotContaining(password);
+  }
+
+  @Test
+  void shouldReportOneConflictPerLocationRatherThanOnePerPairOfTenants() {
+    // given three tenants on one location are one misconfiguration, not three pairs of them
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("shared-bucket", "shared/", "us-east-1"),
+            "tenantb", awsCamunda("shared-bucket", "shared/", "us-east-1"),
+            "tenantc", awsCamunda("shared-bucket", "shared/", "us-east-1"));
+
+    // when
+    final Throwable thrown = catchThrowable(() -> validation.validate(resolved));
+
+    // then all three are named once, in a single conflict
+    assertThat(thrown)
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("tenants [tenanta, tenantb, tenantc] share the same document store");
+    assertThat(thrown.getMessage().split("share the same document store location", -1)).hasSize(2);
+  }
+
+  @Test
+  void shouldWarnWithoutLeakingTheCredentialWhenAnAzureConnectionStringCannotBeResolved() {
+    // given a connection string naming no account resolves to no endpoint, which must neither be
+    // mistaken for a shared location nor reported by quoting the string the SDK rejected
+    final String accountKey = "c3VwZXItc2VjcmV0LWtleQ==";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                azureConnectionStringCamunda(
+                    "AccountKey=" + accountKey + ";EndpointSuffix=core.windows.net", "docs", "a/"),
+            "tenantb", azureEndpointCamunda("https://acct.blob.core.windows.net", "docs", "b/"));
+
+    // when
+    try (final LogCapturer logs = new LogCapturer(DocumentStoreLocation.class.getName())) {
+      assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+
+      // then the store is named, the credential is not
+      assertThat(logs.warnings())
+          .anySatisfy(warning -> assertThat(warning).contains("docs").doesNotContain(accountKey));
+    }
+  }
+
+  @Test
+  void shouldPassWhenTheSameBucketAndPrefixAreUsedOnDifferentProviders() {
+    // given
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", awsCamunda("shared-bucket", "docs/", "us-east-1"),
+            "tenantb", gcpCamunda("shared-bucket", "docs/"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldFailWhenLocalPathsDifferOnlyByCase() {
+    // given a case-insensitive filesystem would make these one directory, and the check must not
+    // depend on the platform it happens to run on
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", localCamunda("/var/camunda/Docs"),
+            "tenantb", localCamunda("/var/camunda/docs"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location");
+  }
+
+  @Test
+  void shouldFailWhenLocalPathsDifferOnlyByTrailingSlash() {
+    // given /data and /data/ are the same directory
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", localCamunda("/var/camunda/docs"),
+            "tenantb", localCamunda("/var/camunda/docs/"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("must not share a document store location");
+  }
+
   // --- helpers ---------------------------------------------------------------------------------
+
+  private static String connectionString(final String accountName) {
+    return "DefaultEndpointsProtocol=https;AccountName="
+        + accountName
+        + ";AccountKey=a2V5;EndpointSuffix=core.windows.net";
+  }
 
   private static Camunda awsCamunda(
       final String bucketName, final String bucketPath, final String region) {
+    return awsCamunda(bucketName, bucketPath, region, null);
+  }
+
+  private static Camunda awsCamunda(
+      final String bucketName,
+      final String bucketPath,
+      final String region,
+      final String endpoint) {
     final Camunda camunda = new Camunda();
     final AwsStore store = new AwsStore();
     store.setBucketName(bucketName);
     store.setBucketPath(bucketPath);
     store.setRegion(region);
+    store.setEndpoint(endpoint);
     final Map<String, AwsStore> aws = new LinkedHashMap<>();
     aws.put("shared-s3", store);
     camunda.getDocument().setAws(aws);
+    return camunda;
+  }
+
+  private static Camunda gcpCamunda(final String bucketName, final String prefix) {
+    final Camunda camunda = new Camunda();
+    final GcpStore store = new GcpStore();
+    store.setBucketName(bucketName);
+    store.setPrefix(prefix);
+    final Map<String, GcpStore> gcp = new LinkedHashMap<>();
+    gcp.put("shared-gcs", store);
+    camunda.getDocument().setGcp(gcp);
+    return camunda;
+  }
+
+  private static Camunda azureEndpointCamunda(
+      final String endpoint, final String containerName, final String containerPath) {
+    final AzureStore store = new AzureStore();
+    store.setEndpoint(endpoint);
+    return azureCamunda(store, containerName, containerPath);
+  }
+
+  private static Camunda azureConnectionStringCamunda(
+      final String connectionString, final String containerName, final String containerPath) {
+    final AzureStore store = new AzureStore();
+    store.setConnectionString(connectionString);
+    return azureCamunda(store, containerName, containerPath);
+  }
+
+  private static Camunda azureCamunda(
+      final String connectionString,
+      final String endpoint,
+      final String containerName,
+      final String containerPath) {
+    final AzureStore store = new AzureStore();
+    store.setConnectionString(connectionString);
+    store.setEndpoint(endpoint);
+    return azureCamunda(store, containerName, containerPath);
+  }
+
+  private static Camunda azureCamunda(
+      final AzureStore store, final String containerName, final String containerPath) {
+    final Camunda camunda = new Camunda();
+    store.setContainerName(containerName);
+    store.setContainerPath(containerPath);
+    final Map<String, AzureStore> azure = new LinkedHashMap<>();
+    azure.put("shared-blob", store);
+    camunda.getDocument().setAzure(azure);
+    return camunda;
+  }
+
+  private static Camunda localCamunda(final String path) {
+    final Camunda camunda = new Camunda();
+    final LocalStore store = new LocalStore();
+    store.setPath(path);
+    final Map<String, LocalStore> local = new LinkedHashMap<>();
+    local.put("shared-local", store);
+    camunda.getDocument().setLocal(local);
     return camunda;
   }
 
@@ -181,5 +735,39 @@ class DocumentStoreIsolationValidationTest {
       map.put((String) idThenCamunda[i], (Camunda) idThenCamunda[i + 1]);
     }
     return map;
+  }
+
+  /** Captures WARN events of a logger; without a log4j2 config the root level would drop them. */
+  private static final class LogCapturer implements AutoCloseable {
+    private final ListAppender appender = new ListAppender("TestAppender");
+    private final String loggerName;
+
+    private LogCapturer(final String loggerName) {
+      this.loggerName = loggerName;
+      appender.start();
+      Configurator.setLevel(loggerName, Level.WARN);
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context
+          .getConfiguration()
+          .getLoggerConfig(loggerName)
+          .addAppender(appender, Level.WARN, null);
+      context.updateLoggers();
+    }
+
+    private List<String> warnings() {
+      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
+      return appender.getEvents().stream()
+          .map(event -> event.getMessage().getFormattedMessage())
+          .toList();
+    }
+
+    @Override
+    public void close() {
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context.getConfiguration().getLoggerConfig(loggerName).removeAppender("TestAppender");
+      context.updateLoggers();
+      appender.stop();
+      appender.clear();
+    }
   }
 }
