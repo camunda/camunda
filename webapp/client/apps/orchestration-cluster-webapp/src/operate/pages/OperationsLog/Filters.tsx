@@ -57,6 +57,8 @@ const Filters: React.FC<Props> = ({search}) => {
 	const navigate = useNavigate();
 	const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
 
+	const {sort: _sort, ...filterValues} = search;
+
 	const specificTenantId = isSpecificTenant(search.tenantId) ? search.tenantId : undefined;
 	const {data: processDefinitions} = useSuspenseQuery(
 		queries.queryProcessDefinitions({
@@ -101,7 +103,7 @@ const Filters: React.FC<Props> = ({search}) => {
 	};
 
 	return (
-		<Form<FormValues> onSubmit={handleFiltersSubmit} initialValues={search}>
+		<Form<FormValues> onSubmit={handleFiltersSubmit} initialValues={filterValues}>
 			{({handleSubmit, form, values}) => (
 				<StyledForm onSubmit={handleSubmit}>
 					<AutoSubmit
