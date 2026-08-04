@@ -223,8 +223,9 @@ async function setStepOutput(name, value) {
 }
 
 // Draft state of m.pr: the caller-supplied value first (no API call), then the
-// API. Returns null when it can't be determined — that is treated as "not a
-// draft" so an unresolvable lookup never silences a real failure.
+// API. Returns false when there is no PR at all (e.g. a push run), and null when
+// a PR exists but the state can't be determined — null is treated as "not a
+// draft", so an unresolvable lookup never silences a real failure.
 async function resolveDraft(m) {
   if (!m.pr) return false;
   if (m.prIsDraft === 'true') return true;
