@@ -240,5 +240,10 @@
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
   </dependencies>
 </project>
