@@ -22,7 +22,9 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
-import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
+import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
+
+const USER_TASK_KEY = '2251799813685281';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -41,6 +43,7 @@ test.beforeEach(({network}) => {
 		mockGetUserTaskEndpoint({
 			successResponse: HttpResponse.json(
 				createUserTask({
+					userTaskKey: USER_TASK_KEY,
 					state: 'CREATED',
 					name: 'Review purchase order',
 					processName: 'Procurement process',
@@ -53,6 +56,74 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
 		}),
 	);
+});
+
+test('should have no accessibility violations on the task tab with editable variables', async ({
+	network,
+	taskDetailPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'invoiceAmount', value: '249.99', variableKey: '2251799813685301'}),
+						createVariable({name: 'invoiceCurrency', value: '"EUR"', variableKey: '2251799813685302'}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(taskDetailPage.variableValueInput('invoiceAmount')).toBeVisible();
+	await expect(taskDetailPage.variableValueInput('invoiceCurrency')).toBeVisible();
+	await taskDetailPage.addVariableButton.click();
+	await expect(taskDetailPage.firstNewVariableNameInput).toBeVisible();
+	await expect(taskDetailPage.firstNewVariableValueInput).toBeVisible();
+	await expect(taskDetailPage.firstNewVariableRemoveButton).toBeVisible();
+	await expect(taskDetailPage.fillAllVariableFieldsWarning).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations on the task tab with read-only variables', async ({
+	network,
+	taskDetailPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'CREATED',
+					name: 'Approve expense report',
+					processName: 'Finance process',
+					assignee: 'another-user',
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'expenseAmount', value: '175.5', variableKey: '2251799813685303'}),
+						createVariable({name: 'expenseStatus', value: '"approved"', variableKey: '2251799813685304'}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(taskDetailPage.variablesTable.getByText('expenseAmount', {exact: true})).toBeVisible();
+	await expect(taskDetailPage.variablesTable.getByText('expenseStatus', {exact: true})).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
 });
 
 test('should have no accessibility violations on the Process tab', async ({
