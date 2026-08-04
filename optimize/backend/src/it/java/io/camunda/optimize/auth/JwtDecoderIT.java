@@ -265,8 +265,6 @@ public class JwtDecoderIT extends AbstractCCSMIT {
 
   static Stream<Arguments> decoderProvider() {
     return Stream.of(
-        Arguments.of("SaaS", "publicApiJwtDecoder"),
-        Arguments.of("CCSM", "publicApiJwtDecoder"),
-        Arguments.of("SaaS", "publicApiJwtDecoder"));
+        Arguments.of("SaaS", "publicApiJwtDecoder"), Arguments.of("CCSM", "publicApiJwtDecoder"));
   }
 }
