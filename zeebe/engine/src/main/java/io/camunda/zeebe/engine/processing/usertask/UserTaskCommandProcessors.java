@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
@@ -38,7 +39,8 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -61,17 +63,17 @@ public final class UserTaskCommandProcessors {
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(
-                    processingState, writers, asyncRequestBehavior, cslCheck, userTaskAuth),
+                    processingState, writers, asyncRequestBehavior, tenantCheck, userTaskAuth),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(
-                    processingState, writers, asyncRequestBehavior, cslCheck, userTaskAuth),
+                    processingState, writers, asyncRequestBehavior, tenantCheck, userTaskAuth),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(
                     processingState,
                     writers,
                     bpmnBehaviors.variableBehavior(),
                     asyncRequestBehavior,
-                    cslCheck,
+                    tenantCheck,
                     userTaskAuth),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
@@ -79,7 +81,7 @@ public final class UserTaskCommandProcessors {
                     eventHandle,
                     writers,
                     asyncRequestBehavior,
-                    cslCheck,
+                    tenantCheck,
                     userTaskAuth),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));

@@ -65,6 +65,7 @@ import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -247,6 +248,7 @@ public final class EngineProcessors {
     final LazyTokenClaimsConverter claimsConverter =
         (LazyTokenClaimsConverter) ports.claimsResolver();
     final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
+    final var tenantCheck = new CslTenantCheck(claimsConverter, securityConfig);
 
     final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
 
@@ -268,7 +270,8 @@ public final class EngineProcessors {
             messageCorrelationMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
-            cslCheck);
+            cslCheck,
+            tenantCheck);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -351,12 +354,13 @@ public final class EngineProcessors {
         config,
         clock,
         cslCheck,
+        tenantCheck,
         incidentMetrics,
         secretStoreRegistry);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck);
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -367,6 +371,7 @@ public final class EngineProcessors {
         writers,
         bpmnBehaviors.jobActivationBehavior(),
         cslCheck,
+        tenantCheck,
         incidentMetrics);
     addResourceDeletionProcessors(
         partitionId,
@@ -376,7 +381,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         bpmnBehaviors,
         permissionsBehavior,
-        cslCheck,
+        tenantCheck,
         processDefinitionMetrics);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
@@ -384,9 +389,10 @@ public final class EngineProcessors {
         writers,
         processingState,
         commandDistributionBehavior,
-        cslCheck);
+        cslCheck,
+        tenantCheck);
     addConditionalEvaluationProcessors(
-        typedRecordProcessors, bpmnBehaviors, writers, processingState, cslCheck);
+        typedRecordProcessors, bpmnBehaviors, writers, processingState, cslCheck, tenantCheck);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         scheduledTaskStateFactory,
@@ -501,7 +507,8 @@ public final class EngineProcessors {
         bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
         processingState.getElementInstanceState(),
-        cslCheck);
+        cslCheck,
+        tenantCheck);
 
     JobMetricsProcessors.addJobMetricsProcessors(
         typedRecordProcessors,
@@ -589,7 +596,8 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -597,7 +605,8 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         asyncRequestBehavior,
-        cslCheck);
+        cslCheck,
+        tenantCheck);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
@@ -617,7 +626,8 @@ public final class EngineProcessors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -635,7 +645,8 @@ public final class EngineProcessors {
         messageCorrelationMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         evaluateDuplicateOutputMappingTargetsInOrder,
-        cslCheck);
+        cslCheck,
+        tenantCheck);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -741,6 +752,7 @@ public final class EngineProcessors {
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
@@ -750,6 +762,7 @@ public final class EngineProcessors {
         writers,
         jobActivationBehavior,
         cslCheck,
+        tenantCheck,
         incidentMetrics);
   }
 
@@ -813,7 +826,7 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
-      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
@@ -823,7 +836,7 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             bpmnBehaviors,
             permissionsBehavior,
-            cslCheck,
+            tenantCheck,
             processDefinitionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
@@ -868,7 +881,8 @@ public final class EngineProcessors {
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final var signalBroadcastProcessor =
         new SignalBroadcastProcessor(
             writers,
@@ -878,6 +892,7 @@ public final class EngineProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             commandDistributionBehavior,
             cslCheck,
+            tenantCheck,
             bpmnBehaviors.variableBehavior());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
@@ -888,7 +903,8 @@ public final class EngineProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final var conditionalEvaluationProcessor =
         new ConditionalEvaluationEvaluateProcessor(
             writers,
@@ -897,6 +913,7 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             cslCheck,
+            tenantCheck,
             bpmnBehaviors.expressionProcessor());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,

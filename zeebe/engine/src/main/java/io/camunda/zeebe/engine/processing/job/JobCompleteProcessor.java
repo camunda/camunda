@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignmentBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -152,6 +153,7 @@ public final class JobCompleteProcessor
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final VariableBehavior variableBehavior,
       final boolean includeVariablesInJobCompletedEvent,
       final boolean businessIdUniquenessEnabled) {
@@ -183,7 +185,7 @@ public final class JobCompleteProcessor
                 this::checkCreatingListenerJobForAssigneeCorrection,
                 this::checkTaskListenerJobForUnknownPropertyCorrections,
                 this::checkBusinessIdAssignment),
-            cslCheck);
+            tenantCheck);
     this.cslCheck = cslCheck;
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;

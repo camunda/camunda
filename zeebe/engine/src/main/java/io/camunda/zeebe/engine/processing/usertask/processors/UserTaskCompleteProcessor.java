@@ -14,7 +14,7 @@ import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAut
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -53,7 +53,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final EventHandle eventHandle,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final UserTaskAuthorizationCheck userTaskAuth) {
     elementInstanceState = state.getElementInstanceState();
     asyncRequestState = state.getAsyncRequestState();
@@ -66,7 +66,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             List.of(LifecycleState.CREATED),
             "complete",
             state.getUserTaskState(),
-            cslCheck,
+            tenantCheck,
             state.getBannedInstanceState());
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.userTaskAuth = userTaskAuth;

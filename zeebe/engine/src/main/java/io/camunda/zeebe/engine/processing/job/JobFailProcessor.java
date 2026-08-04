@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -78,6 +79,7 @@ public final class JobFailProcessor
       final JobBackoffCheckScheduler jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -96,7 +98,7 @@ public final class JobFailProcessor
             "fail",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(JobLeaseFencingCheck.forLifecycleCommand()),
-            cslCheck);
+            tenantCheck);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;

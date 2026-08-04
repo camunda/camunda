@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -27,12 +28,13 @@ public final class ExpressionProcessors {
       final ExpressionBehavior expressionBehavior,
       final ExpressionLanguage expressionLanguage,
       final ElementInstanceState elementInstanceState,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final var validator = new ExpressionValidator(expressionLanguage, elementInstanceState);
     typedRecordProcessors.onCommand(
         ValueType.EXPRESSION,
         ExpressionIntent.EVALUATE,
         new ExpressionEvaluateProcessor(
-            keyGenerator, writers, expressionBehavior, validator, cslCheck));
+            keyGenerator, writers, expressionBehavior, validator, cslCheck, tenantCheck));
   }
 }

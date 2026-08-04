@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -101,7 +101,7 @@ public class ResourceDeletionDeleteProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final StartEventSubscriptions startEventSubscriptions;
   private final PermissionsBehavior permissionsBehavior;
-  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
   private final ResourceState resourceState;
@@ -115,7 +115,7 @@ public class ResourceDeletionDeleteProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
-      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -130,7 +130,7 @@ public class ResourceDeletionDeleteProcessor
     bannedInstanceState = processingState.getBannedInstanceState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.permissionsBehavior = permissionsBehavior;
-    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
@@ -570,7 +570,7 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private TenantAccess getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
-    final var userTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var userTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
       return userTenants;

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -68,6 +69,7 @@ public final class IncidentResolveProcessor
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
@@ -78,6 +80,7 @@ public final class IncidentResolveProcessor
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
@@ -90,6 +93,7 @@ public final class IncidentResolveProcessor
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.incidentMetrics = incidentMetrics;
     this.bannedInstanceCheck =
         new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
@@ -98,7 +102,8 @@ public final class IncidentResolveProcessor
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-    final var authorizedTenantIds = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenantIds =
+        tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);

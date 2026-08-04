@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvalu
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -88,7 +89,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -237,7 +239,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            cslCheck);
+            cslCheck,
+            tenantCheck);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
@@ -294,7 +297,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
-    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, cslCheck, writers);
+    jobUpdateBehaviour =
+        new JobUpdateBehaviour(processingState, clock, cslCheck, tenantCheck, writers);
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(

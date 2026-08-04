@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -56,6 +57,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final VariableBehavior variableBehavior;
 
   public SignalBroadcastProcessor(
@@ -66,6 +68,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final VariableBehavior variableBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -76,6 +79,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.variableBehavior = variableBehavior;
     eventHandle =
         new EventHandle(
@@ -96,9 +100,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
-      final var tenantCheck =
-          cslCheck.checkTenantsRequiringPrincipal(
+      final var authorizedTenants =
+          tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+      final var tenantCheckResult =
+          tenantCheck.checkTenantsRequiringPrincipal(
               List.of(signalRecord.getTenantId()),
               authorizedTenants,
               signalRecord,
@@ -107,8 +112,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                       RejectionType.FORBIDDEN,
                       "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
                           .formatted(signalRecord.getTenantId())));
-      if (tenantCheck.isLeft()) {
-        final var rejection = tenantCheck.getLeft();
+      if (tenantCheckResult.isLeft()) {
+        final var rejection = tenantCheckResult.getLeft();
         rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
         responseWriter.writeRejectedResponseOnCommand(
             command, rejection.type(), rejection.reason());

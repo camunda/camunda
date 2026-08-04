@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -56,6 +57,7 @@ public class BpmnJobActivationBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
@@ -65,7 +67,8 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -74,6 +77,7 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
@@ -172,7 +176,7 @@ public class BpmnJobActivationBehavior {
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
             final var authorizedTenants =
-                cslCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
+                tenantCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
             yield !authorizedTenants.wildcard()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }

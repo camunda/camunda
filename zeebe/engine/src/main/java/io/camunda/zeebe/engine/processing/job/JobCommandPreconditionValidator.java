@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -30,7 +30,7 @@ public class JobCommandPreconditionValidator {
   private final JobState jobState;
   private final String intent;
   private final List<JobCommandCheck> customChecks;
-  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public JobCommandPreconditionValidator(
@@ -38,8 +38,8 @@ public class JobCommandPreconditionValidator {
       final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
-      final CslAuthorizationCheck cslCheck) {
-    this(jobState, bannedInstanceState, intent, validStates, List.of(), cslCheck);
+      final CslTenantCheck tenantCheck) {
+    this(jobState, bannedInstanceState, intent, validStates, List.of(), tenantCheck);
   }
 
   public JobCommandPreconditionValidator(
@@ -48,12 +48,12 @@ public class JobCommandPreconditionValidator {
       final String intent,
       final List<State> validStates,
       final List<JobCommandCheck> customChecks,
-      final CslAuthorizationCheck cslCheck) {
+      final CslTenantCheck tenantCheck) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
     this.customChecks = customChecks;
-    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
   }
 
@@ -100,7 +100,7 @@ public class JobCommandPreconditionValidator {
 
   private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-    final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var storedJob =
         authorizedTenants.wildcard()
             ? jobState.getJob(jobKey)
