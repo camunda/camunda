@@ -217,6 +217,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				rows={auditLogs}
 				rowKey={(row) => row.auditLogKey}
 				emptyState={emptyState}
+				hideHeaderWhenEmpty
 				pagination={{
 					hasPreviousPage,
 					hasNextPage,

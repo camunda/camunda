@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Field, Form} from 'react-final-form';
-import {Dropdown, Stack} from '@carbon/react';
+import {ComboBox, Dropdown, Stack} from '@carbon/react';
 import type {
 	AuditLogOperationType,
 	AuditLogEntityType,
@@ -21,6 +21,7 @@ import type {
 import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
@@ -56,7 +57,18 @@ const Filters: React.FC<Props> = ({search}) => {
 	const navigate = useNavigate();
 	const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
 
-	const {data: processDefinitions} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
+	const specificTenantId = isSpecificTenant(search.tenantId) ? search.tenantId : undefined;
+	const {data: processDefinitions} = useSuspenseQuery(
+		queries.queryProcessDefinitions({
+			page: {limit: 1000},
+			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
+		}),
+	);
+
+	const processItems = [...new Map(processDefinitions.items.map((def) => [def.processDefinitionId, def])).values()]
+		.map((def) => ({id: def.processDefinitionId, label: def.name ?? def.processDefinitionId}))
+		.sort((a, b) => a.label.localeCompare(b.label));
+	const selectedProcess = processItems.find((item) => item.id === search.process) ?? null;
 
 	const versionNumbers = search.process
 		? [
@@ -120,21 +132,16 @@ const Filters: React.FC<Props> = ({search}) => {
 								<Stack gap={5}>
 									<Field name="process">
 										{({input}) => (
-											<Dropdown
+											<ComboBox
 												id="process-filter"
 												titleText={t('operate.processes.filters.name')}
-												label={t('operate.processes.filters.searchByName')}
-												items={['', ...new Set(processDefinitions.items.map((def) => def.processDefinitionId))]}
-												itemToString={(item) => {
-													if (!item) {
-														return '';
-													}
-													return processDefinitions.items.find((def) => def.processDefinitionId === item)?.name ?? item;
-												}}
-												selectedItem={input.value ?? ''}
+												placeholder={t('operate.processes.filters.searchByName')}
+												items={processItems}
+												itemToString={(item) => item?.label ?? ''}
+												selectedItem={input.value ? selectedProcess : null}
 												size="sm"
 												onChange={({selectedItem}) => {
-													input.onChange(selectedItem || undefined);
+													input.onChange(selectedItem?.id);
 													form.change('version', undefined);
 												}}
 											/>

@@ -35,7 +35,16 @@ const EmptyStateContainer = styled.div`
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	padding: var(--cds-spacing-09) 0;
+`;
+
+// Used when the empty state replaces the table entirely (no header row) — fills the whole
+// container instead of just padding out a table cell.
+const BareEmptyStateContainer = styled.div`
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	height: 100%;
 `;
 
-export {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer};
+export {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer, BareEmptyStateContainer};
