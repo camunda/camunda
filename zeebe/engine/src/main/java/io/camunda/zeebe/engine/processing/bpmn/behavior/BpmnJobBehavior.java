@@ -58,7 +58,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -464,13 +465,17 @@ public final class BpmnJobBehavior {
    */
   private Map<String, Set<SecretReference>> mergedSecretReferences(
       final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    final var merged = new HashMap<String, Set<SecretReference>>();
+    final var merged = new LinkedHashMap<String, Set<SecretReference>>();
     element
         .getSecretReferences()
-        .forEach((path, refs) -> merged.computeIfAbsent(path, key -> new HashSet<>()).addAll(refs));
+        .forEach(
+            (path, refs) ->
+                merged.computeIfAbsent(path, key -> new LinkedHashSet<>()).addAll(refs));
     clusterVariableJobSecretResolver
         .resolve(element.getClusterVariableReferences(), context.getTenantId())
-        .forEach((path, refs) -> merged.computeIfAbsent(path, key -> new HashSet<>()).addAll(refs));
+        .forEach(
+            (path, refs) ->
+                merged.computeIfAbsent(path, key -> new LinkedHashSet<>()).addAll(refs));
     return merged;
   }
 
