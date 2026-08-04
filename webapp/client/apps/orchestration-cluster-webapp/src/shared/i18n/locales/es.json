@@ -503,6 +503,19 @@
 			},
 			"decisions": {
 				"title": "Decisiones",
+				"diagramHeader": {
+					"title": "Decisión",
+					"copyButtonDescription": "ID de decisión / Clic para copiar"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
+					"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
+					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
+					"noDecisionSelected": "No hay ninguna decisión seleccionada",
+					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
+					"decisionNotFoundTitle": "No se pudo encontrar la decisión"
+				},
 				"filters": {
 					"tenant": "Inquilino",
 					"decisionSection": "Decisión",

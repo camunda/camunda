@@ -27,6 +27,7 @@ import {
 	type QueryAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
+	type DecisionDefinition,
 	type AuditLog,
 	type DecisionInstance,
 	type Variable,
@@ -241,6 +242,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionDefinitionXml: ({decisionDefinitionKey}: Pick<DecisionDefinition, 'decisionDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionDefinitionXml.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 
