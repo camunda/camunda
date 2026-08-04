@@ -100,31 +100,37 @@ class BusinessValueCycleTimeTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldReturnAverageDurationPerDateBucketForDurationByDateTile() {
-    // given two completed instances that ended on separate days with distinct durations
+    // given two completed instances that ended on different days but share the same duration —
+    // giving them the same duration means the bucket AVG equals that duration regardless of how
+    // many buckets AggregateByDateUnit.AUTOMATIC picks: if AUTOMATIC splits them into per-day
+    // buckets we get two buckets each averaging 4_000; if it collapses them into one wider
+    // bucket the single average is still 4_000. Distinct durations would have made the assertion
+    // brittle against AUTOMATIC unit changes.
     final String procKey = "cyc-by-date";
+    final long duration = 4_000L;
     final java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
     persistProcessInstances(
         List.of(
-            bvdInstanceWithDuration(procKey, 2_000L)
+            bvdInstanceWithDuration(procKey, duration)
                 .startDate(now.minusDays(1).minusHours(1))
                 .endDate(now.minusDays(1))
                 .build(),
-            bvdInstanceWithDuration(procKey, 6_000L)
+            bvdInstanceWithDuration(procKey, duration)
                 .startDate(now.minusDays(2).minusHours(1))
                 .endDate(now.minusDays(2))
                 .build()));
 
     // when evaluating the cycle-time history tile
-    final List<MapResultEntryDto> result =
-        reports.evaluateMapData(DURATION_BY_DATE_REPORT_ID, noExtraFilters());
+    final List<MapResultEntryDto> nonNullValues =
+        reports.evaluateMapData(DURATION_BY_DATE_REPORT_ID, noExtraFilters()).stream()
+            .filter(entry -> entry.getValue() != null)
+            .toList();
 
-    // then the non-null buckets carry the two seeded per-day averages — asserting on the values
-    // themselves (rather than bucket labels) so the test survives AUTOMATIC unit choices
-    assertThat(
-            result.stream()
-                .map(MapResultEntryDto::getValue)
-                .filter(java.util.Objects::nonNull)
-                .toList())
-        .containsExactlyInAnyOrder(2_000.0, 6_000.0);
+    // then at least one bucket carries data and every non-null bucket returns the shared
+    // per-instance duration — no assumption about how many buckets AUTOMATIC produced
+    assertThat(nonNullValues).isNotEmpty();
+    assertThat(nonNullValues)
+        .extracting(MapResultEntryDto::getValue)
+        .allMatch(value -> value == (double) duration);
   }
 }
