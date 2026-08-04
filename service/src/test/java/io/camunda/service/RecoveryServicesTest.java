@@ -48,6 +48,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class RecoveryServicesTest {
 
   private static final String PHYSICAL_TENANT_ID = "testtenant";
+  private static final String FORBIDDEN_MESSAGE =
+      "Unauthorized to perform any of the operations: "
+          + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
 
   private RecoveryServices services;
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender =
@@ -179,26 +182,6 @@ public class RecoveryServicesTest {
   }
 
   @Test
-  public void shouldReportSystemUpdateWhenDenied() {
-    // given - the denial names the permission that exists for this operation rather than every
-    // accepted alternative
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenReturn(Collections.emptySet());
-
-    // when
-    final var future = services.changeMode(Mode.RECOVERING, false, authentication);
-
-    // then
-    assertThat(future)
-        .failsWithin(ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .havingCause()
-        .withMessageContaining("UPDATE")
-        .withMessageContaining("SYSTEM");
-  }
-
-  @Test
   public void shouldPassCoordinatorRejectionThroughUnchanged() {
     // given - the caller maps ErrorResponse to a status itself, so a rejection must not be
     // translated or swallowed here
@@ -238,7 +221,10 @@ public class RecoveryServicesTest {
         .withThrowableOfType(ExecutionException.class)
         .havingCause()
         .asInstanceOf(type(ServiceException.class))
-        .extracting(ServiceException::getStatus)
-        .isEqualTo(Status.FORBIDDEN);
+        .satisfies(
+            exception -> {
+              assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+              assertThat(exception.getMessage()).isEqualTo(FORBIDDEN_MESSAGE);
+            });
   }
 }

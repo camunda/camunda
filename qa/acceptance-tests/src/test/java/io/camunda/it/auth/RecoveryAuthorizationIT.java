@@ -68,6 +68,10 @@ class RecoveryAuthorizationIT {
 
   private static final String CHANGE_MODE_PATH = "v2/mode?mode=RECOVERING&dryRun=true";
 
+  private static final String FORBIDDEN_DETAIL =
+      "Unauthorized to perform any of the operations: "
+          + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
+
   @Test
   void shouldRejectUnauthenticatedRequest(
       @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
@@ -86,6 +90,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -97,6 +102,7 @@ class RecoveryAuthorizationIT {
     // then it is forbidden: a grant on the BACKUP resource type only reaches the mode change when
     // it is the RESTORE permission
     assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
   }
 
   @Test

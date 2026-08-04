@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.service.authorization.Authorizations.BACKUP_RESTORE_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.SYSTEM_UPDATE_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -16,7 +18,7 @@ import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.RecoveryServices;
-import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -143,12 +145,27 @@ public class RecoveryControllerTest extends RestControllerTest {
     Mockito.when(recoveryServices.changeMode(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new ServiceException(
-                    "Unauthorized to perform operation 'UPDATE' on resource 'SYSTEM'",
-                    ServiceException.Status.FORBIDDEN)));
+                ErrorMapper.createForbiddenException(
+                    List.of(BACKUP_RESTORE_AUTHORIZATION, SYSTEM_UPDATE_AUTHORIZATION))));
 
     // when / then
-    webClient.patch().uri("/v2/mode?mode=RECOVERING").exchange().expectStatus().isForbidden();
+    webClient
+        .patch()
+        .uri("/v2/mode?mode=RECOVERING")
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 403,
+              "title": "FORBIDDEN",
+              "detail": "Unauthorized to perform any of the operations: 'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'",
+              "instance": "/v2/mode"
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test

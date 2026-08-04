@@ -33,7 +33,7 @@ import org.jspecify.annotations.NullMarked;
 public final class RecoveryServices extends PhysicalTenantScopedApiServices<RecoveryServices> {
 
   private static final List<RequiredAuthorization<Object>> MODE_CHANGE_AUTHORIZATIONS =
-      List.of(SYSTEM_UPDATE_AUTHORIZATION, BACKUP_RESTORE_AUTHORIZATION);
+      List.of(BACKUP_RESTORE_AUTHORIZATION, SYSTEM_UPDATE_AUTHORIZATION);
 
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   private final AuthorizationChecker authorizationChecker;
@@ -61,9 +61,13 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> changeMode(
       final Mode mode, final boolean dryRun, final CamundaAuthentication authentication) {
-    if (MODE_CHANGE_AUTHORIZATIONS.stream().noneMatch(a -> hasPermission(a, authentication))) {
+    final var missingAuthorizations =
+        MODE_CHANGE_AUTHORIZATIONS.stream()
+            .takeWhile(authorization -> !hasPermission(authorization, authentication))
+            .toList();
+    if (missingAuthorizations.size() == MODE_CHANGE_AUTHORIZATIONS.size()) {
       return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(MODE_CHANGE_AUTHORIZATIONS.getFirst()));
+          ErrorMapper.createForbiddenException(missingAuthorizations));
     }
 
     return clusterConfigurationRequestSender.modeChange(
