@@ -307,4 +307,43 @@ public final class ErrorCatchEventTest {
           .containsExactly(tuple("foo", "\"bar\"", processInstanceKey, VariableIntent.CREATED));
     }
   }
+
+  @Test
+  public void shouldApplyOutputMappingOnErrorBoundaryEvent() {
+    // given: the error boundary event has its own output mapping reading the thrown error's
+    // variables - a standalone process, independent of the parameterized fixtures above
+    final var processId = "error-boundary-with-output-mapping";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+            .boundaryEvent("error-boundary")
+            .error(ERROR_CODE)
+            .zeebeOutputExpression("reason", "failureReason")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .withVariables("{'reason':'x'}")
+        .throwError();
+
+    // then: the error boundary event's own output mapping propagates "failureReason" to its
+    // flow scope, i.e. the process instance
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("failureReason")
+            .getFirst();
+
+    assertThat(variableEvent.getValue())
+        .extracting(VariableRecordValue::getValue, VariableRecordValue::getScopeKey)
+        .containsExactly("\"x\"", processInstanceKey);
+  }
 }
