@@ -469,11 +469,11 @@
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
     <constructor>
-      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
-      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
-      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
-      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
+      <idArg column="FLOW_NODE_ID" javaType="java.lang.String" name="flowNodeId"/>
+      <arg column="COUNT_ACTIVE" javaType="java.lang.Long" name="active"/>
+      <arg column="COUNT_CANCELED" javaType="java.lang.Long" name="canceled"/>
+      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long" name="incidents"/>
+      <arg column="COUNT_COMPLETED" javaType="java.lang.Long" name="completed"/>
     </constructor>
   </resultMap>
 

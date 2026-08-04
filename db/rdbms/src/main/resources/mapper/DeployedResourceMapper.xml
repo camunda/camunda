@@ -14,18 +14,21 @@
 
   <resultMap id="resourceResultMap" type="io.camunda.search.entities.DeployedResourceEntity">
     <constructor>
-      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long" name="resourceKey"/>
       <arg column="RESOURCE_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="resourceId"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="RESOURCE_TYPE" javaType="java.lang.String"/>
-      <arg column="VERSION" javaType="int"/>
-      <arg column="VERSION_TAG" javaType="java.lang.String"/>
-      <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="resourceName"/>
+      <arg column="RESOURCE_TYPE" javaType="java.lang.String" name="resourceType"/>
+      <arg column="VERSION" javaType="java.lang.Integer" name="version"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String" name="versionTag"/>
+      <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long" name="deploymentKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="RESOURCE_CONTENT" javaType="[B" jdbcType="BINARY"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
+      <arg column="RESOURCE_CONTENT" javaType="[B" jdbcType="BINARY" name="resourceContent"/>
     </constructor>
   </resultMap>
 

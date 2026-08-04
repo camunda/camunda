@@ -87,12 +87,13 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
     <constructor>
-      <idArg column="USER_KEY" javaType="java.lang.Long"/>
+      <idArg column="USER_KEY" javaType="java.lang.Long" name="userKey"/>
       <arg column="USERNAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="NAME" javaType="java.lang.String"/>
-      <arg column="EMAIL" javaType="java.lang.String"/>
-      <arg column="PASSWORD" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="username"/>
+      <arg column="NAME" javaType="java.lang.String" name="name"/>
+      <arg column="EMAIL" javaType="java.lang.String" name="email"/>
+      <arg column="PASSWORD" javaType="java.lang.String" name="password"/>
     </constructor>
   </resultMap>
 

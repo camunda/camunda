@@ -14,14 +14,17 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.FormEntity">
     <constructor>
-      <idArg column="FORM_KEY" javaType="java.lang.Long"/>
+      <idArg column="FORM_KEY" javaType="java.lang.Long" name="formKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
       <arg column="FORM_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="formId"/>
       <arg column="SCHEMA_XML" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VERSION" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="schema"/>
+      <arg column="VERSION" javaType="java.lang.Long" name="version"/>
     </constructor>
   </resultMap>
 

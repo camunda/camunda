@@ -32,8 +32,8 @@ import org.jspecify.annotations.Nullable;
  * <p>These rules enforce:
  *
  * <ol>
- *   <li>All top-level types in {@code io.camunda.search.entities} (excluding enums and interfaces)
- *       must be Java {@code record}s.
+ *   <li>All types in {@code io.camunda.search.entities} (excluding enums and interfaces), nested or
+ *       not, must be Java {@code record}s.
  *   <li>Every record in {@code io.camunda.search.entities} with collection-type fields ({@link
  *       List}, {@link Set}, {@link Map}, {@link Collection}) must declare a compact constructor
  *       that defaults those fields to empty <b>mutable</b> instances (e.g. {@code new
@@ -50,8 +50,9 @@ public final class SearchEntityArchTest {
       Set.of(List.class, Set.class, Map.class, Collection.class);
 
   /**
-   * Every concrete top-level type inside {@code io.camunda.search.entities} must be a Java {@code
-   * record}. Enums and interfaces are excluded.
+   * Every concrete type inside {@code io.camunda.search.entities} must be a Java {@code record},
+   * nested or not. Enums, interfaces, and {@code Builder} classes (mutable by design, not data
+   * carriers) are excluded.
    */
   @ArchTest
   static final ArchRule SEARCH_ENTITIES_MUST_BE_RECORDS =
@@ -63,7 +64,7 @@ public final class SearchEntityArchTest {
           .and()
           .areNotInterfaces()
           .and()
-          .areTopLevelClasses()
+          .haveSimpleNameNotEndingWith("Builder")
           .should(
               new ArchCondition<>("be a Java record") {
                 @Override

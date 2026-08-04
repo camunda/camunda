@@ -141,21 +141,26 @@
   <resultMap id="searchResultMap"
     type="io.camunda.search.entities.ProcessDefinitionEntity">
     <constructor>
-      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="NAME" javaType="java.lang.String"/>
+      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="NAME" javaType="java.lang.String" name="name"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="BPMN_XML" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
+      <arg column="BPMN_XML" javaType="java.lang.String" name="bpmnXml"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VERSION" javaType="java.lang.Integer"/>
-      <arg column="VERSION_TAG" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="resourceName"/>
+      <arg column="VERSION" javaType="java.lang.Integer" name="version"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String" name="versionTag"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="FORM_ID" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
+      <arg column="FORM_ID" javaType="java.lang.String" name="formId"/>
       <arg
         column="STATE"
-        javaType="io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState"/>
+        javaType="io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState"
+        name="state"/>
     </constructor>
   </resultMap>
 
@@ -399,8 +404,25 @@
     ) t
   </select>
 
+  <resultMap id="processInstanceStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        name="processDefinitionId"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="LATEST_PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="latestProcessDefinitionName"/>
+      <arg column="HAS_MULTIPLE_VERSIONS" javaType="java.lang.Boolean"
+        name="hasMultipleVersions"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithoutIncidentCount"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithIncidentCount"/>
+    </constructor>
+  </resultMap>
+
   <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
-    resultType="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    resultMap="processInstanceStatisticsResultMap">
     SELECT pi.PROCESS_DEFINITION_ID,
     pi.TENANT_ID,
     (SELECT pd.NAME
@@ -477,7 +499,26 @@
     ) t
   </select>
 
-  <select id="processInstanceVersionStatistics" resultType="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
+  <resultMap id="processInstanceVersionStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="processDefinitionVersion"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="processDefinitionName"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithoutIncidentCount"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithIncidentCount"/>
+    </constructor>
+  </resultMap>
+
+  <select id="processInstanceVersionStatistics" resultMap="processInstanceVersionStatisticsResultMap" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
     SELECT
     pi.PROCESS_DEFINITION_ID,
     pi.PROCESS_DEFINITION_KEY,

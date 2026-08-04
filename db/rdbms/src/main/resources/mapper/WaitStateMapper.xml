@@ -123,8 +123,8 @@
   <resultMap id="waitStateStatisticsResultMap"
     type="io.camunda.search.entities.WaitStateStatisticsEntity">
     <constructor>
-      <idArg column="ELEMENT_ID" javaType="java.lang.String"/>
-      <arg column="WAITING_COUNT" javaType="java.lang.Long"/>
+      <idArg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
+      <arg column="WAITING_COUNT" javaType="java.lang.Long" name="waitingCount"/>
     </constructor>
   </resultMap>
 
