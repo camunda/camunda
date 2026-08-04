@@ -1658,17 +1658,14 @@ public class ProtoBufSerializer
   public Builder encodeTopologyChangeResponse(
       final ClusterConfigurationChangeResponse clusterConfigurationChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
+    final var legacyResponse = clusterConfigurationChangeResponse.legacyResponse();
 
     builder
         .setChangeId(clusterConfigurationChangeResponse.changeId())
         .addAllPlannedChanges(
-            clusterConfigurationChangeResponse.plannedChanges().stream()
-                .map(this::encodeOperation)
-                .toList())
-        .putAllCurrentTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.currentConfiguration()))
-        .putAllExpectedTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.expectedConfiguration()));
+            legacyResponse.plannedChanges().stream().map(this::encodeOperation).toList())
+        .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
+        .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
 
     return builder;
   }
@@ -1677,11 +1674,15 @@ public class ProtoBufSerializer
       final Requests.TopologyChangeResponse topologyChangeResponse) {
     return new ClusterConfigurationChangeResponse(
         topologyChangeResponse.getChangeId(),
-        decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
-        decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
-        topologyChangeResponse.getPlannedChangesList().stream()
-            .map(this::decodeOperation)
-            .toList());
+        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+            decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
+            decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
+            topologyChangeResponse.getPlannedChangesList().stream()
+                .map(this::decodeOperation)
+                .toList()),
+        // The new multi-partition-group configuration is not yet carried over the wire; wired up
+        // in a follow-up change to TopologyChangeResponse.
+        null);
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {

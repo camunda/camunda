@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.api;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import java.util.List;
 import java.util.Map;
@@ -17,19 +18,27 @@ import java.util.SortedMap;
 
 public record ClusterConfigurationChangeResponse(
     long changeId,
-    SortedMap<MemberId, MemberState> currentConfiguration,
-    SortedMap<MemberId, MemberState> expectedConfiguration,
-    List<ClusterConfigurationChangeOperation> plannedChanges) {
+    LegacyConfigurationChangeResponse legacyResponse,
+    CurrentConfigurationChangeResponse response) {
 
-  public ClusterConfigurationChangeResponse(
-      final long changeId,
-      final Map<MemberId, MemberState> currentConfiguration,
-      final Map<MemberId, MemberState> expectedConfiguration,
-      final List<ClusterConfigurationChangeOperation> plannedChanges) {
-    this(
-        changeId,
-        ImmutableSortedMap.copyOf(currentConfiguration),
-        ImmutableSortedMap.copyOf(expectedConfiguration),
-        plannedChanges);
+  public record LegacyConfigurationChangeResponse(
+      SortedMap<MemberId, MemberState> currentConfiguration,
+      SortedMap<MemberId, MemberState> expectedConfiguration,
+      List<ClusterConfigurationChangeOperation> plannedChanges) {
+
+    public LegacyConfigurationChangeResponse(
+        final Map<MemberId, MemberState> currentConfiguration,
+        final Map<MemberId, MemberState> expectedConfiguration,
+        final List<ClusterConfigurationChangeOperation> plannedChanges) {
+      this(
+          ImmutableSortedMap.copyOf(currentConfiguration),
+          ImmutableSortedMap.copyOf(expectedConfiguration),
+          plannedChanges);
+    }
   }
+
+  public record CurrentConfigurationChangeResponse(
+      CurrentClusterConfiguration currentConfiguration,
+      CurrentClusterConfiguration expectedConfiguration,
+      List<ClusterConfigurationChangeOperation> plannedChanges) {}
 }

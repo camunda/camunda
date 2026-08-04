@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import java.util.ArrayList;
@@ -50,6 +51,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
         new ConfigurationChangeResult(
             currentTopology,
             newTopology, // This is not correct, but enough for tests
+            CurrentClusterConfiguration.fromLegacy(currentTopology),
+            CurrentClusterConfiguration.fromLegacy(newTopology),
             newTopology.pendingChanges().map(ClusterChangePlan::id).orElse(0L),
             operations));
   }

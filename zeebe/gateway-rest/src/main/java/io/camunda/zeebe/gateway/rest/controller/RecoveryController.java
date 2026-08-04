@@ -167,7 +167,7 @@ public final class RecoveryController {
   private static ClusterModeChangeResponse toClusterModeChangeResponse(
       final ClusterConfigurationChangeResponse response) {
     final List<ClusterModeChangeOperation> plannedChanges =
-        response.plannedChanges().stream()
+        response.legacyResponse().plannedChanges().stream()
             .map(RecoveryController::toClusterModeChangeOperation)
             .toList();
     return ClusterModeChangeResponse.Builder.create()

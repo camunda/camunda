@@ -269,7 +269,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     final var expected = new MemberJoinOperation(memberFactory.apply(1));
-    assertThat(changeStatus.plannedChanges()).containsExactly(expected);
+    assertThat(changeStatus.legacyResponse().plannedChanges()).containsExactly(expected);
   }
 
   @Test
@@ -291,7 +291,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         List.of(
             new MemberLeaveOperation(memberFactory.apply(1)),
             new MemberLeaveOperation(memberFactory.apply(2)));
-    assertThat(changeStatus.plannedChanges()).containsExactlyElementsOf(expected);
+    assertThat(changeStatus.legacyResponse().plannedChanges()).containsExactlyElementsOf(expected);
   }
 
   @Test
@@ -305,7 +305,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(new PartitionJoinOperation(memberFactory.apply(1), 1, 3));
   }
 
@@ -320,7 +320,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
   }
 
@@ -347,7 +347,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.reassignPartitions(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionJoinOperation(memberFactory.apply(2), 2, 1),
             new PartitionLeaveOperation(memberFactory.apply(1), 2, 1));
@@ -373,7 +373,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -405,7 +405,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .hasSize(6)
         .startsWith(
             new PreScalingOperation(
@@ -477,7 +477,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new PartitionLeaveOperation(memberFactory.apply(1), 1, 1),
@@ -514,7 +514,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.forceScaleDown(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(
                 memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
@@ -557,7 +557,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     EitherAssert.assertThat(changeStatus).isRight();
 
     // then
-    assertThat(changeStatus.get().plannedChanges())
+    assertThat(changeStatus.get().legacyResponse().plannedChanges())
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -593,7 +593,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.patchCluster(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -638,7 +638,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.forceRemoveBrokers(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(
                 memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
@@ -680,7 +680,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.forceRemoveZone(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(zoneB0, 1, Set.of(zoneB0)),
             new PartitionForceReconfigureOperation(zoneB1, 2, Set.of(zoneB1)),
@@ -718,8 +718,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.addZone(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges()).contains(new MemberJoinOperation(zoneB0));
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
+        .contains(new MemberJoinOperation(zoneB0));
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .filteredOn(UpdatePartitionDistributorConfigOperation.class::isInstance)
         .extracting(op -> ((UpdatePartitionDistributorConfigOperation) op).config())
         .containsExactly(
@@ -748,7 +749,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.disableExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionDisableExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
@@ -774,7 +775,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.deleteExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionDeleteExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
@@ -801,7 +802,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.enableExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionEnableExporterOperation(
                 memberFactory.apply(0), 1, exporterId, Optional.empty()));
@@ -909,11 +910,11 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     final var currentConfiguration =
-        changeStatus.currentConfiguration().values().stream()
+        changeStatus.legacyResponse().currentConfiguration().values().stream()
             .map(MemberState::partitions)
             .collect(Collectors.toSet());
     final var expectedConfiguration =
-        changeStatus.expectedConfiguration().values().stream()
+        changeStatus.legacyResponse().expectedConfiguration().values().stream()
             .map(MemberState::partitions)
             .collect(Collectors.toSet());
 

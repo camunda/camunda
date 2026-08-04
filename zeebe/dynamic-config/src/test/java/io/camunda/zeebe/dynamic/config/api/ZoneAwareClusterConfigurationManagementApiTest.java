@@ -77,7 +77,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     final var changeStatus = clientApi.forceRemoveZone(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(ZONE_B_0, 1, Set.of(ZONE_B_0)),
             new PartitionForceReconfigureOperation(ZONE_B_1, 2, Set.of(ZONE_B_1)),
@@ -108,7 +108,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     final var changeStatus = clientApi.addZone(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
             new UpdatePartitionDistributorConfigOperation(

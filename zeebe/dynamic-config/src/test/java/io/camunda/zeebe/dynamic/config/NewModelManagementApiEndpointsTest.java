@@ -169,7 +169,8 @@ final class NewModelManagementApiEndpointsTest {
     final var response = handler.addMembers(new AddMembersRequest(Set.of(ID_1), false)).join();
 
     // then
-    assertThat(response.plannedChanges()).containsExactly(new MemberJoinOperation(ID_1));
+    assertThat(response.legacyResponse().plannedChanges())
+        .containsExactly(new MemberJoinOperation(ID_1));
   }
 
   @Test
@@ -185,7 +186,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.removeMembers(new RemoveMembersRequest(Set.of(ID_1, ID_2), false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactlyElementsOf(
             List.of(new MemberLeaveOperation(ID_1), new MemberLeaveOperation(ID_2)));
   }
@@ -205,7 +206,8 @@ final class NewModelManagementApiEndpointsTest {
     final var response = handler.joinPartition(new JoinPartitionRequest(ID_1, 1, 3, false)).join();
 
     // then
-    assertThat(response.plannedChanges()).containsExactly(new PartitionJoinOperation(ID_1, 1, 3));
+    assertThat(response.legacyResponse().plannedChanges())
+        .containsExactly(new PartitionJoinOperation(ID_1, 1, 3));
   }
 
   @Test
@@ -226,7 +228,8 @@ final class NewModelManagementApiEndpointsTest {
     final var response = handler.leavePartition(new LeavePartitionRequest(ID_1, 1, false)).join();
 
     // then
-    assertThat(response.plannedChanges()).containsExactly(new PartitionLeaveOperation(ID_1, 1, 1));
+    assertThat(response.legacyResponse().plannedChanges())
+        .containsExactly(new PartitionLeaveOperation(ID_1, 1, 1));
   }
 
   @Test
@@ -249,7 +252,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.reassignPartitions(new ReassignPartitionsRequest(Set.of(ID_1, ID_2), false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionJoinOperation(ID_2, 2, 1), new PartitionLeaveOperation(ID_1, 2, 1));
   }
@@ -267,7 +270,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.scaleMembers(new BrokerScaleRequest(Set.of(ID_0, ID_1), false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(
             new PreScalingOperation(ID_0, Set.of(ID_0, ID_1)),
             new MemberJoinOperation(ID_1),
@@ -293,7 +296,7 @@ final class NewModelManagementApiEndpointsTest {
             .join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .startsWith(new PreScalingOperation(ID_0, Set.of(ID_0, ID_1)))
         .endsWith(new PostScalingOperation(ID_0, Set.of(ID_0, ID_1)))
         .contains(new MemberJoinOperation(ID_1));
@@ -316,7 +319,7 @@ final class NewModelManagementApiEndpointsTest {
             .join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .startsWith(new PreScalingOperation(ID_0, Set.of(ID_0, ID_1)))
         .endsWith(new PostScalingOperation(ID_0, Set.of(ID_0, ID_1)))
         .contains(new MemberJoinOperation(ID_1));
@@ -332,7 +335,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.forceScaleDown(new BrokerScaleRequest(Set.of(ID_0, ID_2), false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(ID_0, 1, Set.of(ID_0)),
             new PartitionForceReconfigureOperation(ID_2, 2, Set.of(ID_2)),
@@ -350,7 +353,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.forceRemoveBrokers(new ForceRemoveBrokersRequest(Set.of(ID_1, ID_3), false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(ID_0, 1, Set.of(ID_0)),
             new PartitionForceReconfigureOperation(ID_2, 2, Set.of(ID_2)),
@@ -378,7 +381,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.disableExporter(new ExporterDisableRequest(exporterId, false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(new PartitionDisableExporterOperation(ID_0, 1, exporterId));
   }
 
@@ -436,7 +439,7 @@ final class NewModelManagementApiEndpointsTest {
         handler.deleteExporter(new ExporterDeleteRequest(exporterId, false)).join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(new PartitionDeleteExporterOperation(ID_0, 1, exporterId));
   }
 
@@ -461,7 +464,7 @@ final class NewModelManagementApiEndpointsTest {
             .join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(
             new PartitionEnableExporterOperation(ID_0, 1, exporterId, Optional.empty()));
   }
@@ -477,9 +480,10 @@ final class NewModelManagementApiEndpointsTest {
     final var response = handler.purge(new PurgeRequest(false)).join();
 
     // then — purge produces a plan and preserves the partition assignment of every member
-    assertThat(response.plannedChanges()).isNotEmpty();
-    assertThat(response.expectedConfiguration())
-        .containsOnlyKeys(response.currentConfiguration().keySet().toArray(MemberId[]::new));
+    assertThat(response.legacyResponse().plannedChanges()).isNotEmpty();
+    assertThat(response.legacyResponse().expectedConfiguration())
+        .containsOnlyKeys(
+            response.legacyResponse().currentConfiguration().keySet().toArray(MemberId[]::new));
   }
 
   @Test
@@ -522,7 +526,7 @@ final class NewModelManagementApiEndpointsTest {
             .join();
 
     // then
-    assertThat(response.plannedChanges())
+    assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(new UpdateRoutingState(ID_0, Optional.of(routingState)));
   }
 

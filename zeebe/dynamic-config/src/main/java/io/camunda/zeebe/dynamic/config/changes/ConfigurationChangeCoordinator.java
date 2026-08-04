@@ -57,10 +57,18 @@ public interface ConfigurationChangeCoordinator {
   ActorFuture<ClusterConfiguration> cancelChange(long changeId);
 
   record ConfigurationChangeResult(
-      // The current configuration before applying the operations.
+      // The current configuration before applying the operations, projected to the legacy
+      // default-group view.
       ClusterConfiguration currentConfiguration,
-      // The expected final configuration after applying the operations.
+      // The expected final configuration after applying the operations, projected to the legacy
+      // default-group view.
       ClusterConfiguration finalConfiguration,
+      // The current configuration before applying the operations, on the new multi-partition-group
+      // model.
+      CurrentClusterConfiguration currentMultiConfiguration,
+      // The expected final configuration after applying the operations, on the new
+      // multi-partition-group model.
+      CurrentClusterConfiguration finalMultiConfiguration,
       long changeId,
       // The operations that wille be applied to the current configuration.
       List<ClusterConfigurationChangeOperation> operations) {}

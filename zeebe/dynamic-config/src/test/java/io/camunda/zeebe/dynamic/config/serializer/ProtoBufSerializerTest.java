@@ -300,24 +300,27 @@ final class ProtoBufSerializerTest {
 
   @Test
   void shouldEncodeAndDecodeTopologyChangeResponse() {
-    // given
+    // given — the new multi-partition-group `response` part is not yet carried over the wire, so
+    // it is expected to be null on both sides of the round trip.
     final var topologyChangeResponse =
         new ClusterConfigurationChangeResponse(
             2,
-            Map.of(
-                MemberId.from("1"),
-                MemberState.initializeAsActive(Map.of()),
-                MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of())),
-            Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
-            List.of(
-                new MemberLeaveOperation(MemberId.from("1")),
-                new PartitionJoinOperation(MemberId.from("2"), 1, 2),
-                new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new PartitionPreRestoreOperation(MemberId.from("1"), 1),
-                new PartitionRestoreOperation(
-                    MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))));
+            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                Map.of(
+                    MemberId.from("1"),
+                    MemberState.initializeAsActive(Map.of()),
+                    MemberId.from("2"),
+                    MemberState.initializeAsActive(Map.of())),
+                Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
+                List.of(
+                    new MemberLeaveOperation(MemberId.from("1")),
+                    new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+                    new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                    new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                    new PartitionPreRestoreOperation(MemberId.from("1"), 1),
+                    new PartitionRestoreOperation(
+                        MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))))),
+            null);
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);

@@ -196,6 +196,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           new ConfigurationChangeResult(
               legacyView,
               legacyView,
+              currentConfiguration,
+              currentConfiguration,
               currentConfiguration
                   .phasedChangeState()
                   .lastChange()
@@ -227,6 +229,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                 new ConfigurationChangeResult(
                     currentConfiguration.toLegacyDefault(),
                     simulatedFinalConfiguration.toLegacyDefault(),
+                    currentConfiguration,
+                    simulatedFinalConfiguration,
                     changeId,
                     operations));
             return;
@@ -250,6 +254,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         new ConfigurationChangeResult(
                             currentConfiguration.toLegacyDefault(),
                             simulatedFinalConfiguration.toLegacyDefault(),
+                            currentConfiguration,
+                            simulatedFinalConfiguration,
                             changeId,
                             operations));
                   },
