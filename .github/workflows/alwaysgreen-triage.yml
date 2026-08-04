@@ -208,9 +208,6 @@ jobs:
             echo ""
             echo "- run: ${{ steps.target.outputs.run_id }} (\`${{ steps.target.outputs.base_ref }}\`)"
             echo "- mode: ${{ steps.mode.outputs.mode }} (dispatch=${{ steps.mode.outputs.dispatch }})"
-            blame_reviewer=$(jq -r '.blame.reviewer // "unresolved"' /tmp/alwaysgreen-plan.json)
-            blame_via=$(jq -r '.blame.via // "-"' /tmp/alwaysgreen-plan.json)
-            echo "- blame: ${blame_reviewer} (via ${blame_via})"
             echo ""
             candidates=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)
             if [ "$candidates" -gt 0 ] && [ "${{ steps.mode.outputs.dispatch }}" = "true" ]; then
@@ -259,6 +256,7 @@ jobs:
           PARENT_TS: ${{ inputs.parent_slack_ts }}
           PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          DISPATCHED: ${{ steps.mode.outputs.dispatch }}
         run: |
           set -euo pipefail
           base_ref='${{ steps.target.outputs.base_ref }}'
@@ -266,12 +264,15 @@ jobs:
           count=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)
           failing_url=$(jq -r '.run_url // ""' /tmp/alwaysgreen-plan.json)
           surfaces=$(jq -r '[.dispatches[].surface] | join(", ")' /tmp/alwaysgreen-plan.json)
-          reviewer=$(jq -r 'if .blame.reviewer then "<https://github.com/\(.blame.reviewer)|@\(.blame.reviewer)>" else "unresolved" end' /tmp/alwaysgreen-plan.json)
 
           if [ "${PLAN_OUTCOME}" != "success" ]; then
-            text=":warning: *AlwaysGreen triage failed* on \`${base_ref}\` — no agent dispatched"$'\n'"Triage: <${RUN_URL}|↗>"
+            text=":warning: *AlwaysGreen triage failed* on \`${base_ref}\` — no agent dispatched"$'\n'"<${RUN_URL}|Triage run ↗>"
+          elif [ "${count}" != "0" ] && [ "${DISPATCHED}" = "true" ]; then
+            text=":robot_face: *AlwaysGreen fix agent dispatched* on \`${base_ref}\`"$'\n'"${count} agent(s): ${surfaces}"$'\n'"<${failing_url}|Failing run ↗> · <${RUN_URL}|Triage run ↗>"
           elif [ "${count}" != "0" ]; then
-            text=":robot_face: *AlwaysGreen fix agent dispatched* on \`${base_ref}\`"$'\n'"${count} agent(s): ${surfaces}"$'\n'"Failing run: <${failing_url}|↗> · Triage: <${RUN_URL}|↗> · Blame: ${reviewer}"
+            # Candidates found but the gate is closed. Say so plainly: an announced
+            # dispatch that never happened is worse than no message at all.
+            text=":mag: *AlwaysGreen: would dispatch — withheld* on \`${base_ref}\`"$'\n'"${count} agent(s) held back: ${surfaces}"$'\n'"Fix-agent dispatch is off for this run."$'\n'"<${failing_url}|Failing run ↗> · <${RUN_URL}|Triage run ↗>"
           else
             # Nothing actionable. Name the reasons so the thread explains itself without
             # anyone opening the run.
@@ -280,8 +281,12 @@ jobs:
               | if length == 0 then "no failing job mapped to a known surface"
                 else (group_by(.) | map("\(.[0]) x\(length)") | join(", ")) end' \
               /tmp/alwaysgreen-plan.json 2>/dev/null || echo "unknown")
-            text=":information_source: *AlwaysGreen triage: nothing to dispatch* on \`${base_ref}\`"$'\n'"${reasons}"$'\n'"Triage: <${RUN_URL}|↗>"
+            text=":information_source: *AlwaysGreen triage: nothing to dispatch* on \`${base_ref}\`"$'\n'"${reasons}"$'\n'"<${RUN_URL}|Triage run ↗>"
           fi
+
+          # Kept so the post-dispatch step can append agent links via chat.update
+          # without rebuilding the message and drifting from this wording.
+          printf '%s' "$text" > /tmp/slack-text.txt
 
           # Thread onto the post-failure-feedback message when the caller handed one
           # down, so one failure produces one Slack thread. Falling back to a new
@@ -307,8 +312,13 @@ jobs:
           # The fix agent must reply as a sibling in the SAME thread, so pass the parent
           # ts through when threading; our own reply's ts would nest nothing useful.
           out_ts="${PARENT_TS:-$(jq -r '.ts // ""' <<<"$resp")}"
-          echo "ts=${out_ts}" >> "$GITHUB_OUTPUT"
-          echo "channel=$(jq -r --arg c "$channel" '.channel // $c' <<<"$resp")" >> "$GITHUB_OUTPUT"
+          {
+            echo "ts=${out_ts}"
+            # This message's own ts, which is NOT out_ts when threading: editing the
+            # parent's ts would overwrite the post-failure-feedback message instead.
+            echo "self_ts=$(jq -r '.ts // ""' <<<"$resp")"
+            echo "channel=$(jq -r --arg c "$channel" '.channel // $c' <<<"$resp")"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Dispatch fix agents
         # outcome, not just count: a failed discovery leaves count empty, and '' != '0'
@@ -332,6 +342,11 @@ jobs:
                         '{ts: $ts, channel: $channel}')
           failing_run_url=$(jq -r '.run_url' /tmp/alwaysgreen-plan.json)
 
+          # Only runs created from here on can be ours; earlier runs carry the same
+          # run-name and would otherwise be matched by mistake on a repeat replay.
+          started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          : > /tmp/agent-runs.tsv
+
           jq -c '.dispatches[]' /tmp/alwaysgreen-plan.json | while read -r d; do
             key=$(jq -r '.dispatch_key' <<<"$d")
             echo "Dispatching ${key}"
@@ -347,7 +362,56 @@ jobs:
               -f triage_run_url="${TRIAGE_RUN_URL}" \
               -f blame="${blame_json}" \
               -f slack="${slack_json}"
+
+            # `gh workflow run` returns no run id, so resolve it from the run-name,
+            # which carries the dispatch key verbatim. Poll: the run takes a moment
+            # to appear, and two dispatches would otherwise race on "newest run".
+            url=""
+            for _ in 1 2 3 4 5 6 7 8; do
+              sleep 3
+              url=$(gh run list --repo "${GITHUB_REPOSITORY}" \
+                      --workflow "${FIX_WORKFLOW}" --limit 20 \
+                      --json url,displayTitle,createdAt \
+                    | jq -r --arg t "AlwaysGreen fix [${key}]" --arg since "${started_at}" \
+                        'map(select(.displayTitle == $t and .createdAt >= $since))
+                         | (.[0].url // "")')
+              [ -n "$url" ] && break
+            done
+            if [ -n "$url" ]; then
+              printf '%s\t%s\n' "${key}" "${url}" >> /tmp/agent-runs.tsv
+            else
+              echo "::warning::Dispatched ${key} but could not resolve its run URL."
+            fi
           done
+
+      # The Slack summary is posted before dispatch, because the fix agent needs its
+      # ts to reply in-thread. So the agent links can only be added afterwards.
+      - name: Add agent links to Slack
+        # hashFiles() cannot see outside GITHUB_WORKSPACE, so the file checks live in
+        # the script rather than in this condition.
+        if: ${{ always() && steps.slack.outputs.self_ts != '' }}
+        continue-on-error: true
+        env:
+          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          SLACK_TS: ${{ steps.slack.outputs.self_ts }}
+          SLACK_CHANNEL: ${{ steps.slack.outputs.channel }}
+        run: |
+          set -euo pipefail
+          [ -s /tmp/agent-runs.tsv ] || { echo "No agent runs to link."; exit 0; }
+          [ -s /tmp/slack-text.txt ] || { echo "No posted message to update."; exit 0; }
+
+          links=$(awk -F'\t' '{printf "%s<%s|%s ↗>", sep, $2, $1; sep=" · "}' /tmp/agent-runs.tsv)
+          text="$(cat /tmp/slack-text.txt)"$'\n'"Agents: ${links}"
+
+          # A threaded reply is updated by its own ts; chat.update needs no thread_ts.
+          payload=$(jq -nc --arg channel "${SLACK_CHANNEL}" --arg ts "${SLACK_TS}" --arg text "$text" \
+            '{channel: $channel, ts: $ts, text: $text}')
+          resp=$(curl -sS -X POST https://slack.com/api/chat.update \
+            -H "Authorization: Bearer ${SLACK_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" || echo '{}')
+          [ "$(jq -r '.ok // false' <<<"$resp")" = "true" ] \
+            || echo "::warning::Slack update failed: $(jq -r '.error // "unknown"' <<<"$resp")"
 
       - name: Flag discovery failure
         if: ${{ steps.mode.outputs.active == 'true' && steps.plan.outcome != 'success' }}

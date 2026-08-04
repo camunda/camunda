@@ -190,7 +190,12 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
                     counts.flaky + c.flaky,
                     counts.setup_failed + c.setup_failed,
                 )
-                cand.specs.extend(classify.failing_specs(report))
+                suite = classify.suite_from_rootdir(
+                    ((report.get("config") or {}).get("rootDir"))
+                    if isinstance(report, dict)
+                    else None
+                )
+                cand.specs.extend(classify.failing_specs(report, suite=suite))
         else:
             has_reports = False
 
