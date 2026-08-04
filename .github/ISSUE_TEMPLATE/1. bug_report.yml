@@ -72,6 +72,20 @@ body:
       default: null
     validations:
       required: true
+  - type: dropdown
+    id: discovered-by
+    attributes:
+      label: <!-- Discovered by -->
+      description: Was this found during a specific testing activity? Leave as "Not applicable" for customer reports, code review, etc.
+      options:
+        - <!-- Not applicable+ -->
+        - <!-- Load Tests+ -->
+        - <!-- Chaos Days+ -->
+        - <!-- Game Day+ -->
+        - <!-- QA Automation Found+ -->
+      default: 0
+    validations:
+      required: false
   - type: textarea
     id: description
     attributes:
