@@ -172,10 +172,7 @@ public class AuthInfo extends UnpackedObject {
    * @return Creates a new AuthInfo if the argument is not frozen by copying it. The returned value
    *     is always frozen
    */
-  public static @Nullable AuthInfo of(final @Nullable AuthInfo info) {
-    if (info == null) {
-      return null;
-    }
+  public static AuthInfo of(final AuthInfo info) {
     if (info.isFrozen()) {
       return info;
     }

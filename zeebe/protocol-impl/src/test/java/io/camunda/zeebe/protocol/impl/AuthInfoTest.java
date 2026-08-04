@@ -161,15 +161,6 @@ final class AuthInfoTest {
   @Nested
   class OfTests {
     @Test
-    void shouldReturnNullWhenOfCalledWithNull() {
-      // when
-      final AuthInfo result = AuthInfo.of(null);
-
-      // then
-      assertThat(result).isNull();
-    }
-
-    @Test
     void shouldReturnEmptyWhenOfClaimsCalledWithNull() {
       assertThat(AuthInfo.ofClaims(null)).isSameAs(AuthInfo.empty());
     }
