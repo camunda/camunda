@@ -161,11 +161,12 @@ jobs:
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: |
-          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} ${{ inputs.physical-tenant-opensearch-url != '' && 'opensearch-tenant' || '' }} || {
-            docker compose -f db/docker-compose.yml logs
-            exit 1
-          }
+        uses: ./.github/actions/compose
+        with:
+          compose_file: db/docker-compose.yml
+          project_name: "db"
+          services: "${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} ${{ inputs.physical-tenant-opensearch-url != '' && 'opensearch-tenant' || '' }}"
+          startup_check: "wait"
       # When use-shared-distball is true, restore the io.camunda SNAPSHOTs that a
       # build-distball job elsewhere in the same run installed + archived to GCS,
       # instead of re-running the ~2 min reactor in each matrix entry. gcp-perf runners
@@ -205,9 +206,6 @@ jobs:
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Stop Database service
-        if: ${{ always() && inputs.database-type != 'h2' }}
-        run: docker-compose -f db/docker-compose.yml down
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()

@@ -11,6 +11,9 @@ inputs:
   additional_flags:
     description: "Additional flags to pass to the compose command"
     required: false
+  services:
+    description: "List of (space separated) services to actually run"
+    required: false
   timeout:
     description: "Timeout for the healthcheck (in seconds)"
     required: false
@@ -23,6 +26,10 @@ inputs:
     description: "Seconds to wait between pull retry attempts"
     required: false
     default: "15"
+  startup_check:
+    description: "How to determine if the service(s) are up and running (healthcheck or wait)"
+    required: false
+    default: "healthcheck"
 runs:
   using: composite
   steps:
@@ -38,7 +45,18 @@ runs:
         shell: bash
         command: |
           docker compose -f "${{ inputs.compose_file }}" \
-            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull
+            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull ${{ inputs.services }}
+
+    - name: Convert ${{ inputs.services }} into multiple lines
+      id: multi_line_services
+      if: ${{ inputs.services != '' }}
+      shell: bash
+      run: |
+        {
+          echo "services<<EOF"
+          echo "${{ inputs.services }}" | tr ' ' '\n'
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
 
     - name: Run ${{ inputs.project_name }} compose
       uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
@@ -46,10 +64,14 @@ runs:
         compose-file: |
           ${{ inputs.compose_file }}
         compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
+        up-flags: "${{ inputs.startup_check == 'wait' && '--wait' || '' }}"
+        services: ${{ steps.multi_line_services.outputs.services }}
     - name: Short sleep to let it startup
+      if: ${{ inputs.startup_check == 'healthcheck' }}
       shell: bash
       run: sleep 3
     - name: Check if service is healthy
+      if: ${{ inputs.startup_check == 'healthcheck' }}
       shell: bash
       run: |
         ${{ github.action_path }}/healthy.sh
