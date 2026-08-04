@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
+import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -57,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -131,6 +133,7 @@ public final class BpmnJobBehavior {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final int maxJobTypeLength;
+  private final ClusterVariableJobSecretResolver clusterVariableJobSecretResolver;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -144,7 +147,8 @@ public final class BpmnJobBehavior {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
       final BpmnUserTaskBehavior userTaskBehavior,
-      final int maxJobTypeLength) {
+      final int maxJobTypeLength,
+      final ClusterVariableState clusterVariableState) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -158,6 +162,7 @@ public final class BpmnJobBehavior {
     this.jobActivationBehavior = jobActivationBehavior;
     this.userTaskBehavior = userTaskBehavior;
     this.maxJobTypeLength = maxJobTypeLength;
+    clusterVariableJobSecretResolver = new ClusterVariableJobSecretResolver(clusterVariableState);
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -400,7 +405,7 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        element.getSecretReferences());
+        mergedSecretReferences(context, element));
   }
 
   public void createNewExecutionListenerJob(
@@ -448,7 +453,25 @@ public final class BpmnJobBehavior {
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        element.getSecretReferences());
+        mergedSecretReferences(context, element));
+  }
+
+  /**
+   * Merges an element's direct {@code camunda.secrets.*} references with the secret references
+   * reached indirectly through its {@code camunda.vars.*} cluster-variable references (see {@link
+   * ClusterVariableJobSecretResolver}). Grouping into a {@code Set} per pointer dedups by {@code
+   * (path, storeId, name)}, since {@link SecretReference} is a record.
+   */
+  private Map<String, Set<SecretReference>> mergedSecretReferences(
+      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
+    final var merged = new HashMap<String, Set<SecretReference>>();
+    element
+        .getSecretReferences()
+        .forEach((path, refs) -> merged.computeIfAbsent(path, key -> new HashSet<>()).addAll(refs));
+    clusterVariableJobSecretResolver
+        .resolve(element.getClusterVariableReferences(), context.getTenantId())
+        .forEach((path, refs) -> merged.computeIfAbsent(path, key -> new HashSet<>()).addAll(refs));
+    return merged;
   }
 
   private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(

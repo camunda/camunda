@@ -291,7 +291,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             jobActivationBehavior,
             jobMetrics,
             userTaskBehavior,
-            config.getMaxWorkerTypeLength());
+            config.getMaxWorkerTypeLength(),
+            processingState.getClusterVariableState());
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
