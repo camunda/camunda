@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.regions.Region;
 
 public class AwsDocumentStoreProviderTest {
 
@@ -244,6 +245,80 @@ public class AwsDocumentStoreProviderTest {
 
       // then
       assertThat(optionsCaptor.getValue().chunkedEncodingEnabled()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldPassConfiguredRegion() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "eu-central-1");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isEqualTo("eu-central-1");
+    }
+  }
+
+  @Test
+  public void shouldLeaveRegionToTheSdkWhenNotConfigured() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "  ");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isNull();
+    }
+  }
+
+  @Test
+  public void shouldTargetTheConfiguredRegionFromClientAndPresigner() {
+    // given
+    final AwsClientOptions options = new AwsClientOptions(null, null, null, null, "eu-central-1");
+
+    // when
+    try (final var client = AwsDocumentStore.buildClient(options);
+        final var presigner = AwsDocumentStore.buildPresigner(options)) {
+
+      // then
+      assertThat(client.serviceClientConfiguration().region()).isEqualTo(Region.of("eu-central-1"));
+      // the presigner does not expose its region; it only builds at all once one is resolvable
+      assertThat(presigner).isNotNull();
     }
   }
 }

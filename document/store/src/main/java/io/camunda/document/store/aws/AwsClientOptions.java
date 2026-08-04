@@ -18,9 +18,10 @@ public record AwsClientOptions(
     URI endpointOverride,
     Boolean forcePathStyle,
     Boolean chunkedEncodingEnabled,
-    Boolean supportLegacyMd5) {
+    Boolean supportLegacyMd5,
+    String region) {
 
   public static AwsClientOptions sdkDefaults() {
-    return new AwsClientOptions(null, null, null, null);
+    return new AwsClientOptions(null, null, null, null, null);
   }
 }

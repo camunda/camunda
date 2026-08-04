@@ -20,6 +20,7 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
@@ -130,16 +132,21 @@ public class AwsDocumentStore implements DocumentStore {
     this.requiresBuffering = requiresBuffering;
   }
 
-  private static S3Client buildClient(final AwsClientOptions options) {
+  @VisibleForTesting
+  static S3Client buildClient(final AwsClientOptions options) {
     if (options.endpointOverride() == null
         && options.forcePathStyle() == null
         && options.chunkedEncodingEnabled() == null
+        && options.region() == null
         && !Boolean.TRUE.equals(options.supportLegacyMd5())) {
       return S3Client.create();
     }
     final S3ClientBuilder builder = S3Client.builder();
     if (options.endpointOverride() != null) {
       builder.endpointOverride(options.endpointOverride());
+    }
+    if (options.region() != null) {
+      builder.region(Region.of(options.region()));
     }
     if (Boolean.TRUE.equals(options.supportLegacyMd5())) {
       builder.addPlugin(LegacyMd5Plugin.create());
@@ -148,15 +155,20 @@ public class AwsDocumentStore implements DocumentStore {
     return builder.build();
   }
 
-  private static S3Presigner buildPresigner(final AwsClientOptions options) {
+  @VisibleForTesting
+  static S3Presigner buildPresigner(final AwsClientOptions options) {
     if (options.endpointOverride() == null
         && options.forcePathStyle() == null
-        && options.chunkedEncodingEnabled() == null) {
+        && options.chunkedEncodingEnabled() == null
+        && options.region() == null) {
       return S3Presigner.create();
     }
     final S3Presigner.Builder builder = S3Presigner.builder();
     if (options.endpointOverride() != null) {
       builder.endpointOverride(options.endpointOverride());
+    }
+    if (options.region() != null) {
+      builder.region(Region.of(options.region()));
     }
     builder.serviceConfiguration(buildS3Configuration(options));
     return builder.build();

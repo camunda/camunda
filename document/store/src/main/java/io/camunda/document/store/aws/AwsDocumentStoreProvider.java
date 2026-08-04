@@ -32,6 +32,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   private static final String FORCE_PATH_STYLE = "FORCE_PATH_STYLE";
   private static final String CHUNKED_ENCODING_ENABLED = "CHUNKED_ENCODING_ENABLED";
   private static final String SUPPORT_LEGACY_MD5 = "SUPPORT_LEGACY_MD5";
+  private static final String REGION = "REGION";
 
   @Override
   public DocumentStore createDocumentStore(
@@ -56,7 +57,8 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
             getEndpoint(configuration),
             getForcePathStyle(configuration),
             getChunkedEncodingEnabled(configuration),
-            getSupportLegacyMd5(configuration)));
+            getSupportLegacyMd5(configuration),
+            getRegion(configuration)));
   }
 
   private static Long getDefaultTTL(final DocumentStoreConfigurationRecord configuration) {
@@ -112,6 +114,11 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
               + endpoint,
           e);
     }
+  }
+
+  private static String getRegion(final DocumentStoreConfigurationRecord configuration) {
+    final String region = configuration.properties().get(REGION);
+    return region == null || region.isBlank() ? null : region.trim();
   }
 
   private static Boolean getForcePathStyle(final DocumentStoreConfigurationRecord configuration) {
