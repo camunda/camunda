@@ -154,7 +154,11 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       // backs the pending ask off (removal stays owned by P_K's message-expiry path).
       commandSender.sendStartProcessInstanceExpiredRejected(request);
       metrics.crossPartitionRequest(RequestOutcome.REJECTED_EXPIRED);
-      metrics.discardBlockedAsk(request.getBusinessId(), request.getMessageKey());
+      metrics.discardBlockedAsk(
+          request.getBusinessId(),
+          request.getBpmnProcessId(),
+          request.getTenantId(),
+          request.getMessageKey());
       return;
     }
 
@@ -174,7 +178,11 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     if (businessIdUniquenessEnabled && isBusinessIdAlreadyHeld(request)) {
       commandSender.sendStartProcessInstanceUniquenessRejected(request);
       metrics.crossPartitionRequest(RequestOutcome.REJECTED_UNIQUENESS);
-      metrics.recordAskBlockedOnBusinessId(request.getBusinessId(), request.getMessageKey());
+      metrics.recordAskBlockedOnBusinessId(
+          request.getBusinessId(),
+          request.getBpmnProcessId(),
+          request.getTenantId(),
+          request.getMessageKey());
       return;
     }
 
@@ -211,7 +219,12 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
 
     commandSender.sendStartProcessInstanceStarted(request, processInstanceKey);
     metrics.crossPartitionRequest(RequestOutcome.STARTED);
-    metrics.recordReleaseToStart(request.getBusinessId(), request.getMessageKey(), clock.millis());
+    metrics.recordReleaseToStart(
+        request.getBusinessId(),
+        request.getBpmnProcessId(),
+        request.getTenantId(),
+        request.getMessageKey(),
+        clock.millis());
   }
 
   /**

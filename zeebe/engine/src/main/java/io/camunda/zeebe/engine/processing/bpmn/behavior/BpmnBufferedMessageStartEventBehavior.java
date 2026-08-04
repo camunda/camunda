@@ -209,16 +209,17 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final BpmnElementContext context,
       final DirectBuffer correlationKey,
       final String businessId) {
+    final var bpmnProcessId = context.getBpmnProcessId();
+    final var tenantId = context.getTenantId();
     if (businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty()) {
       // M16: this holder just released the businessId uniqueness lock on P_B. Report the release so
       // an ask blocked on it can measure its release-to-start latency; the recorder arms this only
       // while an ask is actually blocked, so uncontended completions are ignored. Reported before
       // the process-null guard below so the free is captured even when the latest version has since
       // drained.
-      metrics.recordBusinessIdFreed(businessId, clock.millis());
+      metrics.recordBusinessIdFreed(
+          businessId, BufferUtil.bufferAsString(bpmnProcessId), tenantId, clock.millis());
     }
-    final var bpmnProcessId = context.getBpmnProcessId();
-    final var tenantId = context.getTenantId();
     final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process == null) {
       return;

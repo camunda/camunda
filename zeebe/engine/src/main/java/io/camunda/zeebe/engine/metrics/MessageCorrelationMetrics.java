@@ -48,22 +48,27 @@ import java.util.Set;
  *
  * <p>The release-to-start timer (M16) measures, purely on {@code P_B}, the wait between a business
  * id being released by a completing holder and a cross-partition ask that was <em>blocked on that
- * business id</em> actually starting. A single in-memory map {@code businessId → }{@link
- * ContendedBusinessId} makes it leak-free: each entry holds the message keys of the asks currently
- * uniqueness-rejected (blocked) on that business id, plus the timestamp at which the holder last
- * freed it (armed only while an ask is blocked). Asks are added when the REQUEST processor rejects
- * them on uniqueness and pruned per ask when they start or are rejected as expired.
+ * business id</em> actually starting. It is tracked per <em>uniqueness domain</em> — the {@code
+ * (tenantId, processDefinitionId, businessId)} triple that scopes the uniqueness lock — not by
+ * business id alone: the same business id may be held, freed and reused independently in different
+ * process definitions or tenants, and all of them hash to the same {@code P_B}, so a
+ * business-id-only key would let an unrelated domain's free clobber another's measurement. A single
+ * in-memory map {@code domain → }{@link ContendedDomain} makes it leak-free: each entry holds the
+ * message keys of the asks currently uniqueness-rejected (blocked) in that domain, plus the
+ * timestamp at which the holder last freed it (armed only while an ask is blocked). Asks are added
+ * when the REQUEST processor rejects them on uniqueness and pruned per ask when they start or are
+ * rejected as expired.
  *
  * <p>Gating both the free capture and the measurement on the <em>messageKey</em> of an actually
  * blocked ask is what keeps the histogram honest: an uncontended completion never arms a free, and
  * an uncontended reuse of a business id (whose messageKey was never blocked) is never measured — so
  * the timer records contention latency only, not benign business-id reuse gaps. All access is from
  * the processing actor on {@code P_B}, and the map is bounded to the most recent {@value
- * #MAX_TRACKED_BLOCKED_BUSINESS_IDS} contended business ids and cleared on recovery.
+ * #MAX_TRACKED_CONTENDED_DOMAINS} contended domains and cleared on recovery.
  */
 public final class MessageCorrelationMetrics implements StreamProcessorLifecycleAware {
 
-  private static final int MAX_TRACKED_BLOCKED_BUSINESS_IDS = 10_000;
+  private static final int MAX_TRACKED_CONTENDED_DOMAINS = 10_000;
 
   private final MeterRegistry registry;
 
@@ -84,16 +89,16 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
   private final Map<Long, Map<Long, Timer.Sample>> pendingAskSamples = new HashMap<>();
 
   /**
-   * Contended business ids on {@code P_B}: each entry tracks the cross-partition asks currently
-   * blocked (uniqueness-rejected) on the business id and, once its holder completes, the time at
-   * which it was last freed. Entries are created when the REQUEST processor rejects an ask on
-   * uniqueness and removed once no ask remains blocked (each starts or is rejected as expired).
-   * Bounded and insertion-ordered: the eldest contended business id is evicted past {@link
-   * #MAX_TRACKED_BLOCKED_BUSINESS_IDS} so a business id whose blocked asks never resolve ages out
-   * instead of leaking.
+   * Contended uniqueness domains on {@code P_B}: each entry tracks the cross-partition asks
+   * currently blocked (uniqueness-rejected) in that {@code (tenantId, processDefinitionId,
+   * businessId)} domain and, once its holder completes, the time at which it was last freed.
+   * Entries are created when the REQUEST processor rejects an ask on uniqueness and removed once no
+   * ask remains blocked (each starts or is rejected as expired). Bounded and insertion-ordered: the
+   * eldest domain is evicted past {@link #MAX_TRACKED_CONTENDED_DOMAINS} so a domain whose blocked
+   * asks never resolve ages out instead of leaking.
    */
-  private final Map<String, ContendedBusinessId> contendedByBusinessId =
-      boundedByInsertionOrder(MAX_TRACKED_BLOCKED_BUSINESS_IDS);
+  private final Map<ContentionKey, ContendedDomain> contendedByDomain =
+      boundedByInsertionOrder(MAX_TRACKED_CONTENDED_DOMAINS);
 
   private final Counter askCounter;
   private final Counter askRetryCounter;
@@ -260,31 +265,45 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
 
   /**
    * M16: records that a cross-partition ask ({@code messageKey}) was just rejected on {@code P_B}
-   * because {@code businessId} is held by an active holder — i.e. the ask is now blocked and
-   * retrying. Tracking the ask by its message key lets a later free arm the release clock and lets
-   * the eventual start be attributed only to an ask that was genuinely blocked.
+   * because {@code businessId} is held by an active holder in the {@code (tenantId,
+   * processDefinitionId, businessId)} uniqueness domain — i.e. the ask is now blocked and retrying.
+   * Tracking the ask by its message key within that domain lets a later free arm the release clock
+   * and lets the eventual start be attributed only to an ask that was genuinely blocked, without an
+   * unrelated domain that happens to share the business id interfering.
    */
-  public void recordAskBlockedOnBusinessId(final String businessId, final long messageKey) {
+  public void recordAskBlockedOnBusinessId(
+      final String businessId,
+      final String processDefinitionId,
+      final String tenantId,
+      final long messageKey) {
     if (businessId == null || businessId.isEmpty()) {
       return;
     }
-    contendedByBusinessId
-        .computeIfAbsent(businessId, k -> new ContendedBusinessId())
+    contendedByDomain
+        .computeIfAbsent(
+            new ContentionKey(tenantId, processDefinitionId, businessId),
+            k -> new ContendedDomain())
         .blockedMessageKeys
         .add(messageKey);
   }
 
   /**
    * M16: records that a holder just freed {@code businessId} on {@code P_B} at {@code
-   * freedAtMillis}. The release time is armed only while an ask is actually blocked on the business
-   * id; an uncontended completion is ignored, so a subsequent benign reuse cannot be misattributed.
-   * A newer free overwrites an older one (measure from the most recent release).
+   * freedAtMillis} in the {@code (tenantId, processDefinitionId, businessId)} uniqueness domain.
+   * The release time is armed only while an ask is actually blocked in that domain; an uncontended
+   * completion is ignored, so a subsequent benign reuse cannot be misattributed. A newer free
+   * overwrites an older one (measure from the most recent release).
    */
-  public void recordBusinessIdFreed(final String businessId, final long freedAtMillis) {
+  public void recordBusinessIdFreed(
+      final String businessId,
+      final String processDefinitionId,
+      final String tenantId,
+      final long freedAtMillis) {
     if (businessId == null || businessId.isEmpty()) {
       return;
     }
-    final var contended = contendedByBusinessId.get(businessId);
+    final var contended =
+        contendedByDomain.get(new ContentionKey(tenantId, processDefinitionId, businessId));
     if (contended != null) {
       contended.freedAtMillis = freedAtMillis;
     }
@@ -292,18 +311,32 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
 
   /**
    * M16: on a cross-partition ask ({@code messageKey}) decided {@code started} on {@code P_B} at
-   * {@code startedAtMillis}, records the release-to-start latency when the ask was blocked on
-   * {@code businessId} and a free was captured, then prunes the ask. A start whose message key was
-   * never blocked (a first-time or uncontended start) is ignored entirely. A blocked start whose
-   * holder was freed without a completion transition (banned/migrated) is pruned but not recorded —
+   * {@code startedAtMillis}, records the release-to-start latency when the ask was blocked in the
+   * {@code (tenantId, processDefinitionId, businessId)} uniqueness domain and a free was captured,
+   * then prunes the ask. A start whose message key was never blocked (a first-time or uncontended
+   * start) is ignored entirely. A blocked start whose holder was freed without a completion
+   * transition (banned, or migrated to a different process definition) is pruned but not recorded —
    * that blind spot is documented on the meter.
+   *
+   * <p>The uniqueness constraint admits only one active holder per domain, so a single free can
+   * unblock only one ask; any further blocked ask must wait for its own fresh free. The captured
+   * free is therefore consumed here (armed for exactly one measurement) and disarmed once used.
+   * This keeps a second blocked ask that starts without a fresh free — its interim holder was
+   * banned or migrated and emitted no completion — from being misattributed against the stale
+   * earlier release, honouring the documented blind spot rather than recording an inflated
+   * duration.
    */
   public void recordReleaseToStart(
-      final String businessId, final long messageKey, final long startedAtMillis) {
+      final String businessId,
+      final String processDefinitionId,
+      final String tenantId,
+      final long messageKey,
+      final long startedAtMillis) {
     if (businessId == null || businessId.isEmpty()) {
       return;
     }
-    final var contended = contendedByBusinessId.get(businessId);
+    final var key = new ContentionKey(tenantId, processDefinitionId, businessId);
+    final var contended = contendedByDomain.get(key);
     if (contended == null || !contended.blockedMessageKeys.remove(messageKey)) {
       return;
     }
@@ -312,29 +345,36 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
       if (elapsedMillis >= 0) {
         releaseToStartTimer.record(Duration.ofMillis(elapsedMillis));
       }
+      contended.freedAtMillis = null;
     }
     if (contended.blockedMessageKeys.isEmpty()) {
-      contendedByBusinessId.remove(businessId);
+      contendedByDomain.remove(key);
     }
   }
 
   /**
-   * M16: drops a cross-partition ask ({@code messageKey}) that was blocked on {@code businessId}
-   * but has now been rejected as expired — it will stop retrying and never start, so it must no
-   * longer gate the release capture. Without this, a stale blocked entry would let a later
-   * uncontended reuse of the business id be misattributed as release-to-start latency.
+   * M16: drops a cross-partition ask ({@code messageKey}) that was blocked in the {@code (tenantId,
+   * processDefinitionId, businessId)} uniqueness domain but has now been rejected as expired — it
+   * will stop retrying and never start, so it must no longer gate the release capture. Without
+   * this, a stale blocked entry would let a later uncontended reuse of the business id be
+   * misattributed as release-to-start latency.
    */
-  public void discardBlockedAsk(final String businessId, final long messageKey) {
+  public void discardBlockedAsk(
+      final String businessId,
+      final String processDefinitionId,
+      final String tenantId,
+      final long messageKey) {
     if (businessId == null || businessId.isEmpty()) {
       return;
     }
-    final var contended = contendedByBusinessId.get(businessId);
+    final var key = new ContentionKey(tenantId, processDefinitionId, businessId);
+    final var contended = contendedByDomain.get(key);
     if (contended == null) {
       return;
     }
     contended.blockedMessageKeys.remove(messageKey);
     if (contended.blockedMessageKeys.isEmpty()) {
-      contendedByBusinessId.remove(businessId);
+      contendedByDomain.remove(key);
     }
   }
 
@@ -342,7 +382,7 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // Samples belong to the previous leadership term; recording them would produce bogus durations.
     pendingAskSamples.clear();
-    contendedByBusinessId.clear();
+    contendedByDomain.clear();
   }
 
   private Timer askDurationTimer(final AskOutcome outcome) {
@@ -387,12 +427,20 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
   }
 
   /**
-   * Per-business-id M16 tracking state (see {@link #contendedByBusinessId}): the message keys of
-   * the cross-partition asks currently blocked on the business id, and the time its holder last
-   * freed it ({@code null} until a completion arms it). Mutated only from the processing actor on
-   * {@code P_B}, so it needs no synchronisation.
+   * Identifies a uniqueness domain on {@code P_B} — the {@code (tenantId, processDefinitionId,
+   * businessId)} triple that scopes the business-id uniqueness lock. Used as the M16 tracking key
+   * so the same business id reused across different process definitions or tenants (all of which
+   * hash to the same {@code P_B}) is tracked independently rather than conflated.
    */
-  private static final class ContendedBusinessId {
+  private record ContentionKey(String tenantId, String processDefinitionId, String businessId) {}
+
+  /**
+   * Per-domain M16 tracking state (see {@link #contendedByDomain}): the message keys of the
+   * cross-partition asks currently blocked in the domain, and the time its holder last freed it
+   * ({@code null} until a completion arms it). Mutated only from the processing actor on {@code
+   * P_B}, so it needs no synchronisation.
+   */
+  private static final class ContendedDomain {
     private final Set<Long> blockedMessageKeys = new LinkedHashSet<>();
     private Long freedAtMillis;
   }
