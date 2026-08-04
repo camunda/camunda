@@ -53,8 +53,6 @@ public class JobUpdateBehaviour {
             jobState,
             processingStateState.getBannedInstanceState(),
             "update",
-            // a job parked for secret resolution stays updatable: an operator re-prioritising or
-            // topping up the retries of queued work has no reason to wait for the resolution
             List.of(
                 State.ACTIVATABLE,
                 State.ACTIVATED,

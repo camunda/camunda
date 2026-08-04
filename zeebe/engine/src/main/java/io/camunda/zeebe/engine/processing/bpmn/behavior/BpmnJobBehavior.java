@@ -113,8 +113,6 @@ public final class BpmnJobBehavior {
           State.ACTIVATED,
           State.FAILED,
           State.ERROR_THROWN,
-          // a job parked for secret resolution must be canceled with its element instance, or its
-          // record and its waiting entries would outlive the process instance
           State.WAITING_FOR_SECRET_RESOLUTION);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
