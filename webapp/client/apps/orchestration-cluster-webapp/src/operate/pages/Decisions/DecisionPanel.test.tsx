@@ -19,7 +19,10 @@ function renderDecisionPanel(props: React.ComponentProps<typeof DecisionPanel>) 
 	return renderWithRouter(() => <DecisionPanel {...props} />, {path: '/operate/decisions'});
 }
 
-const DEFINITION = createDecisionDefinition({decisionDefinitionKey: '2251799813685280'});
+const DEFINITION = createDecisionDefinition({
+	decisionDefinitionKey: '2251799813685280',
+	decisionDefinitionId: 'invoiceClassification',
+});
 
 describe('<DecisionPanel />', () => {
 	it('shows an empty message when no decision is selected', async () => {
@@ -62,5 +65,6 @@ describe('<DecisionPanel />', () => {
 		});
 
 		await expect.element(screen.getByTestId('decision-viewer')).toBeVisible();
+		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
 	});
 });
