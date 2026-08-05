@@ -214,7 +214,7 @@ public class ResourceDeletionDeleteProcessor
       // Delete-time history purge is only for a resource already fully gone from primary storage.
       if (value.isDeleteHistory()
           && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
-        deleteHistory(eventKey, command);
+        deleteHistory(command);
       } else {
         throw new NoSuchResourceException(value.getResourceKey());
       }
@@ -253,7 +253,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
           drg.getTenantId(),
-          () -> deleteDecisionRequirements(drg, command, eventKey));
+          () -> deleteDecisionRequirements(drg, command));
     }
 
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
@@ -309,16 +309,14 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private void deleteDecisionRequirements(
-      final DeployedDrg drg,
-      final TypedRecord<ResourceDeletionRecord> command,
-      final long eventKey) {
+      final DeployedDrg drg, final TypedRecord<ResourceDeletionRecord> command) {
     decisionState
         .findDecisionsByTenantAndDecisionRequirementsKey(
             drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
 
     if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
-      deleteDecisionInstanceHistory(drg.getDecisionRequirementsKey(), eventKey, command.getValue());
+      deleteDecisionInstanceHistory(drg.getDecisionRequirementsKey(), command.getValue());
     }
 
     final var drgRecord =
@@ -438,8 +436,7 @@ public class ResourceDeletionDeleteProcessor
         .setDeploymentKey(process.getDeploymentKey());
   }
 
-  private void deleteHistory(
-      final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
+  private void deleteHistory(final TypedRecord<ResourceDeletionRecord> command) {
     if (command.isCommandDistributed()) {
       // We should not create batch operations for distributed commands. This gets handled by the
       // batch operation creator itself.
@@ -464,9 +461,9 @@ public class ResourceDeletionDeleteProcessor
 
     switch (resourceType) {
       case PROCESS_DEFINITION ->
-          deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+          deleteProcessInstanceHistory(commandValue.getResourceKey(), commandValue);
       case DECISION_REQUIREMENTS ->
-          deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+          deleteDecisionInstanceHistory(commandValue.getResourceKey(), commandValue);
       default -> {
         // No history to delete for forms and unknown resources
         // This should not be reached as SUPPORTED_HISTORY_DELETION_TYPES filters these out
@@ -475,22 +472,18 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private void deleteProcessInstanceHistory(
-      final long processDefinitionKey,
-      final long eventKey,
-      final ResourceDeletionRecord resourceDeletionRecord) {
+      final long processDefinitionKey, final ResourceDeletionRecord resourceDeletionRecord) {
     final long batchOperationKey =
-        historyDeletionBehavior.deleteProcessInstanceHistory(eventKey, processDefinitionKey);
+        historyDeletionBehavior.deleteProcessInstanceHistory(processDefinitionKey);
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
   }
 
   private void deleteDecisionInstanceHistory(
-      final long decisionRequirementsKey,
-      final long eventKey,
-      final ResourceDeletionRecord resourceDeletionRecord) {
+      final long decisionRequirementsKey, final ResourceDeletionRecord resourceDeletionRecord) {
     final long batchOperationKey =
-        historyDeletionBehavior.deleteDecisionInstanceHistory(eventKey, decisionRequirementsKey);
+        historyDeletionBehavior.deleteDecisionInstanceHistory(decisionRequirementsKey);
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
