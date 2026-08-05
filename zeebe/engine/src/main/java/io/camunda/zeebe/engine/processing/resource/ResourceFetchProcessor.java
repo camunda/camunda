@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.authz.TenantAccess;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,8 +28,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,23 +39,20 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private final ResourceState resourceState;
   private final TenantState tenantState;
   private final PermissionsBehavior permissionsBehavior;
-  private final LazyTokenClaimsConverter claimsConverter;
-  private final EngineSecurityConfig securityConfig;
+  private final CslTenantCheck tenantCheck;
 
   public ResourceFetchProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final CslTenantCheck tenantCheck) {
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     stateWriter = writers.state();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
     this.permissionsBehavior = permissionsBehavior;
-    this.claimsConverter = claimsConverter;
-    this.securityConfig = securityConfig;
+    this.tenantCheck = tenantCheck;
   }
 
   @Override
@@ -106,7 +99,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private Optional<PersistedResource> findResource(
       final TypedRecord<ResourceRecord> command, final long resourceKey) {
-    final var authorizedTenants = determineAuthorizedTenants(command);
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     return authorizedTenants.wildcard()
         ? findResourceForAnonymouslyAuthorizedTenants(resourceKey)
         : findResourceForAuthenticatedAuthorizedTenants(resourceKey, authorizedTenants);
@@ -142,24 +135,6 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
           return true;
         });
     return Optional.ofNullable(resource.get());
-  }
-
-  private TenantAccess determineAuthorizedTenants(final TypedRecord<?> command) {
-    final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return TenantAccess.wildcard(List.of());
-    }
-    if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return TenantAccess.allowed(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-    }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      return TenantAccess.allowed(List.of());
-    }
-    final var authentication = claimsConverter.convert(authorizations);
-    final var tenantIds =
-        Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
-    return TenantAccess.allowed(tenantIds);
   }
 
   private void checkAuthorization(

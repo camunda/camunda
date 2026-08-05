@@ -447,13 +447,7 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
     addResourceFetchProcessors(
-        typedRecordProcessors,
-        writers,
-        processingState,
-        permissionsBehavior,
-        claimsConverter,
-        securityConfig,
-        config);
+        typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
@@ -853,12 +847,10 @@ public final class EngineProcessors {
       final Writers writers,
       final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig,
+      final CslTenantCheck tenantCheck,
       final EngineConfiguration config) {
     final var resourceFetchProcessor =
-        new ResourceFetchProcessor(
-            writers, processingState, permissionsBehavior, claimsConverter, securityConfig);
+        new ResourceFetchProcessor(writers, processingState, permissionsBehavior, tenantCheck);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE, ResourceIntent.FETCH, resourceFetchProcessor);
     // Migration to reexport resources to secondary storage
