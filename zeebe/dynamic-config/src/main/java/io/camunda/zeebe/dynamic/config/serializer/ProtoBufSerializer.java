@@ -106,7 +106,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class ProtoBufSerializer
     implements ClusterConfigurationSerializer, ClusterConfigurationRequestsSerializer {
 
@@ -182,6 +184,22 @@ public class ProtoBufSerializer
               ByteBuffer.wrap(encodedClusterTopology, offset, length));
       return decodeClusterTopology(topology);
 
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
+    return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
+  }
+
+  @Override
+  public CurrentClusterConfiguration decodeCurrentClusterConfiguration(
+      final byte[] encoded, final int offset, final int length) {
+    try {
+      return decodeCurrentClusterConfiguration(
+          Topology.CurrentClusterConfiguration.parseFrom(ByteBuffer.wrap(encoded, offset, length)));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -1731,6 +1749,10 @@ public class ProtoBufSerializer
         .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
   }
 
+  // ---- New multi-partition-group configuration model (8.10) ----
+  // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
+  // wired into gossip or persistence; they exist for the Phase-3 handoff.
+
   private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
     return switch (status) {
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
@@ -1750,28 +1772,8 @@ public class ProtoBufSerializer
     };
   }
 
-  // ---- New multi-partition-group configuration model (8.10) ----
-  // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
-  // wired into gossip or persistence; they exist for the Phase-3 handoff.
-
-  @Override
-  public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
-    return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
-  }
-
   public CurrentClusterConfiguration decodeCurrentClusterConfiguration(final byte[] encoded) {
     return decodeCurrentClusterConfiguration(encoded, 0, encoded.length);
-  }
-
-  @Override
-  public CurrentClusterConfiguration decodeCurrentClusterConfiguration(
-      final byte[] encoded, final int offset, final int length) {
-    try {
-      return decodeCurrentClusterConfiguration(
-          Topology.CurrentClusterConfiguration.parseFrom(ByteBuffer.wrap(encoded, offset, length)));
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
   }
 
   private Topology.CurrentClusterConfiguration encodeCurrentClusterConfigurationProto(
