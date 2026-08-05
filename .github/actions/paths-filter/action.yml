@@ -288,6 +288,7 @@ runs:
 
         renovate-config-change:
           - '**/renovate.json5'
+          - '.github/renovate/**.json5'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes

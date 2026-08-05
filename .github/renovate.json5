@@ -5,6 +5,8 @@
     "config:recommended",
     "github>camunda/infra-renovate-config:herodevs.json5",
     "github>camunda/infra-renovate-config:rebase.json5",
+    // Team-specific configuration
+    "local>camunda/camunda//.github/renovate/team-reliability-testing.json5",
   ],
   commitMessagePrefix: "deps:",
   baseBranchPatterns: [
@@ -516,17 +518,6 @@
       enabled: false,
     },
     {
-      description: "Disable Docker updates for private registries used in load tests that Renovate cannot authenticate to: registry.camunda.cloud (internal Harbor) and europe-west1-docker.pkg.dev/camunda-benchmark (GCP AR pull-through cache for quay.io/prometheuscommunity/elasticsearch-exporter \u2014 track upstream manually).",
-      matchDatasources: [
-        "docker",
-      ],
-      matchPackageNames: [
-        "registry.camunda.cloud/team-zeebe",
-        "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter",
-      ],
-      enabled: false,
-    },
-    {
       description: "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
       matchManagers: [
         "maven",
@@ -799,46 +790,6 @@
       groupSlug: "form-js",
     },
     {
-      description: "Simplify the commit message when updating the Camunda Platform Helm Chart for load tests",
-      matchDepNames: [
-        "camunda/camunda-platform-helm",
-      ],
-      matchDatasources: [
-        "github-tags",
-      ],
-      matchFileNames: [
-        "load-tests/**",
-      ],
-      commitMessageTopic: "camunda-platform Helm Chart",
-    },
-    {
-      description: "Authorize the 'main' load test to deploy alpha version of the Camunda Platform Helm Chart",
-      matchDepNames: [
-        "camunda/camunda-platform-helm",
-      ],
-      matchDatasources: [
-        "github-tags",
-      ],
-      matchFileNames: [
-        "load-tests/setup/main/**",
-      ],
-      ignoreUnstable: false,
-    },
-    {
-      description: "Bump Docker images used by load tests ; keep the same major.minor and update only for patch releases",
-      matchFileNames: [
-        "load-tests/setup/*/values/*.y*ml",
-      ],
-      matchDatasources: [
-        "docker",
-      ],
-      matchPackageNames: [
-        "docker.io/camunda/zeebe",
-        "docker.io/camunda/camunda",
-      ],
-      allowedVersions: "<= {{{major}}}.{{{minor}}}",
-    },
-    {
       description: "Pin slackapi/slack-github-action to v3.x. v4.0.0 re-bundled @slack/webhook onto a new global-fetch stack that no longer accepts the bare 200 returned by Slack Workflow Builder webhook-trigger endpoints as success. The default retries then re-deliver the same message 3-5 times and the escalating back-off blows past the job timeout (jobs show as cancelled). Remove this pin once webhook-trigger handling is fixed upstream.",
       matchManagers: [
         "github-actions",
@@ -849,22 +800,12 @@
       allowedVersions: "<4",
     },
   ],
-  ignorePaths: [
-    "load-tests/setup/test/golden/**",
-  ],
   dockerfile: {
     managerFilePatterns: [
       "/(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$/",
     ],
     ignorePaths: [
-      "zeebe/load-tests/**",
       "clients/go/vendor/**",
-    ],
-  },
-  "helm-values": {
-    managerFilePatterns: [
-      "**/values.y*ml",
-      "load-tests/setup/*/values/*.y*ml",
     ],
   },
   customManagers: [
@@ -877,20 +818,6 @@
         "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s",
       ],
       versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
-    },
-    {
-      description: "Track camunda-platform-helm chart tags pinned in load test scripts.",
-      customType: "regex",
-      managerFilePatterns: [
-        "load-tests/setup/newLoadTest.sh",
-      ],
-      matchStrings: [
-        "renovate: version=(?<parentVersion>.*?)\\s+camunda_platform_helm_chart_version=\"(?<currentValue>[^\"]+)\"",
-      ],
-      extractVersionTemplate: "^{{{parentVersion}}}-(?<version>\\S+)$",
-      datasourceTemplate: "github-tags",
-      depNameTemplate: "camunda/camunda-platform-helm",
-      versioningTemplate: "regex:(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))(-alpha(?<prerelease>.*))?$",
     },
     {
       customType: "regex",
