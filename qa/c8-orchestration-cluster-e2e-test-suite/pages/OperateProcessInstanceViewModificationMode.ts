@@ -373,6 +373,20 @@ export class OperateProcessInstanceViewModificationModePage {
     });
   }
 
+  // Picking the move target after "Move all"/"Move selected instance" is
+  // different from a normal flow-node click: the diagram enters target-selection
+  // mode and lays a transparent interaction layer over the canvas to capture the
+  // pick. That layer intercepts pointer events, so an actionability-checked click
+  // on the target flow node hangs at "performing click action" waiting for the
+  // element to receive the event until it times out. Force the click so the real
+  // mouse event lands at the element's coordinates and the interaction layer
+  // resolves the target — the same interaction a user's click performs.
+  async clickTargetFlowNode(flowNodeName: string): Promise<void> {
+    const targetFlowNode = this.getFlowNode(flowNodeName).first();
+    await expect(targetFlowNode).toBeVisible();
+    await targetFlowNode.click({force: true, timeout: 20000});
+  }
+
   getFlowNode(flowNodeName: string) {
     return this.diagram.locator(
       `.djs-element[data-element-id="${flowNodeName}"]`,
@@ -400,7 +414,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveAllButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
-    await this.clickFlowNode(targetFlowNodeName);
+    await this.clickTargetFlowNode(targetFlowNodeName);
   }
 
   async moveInstanceFromSelectedFlowNodeToTarget(
@@ -410,7 +424,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveInstanceButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
-    await this.clickFlowNode(targetFlowNodeName);
+    await this.clickTargetFlowNode(targetFlowNodeName);
   }
 
   async addTokenToFlowNode(flowNodeName: string): Promise<void> {
