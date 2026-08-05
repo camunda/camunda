@@ -451,3 +451,7 @@ optimize.Dockerfile         @camunda/core-features
 /zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/*/*     @camunda/core-features @camunda/zeebe-distributed-platform
 /zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/*/*/*   @camunda/core-features @camunda/zeebe-distributed-platform
 /zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/*         @camunda/core-features @camunda/zeebe-distributed-platform
+
+# Operate frontend: overrides the broad /operate/ rule above, which predates the
+# operate-frontend/operate-backend team split.
+/operate/client/            @camunda/operate-frontend
