@@ -38,13 +38,13 @@ stamped **before** the chain runs, which an interceptor cannot do.
 CSL adoption also changes how unknown tenants are handled. CSL registers security filter chains in a
 fixed order:
 
-| Order | Chain | Matcher |
-|---|---|---|
-| 0 | unprotected paths | specific unprotected paths |
-| 1 | cluster API chain | `apiPaths()` → `/v2/**` |
-| 1 | per-scope chains | `basePath + apiPaths` → `/physical-tenants/<configured>/v2/**` |
-| 1 | webapp chains | webapp paths |
-| **2** | **catch-all "unhandled" chain** | **`/**`, `denyAll()`** |
+| Order |              Chain              |                            Matcher                             |
+|-------|---------------------------------|----------------------------------------------------------------|
+| 0     | unprotected paths               | specific unprotected paths                                     |
+| 1     | cluster API chain               | `apiPaths()` → `/v2/**`                                        |
+| 1     | per-scope chains                | `basePath + apiPaths` → `/physical-tenants/<configured>/v2/**` |
+| 1     | webapp chains                   | webapp paths                                                   |
+| **2** | **catch-all "unhandled" chain** | **`/**`, `denyAll()`**                                         |
 
 The catch-all (`BaseSecurityConfiguration.protectedUnhandledPathsSecurityFilterChain` in CSL) denies
 all requests and returns **HTTP 404** from both its authentication entry point and its access-denied
@@ -125,3 +125,4 @@ unknown-tenant 404 it provides is what makes the interceptor's validation remova
 - OC #54729 — per-physical-tenant API security chains (the work this ADR is part of).
 - OC #54651 — tenant-first physical-tenant API routing (`PhysicalTenantRequestMappingHandlerMapping`).
 - OC #54730 — per-tenant provider selection (`providers.assigned`), deferred.
+

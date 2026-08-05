@@ -81,17 +81,19 @@ Each handler is constructed from its PT's config:
   `ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)`, `oidcConfig` = that PT's
   `OidcConfiguration`, and `claimsProvider` = that PT's `OidcClaimsProvider`. This is the key reason
   the per-PT unit is a handler, not a decoder:
+
   - The handler derives its `OidcPrincipalLoader` / `OidcGroupsExtractor` and prefer-username /
     groups-claim behavior from `oidcConfig` at construction time, so a PT on a different IdP (with
     different username/client-id/groups claim names) needs its own handler.
   - The handler invokes `claimsProvider` between `JwtDecoder.decode(...)` and
     `OidcPrincipalLoader.load(...)` to augment claims from the IdP's `/userinfo` endpoint
-    ([identity ADR-0006](../../identity/adr/0006-userinfo-claim-augmentation-for-bearer-tokens.md) —
+    ([identity ADR-0006](/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) —
     the bearer-token flow, which includes gRPC). That endpoint and its client config are per-IdP,
     so the claims provider is per-PT as well.
 
   Swapping only the decoder inside a shared handler would decode the token but extract/augment
   claims with the wrong PT's config.
+
 - **BASIC** → `new AuthenticationHandler.BasicAuth(serviceRegistry.userServices(id), passwordEncoder)`
   — the same per-PT user-store routing `BasicAuthUserDetailsAdapter` already uses for REST
   (ADR-0005). `passwordEncoder` is global.
@@ -226,20 +228,30 @@ non-PT deployments are unchanged.
 - [ADR-0005](0005-physical-tenant-routing-of-authorization-reads.md) — per-PT routing of the
   authorization layer; establishes the `serviceRegistry.userServices(pt)` basic-auth routing this
   ADR mirrors on gRPC.
-- [identity ADR-0006](../../identity/adr/0006-userinfo-claim-augmentation-for-bearer-tokens.md) — the
+- [identity ADR-0006](/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) — the
   bearer-token `/userinfo` claim-augmentation flow (`OidcClaimsProvider` invoked inside
   `AuthenticationHandler.Oidc`), which applies to gRPC and is why the claims provider is per-PT.
-- #54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
-- #54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
+- 
+
+# 54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
+
+- 
+
+# 54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
+
 - `AuthenticationInterceptor` / `AuthenticationHandler`
   (`zeebe/gateway-grpc/.../interceptors/impl/`) — the gRPC auth entry point and sealed handler this
   ADR makes PT-aware.
+
 - `PhysicalTenantInterceptor` (`zeebe/gateway-grpc/.../interceptors/impl/`) — the existing
   server-side interceptor that reads/validates the `Camunda-Physical-Tenant` header and stamps the
   `Context`; **removed** by this ADR, its responsibility folded into the merged interceptor.
+
 - `EndpointManager` (`zeebe/gateway-grpc/.../EndpointManager.java`) — reads the PT id from the
   `Context` (`getPhysicalTenantIdKey`) to set the broker request's partition group; the reason the
   stamp must be preserved.
+
 - `ScopedJwtDecoderFactory` (CSL) and `PhysicalTenantAuthConfigurations` /
   `PhysicalTenantScopeProvider` (`authentication/.../pt/`) — the per-PT decoder construction path
   shared with REST.
+

@@ -37,89 +37,79 @@ const sidebars = {
       items: [
         {
           type: 'category',
+          label: 'Cross-cutting Architecture',
+          items: [
+            {
+              type: 'link',
+              label: 'Overview',
+              href: '/architecture/overview',
+            },
+            {
+              type: 'link',
+              label: 'Orchestration Cluster',
+              href: '/adr/orchestration-cluster/jvm-options-argfile-for-runtime-specific-flags',
+            },
+            {
+              type: 'link',
+              label: 'Management',
+              href: '/adr/management/physical-tenant-health-status-topology',
+            },
+            {
+              type: 'link',
+              label: 'Security',
+              href: '/adr/security/endpoint-required-permission-mapping',
+            },
+            {
+              type: 'link',
+              label: 'Clients',
+              href: '/adr/clients/unify-spring-starter-on-multi-client-config-path',
+            },
+          ],
+        },
+        {
+          type: 'category',
           label: 'Components',
           items: [
             {
               type: 'category',
-              label: 'Secondary Storage',
-              link: { type: 'doc', id: 'architecture/components/secondary-storage/index' },
-              items: [
-                'architecture/components/secondary-storage/working-with-secondary-storage',
-                'architecture/components/secondary-storage/archiving',
-                'architecture/components/secondary-storage/backup-and-restore',
-                {
-                  type: 'category',
-                  label: 'RDBMS',
-                  items: [
-                    'architecture/components/secondary-storage/rdbms/rdbms_architecture_docs',
-                    'architecture/components/secondary-storage/rdbms/developer-guide',
-                    'architecture/components/secondary-storage/rdbms/benchmarking',
-                    {
-                      type: 'category',
-                      label: 'ADRs',
-                      items: [
-                        'architecture/components/secondary-storage/rdbms/adr/use-mybatis-as-orm-framework',
-                        'architecture/components/secondary-storage/rdbms/adr/use-liquibase-for-schema-management',
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              type: 'category',
               label: 'Orchestration Cluster Identity',
               items: [
-                'architecture/components/identity/identity_architecture_docs',
                 {
-                  type: 'category',
-                  label: 'ADRs',
-                  items: [
-                    'architecture/components/identity/adr/cluster-embedded-identity',
-                    'architecture/components/identity/adr/oidc-default-production-authentication',
-                    'architecture/components/identity/adr/resource-based-authorization-model',
-                    'architecture/components/identity/adr/multi-jwks-endpoints-per-issuer',
-                    'architecture/components/identity/adr/support-forward-slashes-in-entity-ids',
-                  ],
+                  type: 'link',
+                  label: 'Architecture',
+                  href: '/identity/architecture',
                 },
                 {
                   type: 'category',
                   label: 'Authorizations',
                   items: [
-                    'architecture/components/identity/authorizations/authorization-concept',
-                    'architecture/components/identity/authorizations/engine-authorization',
-                    'architecture/components/identity/authorizations/rest-authorization',
+                    { type: 'link', label: 'Authorization Concept', href: '/identity/authorizations/authorization-concept' },
+                    { type: 'link', label: 'Engine Authorization', href: '/identity/authorizations/engine-authorization' },
+                    { type: 'link', label: 'REST Authorization', href: '/identity/authorizations/rest-authorization' },
                   ],
                 },
                 {
                   type: 'category',
                   label: 'References',
                   items: [
-                    'architecture/components/identity/references/data-model',
-                    'architecture/components/identity/references/default-roles',
-                    'architecture/components/identity/references/rp-initiated-logout',
+                    { type: 'link', label: 'Data Model', href: '/identity/references/data-model' },
+                    { type: 'link', label: 'Default Roles', href: '/identity/references/default-roles' },
+                    { type: 'link', label: 'RP-Initiated Logout', href: '/identity/references/rp-initiated-logout' },
                   ],
                 },
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Orchestration Cluster',
-              items: [
                 {
                   type: 'category',
                   label: 'ADRs',
                   items: [
-                    'architecture/components/orchestration-cluster/adr/jvm-options-argfile-for-runtime-specific-flags',
-                    'architecture/components/orchestration-cluster/adr/jdk-25-base-images-with-jdk-21-runtime-support',
+                    { type: 'link', label: 'ADR Index', href: '/identity/adr/README' },
                   ],
                 },
               ],
             },
             {
-              type: 'doc',
-              id: 'architecture/components/identity/management_identity_architecture_docs',
+              type: 'link',
               label: 'Management Identity',
+              href: '/identity/management-identity',
             },
           ],
         },

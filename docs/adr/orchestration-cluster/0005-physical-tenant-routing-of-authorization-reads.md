@@ -45,6 +45,7 @@ against the wrong tenant's data:
    **singleton bean hardwired to `default`** (#55252) — ES/OS
    `SearchClientReaderConfiguration.authorizationReader()` via `requireDefault(...)`; RDBMS
    `RdbmsConfiguration` equivalently — on two call paths:
+
    - **Control-plane** (Spring Security permission checks): `hasPermission()` → CSL
      `ResourcePermissionService` → `AuthorizationRepositoryAdapter` → `AuthorizationReader.search()`.
    - **Data-plane** (result authorization inside `CamundaSearchClients`): `doSearch`/`doGet` →
@@ -186,17 +187,33 @@ read PT `X`'s data.
 
 - [ADR-0003](0003-physical-tenant-request-scoping-via-pre-security-filter.md) — pre-security filter
   that stamps the PT id on the request (the request-scoped reads' PT source).
-- #55252 — physical-tenant routing of the authorization layer (the defect this resolves; widened from
-  the original `AuthorizationReader`-only scope to membership resolution + both decision-read planes).
-- #54728 — Physical Tenants Identity, Slice 1 (parent).
-- #54474 — per-physical-tenant RDBMS readers (`RdbmsTenantReaders`), merged.
-- #54327 — inventory of hardcoded-`default` `serviceRegistry.*Services(...)` call sites in the
-  authentication / Spring Security services (the request-scoped reads routed under A.1) and the wider
-  per-tenant service-registry integration.
-- #55401 — engine uses the partition's PT-scoped `SearchClient` for batch operations (scopes the
-  *data* read; this ADR extends the same scoping to the data-plane *authorization* read via the per-PT
-  `ResourceAccessController`).
+- 
+
+# 55252 — physical-tenant routing of the authorization layer (the defect this resolves; widened from
+
+the original `AuthorizationReader`-only scope to membership resolution + both decision-read planes).
+-
+
+# 54728 — Physical Tenants Identity, Slice 1 (parent).
+
+- 
+
+# 54474 — per-physical-tenant RDBMS readers (`RdbmsTenantReaders`), merged.
+
+- 
+
+# 54327 — inventory of hardcoded-`default` `serviceRegistry.*Services(...)` call sites in the
+
+authentication / Spring Security services (the request-scoped reads routed under A.1) and the wider
+per-tenant service-registry integration.
+-
+
+# 55401 — engine uses the partition's PT-scoped `SearchClient` for batch operations (scopes the
+
+*data* read; this ADR extends the same scoping to the data-plane *authorization* read via the per-PT
+`ResourceAccessController`).
 - `DefaultMembershipService` (`authentication/.../service/DefaultMembershipService.java`) — resolves
-  the principal's group/role/tenant/mapping-rule memberships; routed per PT under A.1.
+the principal's group/role/tenant/mapping-rule memberships; routed per PT under A.1.
 - `BasicAuthUserDetailsAdapter` (`authentication/.../config/spi/BasicAuthUserDetailsAdapter.java`) —
-  the request-scoped per-PT resolution pattern this ADR generalises across the authorization layer.
+the request-scoped per-PT resolution pattern this ADR generalises across the authorization layer.
+

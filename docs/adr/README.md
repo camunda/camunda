@@ -45,4 +45,9 @@ ADR for that domain is written.
   (engine) paths, behavior-preserving, with the engine keeping its own
   anonymous/mt-off resolver rather than a decorator over the core provider
   (camunda-security-library#582).
+- `orchestration-cluster/` — decisions spanning the broker, gateways, and
+  auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
+  provider selection, authorization routing, gRPC authentication, configuration
+  resolution, exporter assignment, and async context propagation. See
+  [`orchestration-cluster/README.md`](orchestration-cluster/README.md).
 

@@ -1,4 +1,4 @@
-# Physical-Tenant Configuration: Shared-Config-with-Override Resolution and the Per-PT / Cross-PT Validation Split
+# ADR-0007: Physical-Tenant Configuration: Shared-Config-with-Override Resolution and the Per-PT / Cross-PT Validation Split
 
 **DRI**: Houssain Barouni ([@houssain-barouni](https://github.com/houssain-barouni))
 
@@ -54,3 +54,4 @@ Two constraints bound the design. All validation runs inside `configuration/`, w
 - [Physical Tenants epic #52027](https://github.com/camunda/camunda/issues/52027) (internal).
 - Related sub-issues: [#54366](https://github.com/camunda/camunda/issues/54366) (document-store isolation), [#54730](https://github.com/camunda/camunda/issues/54730) (OIDC `assigned`), [#55155](https://github.com/camunda/camunda/issues/55155) (per-tenant exporters).
 - Sibling ADRs: [ADR-0003](0003-physical-tenant-request-scoping-via-pre-security-filter.md), [ADR-0004](0004-per-physical-tenant-provider-selection-via-assigned.md), [ADR-0005](0005-physical-tenant-routing-of-authorization-reads.md), [ADR-0006](0006-physical-tenant-scoped-grpc-authentication.md), [ADR-0008](0008-physical-tenant-exporter-assignment-and-args-merge.md) (per-tenant exporter assignment and args merge).
+
