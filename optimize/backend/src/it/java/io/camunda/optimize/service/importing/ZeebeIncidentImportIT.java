@@ -65,6 +65,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
       zeebeExtension.failTask(SERVICE_TASK);
 
       // when (open fail-task incident)
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
       waitUntilIncidentRecordWithProcessIdExported("someProcess");
       importAllZeebeEntitiesFromScratch();
 
@@ -112,6 +113,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
       zeebeExtension.throwErrorIncident(SERVICE_TASK);
 
       // when (throw-error incident)
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
       waitUntilIncidentRecordWithProcessIdExported("someProcess");
       importAllZeebeEntitiesFromScratch();
 
@@ -139,6 +141,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
           deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
 
       // when (missing-variable incident)
+      waitUntilInstanceRecordWithElementIdExported(CATCH_EVENT);
       waitUntilIncidentRecordWithProcessIdExported("someProcess");
       importAllZeebeEntitiesFromScratch();
 
@@ -168,6 +171,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
       final ProcessInstanceEvent deployedInstance =
           deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
       zeebeExtension.throwErrorIncident(SERVICE_TASK);
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
       waitUntilIncidentRecordWithProcessIdExported("someProcess");
       resolveIncident();
       waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
@@ -197,6 +201,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
       final ProcessInstanceEvent deployedInstance =
           deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
       zeebeExtension.throwErrorIncident(SERVICE_TASK);
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
       waitUntilIncidentRecordWithProcessIdExported("someProcess");
 
       // when (first batch: only the CREATED record)
