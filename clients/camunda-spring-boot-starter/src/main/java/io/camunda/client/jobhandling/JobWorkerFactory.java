@@ -105,6 +105,9 @@ public class JobWorkerFactory {
     if (canBeSetToBuilder(jobWorkerValue.getStreamEnabled())) {
       builder.streamEnabled(jobWorkerValue.getStreamEnabled().value());
     }
+    if (canBeSetToBuilder(jobWorkerValue.getWithLease())) {
+      builder.withLease(jobWorkerValue.getWithLease().value());
+    }
     if (canBeSetToBuilder(jobWorkerValue.getStreamTimeout(), this::isValidDuration)) {
       builder.streamTimeout(jobWorkerValue.getStreamTimeout().value());
     }
