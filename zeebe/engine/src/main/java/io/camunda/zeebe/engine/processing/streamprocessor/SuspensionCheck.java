@@ -42,22 +42,23 @@ public final class SuspensionCheck {
    * is returned alongside the decision so callers reuse it rather than re-deriving it (external
    * {@code JOB}/{@code INCIDENT}/{@code USER_TASK} commands don't carry it on the wire).
    */
-  public Result resolve(final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
+  public SuspensionResult resolve(
+      final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
     if (!(processor instanceof final SuspensionAware<?> suspensionAware)) {
       // processors that don't opt in via SuspensionAware are never gated; checked before resolving
       // the process instance key to keep the state lookups off the hot path for unrelated commands
-      return new Result(Decision.PROCESS, -1);
+      return new SuspensionResult(SuspensionBehavior.PROCESS, -1);
     }
 
     final long processInstanceKey = resolveProcessInstanceKey(command);
     if (processInstanceKey <= 0) {
-      return new Result(Decision.PROCESS, processInstanceKey);
+      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
     }
 
     final State marker =
         processingState.getSuspensionState().getSuspensionState(processInstanceKey);
     if (marker == null) {
-      return new Result(Decision.PROCESS, processInstanceKey);
+      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
     }
 
     final SuspensionBehavior behavior = suspensionBehavior(suspensionAware, command);
@@ -67,20 +68,20 @@ public final class SuspensionCheck {
               + " command '{}'; processing it normally. Please report this as a bug.",
           processor.getClass().getName(),
           command.getValueType());
-      return new Result(Decision.PROCESS, processInstanceKey);
+      return new SuspensionResult(SuspensionBehavior.PROCESS, processInstanceKey);
     }
 
-    final Decision decision =
+    final SuspensionBehavior decision =
         switch (behavior) {
-          case PROCESS -> Decision.PROCESS;
-          case REJECT -> Decision.REJECT;
+          case PROCESS -> SuspensionBehavior.PROCESS;
+          case REJECT -> SuspensionBehavior.REJECT;
           case BUFFER ->
               marker == State.SUSPENDED
-                  ? Decision.BUFFER
+                  ? SuspensionBehavior.BUFFER
                   // RESUMING: pass through so drained commands can execute.
-                  : Decision.PROCESS;
+                  : SuspensionBehavior.PROCESS;
         };
-    return new Result(decision, processInstanceKey);
+    return new SuspensionResult(decision, processInstanceKey);
   }
 
   /**
@@ -122,12 +123,5 @@ public final class SuspensionCheck {
   }
 
   /** The gate outcome for a command, with the resolved target process instance key. */
-  public record Result(Decision decision, long processInstanceKey) {}
-
-  /** The outcome of the suspension gate for a single command. */
-  public enum Decision {
-    PROCESS,
-    REJECT,
-    BUFFER
-  }
+  public record SuspensionResult(SuspensionBehavior outcome, long processInstanceKey) {}
 }

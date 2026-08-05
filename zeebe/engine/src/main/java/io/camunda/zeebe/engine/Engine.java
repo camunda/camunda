@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -181,33 +182,27 @@ public class Engine implements RecordProcessor {
         LOG.error(ERROR_MESSAGE_PROCESSOR_NOT_FOUND, typedCommand, e);
       }
 
+      // special case handling
       if (currentProcessor == null) {
         return processingResultBuilder.build();
       }
-
-      if (shouldProcessCommand(typedCommand)) {
-        final var suspension = suspensionCheck.resolve(typedCommand, currentProcessor);
-        switch (suspension.decision()) {
-          case REJECT ->
-              rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
-          case BUFFER ->
-              bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
-          case PROCESS -> {
-            if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
-              processingResultBuilder.withProcessInASeparateBatch();
-            }
-
-            currentProcessor.processRecord(record, processingResultBuilder);
-          }
-          default ->
-              throw new IllegalStateException(
-                  String.format(
-                      ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION, suspension.decision()));
-        }
-      } else {
+      if (isBannedCommand(typedCommand)) {
         // Reject commands for banned process instances
         rejectBannedInstanceCommand(typedCommand);
+        return processingResultBuilder.build();
       }
+      final var suspension = suspensionCheck.resolve(typedCommand, currentProcessor);
+      if (suspension.outcome() != SuspensionBehavior.PROCESS) {
+        // Reject or buffer commands for suspended process instances
+        handleSuspensionOutcome(typedCommand, suspension);
+        return processingResultBuilder.build();
+      }
+
+      // regular case handling
+      if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
+        processingResultBuilder.withProcessInASeparateBatch();
+      }
+      currentProcessor.processRecord(record, processingResultBuilder);
     }
     return processingResultBuilder.build();
   }
@@ -244,7 +239,7 @@ public class Engine implements RecordProcessor {
     return processingResultBuilder.build();
   }
 
-  private boolean shouldProcessCommand(final TypedRecord<?> typedCommand) {
+  private boolean isBannedCommand(final TypedRecord<?> typedCommand) {
     // There is no ban check needed if the intent is not instance related
     // nor if the intent is to create new instances, which can't be banned yet
     final Intent intent = typedCommand.getIntent();
@@ -253,13 +248,13 @@ public class Engine implements RecordProcessor {
             || intent instanceof ProcessInstanceCreationIntent;
 
     if (noBanCheckNeeded) {
-      return true;
+      return false;
     }
 
     final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
 
     if (!banned) {
-      return true;
+      return false;
     }
 
     // Commands allowed to be processed on banned instances
@@ -269,7 +264,7 @@ public class Engine implements RecordProcessor {
             || intent == ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT
             || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-    return isAllowedOnBannedInstance;
+    return !isAllowedOnBannedInstance;
   }
 
   private void rejectBannedInstanceCommand(final TypedRecord<?> typedCommand) {
@@ -289,6 +284,19 @@ public class Engine implements RecordProcessor {
       final TypedRecord<?> typedCommand, final long processInstanceKey) {
     rejectInstanceCommand(
         typedCommand, String.format(ERROR_MESSAGE_SUSPENDED_PI, processInstanceKey));
+  }
+
+  private void handleSuspensionOutcome(
+      final TypedRecord<?> typedCommand, final SuspensionCheck.SuspensionResult suspension) {
+    final var outcome = suspension.outcome();
+    if (outcome == SuspensionBehavior.REJECT) {
+      rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
+    } else if (outcome == SuspensionBehavior.BUFFER) {
+      bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
+    } else {
+      throw new IllegalStateException(
+          String.format(ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION, outcome));
+    }
   }
 
   private void rejectInstanceCommand(

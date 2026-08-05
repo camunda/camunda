@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck.Decision;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
@@ -55,7 +54,7 @@ final class SuspensionCheckTest {
     final var result = suspensionCheck.resolve(command(), plainProcessor());
 
     // then - non-aware processors are never gated, and the key is not even resolved
-    assertThat(result.decision()).isEqualTo(Decision.PROCESS);
+    assertThat(result.outcome()).isEqualTo(SuspensionBehavior.PROCESS);
     assertThat(result.processInstanceKey()).isEqualTo(-1);
   }
 
@@ -68,8 +67,8 @@ final class SuspensionCheckTest {
     assertThat(
             suspensionCheck
                 .resolve(command(), overridingProcessor(SuspensionBehavior.REJECT))
-                .decision())
-        .isEqualTo(Decision.PROCESS);
+                .outcome())
+        .isEqualTo(SuspensionBehavior.PROCESS);
   }
 
   @ParameterizedTest
@@ -79,15 +78,15 @@ final class SuspensionCheckTest {
   void shouldApplyProcessorClassificationWhileSuspended(final SuspensionBehavior behavior) {
     // given
     markerIs(State.SUSPENDED);
-    final Decision expected =
+    final SuspensionBehavior expected =
         switch (behavior) {
-          case PROCESS -> Decision.PROCESS;
-          case REJECT -> Decision.REJECT;
+          case PROCESS -> SuspensionBehavior.PROCESS;
+          case REJECT -> SuspensionBehavior.REJECT;
           case BUFFER -> throw new IllegalStateException("unreachable");
         };
 
     // when / then
-    assertThat(suspensionCheck.resolve(command(), overridingProcessor(behavior)).decision())
+    assertThat(suspensionCheck.resolve(command(), overridingProcessor(behavior)).outcome())
         .isEqualTo(expected);
   }
 
@@ -101,7 +100,7 @@ final class SuspensionCheckTest {
         suspensionCheck.resolve(command(), overridingProcessor(SuspensionBehavior.BUFFER));
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.BUFFER);
+    assertThat(result.outcome()).isEqualTo(SuspensionBehavior.BUFFER);
   }
 
   @Test
@@ -110,8 +109,8 @@ final class SuspensionCheckTest {
     markerIs(State.SUSPENDED);
 
     // when / then - a contract-violating null classification is logged and processed (fail-open)
-    assertThat(suspensionCheck.resolve(command(), overridingProcessor(null)).decision())
-        .isEqualTo(Decision.PROCESS);
+    assertThat(suspensionCheck.resolve(command(), overridingProcessor(null)).outcome())
+        .isEqualTo(SuspensionBehavior.PROCESS);
   }
 
   @Test
@@ -123,8 +122,8 @@ final class SuspensionCheckTest {
     assertThat(
             suspensionCheck
                 .resolve(command(), overridingProcessor(SuspensionBehavior.BUFFER))
-                .decision())
-        .isEqualTo(Decision.PROCESS);
+                .outcome())
+        .isEqualTo(SuspensionBehavior.PROCESS);
   }
 
   @Test
@@ -136,8 +135,8 @@ final class SuspensionCheckTest {
     assertThat(
             suspensionCheck
                 .resolve(command(), overridingProcessor(SuspensionBehavior.REJECT))
-                .decision())
-        .isEqualTo(Decision.REJECT);
+                .outcome())
+        .isEqualTo(SuspensionBehavior.REJECT);
   }
 
   @Test
@@ -171,7 +170,7 @@ final class SuspensionCheckTest {
         suspensionCheck.resolve(command, overridingProcessor(SuspensionBehavior.REJECT));
 
     // then - the real process instance key is resolved via job state and returned to the caller
-    assertThat(result.decision()).isEqualTo(Decision.REJECT);
+    assertThat(result.outcome()).isEqualTo(SuspensionBehavior.REJECT);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
   }
 
