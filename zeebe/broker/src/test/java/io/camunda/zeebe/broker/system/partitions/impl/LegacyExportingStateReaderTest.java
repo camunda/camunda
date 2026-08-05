@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.cluster.PartitionId;
@@ -91,17 +92,17 @@ final class LegacyExportingStateReaderTest {
   }
 
   @Test
-  void shouldSkipPartitionWithUnknownPersistedPhase() throws IOException {
+  void shouldThrowWhenPersistedPhaseIsUnknown() throws IOException {
     // given
     writeExporterPausedFile("default", 1, "PAUSED");
     writeExporterPausedFile("default", 2, "NOT_A_PHASE");
 
-    // when
-    final var states =
-        LegacyExportingStateReader.readLegacyExportingStates(dataDirectory.toString());
-
-    // then - partition 2 stays UNKNOWN rather than failing the whole broker startup
-    assertThat(states).containsOnly(entry(new PartitionId("default", 1), ExportingState.PAUSED));
+    // when / then
+    assertThatThrownBy(
+            () -> LegacyExportingStateReader.readLegacyExportingStates(dataDirectory.toString()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "No enum constant io.camunda.zeebe.broker.exporter.stream.ExporterPhase.NOT_A_PHASE");
   }
 
   @Test
