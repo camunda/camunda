@@ -29748,7 +29748,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Outcomes of the cross-partition message-start REQUEST decision ladder on the business-id partition (P_B). A rising rejected_uniqueness share is the uniqueness back-pressure the feature exists to enforce.",
+          "description": "Outcomes of the cross-partition message-start REQUEST decision ladder on P_B. A rising rejected_uniqueness share is the uniqueness back-pressure the feature enforces.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -29940,7 +29940,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "P_B request decisions against P_K replies processed. Most meaningful across all partitions (the two counts live on different partitions): a persistent positive gap indicates inter-partition reply loss that the ask retry papers over.",
+          "description": "P_B request decisions vs P_K replies processed (different partitions — read across all). A persistent positive gap indicates inter-partition reply loss the ask retry papers over.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30058,7 +30058,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Initial cross-partition asks dispatched from P_K against scheduler retries. Retries climbing far above initial asks means replies are slow or lost and the scheduler is resending.",
+          "description": "Initial cross-partition asks dispatched from P_K vs scheduler retries. Retries climbing well above initial asks means replies are slow or lost and the scheduler is resending.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30165,7 +30165,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Expired cross-partition message-start dedup entries swept on the business-id partition (P_B). The drain side of the M6 dedup occupancy gauge.",
+          "description": "Expired dedup entries swept on P_B — the drain side of the M6 dedup occupancy gauge.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30275,7 +30275,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Live P_K (correlation-key / message partition) occupancy. Pending asks (M4) is the in-flight ask level seeded from state on recovery; held locks (M5) are correlation keys reserved by started cross-partition instances; business-id buffered (M15) is the subset of the message buffer indexed for the handshake, on this same partition. Any level only ever growing points at replies/releases/index rows that never arrive",
+          "description": "Live P_K occupancy: in-flight pending asks (M4), correlation-key locks held by started instances (M5), and the handshake's business-id buffer index (M15). A level that only ever grows points at replies, releases, or index rows that never arrive.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30393,7 +30393,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Live P_B occupancy. Outstanding dedup entries (M6) retain each cross-partition uniqueness decision until the sweep deletes them after their deadline. A level that only grows points at dedup rows that never expire: the sweep is not keeping up, retaining stale decisions and growing P_B state unboundedly.",
+          "description": "Live P_B occupancy: dedup entries (M6) retained per uniqueness decision until the sweep deletes them past their deadline. A level that only grows means the sweep can't keep up and stale decisions accumulate.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30489,7 +30489,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "On the message partition, rate of message-start correlations left buffered by an active holder, split by the uniqueness gate that blocked (correlation_key takes precedence over business_id). A sustained rate with no matching started drain points at holders that never release.",
+          "description": "Rate of message-starts left buffered by an active holder on the message partition, split by the blocking gate (correlation_key takes precedence over business_id). A sustained rate with no matching started drain points at holders that never release.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30585,7 +30585,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of correlation-key lock-release reconciliation queries dispatched from P_K. This is the safety-net poll that recovers releases when the push fast-path is lost.",
+          "description": "Reconciliation query rate on P_K — the safety-net poll that recovers lock releases when the push fast-path is lost.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30681,7 +30681,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Distribution of holders per reconciliation query. A p-max pinned at the batch limit (128) reveals reconciliation saturation — the poll cannot drain releases fast enough.",
+          "description": "Holders per reconciliation query. A p-max pinned at the batch limit (128) means reconciliation is saturated and can't drain releases fast enough.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -30763,7 +30763,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of correlation-key lock-release commands sent to P_K, split by push fast-path vs reconciliation poll. A rising reconciliation share means pushes are being lost (ADR 0001).",
+          "description": "Lock-release commands sent to P_K, split by push fast-path vs reconciliation poll. A rising reconciliation share means pushes are being lost (ADR 0001).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30859,7 +30859,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of lock-release outcomes processed on P_K: an actual release vs a redundant reply (lock already released or re-acquired — a push-vs-poll race or stale reply).",
+          "description": "Lock-release outcomes on P_K: an actual release vs a redundant reply (lock already released or re-acquired — a push/poll race or stale reply).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -30955,7 +30955,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Release commands sent from P_B against release outcomes processed on P_K. Most meaningful across all partitions: a persistent positive gap indicates lost release commands, which strand held locks (M5) and block further starts on those keys.",
+          "description": "Release commands sent from P_B vs outcomes processed on P_K (read across all partitions). A persistent positive gap means lost releases that strand held locks (M5) and block further starts.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -31087,7 +31087,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Whole cross-partition ask lifetime on P_K: first dispatch to a started or expired terminal (blends the technical round-trip with retry/back-off and business-id contention).",
+          "description": "Whole ask lifetime on P_K, first dispatch to a started/expired terminal — blends the technical round-trip with retry/back-off and business-id contention.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -31487,7 +31487,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Wait on P_B between a contended business id being freed and the blocked cross-partition start actually starting — the uniqueness back-pressure component of the start latency.",
+          "description": "Wait on P_B between a contended business id being freed and the blocked start beginning — the uniqueness back-pressure component of start latency.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -31687,7 +31687,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Both timers are measured on P_K. Mean ask lifetime (M7: first dispatch to a started or expired terminal) minus mean technical round-trip (M17: last send to the matching reply) approximates the retry/back-off plus business-id contention an ask spends beyond a single P_K->P_B->P_K leg. Read it as a directional trend, not an exact per-ask split: M7 records one sample per whole ask lifetime while M17 records one per reply attempt, so a repeatedly-rejected ask contributes a single M7 sample but several M17 samples and the two means are taken over different populations.",
+          "description": "Mean ask lifetime (M7) minus mean round-trip (M17), both on P_K: the retry/back-off + business-id contention beyond a single round-trip. A directional trend, not an exact split — M7 samples once per ask lifetime, M17 once per reply attempt, so the two means cover different populations.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -31819,7 +31819,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of cross-partition message-start asks reaching a terminal outcome on P_K (M7 _count by outcome). 'expired' asks stayed blocked for the whole buffered-message TTL and gave up without ever starting - the clearest count of starts that never happened under uniqueness contention.",
+          "description": "Rate of asks reaching a terminal outcome on P_K (M7 by outcome). 'expired' means the ask stayed blocked the whole message TTL and gave up without starting — the clearest count of starts that never happened under contention.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -31926,7 +31926,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Fraction of terminal cross-partition asks that expired rather than started (M7 expired / all outcomes; M7 has only started|expired). Climbs toward 1 when the contended business id is never released within the message TTL. Gaps mean no ask terminated in the window.",
+          "description": "Fraction of terminal asks that expired rather than started (M7 is started|expired only). Climbs toward 1 when the contended business id is never freed within the message TTL. Gaps mean no ask terminated in the window.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -32031,7 +32031,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Should-be-near-zero reply-loss signals on the handshake. 'dedup_hit' (M1) is a retried request that matched an existing uniqueness decision - it implies the earlier STARTED reply was lost and the request retried (log twin L2). 'request-reply gap' is rate(M1 requests on P_B) minus rate(M2 replies processed on P_K): a sustained positive gap means replies are being lost between partitions. Both hover at zero in a healthy cluster.",
+          "description": "Should-be-near-zero reply-loss signals. 'dedup_hit' (M1) is a retried request that matched an existing decision — the earlier STARTED reply was lost. 'request-reply gap' is rate(M1, P_B) minus rate(M2, P_K); a sustained positive gap means replies lost between partitions.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -32137,7 +32137,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Should-be-low lock self-heal and race signals; the release path self-heals either way. 'reconciliation release' (M12 trigger=reconciliation, on P_B) fires when the fast push release was lost or the holder was banned/migrated, so the reconciliation query frees the lock instead - a rising rate points at lost push deliveries and is the ADR's designated release-health signal (log twin L6). 'redundant release' (M13 result=redundant, on P_K) is a release for a lock already released or re-acquired - a push racing the reconciliation poll (log twin L7).",
+          "description": "Should-be-low self-heal and race signals; releases self-heal either way. 'reconciliation release' (M12, P_B) fires when a push was lost or the holder banned/migrated and the poll frees the lock instead — the ADR's designated release-health signal. 'redundant release' (M13, P_K) is a release for a lock already freed or re-acquired.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -32244,7 +32244,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Cluster-wide growth slope (deriv, entries/second) of the four handshake-state gauges. Each gauge is seeded from state on recovery and is expected to rise and fall with load; a line that holds steadily above zero means that structure is accumulating faster than it drains - the 'level only grows' leak each gauge's description warns about: pending asks never replied (M4), correlation-key locks never released (M5), dedup entries the sweep never reaps (M6), or business-id buffer index rows never cleaned up (M15). Values hovering around zero are healthy.",
+          "description": "Cluster-wide growth slope (deriv, entries/s) of the four handshake-state gauges. A line holding above zero means the structure accumulates faster than it drains — the 'level only grows' leak: pending asks never replied (M4), locks never released (M5), dedup entries never reaped (M6), or business-id index rows never cleaned (M15). Near zero is healthy.",
           "fieldConfig": {
             "defaults": {
               "color": {
