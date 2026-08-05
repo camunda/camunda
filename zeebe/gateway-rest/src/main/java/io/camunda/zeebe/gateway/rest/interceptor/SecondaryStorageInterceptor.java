@@ -17,9 +17,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -34,8 +32,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       configured but the request's physical tenant's secondary storage is currently degraded (see
  *       {@link SecondaryStorageReadiness}).
  * </ul>
+ *
+ * NOTE: This is not a @Component. The actual bean is created with the Unified Configuration system
+ * in `SecondaryStorageInterceptorOverride.java`.
  */
-@Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   /**
@@ -44,13 +44,15 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
    */
   private static final String RETRY_AFTER_SECONDS = "5";
 
-  private final boolean secondaryStorageDisabled;
+  private static final String DEFAULT_DATABASE_TYPE = "elasticsearch";
+
   private final SecondaryStorageReadiness secondaryStorageReadiness;
 
-  public SecondaryStorageInterceptor(
-      @Value("${camunda.database.type:elasticsearch}") final String databaseType,
-      final SecondaryStorageReadiness secondaryStorageReadiness) {
-    secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
+  private String databaseType;
+  private boolean secondaryStorageDisabled;
+
+  public SecondaryStorageInterceptor(final SecondaryStorageReadiness secondaryStorageReadiness) {
+    setDatabaseType(DEFAULT_DATABASE_TYPE);
     this.secondaryStorageReadiness = secondaryStorageReadiness;
   }
 
@@ -64,6 +66,15 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
     }
 
     return true;
+  }
+
+  public String getDatabaseType() {
+    return databaseType;
+  }
+
+  public void setDatabaseType(final String databaseType) {
+    this.databaseType = databaseType;
+    secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
   }
 
   private static boolean requiresSecondaryStorage(final HandlerMethod handlerMethod) {

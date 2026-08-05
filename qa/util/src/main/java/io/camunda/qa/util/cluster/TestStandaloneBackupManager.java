@@ -15,6 +15,7 @@ import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchEngineConfigurations;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
@@ -37,6 +38,13 @@ public class TestStandaloneBackupManager
         PhysicalTenantSearchClientReadersConfiguration.class,
         PhysicalTenantSearchEngineConfigurations.class,
         SearchClientReaderConfiguration.class);
+    // UnifiedConfigurationModule scans in LegacySecondaryStorageInterceptor, which requires a
+    // SecondaryStorageReadiness bean; this standalone application doesn't wire the production
+    // provider (SecondaryStorageReadinessConfiguration), so supply a stand-in here.
+    withBean(
+        "secondaryStorageReadiness",
+        SecondaryStorageReadiness.ALWAYS_READY,
+        SecondaryStorageReadiness.class);
   }
 
   @Override
