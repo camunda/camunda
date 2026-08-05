@@ -1167,11 +1167,12 @@ Storage and consistency
 
 The architectural decisions for Identity are documented as individual ADR files:
 
-- [ADR-0001: Cluster-Embedded Identity Instead of External Component](/adr/identity/cluster-embedded-identity)
-- [ADR-0002: OIDC as Default Production Authentication](/adr/identity/oidc-default-production-authentication)
-- [ADR-0003: Resource-Based Authorization Model](/adr/identity/resource-based-authorization-model)
-- [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](/adr/identity/multi-jwks-endpoints-per-issuer)
-- [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](/adr/identity/support-forward-slashes-in-entity-ids)
+- [ADR-0001: Cluster-Embedded Identity Instead of External Component](./adr/0001-cluster-embedded-identity.md)
+- [ADR-0002: OIDC as Default Production Authentication](./adr/0002-oidc-default-production-authentication.md)
+- [ADR-0003: Resource-Based Authorization Model](./adr/0003-resource-based-authorization-model.md)
+- [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](./adr/0004-multi-jwks-endpoints-per-issuer.md)
+- [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](./adr/0005-support-forward-slashes-in-entity-ids.md)
+- [ADR-0006: UserInfo Claim Augmentation for Bearer Tokens](./adr/0006-userinfo-claim-augmentation-for-bearer-tokens.md)
 
 ## 10. Risks and technical debt
 

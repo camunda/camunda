@@ -228,16 +228,11 @@ non-PT deployments are unchanged.
 - [ADR-0005](0005-physical-tenant-routing-of-authorization-reads.md) — per-PT routing of the
   authorization layer; establishes the `serviceRegistry.userServices(pt)` basic-auth routing this
   ADR mirrors on gRPC.
-- [identity ADR-0006](/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) — the
+- [identity ADR-0006](/camunda/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) — the
   bearer-token `/userinfo` claim-augmentation flow (`OidcClaimsProvider` invoked inside
   `AuthenticationHandler.Oidc`), which applies to gRPC and is why the claims provider is per-PT.
-- 
-
-# 54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
-
-- 
-
-# 54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
+- #54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
+- #54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
 
 - `AuthenticationInterceptor` / `AuthenticationHandler`
   (`zeebe/gateway-grpc/.../interceptors/impl/`) — the gRPC auth entry point and sealed handler this
