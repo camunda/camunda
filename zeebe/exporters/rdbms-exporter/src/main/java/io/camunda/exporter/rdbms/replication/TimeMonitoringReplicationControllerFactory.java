@@ -7,23 +7,27 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
+import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import java.time.InstantSource;
 
-public class DelayReplicationControllerFactory implements ReplicationControllerFactory {
+public class TimeMonitoringReplicationControllerFactory implements ReplicationControllerFactory {
 
+  private final ReplicationLagProvider statusProvider;
   private final ReplicationConfiguration config;
   private final int partitionId;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
-  public DelayReplicationControllerFactory(
+  public TimeMonitoringReplicationControllerFactory(
+      final ReplicationLagProvider statusProvider,
       final ReplicationConfiguration config,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
+    this.statusProvider = statusProvider;
     this.config = config;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -32,7 +36,7 @@ public class DelayReplicationControllerFactory implements ReplicationControllerF
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    final var strategy = new DelayReplicationSignalStrategy(config, clock);
+    final var strategy = new TimeMonitoringReplicationSignalStrategy(statusProvider, config);
     return new DefaultReplicationController(
         controller, strategy, config, partitionId, clock, metrics);
   }

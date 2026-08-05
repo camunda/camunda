@@ -7,4 +7,13 @@
  */
 package io.camunda.db.rdbms.read.replication;
 
-public record ReplicationLogStatus(Long logStatus, String replicaId, Long replicationLagMs) {}
+/**
+ * Common shape shared by {@link ReplicationLsnStatus} and {@link ReplicationLagStatus}, so metrics
+ * recording can treat both uniformly without depending on which replication mechanism is in use.
+ */
+public interface ReplicationStatus {
+
+  String replicaId();
+
+  Long replicationLagMs();
+}
