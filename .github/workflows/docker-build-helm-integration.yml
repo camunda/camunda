@@ -713,7 +713,7 @@ jobs:
           pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
           # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
           # as alwaysgreen-streak-detector.yml.
-          slack_channel: "C0AK0AVKRL0"
+          slack_channel: "C0ALT57EN3C"
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
       - name: Observe build status
@@ -1144,7 +1144,7 @@ jobs:
       - helm-deploy-status
       - trigger-saas-e2e
     if: ${{ always() && contains(needs.*.result, 'failure') }}
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@ci/alwaysgreen-triage-live-check
     secrets: inherit
     with:
       # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the

@@ -182,7 +182,7 @@ const LegacyAppHeader: React.FC = observer(() => {
               },
               {
                 key: 'processes',
-                label: 'Processes',
+                label: 'Process list', // DELIBERATE BREAKAGE - AlwaysGreen triage live test
                 isCurrentPage:
                   currentPage === 'processes' ||
                   currentPage?.startsWith('process-details') === true,

@@ -77,8 +77,8 @@ env:
   FIX_WORKFLOW: alwaysgreen-fix.yml
   # The fix agent workflow only exists on the default branch; base_ref travels as an
   # input so a stable-branch failure is still fixed against its own branch.
-  FIX_AGENT_REF: main
-  ALERT_CHANNEL_ID: 'C0AK0AVKRL0'
+  FIX_AGENT_REF: ci/alwaysgreen-triage-live-check
+  ALERT_CHANNEL_ID: 'C0ALT57EN3C'
 
 jobs:
   triage:

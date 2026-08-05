@@ -110,7 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$BASE_REF" in
-            main|stable/8.7|stable/8.8|stable/8.9) ;;
+            main|stable/8.7|stable/8.8|stable/8.9|ci/alwaysgreen-triage-live-check) ;;
             *) echo "::error::unsupported base_ref '$BASE_REF'"; exit 1 ;;
           esac
           case "$SURFACE" in
@@ -118,7 +118,10 @@ jobs:
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
           # The e2e suite directory the specs live in.
-          if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
+          case "$BASE_REF" in
+            main|ci/alwaysgreen-triage-live-check) version=8.10 ;;
+            *)          version="${BASE_REF#stable/}" ;;
+          esac
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout main for tooling
