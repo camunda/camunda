@@ -69,13 +69,22 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          # Authenticate gcloud when consuming the shared distball (see restore step below)
-          gcs-build-cache-auth: ${{ inputs.use-shared-distball }}
+      # Authenticate gcloud when consuming the shared distball (see restore step below).
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        if: ${{ inputs.use-shared-distball }}
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
       # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
       # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
       # workflow_call, addressing the same run-scoped prefix build-distball wrote. See #52693.
-      # (gcloud is authenticated by setup-build's gcs-build-cache-auth above.)
+      # (gcloud is authenticated by the GCS build-cache auth step above.)
       - if: ${{ inputs.use-shared-distball }}
         uses: ./.github/actions/restore-shared-m2
       # Fallback when the run has no build-distball job: build the platform locally.

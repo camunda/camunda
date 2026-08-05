@@ -91,7 +91,11 @@ jobs:
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
       # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
       # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
-      - uses: ./.github/actions/gcs-build-cache-auth
+      # timeout-minutes bounds a Vault/WIF hang so it fails fast instead of silently
+      # eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
