@@ -11,16 +11,11 @@ import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import java.util.List;
 
 /**
- * AWS Aurora Global Database implementation using {@code aurora_global_db_instance_status()}.
- *
- * <p>The primary's position is read as the {@code durable_lsn} of the row with {@code session_id =
- * 'MASTER_SESSION_ID'}. Each secondary region contributes one row whose {@code durable_lsn}
- * represents how far that instance has replicated data from the primary. The {@code
- * visibility_lag_in_msec} column is surfaced as {@code replicationLagMs} for observability.
- *
- * <p>Aurora always presents itself as a PostgreSQL database to JDBC clients, so this provider is
- * selected at runtime by {@link ReplicationLsnProviderFactory} when the Aurora-specific function is
- * detected in {@code pg_proc}.
+ * AWS Aurora Global Database implementation using {@code aurora_global_db_instance_status()}. The
+ * primary is the row with {@code session_id = 'MASTER_SESSION_ID'}; each secondary region reports
+ * its own {@code durable_lsn} and {@code visibility_lag_in_msec}. Aurora always presents itself as
+ * PostgreSQL to JDBC clients, so this provider is selected at runtime by {@link
+ * ReplicationLsnProviderFactory} when the Aurora-specific function is detected in {@code pg_proc}.
  */
 public final class AuroraReplicationLsnProvider implements ReplicationLsnProvider {
 
@@ -33,6 +28,11 @@ public final class AuroraReplicationLsnProvider implements ReplicationLsnProvide
   @Override
   public long getCurrent() {
     return mapper.getAuroraCurrentLogStatus();
+  }
+
+  @Override
+  public long getCurrentDbTime() {
+    return mapper.getCurrentDbTime();
   }
 
   @Override

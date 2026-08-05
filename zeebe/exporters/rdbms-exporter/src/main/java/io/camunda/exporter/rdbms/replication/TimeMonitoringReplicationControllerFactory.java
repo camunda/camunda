@@ -7,28 +7,28 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import java.time.InstantSource;
 
-public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
+public class TimeMonitoringReplicationControllerFactory implements ReplicationControllerFactory {
 
+  private final ReplicationLagProvider statusProvider;
+  private final ReplicationConfiguration config;
   private final int partitionId;
-  private final ReplicationLsnProvider replicationLsnProvider;
-  private final ReplicationConfiguration replicationConfiguration;
   private final InstantSource clock;
   private final RdbmsWriterMetrics metrics;
 
-  public LsnReplicationControllerFactory(
-      final ReplicationLsnProvider lsnProvider,
-      final ReplicationConfiguration replicationConfiguration,
+  public TimeMonitoringReplicationControllerFactory(
+      final ReplicationLagProvider statusProvider,
+      final ReplicationConfiguration config,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
-    replicationLsnProvider = lsnProvider;
-    this.replicationConfiguration = replicationConfiguration;
+    this.statusProvider = statusProvider;
+    this.config = config;
     this.partitionId = partitionId;
     this.clock = clock;
     this.metrics = metrics;
@@ -36,7 +36,7 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    return new LsnReplicationController(
-        controller, replicationLsnProvider, replicationConfiguration, partitionId, clock, metrics);
+    return new TimeMonitoringReplicationController(
+        controller, statusProvider, config, partitionId, clock, metrics);
   }
 }

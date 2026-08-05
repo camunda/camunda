@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.read.service.AgentDefinitionDbReader;
@@ -68,14 +70,17 @@ public class RdbmsService {
   private final RdbmsWriterFactory rdbmsWriterFactory;
   private final RdbmsTenantReaders tenantReaders;
   private final ReplicationLsnProviderFactory replicationLsnProviderFactory;
+  private final ReplicationLagProviderFactory replicationLagProviderFactory;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final RdbmsTenantReaders tenantReaders,
-      final ReplicationLsnProviderFactory replicationLsnProviderFactory) {
+      final ReplicationLsnProviderFactory replicationLsnProviderFactory,
+      final ReplicationLagProviderFactory replicationLagProviderFactory) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.tenantReaders = tenantReaders;
     this.replicationLsnProviderFactory = replicationLsnProviderFactory;
+    this.replicationLagProviderFactory = replicationLagProviderFactory;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -253,6 +258,10 @@ public class RdbmsService {
 
   public ReplicationLsnProvider getReplicationLsnProvider() {
     return replicationLsnProviderFactory.create();
+  }
+
+  public ReplicationLagProvider getReplicationLagProvider() {
+    return replicationLagProviderFactory.create();
   }
 
   public RdbmsWriters createWriter(final long partitionId) {
