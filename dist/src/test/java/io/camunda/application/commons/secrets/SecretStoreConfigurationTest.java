@@ -16,11 +16,20 @@ import static org.mockito.Mockito.verify;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.CachingSecretStore;
+import io.camunda.secretstore.SecretErrorCode;
+import io.camunda.secretstore.SecretResolutionResult.Failed;
+import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -42,22 +51,28 @@ class SecretStoreConfigurationTest {
     assertThat(registries).containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(registry.getStores()).containsKey("default");
-    assertThat(registry.getStores().get("default")).isInstanceOf(NoopSecretStore.class);
+    assertThatIsNoopStore(registry.getStores().get("default"));
   }
 
   @Test
-  void shouldBuildFileBasedStoreWhenFileStoreConfigured() {
-    // given
+  void shouldBuildFileBasedStoreWhenFileStoreConfigured(@TempDir final Path secretsDir)
+      throws IOException {
+    // given a directory holding one secret, so the store built for it can be told apart by what it
+    // reads rather than by its type: the registry hands out a store that caches, not the store the
+    // configuration constructed
+    Files.writeString(secretsDir.resolve("token"), "token-value");
     final var resolver =
-        resolverFor(Map.of("camunda.secrets.stores.file.main.path", "/etc/camunda/secrets"));
+        resolverFor(Map.of("camunda.secrets.stores.file.main.path", secretsDir.toString()));
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
-    // then
+    // then the configured directory is what the store reads
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(registry.getStores()).containsKey("main");
-    assertThat(registry.getStores().get("main")).isInstanceOf(FileBasedSecretStore.class);
+    final var store = registry.getStores().get("main");
+    assertThat(store.list()).containsExactly("token");
+    assertThat(store.resolve(Set.of("token"))).containsEntry("token", new Resolved("token-value"));
   }
 
   @Test
@@ -135,7 +150,7 @@ class SecretStoreConfigurationTest {
     assertThat(registries).containsKey("mytenant");
     final var registry = registries.get("mytenant");
     assertThat(registry.getStores()).containsKey("default");
-    assertThat(registry.getStores().get("default")).isInstanceOf(NoopSecretStore.class);
+    assertThatIsNoopStore(registry.getStores().get("default"));
   }
 
   @Test
@@ -171,8 +186,10 @@ class SecretStoreConfigurationTest {
     // given — AwsSecretsManagerSecretStore.fromConfig() only probes connectivity/credentials
     // best-effort, logging a warning rather than failing, so wiring an aws-secrets-manager store
     // outside a real AWS/LocalStack environment still constructs successfully; the connectivity
-    // error would only surface on first use. Real resolution against credentials is covered at the
-    // integration level by AwsSecretsManagerSecretStoreIT, which runs against LocalStack.
+    // error would only surface on first use. That is also why this asserts which store was wrapped
+    // rather than what it reads, as every read here would go to AWS. Real resolution against
+    // credentials is covered at the integration level by AwsSecretsManagerSecretStoreIT, which runs
+    // against LocalStack.
     final var resolver =
         resolverFor(
             Map.of(
@@ -182,11 +199,13 @@ class SecretStoreConfigurationTest {
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
-    // then
+    // then the aws branch is what built the store, not the noop fallback or another store type
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(registry.getStores()).containsKey("aws-main");
     assertThat(registry.getStores().get("aws-main"))
-        .isInstanceOf(AwsSecretsManagerSecretStore.class);
+        .isInstanceOfSatisfying(
+            CachingSecretStore.class,
+            store -> assertThat(store.wraps(AwsSecretsManagerSecretStore.class)).isTrue());
   }
 
   @Test
@@ -261,6 +280,17 @@ class SecretStoreConfigurationTest {
       // not leak
       verify(construction.constructed().get(0)).close();
     }
+  }
+
+  /**
+   * Asserts the store is the noop fallback by what it answers: it holds nothing and reports every
+   * name as missing with the fallback's own message.
+   */
+  private static void assertThatIsNoopStore(final SecretStore store) {
+    assertThat(store.list()).isEmpty();
+    assertThat(store.resolve(Set.of("token")))
+        .containsEntry(
+            "token", new Failed(SecretErrorCode.NOT_FOUND, "No secret store configured", null));
   }
 
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {

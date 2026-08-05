@@ -110,6 +110,99 @@ class CachingSecretStoreTest {
     assertThat(names).containsExactly("token");
   }
 
+  @Test
+  void shouldServeALocalLookupFromTheCacheWithoutReadingTheStore() {
+    // given
+    store.holds("token", "token-value");
+    cache.put("token", "cached-value");
+
+    // when
+    final var local = cachingStore.lookupLocal("token");
+
+    // then the store is never read: a local lookup runs where blocking on store I/O is not allowed
+    assertThat(local).contains("cached-value");
+    assertThat(store.resolveCalls).isEmpty();
+  }
+
+  @Test
+  void shouldNotServeALocalLookupForAnUncachedName() {
+    // given a name only the store holds
+    store.holds("token", "token-value");
+
+    // when
+    final var local = cachingStore.lookupLocal("token");
+
+    // then it is reported as not held locally rather than read from the store
+    assertThat(local).isEmpty();
+    assertThat(store.resolveCalls).isEmpty();
+  }
+
+  @Test
+  void shouldServeALocalLookupWithAValueReadFromTheStore() {
+    // given a name resolved once
+    store.holds("token", "token-value");
+    cachingStore.resolve(Set.of("token"));
+
+    // when
+    final var local = cachingStore.lookupLocal("token");
+
+    // then what a resolution read is what a later local lookup sees, so a background resolution
+    // can populate what a non-blocking caller reads
+    assertThat(local).contains("token-value");
+  }
+
+  @Test
+  void shouldNotServeALocalLookupWithAFailedResolution() {
+    // given a name the store cannot read
+    store.fails("token", SecretErrorCode.UNREADABLE);
+    cachingStore.resolve(Set.of("token"));
+
+    // when / then a failure is not cached, so nothing is held locally for it either
+    assertThat(cachingStore.lookupLocal("token")).isEmpty();
+  }
+
+  @Test
+  void shouldAskTheStoreForACachedNameWhenResolvingFromTheStore() {
+    // given a cached value the store no longer holds
+    cache.put("token", "cached-value");
+    store.fails("token", SecretErrorCode.NOT_FOUND);
+
+    // when
+    final var results = cachingStore.resolveFromStore(Set.of("token"));
+
+    // then the store is asked and its answer wins over the cached one: the caller records a durable
+    // outcome, so it must not report a secret the store no longer has as resolved
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"));
+    assertThat(results.get("token"))
+        .isEqualTo(new Failed(SecretErrorCode.NOT_FOUND, "failed: token", null));
+  }
+
+  @Test
+  void shouldCacheAValueResolvedFromTheStore() {
+    // given
+    store.holds("token", "token-value");
+
+    // when
+    cachingStore.resolveFromStore(Set.of("token"));
+
+    // then a resolve bypassing the cache still populates it, which is what makes the value
+    // available to a later cache-only lookup
+    assertThat(cachingStore.lookupLocal("token")).contains("token-value");
+    assertThat(cache.get("token")).contains("token-value");
+  }
+
+  @Test
+  void shouldNotCacheAFailureResolvedFromTheStore() {
+    // given a name the store cannot read
+    store.fails("token", SecretErrorCode.UNREADABLE);
+
+    // when
+    cachingStore.resolveFromStore(Set.of("token"));
+
+    // then nothing is cached for it, so the next resolution retries rather than serving the failure
+    assertThat(cache.get("token")).isEmpty();
+  }
+
   private static final class RecordingSecretStore implements SecretStore {
 
     private final Map<String, String> values = new LinkedHashMap<>();

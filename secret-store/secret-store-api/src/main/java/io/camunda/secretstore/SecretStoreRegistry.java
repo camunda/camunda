@@ -12,77 +12,82 @@ import static java.util.Objects.requireNonNull;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Provides the configured {@link SecretStore}s for the current physical tenant, keyed by store ID,
- * along with the {@link SecretCache} in front of each of them.
+ * Provides the configured {@link SecretStore}s for the current physical tenant, keyed by store ID.
  *
- * <p>Every configured store has a cache: a caller may look one up by store ID without handling a
- * missing entry.
+ * <p>A store is the only thing handed out, and always as a {@link LocallyCachedSecretStore}: it
+ * holds what it resolves itself, so a caller resolves secrets through {@link SecretStore#resolve}
+ * alone and cannot read past the cache by accident. A store that does not cache natively is wrapped
+ * in a {@link CachingSecretStore} to make it one. Each store holds its own values, so entries of
+ * different stores never collide.
  */
 @NullMarked
 public final class SecretStoreRegistry {
 
-  private final Map<String, SecretStore> stores;
-  private final Map<String, SecretCache> caches;
-  private final Map<String, SecretStore> cachingStores;
+  private final Map<String, LocallyCachedSecretStore> stores;
 
   public SecretStoreRegistry(final Map<String, SecretStore> stores) {
     this(stores, Map.of());
   }
 
   /**
-   * Creates a registry with the given caches instead of the default in-memory one. A store the
-   * caches do not cover still gets an in-memory cache, so the one-cache-per-store invariant holds
-   * whichever constructor is used. Primarily for tests that need custom cache behavior.
+   * Creates a registry whose stores cache in the given caches instead of the default in-memory one.
+   * This is the seam for a cache implementation other than {@link InMemorySecretCache} — a TTL and
+   * eviction variant, or a test double. A store the caches do not cover still gets an in-memory
+   * cache, and a store that caches natively is left as it is, so every store handed out holds what
+   * it resolved whichever constructor is used.
    */
   public SecretStoreRegistry(
       final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
-    this.stores = stores;
-    this.caches = withACachePerStore(stores, caches);
-    cachingStores = cachingStores(stores, this.caches);
-  }
-
-  /** Returns all configured secret stores, keyed by store ID. */
-  public Map<String, SecretStore> getStores() {
-    return stores;
-  }
-
-  /** Returns one cache per configured store, keyed by store ID. */
-  public Map<String, SecretCache> getCaches() {
-    return caches;
+    this.stores = locallyCachedStores(stores, caches);
   }
 
   /**
-   * Returns each configured store wrapped so that resolving goes through the store's cache, keyed
-   * by store ID. This is what a caller that only wants to resolve secrets uses, rather than pairing
-   * a store with its cache itself; {@link #getStores()} and {@link #getCaches()} stay for the
-   * callers that drive the two apart, such as the engine writing a value into the cache without
-   * revealing it.
+   * Returns all configured secret stores, keyed by store ID.
+   *
+   * <p>A lookup in this map is exact: an empty store ID addresses no store, even when a single
+   * store is configured. Only {@link #findStoreForReference} applies the sole-store rule below.
    */
-  public Map<String, SecretStore> getCachingStores() {
-    return cachingStores;
+  public Map<String, LocallyCachedSecretStore> getStores() {
+    return stores;
   }
 
-  private static Map<String, SecretStore> cachingStores(
+  /**
+   * Returns the store the secret reference addresses, or empty when it addresses none.
+   *
+   * <p>The {@code camunda.secrets.<name>} syntax carries no store dimension yet, so an empty store
+   * ID addresses the sole configured store; with several stores an empty store ID is ambiguous and
+   * addresses none.
+   */
+  public Optional<LocallyCachedSecretStore> findStoreForReference(final String storeId) {
+    if (!storeId.isEmpty()) {
+      return Optional.ofNullable(stores.get(storeId));
+    }
+    return stores.size() == 1 ? Optional.of(stores.values().iterator().next()) : Optional.empty();
+  }
+
+  private static Map<String, LocallyCachedSecretStore> locallyCachedStores(
       final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
-    final Map<String, SecretStore> caching = new LinkedHashMap<>();
+    final Map<String, LocallyCachedSecretStore> locallyCached = new LinkedHashMap<>();
     stores.forEach(
-        (storeId, store) ->
-            // non-null by the one-cache-per-store invariant withACachePerStore establishes
-            caching.put(
-                storeId, new CachingSecretStore(store, requireNonNull(caches.get(storeId)))));
-    return Collections.unmodifiableMap(caching);
+        (storeId, store) -> locallyCached.put(storeId, locallyCached(storeId, store, caches)));
+    return Collections.unmodifiableMap(locallyCached);
   }
 
-  private static Map<String, SecretCache> withACachePerStore(
-      final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
-    final Map<String, SecretCache> perStore = new LinkedHashMap<>(caches);
-    stores
-        .keySet()
-        .forEach(
-            storeId -> perStore.computeIfAbsent(storeId, ignored -> new InMemorySecretCache()));
-    return Collections.unmodifiableMap(perStore);
+  /**
+   * Returns the store itself when it caches natively — wrapping it would put a second cache in
+   * front of its own — and otherwise the store behind the cache configured for it, or a fresh
+   * in-memory one when the configured caches do not cover it.
+   */
+  private static LocallyCachedSecretStore locallyCached(
+      final String storeId, final SecretStore store, final Map<String, SecretCache> caches) {
+    if (store instanceof final LocallyCachedSecretStore locallyCached) {
+      return locallyCached;
+    }
+    final var cache = requireNonNull(caches.getOrDefault(storeId, new InMemorySecretCache()));
+    return new CachingSecretStore(store, cache);
   }
 }

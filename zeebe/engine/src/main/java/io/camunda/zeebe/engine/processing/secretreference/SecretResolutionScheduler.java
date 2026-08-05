@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.secretreference;
 
-import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretResolutionResult;
-import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -37,9 +35,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Periodically reads all pending secret references from state, resolves them in batches (one batch
- * per store), populates the cache with resolved values, and writes {@link
- * SecretReferenceIntent#RESOLUTION_COMPLETE} or {@link SecretReferenceIntent#RESOLUTION_FAIL}
- * commands.
+ * per store) and writes {@link SecretReferenceIntent#RESOLUTION_COMPLETE} or {@link
+ * SecretReferenceIntent#RESOLUTION_FAIL} commands. The store holds what it reads, which is what
+ * makes a resolved value available to the activation that requested the resolution.
+ *
+ * <p>Resolution goes through {@link
+ * io.camunda.secretstore.LocallyCachedSecretStore#resolveFromStore} rather than the cache-first
+ * {@code resolve}, for the reason given there.
  *
  * <p>Two distinct failure modes:
  *
@@ -67,8 +69,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   private static final Logger LOG = LoggerFactory.getLogger(SecretResolutionScheduler.class);
 
   private final SecretReferenceState secretReferenceState;
-  private final Map<String, SecretStore> secretStores;
-  private final Map<String, SecretCache> secretCaches;
+  private final SecretStoreRegistry secretStoreRegistry;
   private final Duration schedulingInterval;
   private final Duration retryInitialDelay;
   private final Duration retryMaxDelay;
@@ -98,8 +99,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       final SecretStoreRegistry secretStoreRegistry,
       final EngineConfiguration config) {
     secretReferenceState = scheduledTaskStateFactory.get().getSecretReferenceState();
-    secretStores = secretStoreRegistry.getStores();
-    secretCaches = secretStoreRegistry.getCaches();
+    this.secretStoreRegistry = secretStoreRegistry;
     schedulingInterval = config.getSecretResolutionInterval();
     retryInitialDelay = config.getSecretResolutionRetryInitialDelay();
     retryMaxDelay = config.getSecretResolutionRetryMaxDelay();
@@ -211,7 +211,9 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       return;
     }
 
-    final SecretStore store = secretStores.get(storeId);
+    // an exact lookup: a pending reference is keyed by the store ID its record carries, and this
+    // does not reinterpret an empty one as the sole configured store
+    final var store = secretStoreRegistry.getStores().get(storeId);
     if (store == null) {
       LOG.warn(
           "Secret store '{}' is not configured — failing {} pending secret refs",
@@ -225,15 +227,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     }
 
     try {
-      final Map<String, SecretResolutionResult> results = store.resolve(refs);
-      final SecretCache cache = secretCaches.get(storeId);
+      final var results = store.resolveFromStore(refs);
       results.forEach(
           (ref, result) -> {
             switch (result) {
-              case SecretResolutionResult.Resolved(final String value) -> {
-                cache.put(ref, value);
-                appendResolutionComplete(resultBuilder, storeId, ref);
-              }
+              // the value stays in the store and is never touched here, so the resolution record
+              // carries no secret
+              case final SecretResolutionResult.Resolved ignored ->
+                  appendResolutionComplete(resultBuilder, storeId, ref);
               case SecretResolutionResult.Failed(
                       final var code,
                       final var message,
@@ -245,9 +246,9 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
                     code,
                     message,
                     cause);
-                // All permanent per-secret failures (NOT_FOUND/ACCESS_DENIED/INVALID_REF) map to
-                // NOT_FOUND for now; ResolutionState has no finer per-secret states yet (#57855
-                // will refine).
+                // All permanent per-secret failures (NOT_FOUND/ACCESS_DENIED/INVALID_REF) map
+                // to NOT_FOUND for now; ResolutionState has no finer per-secret states yet
+                // (#57855 will refine).
                 appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.NOT_FOUND);
               }
             }
