@@ -27,8 +27,10 @@ import org.jspecify.annotations.NullMarked;
  * <p>Overlap is broader than equality, because document ids are caller-supplied and concatenated
  * onto the key prefix unchecked. With prefixes {@code tenant} and {@code tenant-b-} in one bucket,
  * a request against the first store for document id {@code -b-invoice} resolves to the second
- * store's {@code tenant-b-invoice}, and deleting it requires nothing further. A prefix nested
- * inside another tenant's is therefore rejected rather than trusted to isolate.
+ * store's {@code tenant-b-invoice}, and deleting it requires nothing further. Adding a separator
+ * changes nothing: {@code docs/} reaches {@code docs/archive/} through the id {@code
+ * archive/invoice}, since no object store treats {@code /} in a document id as a path boundary. Any
+ * prefix nested inside another tenant's is therefore rejected rather than trusted to isolate.
  */
 @NullMarked
 class DocumentStoreIsolationValidation implements CrossTenantValidation {
@@ -51,9 +53,9 @@ class DocumentStoreIsolationValidation implements CrossTenantValidation {
       throw new UnifiedConfigurationException(
           "Physical tenants must not share a document store location, or they would read and write "
               + "into the same backing storage. Use a distinct bucket, container, or path per "
-              + "tenant, and where paths nest, separate them with '/' — a path that continues "
-              + "another's without one is reachable through a caller-supplied document id. "
-              + "Conflicts: "
+              + "tenant, and never nest one tenant's path inside another's — a nested path is "
+              + "reachable through a caller-supplied document id, which no object store bounds at "
+              + "'/'. Conflicts: "
               + String.join("; ", conflicts));
     }
   }

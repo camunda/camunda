@@ -32,17 +32,20 @@ import org.junit.jupiter.api.Test;
  * <ul>
  *   <li><b>Local</b>: 4 separate directories, one per store — trivially isolated.
  *   <li><b>GCP</b>: 1 shared bucket for all 4 stores; isolation via prefix ({@code tenanta/},
- *       {@code tenantb/}, {@code tenantc/}, {@code ""} for default).
- *   <li><b>AWS</b>: 2 buckets — {@code bucket-a} holds store-a (no prefix) + store-c (prefix {@code
- *       tenantc/}); {@code bucket-b} holds store-b (no prefix) + store-default (prefix {@code
+ *       {@code tenantb/}, {@code tenantc/}, {@code default/}).
+ *   <li><b>AWS</b>: 2 buckets — {@code bucket-a} holds store-a ({@code tenanta/}) + store-c ({@code
+ *       tenantc/}); {@code bucket-b} holds store-b ({@code tenantb/}) + store-default ({@code
  *       default/}).
- *   <li><b>Azure</b>: 2 containers — {@code container-a} holds store-a (no prefix) + store-c
- *       (prefix {@code tenantc/}); {@code container-b} holds store-b (no prefix) + store-default
- *       (prefix {@code default/}).
+ *   <li><b>Azure</b>: 2 containers — {@code container-a} holds store-a ({@code tenanta/}) + store-c
+ *       ({@code tenantc/}); {@code container-b} holds store-b ({@code tenantb/}) + store-default
+ *       ({@code default/}).
  * </ul>
  *
  * <p>AWS and Azure are the hardest cases: tenanta and tenantc share the same bucket/container, so
- * isolation is purely prefix-level.
+ * isolation is purely prefix-level. Every prefix is a sibling folder — no store sits at a bucket or
+ * container root, because a root encloses every prefix inside it and {@code
+ * DocumentStoreIsolationValidation} rejects that at startup: {@code /} in a caller-supplied
+ * document id is an ordinary character, so nesting is reachable rather than isolated.
  */
 abstract class AbstractDocumentIsolationIT {
 

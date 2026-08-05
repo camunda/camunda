@@ -73,42 +73,20 @@ record DocumentStoreLocation(String provider, List<String> namespace, String key
   }
 
   /**
-   * Whether the two stores could address a common key. Equal prefixes always can. Otherwise one
-   * prefix has to cover the other, and the key spaces stay apart only where crossing the gap
-   * between them takes a document id carrying a {@code /} — the gap being what the enclosing store
-   * must supply as part of an id to reach the enclosed one. That holds when the enclosing prefix
-   * ends at a separator and the gap crosses another: {@code docs/} reaches {@code docs/archive/} no
-   * other way.
+   * Whether the two stores could address a common key: whenever one key prefix contains the other,
+   * equal prefixes included. Every key of the contained store is then also a key the containing
+   * store addresses, and document ids are caller-supplied and appended to the prefix unchecked.
    *
-   * <p>Both halves are load-bearing. Without the first, {@code temp} would be trusted to isolate
-   * {@code temp/} even though it encloses every key of it. Without the second, {@code docs/} would
-   * be trusted against {@code docs/archive}, which {@code archivex} reaches using ordinary
-   * characters — as does {@code tenant-b-invoice} from a store at the root.
-   *
-   * <p>On AWS and Azure {@link DocumentStorePaths#keyPrefix} coerces every non-empty prefix to end
-   * in {@code /}, so both halves hold for any nesting there, which is what lets one tenant own a
-   * container root while another owns a folder inside it — the layout {@code
-   * DocumentIsolationAzureIT} asserts. GCP keeps its prefix verbatim, so there a root does share a
-   * key space with {@code tenant-b-}, and {@code docs/} shares one with {@code docs/archive}.
-   *
-   * <p>Treating a separator as a boundary rests on document ids not carrying one, which the object
-   * stores do not yet enforce — unlike {@code LocalStorageDocumentStore}.
+   * <p>A separator bounds nothing. {@code docs/} reaches every key of {@code docs/archive/} through
+   * the document id {@code archive/invoice}, because {@code /} is an ordinary character in S3 keys,
+   * GCS object names and Azure blob names alike — none of the three gives it path semantics, and no
+   * store strips it from a document id. So a store at a bucket or container root cannot be isolated
+   * from a folder inside it, and nesting is rejected rather than trusted.
    */
   boolean sharesKeySpaceWith(final DocumentStoreLocation other) {
-    if (!provider.equals(other.provider) || !namespace.equals(other.namespace)) {
-      return false;
-    }
-    if (keyPrefix.equals(other.keyPrefix)) {
-      return true;
-    }
-    final boolean thisEncloses = keyPrefix.length() < other.keyPrefix.length();
-    final String enclosing = thisEncloses ? keyPrefix : other.keyPrefix;
-    final String enclosed = thisEncloses ? other.keyPrefix : keyPrefix;
-    if (!enclosed.startsWith(enclosing)) {
-      return false;
-    }
-    final boolean enclosingEndsAtSeparator = enclosing.isEmpty() || enclosing.endsWith("/");
-    return !enclosingEndsAtSeparator || !enclosed.substring(enclosing.length()).contains("/");
+    return provider.equals(other.provider)
+        && namespace.equals(other.namespace)
+        && (keyPrefix.startsWith(other.keyPrefix) || other.keyPrefix.startsWith(keyPrefix));
   }
 
   String describe() {

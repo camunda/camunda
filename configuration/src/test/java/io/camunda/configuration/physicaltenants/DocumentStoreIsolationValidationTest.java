@@ -195,8 +195,7 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldFailWhenAGcpPrefixIsAnotherWithoutItsTrailingSeparator() {
-    // given "temp" is not a folder, so it encloses every key of "temp/" — the separator that would
-    // bound it belongs to the enclosed prefix, and a document id supplies it just as easily
+    // given "temp" encloses every key of "temp/", which the document id "/invoice" reaches
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", gcpCamunda("camunda-shared", "temp"),
@@ -211,10 +210,8 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldFailWhenAGcpTenantOwnsTheBucketRootAndAnotherASlashFreePrefix() {
-    // given GCP takes the prefix verbatim, so nothing separates the root from "tenant-b-": the root
-    // tenant reaches tenant-b's "tenant-b-invoice" by asking its own store for that very id, with
-    // no
-    // separator involved — unlike an AWS or Azure root, whose folders are always slash-terminated
+    // given the root tenant reaches tenant-b's "tenant-b-invoice" by asking its own store for that
+    // very id
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", gcpCamunda("camunda-shared", ""),
@@ -229,9 +226,7 @@ class DocumentStoreIsolationValidationTest {
 
   @Test
   void shouldFailWhenAGcpPrefixContinuesAFolderPrefixWithoutASeparator() {
-    // given an enclosing prefix that ends at a separator is not enough on its own: "docs/" plus the
-    // document id "archivex" reaches tenant-b's "docs/archivex", because GCP does not coerce
-    // "docs/archive" into a folder of its own
+    // given "docs/" plus the document id "archivex" reaches tenant-b's "docs/archivex"
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", gcpCamunda("camunda-shared", "docs/"),
@@ -245,7 +240,7 @@ class DocumentStoreIsolationValidationTest {
   }
 
   @Test
-  void shouldPassWhenAwsBucketPathsShareAStringPrefixButNotADirectory() {
+  void shouldPassWhenAwsBucketPathsShareAStringPrefixButNotAFolder() {
     // given the coerced slash makes "tenant/" and "tenant-b-/" — neither encloses the other
     final Map<String, Camunda> resolved =
         tenants(
@@ -257,41 +252,70 @@ class DocumentStoreIsolationValidationTest {
   }
 
   @Test
-  void shouldPassWhenAwsBucketPathIsNestedBelowASeparator() {
-    // given the coerced "tenant-a/" ends at a separator, so only a document id carrying '/' could
-    // reach the nested path — the boundary holds for every ordinary id
+  void shouldFailWhenAnAwsBucketPathIsNestedBelowASeparator() {
+    // given the separator is no boundary: the document id "nested/invoice" carries tenant-a's store
+    // from "tenant-a/" into tenant-b's "tenant-a/nested/", and S3 keys give '/' no path meaning
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", awsCamunda("camunda-shared", "tenant-a", "us-east-1"),
             "tenantb", awsCamunda("camunda-shared", "tenant-a/nested", "us-east-1"));
 
     // when / then
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
   }
 
   @Test
-  void shouldPassWhenOneTenantOwnsTheBucketRootAndAnotherAFolderInside() {
-    // given the root ends at a separator as much as a folder does, so this layout — supported by
-    // DocumentIsolationAzureIT — stays legal
+  void shouldFailWhenOneTenantOwnsTheBucketRootAndAnotherAFolderInside() {
+    // given the root encloses every folder in the bucket, so the id "tenant-b/invoice" reaches them
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", awsCamunda("camunda-shared", null, "us-east-1"),
             "tenantb", awsCamunda("camunda-shared", "tenant-b", "us-east-1"));
 
     // when / then
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta's document store location")
+        .withMessageContaining("encloses tenant tenantb's");
   }
 
   @Test
-  void shouldPassForTheContainerRootAndFolderLayoutOfDocumentIsolationAzureIT() {
-    // given the layout that IT asserts isolation for: two tenants at container roots, and two more
-    // in folders inside those same containers
+  void shouldFailForTheContainerRootAndFolderLayout() {
+    // given the layout DocumentIsolationAzureIT used before it moved every tenant into a folder of
+    // its own: two tenants at container roots, two more in folders inside those same containers
     final String endpoint = "http://localhost:10000/devstoreaccount1";
     final Map<String, Camunda> resolved =
         tenants(
             "tenanta", azureEndpointCamunda(endpoint, "container-a", null),
             "tenantc", azureEndpointCamunda(endpoint, "container-a", "tenantc/"),
             "tenantb", azureEndpointCamunda(endpoint, "container-b", null),
+            "default", azureEndpointCamunda(endpoint, "container-b", "default/"));
+
+    // when
+    final Throwable thrown = catchThrowable(() -> validation.validate(resolved));
+
+    // then both containers are reported, each naming the root tenant as the enclosing one
+    assertThat(thrown)
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("tenant tenanta's document store location")
+        .hasMessageContaining("encloses tenant tenantc's")
+        .hasMessageContaining("tenant tenantb's document store location")
+        .hasMessageContaining("encloses tenant default's");
+  }
+
+  @Test
+  void shouldPassWhenSiblingFoldersShareAContainer() {
+    // given the layout DocumentIsolationAzureIT asserts isolation for: no prefix contains another,
+    // so no document id can carry one tenant's store into the next
+    final String endpoint = "http://localhost:10000/devstoreaccount1";
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", azureEndpointCamunda(endpoint, "container-a", "tenanta/"),
+            "tenantc", azureEndpointCamunda(endpoint, "container-a", "tenantc/"),
+            "tenantb", azureEndpointCamunda(endpoint, "container-b", "tenantb/"),
             "default", azureEndpointCamunda(endpoint, "container-b", "default/"));
 
     // when / then

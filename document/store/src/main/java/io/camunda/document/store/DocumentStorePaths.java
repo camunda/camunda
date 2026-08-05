@@ -24,7 +24,7 @@ public final class DocumentStorePaths {
 
   /**
    * The key prefix an object store prepends to a document id: unset becomes empty, and a non-empty
-   * prefix always ends in {@code /} so a document id cannot extend it past a directory boundary.
+   * prefix always ends in {@code /} so its keys group under one folder instead of beside it.
    */
   public static String keyPrefix(final @Nullable String configuredPath) {
     final String path = Objects.requireNonNullElse(configuredPath, "");
