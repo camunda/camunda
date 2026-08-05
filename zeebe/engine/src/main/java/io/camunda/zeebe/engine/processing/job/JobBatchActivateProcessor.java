@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -17,7 +15,6 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -29,15 +26,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -52,7 +45,6 @@ import java.time.InstantSource;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
@@ -66,12 +58,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobBatchCollector jobBatchCollector;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
-  private final ElementInstanceState elementInstanceState;
-  private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
-  private final IncidentMetrics incidentMetrics;
   private final JobSecretInjector jobSecretInjector;
+  private final JobIncidentBehavior jobIncidentBehavior;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -101,9 +91,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
-    elementInstanceState = state.getElementInstanceState();
-    processState = state.getProcessState();
-    this.incidentMetrics = incidentMetrics;
+    jobIncidentBehavior =
+        new JobIncidentBehavior(state, keyGenerator, stateWriter, incidentMetrics);
   }
 
   @Override
@@ -358,32 +347,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   private void raiseJobIncident(
       final long jobKey, final JobRecord job, final ErrorType errorType, final String message) {
-    final DirectBuffer incidentMessage = wrapString(message);
-
-    final var treePathProperties =
-        new ElementTreePathBuilder()
-            .withElementInstanceProvider(elementInstanceState::getInstance)
-            .withCallActivityIndexProvider(processState::getFlowElement)
-            .withElementInstanceKey(job.getElementInstanceKey())
-            .build();
-
-    final var incidentEvent =
-        new IncidentRecord()
-            .setErrorType(errorType)
-            .setErrorMessage(incidentMessage)
-            .setBpmnProcessId(job.getBpmnProcessIdBuffer())
-            .setProcessDefinitionKey(job.getProcessDefinitionKey())
-            .setProcessInstanceKey(job.getProcessInstanceKey())
-            .setElementId(job.getElementIdBuffer())
-            .setElementInstanceKey(job.getElementInstanceKey())
-            .setJobKey(jobKey)
-            .setTenantId(job.getTenantId())
-            .setVariableScopeKey(job.getElementInstanceKey())
-            .setElementInstancePath(treePathProperties.elementInstancePath())
-            .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
-            .setCallingElementPath(treePathProperties.callingElementPath());
-
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
-    incidentMetrics.incidentCreated();
+    jobIncidentBehavior.createIncident(jobKey, job, errorType, message);
   }
 }
