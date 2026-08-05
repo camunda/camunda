@@ -211,8 +211,8 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       return;
     }
 
-    // an exact lookup: a pending reference is keyed by the store ID its record carries, and this
-    // does not reinterpret an empty one as the sole configured store
+    // a pending reference is keyed by the store ID its record carries, which for a
+    // camunda.secrets.<name> reference is empty and addresses no store here (see #59432)
     final var store = secretStoreRegistry.getStores().get(storeId);
     if (store == null) {
       LOG.warn(

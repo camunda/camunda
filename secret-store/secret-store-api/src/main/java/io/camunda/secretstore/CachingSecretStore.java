@@ -85,15 +85,15 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
   }
 
   /**
-   * Whether the store this caches for is of the given type. Visible for testing only: it lets a
-   * configuration test tell the store that was built apart without reading it, which for a cloud
-   * store would mean a call to the cloud provider.
+   * Answers for the store this caches for rather than for this wrapper, so a caller asking which
+   * store was configured gets the same answer whether or not the store had to be wrapped.
    *
-   * <p>Deliberately a predicate rather than an accessor for the store: handing the store out is the
-   * uncached read path this wrapper exists to close.
+   * <p>Delegates rather than testing the wrapped store itself, so the answer still reaches the
+   * innermost store if one wrapper ever sits behind another.
    */
-  public boolean wraps(final Class<? extends SecretStore> storeType) {
-    return storeType.isInstance(store);
+  @Override
+  public boolean is(final Class<? extends SecretStore> storeType) {
+    return store.is(storeType);
   }
 
   /** Asks the store for the given names and caches every value it answers with. */

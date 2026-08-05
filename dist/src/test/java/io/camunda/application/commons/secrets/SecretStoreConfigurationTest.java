@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.secretstore.CachingSecretStore;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -186,7 +185,7 @@ class SecretStoreConfigurationTest {
     // given — AwsSecretsManagerSecretStore.fromConfig() only probes connectivity/credentials
     // best-effort, logging a warning rather than failing, so wiring an aws-secrets-manager store
     // outside a real AWS/LocalStack environment still constructs successfully; the connectivity
-    // error would only surface on first use. That is also why this asserts which store was wrapped
+    // error would only surface on first use. That is also why this asserts which store answers
     // rather than what it reads, as every read here would go to AWS. Real resolution against
     // credentials is covered at the integration level by AwsSecretsManagerSecretStoreIT, which runs
     // against LocalStack.
@@ -202,10 +201,8 @@ class SecretStoreConfigurationTest {
     // then the aws branch is what built the store, not the noop fallback or another store type
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(registry.getStores()).containsKey("aws-main");
-    assertThat(registry.getStores().get("aws-main"))
-        .isInstanceOfSatisfying(
-            CachingSecretStore.class,
-            store -> assertThat(store.wraps(AwsSecretsManagerSecretStore.class)).isTrue());
+    assertThat(registry.getStores().get("aws-main").is(AwsSecretsManagerSecretStore.class))
+        .isTrue();
   }
 
   @Test

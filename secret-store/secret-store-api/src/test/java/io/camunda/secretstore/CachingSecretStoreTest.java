@@ -203,6 +203,32 @@ class CachingSecretStoreTest {
     assertThat(cache.get("token")).isEmpty();
   }
 
+  @Test
+  void shouldAnswerATypeCheckForTheStoreItWraps() {
+    // when / then the wrapper answers for the store it caches for, so a caller can tell which store
+    // was configured whether or not it had to be wrapped
+    assertThat(cachingStore.is(RecordingSecretStore.class)).isTrue();
+  }
+
+  @Test
+  void shouldNotAnswerATypeCheckForAnotherStoreType() {
+    // when / then
+    assertThat(cachingStore.is(NoopSecretStore.class)).isFalse();
+  }
+
+  @Test
+  void shouldNotAnswerATypeCheckForItself() {
+    // when / then the type check is about the configured store, not about how it is held: a caller
+    // asserting a store type must not have to know whether it is wrapped
+    assertThat(cachingStore.is(CachingSecretStore.class)).isFalse();
+  }
+
+  @Test
+  void shouldAnswerATypeCheckForAStoreThatIsNotWrapped() {
+    // when / then an unwrapped store answers for itself, so the same check serves both
+    assertThat(store.is(RecordingSecretStore.class)).isTrue();
+  }
+
   private static final class RecordingSecretStore implements SecretStore {
 
     private final Map<String, String> values = new LinkedHashMap<>();

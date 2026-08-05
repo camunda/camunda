@@ -40,6 +40,19 @@ public interface SecretStore extends AutoCloseable {
    */
   List<String> list();
 
+  /**
+   * Whether this is a store of the given type, seeing through any wrapper: a store wrapped for
+   * caching answers for the store it wraps rather than for the wrapper. That lets a caller tell
+   * which store was configured without reading it, which for a cloud store would mean a call to the
+   * provider.
+   *
+   * <p>Visible for testing: only a configuration test needs to tell a store apart by type, since
+   * every other caller resolves through {@link #resolve} regardless of which store answers.
+   */
+  default boolean is(final Class<? extends SecretStore> storeType) {
+    return storeType.isInstance(this);
+  }
+
   @Override
   default void close() {}
 }
