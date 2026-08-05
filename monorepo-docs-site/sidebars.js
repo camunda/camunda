@@ -42,27 +42,27 @@ const sidebars = {
             {
               type: 'link',
               label: 'Overview',
-              href: '/camunda/architecture/overview',
+              href: '/architecture/overview',
             },
             {
               type: 'link',
               label: 'Orchestration Cluster',
-              href: '/camunda/adr/orchestration-cluster/jvm-options-argfile-for-runtime-specific-flags',
+              href: '/adr/orchestration-cluster/jvm-options-argfile-for-runtime-specific-flags',
             },
             {
               type: 'link',
               label: 'Management',
-              href: '/camunda/adr/management/physical-tenant-health-status-topology',
+              href: '/adr/management/physical-tenant-health-status-topology',
             },
             {
               type: 'link',
               label: 'Security',
-              href: '/camunda/adr/security/endpoint-required-permission-mapping',
+              href: '/adr/security/endpoint-required-permission-mapping',
             },
             {
               type: 'link',
               label: 'Clients',
-              href: '/camunda/adr/clients/unify-spring-starter-on-multi-client-config-path',
+              href: '/adr/clients/unify-spring-starter-on-multi-client-config-path',
             },
           ],
         },
@@ -77,31 +77,31 @@ const sidebars = {
                 {
                   type: 'link',
                   label: 'Architecture',
-                  href: '/camunda/identity/architecture',
+                  href: '/identity/architecture',
                 },
                 {
                   type: 'category',
                   label: 'Authorizations',
                   items: [
-                    { type: 'link', label: 'Authorization Concept', href: '/camunda/identity/authorizations/authorization-concept' },
-                    { type: 'link', label: 'Engine Authorization', href: '/camunda/identity/authorizations/engine-authorization' },
-                    { type: 'link', label: 'REST Authorization', href: '/camunda/identity/authorizations/rest-authorization' },
+                    { type: 'link', label: 'Authorization Concept', href: '/identity/authorizations/authorization-concept' },
+                    { type: 'link', label: 'Engine Authorization', href: '/identity/authorizations/engine-authorization' },
+                    { type: 'link', label: 'REST Authorization', href: '/identity/authorizations/rest-authorization' },
                   ],
                 },
                 {
                   type: 'category',
                   label: 'References',
                   items: [
-                    { type: 'link', label: 'Data Model', href: '/camunda/identity/references/data-model' },
-                    { type: 'link', label: 'Default Roles', href: '/camunda/identity/references/default-roles' },
-                    { type: 'link', label: 'RP-Initiated Logout', href: '/camunda/identity/references/rp-initiated-logout' },
+                    { type: 'link', label: 'Data Model', href: '/identity/references/data-model' },
+                    { type: 'link', label: 'Default Roles', href: '/identity/references/default-roles' },
+                    { type: 'link', label: 'RP-Initiated Logout', href: '/identity/references/rp-initiated-logout' },
                   ],
                 },
                 {
                   type: 'category',
                   label: 'ADRs',
                   items: [
-                    { type: 'link', label: 'ADR Index', href: '/camunda/identity/adr/README' },
+                    { type: 'link', label: 'ADR Index', href: '/identity/adr/README' },
                   ],
                 },
               ],
@@ -109,7 +109,7 @@ const sidebars = {
             {
               type: 'link',
               label: 'Management Identity',
-              href: '/camunda/identity/management-identity',
+              href: '/identity/management-identity',
             },
           ],
         },
