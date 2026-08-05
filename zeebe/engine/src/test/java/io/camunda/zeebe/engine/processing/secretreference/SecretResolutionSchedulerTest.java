@@ -19,6 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.InMemorySecretCache;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult;
@@ -224,10 +225,40 @@ final class SecretResolutionSchedulerTest {
     // when
     localScheduler.resolveSecrets(resultBuilder);
 
-    // then the registry's own cache took the value and the reference completes: a configured store
-    // always has a cache, so resolving cannot strand a job by completing it uncached
-    assertThat(registry.getCaches().get("my-store").get("db-password")).contains("v");
+    // then the store's own cache took the value and the reference completes: a configured store
+    // always caches, so resolving cannot strand a job by completing it uncached
+    assertThat(registry.getStores().get("my-store").lookupLocal("db-password")).contains("v");
     verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
+  }
+
+  @Test
+  void shouldFailAReferenceTheStoreHoldsCachedButNoLongerHas() throws Exception {
+    // given a reference the store still holds cached — another partition's scheduler or the resolve
+    // API may have read it since the resolution was requested — but that the store has since lost
+    final var cache = new InMemorySecretCache();
+    cache.put("db-password", "already-held");
+    final var registry =
+        new SecretStoreRegistry(Map.of("my-store", secretStore), Map.of("my-store", cache));
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState, registry, new EngineConfiguration());
+    localScheduler.onRecovered(context);
+    stubPending("my-store", "db-password");
+    when(secretStore.resolve(Set.of("db-password")))
+        .thenReturn(
+            Map.of(
+                "db-password",
+                new SecretResolutionResult.Failed(SecretErrorCode.NOT_FOUND, "gone", null)));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then the store is asked even for a cached reference and the reference fails: the completion
+    // record is durable and exported, so it must not claim a secret the store no longer has
+    verify(secretStore).resolve(Set.of("db-password"));
+    verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_FAIL), any());
+    verify(resultBuilder, never())
+        .appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
   }
 
   @Test

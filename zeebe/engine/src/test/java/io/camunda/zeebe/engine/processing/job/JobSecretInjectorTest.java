@@ -329,6 +329,31 @@ final class JobSecretInjectorTest {
     }
 
     @Test
+    void shouldNotResolveReferenceNamingAnUnconfiguredStore() {
+      // given - a store holding the secret, and a reference naming a store next to it that is not
+      // configured
+      final var cache = new InMemorySecretCache();
+      cache.put("token", "resolved");
+      final var registry =
+          new SecretStoreRegistry(
+              Map.of("store-a", new NoopSecretStore()), Map.of("store-a", cache));
+      final var injector = new JobSecretInjector(registry);
+
+      // when
+      final var batch =
+          collect(
+              injector,
+              job(
+                  Map.of("auth", "camunda.secrets.token"),
+                  new SecretRef("store-b", "token", "/auth")));
+
+      // then - the job is skipped rather than served from the store that happens to hold the name:
+      // a named store is looked up exactly, and the sole-store rule is only for a reference that
+      // names none
+      assertThat(jobKeysOf(batch)).isEmpty();
+    }
+
+    @Test
     void shouldNotResolveReferenceWithoutStoreIdWhenSeveralStoresAreConfigured() {
       // given - both stores cache the secret, but the reference names no store, which is
       // ambiguous with more than one configured store

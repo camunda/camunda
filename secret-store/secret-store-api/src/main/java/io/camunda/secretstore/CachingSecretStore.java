@@ -11,22 +11,28 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * A {@link SecretStore} that serves what its {@link SecretCache} holds and caches what the store
- * answers, so a caller resolves secrets through a single call instead of driving store and cache
- * itself.
+ * Makes any {@link SecretStore} a {@link LocallyCachedSecretStore} by putting a {@link SecretCache}
+ * in front of it, so a caller resolves secrets through a single call instead of driving store and
+ * cache itself. The cache is this store's own: no caller is handed one alongside it, and nothing
+ * reaches the wrapped store except through here.
  *
  * <p>Only a resolved value is cached: a failure has to stay retryable, or a secret that was briefly
  * unreadable would stay unresolvable until the process restarts. {@link #list()} goes straight to
  * the store, since a cache holds the values read so far rather than the store's set of secrets.
  *
- * <p>Does not close the store it wraps: whoever configured that store owns its lifecycle.
+ * <p>What the cache holds is also what {@link #lookupLocal} answers with, so a value read by one
+ * caller is what a later cache-only lookup of another sees.
+ *
+ * <p>Does not close the store it wraps, and closing this releases nothing: the wrapped store's
+ * lifecycle belongs to whoever configured it.
  */
 @NullMarked
-public final class CachingSecretStore implements SecretStore {
+public final class CachingSecretStore implements LocallyCachedSecretStore {
 
   private final SecretStore store;
   private final SecretCache cache;
@@ -58,8 +64,43 @@ public final class CachingSecretStore implements SecretStore {
       return results;
     }
 
+    results.putAll(resolveAndCache(misses));
+    return results;
+  }
+
+  @Override
+  public Map<String, SecretResolutionResult> resolveFromStore(final Set<String> names) {
+    return resolveAndCache(names);
+  }
+
+  /** Serves what the cache holds, never reading the wrapped store. */
+  @Override
+  public Optional<String> lookupLocal(final String name) {
+    return cache.get(name);
+  }
+
+  @Override
+  public List<String> list() {
+    return store.list();
+  }
+
+  /**
+   * Answers for the store this caches for rather than for this wrapper, so a caller asking which
+   * store was configured gets the same answer whether or not the store had to be wrapped.
+   *
+   * <p>Delegates rather than testing the wrapped store itself, so the answer still reaches the
+   * innermost store if one wrapper ever sits behind another.
+   */
+  @Override
+  public boolean is(final Class<? extends SecretStore> storeType) {
+    return store.is(storeType);
+  }
+
+  /** Asks the store for the given names and caches every value it answers with. */
+  private Map<String, SecretResolutionResult> resolveAndCache(final Set<String> names) {
+    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>();
     store
-        .resolve(misses)
+        .resolve(names)
         .forEach(
             (name, result) -> {
               if (result instanceof final SecretResolutionResult.Resolved resolved) {
@@ -68,10 +109,5 @@ public final class CachingSecretStore implements SecretStore {
               results.put(name, result);
             });
     return results;
-  }
-
-  @Override
-  public List<String> list() {
-    return store.list();
   }
 }

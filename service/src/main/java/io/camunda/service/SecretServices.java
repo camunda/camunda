@@ -49,10 +49,11 @@ import org.slf4j.LoggerFactory;
  * batch.
  *
  * <p>Both read the secret stores of this service's physical tenant, taken from the {@link
- * SecretStoreRegistry} the service is constructed with. Resolving is cache-first: a reference whose
- * value is in the store's cache is served from there, and only the remaining references reach the
- * store, whose values are then cached. Listing always polls the stores, since the caches only hold
- * the values read so far rather than the tenant's set of secrets.
+ * SecretStoreRegistry} the service is constructed with. Each store caches what it resolves, so
+ * resolving is cache-first without this service driving a cache itself: a reference whose value the
+ * store already holds is served from there, and only the remaining references reach the backing
+ * store. Listing always polls the stores, since what they hold is the values read so far rather
+ * than the tenant's set of secrets.
  */
 @NullMarked
 public class SecretServices extends PhysicalTenantScopedApiServices<SecretServices> {
@@ -105,10 +106,10 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Returns the secret stores and caches of this service's physical tenant. {@link #resolve} and
-   * {@link #list} read the field directly, so this exists only so the wiring can be asserted,
-   * deliberately not a production read path: a caller holding the registry could read a value
-   * without the per-reference {@code SECRET:REVEAL} check {@link #resolve} applies.
+   * Returns the secret stores of this service's physical tenant. {@link #resolve} and {@link #list}
+   * read the field directly, so this exists only so the wiring can be asserted, deliberately not a
+   * production read path: a caller holding the registry could read a value without the
+   * per-reference {@code SECRET:REVEAL} check {@link #resolve} applies.
    */
   @VisibleForTesting
   public SecretStoreRegistry getSecretStoreRegistry() {
@@ -183,8 +184,8 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
 
   /**
    * Asks each configured store for the authorized references, adding every outcome to {@code
-   * resolved} or {@code errors}. The stores are the registry's caching ones, so a reference already
-   * cached for a store never reaches it and every value it answers with is cached; this method only
+   * resolved} or {@code errors}. A store caches what it resolves, so a reference it already holds
+   * never reaches its backing store and every value it answers with is cached; this method only
    * decides what each outcome means to the API. A reference nothing answered for is reported as
    * {@code NOT_FOUND}.
    *
@@ -209,7 +210,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     final Set<String> pending = new LinkedHashSet<>(references);
 
     try {
-      for (final var store : secretStoreRegistry.getCachingStores().entrySet()) {
+      for (final var store : secretStoreRegistry.getStores().entrySet()) {
         if (pending.isEmpty()) {
           break;
         }
@@ -345,9 +346,9 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Enumerates the references of every configured store, sorted and without duplicates. The caches
-   * are deliberately bypassed: they hold the values read so far, which is not the tenant's set of
-   * secrets.
+   * Enumerates the references of every configured store, sorted and without duplicates. A store's
+   * {@code list()} deliberately bypasses what it has cached: that is the values read so far, which
+   * is not the tenant's set of secrets.
    */
   private List<String> listFromStores() {
     final var references = new TreeSet<String>();

@@ -13,7 +13,7 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.LocallyCachedSecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
@@ -43,10 +43,12 @@ import org.slf4j.LoggerFactory;
  *
  * <ol>
  *   <li>During batch collection, {@link #checkSecrets} looks up the secret references of every job
- *       (stored on the {@link JobRecord} at creation) in the per-store secret caches of the {@link
- *       SecretStoreRegistry}. Jobs with an uncached reference are skipped by the collector without
- *       consuming a batch slot, so jobs behind them can still be activated; jobs whose references
- *       are all cached are appended and registered via {@link #registerForInjection}.
+ *       (stored on the {@link JobRecord} at creation) in what the stores of the {@link
+ *       SecretStoreRegistry} already hold locally, reading no store: this runs on the stream
+ *       processor, where blocking on store I/O would stall processing. Jobs with a reference no
+ *       store holds are skipped by the collector without consuming a batch slot, so jobs behind
+ *       them can still be activated; jobs whose references are all cached are appended and
+ *       registered via {@link #registerForInjection}.
  *   <li>{@link #injectSecretValues} replaces the placeholder text {@code camunda.secrets.<name>} of
  *       the registered jobs with the cached value on a response-only copy of the batch, at the JSON
  *       pointer recorded for each reference. Jobs whose values would grow the response beyond the
@@ -76,7 +78,7 @@ public final class JobSecretInjector {
   /** Reads and writes the msgpack encoding of job variables as Jackson trees. */
   private final ObjectMapper variablesMapper = new ObjectMapper(new MessagePackFactory());
 
-  private final Map<String, SecretCache> caches;
+  private final SecretStoreRegistry secretStoreRegistry;
 
   // accumulated per activation command while the collector checks and appends jobs, consumed
   // (and reset) by injectSecretValues; the collector's reset() bounds a new command
@@ -88,7 +90,7 @@ public final class JobSecretInjector {
   private final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets = new LinkedHashMap<>();
 
   public JobSecretInjector(final SecretStoreRegistry secretStoreRegistry) {
-    caches = secretStoreRegistry.getCaches();
+    this.secretStoreRegistry = secretStoreRegistry;
   }
 
   /** Discards any state accumulated for a previous activation command. */
@@ -100,9 +102,10 @@ public final class JobSecretInjector {
 
   /**
    * Checks each secret reference of the job (stored on the {@link JobRecord} at creation) for a
-   * cached value, materializing the values and the job's secrets once. Every reference is checked,
-   * even after the first miss, so the caller sees all non-cached references of the job. A cache
-   * lookup failure propagates to the caller and fails the activation command.
+   * value its store already holds locally, materializing the values and the job's secrets once. No
+   * store is read, so this cannot block the stream processor. Every reference is checked, even
+   * after the first miss, so the caller sees all non-cached references of the job. A failing lookup
+   * propagates to the caller and fails the activation command.
    *
    * <p>The collector skips a job with any non-cached reference and registers it via {@link
    * #registerForResolution}, so the processor can request the background resolution of the
@@ -174,21 +177,35 @@ public final class JobSecretInjector {
   }
 
   /**
-   * Resolves the reference into the materialized values, or returns {@code false} when it has no
-   * cached value. A reference resolved before is not looked up again. A cache lookup failure is
-   * deliberately not caught here: it propagates and fails the activation command.
+   * Resolves the reference into the materialized values, or returns {@code false} when no store
+   * holds a value for it locally. A reference resolved before is not looked up again. The lookup
+   * reads no store, so it cannot block the stream processor; a lookup failure is deliberately not
+   * caught here: it propagates and fails the activation command.
    */
   private boolean resolveIntoValues(final SecretReference reference) {
     if (values.containsKey(reference)) {
       return true;
     }
-    final SecretCache cache = cacheOf(reference.storeId());
-    if (cache == null) {
-      return false;
-    }
-    final Optional<String> value = cache.get(reference.name());
+    final Optional<String> value =
+        storeFor(reference.storeId()).flatMap(store -> store.lookupLocal(reference.name()));
     value.ifPresent(cachedValue -> values.put(reference, cachedValue));
     return value.isPresent();
+  }
+
+  /**
+   * Returns the store the reference addresses, or empty when it addresses none.
+   *
+   * <p>The {@code camunda.secrets.<name>} syntax carries no store dimension yet, so a reference
+   * written that way has an empty store ID and addresses the sole configured store; with several
+   * stores an empty store ID is ambiguous and addresses none. This rule belongs to the reference
+   * syntax rather than to the registry, whose own lookup is exact.
+   */
+  private Optional<LocallyCachedSecretStore> storeFor(final String storeId) {
+    final var stores = secretStoreRegistry.getStores();
+    if (!storeId.isEmpty()) {
+      return Optional.ofNullable(stores.get(storeId));
+    }
+    return stores.size() == 1 ? Optional.of(stores.values().iterator().next()) : Optional.empty();
   }
 
   /**
@@ -240,19 +257,6 @@ public final class JobSecretInjector {
     } finally {
       reset();
     }
-  }
-
-  /**
-   * Returns the cache of the store holding the referenced secret, or {@code null} when no store
-   * matches. The {@code camunda.secrets.<name>} syntax carries no store dimension yet, so an empty
-   * store ID addresses the sole configured store; with several stores an empty store ID is
-   * ambiguous and does not resolve.
-   */
-  private SecretCache cacheOf(final String storeId) {
-    if (!storeId.isEmpty()) {
-      return caches.get(storeId);
-    }
-    return caches.size() == 1 ? caches.values().iterator().next() : null;
   }
 
   /**
