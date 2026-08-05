@@ -8,9 +8,9 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
@@ -24,6 +24,15 @@ public class ProcessDrainingApplier implements TypedEventApplier<ProcessIntent, 
 
   @Override
   public void applyState(final long key, final ProcessRecord value) {
-    processState.updateProcessState(value, PersistedProcessState.DRAINING);
+    processState.markDraining(value);
+
+    // Only the deployment partition aggregates; the event key is minted locally so it encodes the
+    // applying partition. Seed one pending entry per frozen partition; each DELETE_COMPLETE clears
+    // one, and the definition is fully deleted once none remain.
+    if (Protocol.decodePartitionId(key) == Protocol.DEPLOYMENT_PARTITION) {
+      for (final int partitionId : value.getDrainPartitions()) {
+        processState.addPendingDeletion(value.getProcessDefinitionKey(), partitionId);
+      }
+    }
   }
 }
