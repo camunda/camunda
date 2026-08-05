@@ -13,9 +13,9 @@
   <resultMap id="replicationLogStatusResultMap"
     type="io.camunda.db.rdbms.read.replication.ReplicationLogStatus">
     <constructor>
-      <arg column="logStatus" javaType="java.lang.Long"/>
-      <arg column="replicaId" javaType="java.lang.String"/>
-      <arg column="replicationLagMs" javaType="java.lang.Long"/>
+      <arg column="logStatus" javaType="java.lang.Long" name="logStatus"/>
+      <arg column="replicaId" javaType="java.lang.String" name="replicaId"/>
+      <arg column="replicationLagMs" javaType="java.lang.Long" name="replicationLagMs"/>
     </constructor>
   </resultMap>
 
