@@ -49,3 +49,4 @@ the distribution tarball ships no such file.
   are unlikely given the plugin has been frozen since 2015.
 - `optimize-startup.sh` uses its own startup script and requires the same pattern maintained
   separately.
+

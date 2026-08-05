@@ -37,6 +37,37 @@ const sidebars = {
       items: [
         {
           type: 'category',
+          label: 'Cross-cutting Architecture',
+          items: [
+            {
+              type: 'link',
+              label: 'Overview',
+              href: '/camunda/architecture/overview',
+            },
+            {
+              type: 'link',
+              label: 'Orchestration Cluster',
+              href: '/camunda/adr/orchestration-cluster/jvm-options-argfile-for-runtime-specific-flags',
+            },
+            {
+              type: 'link',
+              label: 'Management',
+              href: '/camunda/adr/management/physical-tenant-health-status-topology',
+            },
+            {
+              type: 'link',
+              label: 'Security',
+              href: '/camunda/adr/security/endpoint-required-permission-mapping',
+            },
+            {
+              type: 'link',
+              label: 'Clients',
+              href: '/camunda/adr/clients/unify-spring-starter-on-multi-client-config-path',
+            },
+          ],
+        },
+        {
+          type: 'category',
           label: 'Components',
           items: [
             {
@@ -70,56 +101,42 @@ const sidebars = {
               type: 'category',
               label: 'Orchestration Cluster Identity',
               items: [
-                'architecture/components/identity/identity_architecture_docs',
                 {
-                  type: 'category',
-                  label: 'ADRs',
-                  items: [
-                    'architecture/components/identity/adr/cluster-embedded-identity',
-                    'architecture/components/identity/adr/oidc-default-production-authentication',
-                    'architecture/components/identity/adr/resource-based-authorization-model',
-                    'architecture/components/identity/adr/multi-jwks-endpoints-per-issuer',
-                    'architecture/components/identity/adr/support-forward-slashes-in-entity-ids',
-                  ],
+                  type: 'link',
+                  label: 'Architecture',
+                  href: '/camunda/identity/architecture',
                 },
                 {
                   type: 'category',
                   label: 'Authorizations',
                   items: [
-                    'architecture/components/identity/authorizations/authorization-concept',
-                    'architecture/components/identity/authorizations/engine-authorization',
-                    'architecture/components/identity/authorizations/rest-authorization',
+                    { type: 'link', label: 'Authorization Concept', href: '/camunda/identity/authorizations/authorization-concept' },
+                    { type: 'link', label: 'Engine Authorization', href: '/camunda/identity/authorizations/engine-authorization' },
+                    { type: 'link', label: 'REST Authorization', href: '/camunda/identity/authorizations/rest-authorization' },
                   ],
                 },
                 {
                   type: 'category',
                   label: 'References',
                   items: [
-                    'architecture/components/identity/references/data-model',
-                    'architecture/components/identity/references/default-roles',
-                    'architecture/components/identity/references/rp-initiated-logout',
+                    { type: 'link', label: 'Data Model', href: '/camunda/identity/references/data-model' },
+                    { type: 'link', label: 'Default Roles', href: '/camunda/identity/references/default-roles' },
+                    { type: 'link', label: 'RP-Initiated Logout', href: '/camunda/identity/references/rp-initiated-logout' },
                   ],
                 },
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Orchestration Cluster',
-              items: [
                 {
                   type: 'category',
                   label: 'ADRs',
                   items: [
-                    'architecture/components/orchestration-cluster/adr/jvm-options-argfile-for-runtime-specific-flags',
-                    'architecture/components/orchestration-cluster/adr/jdk-25-base-images-with-jdk-21-runtime-support',
+                    { type: 'link', label: 'ADR Index', href: '/camunda/identity/adr/README' },
                   ],
                 },
               ],
             },
             {
-              type: 'doc',
-              id: 'architecture/components/identity/management_identity_architecture_docs',
+              type: 'link',
               label: 'Management Identity',
+              href: '/camunda/identity/management-identity',
             },
           ],
         },

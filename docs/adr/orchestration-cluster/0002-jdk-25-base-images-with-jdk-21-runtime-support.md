@@ -56,3 +56,4 @@ could have — but would not necessarily have — detected had we kept JRE 21 Do
 - E2E and reliability tests no longer exercise JRE 21 JVM behavior; Virtual Thread pinning
   regressions on JRE 21 will not be caught by CI unless a dedicated job is added.
 - Bare-metal JRE 21 users receive no direct benefit from this change.
+

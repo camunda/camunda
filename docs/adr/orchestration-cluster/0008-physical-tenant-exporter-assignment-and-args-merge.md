@@ -1,4 +1,4 @@
-# Physical-Tenant Exporter Configuration: Explicit Assignment and Opt-In Type-Aware Args Merge
+# ADR-0008: Physical-Tenant Exporter Configuration: Explicit Assignment and Opt-In Type-Aware Args Merge
 
 **DRI**: Houssain Barouni ([@houssain-barouni](https://github.com/houssain-barouni))
 
@@ -53,3 +53,4 @@ Two properties make the design non-trivial. The merge cannot be done generically
 - [PR #57202](https://github.com/camunda/camunda/pull/57202) (internal) — per-tenant `BrokerCfg` + `ExporterRepository` wiring; makes these semantics live and adds `PhysicalTenantExporterConfigIT`.
 - [ADR-0007](0007-physical-tenant-configuration-resolution-and-validation.md) — resolution model, overlay engine, validation split (D5 deferred exporters here). [ADR-0004](0004-per-physical-tenant-provider-selection-via-assigned.md) — the `assigned` precedent.
 - [#56652](https://github.com/camunda/camunda/issues/56652) (internal) — per-tenant exporter enable state; gates the assignment step (D6).
+

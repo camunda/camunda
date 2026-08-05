@@ -9,11 +9,11 @@
 
 ## Model layers
 
-| Layer | Purpose | Representative packages / symbols |
-| --- | --- | --- |
-| Record model | Command/event payloads written to the Zeebe log | `io.camunda.zeebe.protocol.impl.record.value.user.UserRecord`, `io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord`, `io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord`, `io.camunda.zeebe.protocol.impl.record.value.authorization.*` |
-| Primary storage model | Source of truth for state transitions in Zeebe (RocksDB) | `io.camunda.zeebe.engine.state.user.DbUserState`, `io.camunda.zeebe.engine.state.tenant.DbTenantState`, `io.camunda.zeebe.engine.state.authorization.*` |
-| Secondary storage model | Query projection in ES/OS/RDBMS | `io.camunda.search.entities.UserEntity`, `io.camunda.search.entities.GroupEntity`, `io.camunda.search.entities.RoleEntity`, `io.camunda.search.entities.TenantEntity`, `io.camunda.search.entities.AuthorizationEntity`, `io.camunda.search.entities.MappingRuleEntity` |
+|          Layer          |                         Purpose                          |                                                                                                                    Representative packages / symbols                                                                                                                    |
+|-------------------------|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Record model            | Command/event payloads written to the Zeebe log          | `io.camunda.zeebe.protocol.impl.record.value.user.UserRecord`, `io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord`, `io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord`, `io.camunda.zeebe.protocol.impl.record.value.authorization.*`        |
+| Primary storage model   | Source of truth for state transitions in Zeebe (RocksDB) | `io.camunda.zeebe.engine.state.user.DbUserState`, `io.camunda.zeebe.engine.state.tenant.DbTenantState`, `io.camunda.zeebe.engine.state.authorization.*`                                                                                                                 |
+| Secondary storage model | Query projection in ES/OS/RDBMS                          | `io.camunda.search.entities.UserEntity`, `io.camunda.search.entities.GroupEntity`, `io.camunda.search.entities.RoleEntity`, `io.camunda.search.entities.TenantEntity`, `io.camunda.search.entities.AuthorizationEntity`, `io.camunda.search.entities.MappingRuleEntity` |
 
 ## Simplified view
 
@@ -247,14 +247,14 @@ erDiagram
 
 ## Primary vs secondary differences
 
-| Concern | Primary storage model | Secondary storage model                |
-| --- | --- |----------------------------------------|
-| Role in architecture | Source of truth for command handling | Read model for query APIs              |
-| Write path | Updated by command processing in engine | Updated by exporter pipeline           |
-| Read pattern | Key/state access in engine internals | Filter/sort/search in REST query layer |
-| Shape | State-centric, index-driven | Query-centric, document/row oriented   |
-| Consistency | Immediate for command processing | Eventually consistent with primary     |
-| Typical package | `io.camunda.zeebe.engine.state.*` | `io.camunda.search.entities.*`         |
+|       Concern        |          Primary storage model          |        Secondary storage model         |
+|----------------------|-----------------------------------------|----------------------------------------|
+| Role in architecture | Source of truth for command handling    | Read model for query APIs              |
+| Write path           | Updated by command processing in engine | Updated by exporter pipeline           |
+| Read pattern         | Key/state access in engine internals    | Filter/sort/search in REST query layer |
+| Shape                | State-centric, index-driven             | Query-centric, document/row oriented   |
+| Consistency          | Immediate for command processing        | Eventually consistent with primary     |
+| Typical package      | `io.camunda.zeebe.engine.state.*`       | `io.camunda.search.entities.*`         |
 
 ## Entity cheat sheet
 

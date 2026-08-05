@@ -1,7 +1,8 @@
 ---
+
 toc_min_heading_level: 2
 toc_max_heading_level: 5
----
+------------------------
 
 # Architecture Documentation
 
@@ -36,33 +37,33 @@ Goals:
 Selected high‑level requirements:
 
 R1 – Cluster‑scoped access control
-: Identity controls access to Zeebe, Operate, Tasklist, and Orchestration Cluster APIs per cluster.
+:   Identity controls access to Zeebe, Operate, Tasklist, and Orchestration Cluster APIs per cluster.
 
 R2 – External IdP integration
-: OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants, and authorizations.
+:   OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants, and authorizations.
 
 R3 – Fine‑grained authorizations
-: Resource‑based permissions evaluated uniformly across UIs and APIs.
+:   Resource‑based permissions evaluated uniformly across UIs and APIs.
 
 R4 – Multi‑tenancy
-: Tenants created, assigned, and enforced at Orchestration Cluster level. Management Identity is no longer a source of truth for runtime tenants.
+:   Tenants created, assigned, and enforced at Orchestration Cluster level. Management Identity is no longer a source of truth for runtime tenants.
 
 R5 – Migration from Management Identity
-: Tooling and mappings to migrate users, groups, roles, tenants, mapping rules, and resource authorizations from Management Identity.
+:   Tooling and mappings to migrate users, groups, roles, tenants, mapping rules, and resource authorizations from Management Identity.
 
 ### 1.3 Quality goals (top level)
 
 Security
-: Strong, auditable authentication and authorization; OIDC‑based SSO recommended for production.
+:   Strong, auditable authentication and authorization; OIDC‑based SSO recommended for production.
 
 Consistency
-: Same authorization semantics for UI and API; same conceptual model in SaaS and Self‑Managed.
+:   Same authorization semantics for UI and API; same conceptual model in SaaS and Self‑Managed.
 
 Operability
-: Minimal extra infrastructure; suitable hooks for observing authentication and authorization flows.
+:   Minimal extra infrastructure; suitable hooks for observing authentication and authorization flows.
 
 Extensibility
-: Other teams can introduce new resource or permission types while reusing the shared RBAC framework.
+:   Other teams can introduce new resource or permission types while reusing the shared RBAC framework.
 
 ### 1.4 Stakeholders
 
@@ -174,22 +175,22 @@ External interfaces (technical):
 ## 4. Solution strategy
 
 Cluster‑embedded identity service
-: Identity runs inside the Orchestration Cluster and is the source of truth for runtime IAM instead of relying on an external system to query for identity data.
+:   Identity runs inside the Orchestration Cluster and is the source of truth for runtime IAM instead of relying on an external system to query for identity data.
 
 Multiple authentication methods
-: Basic for simple Self‑Managed setups and development. OIDC for production with SSO, MFA, and centralized user lifecycle. Optional no‑auth for local or demo scenarios.
+:   Basic for simple Self‑Managed setups and development. OIDC for production with SSO, MFA, and centralized user lifecycle. Optional no‑auth for local or demo scenarios.
 
 Resource‑based authorization
-: Fine‑grained authorizations per resource type and action (for example, PROCESS_DEFINITION:READ, USER_TASK:ASSIGN) across UIs and APIs.
+:   Fine‑grained authorizations per resource type and action (for example, PROCESS_DEFINITION:READ, USER_TASK:ASSIGN) across UIs and APIs.
 
 Cluster‑local tenant model
-: Tenants are managed directly in Identity per cluster. Management Identity tenants remain only for Optimize in Self‑Managed.
+:   Tenants are managed directly in Identity per cluster. Management Identity tenants remain only for Optimize in Self‑Managed.
 
 Extensible RBAC library
-: Shared helpers and engine behaviors so feature teams can introduce new resource and permission types without re‑implementing authorization logic.
+:   Shared helpers and engine behaviors so feature teams can introduce new resource and permission types without re‑implementing authorization logic.
 
 Reuse of Zeebe storage
-: Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
+:   Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
 
 ## 5. Building block view
 
@@ -468,7 +469,7 @@ Scenario: human user logs into Operate or Tasklist using username and password (
 4. The converter loads the user entity, roles, and tenants via Camunda Services (which queries the Secondary Database through the Camunda Search Client) — no external IdP is involved.
 5. `DefaultCamundaAuthenticationProvider` creates a `CamundaAuthentication` object
 6. `WebSessionRepository` stores the session in secondary storage
-7.  Subsequent requests are authenticated via the session.
+7. Subsequent requests are authenticated via the session.
 
 ```mermaid
 sequenceDiagram
@@ -523,7 +524,7 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
 5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](references/rp-initiated-logout.md).
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -672,7 +673,7 @@ Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Tok
 3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
 4. `OidcTokenAuthenticationConverter` and `TokenClaimsConverter` extract the client identity and apply mapping rules to resolve roles and tenants via Camunda Services.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -875,7 +876,7 @@ Scenario: a client starts a process instance via the REST API; the Zeebe Engine 
 6. If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.
 7. Camunda Services returns a `CreateProcessInstanceResponse` and the REST API responds with `200 OK` containing the process instance key.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -927,7 +928,7 @@ Scenario: a client queries process instances via the REST API; the Camunda Searc
 8. The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.
 9. Camunda Services returns a `SearchProcessInstancesResponse` and the REST API responds with `200 OK` containing the filtered process instances.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -983,7 +984,7 @@ Scenario: an administrator creates a new user via the REST API; the command is a
 6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
 7. Asynchronously, the Camunda or Rdbms Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -1042,7 +1043,7 @@ Scenario: an administrator creates a new authorization (permission grant) via th
 6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
 7. Asynchronously, the Camunda or RDBMS Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
 
-Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/architecture/components/identity/identity_architecture_docs.md).
+Note: If you are on the Camunda Platform docs side (docusaurus), it is much convenient to view big diagrams directly on GitHub since there you have zooming and can make it bigger: [Identiy Architecture Docs - Github Viewer](https://github.com/camunda/camunda/blob/main/identity/docs/architecture.md).
 
 ```mermaid
 sequenceDiagram
@@ -1151,40 +1152,40 @@ flowchart TB
 ## 8. Crosscutting concepts
 
 Authentication concept
-: Unified Spring Security configuration for Basic and OIDC. Pluggable IdP integration through standard OIDC configuration.
+:   Unified Spring Security configuration for Basic and OIDC. Pluggable IdP integration through standard OIDC configuration.
 
 Authorization and RBAC concept
-: Central resource‑based authorization model, decoupled from individual UIs and services. Shared checks used by engine, Operate, Tasklist, and APIs. For detailed behavior and examples, see the [Authorization concept](authorizations/authorization-concept.md), [Engine authorization checks](authorizations/engine-authorization.md), and [REST authorization checks](authorizations/rest-authorization.md).
+:   Central resource‑based authorization model, decoupled from individual UIs and services. Shared checks used by engine, Operate, Tasklist, and APIs. For detailed behavior and examples, see the [Authorization concept](authorizations/authorization-concept.md), [Engine authorization checks](authorizations/engine-authorization.md), and [REST authorization checks](authorizations/rest-authorization.md).
 
 Tenant concept
-: Cluster‑local tenants defined in Identity. Tenants applied across runtime resources for data and access isolation (Self‑Managed).
+:   Cluster‑local tenants defined in Identity. Tenants applied across runtime resources for data and access isolation (Self‑Managed).
 
 Mapping rules concept
-: Declarative mapping from IdP claims (groups, attributes) to Identity entities such as groups, roles, tenants, authorizations. Enables identity‑as‑code and external lifecycle via IdP.
+:   Declarative mapping from IdP claims (groups, attributes) to Identity entities such as groups, roles, tenants, authorizations. Enables identity‑as‑code and external lifecycle via IdP.
 
 Migration concept (from Management Identity)
-: Identity Migration tooling to move roles, groups, tenants, resource authorizations, and mapping rules. Designed to be idempotent and re‑runnable.
+:   Identity Migration tooling to move roles, groups, tenants, resource authorizations, and mapping rules. Designed to be idempotent and re‑runnable.
 
 Storage and consistency
-: Identity state follows Zeebe's durability and snapshot mechanisms via shared storage. Secondary storage ensures efficient querying for Admin UI and APIs.
+:   Identity state follows Zeebe's durability and snapshot mechanisms via shared storage. Secondary storage ensures efficient querying for Admin UI and APIs.
 
 ## 9. Architectural decisions
 
 The architectural decisions for Identity are documented as individual ADR files:
 
-- [ADR-0001: Cluster-Embedded Identity Instead of External Component](adr/0001-cluster-embedded-identity.md)
-- [ADR-0002: OIDC as Default Production Authentication](adr/0002-oidc-default-production-authentication.md)
-- [ADR-0003: Resource-Based Authorization Model](adr/0003-resource-based-authorization-model.md)
-- [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
-- [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](adr/0005-support-forward-slashes-in-entity-ids.md)
+- [ADR-0001: Cluster-Embedded Identity Instead of External Component](/adr/identity/cluster-embedded-identity)
+- [ADR-0002: OIDC as Default Production Authentication](/adr/identity/oidc-default-production-authentication)
+- [ADR-0003: Resource-Based Authorization Model](/adr/identity/resource-based-authorization-model)
+- [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](/adr/identity/multi-jwks-endpoints-per-issuer)
+- [ADR-0005: Support Forward Slashes in Entity IDs via URL Encoding](/adr/identity/support-forward-slashes-in-entity-ids)
 
 ## 10. Risks and technical debt
 
 Migration complexity and failure modes
-: Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules). Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.
+:   Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules). Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.
 
 Dual identity model during transition
-: Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
+:   Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
 ## 11. Glossary
 

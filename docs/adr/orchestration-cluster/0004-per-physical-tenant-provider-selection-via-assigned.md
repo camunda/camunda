@@ -127,8 +127,11 @@ camunda:
   the auth merge. The merge stays total (it only ever applies a valid selection).
 - The default tenant's two surfaces (`/v2` and `/physical-tenants/default`) are **identical by
   construction**, since both derive from `forPhysicalTenant("default")`. This also closes a latent
-  #54729 gap where any `camunda.physical-tenants.default.*` overlay (not just `assigned`) would have
+
+  # 54729 gap where any `camunda.physical-tenants.default.*` overlay (not just `assigned`) would have
+
   diverged the alias from `/v2`.
+
 - Flips the smoke harness's cross-issuer `[#54730]` cell to a pass and is mirrored by an
   `PhysicalTenantApiChainIsolationIT` case (a provider assigned to PT-A but not PT-B → PT-A's token
   rejected on PT-B).
@@ -184,3 +187,4 @@ camunda:
   `0.1.0-alpha30`).
 - OC #54731 — forbidden per-tenant override validation (the `PhysicalTenantOverridePolicyValidation`
   pattern the `assigned` validation extends).
+
