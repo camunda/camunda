@@ -40,6 +40,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -421,7 +422,8 @@ class CamundaServicesConfigurationTest {
         readinessProvider(),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
         secretStoreRegistries,
-        mock(ClusterConfigurationManagementRequestSender.class));
+        mock(ClusterConfigurationManagementRequestSender.class),
+        mock(ExportingStateController.class));
   }
 
   /**

@@ -28,11 +28,9 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -41,7 +39,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.gateway.admin.ExportingStatus;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,7 +47,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 public class ExportingServicesTest {
 
@@ -59,6 +55,8 @@ public class ExportingServicesTest {
   private ExportingServices services;
   private final ClusterConfigurationManagementRequestSender requestSender =
       mock(ClusterConfigurationManagementRequestSender.class);
+  private final ExportingStateController exportingStateController =
+      mock(ExportingStateController.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
   private final AuthorizationsConfiguration authorizationsConfig =
       new AuthorizationsConfiguration();
@@ -73,6 +71,7 @@ public class ExportingServicesTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             requestSender,
+            exportingStateController,
             authorizationChecker,
             authorizationsConfig,
             mock(ApiServicesExecutorProvider.class),
@@ -82,43 +81,43 @@ public class ExportingServicesTest {
   @Test
   public void shouldDelegatePauseWhenAuthorizationsDisabled() {
     // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
+    when(exportingStateController.pauseExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var future = services.pauseExporting(false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.PAUSED);
+    verify(exportingStateController).pauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
   public void shouldDelegateSoftPauseToSoftPause() {
     // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
+    when(exportingStateController.softPauseExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var future = services.pauseExporting(true, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.SOFT_PAUSED);
+    verify(exportingStateController).softPauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
   public void shouldDelegateResume() {
     // given
-    final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
-    when(requestSender.changeExportingState(captor.capture())).thenReturn(emptyPlan());
+    when(exportingStateController.resumeExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var future = services.resumeExporting(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    assertThat(captor.getValue().state()).isEqualTo(ExportingState.EXPORTING);
+    verify(exportingStateController).resumeExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -203,35 +202,37 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(requestSender, never()).changeExportingState(any());
+    verify(exportingStateController, never()).pauseExporting(any());
   }
 
   @Test
   public void shouldDelegatePauseWhenUserHasExporterPausePermission() {
     // given
     grantExporterPausePermission();
-    when(requestSender.changeExportingState(any())).thenReturn(emptyPlan());
+    when(exportingStateController.pauseExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var future = services.pauseExporting(false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(requestSender).changeExportingState(any());
+    verify(exportingStateController).pauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
   public void shouldDelegateResumeWhenUserHasExporterPausePermission() {
     // given
     grantExporterPausePermission();
-    when(requestSender.changeExportingState(any())).thenReturn(emptyPlan());
+    when(exportingStateController.resumeExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     final var future = services.resumeExporting(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(requestSender).changeExportingState(any());
+    verify(exportingStateController).resumeExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -255,7 +256,7 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(requestSender, never()).changeExportingState(any());
+    verify(exportingStateController, never()).pauseExporting(any());
   }
 
   private void grantExporterPausePermission() {
@@ -285,16 +286,14 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(requestSender, never()).changeExportingState(any());
+    verify(exportingStateController, never()).pauseExporting(any());
   }
 
   @Test
-  public void shouldMapFailedSubmissionToServiceException() {
-    // given - the coordinator rejected the request outright
-    when(requestSender.changeExportingState(any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "nope"))));
+  public void shouldMapFailedStateChangeToServiceException() {
+    // given - the state change failed to apply
+    when(exportingStateController.pauseExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("nope")));
 
     // when
     final var future = services.pauseExporting(false, authentication);
@@ -307,11 +306,6 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.INTERNAL);
-  }
-
-  private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> emptyPlan() {
-    return CompletableFuture.completedFuture(
-        Either.right(new ClusterConfigurationChangeResponse(0, Map.of(), Map.of(), List.of())));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> topology(

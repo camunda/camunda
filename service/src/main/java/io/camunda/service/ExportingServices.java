@@ -17,13 +17,11 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeAwaiter;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.gateway.admin.ExportingStatus;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -35,20 +33,15 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>It extends {@link PhysicalTenantScopedApiServices} for uniformity with the other
  * explicitly-checked management services ({@code DocumentServices}, {@code SecretServices}) and to
- * carry the physical tenant id, but it only consumes {@link #getPhysicalTenantId()} for the base
- * class's auth wiring: state changes are submitted cluster-wide through dynamic cluster
- * configuration (there is no per-physical-tenant scoping on that path yet), the same mechanism
- * {@code ExportingEndpoint} uses for the unauthenticated actuator endpoint, so the base class's
- * {@code brokerRequestMutators()} PT-stamping is not exercised here.
+ * carry the physical tenant id, which it passes to the {@link ExportingStateController}. That
+ * controller — shared with the {@code ExportingEndpoint} actuator — owns how the scope is applied,
+ * so the base class's {@code brokerRequestMutators()} PT-stamping is not exercised here.
  */
 @NullMarked
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
-  private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
-  private static final Duration TIMEOUT = Duration.ofSeconds(60);
-
   private final ClusterConfigurationManagementRequestSender requestSender;
-  private final ClusterConfigurationChangeAwaiter changeAwaiter;
+  private final ExportingStateController exportingStateController;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
 
@@ -57,6 +50,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ClusterConfigurationManagementRequestSender requestSender,
+      final ExportingStateController exportingStateController,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
@@ -68,7 +62,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.requestSender = requestSender;
-    changeAwaiter = new ClusterConfigurationChangeAwaiter(requestSender, POLL_INTERVAL, TIMEOUT);
+    this.exportingStateController = exportingStateController;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
   }
@@ -77,12 +71,15 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final boolean soft, final CamundaAuthentication authentication) {
     return withExporterPausePermission(
         authentication,
-        () -> changeExportingState(soft ? ExportingState.SOFT_PAUSED : ExportingState.PAUSED));
+        () ->
+            soft
+                ? exportingStateController.softPauseExporting(getPhysicalTenantId())
+                : exportingStateController.pauseExporting(getPhysicalTenantId()));
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
     return withExporterPausePermission(
-        authentication, () -> changeExportingState(ExportingState.EXPORTING));
+        authentication, () -> exportingStateController.resumeExporting(getPhysicalTenantId()));
   }
 
   /**
@@ -96,11 +93,6 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
   public CompletableFuture<ExportingStatus> getExportingStatus(
       final CamundaAuthentication authentication) {
     return withExporterPausePermission(authentication, this::queryExportingStatus);
-  }
-
-  private CompletableFuture<Void> changeExportingState(final ExportingState state) {
-    return changeAwaiter.awaitCompletion(
-        requestSender.changeExportingState(new ExportingStateChangeRequest(state, false)));
   }
 
   private CompletableFuture<ExportingStatus> queryExportingStatus() {

@@ -74,6 +74,7 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -141,8 +142,8 @@ public class CamundaServicesConfiguration {
       final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
       final ApiServicesExecutorProvider executor,
       final SecretStoreRegistries secretStoreRegistries,
-      final ClusterConfigurationManagementRequestSender
-          clusterConfigurationManagementRequestSender) {
+      final ClusterConfigurationManagementRequestSender clusterConfigurationManagementRequestSender,
+      final ExportingStateController exportingStateController) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
@@ -366,6 +367,7 @@ public class CamundaServicesConfiguration {
                           brokerClient,
                           securityContextProvider,
                           clusterConfigurationManagementRequestSender,
+                          exportingStateController,
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
                           executor,

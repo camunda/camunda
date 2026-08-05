@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeAwaiter;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
-import java.time.Duration;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -21,35 +19,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * Legacy actuator endpoint for controlling exporting.
- *
- * <p>The dynamic-configuration operation is cluster-wide. This endpoint has no physical-tenant
- * scope, and must not be used as evidence that exporting state is isolated per physical tenant.
- */
 @Component
 @RestControllerEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
-  private static final Duration TIMEOUT = Duration.ofSeconds(60);
 
-  private final ClusterConfigurationManagementRequestSender requestSender;
-  private final ClusterConfigurationChangeAwaiter changeAwaiter;
+  private final ExportingStateController exportingStateController;
 
   @Autowired
-  public ExportingEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
-    this(
-        requestSender,
-        new ClusterConfigurationChangeAwaiter(requestSender, POLL_INTERVAL, TIMEOUT));
-  }
-
-  ExportingEndpoint(
-      final ClusterConfigurationManagementRequestSender requestSender,
-      final ClusterConfigurationChangeAwaiter changeAwaiter) {
-    this.requestSender = requestSender;
-    this.changeAwaiter = changeAwaiter;
+  public ExportingEndpoint(final ExportingStateController exportingStateController) {
+    this.exportingStateController = exportingStateController;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -58,17 +38,16 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
-      final var targetState =
+      final var result =
           switch (operationKey) {
-            case RESUME -> ExportingState.EXPORTING;
-            case PAUSE -> soft ? ExportingState.SOFT_PAUSED : ExportingState.PAUSED;
+            case RESUME -> exportingStateController.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case PAUSE ->
+                soft
+                    ? exportingStateController.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
+                    : exportingStateController.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
             default -> throw new UnsupportedOperationException();
           };
-      changeAwaiter
-          .awaitCompletion(
-              requestSender.changeExportingState(
-                  new ExportingStateChangeRequest(targetState, false)))
-          .join();
+      result.join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
       final var message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
