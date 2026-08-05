@@ -12,9 +12,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A minimal {@link SecretCache} backed by a {@link ConcurrentHashMap}, with no eviction or expiry.
- * The concurrent map makes it safe to use in front of a thread-safe {@link SecretStore} and rejects
- * {@code null} keys and values.
+ * A minimal {@link SecretCache} backed by a {@link ConcurrentHashMap}, with no eviction or expiry
+ * by design — for callers and tests that want none. {@link CaffeineSecretCache} is what {@link
+ * SecretStoreRegistry} defaults to. The concurrent map makes it safe to use in front of a
+ * thread-safe {@link SecretStore} and rejects {@code null} keys and values.
  */
 public final class InMemorySecretCache implements SecretCache {
 
@@ -28,5 +29,10 @@ public final class InMemorySecretCache implements SecretCache {
   @Override
   public void put(final String name, final String value) {
     values.put(name, value);
+  }
+
+  @Override
+  public void remove(final String name) {
+    values.remove(name);
   }
 }
