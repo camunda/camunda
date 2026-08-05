@@ -16,9 +16,9 @@ import java.util.Optional;
  * <p>Implementations must be thread-safe: a {@link SecretStore} may be resolved concurrently, so
  * the cache in front of it is accessed concurrently too.
  *
- * <p>This is the stable contract callers resolve secrets through; the minimal {@link
- * InMemorySecretCache} has no eviction or expiry, and a TTL/eviction variant replaces it later
- * behind this same interface.
+ * <p>This is the stable contract callers resolve secrets through. {@link CaffeineSecretCache} is
+ * the production default, bounding both staleness and size; the minimal {@link InMemorySecretCache}
+ * has no eviction or expiry and is kept for callers and tests that want none.
  */
 public interface SecretCache {
 
@@ -31,4 +31,7 @@ public interface SecretCache {
 
   /** Stores the resolved value for the secret name, overwriting any previously cached value. */
   void put(String name, String value);
+
+  /** Removes any cached value for the secret name. */
+  void remove(String name);
 }
