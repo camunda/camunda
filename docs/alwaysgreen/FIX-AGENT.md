@@ -110,12 +110,19 @@ gh pr view <blame_pr> --repo camunda/camunda --json title,body,files \
   --jq '{title, files: [.files[].path]}'
 ```
 
-- **It also updated the product's own tests** to the new value — `operate/client/**/tests/**`,
-  `tasklist/client/**/tests/**`, `identity/client/**/tests/**`, or
-  `qa/c8-orchestration-cluster-e2e-test-suite/**` — then the change is **intended** and the
-  cross-component suite is simply behind. Fix `c8-cross-component-e2e-tests`.
-- **The product's own tests still assert the old value**, so the product now contradicts
-  itself: that is a **regression**. Fix `camunda`.
+- **It also updated the product's own tests** to the new value → the change is **intended**
+  and the cross-component suite is simply behind. Fix `c8-cross-component-e2e-tests`.
+- **Those tests still assert the old value**, so the product now contradicts itself → that
+  is a **regression**. Fix `camunda`.
+
+Product tests are not in one place, so grep the PR's file list rather than matching a fixed
+glob: colocated `*.test.tsx` next to the component, a `tests/` directory beside it,
+`e2e-playwright/` or `e2e/` specs, and `qa/c8-orchestration-cluster-e2e-test-suite/`. In
+`operate/client` most are colocated and only a minority sit under `tests/`.
+
+**Absence of a test change only means something if such tests exist.** `identity/client` has
+no frontend tests at all, so for an Identity UI failure "the tests were not updated" proves
+nothing — skip to the weaker signals below rather than reading it as a regression.
 
 Two weaker signals, for when the first is inconclusive. A Conventional-Commit `feat:` that
 renames user-visible copy is usually deliberate, while `refactor:`/`fix:` that changes copy
