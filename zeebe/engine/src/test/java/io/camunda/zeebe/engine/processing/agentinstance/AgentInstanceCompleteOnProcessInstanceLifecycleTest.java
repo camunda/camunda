@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -69,10 +70,11 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
 
-    // then — AGENT_INSTANCE:COMPLETE is emitted as a follow-up to PROCESS:COMPLETE_ELEMENT
+    // then — the batch AGENT_INSTANCE:COMPLETE command is emitted as a follow-up to
+    // PROCESS:COMPLETE_ELEMENT, and the agent instance itself is completed from it
     final var agentInstanceCompleteCommand =
         RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
-            .withRecordKey(agentInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var processCompleteElementCommand =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
@@ -85,6 +87,11 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             "AGENT_INSTANCE:COMPLETE is a follow-up to PROCESS:COMPLETE_ELEMENT, "
                 + "so it must appear after it in the log")
         .isGreaterThan(processCompleteElementCommand.getPosition());
+    assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+                .withRecordKey(agentInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -135,7 +142,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     // completion
     final var agentInstanceCompleteCommand =
         RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
-            .withRecordKey(agentInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var processCompleteElementCommand =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
@@ -148,6 +155,11 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             "AGENT_INSTANCE:COMPLETE is a follow-up to PROCESS:COMPLETE_ELEMENT, "
                 + "so it must appear after it in the log")
         .isGreaterThan(processCompleteElementCommand.getPosition());
+    assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+                .withRecordKey(agentInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -247,7 +259,10 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
 
   @Test
   public void shouldCompleteAllAgentInstancesOfProcessInstance() {
-    // given — two parallel agentic service tasks, each with its own agent instance
+    // given — two parallel agentic service tasks, each with its own agent instance, on the
+    // process instance under test; plus an unrelated process instance with its own agent
+    // instance, whose agentic job is left active so its own cleanup never triggers, to prove the
+    // batch stays scoped to the process instance under test
     final String otherAgentTaskId = "other-agent-task";
     final String otherAgentJobType = "other-agent";
     ENGINE
@@ -282,17 +297,83 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     awaitAndActivateJob(AGENT_JOB_TYPE);
     awaitAndActivateJob(otherAgentJobType);
 
-    // when
+    final String unrelatedProcessId = "unrelated-process";
+    final String unrelatedAgentJobType = "unrelated-agent";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(unrelatedProcessId)
+                .startEvent()
+                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(unrelatedAgentJobType))
+                .endEvent()
+                .done())
+        .deploy();
+    final var unrelatedProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(unrelatedProcessId).create();
+    final var unrelatedTaskInstance =
+        awaitElementActivated(unrelatedProcessInstanceKey, AGENT_TASK_ID);
+    final var unrelatedAgentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(unrelatedTaskInstance.getKey())
+            .create()
+            .getKey();
+
+    // when — only the process instance under test completes; the unrelated one's agentic job is
+    // left active on purpose
     ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
     ENGINE.job().ofInstance(processInstanceKey).withType(otherAgentJobType).complete();
 
-    // then
+    // then — a single AGENT_INSTANCE:COMPLETE command is written as a follow-up of the process
+    // instance completing
+    final var firstCompleteCommand =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+            .onlyCommands()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // and — it self-chains until every agent instance is completed, closing with a NOT_FOUND
+    // rejection once none remain; that rejection is the signal the batch is done
+    final var rejectedCompleteCommand =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(rejectedCompleteCommand.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+
+    // and — between that first command and the closing rejection, both (and only both) agent
+    // instances belonging to the process instance are completed; how many self-chained COMPLETE
+    // commands it took to get there is an implementation detail, not asserted here
     assertThat(
             RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(
+                    r ->
+                        r.getPosition() > firstCompleteCommand.getPosition()
+                            && r.getPosition() < rejectedCompleteCommand.getPosition())
                 .limit(2)
                 .map(Record::getKey))
-        .describedAs("Both agent instances belonging to the process instance are completed")
+        .describedAs(
+            "Both agent instances belonging to the process instance are completed between the "
+                + "first COMPLETE command and the closing rejection")
         .containsExactlyInAnyOrder(firstAgentInstanceKey, secondAgentInstanceKey);
+
+    // and — the unrelated process instance's own agent instance was never touched by this batch;
+    // bound the negative check with a clock reset marker, since exists() can't short-circuit on
+    // an absence
+    final long clockResetKey = ENGINE.clock().reset().getKey();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_INSTANCE)
+                .withIntent(AgentInstanceIntent.COMPLETED)
+                .withRecordKey(unrelatedAgentInstanceKey)
+                .exists())
+        .describedAs(
+            ("Unrelated process instance %d's agent instance is untouched by process instance "
+                    + "%d's batch completion")
+                .formatted(unrelatedProcessInstanceKey, processInstanceKey))
+        .isFalse();
   }
 
   @Test
