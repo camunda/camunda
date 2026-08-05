@@ -31687,7 +31687,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Subtracting the technical round-trip (M17) from the whole ask lifetime (M7) leaves the retry/back-off plus business-id contention overhead. Means (rate of _sum over rate of _count) are additive, so the difference is the average time an ask spends beyond a single technical round-trip.",
+          "description": "Both timers are measured on P_K. Mean ask lifetime (M7: first dispatch to a started or expired terminal) minus mean technical round-trip (M17: last send to the matching reply) approximates the retry/back-off plus business-id contention an ask spends beyond a single P_K->P_B->P_K leg. Read it as a directional trend, not an exact per-ask split: M7 records one sample per whole ask lifetime while M17 records one per reply attempt, so a repeatedly-rejected ask contributes a single M7 sample but several M17 samples and the two means are taken over different populations.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -31792,12 +31792,12 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_message_start_cross_partition_asks_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_message_start_cross_partition_asks_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) - sum(rate(zeebe_message_start_cross_partition_asks_round_trip_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_message_start_cross_partition_asks_round_trip_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))",
-              "legendFormat": "mean retry + contention (M7 - M17)",
+              "legendFormat": "mean retry + contention (M7 - M17, approx)",
               "range": true,
               "refId": "C"
             }
           ],
-          "title": "Latency decomposition: mean retry + contention (M7 - M17)",
+          "title": "Latency decomposition: retry + contention beyond the round-trip (M7 - M17, P_K)",
           "type": "timeseries"
         }
       ],
