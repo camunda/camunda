@@ -16,12 +16,14 @@ import {
 	mockQueryVariablesByUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 const currentUser = createCurrentUser();
 
@@ -84,7 +86,17 @@ test.describe('Tasklist index page', () => {
 		await expect(tasklistIndexPage.processesNavItem).toBeVisible();
 	});
 
-	test('should navigate from Tasks to Processes', async ({tasklistIndexPage, page}) => {
+	test('should navigate from Tasks to Processes', async ({tasklistIndexPage, page, network}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [],
+					}),
+				),
+			}),
+		);
+
 		await tasklistIndexPage.goto();
 
 		await tasklistIndexPage.processesNavItem.click();

@@ -51,6 +51,8 @@ const queryKeys = {
 		['userTaskAuditLogs', userTaskKey, body] as const,
 	auditLog: (auditLogKey: string) => ['auditLog', auditLogKey] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
+	queryProcessDefinitionsInfinite: (body: QueryProcessDefinitionsRequestBody) =>
+		['queryProcessDefinitionsInfinite', body] as const,
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -329,6 +331,28 @@ const queries = {
 				}
 				return response.json();
 			},
+		}),
+
+	queryProcessDefinitionsInfinite: (body: QueryProcessDefinitionsRequestBody) =>
+		infiniteQueryOptions({
+			queryKey: queryKeys.queryProcessDefinitionsInfinite(body),
+			queryFn: async ({pageParam}): Promise<QueryProcessDefinitionsResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryProcessDefinitions({
+						...body,
+						page: {
+							...body.page,
+							after: pageParam ?? undefined,
+						},
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+			initialPageParam: null as string | null,
+			getNextPageParam: (lastPage) => lastPage.page.endCursor ?? undefined,
 		}),
 
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>

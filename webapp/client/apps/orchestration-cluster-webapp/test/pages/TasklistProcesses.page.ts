@@ -18,8 +18,8 @@ class TasklistProcessesPage extends BasePage {
 		this.header = new Header(page);
 	}
 
-	async goto() {
-		return this.page.goto('/tasklist/processes');
+	async goto(search = '') {
+		return this.page.goto(`/tasklist/processes${search}`);
 	}
 
 	get heading() {
@@ -32,6 +32,38 @@ class TasklistProcessesPage extends BasePage {
 
 	get processesNavItem() {
 		return this.page.getByRole('link', {name: 'Processes'});
+	}
+
+	get searchInput() {
+		return this.page.getByRole('searchbox', {name: 'Search processes'});
+	}
+
+	get processFilter() {
+		return this.page.getByRole('combobox', {name: 'Filter processes'});
+	}
+
+	get tenantFilter() {
+		return this.page.getByRole('combobox', {name: 'Tenant'});
+	}
+
+	get unpublishedProcessesHeading() {
+		return this.page.getByRole('heading', {name: 'No published processes yet'});
+	}
+
+	get noMatchingProcessesHeading() {
+		return this.page.getByRole('heading', {name: 'We could not find any process with that name'});
+	}
+
+	get loadMoreButton() {
+		return this.page.getByRole('button', {name: 'Load more'});
+	}
+
+	get genericErrorHeading() {
+		return this.page.getByRole('heading', {name: 'Something went wrong'});
+	}
+
+	processHeading(name: string) {
+		return this.page.getByRole('heading', {name});
 	}
 }
 
