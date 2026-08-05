@@ -383,7 +383,7 @@ export class OperateProcessInstanceViewModificationModePage {
   // resolves the target — the same interaction a user's click performs.
   async clickTargetFlowNode(flowNodeName: string): Promise<void> {
     const targetFlowNode = this.getFlowNode(flowNodeName).first();
-    await expect(targetFlowNode).toBeVisible();
+    await expect(targetFlowNode).toBeVisible({timeout: 20000});
     await targetFlowNode.click({force: true, timeout: 20000});
   }
 
