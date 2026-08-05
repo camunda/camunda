@@ -255,6 +255,25 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
+  void shouldOverrideWithLeaseFromWorkerOverGlobalDefault() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setWithLease(false);
+    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
+    override.setWithLease(true);
+    properties.getWorker().getOverride().put("sampleWorker", override);
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setType(new GeneratedFromMethodInfo<>("sampleWorker"));
+    assertThat(jobWorkerValue.getWithLease()).isEqualTo(new Empty<>());
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getWithLease()).isEqualTo(new FromOverrideProperty<>(true));
+  }
+
+  @Test
   void shouldNotOverrideTypeAndNameAndFetchVariablesFromGlobalsIfSet() {
     final CamundaClientProperties properties = properties();
     properties.getWorker().getDefaults().setType("globalOverride");
@@ -380,6 +399,12 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
                 "streamEnabled",
                 CamundaClientJobWorkerProperties::setStreamEnabled,
                 j -> j.getStreamEnabled().value(),
+                true),
+            //    private Boolean withLease;
+            new Input<>(
+                "withLease",
+                CamundaClientJobWorkerProperties::setWithLease,
+                j -> j.getWithLease().value(),
                 true),
             //    private Duration streamTimeout;
             new Input<>(

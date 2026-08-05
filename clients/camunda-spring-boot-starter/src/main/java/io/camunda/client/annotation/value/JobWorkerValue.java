@@ -42,8 +42,9 @@ public class JobWorkerValue {
   private SourceAware<Integer> maxRetries = new Empty<>();
   private SourceAware<Duration> retryBackoff = new Empty<>();
   private SourceAware<TenantFilter> tenantFilter = new Empty<>();
-  // cannot be changed from change set
+  // autoComplete and withLease cannot be changed from change set
   private SourceAware<Boolean> autoComplete = new Empty<>();
+  private SourceAware<Boolean> withLease = new Empty<>();
 
   @Deprecated(forRemoval = true)
   @JsonIgnore
@@ -68,7 +69,8 @@ public class JobWorkerValue {
       final SourceAware<Duration> streamInactivityTimeout,
       final SourceAware<Integer> maxRetries,
       final SourceAware<Duration> retryBackoff,
-      final SourceAware<TenantFilter> tenantFilter) {
+      final SourceAware<TenantFilter> tenantFilter,
+      final SourceAware<Boolean> withLease) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -86,6 +88,7 @@ public class JobWorkerValue {
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
     this.tenantFilter = tenantFilter;
+    this.withLease = withLease;
   }
 
   public SourceAware<String> getType() {
@@ -208,6 +211,14 @@ public class JobWorkerValue {
     this.autoComplete = autoComplete;
   }
 
+  public SourceAware<Boolean> getWithLease() {
+    return withLease;
+  }
+
+  public void setWithLease(final SourceAware<Boolean> withLease) {
+    this.withLease = withLease;
+  }
+
   public SourceAware<Duration> getRetryBackoff() {
     return retryBackoff;
   }
@@ -253,7 +264,8 @@ public class JobWorkerValue {
         maxRetries,
         retryBackoff,
         tenantFilter,
-        autoComplete);
+        autoComplete,
+        withLease);
   }
 
   @Override
@@ -278,7 +290,8 @@ public class JobWorkerValue {
         && Objects.equals(maxRetries, that.maxRetries)
         && Objects.equals(retryBackoff, that.retryBackoff)
         && Objects.equals(tenantFilter, that.tenantFilter)
-        && Objects.equals(autoComplete, that.autoComplete);
+        && Objects.equals(autoComplete, that.autoComplete)
+        && Objects.equals(withLease, that.withLease);
   }
 
   @Override
@@ -286,6 +299,8 @@ public class JobWorkerValue {
     return "JobWorkerValue{"
         + "autoComplete="
         + autoComplete
+        + ", withLease="
+        + withLease
         + ", tenantFilter="
         + tenantFilter
         + ", retryBackoff="

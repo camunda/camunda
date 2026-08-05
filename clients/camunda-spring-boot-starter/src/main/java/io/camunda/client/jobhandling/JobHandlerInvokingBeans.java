@@ -104,7 +104,8 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   private JobCallbackFinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
-    final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
+    final CompleteJobCommandStep1 completeCommand =
+        jobClient.newCompleteCommand(job.getKey()).withLeaseToken(job.getLeaseToken());
     if (result instanceof final UserTaskResultFunction resultFunction) {
       return completeCommand.withResult(r -> resultFunction.apply(r.forUserTask()));
     } else if (result instanceof final AdHocSubProcessResultFunction resultFunction) {

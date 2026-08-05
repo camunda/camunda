@@ -103,7 +103,8 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
         jobClient
             .newThrowErrorCommand(job.getKey())
             .errorCode(bpmnError.getErrorCode())
-            .errorMessage(bpmnError.getErrorMessage());
+            .errorMessage(bpmnError.getErrorMessage())
+            .withLeaseToken(job.getLeaseToken());
     return JobHandlingUtil.applyVariables(bpmnError.getVariables(), command);
   }
 
@@ -121,7 +122,8 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
             .newFailCommand(job.getKey())
             .retries(retries)
             .errorMessage(errorMessage)
-            .retryBackoff(backoff);
+            .retryBackoff(backoff)
+            .withLeaseToken(job.getLeaseToken());
     return JobHandlingUtil.applyVariables(jobError.getVariables(), command);
   }
 }
