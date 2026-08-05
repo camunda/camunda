@@ -202,13 +202,14 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
 
-    // then (object-shaped)
+    // then (object-shaped and list-shaped) — asserted exhaustively in one call since both
+    // variables coexist on this single instance and no other variables are present
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .contains(
+        .containsExactlyInAnyOrder(
             Tuple.tuple(
                 "numericStrings",
                 OBJECT.getId(),
@@ -243,15 +244,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple(
                 "numericStrings.20",
                 STRING.getId(),
-                Collections.singletonList("12345678901234567890")));
-
-    // then (list-shaped)
-    assertThat(instance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getType,
-            SimpleProcessVariableDto::getValue)
-        .contains(
+                Collections.singletonList("12345678901234567890")),
             Tuple.tuple("numericStringsList", STRING.getId(), numericStringList),
             // additional _listSize variable for lists
             Tuple.tuple(
@@ -465,13 +458,14 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
 
-    // then (object-shaped)
+    // then (object-shaped and list-shaped) — asserted exhaustively in one call since both
+    // variables coexist on this single instance and no other variables are present
     assertThat(instance.getVariables())
         .extracting(
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .contains(
+        .containsExactlyInAnyOrder(
             Tuple.tuple(
                 "objectVar",
                 OBJECT.getId(),
@@ -495,15 +489,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
                 "objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
             Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
             // additional _listSize variable for lists
-            Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2")));
-
-    // then (list-shaped)
-    assertThat(instance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getType,
-            SimpleProcessVariableDto::getValue)
-        .contains(
+            Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2")),
             Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
             // additional _listSize variable for lists
             Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2")));
