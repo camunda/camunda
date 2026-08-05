@@ -7,12 +7,9 @@
  */
 
 import {loader} from '@monaco-editor/react';
-import 'monaco-editor/esm/vs/language/json/monaco.contribution.js';
-import 'monaco-editor/esm/vs/editor/browser/coreCommands.js';
-import 'monaco-editor/esm/vs/editor/contrib/find/browser/findController.js';
 import * as monaco from 'monaco-editor';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import jsonWorker from 'monaco-editor/languages/features/json/json.worker?worker';
+import editorWorker from 'monaco-editor/editor/editor.worker?worker';
 
 declare global {
 	interface Window {
@@ -27,8 +24,8 @@ function loadMonaco() {
 		},
 	};
 
-	monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-		...monaco.languages.json.jsonDefaults.diagnosticsOptions,
+	monaco.json.jsonDefaults.setDiagnosticsOptions({
+		...monaco.json.jsonDefaults.diagnosticsOptions,
 		schemaValidation: 'error',
 		schemaRequest: 'error',
 	});

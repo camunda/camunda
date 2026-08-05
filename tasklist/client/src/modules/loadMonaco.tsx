@@ -7,12 +7,9 @@
  */
 
 import {loader} from '@monaco-editor/react';
-import 'monaco-editor/esm/vs/language/json/monaco.contribution.js';
-import 'monaco-editor/esm/vs/editor/browser/coreCommands.js';
-import 'monaco-editor/esm/vs/editor/contrib/find/browser/findController.js';
 import * as monaco from 'monaco-editor';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import jsonWorker from 'monaco-editor/languages/features/json/json.worker?worker';
+import editorWorker from 'monaco-editor/editor/editor.worker?worker';
 
 function loadMonaco() {
   self.MonacoEnvironment = {

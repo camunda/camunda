@@ -74,8 +74,8 @@ const RichTextEditor: React.FC<Props> = observer(
         if (!monaco) {
           return;
         }
-        const current = monaco.languages.json.jsonDefaults.diagnosticsOptions;
-        monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+        const current = monaco.json.jsonDefaults.diagnosticsOptions;
+        monaco.json.jsonDefaults.setDiagnosticsOptions({
           ...current,
           schemas: (current.schemas ?? []).filter(
             (s: {uri: string}) => s.uri !== schemaUri,
@@ -104,9 +104,8 @@ const RichTextEditor: React.FC<Props> = observer(
             monacoRef.current = monaco;
 
             if (jsonSchema && language === 'json') {
-              const current =
-                monaco.languages.json.jsonDefaults.diagnosticsOptions;
-              monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+              const current = monaco.json.jsonDefaults.diagnosticsOptions;
+              monaco.json.jsonDefaults.setDiagnosticsOptions({
                 ...current,
                 schemas: [
                   ...(current.schemas ?? []).filter(
