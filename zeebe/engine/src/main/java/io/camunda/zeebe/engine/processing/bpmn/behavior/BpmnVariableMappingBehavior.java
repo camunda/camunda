@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -16,7 +15,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
+import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -26,6 +27,10 @@ import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -37,18 +42,22 @@ public final class BpmnVariableMappingBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.evaluateDuplicateOutputMappingTargetsInOrder =
+        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   /**
@@ -75,12 +84,11 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder = new InputMappingResultBuilder();
+    final var resultBuilder = new MappingResultBuilder();
     final var processor = expressionProcessor.withPrimaryContext(resultBuilder::getVariable);
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
-      final var result =
-          processor.evaluateVariableMappingSourceExpression(mapping.source(), scopeKey);
+      final var result = processor.evaluateVariableMappingExpression(mapping.source(), scopeKey);
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
@@ -100,6 +108,12 @@ public final class BpmnVariableMappingBehavior {
   /**
    * Apply the output mappings for a BPMN element. Generally called on completing of the element.
    *
+   * <p>The mappings are evaluated one by one in modeling order. Each mapping's source expression
+   * sees the results of the earlier mappings (they take priority over same-named scope variables)
+   * and falls back to the element's variable scope otherwise. A nested target merges with the
+   * existing scope value at every path level. Evaluation stops at the first failing mapping and no
+   * variables are applied in that case.
+   *
    * @param context The current bpmn element context
    * @param element The current bpmn element
    * @return either void if successful, otherwise a failure
@@ -112,7 +126,7 @@ public final class BpmnVariableMappingBehavior {
     final long processInstanceKey = record.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final long scopeKey = getVariableScopeKey(context);
-    final Optional<Expression> outputMappingExpression = element.getOutputMappings();
+    final Optional<List<OutputMapping>> outputMappings = element.getOutputMappings();
 
     final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
     boolean hasVariables = false;
@@ -131,7 +145,7 @@ public final class BpmnVariableMappingBehavior {
           element.getId());
     }
 
-    if (outputMappingExpression.isPresent()) {
+    if (outputMappings.isPresent()) {
       // set as local variables
       if (hasVariables) {
         variableBehavior.mergeLocalDocument(
@@ -143,20 +157,40 @@ public final class BpmnVariableMappingBehavior {
             variables);
       }
 
-      // apply the output mappings
-      return expressionProcessor
-          .evaluateVariableMappingExpression(outputMappingExpression.get(), elementInstanceKey)
-          .map(
-              result -> {
-                variableBehavior.mergeDocument(
-                    scopeKey,
-                    processDefinitionKey,
-                    processInstanceKey,
-                    bpmnProcessId,
-                    context.getTenantId(),
-                    result);
-                return null;
-              });
+      // Resolves the current scope value at a nested target's path so the builder can merge into
+      // it and keep the existing sibling properties: look up the top-level variable in the element
+      // scope, then navigate into it along the remaining path segments (null when absent).
+      final var resultBuilder =
+          new MappingResultBuilder(
+              path ->
+                  Optional.ofNullable(
+                          variablesState.getVariable(
+                              elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
+                      .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                      .orElse(null));
+      final var processor = expressionProcessor.withPrimaryContext(resultBuilder::getVariable);
+
+      final var mappingsToEvaluate =
+          evaluateDuplicateOutputMappingTargetsInOrder
+              ? outputMappings.get()
+              : withoutSupersededDuplicateTargets(outputMappings.get());
+
+      for (final OutputMapping mapping : mappingsToEvaluate) {
+        final var result =
+            processor.evaluateVariableMappingExpression(mapping.source(), elementInstanceKey);
+        if (result.isLeft()) {
+          return Either.left(result.getLeft());
+        }
+        resultBuilder.put(mapping.targetPath(), result.get());
+      }
+      variableBehavior.mergeDocument(
+          scopeKey,
+          processDefinitionKey,
+          processInstanceKey,
+          bpmnProcessId,
+          context.getTenantId(),
+          resultBuilder.toDocument());
+      return Either.right(null);
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
@@ -208,5 +242,40 @@ public final class BpmnVariableMappingBehavior {
     } else {
       return false;
     }
+  }
+
+  /**
+   * Reproduces the target-collision handling of the removed combined-FEEL-context builder, for the
+   * {@code evaluateDuplicateOutputMappingTargetsInOrder} kill-switch: a mapping whose target path
+   * collides with an earlier one (equal, or one a prefix of the other) replaces it outright,
+   * keeping the FIRST colliding mapping's position but the LAST one's value -- mirroring how
+   * re-inserting an existing key into a {@code LinkedHashMap} keeps its iteration position but
+   * replaces its value. The superseded mapping's source is dropped entirely and never evaluated.
+   */
+  static List<OutputMapping> withoutSupersededDuplicateTargets(final List<OutputMapping> mappings) {
+    record Survivor(int firstIndex, OutputMapping mapping) {}
+
+    final var survivors = new ArrayList<Survivor>();
+    for (int i = 0; i < mappings.size(); i++) {
+      final var mapping = mappings.get(i);
+      var firstIndex = i;
+      final var iterator = survivors.iterator();
+      while (iterator.hasNext()) {
+        final var existing = iterator.next();
+        if (collides(existing.mapping().targetPath(), mapping.targetPath())) {
+          firstIndex = Math.min(firstIndex, existing.firstIndex());
+          iterator.remove();
+        }
+      }
+      survivors.add(new Survivor(firstIndex, mapping));
+    }
+    survivors.sort(Comparator.comparingInt(Survivor::firstIndex));
+    return survivors.stream().map(Survivor::mapping).toList();
+  }
+
+  private static boolean collides(final List<String> a, final List<String> b) {
+    final var shorter = a.size() <= b.size() ? a : b;
+    final var longer = a.size() <= b.size() ? b : a;
+    return longer.subList(0, shorter.size()).equals(shorter);
   }
 }
