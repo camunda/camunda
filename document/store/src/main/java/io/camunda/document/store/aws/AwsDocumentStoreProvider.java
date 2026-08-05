@@ -33,6 +33,8 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   private static final String CHUNKED_ENCODING_ENABLED = "CHUNKED_ENCODING_ENABLED";
   private static final String SUPPORT_LEGACY_MD5 = "SUPPORT_LEGACY_MD5";
   private static final String REGION = "REGION";
+  private static final String ACCESS_KEY = "ACCESS_KEY";
+  private static final String SECRET_KEY = "SECRET_KEY";
 
   @Override
   public DocumentStore createDocumentStore(
@@ -48,6 +50,10 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
                             + BUCKET_NAME_PROPERTY
                             + "'"));
 
+    final String accessKey = getTrimmedProperty(configuration, ACCESS_KEY);
+    final String secretKey = getTrimmedProperty(configuration, SECRET_KEY);
+    validateCredentialPair(configuration, accessKey, secretKey);
+
     return AwsDocumentStoreFactory.create(
         bucketName,
         getDefaultTTL(configuration),
@@ -58,7 +64,33 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
             getForcePathStyle(configuration),
             getChunkedEncodingEnabled(configuration),
             getSupportLegacyMd5(configuration),
-            getRegion(configuration)));
+            getRegion(configuration),
+            accessKey,
+            secretKey));
+  }
+
+  /**
+   * A half-configured key pair must fail loudly: silently falling back to the SDK default chain
+   * would let a store that was meant to use its own identity read and write with the process-wide
+   * credentials instead, which for a physical tenant means reaching storage that belongs to
+   * somebody else.
+   */
+  private static void validateCredentialPair(
+      final DocumentStoreConfigurationRecord configuration,
+      final String accessKey,
+      final String secretKey) {
+    if ((accessKey == null) == (secretKey == null)) {
+      return;
+    }
+    throw new IllegalArgumentException(
+        "Failed to configure document store with id '"
+            + configuration.id()
+            + "': '"
+            + ACCESS_KEY
+            + "' and '"
+            + SECRET_KEY
+            + "' must be configured together. Configure both to authenticate this store with its"
+            + " own credentials, or neither to use the credentials of the AWS SDK default chain.");
   }
 
   private static Long getDefaultTTL(final DocumentStoreConfigurationRecord configuration) {
@@ -117,8 +149,13 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   private static String getRegion(final DocumentStoreConfigurationRecord configuration) {
-    final String region = configuration.properties().get(REGION);
-    return region == null || region.isBlank() ? null : region.trim();
+    return getTrimmedProperty(configuration, REGION);
+  }
+
+  private static String getTrimmedProperty(
+      final DocumentStoreConfigurationRecord configuration, final String property) {
+    final String value = configuration.properties().get(property);
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   private static Boolean getForcePathStyle(final DocumentStoreConfigurationRecord configuration) {

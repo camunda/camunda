@@ -110,6 +110,9 @@ public final class CamundaDocumentStoreConfigurationLoader
         "support-legacy-md5",
         "SUPPORT_LEGACY_MD5",
         store.getSupportLegacyMd5());
+    putResolved(properties, AWS, storeId, "access-key", "ACCESS_KEY", store.getAccessKey());
+    putResolvedSensitive(
+        properties, AWS, storeId, "secret-key", "SECRET_KEY", store.getSecretKey());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
@@ -158,27 +161,65 @@ public final class CamundaDocumentStoreConfigurationLoader
       final String unifiedField,
       final String propertyKey,
       final Object unifiedValue) {
+    putResolved(properties, storeType, storeId, unifiedField, propertyKey, unifiedValue, false);
+  }
+
+  /**
+   * Same as {@link #putResolved}, for a value that must never be written to a log line: the
+   * legacy-configuration check reports conflicts by printing the values it compared.
+   */
+  private static void putResolvedSensitive(
+      final Map<String, String> properties,
+      final String storeType,
+      final String storeId,
+      final String unifiedField,
+      final String propertyKey,
+      final Object unifiedValue) {
+    putResolved(properties, storeType, storeId, unifiedField, propertyKey, unifiedValue, true);
+  }
+
+  private static void putResolved(
+      final Map<String, String> properties,
+      final String storeType,
+      final String storeId,
+      final String unifiedField,
+      final String propertyKey,
+      final Object unifiedValue,
+      final boolean sensitive) {
+    final String unifiedProperty = PREFIX + storeType + "." + storeId + "." + unifiedField;
+    final Set<String> legacyProperties =
+        Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey);
+
     if (unifiedValue != null) {
-      UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-          PREFIX + storeType + "." + storeId + "." + unifiedField,
-          String.valueOf(unifiedValue),
-          String.class,
-          BackwardsCompatibilityMode.SUPPORTED,
-          Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));
+      validate(unifiedProperty, String.valueOf(unifiedValue), legacyProperties, sensitive);
       properties.put(propertyKey, String.valueOf(unifiedValue));
       return;
     }
 
-    final String resolved =
-        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-            PREFIX + storeType + "." + storeId + "." + unifiedField,
-            null,
-            String.class,
-            BackwardsCompatibilityMode.SUPPORTED,
-            Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));
+    final String resolved = validate(unifiedProperty, null, legacyProperties, sensitive);
     if (resolved != null) {
       properties.put(propertyKey, resolved);
     }
+  }
+
+  private static String validate(
+      final String unifiedProperty,
+      final String unifiedValue,
+      final Set<String> legacyProperties,
+      final boolean sensitive) {
+    return sensitive
+        ? UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
+            unifiedProperty,
+            unifiedValue,
+            String.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyProperties)
+        : UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            unifiedProperty,
+            unifiedValue,
+            String.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyProperties);
   }
 
   private static DocumentStoreConfigurationRecord toRecord(

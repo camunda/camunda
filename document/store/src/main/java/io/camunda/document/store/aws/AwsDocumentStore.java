@@ -138,6 +138,7 @@ public class AwsDocumentStore implements DocumentStore {
         && options.forcePathStyle() == null
         && options.chunkedEncodingEnabled() == null
         && options.region() == null
+        && !options.hasStaticCredentials()
         && !Boolean.TRUE.equals(options.supportLegacyMd5())) {
       return S3Client.create();
     }
@@ -147,6 +148,9 @@ public class AwsDocumentStore implements DocumentStore {
     }
     if (options.region() != null) {
       builder.region(Region.of(options.region()));
+    }
+    if (options.hasStaticCredentials()) {
+      builder.credentialsProvider(options.credentialsProvider());
     }
     if (Boolean.TRUE.equals(options.supportLegacyMd5())) {
       builder.addPlugin(LegacyMd5Plugin.create());
@@ -160,7 +164,8 @@ public class AwsDocumentStore implements DocumentStore {
     if (options.endpointOverride() == null
         && options.forcePathStyle() == null
         && options.chunkedEncodingEnabled() == null
-        && options.region() == null) {
+        && options.region() == null
+        && !options.hasStaticCredentials()) {
       return S3Presigner.create();
     }
     final S3Presigner.Builder builder = S3Presigner.builder();
@@ -169,6 +174,9 @@ public class AwsDocumentStore implements DocumentStore {
     }
     if (options.region() != null) {
       builder.region(Region.of(options.region()));
+    }
+    if (options.hasStaticCredentials()) {
+      builder.credentialsProvider(options.credentialsProvider());
     }
     builder.serviceConfiguration(buildS3Configuration(options));
     return builder.build();
