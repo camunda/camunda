@@ -46,6 +46,8 @@ public class Engine implements RecordProcessor {
 
   public static final String ERROR_MESSAGE_BANNED_PI =
       "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
+  public static final String ERROR_MESSAGE_SUSPENDED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is suspended.";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";

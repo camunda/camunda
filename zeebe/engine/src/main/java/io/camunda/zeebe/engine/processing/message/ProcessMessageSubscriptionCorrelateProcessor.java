@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -35,7 +37,8 @@ import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class ProcessMessageSubscriptionCorrelateProcessor
-    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
+    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord>,
+        SuspensionAware<ProcessMessageSubscriptionRecord> {
 
   private static final String NO_EVENT_OCCURRED_MESSAGE =
       "Expected to correlate a process message subscription with element key '%d' and message name '%s', "
@@ -219,5 +222,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
         subscription.getTenantId());
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(
+      final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }

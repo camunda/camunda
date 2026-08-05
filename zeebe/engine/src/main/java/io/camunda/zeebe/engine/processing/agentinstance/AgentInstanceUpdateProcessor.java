@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -35,7 +37,7 @@ import java.util.List;
 import java.util.Set;
 
 public final class AgentInstanceUpdateProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
   // Iteration order matters: it determines the order of names in the emitted changedAttributes
   // list and must be stable across JVMs and replays. Used both as the allow-list for incoming
@@ -358,5 +360,10 @@ public final class AgentInstanceUpdateProcessor
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
     responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }

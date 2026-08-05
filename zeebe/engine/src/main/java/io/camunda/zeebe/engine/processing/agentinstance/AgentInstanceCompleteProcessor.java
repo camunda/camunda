@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,7 +25,7 @@ import java.util.List;
 
 @ExcludeAuthorizationCheck
 public final class AgentInstanceCompleteProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to complete agent instance with key '%d', but no such agent instance was found.";
@@ -52,5 +54,10 @@ public final class AgentInstanceCompleteProcessor
     current.setStatus(AgentInstanceStatus.COMPLETED);
     current.setChangedAttributes(List.of(AgentInstanceRecord.ATTR_STATUS));
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.COMPLETED, current);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -218,6 +219,14 @@ public final class MessageCorrelateBehavior {
 
   public void correlateToMessageEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    // TODO(#58766): defer correlations to suspended instances so live messages can retry on resume.
+    correlateToMessageEvents(messageData, correlatingSubscriptions, processInstanceKey -> false);
+  }
+
+  public void correlateToMessageEvents(
+      final MessageData messageData,
+      final Subscriptions correlatingSubscriptions,
+      final LongPredicate skipProcessInstance) {
 
     messageSubscriptionState.visitSubscriptions(
         messageData.tenantId(),
@@ -230,7 +239,8 @@ public final class MessageCorrelateBehavior {
               && !correlatingSubscriptions.contains(
                   subscription.getRecord().getBpmnProcessIdBuffer())
               && businessIdMatches(
-                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())) {
+                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())
+              && !skipProcessInstance.test(subscription.getRecord().getProcessInstanceKey())) {
 
             final var correlatingSubscription =
                 subscription

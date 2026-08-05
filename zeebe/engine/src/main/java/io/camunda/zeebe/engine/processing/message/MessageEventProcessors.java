@@ -172,7 +172,8 @@ public final class MessageEventProcessors {
                 businessIdUniquenessEnabled,
                 routingInfo,
                 partitionId,
-                metrics))
+                metrics,
+                processingState.getSuspensionState()))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,

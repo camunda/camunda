@@ -22,6 +22,8 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -46,7 +48,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobFailProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
@@ -229,5 +232,10 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
             b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
         job,
         AuthorizationRejectionMapper.noPrincipal());
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    return SuspensionBehavior.REJECT;
   }
 }

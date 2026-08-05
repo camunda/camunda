@@ -11,6 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -32,7 +34,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 
 public final class AgentInstanceCreateProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
   // CAUTION: callers may parse this message to extract the existing agentInstanceKey from the
   // second '%d'. Wording changes that alter the position of the numeric values are a breaking
@@ -188,5 +190,10 @@ public final class AgentInstanceCreateProcessor
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
     responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }

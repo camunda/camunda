@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,7 +25,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
-public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobRecurAfterBackoffProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =
       "Expected to back off failed job with key '%d', but %s";
@@ -82,5 +85,10 @@ public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRe
 
   private boolean hasRecurred(final JobRecord job) {
     return job.getRecurringTime() < clock.millis();
+  }
+
+  @Override
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+    return SuspensionBehavior.BUFFER;
   }
 }
