@@ -120,10 +120,11 @@ class RdbmsMapperConstructorArgsMustBeNamedTest {
       final var statement = configuration.getMappedStatement(statementId);
       for (final var resultMap : statement.getResultMaps()) {
         if (!resultMap.getType().isRecord()) {
-          // Only records have the positional-automapping risk this check targets: a scalar
-          // result (e.g. resultType="java.lang.Long" for a COUNT(*)), an insert/update/delete's
-          // implicit void, or a plain mutable class has no named-constructor binding to get wrong
-          // in the first place.
+          // Scoped to records deliberately, not because non-records are immune (see the
+          // isRecord() caveat in the class Javadoc) -- every current resultType= usage in this
+          // directory targets a scalar (e.g. java.lang.Long for a COUNT(*)) or an
+          // insert/update/delete's implicit void, neither of which has any constructor to bind
+          // by name or position in the first place.
           continue;
         }
         softly
@@ -133,7 +134,7 @@ class RdbmsMapperConstructorArgsMustBeNamedTest {
                     + " automapping matches SELECT columns to constructor params by position, not"
                     + " by name",
                 statementId, resultMap.getType().getSimpleName())
-            .doesNotEndWith("-Inline");
+            .isNotEqualTo(statementId + "-Inline");
       }
     }
   }
