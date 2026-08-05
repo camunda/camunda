@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.agentinstance;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -29,6 +30,9 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private long processDefinitionKey;
   private int processDefinitionVersion;
   private String tenantId;
+  private long jobKey = -1L;
+  private String jobLease;
+  private int loopIteration;
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
@@ -129,6 +133,40 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
+  public long getJobKey() {
+    return jobKey;
+  }
+
+  public void setJobKey(final long jobKey) {
+    this.jobKey = jobKey;
+  }
+
+  @Override
+  public String getJobLease() {
+    return jobLease;
+  }
+
+  public void setJobLease(final String jobLease) {
+    this.jobLease = jobLease;
+  }
+
+  @Override
+  public int getLoopIteration() {
+    return loopIteration;
+  }
+
+  public void setLoopIteration(final int loopIteration) {
+    this.loopIteration = loopIteration;
+  }
+
+  // Not tracked — Optimize's import doesn't need the embedded history batch, only the
+  // instance-level fields above.
+  @Override
+  public List<AgentHistoryRecordValue> getHistory() {
+    return null;
+  }
+
+  @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
@@ -200,6 +238,9 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         processDefinitionKey,
         processDefinitionVersion,
         tenantId,
+        jobKey,
+        jobLease,
+        loopIteration,
         status,
         definition,
         metrics,
@@ -219,10 +260,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && rootProcessInstanceKey == that.rootProcessInstanceKey
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
+        && jobKey == that.jobKey
+        && loopIteration == that.loopIteration
         && Objects.equals(elementInstanceKeys, that.elementInstanceKeys)
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(jobLease, that.jobLease)
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
@@ -248,6 +292,12 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + processDefinitionVersion
         + ", tenantId="
         + tenantId
+        + ", jobKey="
+        + jobKey
+        + ", jobLease="
+        + jobLease
+        + ", loopIteration="
+        + loopIteration
         + ", status="
         + status
         + ", definition="
@@ -273,6 +323,9 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String processDefinitionKey = "processDefinitionKey";
     public static final String processDefinitionVersion = "processDefinitionVersion";
     public static final String tenantId = "tenantId";
+    public static final String jobKey = "jobKey";
+    public static final String jobLease = "jobLease";
+    public static final String loopIteration = "loopIteration";
     public static final String status = "status";
     public static final String definition = "definition";
     public static final String metrics = "metrics";
@@ -341,6 +394,9 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
     private long inputTokens;
     private long outputTokens;
+    private long reasoningTokenCount;
+    private long cacheCreationTokenCount;
+    private long cacheReadTokenCount;
     private int modelCalls;
     private int toolCalls;
 
@@ -365,6 +421,33 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
+    public long getReasoningTokenCount() {
+      return reasoningTokenCount;
+    }
+
+    public void setReasoningTokenCount(final long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+    }
+
+    @Override
+    public long getCacheCreationTokenCount() {
+      return cacheCreationTokenCount;
+    }
+
+    public void setCacheCreationTokenCount(final long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+    }
+
+    @Override
+    public long getCacheReadTokenCount() {
+      return cacheReadTokenCount;
+    }
+
+    public void setCacheReadTokenCount(final long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
+    }
+
+    @Override
     public int getModelCalls() {
       return modelCalls;
     }
@@ -384,7 +467,14 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
     @Override
     public int hashCode() {
-      return Objects.hash(inputTokens, outputTokens, modelCalls, toolCalls);
+      return Objects.hash(
+          inputTokens,
+          outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
+          modelCalls,
+          toolCalls);
     }
 
     @Override
@@ -395,6 +485,9 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
       final AgentMetricsValueDto that = (AgentMetricsValueDto) o;
       return inputTokens == that.inputTokens
           && outputTokens == that.outputTokens
+          && reasoningTokenCount == that.reasoningTokenCount
+          && cacheCreationTokenCount == that.cacheCreationTokenCount
+          && cacheReadTokenCount == that.cacheReadTokenCount
           && modelCalls == that.modelCalls
           && toolCalls == that.toolCalls;
     }
@@ -405,6 +498,12 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
           + inputTokens
           + ", outputTokens="
           + outputTokens
+          + ", reasoningTokenCount="
+          + reasoningTokenCount
+          + ", cacheCreationTokenCount="
+          + cacheCreationTokenCount
+          + ", cacheReadTokenCount="
+          + cacheReadTokenCount
           + ", modelCalls="
           + modelCalls
           + ", toolCalls="
