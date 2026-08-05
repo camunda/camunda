@@ -251,9 +251,11 @@ public class ResolveSecretsTest extends ClientRestTest {
   /**
    * Drives every code the generated protocol enum knows, excluding only the generator's unknown
    * default, which {@link #shouldMapUnknownErrorCodeToUnknownEnumValue} covers. Deliberately not an
-   * explicit name list: should the API contract gain a code that {@link SecretErrorCode} does not
-   * mirror, {@code EnumUtil.convert} throws and fails the whole batch at runtime, so this test has
-   * to fail on the added code rather than silently keep testing the old three.
+   * explicit name list: a code the API contract gains is picked up by the enum source, and the
+   * assertion's {@code SecretErrorCode.valueOf(code.name())} then fails until {@link
+   * SecretErrorCode} mirrors it. An unmirrored code does not fail the batch at runtime any more, it
+   * degrades to {@link SecretErrorCode#UNKNOWN_ENUM_VALUE}, so this test is what keeps the two
+   * enums from drifting apart unnoticed.
    */
   @ParameterizedTest
   @EnumSource(
