@@ -155,7 +155,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then -- partition join is rejected on zone-aware clusters
       assertThatCode(() -> actuator.joinPartition(0, 1, 1))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("is not an active member");
+          .hasMessageContaining("is not active");
     }
   }
 
@@ -306,7 +306,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - force-remove zoneA: force-evict its brokers and drop it from the distribution config
       final var forceRemoveResponse = actuator.forceRemoveZone(ZONE_A, false);
       Awaitility.await()
-          .ignoreException(FeignException.class)
           .untilAsserted(
               () ->
                   ClusterActuatorAssert.assertThat(actuator)
