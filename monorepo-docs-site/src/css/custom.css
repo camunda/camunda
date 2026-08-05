@@ -37,3 +37,18 @@ body {
         roboto, oxygen, ubuntu, cantarell, fira sans, droid sans, helvetica neue,
         sans-serif !important;
 }
+
+/* Partition distribution visualizer — data viz palette */
+:root {
+    --viz-leader: #c62828;
+    --viz-leader-light: #ffebee;
+    --viz-follower-border: #ef9a9a;
+    --viz-broker-head: #4e342e;
+}
+
+[data-theme='dark'] {
+    --viz-leader: #ef9a9a;
+    --viz-leader-light: #3e0a0a;
+    --viz-follower-border: #c62828;
+    --viz-broker-head: #6d4c41;
+}

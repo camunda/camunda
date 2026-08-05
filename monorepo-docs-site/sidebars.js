@@ -106,6 +106,7 @@ const sidebars = {
               type: 'category',
               label: 'Orchestration Cluster',
               items: [
+                'architecture/components/orchestration-cluster/partition-distribution',
                 {
                   type: 'category',
                   label: 'ADRs',
