@@ -207,8 +207,9 @@ public class BpmnJobActivationBehavior {
    * <p>Stops appending once the record batch is full instead of letting the append overflow and
    * roll back the command being processed. A job already parked by an earlier reference of this
    * call is left parked: its remaining references are requested when the reactivation pushes it
-   * again. A job that could not be parked at all stays activatable, so a long poll can still
-   * collect it and request the resolution itself.
+   * again. A job that could not be parked at all stays activatable and is announced to the workers
+   * instead of being counted as skipped, so a long poll can still collect it and request the
+   * resolution itself.
    */
   private void requestResolutionAndPark(
       final long jobKey,
@@ -238,10 +239,11 @@ public class BpmnJobActivationBehavior {
           keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
       parked = true;
     }
-    if (!parked) {
+    if (parked) {
+      jobMetrics.countJobEvent(JobAction.SKIPPED, jobKind, jobType);
+    } else {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
     }
-    jobMetrics.countJobEvent(JobAction.SKIPPED, jobKind, jobType);
   }
 
   /** Notifies the workers of the job type unless this batch of jobs already did. */
