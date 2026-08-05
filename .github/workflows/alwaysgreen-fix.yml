@@ -316,7 +316,12 @@ jobs:
           if [ -n "${FAILING_RUN_URL}" ]; then
             dl "${GITHUB_REPOSITORY}" "${FAILING_RUN_URL##*/}" 'diagnostics-e2e*'
           fi
-          find /tmp/alwaysgreen-artifacts -type f | head -40
+          # Deliberately pipe-free. `find | head -40` makes head close the pipe once
+          # the cap is reached, find then dies on SIGPIPE, and pipefail turns this
+          # informational listing into a step failure that skips the agent.
+          find /tmp/alwaysgreen-artifacts -type f > /tmp/evidence-files.txt
+          echo "evidence files: $(wc -l < /tmp/evidence-files.txt) (first 40 shown)"
+          head -40 /tmp/evidence-files.txt
 
       - name: Run Claude Code fix agent
         env:

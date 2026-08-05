@@ -178,7 +178,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
 
       - name: Discover and plan
         id: plan
@@ -251,7 +251,7 @@ jobs:
         if: ${{ steps.mode.outputs.active == 'true' && steps.slack-secrets.outcome == 'success' && (steps.plan.outputs.count != '0' || inputs.parent_slack_ts != '') }}
         continue-on-error: true
         env:
-          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PARENT_TS: ${{ inputs.parent_slack_ts }}
           PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
@@ -392,7 +392,7 @@ jobs:
         if: ${{ always() && steps.slack.outputs.self_ts != '' }}
         continue-on-error: true
         env:
-          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_TS: ${{ steps.slack.outputs.self_ts }}
           SLACK_CHANNEL: ${{ steps.slack.outputs.channel }}
         run: |
