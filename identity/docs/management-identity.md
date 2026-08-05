@@ -1,9 +1,3 @@
----
-
-toc_min_heading_level: 2
-toc_max_heading_level: 5
-------------------------
-
 # Management Identity Architecture Documentation
 
 ## 1. Introduction and goals
