@@ -31,7 +31,7 @@ const FilterSwitcherButton = styled.button`
   &[aria-pressed='true'] {
     background-color: var(--cds-layer-01);
     color: var(--cds-text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 1px 2px var(--cds-shadow);
   }
 
   &:hover {
