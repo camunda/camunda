@@ -8,13 +8,39 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2026-07-28T14:59:54.260Z
- * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
+ * Generated At: 2026-08-04T11:55:54.253Z
+ * Spec Commit: 7ad6907f6d9cf772438213329bf52fa21d343ed2
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Secrets Validation API Tests', () => {
+  test('listSecrets - Additional prop __unexpectedField', async ({request}) => {
+    const requestBody = {
+      __unexpectedField: 'x',
+    };
+    const res = await request.post(buildUrl('/secrets/list', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('listSecrets - Body wrong top-level type', async ({request}) => {
+    const requestBody: string[] = [];
+    const res = await request.post(buildUrl('/secrets/list', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
   test('resolveSecrets - Additional prop __extraField', async ({request}) => {
     const requestBody = {
       references: ['x'],

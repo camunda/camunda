@@ -11,7 +11,7 @@ import {
   ValidationScenario,
   ParameterModel,
 } from '../model/types.js';
-import {makeId} from './common.js';
+import {makeId, validParamValue} from './common.js';
 import {buildGuaranteedPatternMismatch} from '../util/patternMismatch.js';
 
 interface Opts {
@@ -57,17 +57,6 @@ function resolveParamSchema(
   return out;
 }
 
-function buildValidValue(r: ResolvedParamSchema): string {
-  if (r.enumValues && r.enumValues.length) return String(r.enumValues[0]);
-  if (r.pattern) {
-    // If numeric-only pattern
-    if (/^\^-?\[0-9]\+\$$/.test(r.pattern) || r.pattern === '^-?[0-9]+$')
-      return '1';
-  }
-  if (r.minLength && r.minLength > 1) return 'a'.repeat(r.minLength);
-  return 'x';
-}
-
 function buildViolations(
   p: ParameterModel,
   r: ResolvedParamSchema,
@@ -98,7 +87,12 @@ function buildViolations(
   return out;
 }
 
-function buildParams(
+/**
+ * Values for the path template's `{token}`s only. Overrides that name no token are ignored - a
+ * query parameter passed here would be silently dropped by buildUrl instead of sent, so query
+ * values are kept in a separate map and handed to buildUrl's `query` argument.
+ */
+function buildPathParams(
   path: string,
   overrides: Record<string, string>,
 ): Record<string, string> | undefined {
@@ -106,8 +100,29 @@ function buildParams(
   if (!m) return undefined;
   const params: Record<string, string> = {};
   for (const token of m) params[token.slice(1, -1)] = 'x';
-  for (const [k, v] of Object.entries(overrides)) params[k] = v;
+  for (const [k, v] of Object.entries(overrides)) {
+    if (k in params) params[k] = v;
+  }
   return params;
+}
+
+/**
+ * Valid placeholder values for the operation's parameters in one location, so the violation under
+ * test is the only thing wrong with the request. Optional query parameters are skipped: a dummy
+ * value for one of them can fail its own validation, which would make the expected 400 mean
+ * something other than the violation the scenario claims to exercise.
+ */
+function buildValidValues(
+  op: OperationModel,
+  where: 'path' | 'query',
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of op.parameters) {
+    if (p.in !== where) continue;
+    if (where === 'query' && !p.required) continue;
+    out[p.name] = validParamValue(p.schema, p.name);
+  }
+  return out;
 }
 
 export function generateParamConstraintViolations(
@@ -126,14 +141,16 @@ export function generateParamConstraintViolations(
       const violations = buildViolations(p, resolved);
       if (!violations.length) continue;
       // Use valid placeholders for all params first
-      const validMap: Record<string, string> = {};
-      for (const pp of op.parameters.filter((pp) => pp.in === p.in)) {
-        const rr = resolveParamSchema(pp);
-        if (rr) validMap[pp.name] = buildValidValue(rr);
-      }
+      const validPath = buildValidValues(op, 'path');
+      const validQuery = buildValidValues(op, 'query');
       for (const v of violations) {
         if (opts.capPerOperation && produced >= opts.capPerOperation) break;
-        const params = buildParams(op.path, {...validMap, [p.name]: v.invalid});
+        const params = buildPathParams(
+          op.path,
+          p.in === 'path' ? {...validPath, [p.name]: v.invalid} : validPath,
+        );
+        const queryMap =
+          p.in === 'query' ? {...validQuery, [p.name]: v.invalid} : validQuery;
         out.push({
           id: makeId([op.operationId, 'paramConstraint', p.in, p.name, v.kind]),
           operationId: op.operationId,
@@ -143,6 +160,7 @@ export function generateParamConstraintViolations(
           type: 'param-constraint-violation' as unknown as ValidationScenario['type'],
           target: `${p.in}.${p.name}`,
           params,
+          query: Object.keys(queryMap).length ? queryMap : undefined,
           expectedStatus: 400,
           description: `${p.in === 'path' ? 'Path' : 'Query'} parameter ${p.name} ${v.kind} constraint violation`,
           headersAuth: true,

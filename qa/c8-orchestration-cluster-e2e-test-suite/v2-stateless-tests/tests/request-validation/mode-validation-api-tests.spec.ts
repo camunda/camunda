@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2026-07-28T14:59:54.260Z
- * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
+ * Generated At: 2026-08-04T11:55:54.253Z
+ * Spec Commit: 7ad6907f6d9cf772438213329bf52fa21d343ed2
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -18,9 +18,12 @@ test.describe('Mode Validation API Tests', () => {
   test('changeClusterMode - Query param mode enum violation', async ({
     request,
   }) => {
-    const res = await request.patch(buildUrl('/mode', undefined), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.patch(
+      buildUrl('/mode', undefined, {mode: 'PROCESSING_X'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -28,9 +31,12 @@ test.describe('Mode Validation API Tests', () => {
     expect(res.status()).toBe(400);
   });
   test('changeClusterMode__paramEnum__query__mode', async ({request}) => {
-    const res = await request.patch(buildUrl('/mode', {mode: 'PROCESSING_X'}), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.patch(
+      buildUrl('/mode', undefined, {mode: 'PROCESSING_X'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
@@ -38,7 +44,7 @@ test.describe('Mode Validation API Tests', () => {
     expect(res.status()).toBe(400);
   });
   test('changeClusterMode - Missing param query.mode', async ({request}) => {
-    const res = await request.patch(buildUrl('/mode', {dryRun: 'true'}), {
+    const res = await request.patch(buildUrl('/mode', undefined), {
       headers: jsonHeaders(),
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
@@ -51,7 +57,7 @@ test.describe('Mode Validation API Tests', () => {
     request,
   }) => {
     const res = await request.patch(
-      buildUrl('/mode', {mode: 'x', dryRun: 'notBoolean'}),
+      buildUrl('/mode', undefined, {mode: 'PROCESSING', dryRun: 'notBoolean'}),
       {
         headers: jsonHeaders(),
       },
@@ -64,7 +70,7 @@ test.describe('Mode Validation API Tests', () => {
   });
   test('changeClusterMode - Param query.mode wrong type', async ({request}) => {
     const res = await request.patch(
-      buildUrl('/mode', {mode: '__INVALID_STRING__', dryRun: 'true'}),
+      buildUrl('/mode', undefined, {mode: '__INVALID_STRING__'}),
       {
         headers: jsonHeaders(),
       },
