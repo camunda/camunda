@@ -1085,7 +1085,91 @@ jobs:
           path: ${{ runner.temp }}/alwaysgreen-saas-category.json
           retention-days: 14
 
+      # Standardised AlwaysGreen feedback, same contract as helm-deploy-status:
+      # Verdict/Evidence/Next-steps to the job summary, the PR (upserted) and Slack.
+      # Until this ran, a SaaS failure reached the author only as a check-run on the
+      # tested commit -- which on a push run is the merge commit, not part of the PR.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: failure()
+        with:
+          node-version: "24"
+      - name: Import Slack token
+        id: slack-secrets
+        if: failure()
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+      # downstream-category speaks the ci-failure-categories.md vocabulary
+      # (infrastructure / product / mixed / unknown_artifact_unreachable); the
+      # feedback action speaks the CI Failure Feedback Standard's enum. Translate
+      # rather than passing through, or every message renders as "Needs triage".
+      - name: Map downstream category to feedback category
+        id: map-category
+        if: failure()
+        env:
+          DOWNSTREAM_CATEGORY: ${{ steps.downstream-category.outputs.downstream_category }}
+          DOWNSTREAM_OWNER: ${{ steps.downstream-category.outputs.downstream_owner }}
+          DOWNSTREAM_URL: ${{ steps.wait-downstream.outputs.downstream_run_url }}
+          DOWNSTREAM_CONCLUSION: ${{ steps.wait-downstream.outputs.downstream_conclusion }}
+        run: |
+          set -euo pipefail
+          case "${DOWNSTREAM_CATEGORY:-}" in
+            infrastructure)                 CATEGORY="test-infra" ;;
+            product)                        CATEGORY="product" ;;
+            # At least one deterministic failure alongside the flakes, so route it
+            # as a real failure -- the flaky count goes in the evidence line.
+            mixed)                          CATEGORY="product" ;;
+            unknown_artifact_unreachable)   CATEGORY="external" ;;
+            # Empty when the dispatch or the wait itself failed and no downstream
+            # run was ever resolved: that is this job's own plumbing.
+            ""|none|unknown|*)              CATEGORY="unknown" ;;
+          esac
 
+          # SaaS E2E is owned end-to-end by test-automation-team, including this
+          # job's dispatch/wait mechanism -- same routing as the failure-context
+          # artifact below. The one exception is an unreachable artifact, which is
+          # a parent-side permissions/integration problem owned by Distribution.
+          OWNER="${DOWNSTREAM_OWNER:-}"
+          if [[ -z "$OWNER" || "$OWNER" == "none" ]]; then
+            OWNER="@camunda/test-automation-team"
+          fi
+
+          if [[ -n "${DOWNSTREAM_URL:-}" ]]; then
+            EVIDENCE="Downstream SaaS E2E run ${DOWNSTREAM_CONCLUSION:-failed} (category: ${DOWNSTREAM_CATEGORY:-unresolved}) — ${DOWNSTREAM_URL}"
+          else
+            EVIDENCE="SaaS E2E dispatch or wait failed before a downstream run could be resolved."
+          fi
+
+          {
+            echo "failure_category=$CATEGORY"
+            echo "owner_team=$OWNER"
+            echo "evidence=$EVIDENCE"
+          } >> "$GITHUB_OUTPUT"
+      - name: Post AlwaysGreen failure feedback
+        id: feedback
+        if: failure()
+        continue-on-error: true
+        uses: ./.github/actions/post-failure-feedback
+        with:
+          failure_category: ${{ steps.map-category.outputs.failure_category || 'unknown' }}
+          stage: saas-e2e
+          owner_team: ${{ steps.map-category.outputs.owner_team || '@camunda/test-automation-team' }}
+          run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          status: failure
+          evidence: ${{ steps.map-category.outputs.evidence || 'SaaS E2E tests failed.' }}
+          pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
+          # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
+          # as helm-deploy-status and alwaysgreen-streak-detector.yml.
+          slack_channel: "C0AK0AVKRL0"
+          slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          # Same app token the dispatch uses; its installation covers camunda, so
+          # no second token step is needed for the PR comment.
+          github_token: ${{ steps.github-token.outputs.token }}
       - name: Observe build status
         if: always()
         continue-on-error: true
