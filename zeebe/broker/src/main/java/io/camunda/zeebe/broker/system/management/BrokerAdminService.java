@@ -7,24 +7,21 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import java.util.Map;
 
-public interface BrokerAdminService {
+/**
+ * Broker-local admin operations for the partitions of a single physical tenant. The exporting
+ * operations come from {@link ExportingStateController.ByTenant}, so this shares one contract with
+ * the {@code /actuator/exporting} endpoint and the v2 exporting API.
+ */
+public interface BrokerAdminService extends ExportingStateController.ByTenant {
 
   /** Request a partition to pause its StreamProcessor */
   void pauseStreamProcessing();
 
   /** Request a partition to resume its StreamProcessor */
   void resumeStreamProcessing();
-
-  /** Request a partition to pause exporting */
-  void pauseExporting();
-
-  /** Request a partition to soft pause exporting */
-  void softPauseExporting();
-
-  /** Request a partition to resume exporting */
-  void resumeExporting();
 
   /**
    * Trigger a snapshot. Partition will attempt to take a snapshot instead of waiting for the

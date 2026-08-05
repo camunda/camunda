@@ -18,12 +18,9 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
-import io.camunda.zeebe.gateway.admin.ExportingStatus;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -65,60 +62,30 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
 
   public CompletableFuture<Void> pauseExporting(
       final boolean soft, final CamundaAuthentication authentication) {
+    final var tenantController = exportingStateController.getByTenant(getPhysicalTenantId());
     return withExporterPausePermission(
         authentication,
-        () ->
-            soft
-                ? exportingStateController.softPauseExporting(getPhysicalTenantId())
-                : exportingStateController.pauseExporting(getPhysicalTenantId()));
+        () -> soft ? tenantController.softPauseExporting() : tenantController.pauseExporting());
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
     return withExporterPausePermission(
-        authentication, () -> exportingStateController.resumeExporting(getPhysicalTenantId()));
+        authentication,
+        () -> exportingStateController.getByTenant(getPhysicalTenantId()).resumeExporting());
   }
 
   /**
-   * Returns the exporting status aggregated over every partition replica in the cluster
-   * configuration, so backup tooling can confirm a pause took effect instead of relying on its own
-   * bookkeeping.
+   * Returns the exporting status aggregated over every partition replica, so backup tooling can
+   * confirm a pause took effect instead of relying on its own bookkeeping.
    *
    * <p>Reading is gated on the same permission as pause/resume because {@code EXPORTER} only
    * defines {@code PAUSE}: there is no separate read permission to grant.
    */
   public CompletableFuture<ExportingStatus> getExportingStatus(
       final CamundaAuthentication authentication) {
-    return withExporterPausePermission(authentication, this::queryExportingStatus);
-  }
-
-  private CompletableFuture<ExportingStatus> queryExportingStatus() {
-    return requestSender
-        .getTopology()
-        .thenApply(
-            topology -> {
-              if (topology.isLeft()) {
-                final var error = topology.getLeft();
-                throw new IllegalStateException(error.code() + ": " + error.message());
-              }
-              return aggregateStatus(topology.get());
-            });
-  }
-
-  /**
-   * Exporting state is stored per partition replica, so replicas can disagree mid-rollout; {@link
-   * ExportingStatus#aggregate(java.util.Set)} folds them into a single phase, or {@code MIXED} when
-   * they don't agree. {@link ExportingState#UNKNOWN} means the replica has never been touched by a
-   * state-change operation, which is equivalent to actively exporting.
-   */
-  private static ExportingStatus aggregateStatus(final ClusterConfiguration configuration) {
-    final var phases =
-        configuration.members().values().stream()
-            .flatMap(member -> member.partitions().values().stream())
-            .map(partition -> partition.config().exporting().state())
-            .map(state -> state == ExportingState.UNKNOWN ? ExportingState.EXPORTING : state)
-            .map(Enum::name)
-            .collect(Collectors.toSet());
-    return ExportingStatus.aggregate(phases);
+    return withExporterPausePermission(
+        authentication,
+        () -> exportingStateController.getByTenant(getPhysicalTenantId()).getExportingStatus());
   }
 
   /**

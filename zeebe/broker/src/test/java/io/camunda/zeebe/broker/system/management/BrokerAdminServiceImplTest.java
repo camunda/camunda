@@ -7,25 +7,38 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
-import java.util.ArrayList;
-import java.util.List;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that the exporting operations delegate to the durable {@link ExportingStateChanger}
- * (dynamic cluster configuration) rather than pausing exporting only locally. Pausing locally would
- * not survive a broker restart, which is the bug this wiring fixes.
+ * Verifies that the exporting operations delegate to the durable {@link
+ * ExportingStateController.ByTenant} (dynamic cluster configuration) rather than pausing exporting
+ * only locally. Pausing locally would not survive a broker restart, which is the bug this wiring
+ * fixes.
  */
 final class BrokerAdminServiceImplTest {
 
-  private final List<ExportingState> requestedStates = new ArrayList<>();
+  private final ExportingStateController.ByTenant exportingStateController =
+      mock(ExportingStateController.ByTenant.class);
   private final BrokerAdminServiceImpl adminService =
-      new BrokerAdminServiceImpl(mock(PartitionManager.class), requestedStates::add);
+      new BrokerAdminServiceImpl(mock(PartitionManager.class), exportingStateController);
+
+  @BeforeEach
+  void setUp() {
+    when(exportingStateController.pauseExporting())
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(exportingStateController.softPauseExporting())
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(exportingStateController.resumeExporting())
+        .thenReturn(CompletableFuture.completedFuture(null));
+  }
 
   @Test
   void shouldPauseExportingViaDynamicConfig() {
@@ -33,7 +46,7 @@ final class BrokerAdminServiceImplTest {
     adminService.pauseExporting();
 
     // then
-    assertThat(requestedStates).containsExactly(ExportingState.PAUSED);
+    verify(exportingStateController).pauseExporting();
   }
 
   @Test
@@ -42,7 +55,7 @@ final class BrokerAdminServiceImplTest {
     adminService.softPauseExporting();
 
     // then
-    assertThat(requestedStates).containsExactly(ExportingState.SOFT_PAUSED);
+    verify(exportingStateController).softPauseExporting();
   }
 
   @Test
@@ -51,6 +64,6 @@ final class BrokerAdminServiceImplTest {
     adminService.resumeExporting();
 
     // then
-    assertThat(requestedStates).containsExactly(ExportingState.EXPORTING);
+    verify(exportingStateController).resumeExporting();
   }
 }

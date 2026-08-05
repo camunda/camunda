@@ -14,15 +14,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,14 +40,15 @@ final class DynamicConfigExportingStateControllerTest {
 
   private final ClusterConfigurationManagementRequestSender requestSender =
       mock(ClusterConfigurationManagementRequestSender.class);
-  private final DynamicConfigExportingStateController controller =
+  private final ExportingStateController.ByTenant controller =
       new DynamicConfigExportingStateController(
-          requestSender, Duration.ofMillis(1), Duration.ofSeconds(10));
+              requestSender, Duration.ofMillis(1), Duration.ofSeconds(10))
+          .getByTenant(DEFAULT_PHYSICAL_TENANT_ID);
 
   @ParameterizedTest
   @MethodSource("operations")
   void shouldSubmitExpectedTargetState(
-      final Function<DynamicConfigExportingStateController, CompletableFuture<Void>> operation,
+      final Function<ExportingStateController.ByTenant, CompletableFuture<Void>> operation,
       final ExportingState expectedState) {
     // given
     final var captor = ArgumentCaptor.forClass(ExportingStateChangeRequest.class);
@@ -55,7 +64,7 @@ final class DynamicConfigExportingStateControllerTest {
   @ParameterizedTest
   @MethodSource("operations")
   void shouldFailIfSubmissionIsRejected(
-      final Function<DynamicConfigExportingStateController, CompletableFuture<Void>> operation,
+      final Function<ExportingStateController.ByTenant, CompletableFuture<Void>> operation,
       final ExportingState expectedState) {
     // given
     when(requestSender.changeExportingState(any()))
@@ -67,19 +76,91 @@ final class DynamicConfigExportingStateControllerTest {
     assertThatThrownBy(() -> operation.apply(controller).join()).hasMessageContaining("nope");
   }
 
+  @Test
+  void shouldAggregateStatusWhenReplicasAgree() {
+    // given
+    when(requestSender.getTopology())
+        .thenReturn(topology(Map.of(MemberId.from("0"), ExportingState.SOFT_PAUSED)));
+
+    // when
+    final var status = controller.getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.SOFT_PAUSED);
+  }
+
+  @Test
+  void shouldReportMixedStatusWhenReplicasDisagree() {
+    // given
+    when(requestSender.getTopology())
+        .thenReturn(
+            topology(
+                Map.of(
+                    MemberId.from("0"), ExportingState.PAUSED,
+                    MemberId.from("1"), ExportingState.EXPORTING)));
+
+    // when
+    final var status = controller.getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.MIXED);
+  }
+
+  @Test
+  void shouldReportExportingStatusWhenNeverControlledByConfig() {
+    // given - a replica config never touched by a state-change operation is UNKNOWN
+    when(requestSender.getTopology())
+        .thenReturn(topology(Map.of(MemberId.from("0"), ExportingState.UNKNOWN)));
+
+    // when
+    final var status = controller.getExportingStatus();
+
+    // then
+    assertThat(status).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(ExportingStatus.EXPORTING);
+  }
+
+  private static CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> topology(
+      final Map<MemberId, ExportingState> statesByMember) {
+    final Map<MemberId, MemberState> members =
+        statesByMember.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        MemberState.initializeAsActive(
+                            Map.of(
+                                1,
+                                PartitionState.active(
+                                    1,
+                                    DynamicPartitionConfig.init()
+                                        .updateExporting(
+                                            config -> config.withState(entry.getValue())))))));
+    return CompletableFuture.completedFuture(
+        Either.right(
+            new ClusterConfiguration(
+                1,
+                members,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                0,
+                Optional.empty())));
+  }
+
   private static Stream<Arguments> operations() {
     return Stream.of(
         Arguments.of(
-            (Function<DynamicConfigExportingStateController, CompletableFuture<Void>>)
-                c -> c.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID),
+            (Function<ExportingStateController.ByTenant, CompletableFuture<Void>>)
+                ExportingStateController.ByTenant::pauseExporting,
             ExportingState.PAUSED),
         Arguments.of(
-            (Function<DynamicConfigExportingStateController, CompletableFuture<Void>>)
-                c -> c.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID),
+            (Function<ExportingStateController.ByTenant, CompletableFuture<Void>>)
+                ExportingStateController.ByTenant::softPauseExporting,
             ExportingState.SOFT_PAUSED),
         Arguments.of(
-            (Function<DynamicConfigExportingStateController, CompletableFuture<Void>>)
-                c -> c.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID),
+            (Function<ExportingStateController.ByTenant, CompletableFuture<Void>>)
+                ExportingStateController.ByTenant::resumeExporting,
             ExportingState.EXPORTING));
   }
 

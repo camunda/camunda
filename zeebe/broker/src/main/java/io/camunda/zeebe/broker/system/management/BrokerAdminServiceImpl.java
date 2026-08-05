@@ -14,7 +14,8 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
@@ -42,12 +43,13 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final PartitionManager partitionManager;
-  private final ExportingStateChanger exportingStateChanger;
+  private final ExportingStateController.ByTenant exportingStateController;
 
   public BrokerAdminServiceImpl(
-      final PartitionManager partitionManager, final ExportingStateChanger exportingStateChanger) {
+      final PartitionManager partitionManager,
+      final ExportingStateController.ByTenant exportingStateController) {
     this.partitionManager = partitionManager;
-    this.exportingStateChanger = exportingStateChanger;
+    this.exportingStateController = exportingStateController;
   }
 
   @Override
@@ -61,18 +63,23 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   @Override
-  public void pauseExporting() {
-    exportingStateChanger.changeExportingState(ExportingState.PAUSED);
+  public CompletableFuture<Void> pauseExporting() {
+    return exportingStateController.pauseExporting();
   }
 
   @Override
-  public void softPauseExporting() {
-    exportingStateChanger.changeExportingState(ExportingState.SOFT_PAUSED);
+  public CompletableFuture<Void> softPauseExporting() {
+    return exportingStateController.softPauseExporting();
   }
 
   @Override
-  public void resumeExporting() {
-    exportingStateChanger.changeExportingState(ExportingState.EXPORTING);
+  public CompletableFuture<Void> resumeExporting() {
+    return exportingStateController.resumeExporting();
+  }
+
+  @Override
+  public CompletableFuture<ExportingStatus> getExportingStatus() {
+    return exportingStateController.getExportingStatus();
   }
 
   @Override

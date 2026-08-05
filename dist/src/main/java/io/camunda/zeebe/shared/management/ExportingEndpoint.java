@@ -38,13 +38,11 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
+      final var controller = exportingStateController.getByTenant(DEFAULT_PHYSICAL_TENANT_ID);
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingStateController.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
-            case PAUSE ->
-                soft
-                    ? exportingStateController.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
-                    : exportingStateController.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case RESUME -> controller.resumeExporting();
+            case PAUSE -> soft ? controller.softPauseExporting() : controller.pauseExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();

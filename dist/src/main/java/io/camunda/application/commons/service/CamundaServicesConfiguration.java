@@ -142,7 +142,6 @@ public class CamundaServicesConfiguration {
       final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
       final ApiServicesExecutorProvider executor,
       final SecretStoreRegistries secretStoreRegistries,
-      final ClusterConfigurationManagementRequestSender clusterConfigurationManagementRequestSender,
       final ExportingStateController exportingStateController) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
