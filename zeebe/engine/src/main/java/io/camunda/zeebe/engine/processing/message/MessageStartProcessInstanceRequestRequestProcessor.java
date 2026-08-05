@@ -30,6 +30,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the cross-partition {@link MessageStartProcessInstanceRequestIntent#REQUEST} command on
@@ -91,6 +93,9 @@ import java.time.InstantSource;
 public final class MessageStartProcessInstanceRequestRequestProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestRequestProcessor.class);
+
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -144,6 +149,11 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var request = record.getValue();
 
+    LOG.atTrace()
+        .addKeyValue("messageKey", request.getMessageKey())
+        .addKeyValue("processDefinitionKey", request.getProcessDefinitionKey())
+        .log("Received cross-partition message-start request");
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, request);
 
@@ -159,6 +169,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
           request.getBpmnProcessId(),
           request.getTenantId(),
           request.getMessageKey());
+      logRequestOutcome(request, RequestOutcome.REJECTED_EXPIRED);
       return;
     }
 
@@ -166,12 +177,14 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     if (cachedPiKey != null) {
       commandSender.sendStartProcessInstanceStarted(request, cachedPiKey);
       metrics.crossPartitionRequest(RequestOutcome.DEDUP_HIT);
+      logRequestOutcome(request, RequestOutcome.DEDUP_HIT, cachedPiKey);
       return;
     }
 
     if (!localSubscriptionExists(request)) {
       commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
       metrics.crossPartitionRequest(RequestOutcome.REJECTED_NO_SUBSCRIPTION);
+      logRequestOutcome(request, RequestOutcome.REJECTED_NO_SUBSCRIPTION);
       return;
     }
 
@@ -183,6 +196,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
           request.getBpmnProcessId(),
           request.getTenantId(),
           request.getMessageKey());
+      logRequestOutcome(request, RequestOutcome.REJECTED_UNIQUENESS);
       return;
     }
 
@@ -205,6 +219,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       // Activation failed because the definition is draining/deleted on this partition.
       commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
       metrics.crossPartitionRequest(RequestOutcome.REJECTED_NOT_ACTIVATABLE);
+      logRequestOutcome(request, RequestOutcome.REJECTED_NOT_ACTIVATABLE);
       return;
     }
 
@@ -225,6 +240,30 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
         request.getTenantId(),
         request.getMessageKey(),
         clock.millis());
+    logRequestOutcome(request, RequestOutcome.STARTED, processInstanceKey);
+  }
+
+  private void logRequestOutcome(
+      final MessageStartProcessInstanceRequestRecord request, final RequestOutcome outcome) {
+    logRequestOutcome(request, outcome, -1L);
+  }
+
+  private void logRequestOutcome(
+      final MessageStartProcessInstanceRequestRecord request,
+      final RequestOutcome outcome,
+      final long processInstanceKey) {
+    if (!LOG.isDebugEnabled()) {
+      return;
+    }
+    var event =
+        LOG.atDebug()
+            .addKeyValue("messageKey", request.getMessageKey())
+            .addKeyValue("processDefinitionKey", request.getProcessDefinitionKey())
+            .addKeyValue("outcome", outcome.getLabel());
+    if (processInstanceKey >= 0) {
+      event = event.addKeyValue("processInstanceKey", processInstanceKey);
+    }
+    event.log("Resolved cross-partition message-start request");
   }
 
   /**

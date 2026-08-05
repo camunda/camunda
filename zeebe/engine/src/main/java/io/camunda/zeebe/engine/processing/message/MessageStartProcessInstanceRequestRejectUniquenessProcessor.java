@@ -20,6 +20,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartProcessInstanceRequestIntent#REJECT_UNIQUENESS} command on {@code
@@ -43,6 +45,9 @@ import java.util.Set;
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestRejectUniquenessProcessor.class);
 
   private static final String BLOCKED_BY_ACTIVE_INSTANCE =
       "Expected to correlate message with name '%s' to a message start event, but a process instance"
@@ -72,6 +77,12 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_UNIQUENESS);
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", reply.getMessageKey())
+        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
+        .addKeyValue("outcome", ReplyOutcome.REJECTED_UNIQUENESS.getLabel())
+        .log("Applied cross-partition message-start reply");
 
     deferredCorrelationResponse.writeNotCorrelatedResponse(
         reply,

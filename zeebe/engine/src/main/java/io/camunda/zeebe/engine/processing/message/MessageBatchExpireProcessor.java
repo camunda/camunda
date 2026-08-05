@@ -20,9 +20,13 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 import org.agrona.collections.MutableLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class MessageBatchExpireProcessor implements TypedRecordProcessor<MessageBatchRecord> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MessageBatchExpireProcessor.class);
 
   /** The safety margin to ensure that we can always write an empty EXPIRE command at the end. */
   private static final int FOLLOWUP_COMMAND_SAFETY_MARGIN = 8192;
@@ -77,7 +81,12 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
                 // M7: a buffered message that carried a pending cross-partition message-start ask
                 // has now blocked the whole TTL window without starting — close its ask timer(s) as
                 // expired. A no-op for every message with no outstanding ask.
-                metrics.expireCrossPartitionAsks(messageKey);
+                if (metrics.expireCrossPartitionAsks(messageKey)) {
+                  LOG.atDebug()
+                      .addKeyValue("messageKey", messageKey)
+                      .log(
+                          "Buffered message expired while its cross-partition ask was still pending");
+                }
                 return true;
               } else {
                 return false;

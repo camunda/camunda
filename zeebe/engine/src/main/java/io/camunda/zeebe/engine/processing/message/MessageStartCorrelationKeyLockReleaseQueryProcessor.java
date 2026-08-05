@@ -17,10 +17,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartCorrelationKeyLockReleaseIntent#QUERY} command on {@code P_B =
@@ -52,6 +55,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 @ExcludeAuthorizationCheck
 public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
     implements TypedRecordProcessor<MessageStartCorrelationKeyLockReleaseRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartCorrelationKeyLockReleaseQueryProcessor.class);
 
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -89,6 +95,11 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
       commandSender.sendCorrelationKeyLockRelease(query.getRequestKey(), holder);
       metrics.lockReleaseSent(ReleaseTrigger.RECONCILIATION);
       cleanUpOriginIfLeftover(holder);
+
+      LOG.atDebug()
+          .addKeyValue("holderProcessInstanceKey", holder.getProcessInstanceKey())
+          .addKeyValue("requestPartition", Protocol.decodePartitionId(query.getRequestKey()))
+          .log("Holder gone; sending reconciliation release");
     }
   }
 

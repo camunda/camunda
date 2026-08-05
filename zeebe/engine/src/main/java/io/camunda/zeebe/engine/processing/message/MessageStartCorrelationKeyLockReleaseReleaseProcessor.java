@@ -19,8 +19,11 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply on {@code P_K =
@@ -49,6 +52,9 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
     implements TypedRecordProcessor<MessageStartCorrelationKeyLockReleaseRecord> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartCorrelationKeyLockReleaseReleaseProcessor.class);
+
   private static final String REDUNDANT_RELEASE_REJECTION_REASON =
       """
       Expected to release the correlation-key lock still held by the holder(s) named in the \
@@ -76,10 +82,12 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
   @Override
   public void processRecord(final TypedRecord<MessageStartCorrelationKeyLockReleaseRecord> record) {
     final var reply = record.getValue();
+    // getHolders() deep-copies the array on every call, so materialize it once and reuse it.
+    final var reportedHolders = reply.getHolders();
 
     final var releasable =
         new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(reply.getRequestKey());
-    for (final var holder : reply.getHolders()) {
+    for (final var holder : reportedHolders) {
       final var bpmnProcessId = BufferUtil.wrapString(holder.getBpmnProcessId());
       final var correlationKey = BufferUtil.wrapString(holder.getCorrelationKey());
       if (messageState.getCrossPartitionStartLockHolder(bpmnProcessId, correlationKey)
@@ -101,6 +109,16 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
       rejectionWriter.appendRejection(
           record, RejectionType.INVALID_STATE, REDUNDANT_RELEASE_REJECTION_REASON);
       metrics.lockReleased(ReleaseResult.REDUNDANT);
+      if (LOG.isDebugEnabled()) {
+        LOG.atDebug()
+            .addKeyValue(
+                "holderProcessInstanceKeys",
+                reportedHolders.stream()
+                    .map(MessageStartLockReleaseHolderValue::getProcessInstanceKey)
+                    .toList())
+            .log(
+                "Ignoring redundant correlation-key lock release (already released or re-acquired)");
+      }
       return;
     }
 
@@ -111,12 +129,17 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
     // ... then pick up the next buffered message for each freed correlation key. This runs after
     // the lock removal above, so the pick-up sees the lock free and can trigger / re-route the next
     // buffered message through the normal correlation logic.
-    for (final var holder : releasable.getHolders()) {
+    final var releasableHolders = releasable.getHolders();
+    for (final var holder : releasableHolders) {
       metrics.lockReleased(ReleaseResult.RELEASED);
       bufferedMessageStartEventBehavior.correlateNextBufferedMessage(
           BufferUtil.wrapString(holder.getBpmnProcessId()),
           BufferUtil.wrapString(holder.getCorrelationKey()),
           holder.getTenantId());
     }
+
+    LOG.atDebug()
+        .addKeyValue("releasedCount", releasableHolders.size())
+        .log("Released correlation-key lock(s)");
   }
 }

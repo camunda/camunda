@@ -120,11 +120,16 @@ public final class PendingMessageStartAskCheckScheduler
   private void sendAsk(final MessageStartProcessInstanceAsk ask, final long now) {
     final int targetPartitionId = routingInfo.partitionForCorrelationKey(ask.getBusinessIdBuffer());
 
-    LOG.debug(
-        "Retrying pending message-start ask: messageKey={}, processDefinitionKey={}, targetPartition={}",
-        ask.getMessageKey(),
-        ask.getProcessDefinitionKey(),
-        targetPartitionId);
+    if (LOG.isDebugEnabled()) {
+      final long rejectionCount = ask.getRejectionCount();
+      LOG.atDebug()
+          .addKeyValue("messageKey", ask.getMessageKey())
+          .addKeyValue("processDefinitionKey", ask.getProcessDefinitionKey())
+          .addKeyValue("targetPartition", targetPartitionId)
+          .addKeyValue("rejectionCount", rejectionCount)
+          .addKeyValue("backoffMillis", retryIntervalMillis(rejectionCount))
+          .log("Retrying pending message-start ask");
+    }
 
     commandSender.sendDirectStartProcessInstanceRequest(
         targetPartitionId,

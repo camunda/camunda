@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the {@link MessageStartProcessInstanceRequestIntent#START} reply command on {@code P_K},
@@ -73,6 +75,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public final class MessageStartProcessInstanceRequestStartProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestStartProcessor.class);
+
   private final StateWriter stateWriter;
   private final MessageState messageState;
   private final MessageCorrelationMetrics metrics;
@@ -102,6 +107,13 @@ public final class MessageStartProcessInstanceRequestStartProcessor
     metrics.crossPartitionReply(ReplyOutcome.STARTED);
     metrics.completeCrossPartitionAskStarted(
         reply.getMessageKey(), reply.getProcessDefinitionKey());
+
+    LOG.atDebug()
+        .addKeyValue("messageKey", reply.getMessageKey())
+        .addKeyValue("processDefinitionKey", reply.getProcessDefinitionKey())
+        .addKeyValue("outcome", ReplyOutcome.STARTED.getLabel())
+        .addKeyValue("processInstanceKey", reply.getProcessInstanceKey())
+        .log("Applied cross-partition message-start reply");
 
     // Look up the buffered message once: both the CORRELATED applier and the EXPIRED applier need
     // it (CORRELATED writes a foreign-key reference into MESSAGE_KEY; EXPIRED removes the buffered
