@@ -33,6 +33,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Validate startup_check input
+      if: ${{ inputs.startup_check != 'healthcheck' && inputs.startup_check != 'wait' }}
+      shell: bash
+      run: |
+        echo "::error::startup_check must be 'healthcheck' or 'wait', got '${{ inputs.startup_check }}'"
+        exit 1
+
     # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
     # 502s, see INC-6810) does not fail the whole job. Once images are cached locally,
     # the compose "up" below does not need to hit the registry again.
