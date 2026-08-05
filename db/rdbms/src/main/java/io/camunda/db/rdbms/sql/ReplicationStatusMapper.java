@@ -16,6 +16,12 @@ public interface ReplicationStatusMapper {
 
   List<ReplicationLsnStatus> getReplicationStatus();
 
+  /**
+   * Returns the primary's own clock, read directly from the database as an absolute
+   * epoch-millisecond value.
+   */
+  long getCurrentDbTime();
+
   /** Returns {@code true} when connected to AWS Aurora. */
   boolean isAurora();
 
