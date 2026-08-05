@@ -26,8 +26,10 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   private final int partitionId;
   private @Nullable LoggedEvent rawEvent;
