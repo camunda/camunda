@@ -133,6 +133,12 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   int getLoopIteration();
 
+  /**
+   * @return the batch of history items carried by this command, each reusing the same shape as a
+   *     persisted {@code AgentHistoryRecord} entry
+   */
+  List<AgentHistoryRecordValue> getHistory();
+
   /** Represents a tool available to an agent. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)

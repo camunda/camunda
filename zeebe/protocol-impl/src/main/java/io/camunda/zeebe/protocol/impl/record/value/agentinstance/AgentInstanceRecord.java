@@ -16,11 +16,14 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
@@ -60,9 +63,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
   private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
+  private final ArrayProperty<AgentHistoryRecord> historyProp =
+      new ArrayProperty<>("history", AgentHistoryRecord::new);
 
   public AgentInstanceRecord() {
-    super(20);
+    super(21);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
@@ -82,7 +87,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
-        .declareProperty(loopIterationProp);
+        .declareProperty(loopIterationProp)
+        .declareProperty(historyProp);
   }
 
   @Override
@@ -297,6 +303,26 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setLoopIteration(final int loopIteration) {
     loopIterationProp.setValue(loopIteration);
+    return this;
+  }
+
+  @Override
+  public List<AgentHistoryRecordValue> getHistory() {
+    return historyProp.stream().collect(Collectors.toList());
+  }
+
+  public AgentInstanceRecord setHistory(final List<? extends AgentHistoryRecord> history) {
+    historyProp.reset();
+    if (history != null) {
+      for (final var item : history) {
+        historyProp.add().copyFrom(item);
+      }
+    }
+    return this;
+  }
+
+  public AgentInstanceRecord addHistoryItem(final AgentHistoryRecord historyItem) {
+    historyProp.add().copyFrom(historyItem);
     return this;
   }
 }

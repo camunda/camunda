@@ -127,6 +127,68 @@
             },
             "loopIteration": {
               "type": "integer"
+            },
+            "history": {
+              "properties": {
+                "agentHistoryKey": {
+                  "type": "long"
+                },
+                "agentInstanceKey": {
+                  "type": "long"
+                },
+                "elementInstanceKey": {
+                  "type": "long"
+                },
+                "processInstanceKey": {
+                  "type": "long"
+                },
+                "rootProcessInstanceKey": {
+                  "type": "long"
+                },
+                "bpmnProcessId": {
+                  "type": "keyword"
+                },
+                "processDefinitionKey": {
+                  "type": "long"
+                },
+                "tenantId": {
+                  "type": "keyword"
+                },
+                "jobKey": {
+                  "type": "long"
+                },
+                "jobLease": {
+                  "type": "keyword"
+                },
+                "loopIteration": {
+                  "type": "integer"
+                },
+                "role": {
+                  "type": "keyword"
+                },
+                "producedAt": {
+                  "type": "long"
+                },
+                "content": {
+                  "enabled": false
+                },
+                "toolCalls": {
+                  "enabled": false
+                },
+                "metrics": {
+                  "properties": {
+                    "inputTokens": {
+                      "type": "long"
+                    },
+                    "outputTokens": {
+                      "type": "long"
+                    },
+                    "durationMs": {
+                      "type": "long"
+                    }
+                  }
+                }
+              }
             }
           }
         }

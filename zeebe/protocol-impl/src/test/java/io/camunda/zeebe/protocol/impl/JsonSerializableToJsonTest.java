@@ -5131,7 +5131,8 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": ["status", "metrics"],
           "jobKey": -1,
           "jobLease": "",
-          "loopIteration": 0
+          "loopIteration": 0,
+          "history": []
         }
         """
       },
@@ -5159,7 +5160,8 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": [],
           "jobKey": -1,
           "jobLease": "",
-          "loopIteration": 0
+          "loopIteration": 0,
+          "history": []
         }
         """
       },
