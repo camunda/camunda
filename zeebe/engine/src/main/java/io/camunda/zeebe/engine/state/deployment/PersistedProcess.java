@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -44,9 +45,10 @@ public final class PersistedProcess extends UnpackedObject
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final ArrayProperty<TransformerVersion> transformerVersionsProp =
       new ArrayProperty<>("transformerVersions", TransformerVersion::new);
+  private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
 
   public PersistedProcess() {
-    super(10);
+    super(11);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -56,7 +58,8 @@ public final class PersistedProcess extends UnpackedObject
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
-        .declareProperty(transformerVersionsProp);
+        .declareProperty(transformerVersionsProp)
+        .declareProperty(deleteHistoryProp);
   }
 
   @Override
@@ -66,6 +69,7 @@ public final class PersistedProcess extends UnpackedObject
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
+    reset();
     bpmnProcessIdProp.setValue(processRecord.getBpmnProcessIdBuffer());
     resourceNameProp.setValue(processRecord.getResourceNameBuffer());
     resourceProp.setValue(processRecord.getResourceBuffer());
@@ -76,7 +80,6 @@ public final class PersistedProcess extends UnpackedObject
     deploymentKeyProp.setValue(processRecord.getDeploymentKey());
     versionTagProp.setValue(processRecord.getVersionTag());
 
-    transformerVersionsProp.reset();
     processRecord
         .getTransformerVersions()
         .forEach(
@@ -130,6 +133,15 @@ public final class PersistedProcess extends UnpackedObject
 
   public PersistedProcess setState(final PersistedProcessState state) {
     stateProp.setValue(state);
+    return this;
+  }
+
+  public boolean isDeleteHistory() {
+    return deleteHistoryProp.getValue();
+  }
+
+  public PersistedProcess setDeleteHistory(final boolean deleteHistory) {
+    deleteHistoryProp.setValue(deleteHistory);
     return this;
   }
 

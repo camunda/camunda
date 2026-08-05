@@ -271,6 +271,18 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void markDraining(final ProcessRecord processRecord) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+
+    final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    process.setState(PersistedProcessState.DRAINING);
+    process.setDeleteHistory(processRecord.isDeleteHistory());
+    processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
+    updateInMemoryState(process);
+  }
+
+  @Override
   public void setMissingDeploymentKey(
       final String tenantId, final long processDefinitionKey, final long deploymentKey) {
     tenantIdKey.wrapString(tenantId);
@@ -343,6 +355,20 @@ public final class DbProcessState implements MutableProcessState {
 
     versionManager.deleteResourceVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
+  }
+
+  @Override
+  public void addPendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    pendingProcessDeletionsPerPartitionColumnFamily.insert(pendingDeletionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    pendingProcessDeletionsPerPartitionColumnFamily.deleteExisting(pendingDeletionKey);
   }
 
   private void invalidateCaches(
@@ -624,6 +650,26 @@ public final class DbProcessState implements MutableProcessState {
         });
   }
 
+  @Override
+  public boolean hasPendingDeletion(final long processDefinitionKey, final int partitionId) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    pendingDeletionPartitionId.wrapInt(partitionId);
+    return pendingProcessDeletionsPerPartitionColumnFamily.exists(pendingDeletionKey);
+  }
+
+  @Override
+  public boolean hasPendingDeletion(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final var hasPending = new MutableBoolean();
+    pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        ignored -> {
+          hasPending.set(true);
+          return false;
+        });
+    return hasPending.get();
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(
       final long latestVersion, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
@@ -696,40 +742,6 @@ public final class DbProcessState implements MutableProcessState {
     }
     // does not exist in persistence and in memory state
     return null;
-  }
-
-  @Override
-  public void addPendingDeletion(final long processDefinitionKey, final int partitionId) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    pendingDeletionPartitionId.wrapInt(partitionId);
-    pendingProcessDeletionsPerPartitionColumnFamily.insert(pendingDeletionKey, DbNil.INSTANCE);
-  }
-
-  @Override
-  public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    pendingDeletionPartitionId.wrapInt(partitionId);
-    pendingProcessDeletionsPerPartitionColumnFamily.deleteExisting(pendingDeletionKey);
-  }
-
-  @Override
-  public boolean hasPendingDeletion(final long processDefinitionKey, final int partitionId) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    pendingDeletionPartitionId.wrapInt(partitionId);
-    return pendingProcessDeletionsPerPartitionColumnFamily.exists(pendingDeletionKey);
-  }
-
-  @Override
-  public boolean hasPendingDeletion(final long processDefinitionKey) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    final var hasPending = new MutableBoolean();
-    pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
-        ignored -> {
-          hasPending.set(true);
-          return false;
-        });
-    return hasPending.get();
   }
 
   record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}
