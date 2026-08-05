@@ -55,96 +55,127 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
           .captureForType(AbstractZeebeRecordFetcherOS.class);
 
   @Test
-  public void importPositionIsZeroIfNothingIsImportedYet() {
-    // when
-    final List<PositionBasedImportIndexHandler> positionBasedHandlers =
-        embeddedOptimizeExtension.getAllPositionBasedImportHandlers();
+  public void
+      importPositionIsZeroIfNothingIsImportedYetAndIndexesAreRestoredAfterRestartAndCanBeReset() {
+    // Covers four independent position/sequence-tracking scenarios: scenario 1 the initial
+    // zero state before anything is imported; scenario 2 position indexes survive an Optimize
+    // restart; scenario 3 sequence indexes survive an Optimize restart; scenario 4 the import
+    // index can be reset back to zero. Order matters: the zero-state check must run first
+    // (nothing deployed yet), and the reset check must run last (it destroys the state the
+    // restart scenarios verify). Each scenario is reset to a clean Zeebe export index and clean
+    // Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would otherwise do
+    // between separate test methods.
 
-    // then
-    assertThat(positionBasedHandlers)
-        .hasSize(10)
-        .allSatisfy(
-            handler -> {
-              assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
-              assertThat(handler.getPendingSequenceOfLastEntity()).isZero();
-              assertThat(handler.getTimestampOfLastPersistedEntity()).isEqualTo(BEGINNING_OF_TIME);
-              assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(BEGINNING_OF_TIME);
-              assertThat(handler.isHasSeenSequenceField()).isFalse();
-            });
-  }
+    // given (nothing imported yet)
+    {
+      // when (nothing imported yet)
+      final List<PositionBasedImportIndexHandler> positionBasedHandlers =
+          embeddedOptimizeExtension.getAllPositionBasedImportHandlers();
 
-  @Test
-  public void latestPositionImportIndexesAreRestoredAfterRestartOfOptimize() {
-    // given
-    deployZeebeData();
+      // then (nothing imported yet)
+      assertThat(positionBasedHandlers)
+          .hasSize(10)
+          .allSatisfy(
+              handler -> {
+                assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
+                assertThat(handler.getPendingSequenceOfLastEntity()).isZero();
+                assertThat(handler.getTimestampOfLastPersistedEntity())
+                    .isEqualTo(BEGINNING_OF_TIME);
+                assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(BEGINNING_OF_TIME);
+                assertThat(handler.isHasSeenSequenceField()).isFalse();
+              });
+    }
 
-    importAllZeebeEntitiesFromScratch();
-
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    final List<Long> positionsBeforeRestart = getCurrentHandlerPositions();
-    final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
-
-    // when
-    startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // then
-    assertThat(getCurrentHandlerPositions())
-        .anySatisfy(position -> assertThat(position).isPositive())
-        .isEqualTo(positionsBeforeRestart);
-    assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
-  }
-
-  @Test
-  public void latestSequenceImportIndexesAreRestoredAfterRestartOfOptimize() {
-    // given
-    deployZeebeData();
-
-    importAllZeebeEntitiesFromScratch();
-
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    final List<Long> sequencesBeforeRestart = getCurrentHandlerSequences();
-    final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
-
-    // when
-    startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(getCurrentHandlerSequences())
-        .anySatisfy(sequence -> assertThat(sequence).isPositive())
-        .isEqualTo(sequencesBeforeRestart);
-    assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
-    assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
-        .filteredOn(handler -> handler.getPersistedSequenceOfLastEntity() > 0)
-        .anySatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isTrue());
-  }
+    // given (position indexes restored after restart)
+    {
+      deployZeebeData();
 
-  @Test
-  public void importIndexCanBeReset() {
-    // given
-    deployZeebeData();
+      importAllZeebeEntitiesFromScratch();
 
-    importAllZeebeEntitiesFromScratch();
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+      embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+      final List<Long> positionsBeforeRestart = getCurrentHandlerPositions();
+      final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
+
+      // when (position indexes restored after restart)
+      startAndUseNewOptimizeInstance();
+      setupZeebeImportAndReloadConfiguration();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+      // then (position indexes restored after restart)
+      assertThat(getCurrentHandlerPositions())
+          .anySatisfy(position -> assertThat(position).isPositive())
+          .isEqualTo(positionsBeforeRestart);
+      assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
+    }
+
+    // reset to a clean slate before the third scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // when
-    embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    // given (sequence indexes restored after restart)
+    {
+      deployZeebeData();
+
+      importAllZeebeEntitiesFromScratch();
+
+      embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+      final List<Long> sequencesBeforeRestart = getCurrentHandlerSequences();
+      final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
+
+      // when (sequence indexes restored after restart)
+      startAndUseNewOptimizeInstance();
+      setupZeebeImportAndReloadConfiguration();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+      // then (sequence indexes restored after restart)
+      assertThat(getCurrentHandlerSequences())
+          .anySatisfy(sequence -> assertThat(sequence).isPositive())
+          .isEqualTo(sequencesBeforeRestart);
+      assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
+      assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
+          .filteredOn(handler -> handler.getPersistedSequenceOfLastEntity() > 0)
+          .anySatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isTrue());
+    }
+
+    // reset to a clean slate before the fourth scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(getCurrentHandlerPositions()).allSatisfy(position -> assertThat(position).isZero());
-    assertThat(getCurrentHandlerSequences()).allSatisfy(sequence -> assertThat(sequence).isZero());
-    assertThat(getLastImportedEntityTimestamps())
-        .allSatisfy(timestamp -> assertThat(timestamp).isEqualTo(BEGINNING_OF_TIME));
-    assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
-        .allSatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isFalse());
+    // given (import index can be reset)
+    {
+      deployZeebeData();
+
+      importAllZeebeEntitiesFromScratch();
+      embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+      // when (import index can be reset)
+      embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
+      embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+      // then (import index can be reset)
+      assertThat(getCurrentHandlerPositions())
+          .allSatisfy(position -> assertThat(position).isZero());
+      assertThat(getCurrentHandlerSequences())
+          .allSatisfy(sequence -> assertThat(sequence).isZero());
+      assertThat(getLastImportedEntityTimestamps())
+          .allSatisfy(timestamp -> assertThat(timestamp).isEqualTo(BEGINNING_OF_TIME));
+      assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
+          .allSatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isFalse());
+    }
   }
 
   @Test

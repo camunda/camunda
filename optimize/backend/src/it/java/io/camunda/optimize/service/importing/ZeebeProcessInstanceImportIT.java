@@ -89,62 +89,141 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   @Test
   public void
-      importCompletedZeebeProcessInstanceDataInOneBatch_allDataSavedToOptimizeProcessInstance() {
-    // given
-    final String processName = "someProcess";
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createStartEndProcess(processName));
+      importCompletedAndRunningZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
+    // Covers two independent terminal-state scenarios for the same "import from scratch, assert
+    // all fields" flow: scenario 1 a completed instance, scenario 2 a still-running instance. Each
+    // scenario is reset to a clean Zeebe export index and clean Optimize data before it runs,
+    // mirroring what @BeforeEach/@AfterEach would otherwise do between separate test methods.
 
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
-    importAllZeebeEntitiesFromScratch();
+    // given (completed)
+    {
+      final String processName = "someProcess";
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
-    // then
-    final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
-        getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(deployedInstance.getBpmnProcessId());
-              assertThat(savedInstance.getProcessDefinitionVersion())
-                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getState())
-                  .isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getBusinessKey()).isNull();
-              assertThat(savedInstance.getIncidents()).isEmpty();
-              assertThat(savedInstance.getVariables()).isEmpty();
-              assertThat(savedInstance.getStartDate())
-                  .isEqualTo(
-                      getExpectedStartDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getEndDate())
-                  .isEqualTo(
-                      getExpectedEndDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getDuration())
-                  .isEqualTo(
-                      getExpectedDurationForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .hasSize(2)
-                  .containsExactlyInAnyOrder(
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          START_EVENT,
-                          BpmnElementType.START_EVENT),
-                      createFlowNodeInstance(
-                          deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT));
-            });
+      // when (completed)
+      waitUntilMinimumProcessInstanceEventsExportedCount(6);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (completed)
+      final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
+          getZeebeExportedProcessInstanceEventsByElementId();
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance -> {
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+                assertThat(savedInstance.getProcessDefinitionId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+                assertThat(savedInstance.getProcessDefinitionKey())
+                    .isEqualTo(deployedInstance.getBpmnProcessId());
+                assertThat(savedInstance.getProcessDefinitionVersion())
+                    .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+                assertThat(savedInstance.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(savedInstance.getState())
+                    .isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
+                assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(savedInstance.getBusinessKey()).isNull();
+                assertThat(savedInstance.getIncidents()).isEmpty();
+                assertThat(savedInstance.getVariables()).isEmpty();
+                assertThat(savedInstance.getStartDate())
+                    .isEqualTo(
+                        getExpectedStartDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getEndDate())
+                    .isEqualTo(
+                        getExpectedEndDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getDuration())
+                    .isEqualTo(
+                        getExpectedDurationForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            START_EVENT,
+                            BpmnElementType.START_EVENT),
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            END_EVENT,
+                            BpmnElementType.END_EVENT));
+              });
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (running)
+    {
+      final String processName = "someProcess";
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
+
+      // when (running)
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (running)
+      final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
+          getZeebeExportedProcessInstanceEventsByElementId();
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance -> {
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+                assertThat(savedInstance.getProcessDefinitionId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+                assertThat(savedInstance.getProcessDefinitionKey())
+                    .isEqualTo(deployedInstance.getBpmnProcessId());
+                assertThat(savedInstance.getProcessDefinitionVersion())
+                    .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+                assertThat(savedInstance.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(savedInstance.getState())
+                    .isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
+                assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(savedInstance.getBusinessKey()).isNull();
+                assertThat(savedInstance.getIncidents()).isEmpty();
+                assertThat(savedInstance.getVariables()).isEmpty();
+                assertThat(savedInstance.getStartDate())
+                    .isEqualTo(
+                        getExpectedStartDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getEndDate()).isNull();
+                assertThat(savedInstance.getDuration()).isNull();
+                final FlowNodeInstanceDto flowNodeInstanceDto =
+                    new FlowNodeInstanceDto(
+                        String.valueOf(deployedInstance.getBpmnProcessId()),
+                        String.valueOf(deployedInstance.getVersion()),
+                        ZEEBE_DEFAULT_TENANT_ID,
+                        String.valueOf(deployedInstance.getProcessInstanceKey()),
+                        USER_TASK,
+                        getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
+                        String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()));
+                flowNodeInstanceDto.setStartDate(
+                    getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)));
+                flowNodeInstanceDto.setCanceled(false);
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            START_EVENT,
+                            BpmnElementType.START_EVENT),
+                        flowNodeInstanceDto);
+              });
+    }
   }
 
   @Test
@@ -216,388 +295,388 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void importRunningZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
-    // given
-    final String processName = "someProcess";
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
+  public void
+      importCanceledAndFromMultipleDaysZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
+    // Covers two independent scenarios: scenario 1 a canceled (externally terminated) instance;
+    // scenario 2 an instance completed across a pinned clock jump of one day. Scenario 2 must run
+    // last since it pins the Zeebe engine clock with no reset mechanism — the pin would otherwise
+    // stay in effect for scenario 1 too. Each scenario is reset to a clean Zeebe export index and
+    // clean Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would otherwise do
+    // between separate test methods.
 
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    importAllZeebeEntitiesFromScratch();
+    // given (canceled)
+    {
+      final String processName = "someProcess";
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
 
-    // then
-    final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
-        getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(deployedInstance.getBpmnProcessId());
-              assertThat(savedInstance.getProcessDefinitionVersion())
-                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getBusinessKey()).isNull();
-              assertThat(savedInstance.getIncidents()).isEmpty();
-              assertThat(savedInstance.getVariables()).isEmpty();
-              assertThat(savedInstance.getStartDate())
-                  .isEqualTo(
-                      getExpectedStartDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getEndDate()).isNull();
-              assertThat(savedInstance.getDuration()).isNull();
-              final FlowNodeInstanceDto flowNodeInstanceDto =
-                  new FlowNodeInstanceDto(
-                      String.valueOf(deployedInstance.getBpmnProcessId()),
-                      String.valueOf(deployedInstance.getVersion()),
-                      ZEEBE_DEFAULT_TENANT_ID,
-                      String.valueOf(deployedInstance.getProcessInstanceKey()),
-                      USER_TASK,
-                      getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
-                      String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()));
-              flowNodeInstanceDto.setStartDate(
-                  getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)));
-              flowNodeInstanceDto.setCanceled(false);
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .hasSize(2)
-                  .containsExactlyInAnyOrder(
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          START_EVENT,
-                          BpmnElementType.START_EVENT),
-                      flowNodeInstanceDto);
-            });
-  }
+      // We wait for the service task to be exported before cancelling the process
+      // (1 * process event, 2 * "start_event" events). Then again for the import of cancellation
+      // events (2 cancel events)
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      zeebeExtension.cancelProcessInstance(deployedInstance.getProcessInstanceKey());
+      waitUntilMinimumProcessInstanceEventsExportedCount(6);
 
-  @Test
-  public void importCanceledZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
-    // given
-    final String processName = "someProcess";
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
+      // when (canceled)
+      importAllZeebeEntitiesFromScratch();
 
-    // We wait for the service task to be exported before cancelling the process
-    // (1 * process event, 2 * "start_event" events). Then again for the import of cancellation
-    // events (2 cancel events)
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.cancelProcessInstance(deployedInstance.getProcessInstanceKey());
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+      // then (canceled)
+      final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
+          getZeebeExportedProcessInstanceEventsByElementId();
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance -> {
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+                assertThat(savedInstance.getProcessDefinitionId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+                assertThat(savedInstance.getProcessDefinitionKey())
+                    .isEqualTo(deployedInstance.getBpmnProcessId());
+                assertThat(savedInstance.getProcessDefinitionVersion())
+                    .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+                assertThat(savedInstance.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(savedInstance.getState())
+                    .isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
+                assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(savedInstance.getBusinessKey()).isNull();
+                assertThat(savedInstance.getIncidents()).isEmpty();
+                assertThat(savedInstance.getVariables()).isEmpty();
+                assertThat(savedInstance.getStartDate())
+                    .isEqualTo(
+                        getExpectedStartDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getEndDate())
+                    .isEqualTo(
+                        getExpectedEndDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getDuration())
+                    .isEqualTo(
+                        getExpectedDurationForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            START_EVENT,
+                            BpmnElementType.START_EVENT),
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            SERVICE_TASK,
+                            BpmnElementType.SERVICE_TASK,
+                            true));
+              });
+    }
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
-        getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(deployedInstance.getBpmnProcessId());
-              assertThat(savedInstance.getProcessDefinitionVersion())
-                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getState())
-                  .isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getBusinessKey()).isNull();
-              assertThat(savedInstance.getIncidents()).isEmpty();
-              assertThat(savedInstance.getVariables()).isEmpty();
-              assertThat(savedInstance.getStartDate())
-                  .isEqualTo(
-                      getExpectedStartDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getEndDate())
-                  .isEqualTo(
-                      getExpectedEndDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getDuration())
-                  .isEqualTo(
-                      getExpectedDurationForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .hasSize(2)
-                  .containsExactlyInAnyOrder(
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          START_EVENT,
-                          BpmnElementType.START_EVENT),
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          SERVICE_TASK,
-                          BpmnElementType.SERVICE_TASK,
-                          true));
-            });
+    // given (from multiple days)
+    {
+      final String processName = "someProcess";
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
+
+      // when (from multiple days)
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      try {
+        zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+      } catch (final IOException | InterruptedException e) {
+        throw new OptimizeRuntimeException(e);
+      }
+      zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
+      waitUntilMinimumProcessInstanceEventsExportedCount(8);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (from multiple days)
+      final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
+          getZeebeExportedProcessInstanceEventsByElementId();
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance -> {
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+                assertThat(savedInstance.getProcessDefinitionId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+                assertThat(savedInstance.getProcessDefinitionKey())
+                    .isEqualTo(deployedInstance.getBpmnProcessId());
+                assertThat(savedInstance.getProcessDefinitionVersion())
+                    .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+                assertThat(savedInstance.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(savedInstance.getState())
+                    .isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
+                assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(savedInstance.getBusinessKey()).isNull();
+                assertThat(savedInstance.getIncidents()).isEmpty();
+                assertThat(savedInstance.getVariables()).isEmpty();
+                assertThat(savedInstance.getStartDate())
+                    .isEqualTo(
+                        getExpectedStartDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getEndDate())
+                    .isEqualTo(
+                        getExpectedEndDateForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getDuration())
+                    .isEqualTo(
+                        getExpectedDurationForEvents(
+                            exportedEvents.get(deployedInstance.getBpmnProcessId())));
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .hasSize(3)
+                    .containsExactlyInAnyOrder(
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            START_EVENT,
+                            BpmnElementType.START_EVENT),
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            SERVICE_TASK,
+                            BpmnElementType.SERVICE_TASK),
+                        createFlowNodeInstance(
+                            deployedInstance,
+                            exportedEvents,
+                            END_EVENT,
+                            BpmnElementType.END_EVENT));
+              });
+    }
   }
 
   @Test
   public void
-      importZeebeProcessInstanceDataFromMultipleDays_allDataSavedToOptimizeProcessInstance() {
-    // given
-    final String processName = "someProcess";
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
+      importZeebeProcessInstanceData_multipleInstancesForSameProcessAndDifferentProcessesAndDifferentVersions() {
+    // Covers three independent multi-instance scenarios: scenario 1 two instances of the same
+    // process; scenario 2 two instances of two different processes; scenario 3 two instances of
+    // two different versions of the same process. Each scenario is reset to a clean Zeebe export
+    // index and clean Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would
+    // otherwise do between separate test methods.
 
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    try {
-      zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
-    } catch (final IOException | InterruptedException e) {
-      throw new OptimizeRuntimeException(e);
+    // given (same process)
+    {
+      final String processName = "someProcess";
+      final Process deployedProcess =
+          zeebeExtension.deployProcess(createStartEndProcess(processName));
+      final ProcessInstanceEvent firstInstance =
+          zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+      final ProcessInstanceEvent secondInstance =
+          zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+
+      // when (same process)
+      // Each instance generates 6 events
+      waitUntilMinimumProcessInstanceEventsExportedCount(12);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (same process)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .hasSize(2)
+          .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
+          .extracting(ProcessInstanceDto::getProcessInstanceId)
+          .containsExactlyInAnyOrder(
+              String.valueOf(firstInstance.getProcessInstanceKey()),
+              String.valueOf(secondInstance.getProcessInstanceKey()));
     }
-    zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    importAllZeebeEntitiesFromScratch();
 
-    // then
-    final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
-        getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(deployedInstance.getBpmnProcessId());
-              assertThat(savedInstance.getProcessDefinitionVersion())
-                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getState())
-                  .isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getBusinessKey()).isNull();
-              assertThat(savedInstance.getIncidents()).isEmpty();
-              assertThat(savedInstance.getVariables()).isEmpty();
-              assertThat(savedInstance.getStartDate())
-                  .isEqualTo(
-                      getExpectedStartDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getEndDate())
-                  .isEqualTo(
-                      getExpectedEndDateForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getDuration())
-                  .isEqualTo(
-                      getExpectedDurationForEvents(
-                          exportedEvents.get(deployedInstance.getBpmnProcessId())));
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .hasSize(3)
-                  .containsExactlyInAnyOrder(
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          START_EVENT,
-                          BpmnElementType.START_EVENT),
-                      createFlowNodeInstance(
-                          deployedInstance,
-                          exportedEvents,
-                          SERVICE_TASK,
-                          BpmnElementType.SERVICE_TASK),
-                      createFlowNodeInstance(
-                          deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT));
-            });
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (different processes)
+    {
+      final ProcessInstanceEvent firstInstance =
+          zeebeExtension.startProcessInstanceForProcess(
+              zeebeExtension
+                  .deployProcess(createStartEndProcess("firstProcess"))
+                  .getBpmnProcessId());
+      final ProcessInstanceEvent secondInstance =
+          zeebeExtension.startProcessInstanceForProcess(
+              zeebeExtension
+                  .deployProcess(createStartEndProcess("secondProcess"))
+                  .getBpmnProcessId());
+
+      // when (different processes)
+      // both processes have 6 importable events, wait until all records for both have been
+      // exported
+      waitUntilMinimumProcessInstanceEventsExportedCount(12);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (different processes)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .hasSize(2)
+          .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
+          .extracting(ProcessInstanceDto::getProcessInstanceId)
+          .containsExactlyInAnyOrder(
+              String.valueOf(firstInstance.getProcessInstanceKey()),
+              String.valueOf(secondInstance.getProcessInstanceKey()));
+    }
+
+    // reset to a clean slate before the third scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (different versions of the same process)
+    {
+      final String processName = "someProcess";
+      final ProcessInstanceEvent v1Instance =
+          deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
+      final ProcessInstanceEvent v2Instance =
+          deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
+
+      // when (different versions of the same process)
+      // The first instance generates 6 events, so the 7th indicates that both processes have been
+      // exported
+      waitUntilMinimumProcessInstanceEventsExportedCount(12);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (different versions of the same process)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .hasSize(2)
+          .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
+          .extracting(
+              ProcessInstanceDto::getProcessInstanceId,
+              ProcessInstanceDto::getProcessDefinitionVersion)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple(String.valueOf(v1Instance.getProcessInstanceKey()), "1"),
+              Tuple.tuple(String.valueOf(v2Instance.getProcessInstanceKey()), "2"));
+    }
   }
 
   @Test
-  public void importZeebeProcessInstanceData_multipleInstancesForSameProcess() {
-    // given
-    final String processName = "someProcess";
-    final Process deployedProcess =
-        zeebeExtension.deployProcess(createStartEndProcess(processName));
-    final ProcessInstanceEvent firstInstance =
-        zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
-    final ProcessInstanceEvent secondInstance =
-        zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+  public void importZeebeProcessInstanceData_processContainsLoopAndProcessStartedDuringProcess() {
+    // Covers two independent structural edge cases: scenario 1 a process containing a looping
+    // service task; scenario 2 a process started partway through (before two end events). Each
+    // scenario is reset to a clean Zeebe export index and clean Optimize data before it runs,
+    // mirroring what @BeforeEach/@AfterEach would otherwise do between separate test methods.
 
-    // when
-    // Each instance generates 6 events
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
-    importAllZeebeEntitiesFromScratch();
+    // given (contains loop)
+    {
+      final String processName = "someProcess";
+      deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .hasSize(2)
-        .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
-        .extracting(ProcessInstanceDto::getProcessInstanceId)
-        .containsExactlyInAnyOrder(
-            String.valueOf(firstInstance.getProcessInstanceKey()),
-            String.valueOf(secondInstance.getProcessInstanceKey()));
-  }
+      // when (contains loop)
+      waitUntilMinimumProcessInstanceEventsExportedCount(1);
+      zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
+      zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
+      waitUntilMinimumProcessInstanceEventsExportedCount(18);
+      importAllZeebeEntitiesFromScratch();
 
-  @Test
-  public void importZeebeProcessInstanceData_instancesForDifferentProcesses() {
-    // given
-    final ProcessInstanceEvent firstInstance =
-        zeebeExtension.startProcessInstanceForProcess(
-            zeebeExtension.deployProcess(createStartEndProcess("firstProcess")).getBpmnProcessId());
-    final ProcessInstanceEvent secondInstance =
-        zeebeExtension.startProcessInstanceForProcess(
-            zeebeExtension
-                .deployProcess(createStartEndProcess("secondProcess"))
-                .getBpmnProcessId());
+      // then (contains loop)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              instance ->
+                  assertThat(instance.getFlowNodeInstances())
+                      .filteredOn(
+                          flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals(SERVICE_TASK))
+                      .hasSizeGreaterThan(1));
+    }
 
-    // when
-    // both processes have 6 importable events, wait until all records for both have been exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
-    importAllZeebeEntitiesFromScratch();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .hasSize(2)
-        .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
-        .extracting(ProcessInstanceDto::getProcessInstanceId)
-        .containsExactlyInAnyOrder(
-            String.valueOf(firstInstance.getProcessInstanceKey()),
-            String.valueOf(secondInstance.getProcessInstanceKey()));
-  }
+    // given (started during process)
+    {
+      final String processName = "someProcess";
+      final Process process =
+          zeebeExtension.deployProcess(createSingleStartDoubleEndEventProcess(processName));
+      zeebeExtension.startProcessInstanceBeforeElementWithIds(
+          process.getBpmnProcessId(), END_EVENT, END_EVENT_2);
 
-  @Test
-  public void importZeebeProcessInstanceData_instancesWithDifferentVersionsOfSameProcess() {
-    // given
-    final String processName = "someProcess";
-    final ProcessInstanceEvent v1Instance =
-        deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
-    final ProcessInstanceEvent v2Instance =
-        deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
+      // when (started during process)
+      waitUntilMinimumProcessInstanceEventsExportedCount(6);
+      importAllZeebeEntitiesFromScratch();
 
-    // when
-    // The first instance generates 6 events, so the 7th indicates that both processes have been
-    // exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .hasSize(2)
-        .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
-        .extracting(
-            ProcessInstanceDto::getProcessInstanceId,
-            ProcessInstanceDto::getProcessDefinitionVersion)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple(String.valueOf(v1Instance.getProcessInstanceKey()), "1"),
-            Tuple.tuple(String.valueOf(v2Instance.getProcessInstanceKey()), "2"));
-  }
-
-  @Test
-  public void importZeebeProcessInstanceData_processContainsLoop() {
-    // given
-    final String processName = "someProcess";
-    deployAndStartInstanceForProcess(createLoopingProcess(processName));
-
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
-    zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
-    zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
-    waitUntilMinimumProcessInstanceEventsExportedCount(18);
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            instance ->
-                assertThat(instance.getFlowNodeInstances())
-                    .filteredOn(
-                        flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals(SERVICE_TASK))
-                    .hasSizeGreaterThan(1));
-  }
-
-  @Test
-  public void importZeebeProcessInstanceData_processStartedDuringProcess() {
-    // given
-    final String processName = "someProcess";
-    final Process process =
-        zeebeExtension.deployProcess(createSingleStartDoubleEndEventProcess(processName));
-    zeebeExtension.startProcessInstanceBeforeElementWithIds(
-        process.getBpmnProcessId(), END_EVENT, END_EVENT_2);
-
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            instance -> {
-              assertThat(instance.getEndDate()).isNotNull();
-              assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
-              assertThat(instance.getFlowNodeInstances())
-                  .extracting(FlowNodeInstanceDto::getFlowNodeType)
-                  .containsExactlyInAnyOrder(
-                      BpmnElementType.END_EVENT.getElementTypeName().get(),
-                      BpmnElementType.END_EVENT.getElementTypeName().get());
-            });
-  }
-
-  @Test
-  public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
-    // given
-    final String processName = "someProcess";
-    deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
-
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            instance ->
+      // then (started during process)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              instance -> {
+                assertThat(instance.getEndDate()).isNotNull();
+                assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
                 assertThat(instance.getFlowNodeInstances())
                     .extracting(FlowNodeInstanceDto::getFlowNodeType)
                     .containsExactlyInAnyOrder(
-                        BpmnElementType.START_EVENT.getElementTypeName().get(),
-                        BpmnElementType.END_EVENT.getElementTypeName().get()));
-  }
-
-  @Test
-  public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
-    // given
-    final String processName = "someProcess";
-    final Process process =
-        zeebeExtension.deployProcess(createInclusiveGatewayProcess(processName));
-    zeebeExtension.startProcessInstanceWithVariables(
-        process.getBpmnProcessId(), Map.of("varName", "a,b"));
-
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            instance ->
-                assertThat(instance.getFlowNodeInstances())
-                    .extracting(FlowNodeInstanceDto::getFlowNodeType)
-                    .containsExactlyInAnyOrder(
-                        BpmnElementType.START_EVENT.getElementTypeName().get(),
-                        BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
                         BpmnElementType.END_EVENT.getElementTypeName().get(),
-                        BpmnElementType.END_EVENT.getElementTypeName().get()));
+                        BpmnElementType.END_EVENT.getElementTypeName().get());
+              });
+    }
+  }
+
+  @Test
+  public void importZeebeProcessInstanceData_processContainsTerminateEndEventAndInclusiveGateway() {
+    // Covers two independent BPMN-construct checks: scenario 1 a process with a terminate end
+    // event; scenario 2 a process with an inclusive gateway. Each scenario is reset to a clean
+    // Zeebe export index and clean Optimize data before it runs, mirroring what
+    // @BeforeEach/@AfterEach would otherwise do between separate test methods.
+
+    // given (terminate end event)
+    {
+      final String processName = "someProcess";
+      deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
+
+      // when (terminate end event)
+      waitUntilMinimumProcessInstanceEventsExportedCount(6);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (terminate end event)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              instance ->
+                  assertThat(instance.getFlowNodeInstances())
+                      .extracting(FlowNodeInstanceDto::getFlowNodeType)
+                      .containsExactlyInAnyOrder(
+                          BpmnElementType.START_EVENT.getElementTypeName().get(),
+                          BpmnElementType.END_EVENT.getElementTypeName().get()));
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (inclusive gateway)
+    {
+      final String processName = "someProcess";
+      final Process process =
+          zeebeExtension.deployProcess(createInclusiveGatewayProcess(processName));
+      zeebeExtension.startProcessInstanceWithVariables(
+          process.getBpmnProcessId(), Map.of("varName", "a,b"));
+
+      // when (inclusive gateway)
+      waitUntilMinimumProcessInstanceEventsExportedCount(8);
+      importAllZeebeEntitiesFromScratch();
+
+      // then (inclusive gateway)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              instance ->
+                  assertThat(instance.getFlowNodeInstances())
+                      .extracting(FlowNodeInstanceDto::getFlowNodeType)
+                      .containsExactlyInAnyOrder(
+                          BpmnElementType.START_EVENT.getElementTypeName().get(),
+                          BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
+                          BpmnElementType.END_EVENT.getElementTypeName().get(),
+                          BpmnElementType.END_EVENT.getElementTypeName().get()));
+    }
   }
 
   @DisabledIf("isZeebeVersionPre86")
@@ -626,74 +705,89 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
-    // given
-    final ProcessInstanceEvent processInstance =
-        deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
+  public void
+      importSendTaskAndNewBpmnElementsIntroducedWith820ZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
+    // Covers two independent BPMN-construct checks: scenario 1 a process with a send task;
+    // scenario 2 a process with the new 8.2.0 elements (data stores, date objects, link events,
+    // escalation events, undefined tasks). Each scenario is reset to a clean Zeebe export index
+    // and clean Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would
+    // otherwise do between separate test methods.
 
-    // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
+    // given (send task)
+    {
+      final ProcessInstanceEvent processInstance =
+          deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
-                assertThat(savedInstance.getFlowNodeInstances())
-                    .hasSize(2)
-                    .allSatisfy(
-                        flowNodeInstanceDto ->
-                            assertThat(flowNodeInstanceDto)
-                                .hasFieldOrPropertyWithValue(
-                                    FlowNodeInstanceDto.Fields.definitionKey,
-                                    processInstance.getBpmnProcessId())
-                                .hasFieldOrPropertyWithValue(
-                                    FlowNodeInstanceDto.Fields.definitionVersion,
-                                    String.valueOf(processInstance.getVersion()))
-                                .hasFieldOrPropertyWithValue(
-                                    FlowNodeInstanceDto.Fields.tenantId, ZEEBE_DEFAULT_TENANT_ID))
-                    .extracting(
-                        FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
-                    .containsExactlyInAnyOrder(
-                        Tuple.tuple(
-                            START_EVENT,
-                            getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
-                        Tuple.tuple(
-                            SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))));
-  }
+      // when (send task)
+      waitUntilMinimumProcessInstanceEventsExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
 
-  @Test
-  public void importZeebeProcessInstanceData_processContainsNewBpmnElementsIntroducedWith820() {
-    // given a process that contains the following:
+      // then (send task)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getFlowNodeInstances())
+                      .hasSize(2)
+                      .allSatisfy(
+                          flowNodeInstanceDto ->
+                              assertThat(flowNodeInstanceDto)
+                                  .hasFieldOrPropertyWithValue(
+                                      FlowNodeInstanceDto.Fields.definitionKey,
+                                      processInstance.getBpmnProcessId())
+                                  .hasFieldOrPropertyWithValue(
+                                      FlowNodeInstanceDto.Fields.definitionVersion,
+                                      String.valueOf(processInstance.getVersion()))
+                                  .hasFieldOrPropertyWithValue(
+                                      FlowNodeInstanceDto.Fields.tenantId, ZEEBE_DEFAULT_TENANT_ID))
+                      .extracting(
+                          FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
+                      .containsExactlyInAnyOrder(
+                          Tuple.tuple(
+                              START_EVENT,
+                              getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
+                          Tuple.tuple(
+                              SEND_TASK,
+                              getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))));
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (new 8.2.0 elements) a process that contains the following:
     // data stores, date objects, link events, escalation events, undefined tasks
-    final BpmnModelInstance model =
-        readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
-    final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
-    zeebeExtension.startProcessInstanceWithVariables(
-        processId, Map.of("space", true, "time", true));
+    {
+      final BpmnModelInstance model =
+          readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
+      final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
+      zeebeExtension.startProcessInstanceWithVariables(
+          processId, Map.of("space", true, "time", true));
 
-    // when
-    waitUntilInstanceRecordWithElementIdExported("milkAdventureEndEventId");
-    importAllZeebeEntitiesFromScratch();
+      // when (new 8.2.0 elements)
+      waitUntilInstanceRecordWithElementIdExported("milkAdventureEndEventId");
+      importAllZeebeEntitiesFromScratch();
 
-    // then all new events were imported
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            instance ->
-                assertThat(instance.getFlowNodeInstances())
-                    .extracting(FlowNodeInstanceDto::getFlowNodeId)
-                    .contains(
-                        "linkIntermediateThrowEventId",
-                        "linkIntermediateCatchEventId",
-                        "undefinedTaskId",
-                        "escalationIntermediateThrowEventId",
-                        "escalationNonInterruptingBoundaryEventId",
-                        "escalationBoundaryEventId",
-                        "escalationNonInterruptingStartEventId",
-                        "escalationStartEventId",
-                        "escalationEndEventId"));
+      // then (new 8.2.0 elements) all new events were imported
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              instance ->
+                  assertThat(instance.getFlowNodeInstances())
+                      .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                      .contains(
+                          "linkIntermediateThrowEventId",
+                          "linkIntermediateCatchEventId",
+                          "undefinedTaskId",
+                          "escalationIntermediateThrowEventId",
+                          "escalationNonInterruptingBoundaryEventId",
+                          "escalationBoundaryEventId",
+                          "escalationNonInterruptingStartEventId",
+                          "escalationStartEventId",
+                          "escalationEndEventId"));
+    }
   }
 
   @DisabledIf("isZeebeVersionPre83")

@@ -44,39 +44,50 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
 
   @Test
   public void
-      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnSameBatch() {
-    // given
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
-    zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
-    waitUntilNumberOfDefinitionsExported(1);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
+      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnSameAndOnDifferentBatch() {
+    // Covers two independent variable-update batching scenarios: scenario 1 imports creation and
+    // update together in one batch; scenario 2 imports them as two separate batches. Each
+    // scenario is reset to a clean Zeebe export index and clean Optimize data before it runs,
+    // mirroring what @BeforeEach/@AfterEach would otherwise do between separate test methods.
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    // given (same batch)
+    {
+      final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
+      zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
+      waitUntilNumberOfDefinitionsExported(1);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
-  }
+      // when (same batch)
+      importAllZeebeEntitiesFromScratch();
 
-  @Test
-  public void
-      zeebeVariableImport_importRecordsForTheCreationAndTheUpdateOfProcessVariablesOnDifferentBatch() {
-    // given
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(5);
-    importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
+      // then (same batch)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    }
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    // given (different batch)
+    {
+      final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(5);
+      importAllZeebeEntitiesFromScratch();
+      zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
+
+      // when (different batch)
+      importAllZeebeEntitiesFromLastIndex();
+
+      // then (different batch)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+    }
   }
 
   @Test
@@ -146,111 +157,181 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void zeebeVariableImport_variableNameOnSeveralScopesOnlyProcessLevelGetsUpdated() {
-    // given
-    final long processInstanceKey =
-        deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
-    ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    final String flowNodeId =
-        getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
-    zeebeExtension.addVariablesToScope(
-        Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
-    importAllZeebeEntitiesFromLastIndex();
-    zeebeExtension.addVariablesToScope(
-        processInstanceKey, Map.of("var1", "processInstanceScopeUpdatedValue"), true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+  public void
+      zeebeVariableImport_variableNameOnSeveralScopesOnlyProcessLevelGetsUpdatedAndOnlyFlowNodeLevelGetsUpdated() {
+    // Covers two independent scoped-update scenarios for a variable name that exists at both
+    // process and flow-node scope: scenario 1 only the process-level value is updated; scenario
+    // 2 only the flow-node-level value is updated. Each scenario is reset to a clean Zeebe export
+    // index and clean Optimize data before it runs, mirroring what @BeforeEach/@AfterEach would
+    // otherwise do between separate test methods.
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
+    // given (only process level gets updated)
+    {
+      final long processInstanceKey =
+          deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
+      waitUntilMinimumProcessInstanceEventsExportedCount(4);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+      ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      final String flowNodeId =
+          getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
+      zeebeExtension.addVariablesToScope(
+          Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
+      importAllZeebeEntitiesFromLastIndex();
+      zeebeExtension.addVariablesToScope(
+          processInstanceKey, Map.of("var1", "processInstanceScopeUpdatedValue"), true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
 
-    // then
-    savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple(
-                "var1", Collections.singletonList("processInstanceScopeUpdatedValue"), STRING_TYPE),
-            Tuple.tuple(
-                "var1", Collections.singletonList("flowNodeInstanceScopeValue"), STRING_TYPE));
+      // when (only process level gets updated)
+      importAllZeebeEntitiesFromLastIndex();
+
+      // then (only process level gets updated)
+      savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple(
+                  "var1",
+                  Collections.singletonList("processInstanceScopeUpdatedValue"),
+                  STRING_TYPE),
+              Tuple.tuple(
+                  "var1", Collections.singletonList("flowNodeInstanceScopeValue"), STRING_TYPE));
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (only flow node level gets updated)
+    {
+      final long processInstanceKey =
+          deployProcessAndStartProcessInstanceWithVariables(
+              Map.of("var1", "processInstanceScopeValue"));
+      waitUntilMinimumProcessInstanceEventsExportedCount(1);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+      ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      final String flowNodeId =
+          getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
+      zeebeExtension.addVariablesToScope(
+          Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
+      importAllZeebeEntitiesFromLastIndex();
+      zeebeExtension.addVariablesToScope(
+          Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeUpdatedValue"), true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+
+      // when (only flow node level gets updated)
+      importAllZeebeEntitiesFromLastIndex();
+
+      // then (only flow node level gets updated)
+      savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple(
+                  "var1", Collections.singletonList("processInstanceScopeValue"), STRING_TYPE),
+              Tuple.tuple(
+                  "var1",
+                  Collections.singletonList("flowNodeInstanceScopeUpdatedValue"),
+                  STRING_TYPE));
+    }
   }
 
   @Test
-  public void zeebeVariableImport_variableNameOnSeveralScopesOnlyFlowNodeLevelGetsUpdated() {
-    // given
-    final long processInstanceKey =
-        deployProcessAndStartProcessInstanceWithVariables(
-            Map.of("var1", "processInstanceScopeValue"));
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
-    ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    final String flowNodeId =
-        getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
-    zeebeExtension.addVariablesToScope(
-        Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
-    importAllZeebeEntitiesFromLastIndex();
-    zeebeExtension.addVariablesToScope(
-        Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeUpdatedValue"), true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+  public void zeebeVariableImport_updateTheTypeOfVariablesAndUpdateObjectVariable() {
+    // Covers two independent variable-update scenarios: scenario 1 updating primitive variables
+    // to different types; scenario 2 updating a nested object variable's fields. Each scenario is
+    // reset to a clean Zeebe export index and clean Optimize data before it runs, mirroring what
+    // @BeforeEach/@AfterEach would otherwise do between separate test methods.
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
+    // given (update the type of variables)
+    {
+      final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(5);
+      importAllZeebeEntitiesFromScratch();
+      zeebeExtension.addVariablesToScope(
+          processInstanceKey,
+          Map.of("var1", false, "var2", "someValue", "var3", "", "var4", true, "var5", 123.0),
+          true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
 
-    // then
-    savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple(
-                "var1", Collections.singletonList("processInstanceScopeValue"), STRING_TYPE),
-            Tuple.tuple(
-                "var1",
-                Collections.singletonList("flowNodeInstanceScopeUpdatedValue"),
-                STRING_TYPE));
-  }
+      // when (update the type of variables)
+      importAllZeebeEntitiesFromLastIndex();
 
-  @Test
-  public void zeebeVariableImport_updateTheTypeOfVariables() {
-    // given
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(5);
-    importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(
-        processInstanceKey,
-        Map.of("var1", false, "var2", "someValue", "var3", "", "var4", true, "var5", 123.0),
-        true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
+      // then (update the type of variables)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple("var1", Collections.singletonList("false"), BOOLEAN_TYPE),
+              Tuple.tuple("var2", Collections.singletonList("someValue"), STRING_TYPE),
+              Tuple.tuple("var3", Collections.singletonList(""), STRING_TYPE),
+              Tuple.tuple("var4", Collections.singletonList("true"), BOOLEAN_TYPE),
+              Tuple.tuple("var5", Collections.singletonList("123.0"), DOUBLE_TYPE));
+    }
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", Collections.singletonList("false"), BOOLEAN_TYPE),
-            Tuple.tuple("var2", Collections.singletonList("someValue"), STRING_TYPE),
-            Tuple.tuple("var3", Collections.singletonList(""), STRING_TYPE),
-            Tuple.tuple("var4", Collections.singletonList("true"), BOOLEAN_TYPE),
-            Tuple.tuple("var5", Collections.singletonList("123.0"), DOUBLE_TYPE));
+    // given (update object variable)
+    {
+      final Map<String, Object> objectVar = new HashMap<>();
+      objectVar.put("name", "Pond");
+      objectVar.put("age", 28);
+      objectVar.put("likes", List.of("optimize", "garlic"));
+      final Map<String, Object> variables = new HashMap<>();
+      variables.put("objectVar", objectVar);
+      final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(variables);
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+
+      objectVar.put("age", 29);
+      objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
+      zeebeExtension.addVariablesToScope(processInstanceKey, variables, true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+
+      // when (update object variable)
+      importAllZeebeEntitiesFromLastIndex();
+
+      // then (update object variable)
+      final ProcessInstanceDto instance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(instance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getType,
+              SimpleProcessVariableDto::getValue)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple(
+                  "objectVar",
+                  OBJECT.getId(),
+                  Collections.singletonList(
+                      variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())),
+              Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
+              Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("29.0")),
+              Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic", "tofu")),
+              Tuple.tuple(
+                  "objectVar.likes._listSize", LONG.getId(), Collections.singletonList("3")));
+    }
   }
 
   @Test
@@ -294,104 +375,77 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void zeebeVariableImport_updateVariableSeveralTimesInSameBatch() {
-    // given
-    final long processInstanceKey =
-        deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
-    importAllZeebeEntitiesFromLastIndex();
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(2);
+  public void zeebeVariableImport_updateVariableSeveralTimesInSameAndInSeveralBatches() {
+    // Covers two independent variable-update batching scenarios: scenario 1 updates the variable
+    // twice, importing both updates in one batch; scenario 2 updates it twice again on a fresh
+    // instance, importing each update as its own batch (forced via maxImportPageSize=1). Scenario
+    // 2 must run last since it mutates shared configuration, only reset by the next test method's
+    // @BeforeEach.
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
+    // given (same batch)
+    {
+      final long processInstanceKey =
+          deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+      zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
+      zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
+      importAllZeebeEntitiesFromLastIndex();
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(2);
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
-  }
+      // when (same batch)
+      importAllZeebeEntitiesFromLastIndex();
 
-  @Test
-  public void zeebeVariableImport_updateVariableSeveralTimesInSeveralBatches() {
-    // given
-    embeddedOptimizeExtension
-        .getConfigurationService()
-        .getConfiguredZeebe()
-        .setMaxImportPageSize(1);
-    embeddedOptimizeExtension.reloadConfiguration();
-    final long processInstanceKey =
-        deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromLastIndex();
-    zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(2);
+      // then (same batch)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
+    }
 
-    // when
-    importAllZeebeEntitiesFromLastIndex();
-    importAllZeebeEntitiesFromLastIndex();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    final ProcessInstanceDto savedProcessInstance =
-        getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(savedProcessInstance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getValue,
-            SimpleProcessVariableDto::getType)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
-  }
+    // given (several batches)
+    {
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getConfiguredZeebe()
+          .setMaxImportPageSize(1);
+      embeddedOptimizeExtension.reloadConfiguration();
+      final long processInstanceKey =
+          deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
+      waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromScratch();
+      zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "firstUpdate"), true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+      importAllZeebeEntitiesFromLastIndex();
+      zeebeExtension.addVariablesToScope(processInstanceKey, Map.of("var1", "secondUpdate"), true);
+      waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(2);
 
-  @Test
-  public void zeebeVariableImport_updateObjectVariable() {
-    // given
-    final Map<String, Object> objectVar = new HashMap<>();
-    objectVar.put("name", "Pond");
-    objectVar.put("age", 28);
-    objectVar.put("likes", List.of("optimize", "garlic"));
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("objectVar", objectVar);
-    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(variables);
-    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
-    importAllZeebeEntitiesFromScratch();
+      // when (several batches)
+      importAllZeebeEntitiesFromLastIndex();
+      importAllZeebeEntitiesFromLastIndex();
 
-    objectVar.put("age", 29);
-    objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
-    zeebeExtension.addVariablesToScope(processInstanceKey, variables, true);
-    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
-
-    // when
-    importAllZeebeEntitiesFromLastIndex();
-
-    // then
-    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-    assertThat(instance.getVariables())
-        .extracting(
-            SimpleProcessVariableDto::getName,
-            SimpleProcessVariableDto::getType,
-            SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(
-            Tuple.tuple(
-                "objectVar",
-                OBJECT.getId(),
-                Collections.singletonList(
-                    variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())),
-            Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
-            Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("29.0")),
-            Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic", "tofu")),
-            Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("3")));
+      // then (several batches)
+      final ProcessInstanceDto savedProcessInstance =
+          getProcessInstanceForId(String.valueOf(processInstanceKey));
+      assertThat(savedProcessInstance.getVariables())
+          .extracting(
+              SimpleProcessVariableDto::getName,
+              SimpleProcessVariableDto::getValue,
+              SimpleProcessVariableDto::getType)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
+    }
   }
 
   private Map<String, Object> generateVariables() {

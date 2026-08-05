@@ -53,132 +53,160 @@ import org.junit.jupiter.api.condition.EnabledIf;
 public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
   @Test
-  public void importZeebeProcess_allDataSavedToDefinition() {
-    // given
-    final String processName = "someProcess";
-    final BpmnModelInstance simpleProcess = createSimpleUserTaskProcess(processName);
-    final Process deployedProcess = deployProcessAndStartInstance(simpleProcess);
-    waitUntilNumberOfDefinitionsExported(1);
+  public void importZeebeProcess_allDataSavedToDefinitionAndUnnamedProcessUsesProcessIdAsName() {
+    // Covers two independent scenarios: scenario 1 the full field set for a named process;
+    // scenario 2 that an unnamed process defaults its name to the bpmnProcessId. Each scenario is
+    // reset to a clean Zeebe export index and clean Optimize data before it runs, mirroring what
+    // @BeforeEach/@AfterEach would otherwise do between separate test methods.
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    // given (named process)
+    {
+      final String processName = "someProcess";
+      final BpmnModelInstance simpleProcess = createSimpleUserTaskProcess(processName);
+      final Process deployedProcess = deployProcessAndStartInstance(simpleProcess);
+      waitUntilNumberOfDefinitionsExported(1);
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-        .singleElement()
-        .satisfies(
-            importedDef -> {
-              assertThat(importedDef.getId())
-                  .isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
-              assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
-              assertThat(importedDef.getVersion())
-                  .isEqualTo(String.valueOf(deployedProcess.getVersion()));
-              if (isZeebeVersionPre86()) {
-                assertThat(importedDef.getVersionTag()).isNull();
-              } else {
-                assertThat(importedDef.getVersionTag()).isEqualTo(ZeebeBpmnModels.VERSION_TAG);
-              }
-              assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
+      // when (named process)
+      importAllZeebeEntitiesFromScratch();
 
-              assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));
-              assertThat(importedDef.getName()).isEqualTo(processName);
-              assertThat(importedDef.getDataSource().getType())
-                  .isEqualTo(DataImportSourceType.ZEEBE);
+      // then (named process)
+      assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+          .singleElement()
+          .satisfies(
+              importedDef -> {
+                assertThat(importedDef.getId())
+                    .isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
+                assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
+                assertThat(importedDef.getVersion())
+                    .isEqualTo(String.valueOf(deployedProcess.getVersion()));
+                if (isZeebeVersionPre86()) {
+                  assertThat(importedDef.getVersionTag()).isNull();
+                } else {
+                  assertThat(importedDef.getVersionTag()).isEqualTo(ZeebeBpmnModels.VERSION_TAG);
+                }
+                assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
 
-              assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
-              assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(importedDef.isDeleted()).isFalse();
-              assertThat(importedDef.getUserTaskNames()).containsEntry(USER_TASK, USER_TASK);
-              assertThat(importedDef.getFlowNodeData())
-                  .containsExactlyInAnyOrder(
-                      new FlowNodeDataDto(START_EVENT, START_EVENT, "startEvent"),
-                      new FlowNodeDataDto(USER_TASK, USER_TASK, "userTask"),
-                      new FlowNodeDataDto(END_EVENT, null, "endEvent"));
-            });
-  }
+                assertThat(importedDef.getBpmn20Xml())
+                    .isEqualTo(Bpmn.convertToString(simpleProcess));
+                assertThat(importedDef.getName()).isEqualTo(processName);
+                assertThat(importedDef.getDataSource().getType())
+                    .isEqualTo(DataImportSourceType.ZEEBE);
 
-  @Test
-  public void importZeebeProcess_unnamedProcessUsesProcessIdAsName() {
-    // given
-    final BpmnModelInstance noNameStartEventProcess =
-        Bpmn.createExecutableProcess().startEvent(START_EVENT).name(START_EVENT).done();
-    final Process deployedProcess = deployProcessAndStartInstance(noNameStartEventProcess);
-    waitUntilNumberOfDefinitionsExported(1);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-        .singleElement()
-        .satisfies(
-            importedDef -> {
-              assertThat(importedDef.getId())
-                  .isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
-              assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
-              assertThat(importedDef.getVersion())
-                  .isEqualTo(String.valueOf(deployedProcess.getVersion()));
-              assertThat(importedDef.getVersionTag()).isNull();
-              assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
-              assertThat(importedDef.getBpmn20Xml())
-                  .isEqualTo(Bpmn.convertToString(noNameStartEventProcess));
-              assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
-              assertThat(importedDef.getDataSource().getType())
-                  .isEqualTo(DataImportSourceType.ZEEBE);
-
-              assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
-              assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(importedDef.isDeleted()).isFalse();
-              assertThat(importedDef.getUserTaskNames()).isEmpty();
-              assertThat(importedDef.getFlowNodeData())
-                  .containsExactlyInAnyOrder(
-                      new FlowNodeDataDto(START_EVENT, START_EVENT, "startEvent"));
-            });
-  }
-
-  @Test
-  public void importZeebeProcess_multipleProcessesDeployed() {
-    // given
-    final String firstProcessName = "firstProcess";
-    deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    final String secondProcessName = "secondProcess";
-    deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-        .hasSize(2)
-        .extracting(DefinitionOptimizeResponseDto::getName)
-        .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
-  }
-
-  @Test
-  public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
-    // given
-    final String firstProcessName = "firstProcess";
-    deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-
-    try {
-      zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
-    } catch (final IOException | InterruptedException e) {
-      throw new OptimizeRuntimeException(e);
+                assertThat(importedDef.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(importedDef.isDeleted()).isFalse();
+                assertThat(importedDef.getUserTaskNames()).containsEntry(USER_TASK, USER_TASK);
+                assertThat(importedDef.getFlowNodeData())
+                    .containsExactlyInAnyOrder(
+                        new FlowNodeDataDto(START_EVENT, START_EVENT, "startEvent"),
+                        new FlowNodeDataDto(USER_TASK, USER_TASK, "userTask"),
+                        new FlowNodeDataDto(END_EVENT, null, "endEvent"));
+              });
     }
-    final String secondProcessName = "secondProcess";
-    deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilDefinitionWithIdExported(firstProcessName);
-    waitUntilDefinitionWithIdExported(secondProcessName);
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-        .hasSize(2)
-        .extracting(DefinitionOptimizeResponseDto::getName)
-        .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
+    // given (unnamed process)
+    {
+      final BpmnModelInstance noNameStartEventProcess =
+          Bpmn.createExecutableProcess().startEvent(START_EVENT).name(START_EVENT).done();
+      final Process deployedProcess = deployProcessAndStartInstance(noNameStartEventProcess);
+      waitUntilNumberOfDefinitionsExported(1);
+
+      // when (unnamed process)
+      importAllZeebeEntitiesFromScratch();
+
+      // then (unnamed process)
+      assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+          .singleElement()
+          .satisfies(
+              importedDef -> {
+                assertThat(importedDef.getId())
+                    .isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
+                assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
+                assertThat(importedDef.getVersion())
+                    .isEqualTo(String.valueOf(deployedProcess.getVersion()));
+                assertThat(importedDef.getVersionTag()).isNull();
+                assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
+                assertThat(importedDef.getBpmn20Xml())
+                    .isEqualTo(Bpmn.convertToString(noNameStartEventProcess));
+                assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
+                assertThat(importedDef.getDataSource().getType())
+                    .isEqualTo(DataImportSourceType.ZEEBE);
+
+                assertThat(importedDef.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+                assertThat(importedDef.isDeleted()).isFalse();
+                assertThat(importedDef.getUserTaskNames()).isEmpty();
+                assertThat(importedDef.getFlowNodeData())
+                    .containsExactlyInAnyOrder(
+                        new FlowNodeDataDto(START_EVENT, START_EVENT, "startEvent"));
+              });
+    }
+  }
+
+  @Test
+  public void importZeebeProcess_multipleProcessesDeployedAndOnDifferentDays() {
+    // Covers two independent scenarios: scenario 1 two processes deployed on the same day;
+    // scenario 2 two processes deployed on different days. Scenario 2 must run last since it pins
+    // the Zeebe engine clock with no reset mechanism. Each scenario is reset to a clean Zeebe
+    // export index and clean Optimize data before it runs, mirroring what
+    // @BeforeEach/@AfterEach would otherwise do between separate test methods.
+
+    // given (same day)
+    {
+      final String firstProcessName = "firstProcess";
+      deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
+      final String secondProcessName = "secondProcess";
+      deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
+      waitUntilNumberOfDefinitionsExported(2);
+
+      // when (same day)
+      importAllZeebeEntitiesFromScratch();
+
+      // then (same day)
+      assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+          .hasSize(2)
+          .extracting(DefinitionOptimizeResponseDto::getName)
+          .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (different days)
+    {
+      final String firstProcessName = "firstProcess";
+      deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
+
+      try {
+        zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+      } catch (final IOException | InterruptedException e) {
+        throw new OptimizeRuntimeException(e);
+      }
+      final String secondProcessName = "secondProcess";
+      deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
+      waitUntilDefinitionWithIdExported(firstProcessName);
+      waitUntilDefinitionWithIdExported(secondProcessName);
+
+      // when (different days)
+      importAllZeebeEntitiesFromScratch();
+
+      // then (different days)
+      assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+          .hasSize(2)
+          .extracting(DefinitionOptimizeResponseDto::getName)
+          .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
+    }
   }
 
   @Test

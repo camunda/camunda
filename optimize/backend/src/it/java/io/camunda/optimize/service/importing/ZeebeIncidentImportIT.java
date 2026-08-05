@@ -49,150 +49,189 @@ import org.junit.jupiter.api.condition.EnabledIf;
 public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
   @Test
-  public void importZeebeIncidentData_openFailTaskIncident() {
-    // given
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
-    zeebeExtension.failTask(SERVICE_TASK);
+  public void
+      importZeebeIncidentData_openFailTaskIncidentAndThrowErrorIncidentAndMissingVariableIncident() {
+    // Covers three independent incident-creation scenarios: a fail-task incident, a
+    // throw-error incident, and a missing-variable incident. Each scenario deploys its own
+    // process and is reset to a clean Zeebe export index and clean Optimize data before it
+    // runs — this is what makes createIncident()'s helper lookup (which is not scoped by
+    // process instance key, only by element) safe to reuse here: only one instance's records
+    // ever exist in the index at the point it runs.
 
-    // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
-    importAllZeebeEntitiesFromScratch();
+    // given (open fail-task incident)
+    {
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+      zeebeExtension.failTask(SERVICE_TASK);
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(deployedInstance.getBpmnProcessId());
-              assertThat(savedInstance.getProcessDefinitionVersion())
-                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
-              assertThat(savedInstance.getBusinessKey()).isNull();
-              assertThat(savedInstance.getFlowNodeInstances()).isNotEmpty();
-              assertThat(savedInstance.getVariables()).isEmpty();
-              assertThat(savedInstance.getStartDate()).isNotNull();
-              assertThat(savedInstance.getEndDate()).isNull();
-              assertThat(savedInstance.getDuration()).isNull();
-              assertThat(savedInstance.getIncidents())
-                  .isNotEmpty()
-                  .hasSize(1)
-                  .containsExactly(
-                      createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN));
-            });
-  }
+      // when (open fail-task incident)
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
+      waitUntilIncidentRecordWithProcessIdExported("someProcess");
+      importAllZeebeEntitiesFromScratch();
 
-  @Test
-  public void importZeebeIncidentData_throwErrorIncident() {
-    // given
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
-    zeebeExtension.throwErrorIncident(SERVICE_TASK);
-
-    // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
+      // then (open fail-task incident)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance -> {
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+                assertThat(savedInstance.getProcessDefinitionId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+                assertThat(savedInstance.getProcessDefinitionKey())
+                    .isEqualTo(deployedInstance.getBpmnProcessId());
+                assertThat(savedInstance.getProcessDefinitionVersion())
+                    .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+                assertThat(savedInstance.getDataSource().getName())
+                    .isEqualTo(getConfiguredZeebeName());
+                assertThat(savedInstance.getState())
+                    .isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
+                assertThat(savedInstance.getBusinessKey()).isNull();
+                assertThat(savedInstance.getFlowNodeInstances()).isNotEmpty();
+                assertThat(savedInstance.getVariables()).isEmpty();
+                assertThat(savedInstance.getStartDate()).isNotNull();
+                assertThat(savedInstance.getEndDate()).isNull();
+                assertThat(savedInstance.getDuration()).isNull();
                 assertThat(savedInstance.getIncidents())
                     .isNotEmpty()
                     .hasSize(1)
                     .containsExactly(
-                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
+                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN));
+              });
+    }
+
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (throw-error incident)
+    {
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+      zeebeExtension.throwErrorIncident(SERVICE_TASK);
+
+      // when (throw-error incident)
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
+      waitUntilIncidentRecordWithProcessIdExported("someProcess");
+      importAllZeebeEntitiesFromScratch();
+
+      // then (throw-error incident)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getIncidents())
+                      .isNotEmpty()
+                      .hasSize(1)
+                      .containsExactly(
+                          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
+    }
+
+    // reset to a clean slate before the third scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // given (missing-variable incident)
+    {
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
+
+      // when (missing-variable incident)
+      waitUntilInstanceRecordWithElementIdExported(CATCH_EVENT);
+      waitUntilIncidentRecordWithProcessIdExported("someProcess");
+      importAllZeebeEntitiesFromScratch();
+
+      // then (missing-variable incident)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getIncidents())
+                      .isNotEmpty()
+                      .hasSize(1)
+                      .containsExactly(
+                          createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)));
+    }
   }
 
   @Test
-  public void importZeebeIncidentData_missingVariableIncident() {
-    // given
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
+  public void importZeebeIncidentData_importResolvedIncidentInSameBatchAndInDifferentBatches() {
+    // Covers two independent resolved-incident import scenarios: resolving and importing
+    // both the CREATED and RESOLVED records in a single batch, versus importing CREATED
+    // first, then RESOLVED in a later, separate import pass. Each scenario is reset to a
+    // clean Zeebe export index and clean Optimize data before it runs, for the same
+    // unscoped-helper-lookup reason noted on the sibling merged test above.
 
-    // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
-    importAllZeebeEntitiesFromScratch();
+    // given (resolved incident imported in the same batch)
+    {
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+      zeebeExtension.throwErrorIncident(SERVICE_TASK);
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
+      waitUntilIncidentRecordWithProcessIdExported("someProcess");
+      resolveIncident();
+      waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
-                assertThat(savedInstance.getIncidents())
-                    .isNotEmpty()
-                    .hasSize(1)
-                    .containsExactly(
-                        createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)));
-  }
+      // when (resolved incident imported in the same batch)
+      importAllZeebeEntitiesFromScratch();
 
-  @Test
-  public void importZeebeIncidentData_importResolvedIncidentInSameBatch() {
-    // given
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
-    zeebeExtension.throwErrorIncident(SERVICE_TASK);
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
-    resolveIncident();
-    waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
+      // then (resolved incident imported in the same batch)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getIncidents())
+                      .isNotEmpty()
+                      .containsExactly(
+                          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
+    }
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    // reset to a clean slate before the second scenario, mirroring @AfterEach/@BeforeEach
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
-                assertThat(savedInstance.getIncidents())
-                    .isNotEmpty()
-                    .containsExactly(
-                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
-  }
+    // given (resolved incident imported in a different, later batch)
+    {
+      final ProcessInstanceEvent deployedInstance =
+          deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+      zeebeExtension.throwErrorIncident(SERVICE_TASK);
+      waitUntilInstanceRecordWithElementIdExported(SERVICE_TASK);
+      waitUntilIncidentRecordWithProcessIdExported("someProcess");
 
-  @Test
-  public void importZeebeIncidentData_importResolvedIncidentInDifferentBatches() {
-    // given
-    final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
-    zeebeExtension.throwErrorIncident(SERVICE_TASK);
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+      // when (first batch: only the CREATED record)
+      importAllZeebeEntitiesFromScratch();
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+      // then (first batch: only the CREATED record)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getIncidents())
+                      .isNotEmpty()
+                      .containsExactly(
+                          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
 
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
-                assertThat(savedInstance.getIncidents())
-                    .isNotEmpty()
-                    .containsExactly(
-                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
+      // when (second, later batch: the RESOLVED record)
+      resolveIncident();
+      waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
+      importAllZeebeEntitiesFromLastIndex();
 
-    // when
-    resolveIncident();
-    waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
-    importAllZeebeEntitiesFromLastIndex();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance ->
-                assertThat(savedInstance.getIncidents())
-                    .isNotEmpty()
-                    .containsExactly(
-                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
+      // then (second, later batch: the RESOLVED record)
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+          .singleElement()
+          .satisfies(
+              savedInstance ->
+                  assertThat(savedInstance.getIncidents())
+                      .isNotEmpty()
+                      .containsExactly(
+                          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
+    }
   }
 
   // Test backwards compatibility for default tenantID applied when importing records pre multi
