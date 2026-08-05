@@ -181,12 +181,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
    */
   private static ExporterPhase resolveExporterPhase(final PartitionTransitionContext context) {
     final var dynamicState = context.getDynamicPartitionConfig().exporting().state();
-    return switch (dynamicState) {
-      case EXPORTING -> ExporterPhase.EXPORTING;
-      case SOFT_PAUSED -> ExporterPhase.SOFT_PAUSED;
-      case PAUSED -> ExporterPhase.PAUSED;
-      case UNKNOWN -> context.getExporterPhase();
-    };
+    return dynamicState == ExportingState.UNKNOWN
+        ? context.getExporterPhase()
+        : ExporterPhase.fromExportingState(dynamicState);
   }
 
   private void deleteOrEnableExportersIfConfigChanged(
