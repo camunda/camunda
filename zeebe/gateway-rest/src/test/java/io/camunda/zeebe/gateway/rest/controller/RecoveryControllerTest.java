@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.service.authorization.Authorizations.BACKUP_RESTORE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.SYSTEM_UPDATE_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -22,7 +24,6 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
@@ -59,7 +60,6 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(RecoveryController.class)
 public class RecoveryControllerTest extends RestControllerTest {
 
-  @MockitoBean ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean RecoveryServices recoveryServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -72,7 +72,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   private void stubValidationSuccess() {
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.right(
@@ -169,9 +169,39 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectRestoreWhenCallerIsNotAuthorized() {
+    // given
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION)));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 403,
+              "title": "FORBIDDEN",
+              "detail": "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
+              "instance": "/v2/restore"
+            }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldMapInvalidRequestErrorFromCoordinator() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "bad params"))));
@@ -190,7 +220,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapInternalErrorFromCoordinator() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, "boom"))));
@@ -209,7 +239,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapConcurrentModificationFromCoordinator() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.CONCURRENT_MODIFICATION, "boom"))));
@@ -226,9 +256,37 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectRestoreStatusWhenCallerIsNotAuthorized() {
+    // given
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION)));
+
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/restore")
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 403,
+              "title": "FORBIDDEN",
+              "detail": "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'",
+              "instance": "/v2/restore"
+            }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldReturnNotFoundWhenNoRestore() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.getTopology())
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
 
     // when / then
@@ -328,7 +386,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapErrorResponseWhenTopologyQueryRejected() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.getTopology())
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(
@@ -342,7 +400,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapFailedTopologyRequest() {
     // given
-    Mockito.when(clusterConfigurationRequestSender.getTopology())
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("no coordinator")));
 
     // when / then
@@ -395,7 +453,7 @@ public class RecoveryControllerTest extends RestControllerTest {
             Optional.empty(),
             0,
             Optional.empty());
-    Mockito.when(clusterConfigurationRequestSender.getTopology())
+    Mockito.when(recoveryServices.restoreStatus(Mockito.any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
   }
 
@@ -489,16 +547,18 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectBody()
           .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
 
-      Mockito.verify(clusterConfigurationRequestSender)
+      Mockito.verify(recoveryServices)
           .restore(
-              new RestoreRequest(
-                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                  List.of(100L, 101L),
-                  null,
-                  null,
-                  expectedDatabaseType(),
-                  false,
-                  false));
+              eq(
+                  new RestoreRequest(
+                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                      List.of(100L, 101L),
+                      null,
+                      null,
+                      expectedDatabaseType(),
+                      false,
+                      false)),
+              any());
     }
 
     @ParameterizedTest
@@ -516,16 +576,18 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectStatus()
           .isAccepted();
 
-      Mockito.verify(clusterConfigurationRequestSender)
+      Mockito.verify(recoveryServices)
           .restore(
-              new RestoreRequest(
-                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                  List.of(),
-                  null,
-                  null,
-                  expectedDatabaseType(),
-                  false,
-                  false));
+              eq(
+                  new RestoreRequest(
+                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                      List.of(),
+                      null,
+                      null,
+                      expectedDatabaseType(),
+                      false,
+                      false)),
+              any());
     }
   }
 
@@ -549,16 +611,18 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectStatus()
           .isAccepted();
 
-      Mockito.verify(clusterConfigurationRequestSender)
+      Mockito.verify(recoveryServices)
           .restore(
-              new RestoreRequest(
-                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                  List.of(100L, 101L),
-                  null,
-                  null,
-                  expectedDatabaseType(),
-                  true,
-                  false));
+              eq(
+                  new RestoreRequest(
+                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                      List.of(100L, 101L),
+                      null,
+                      null,
+                      expectedDatabaseType(),
+                      true,
+                      false)),
+              any());
     }
 
     @ParameterizedTest
@@ -577,16 +641,18 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectStatus()
           .isAccepted();
 
-      Mockito.verify(clusterConfigurationRequestSender)
+      Mockito.verify(recoveryServices)
           .restore(
-              new RestoreRequest(
-                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                  List.of(),
-                  "2024-01-01T10:00:00Z",
-                  "2024-01-01T12:00:00Z",
-                  expectedDatabaseType(),
-                  true,
-                  false));
+              eq(
+                  new RestoreRequest(
+                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                      List.of(),
+                      "2024-01-01T10:00:00Z",
+                      "2024-01-01T12:00:00Z",
+                      expectedDatabaseType(),
+                      true,
+                      false)),
+              any());
     }
   }
 }

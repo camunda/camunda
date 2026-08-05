@@ -29,9 +29,11 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -48,9 +50,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class RecoveryServicesTest {
 
   private static final String PHYSICAL_TENANT_ID = "testtenant";
-  private static final String FORBIDDEN_MESSAGE =
+  private static final String MODE_CHANGE_FORBIDDEN_MESSAGE =
       "Unauthorized to perform any of the operations: "
           + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
+  private static final String RESTORE_FORBIDDEN_MESSAGE =
+      "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'";
 
   private RecoveryServices services;
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender =
@@ -143,7 +147,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -156,7 +160,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -177,7 +181,7 @@ public class RecoveryServicesTest {
     final var future = services.changeMode(Mode.RECOVERING, false, authentication);
 
     // then
-    assertForbidden(future);
+    assertForbidden(future, MODE_CHANGE_FORBIDDEN_MESSAGE);
     verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 
@@ -198,6 +202,201 @@ public class RecoveryServicesTest {
     assertThat(future.join().getLeft()).isEqualTo(rejection);
   }
 
+  @Test
+  public void shouldForwardRestoreRequestUnchanged() {
+    // given
+    final var request =
+        new RestoreRequest(
+            PHYSICAL_TENANT_ID, List.of(100L, 101L), null, null, "elasticsearch", false, false);
+    stubRestoreSuccess();
+
+    // when
+    final var future = services.restore(request, authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    verify(clusterConfigurationRequestSender).restore(request);
+  }
+
+  @Test
+  public void shouldRestoreWhenAuthorizationsDisabled() {
+    // given
+    stubRestoreSuccess();
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    verify(clusterConfigurationRequestSender).restore(any());
+  }
+
+  @Test
+  public void shouldRestoreWhenUserHasBackupRestorePermission() {
+    // given
+    grant(AuthorizationResourceType.BACKUP, PermissionType.RESTORE);
+    stubRestoreSuccess();
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    verify(clusterConfigurationRequestSender).restore(any());
+  }
+
+  @Test
+  public void shouldFailRestoreWithForbiddenWhenUserHasNoAuthorizations() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Collections.emptySet());
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
+    verify(clusterConfigurationRequestSender, never()).restore(any());
+  }
+
+  @Test
+  public void shouldFailRestoreWithForbiddenWhenUserOnlyHasSystemUpdatePermission() {
+    // given - unlike the mode change, restoring is not OR-gated: SYSTEM:UPDATE alone must not
+    // authorize consuming a backup
+    grant(AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
+    verify(clusterConfigurationRequestSender, never()).restore(any());
+  }
+
+  @Test
+  public void shouldReportBackupRestoreWhenRestoreIsDenied() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Collections.emptySet());
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .withMessageContaining("RESTORE")
+        .withMessageContaining("BACKUP");
+  }
+
+  @Test
+  public void shouldPassRestoreCoordinatorRejectionThroughUnchanged() {
+    // given
+    final var rejection = new ErrorResponse(ErrorCode.INVALID_STATE, "restore already running");
+    when(clusterConfigurationRequestSender.restore(any()))
+        .thenReturn(CompletableFuture.completedFuture(Either.left(rejection)));
+
+    // when
+    final var future = services.restore(restoreRequest(), authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    assertThat(future.join().getLeft()).isEqualTo(rejection);
+  }
+
+  @Test
+  public void shouldGetRestoreStatusWhenAuthorizationsDisabled() {
+    // given
+    stubTopologySuccess();
+
+    // when
+    final var future = services.restoreStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    verify(clusterConfigurationRequestSender).getTopology();
+  }
+
+  @Test
+  public void shouldGetRestoreStatusWhenUserHasBackupRestorePermission() {
+    // given
+    grant(AuthorizationResourceType.BACKUP, PermissionType.RESTORE);
+    stubTopologySuccess();
+
+    // when
+    final var future = services.restoreStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    verify(clusterConfigurationRequestSender).getTopology();
+  }
+
+  @Test
+  public void shouldFailGetRestoreStatusWithForbiddenWhenUserHasNoAuthorizations() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenReturn(Collections.emptySet());
+
+    // when
+    final var future = services.restoreStatus(authentication);
+
+    // then
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
+    verify(clusterConfigurationRequestSender, never()).getTopology();
+  }
+
+  @Test
+  public void shouldFailGetRestoreStatusWithForbiddenWhenUserOnlyHasSystemUpdatePermission() {
+    // given - reading the restore status is gated the same as triggering one: SYSTEM:UPDATE alone
+    // must not suffice
+    grant(AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
+
+    // when
+    final var future = services.restoreStatus(authentication);
+
+    // then
+    assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
+    verify(clusterConfigurationRequestSender, never()).getTopology();
+  }
+
+  @Test
+  public void shouldPassGetRestoreStatusCoordinatorRejectionThroughUnchanged() {
+    // given
+    final var rejection = new ErrorResponse(ErrorCode.INTERNAL_ERROR, "topology is unavailable");
+    when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(CompletableFuture.completedFuture(Either.left(rejection)));
+
+    // when
+    final var future = services.restoreStatus(authentication);
+
+    // then
+    assertThat(future).succeedsWithin(ofSeconds(1));
+    assertThat(future.join().getLeft()).isEqualTo(rejection);
+  }
+
+  private static RestoreRequest restoreRequest() {
+    return new RestoreRequest(
+        PHYSICAL_TENANT_ID, List.of(100L), null, null, "elasticsearch", false, false);
+  }
+
+  private void stubRestoreSuccess() {
+    when(clusterConfigurationRequestSender.restore(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+  }
+
+  private void stubTopologySuccess() {
+    when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
+  }
+
   private void grant(
       final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     authorizationsConfig.setEnabled(true);
@@ -215,7 +414,8 @@ public class RecoveryServicesTest {
                     new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
   }
 
-  private static void assertForbidden(final CompletableFuture<?> future) {
+  private static void assertForbidden(
+      final CompletableFuture<?> future, final String expectedMessage) {
     assertThat(future)
         .failsWithin(ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
@@ -224,7 +424,7 @@ public class RecoveryServicesTest {
         .satisfies(
             exception -> {
               assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-              assertThat(exception.getMessage()).isEqualTo(FORBIDDEN_MESSAGE);
+              assertThat(exception.getMessage()).isEqualTo(expectedMessage);
             });
   }
 }

@@ -33,6 +33,12 @@ import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/**
+ * {@code POST /restore} and {@code GET /restore} are both gated strictly on {@code BACKUP:RESTORE}
+ * — unlike {@code PATCH /mode}, {@code SYSTEM:UPDATE} does not reach either of them: being allowed
+ * to change the cluster's mode must not imply being allowed to consume a backup or read the status
+ * of an in-flight restore.
+ */
 @MultiDbTest
 class RecoveryAuthorizationIT {
 
@@ -67,10 +73,14 @@ class RecoveryAuthorizationIT {
           BACKUP_READ_USER, PASSWORD, List.of(new Permissions(BACKUP, READ, List.of("*"))));
 
   private static final String CHANGE_MODE_PATH = "v2/mode?mode=RECOVERING&dryRun=true";
+  private static final String RESTORE_PATH = "v2/restore";
+  private static final String RESTORE_BODY = "{\"backupIds\": [1]}";
 
-  private static final String FORBIDDEN_DETAIL =
+  private static final String MODE_CHANGE_FORBIDDEN_DETAIL =
       "Unauthorized to perform any of the operations: "
           + "'RESTORE' on 'BACKUP' or 'UPDATE' on 'SYSTEM'";
+  private static final String RESTORE_FORBIDDEN_DETAIL =
+      "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'";
 
   @Test
   void shouldRejectUnauthenticatedRequest(
@@ -90,7 +100,7 @@ class RecoveryAuthorizationIT {
 
     // then it is forbidden
     assertThat(response.statusCode()).isEqualTo(403);
-    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
+    assertThat(response.body()).contains(MODE_CHANGE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -102,7 +112,7 @@ class RecoveryAuthorizationIT {
     // then it is forbidden: a grant on the BACKUP resource type only reaches the mode change when
     // it is the RESTORE permission
     assertThat(response.statusCode()).isEqualTo(403);
-    assertThat(response.body()).contains(FORBIDDEN_DETAIL);
+    assertThat(response.body()).contains(MODE_CHANGE_FORBIDDEN_DETAIL);
   }
 
   @Test
@@ -126,6 +136,92 @@ class RecoveryAuthorizationIT {
     assertThat(response.statusCode()).isEqualTo(200);
   }
 
+  @Test
+  void shouldRejectUnauthenticatedRestoreRequest(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
+    // when the endpoint is called without credentials
+    final var response = restore(client, null);
+
+    // then it is rejected before any authorization decision is made
+    assertThat(response.statusCode()).isEqualTo(401);
+  }
+
+  @Test
+  void shouldRejectUnauthenticatedGetRestoreStatusRequest(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
+    // when the endpoint is called without credentials
+    final var response = getRestoreStatus(client, null);
+
+    // then it is rejected before any authorization decision is made
+    assertThat(response.statusCode()).isEqualTo(401);
+  }
+
+  @Test
+  void shouldDenyRestoreWhenUserHasNoGrants(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
+    // when an authenticated user without any grant triggers a restore
+    final var response = restore(client, NO_PERMISSION_USER);
+
+    // then it is forbidden
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
+  }
+
+  @Test
+  void shouldDenyRestoreWithSystemUpdateGrant(
+      @Authenticated(SYSTEM_UPDATE_USER) final CamundaClient client) throws Exception {
+    // when a user granted only SYSTEM:UPDATE triggers a restore
+    final var response = restore(client, SYSTEM_UPDATE_USER);
+
+    // then it is forbidden: being allowed to change the cluster mode must not imply being allowed
+    // to consume a backup, and the error names the permission that is actually required
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
+  }
+
+  @Test
+  void shouldAllowRestoreWithBackupRestoreGrant(
+      @Authenticated(BACKUP_RESTORE_USER) final CamundaClient client) throws Exception {
+    // when a user granted BACKUP:RESTORE triggers a restore while the cluster is processing
+    final var response = restore(client, BACKUP_RESTORE_USER);
+
+    // then authorization passes and the request is rejected on cluster state instead: the cluster
+    // must be in recovery mode for the restore to be accepted
+    assertThat(response.statusCode()).isEqualTo(409);
+  }
+
+  @Test
+  void shouldDenyGetRestoreStatusWhenUserHasNoGrants(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
+    // when an authenticated user without any grant reads the restore status
+    final var response = getRestoreStatus(client, NO_PERMISSION_USER);
+
+    // then it is forbidden
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
+  }
+
+  @Test
+  void shouldDenyGetRestoreStatusWithSystemUpdateGrant(
+      @Authenticated(SYSTEM_UPDATE_USER) final CamundaClient client) throws Exception {
+    // when a user granted only SYSTEM:UPDATE reads the restore status
+    final var response = getRestoreStatus(client, SYSTEM_UPDATE_USER);
+
+    // then it is forbidden
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.body()).contains(RESTORE_FORBIDDEN_DETAIL);
+  }
+
+  @Test
+  void shouldAllowGetRestoreStatusWithBackupRestoreGrant(
+      @Authenticated(BACKUP_RESTORE_USER) final CamundaClient client) throws Exception {
+    // when a user granted BACKUP:RESTORE reads the restore status
+    final var response = getRestoreStatus(client, BACKUP_RESTORE_USER);
+
+    // then authorization passes; no restore is in progress on this cluster
+    assertThat(response.statusCode()).isEqualTo(404);
+  }
+
   /**
    * Issues a raw HTTP call to the mode change endpoint, authenticated as {@code username} when it
    * is non-null. The endpoint has no fluent Java client method yet.
@@ -137,6 +233,39 @@ class RecoveryAuthorizationIT {
       builder.header("Authorization", basicAuthentication(username));
     }
     builder.method("PATCH", BodyPublishers.noBody());
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(builder.build(), BodyHandlers.ofString());
+    }
+  }
+
+  /**
+   * Issues a raw HTTP call to {@code POST /restore}, authenticated as {@code username} when it is
+   * non-null. The endpoint has no fluent Java client method yet.
+   */
+  private static HttpResponse<String> restore(final CamundaClient client, final String username)
+      throws Exception {
+    final var builder = HttpRequest.newBuilder(createUri(client, RESTORE_PATH));
+    if (username != null) {
+      builder.header("Authorization", basicAuthentication(username));
+    }
+    builder.header("Content-Type", "application/json");
+    builder.method("POST", BodyPublishers.ofString(RESTORE_BODY));
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(builder.build(), BodyHandlers.ofString());
+    }
+  }
+
+  /**
+   * Issues a raw HTTP call to {@code GET /restore}, authenticated as {@code username} when it is
+   * non-null. The endpoint has no fluent Java client method yet.
+   */
+  private static HttpResponse<String> getRestoreStatus(
+      final CamundaClient client, final String username) throws Exception {
+    final var builder = HttpRequest.newBuilder(createUri(client, RESTORE_PATH));
+    if (username != null) {
+      builder.header("Authorization", basicAuthentication(username));
+    }
+    builder.method("GET", BodyPublishers.noBody());
     try (final var httpClient = HttpClient.newHttpClient()) {
       return httpClient.send(builder.build(), BodyHandlers.ofString());
     }

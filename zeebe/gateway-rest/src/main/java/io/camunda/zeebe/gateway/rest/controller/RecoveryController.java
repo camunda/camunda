@@ -19,7 +19,6 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
@@ -57,17 +56,14 @@ public final class RecoveryController {
   private static final String CONTINUOUS_BACKUPS_PROPERTY =
       "camunda.data.primary-storage.backup.continuous";
 
-  private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final Environment environment;
 
   public RecoveryController(
-      final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final Environment environment) {
-    this.clusterConfigurationRequestSender = clusterConfigurationRequestSender;
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.environment = environment;
@@ -99,10 +95,13 @@ public final class RecoveryController {
           final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
     LOG.info("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var request = toRestoreRequest(physicalTenantId, restoreRequest, dryRun);
     return RequestExecutor.executeServiceMethod(
         () ->
-            clusterConfigurationRequestSender
-                .restore(toRestoreRequest(physicalTenantId, restoreRequest, dryRun))
+            serviceRegistry
+                .recoveryServices(physicalTenantId)
+                .restore(request, authentication)
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.ACCEPTED);
@@ -112,10 +111,12 @@ public final class RecoveryController {
   public CompletableFuture<ResponseEntity<Object>> getRestoreStatus(
       @PhysicalTenantId final String physicalTenantId) {
     LOG.debug("Requested restore status for physical tenant {}", physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            clusterConfigurationRequestSender
-                .getTopology()
+            serviceRegistry
+                .recoveryServices(physicalTenantId)
+                .restoreStatus(authentication)
                 .thenApply(RecoveryController::unwrapOrThrow)
                 .thenApply(RecoveryController::restoreStatus),
         RecoveryController::mapRestoreStatus,
