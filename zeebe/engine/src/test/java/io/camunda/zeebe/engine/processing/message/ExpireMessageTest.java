@@ -36,7 +36,7 @@ public final class ExpireMessageTest {
   @ClassRule
   public static final EngineRule ENGINE_RULE =
       EngineRule.singlePartition()
-          .withFeatureFlags(new FeatureFlags(true, false, false, false, true, false, true));
+          .withFeatureFlags(new FeatureFlags(true, false, false, false, true, false, true, true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
