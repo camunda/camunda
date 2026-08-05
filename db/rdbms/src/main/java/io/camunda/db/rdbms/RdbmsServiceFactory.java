@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -54,6 +55,14 @@ public class RdbmsServiceFactory {
         new ReplicationLsnProviderFactory(
             rdbmsMapperBundle.vendorDatabaseProperties(),
             rdbmsMapperBundle.replicationStatusMapper());
-    return new RdbmsService(rdbmsWriterFactory, rdbmsTenantReader, replicationLsnProviderFactory);
+    final var replicationLagProviderFactory =
+        new ReplicationLagProviderFactory(
+            rdbmsMapperBundle.vendorDatabaseProperties(),
+            rdbmsMapperBundle.replicationStatusMapper());
+    return new RdbmsService(
+        rdbmsWriterFactory,
+        rdbmsTenantReader,
+        replicationLsnProviderFactory,
+        replicationLagProviderFactory);
   }
 }
