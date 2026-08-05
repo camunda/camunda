@@ -179,8 +179,14 @@ function renderScenario(
   }
   const testFn = knownFailure ? 'test.skip' : 'test';
   lines.push(`  ${testFn}(${JSON.stringify(title)}, async ({request}) => {`);
+  const pathLit = JSON.stringify(s.path);
   const paramsLit = s.params ? JSON.stringify(s.params) : 'undefined';
-  const urlCall = `buildUrl(${JSON.stringify(s.path.replace(/\{([^}]+)}/g, '{$1}'))}, ${paramsLit})`;
+  // Query values have to reach buildUrl's 3rd argument. Its 2nd argument only substitutes the
+  // path template's {placeholder} tokens, so anything passed there with no matching token is
+  // dropped without a trace - and the request never carries the value under test.
+  const urlCall = s.query
+    ? `buildUrl(${pathLit}, ${paramsLit}, ${JSON.stringify(s.query)})`
+    : `buildUrl(${pathLit}, ${paramsLit})`;
   if (s.bodyEncoding === 'multipart' && s.multipartForm) {
     const formLit = JSON.stringify(s.multipartForm, null, 2);
     lines.push(`    const formData = new FormData();`);

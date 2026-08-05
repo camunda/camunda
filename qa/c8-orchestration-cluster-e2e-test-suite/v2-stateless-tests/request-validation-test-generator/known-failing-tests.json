@@ -17,11 +17,6 @@
       "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
     },
     {
-      "describe": "Backups Validation API Tests",
-      "title": "listRuntimeBackups - Query param prefix pattern violation",
-      "reason": "query param pattern constraint not enforced"
-    },
-    {
       "describe": "Decisioninstances Validation API Tests",
       "title": "deleteDecisionInstance - Constraint violation operationReference (#2)",
       "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
@@ -123,11 +118,6 @@
     },
     {
       "describe": "Documents Validation API Tests",
-      "title": "createDocument - Param query.documentId wrong type",
-      "reason": "query param type mismatch not rejected"
-    },
-    {
-      "describe": "Documents Validation API Tests",
       "title": "createDocuments - Additional prop __unexpectedField",
       "reason": "multipart request bodies aren't run through the same additional-property validation as JSON bodies"
     },
@@ -155,11 +145,6 @@
       "describe": "Documents Validation API Tests",
       "title": "createDocuments - Missing files",
       "reason": "multipart required-part omission not rejected"
-    },
-    {
-      "describe": "Exporting Validation API Tests",
-      "title": "pauseExporting - Param query.soft wrong type",
-      "reason": "query param type mismatch not rejected"
     },
     {
       "describe": "Groups Validation API Tests",
@@ -322,6 +307,11 @@
       "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
     },
     {
+      "describe": "System Validation API Tests",
+      "title": "getUsageMetrics - Query param tenantId pattern violation",
+      "reason": "#59378 - getUsageMetrics binds tenantId as a plain String and passes it straight to UsageMetricsFilter, so the TenantId pattern (^(<default>|[\\w\\.\\-]{1,31})$) is never checked and the request succeeds with a 200. Previously masked by #58948: the scenario sent no query string at all, so its 400 came from the missing required startTime/endTime"
+    },
+    {
       "describe": "Setup Validation API Tests",
       "title": "createAdminUser - Missing password (#1)",
       "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
@@ -395,11 +385,6 @@
       "describe": "Users Validation API Tests",
       "title": "getUser - Path param username pattern violation",
       "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
-    },
-    {
-      "describe": "Variables Validation API Tests",
-      "title": "searchVariables - Param query.truncateValues wrong type",
-      "reason": "query param type mismatch not rejected"
     }
   ]
 }
