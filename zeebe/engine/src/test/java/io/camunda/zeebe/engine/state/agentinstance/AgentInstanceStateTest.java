@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -143,6 +144,67 @@ public final class AgentInstanceStateTest {
 
     // then
     assertThat(keys).isEmpty();
+  }
+
+  @Test
+  public void shouldFindOneAgentInstanceKeyByProcessInstanceKey() {
+    // given
+    final long processInstanceKey = 100L;
+    final long agentInstanceKey = 1L;
+    agentInstanceState.insert(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+
+    // when
+    final var found =
+        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+
+    // then
+    assertThat(found).isEqualTo(agentInstanceKey);
+  }
+
+  @Test
+  public void shouldFindNextAgentInstanceKeyAfterOneIsDeleted() {
+    // given
+    final long processInstanceKey = 100L;
+    final long firstAgentInstanceKey = 1L;
+    final long secondAgentInstanceKey = 2L;
+    agentInstanceState.insert(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentInstanceState.insert(
+        secondAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(secondAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+
+    // when
+    final var first =
+        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+    agentInstanceState.delete(first);
+    final var second =
+        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+
+    // then
+    assertThat(first).isNotEqualTo(second);
+    assertThat(List.of(first, second))
+        .containsExactlyInAnyOrder(firstAgentInstanceKey, secondAgentInstanceKey);
+  }
+
+  @Test
+  public void shouldReturnNullWhenNoAgentInstanceKeyFoundForProcessInstanceKey() {
+    // given / when
+    final var found = agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(9999L);
+
+    // then
+    assertThat(found).isNull();
   }
 
   @Test

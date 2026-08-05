@@ -21,4 +21,13 @@ public interface AgentInstanceState {
    * @return the keys of all agent instances currently associated with the given process instance
    */
   List<Long> getAgentInstanceKeysByProcessInstanceKey(long processInstanceKey);
+
+  /**
+   * Finds a single agent instance still associated with the given process instance, without loading
+   * the full key list. Used to drive batch completion one instance at a time.
+   *
+   * @return the key of an agent instance still associated with the given process instance, or
+   *     {@code null} if none remain
+   */
+  Long findNextAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
 }
