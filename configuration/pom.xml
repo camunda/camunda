@@ -246,11 +246,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.azure</groupId>
-      <artifactId>azure-storage-blob</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>document-store</artifactId>
     </dependency>

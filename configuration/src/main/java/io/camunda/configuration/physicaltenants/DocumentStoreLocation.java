@@ -7,12 +7,12 @@
  */
 package io.camunda.configuration.physicaltenants;
 
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.camunda.configuration.Document.AwsStore;
 import io.camunda.configuration.Document.AzureStore;
 import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.LocalStore;
 import io.camunda.document.store.DocumentStorePaths;
+import io.camunda.document.store.azure.AzureBlobDocumentStoreProvider;
 import io.camunda.document.store.gcp.GcpDocumentStoreProvider;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -95,28 +95,15 @@ record DocumentStoreLocation(String provider, List<String> namespace, String key
   }
 
   /**
-   * The blob endpoint the store resolves to, reduced from the connection string whenever one is
-   * set: {@code AzureBlobDocumentStoreProvider} takes that branch on a non-null connection string
-   * and never reads {@code endpoint}, so preferring the endpoint here would compare an account the
-   * store does not address, and two tenants really sharing one account would pass. Without the
-   * reduction they also go undetected whenever they name the account differently.
-   *
-   * <p>The SDK resolves the URL because the rules are not obvious enough to restate: a path-style
-   * {@code BlobEndpoint} keeps its path only when the host is an IP address. Only the URL is read,
-   * so no credential reaches {@link #describe()}, and a rejected connection string yields an empty
-   * endpoint rather than failing here, where the message cannot name the cause.
+   * The blob endpoint the store resolves to. A connection string the SDK rejects yields an empty
+   * endpoint rather than failing here, where the message could not name the cause — and it is
+   * reported without quoting the string, which is the value most likely to carry a credential.
    */
   private static String azureEndpointOf(final AzureStore store) {
-    final String connectionString = store.getConnectionString();
-    if (connectionString == null) {
-      return normalizeEndpoint(store.getEndpoint());
-    }
     try {
       return normalizeEndpoint(
-          new BlobServiceClientBuilder()
-              .connectionString(connectionString)
-              .buildClient()
-              .getAccountUrl());
+          AzureBlobDocumentStoreProvider.effectiveEndpoint(
+              store.getConnectionString(), store.getEndpoint()));
     } catch (final RuntimeException e) {
       LOG.warn(
           "Could not resolve the Azure blob endpoint of container '{}'", store.getContainerName());
