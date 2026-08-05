@@ -26,7 +26,7 @@ import java.lang.IllegalArgumentException;
 /**
  * Reads the legacy per-partition {@code .exporterPaused} state from disk, so it can be migrated
  * into the dynamic cluster configuration on startup. See {@link
- * io.camunda.zeebe.dynamic.config.ExportingStateInitializer}.
+ * io.camunda.zeebe.dynamic.config.PartitionGroupExportingStateInitializer}.
  */
 @NullMarked
 public final class LegacyExportingStateReader {
