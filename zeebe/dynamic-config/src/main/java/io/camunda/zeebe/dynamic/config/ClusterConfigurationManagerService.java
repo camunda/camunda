@@ -235,9 +235,6 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(
-            new ExportingStateInitializer(
-                legacyExportingStates, staticConfiguration.localMemberId(), managerActor))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only. However, we still define it here because
         // the
@@ -272,9 +269,6 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
-        .andThen(
-            new ExportingStateInitializer(
-                legacyExportingStates, staticConfiguration.localMemberId(), managerActor))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only
         .andThen(

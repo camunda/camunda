@@ -24,10 +24,10 @@ import org.jspecify.annotations.NullMarked;
  * exporting state is still {@link ExportingState#UNKNOWN}, so a cluster upgraded from a version
  * that did not track exporting in the dynamic configuration keeps its paused partitions paused.
  *
- * <p>New-model counterpart of {@link ExportingStateInitializer}, which does the same for the single
- * default group of the legacy model. Unlike that one, this has no after-restore branch: nothing
- * currently produces a restore change plan on {@link CurrentClusterConfiguration}, so the branch
- * would be unreachable and untested. Revisit once restore is migrated to the new model.
+ * <p>This initializer seeds every configured partition group from the legacy per-partition files.
+ * Unlike the legacy configuration initializer, this has no after-restore branch: nothing currently
+ * produces a restore change plan on {@link CurrentClusterConfiguration}, so the branch would be
+ * unreachable and untested. Revisit once restore is migrated to the new model.
  *
  * <p>Not to be confused with {@link PartitionGroupExporterStateInitializer}, which reconciles the
  * per-exporter {@link io.camunda.zeebe.dynamic.config.state.ExporterState} (enabled/disabled)

@@ -156,6 +156,9 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               clusterChangeExecutor);
       case final UpdatePartitionDistributorConfigOperation updateDistributorConfig ->
           new UpdatePartitionDistributorConfigApplier(updateDistributorConfig);
+      case final ExportingStateChangeOperation ignored ->
+          throw new UnsupportedOperationException(
+              "Exporting state changes are not supported by the legacy configuration applier");
       case final ModeChangeOperation modeChangeOperation ->
           switch (modeChangeOperation.mode()) {
             case RECOVERING ->
@@ -168,11 +171,6 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               awaitModeChangeOperation.memberId(),
               awaitModeChangeOperation.mode(),
               modeChangeExecutor);
-      case final ExportingStateChangeOperation exportingStateChangeOperation ->
-          new ExportingStateChangeApplier(
-              exportingStateChangeOperation.memberId(),
-              exportingStateChangeOperation.state(),
-              partitionChangeExecutor);
     };
   }
 }

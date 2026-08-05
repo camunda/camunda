@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
@@ -469,136 +467,5 @@ final class ClusterConfigurationModifierTest {
         ClusterConfiguration initialConfig,
         Set<String> configuredExporters,
         DynamicPartitionConfig expectedConfig) {}
-  }
-
-  @Nested
-  final class ExportingStateInitializerTest {
-    private static final MemberId LOCAL = MemberId.from("0");
-
-    @Test
-    void shouldSeedUnknownStateFromLegacyFile() {
-      // given
-      final var config =
-          configWithStates(LOCAL, Map.of(1, ExportingState.UNKNOWN, 2, ExportingState.UNKNOWN));
-      final var legacy =
-          Map.of(
-              new PartitionId("default", 1), ExportingState.PAUSED,
-              new PartitionId("default", 2), ExportingState.SOFT_PAUSED);
-
-      // when
-      final var result =
-          new ExportingStateInitializer(legacy, LOCAL, executor).modify(config).join();
-
-      // then
-      assertExportingState(result, LOCAL, 1, ExportingState.PAUSED);
-      assertExportingState(result, LOCAL, 2, ExportingState.SOFT_PAUSED);
-    }
-
-    @Test
-    void shouldNotOverwriteAlreadyDefinedState() {
-      // given — dynamic state already PAUSED, legacy file says EXPORTING
-      final var config = configWithStates(LOCAL, Map.of(1, ExportingState.PAUSED));
-      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.EXPORTING);
-
-      // when
-      final var result =
-          new ExportingStateInitializer(legacy, LOCAL, executor).modify(config).join();
-
-      // then — dynamic state is authoritative and unchanged
-      assertThat(result).isEqualTo(config);
-    }
-
-    @Test
-    void shouldNotSeedWhenLegacyStateMissingOrUnknown() {
-      // given — partition 2 has no legacy entry, partition 1's legacy is UNKNOWN
-      final var config =
-          configWithStates(LOCAL, Map.of(1, ExportingState.UNKNOWN, 2, ExportingState.UNKNOWN));
-      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.UNKNOWN);
-
-      // when
-      final var result =
-          new ExportingStateInitializer(legacy, LOCAL, executor).modify(config).join();
-
-      // then
-      assertThat(result).isEqualTo(config);
-    }
-
-    @Test
-    void shouldSkipWhenAfterRestore() {
-      // given
-      final var base = configWithStates(LOCAL, Map.of(1, ExportingState.UNKNOWN));
-      final var config =
-          ClusterConfiguration.builder()
-              .from(base)
-              .pendingChanges(
-                  Optional.of(
-                      ClusterChangePlan.initForRestore(
-                          List.of(new UpdateRoutingState(LOCAL, Optional.empty())))))
-              .build();
-      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.PAUSED);
-
-      // when
-      final var result =
-          new ExportingStateInitializer(legacy, LOCAL, executor).modify(config).join();
-
-      // then — seeding is skipped after restore
-      assertThat(result).isEqualTo(config);
-    }
-
-    @Test
-    void shouldOnlyUpdateLocalMember() {
-      // given — two members each owning a distinct partition, both UNKNOWN
-      final var member1 = MemberId.from("1");
-      final var partitionConfig =
-          new DynamicPartitionConfig(new ExportingConfig(ExportingState.UNKNOWN, Map.of()));
-      final var config =
-          ClusterConfiguration.init()
-              .addMember(
-                  LOCAL,
-                  MemberState.initializeAsActive(
-                      Map.of(1, PartitionState.active(1, partitionConfig))))
-              .addMember(
-                  member1,
-                  MemberState.initializeAsActive(
-                      Map.of(2, PartitionState.active(2, partitionConfig))));
-      final var legacy =
-          Map.of(
-              new PartitionId("default", 1), ExportingState.PAUSED,
-              new PartitionId("default", 2), ExportingState.PAUSED);
-
-      // when
-      final var result =
-          new ExportingStateInitializer(legacy, LOCAL, executor).modify(config).join();
-
-      // then — only the local member is seeded
-      assertExportingState(result, LOCAL, 1, ExportingState.PAUSED);
-      assertExportingState(result, member1, 2, ExportingState.UNKNOWN);
-    }
-
-    private ClusterConfiguration configWithStates(
-        final MemberId member, final Map<Integer, ExportingState> states) {
-      final Map<Integer, PartitionState> partitions =
-          states.entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Map.Entry::getKey,
-                      e ->
-                          PartitionState.active(
-                              e.getKey(),
-                              new DynamicPartitionConfig(
-                                  new ExportingConfig(e.getValue(), Map.of())))));
-      return ClusterConfiguration.init()
-          .addMember(member, MemberState.initializeAsActive(partitions));
-    }
-
-    private void assertExportingState(
-        final ClusterConfiguration config,
-        final MemberId member,
-        final int partition,
-        final ExportingState expected) {
-      assertThat(
-              config.members().get(member).partitions().get(partition).config().exporting().state())
-          .isEqualTo(expected);
-    }
   }
 }
