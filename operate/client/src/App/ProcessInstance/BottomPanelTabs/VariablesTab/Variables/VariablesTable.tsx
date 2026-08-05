@@ -14,12 +14,14 @@ import {
   StructuredList,
   VariableName,
   FilterSwitcherContainer,
-  FilterSwitcher,
-  FilterSwitcherButton,
   EmptyMessageWrapper,
   DimmableResults,
   VariablesSearch,
 } from './styled';
+import {
+  FilterSwitcher,
+  FilterSwitcherButton,
+} from 'modules/components/FilterSwitcher/styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';

@@ -65,45 +65,6 @@ const VariablesSearch = styled.div`
   width: 100%;
 `;
 
-const FilterSwitcher = styled.div`
-  display: inline-flex;
-  gap: var(--cds-spacing-01);
-  padding: var(--cds-spacing-01);
-  border-radius: 6px;
-  background-color: var(--cds-layer-accent-01);
-`;
-
-const FilterSwitcherButton = styled.button`
-  ${styles.label01};
-  appearance: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--cds-spacing-02) var(--cds-spacing-04);
-  border-radius: 4px;
-  background-color: transparent;
-  color: var(--cds-text-secondary);
-  box-shadow: none;
-
-  &[aria-pressed='true'] {
-    background-color: var(--cds-layer-01);
-    color: var(--cds-text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  }
-
-  &:hover {
-    background-color: var(--cds-layer-hover-01);
-  }
-
-  &[aria-pressed='true']:hover {
-    background-color: var(--cds-layer-01);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--cds-focus);
-    outline-offset: -2px;
-  }
-`;
-
 export {
   VariablesContent,
   VariableName,
@@ -111,7 +72,5 @@ export {
   EmptyMessageWrapper,
   DimmableResults,
   FilterSwitcherContainer,
-  FilterSwitcher,
-  FilterSwitcherButton,
   VariablesSearch,
 };
