@@ -561,4 +561,53 @@ describe('ElementInstanceLog — search flow', () => {
 
     modificationsStore.reset();
   });
+
+  it('shows the status filter in panel mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('group', {name: 'Instance status filter'}),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the filtered results list when the URL has an elementStatus param', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementStatus=active">{children}</Wrapper>
+      ),
+    });
+
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the status filter when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    const statusFilter = await screen.findByRole('group', {
+      name: 'Instance status filter',
+    });
+    expect(statusFilter).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(statusFilter);
+
+    modificationsStore.reset();
+  });
 });
