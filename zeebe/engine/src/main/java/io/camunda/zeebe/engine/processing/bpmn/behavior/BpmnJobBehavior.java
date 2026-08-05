@@ -465,17 +465,18 @@ public final class BpmnJobBehavior {
    */
   private Map<String, Set<SecretReference>> mergedSecretReferences(
       final BpmnElementContext context, final ExecutableJobWorkerElement element) {
+    final var clusterVariableReferences = element.getClusterVariableReferences();
+    if (clusterVariableReferences.isEmpty()) {
+      return element.getSecretReferences();
+    }
     final var merged = new LinkedHashMap<String, Set<SecretReference>>();
     element
         .getSecretReferences()
         .forEach(
             (path, refs) ->
                 merged.computeIfAbsent(path, key -> new LinkedHashSet<>()).addAll(refs));
-    clusterVariableJobSecretResolver
-        .resolve(element.getClusterVariableReferences(), context.getTenantId())
-        .forEach(
-            (path, refs) ->
-                merged.computeIfAbsent(path, key -> new LinkedHashSet<>()).addAll(refs));
+    clusterVariableJobSecretResolver.resolveInto(
+        clusterVariableReferences, context.getTenantId(), merged);
     return merged;
   }
 

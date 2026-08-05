@@ -174,4 +174,141 @@ public final class ClusterVariableSecretJobCreationTest {
             .getFirst();
     assertThat(job.getSecretReferences()).isEmpty();
   }
+
+  @Test
+  public void shouldFoldGloballyScopedClusterVariableSecretOntoJobForClusterReference() {
+    // given
+    ENGINE
+        .clusterVariables()
+        .withName("globalCreds")
+        .setGlobalScope()
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.globalToken"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("cv-secret-cluster")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("cv-secret-cluster-job")
+                        .zeebeInputExpression(
+                            "camunda.vars.cluster.globalCreds.token", "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).withTenantId(TENANT).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("cv-secret-cluster").withTenantId(TENANT).create();
+
+    // then
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("cv-secret-cluster-job")
+            .withTenantId(TENANT)
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getSecretReferences())
+        .extracting(
+            JobSecretReferenceValue::getStoreId,
+            JobSecretReferenceValue::getSecretReference,
+            JobSecretReferenceValue::getPath)
+        .containsExactly(tuple("", "globalToken", "/authToken"));
+  }
+
+  @Test
+  public void shouldFoldGloballyScopedClusterVariableSecretOntoJobForEnvReference() {
+    // given
+    ENGINE
+        .clusterVariables()
+        .withName("envCreds")
+        .setGlobalScope()
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.envToken"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("cv-secret-env")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("cv-secret-env-job")
+                        .zeebeInputExpression("camunda.vars.env.envCreds.token", "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).withTenantId(TENANT).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("cv-secret-env").withTenantId(TENANT).create();
+
+    // then
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("cv-secret-env-job")
+            .withTenantId(TENANT)
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getSecretReferences())
+        .extracting(
+            JobSecretReferenceValue::getStoreId,
+            JobSecretReferenceValue::getSecretReference,
+            JobSecretReferenceValue::getPath)
+        .containsExactly(tuple("", "envToken", "/authToken"));
+  }
+
+  @Test
+  public void shouldNotFoldTenantScopedClusterVariableSecretAcrossTenants() {
+    // given
+    final var otherTenant = "tenant-2";
+    ENGINE.tenant().newTenant().withTenantId(otherTenant).create();
+
+    ENGINE
+        .clusterVariables()
+        .withName("isolatedCreds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.isolatedToken"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("cv-secret-tenant-isolation")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("cv-secret-tenant-isolation-job")
+                        .zeebeInputExpression(
+                            "camunda.vars.tenant.isolatedCreds.token", "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).withTenantId(otherTenant).deploy();
+
+    // when
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId("cv-secret-tenant-isolation")
+        .withTenantId(otherTenant)
+        .create();
+
+    // then
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("cv-secret-tenant-isolation-job")
+            .withTenantId(otherTenant)
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getSecretReferences()).isEmpty();
+  }
 }
