@@ -61,7 +61,11 @@ public final class ClusterConfigurationChangeAwaiter {
 
     final var change = response.get();
     // An empty plan means the cluster is already in the requested state: nothing to await.
-    if (change.legacyResponse().plannedChanges().isEmpty()) {
+    final var plannedChanges =
+        change.response() != null
+            ? change.response().plannedChanges()
+            : change.legacyResponse().plannedChanges();
+    if (plannedChanges.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
 

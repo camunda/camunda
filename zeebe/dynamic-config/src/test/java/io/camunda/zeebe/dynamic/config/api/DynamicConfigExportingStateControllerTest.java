@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -171,6 +172,9 @@ final class DynamicConfigExportingStateControllerTest {
                 0,
                 new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
                     Map.of(), Map.of(), List.of()),
-                null)));
+                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                    CurrentClusterConfiguration.init(),
+                    CurrentClusterConfiguration.init(),
+                    List.of()))));
   }
 }

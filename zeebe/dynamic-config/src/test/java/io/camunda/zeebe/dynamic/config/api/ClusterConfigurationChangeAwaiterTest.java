@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.util.Either;
@@ -105,6 +106,28 @@ final class ClusterConfigurationChangeAwaiterTest {
   }
 
   @Test
+  void shouldFallbackToLegacyResponseWhenCurrentConfigurationResponseIsMissing() {
+    // given
+    when(sender.getTopology())
+        .thenReturn(topology(Optional.of(completed(7, Status.COMPLETED)), Optional.empty()));
+    final var submission =
+        CompletableFuture.completedFuture(
+            Either.<ErrorResponse, ClusterConfigurationChangeResponse>right(
+                new ClusterConfigurationChangeResponse(
+                    7,
+                    new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                        Map.of(),
+                        Map.of(),
+                        List.of(
+                            new ExportingStateChangeOperation(
+                                MemberId.from("0"), ExportingState.PAUSED))),
+                    null)));
+
+    // when - then
+    assertThat(awaiter.awaitCompletion(submission)).succeedsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
   void shouldFailWhenChangeNeverCompletes() {
     // given
     final var timingOutAwaiter =
@@ -126,7 +149,10 @@ final class ClusterConfigurationChangeAwaiterTest {
                 0,
                 new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
                     Map.of(), Map.of(), List.of()),
-                null)));
+                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                    CurrentClusterConfiguration.init(),
+                    CurrentClusterConfiguration.init(),
+                    List.of()))));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> plan(
@@ -141,7 +167,12 @@ final class ClusterConfigurationChangeAwaiterTest {
                     List.of(
                         new ExportingStateChangeOperation(
                             MemberId.from("0"), ExportingState.PAUSED))),
-                null)));
+                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                    CurrentClusterConfiguration.init(),
+                    CurrentClusterConfiguration.init(),
+                    List.of(
+                        new ExportingStateChangeOperation(
+                            MemberId.from("0"), ExportingState.PAUSED))))));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> topology(
