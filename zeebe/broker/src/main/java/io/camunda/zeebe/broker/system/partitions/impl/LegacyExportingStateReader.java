@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,12 +15,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.IllegalArgumentException;
 
 /**
  * Reads the legacy per-partition {@code .exporterPaused} state from disk, so it can be migrated
@@ -60,7 +57,7 @@ public final class LegacyExportingStateReader {
               continue;
             }
             final var state = readLegacyExportingState(partitionDir);
-              legacyExportingStates.put(new PartitionId(groupId, partitionId), state);
+            legacyExportingStates.put(new PartitionId(groupId, partitionId), state);
           }
         }
       }
@@ -79,6 +76,6 @@ public final class LegacyExportingStateReader {
   }
 
   private static ExportingState readLegacyExportingState(final Path partitionDir) {
-      return PartitionProcessingState.readPersistedExporterPhase(partitionDir).toExportingState();
+    return PartitionProcessingState.readPersistedExporterPhase(partitionDir).toExportingState();
   }
 }

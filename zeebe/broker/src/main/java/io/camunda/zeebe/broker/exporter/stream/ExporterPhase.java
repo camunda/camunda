@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
+
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 
 // The PAUSED phase is when the exporter is paused, and the exporter is not exporting records.
@@ -16,8 +17,8 @@ public enum ExporterPhase {
   SOFT_PAUSED,
   CLOSED;
 
-  public ExportingState toExportingState(){
-    return switch (this)  {
+  public ExportingState toExportingState() {
+    return switch (this) {
       case PAUSED -> ExportingState.PAUSED;
       case SOFT_PAUSED -> ExportingState.SOFT_PAUSED;
       // CLOSED is never persisted; it only exists while an exporter director shuts down.
