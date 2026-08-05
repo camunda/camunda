@@ -74,6 +74,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
@@ -347,6 +348,7 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
+    valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
     valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
   }
 
@@ -560,6 +562,34 @@ public class CompactRecordLogger {
                   .map(CompactRecordLogger::abbreviateToFirstLetters)
                   .toList());
     }
+
+    return result.toString();
+  }
+
+  protected String summarizeAgentDefinition(final Record<?> record) {
+    final var value = (AgentDefinitionRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append(shortenKey(value.getAgentDefinitionKey()))
+        .append(" ")
+        .append(value.getAgentType())
+        .append(" @")
+        .append(formatId(value.getElementId()));
+
+    // name defaults to elementId when no element name is set; avoid logging it twice
+    if (StringUtils.isNotBlank(value.getName()) && !value.getName().equals(value.getElementId())) {
+      result.append(" ").append(formatId(value.getName()));
+    }
+
+    result
+        .append(" of <process ")
+        .append(formatId(value.getBpmnProcessId()))
+        .append("[")
+        .append(shortenKey(value.getProcessDefinitionKey()))
+        .append("] v")
+        .append(value.getProcessDefinitionVersion())
+        .append(">");
 
     return result.toString();
   }
