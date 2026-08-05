@@ -527,7 +527,8 @@ public final class EngineProcessors {
         incidentMetrics,
         scheduledTaskStateFactory,
         secretStoreRegistry,
-        config);
+        config,
+        bpmnBehaviors.jobActivationBehavior());
 
     return typedRecordProcessors;
   }
