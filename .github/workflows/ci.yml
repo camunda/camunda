@@ -924,14 +924,22 @@ jobs:
       # Consume the shared distball's io.camunda SNAPSHOTs instead of a full reactor build.
       # These shards run on self-hosted gcp-perf runners where the artifact API is
       # throughput-capped, so downloads use GCS (same-region, non-billable). See build-distball.
-      # gcs-build-cache-auth authenticates gcloud via vault+WIF for the downloads below.
+      # The GCS build-cache auth step below authenticates gcloud via vault+WIF for the downloads.
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-elasticsearch
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          gcs-build-cache-auth: true
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/restore-shared-m2
       - name: Download distball from GCS
         shell: bash
@@ -1068,7 +1076,8 @@ jobs:
       # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
       # so restore-shared-m2 pulls from GCS (same-region, non-billable). RDBMS ITs run in-process
       # (no Docker image build), so only the m2 SNAPSHOTs are needed, not the distball tarball.
-      # gcs-build-cache-auth authenticates gcloud for that download. See build-distball.
+      # The GCS build-cache auth step below authenticates gcloud for that download.
+      # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -1076,7 +1085,15 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          gcs-build-cache-auth: true
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/restore-shared-m2
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
@@ -1288,7 +1305,7 @@ jobs:
       # Consume the shared distball instead of a ~15 min reactor build. These shards run
       # on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
       # they pull from GCS (same-region, non-billable). See build-distball.
-      # gcs-build-cache-auth authenticates gcloud for the GCS download below.
+      # The GCS build-cache auth step below authenticates gcloud for the download below.
       - uses: ./.github/actions/setup-build
         with:
           minimus: true
@@ -1297,7 +1314,15 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          gcs-build-cache-auth: true
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
       - name: Create dist/target
         shell: bash
@@ -2333,9 +2358,12 @@ jobs:
       # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
       # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
+      # timeout-minutes additionally bounds a Vault/WIF hang so continue-on-error doesn't
+      # have to wait out the whole job timeout-minutes budget to take effect -- see INC-6820.
       - name: Authenticate to GCS build-cache
         if: env.SHOULD_CLEANUP_GCS == 'true'
         continue-on-error: true
+        timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}

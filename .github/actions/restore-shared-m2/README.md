@@ -16,8 +16,7 @@ consumer does.
 
 - The repository must be checked out first (e.g. `actions/checkout`), since this action
   is referenced by local path.
-- gcloud must already be authenticated against the build-cache bucket — e.g. via
-  [`setup-build`](../setup-build) with `gcs-build-cache-auth: true`, or a direct
+- gcloud must already be authenticated against the build-cache bucket via a prior
   [`gcs-build-cache-auth`](../gcs-build-cache-auth) step.
 - `GCS_BUILD_CACHE_BUCKET` must be set at the workflow level, and the job must run in the
   same `github.run_id` as the `build-distball` job that produced the tarball.
@@ -42,7 +41,13 @@ steps:
       vault-address: ${{ secrets.VAULT_ADDR }}
       vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
       vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      gcs-build-cache-auth: true  # authenticates gcloud for the restore below
+  - name: Authenticate to GCS build-cache  # authenticates gcloud for the restore below
+    timeout-minutes: 3
+    uses: ./.github/actions/gcs-build-cache-auth
+    with:
+      vault-addr: ${{ secrets.VAULT_ADDR }}
+      vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+      vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
   - uses: ./.github/actions/restore-shared-m2
 ```
 
