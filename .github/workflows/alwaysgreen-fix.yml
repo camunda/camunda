@@ -352,6 +352,11 @@ jobs:
           Failing AlwaysGreen run: ${FAILING_RUN_URL}
           Triage run: ${TRIAGE_RUN_URL}
           Breaking change: PR #${BLAME_PR} by ${BLAME_AUTHOR}
+          Read what that PR changed before choosing a repo. If it also updated the
+          product's own tests to the new value, the change is intended and the
+          cross-component test is behind; if those tests still assert the old value,
+          the product contradicts itself and it is a regression. The manual's
+          "Regression, or an intended change" section is the full rule.
 
           /tmp/test_specs.json  — the failing specs, with retry history per attempt.
           /tmp/fingerprints.json — the fingerprints your PR body MUST claim in its

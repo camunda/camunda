@@ -95,6 +95,44 @@ Read PNG screenshots directly. For a trace: `unzip -l trace.zip`, then extract w
    `camunda-docs/versioned_docs/version-<X.Y>/` and cite it in the PR body. Match the
    version tree exactly. Skip this for pure selector drift.
 
+## Regression, or an intended change the test has not caught up with?
+
+A changed locator has two possible causes, and they land in different repositories. Decide
+this **before** picking a repo, because guessing wrong is expensive in both directions:
+reverting an intentional change destroys someone's work, and adapting the test to a real
+regression masks the defect the test exists to catch.
+
+The discriminator is whether the product still agrees with itself. The breaking PR number
+is in your prompt — read what it changed:
+
+```bash
+gh pr view <blame_pr> --repo camunda/camunda --json title,body,files \
+  --jq '{title, files: [.files[].path]}'
+```
+
+- **It also updated the product's own tests** to the new value — `operate/client/**/tests/**`,
+  `tasklist/client/**/tests/**`, `identity/client/**/tests/**`, or
+  `qa/c8-orchestration-cluster-e2e-test-suite/**` — then the change is **intended** and the
+  cross-component suite is simply behind. Fix `c8-cross-component-e2e-tests`.
+- **The product's own tests still assert the old value**, so the product now contradicts
+  itself: that is a **regression**. Fix `camunda`.
+
+Two weaker signals, for when the first is inconclusive. A Conventional-Commit `feat:` that
+renames user-visible copy is usually deliberate, while `refactor:`/`fix:` that changes copy
+usually is not. And `camunda-docs` describing the new copy or behaviour for this version
+settles it as intended — cite it in the PR body.
+
+If it is still genuinely ambiguous, do **not** pick one. Write `category: "not-determined"`
+to `/tmp/fix-meta.json` with the evidence, name both candidate fixes, and leave the
+fingerprint unclaimed so a recurrence is re-triaged. A human deciding in ten minutes beats
+either wrong PR.
+
+**A test-side fix does not turn the run green by itself.** The helm e2e job runs the
+published `@camunda/e2e-test-suite` package, not the repo source, so a locator fix takes
+effect only once that package is published. Say so in the PR body: until then the pipeline
+stays red and the same failure will be re-dispatched unless your PR carries the coverage
+block.
+
 ## Where fixes go
 
 |                       Diagnosis                       |           Repository           |                  Path                   |
