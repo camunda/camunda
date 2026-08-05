@@ -22,7 +22,11 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
@@ -164,6 +168,131 @@ class RdbmsDataSourcesTest {
     assertThat(dsB.isClosed()).isTrue();
   }
 
+  static Stream<BatchRewritingCase> batchRewritingCases() {
+    return Stream.of(
+        new BatchRewritingCase(
+            "mysql enabled by default",
+            "jdbc:mysql://localhost:3306/testdb",
+            "mysql",
+            true,
+            "rewriteBatchedStatements",
+            "true"),
+        new BatchRewritingCase(
+            "mariadb enabled by default",
+            "jdbc:mariadb://localhost:3306/testdb",
+            "mariadb",
+            true,
+            "useBulkStmts",
+            "true"),
+        new BatchRewritingCase(
+            "mysql disabled via config",
+            "jdbc:mysql://localhost:3306/testdb",
+            "mysql",
+            false,
+            "rewriteBatchedStatements",
+            null),
+        new BatchRewritingCase(
+            "mysql behind AWS JDBC wrapper",
+            "jdbc:aws-wrapper:mysql://localhost:3306/testdb",
+            "mysql",
+            true,
+            "rewriteBatchedStatements",
+            "true"),
+        new BatchRewritingCase(
+            "mariadb behind AWS JDBC wrapper",
+            "jdbc:aws-wrapper:mariadb://localhost:3306/testdb",
+            "mariadb",
+            true,
+            "useBulkStmts",
+            "true"),
+        new BatchRewritingCase(
+            "mysql url already sets the property explicitly",
+            "jdbc:mysql://localhost:3306/testdb?rewriteBatchedStatements=false",
+            "mysql",
+            true,
+            "rewriteBatchedStatements",
+            null),
+        new BatchRewritingCase(
+            "mariadb url already sets the property explicitly",
+            "jdbc:mariadb://localhost:3306/testdb?useBulkStmts=false",
+            "mariadb",
+            true,
+            "useBulkStmts",
+            null),
+        new BatchRewritingCase(
+            "mysql url already sets the property explicitly to true",
+            "jdbc:mysql://localhost:3306/testdb?rewriteBatchedStatements=true",
+            "mysql",
+            true,
+            "rewriteBatchedStatements",
+            null),
+        new BatchRewritingCase(
+            "mariadb url already sets the property explicitly to true",
+            "jdbc:mariadb://localhost:3306/testdb?useBulkStmts=true",
+            "mariadb",
+            true,
+            "useBulkStmts",
+            null));
+  }
+
+  @ParameterizedTest
+  @MethodSource("batchRewritingCases")
+  void shouldApplyBatchRewritingProperty(final BatchRewritingCase testCase) throws Exception {
+    // given
+    final var rdbms = new Rdbms();
+    rdbms.setUrl(testCase.url());
+    rdbms.setUsername("sa");
+    rdbms.setPassword("");
+    rdbms.setDatabaseVendorId(testCase.databaseVendorId());
+    rdbms.setRewriteBatchedStatements(testCase.rewriteBatchedStatements());
+
+    // when
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
+
+      // then
+      final var ds =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      assertThat(ds.getDataSourceProperties().getProperty(testCase.expectedPropertyName()))
+          .isEqualTo(testCase.expectedPropertyValue());
+    }
+  }
+
+  static Stream<Arguments> otherVendors() {
+    return Stream.of(
+        Arguments.of("h2", h2Rdbms().getUrl(), "h2"),
+        Arguments.of("postgresql", "jdbc:postgresql://localhost:5432/testdb", "postgresql"),
+        Arguments.of("oracle", "jdbc:oracle:thin:@localhost:1521/testdb", "oracle"),
+        Arguments.of("mssql", "jdbc:sqlserver://localhost:1433;databaseName=testdb", "mssql"));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("otherVendors")
+  void shouldNotSetBatchRewritingPropertyForOtherVendors(
+      final String vendorName, final String url, final String databaseVendorId) throws Exception {
+    // given
+    final var rdbms = new Rdbms();
+    rdbms.setUrl(url);
+    rdbms.setUsername("sa");
+    rdbms.setPassword("");
+    rdbms.setDatabaseVendorId(databaseVendorId);
+
+    // when
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
+
+      // then
+      final var ds =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      assertThat(ds.getDataSourceProperties().getProperty("rewriteBatchedStatements")).isNull();
+      assertThat(ds.getDataSourceProperties().getProperty("useBulkStmts")).isNull();
+    }
+  }
+
   @Test
   void shouldCloseAlreadyOpenedDataSourcesWhenLaterTenantFails() {
     try (final MockedStatic<RdbmsDataSources> spy =
@@ -189,6 +318,19 @@ class RdbmsDataSourcesTest {
             .as("opened HikariDataSource should be closed on failure")
             .isTrue();
       }
+    }
+  }
+
+  private record BatchRewritingCase(
+      String name,
+      String url,
+      String databaseVendorId,
+      boolean rewriteBatchedStatements,
+      String expectedPropertyName,
+      String expectedPropertyValue) {
+    @Override
+    public String toString() {
+      return name;
     }
   }
 }
