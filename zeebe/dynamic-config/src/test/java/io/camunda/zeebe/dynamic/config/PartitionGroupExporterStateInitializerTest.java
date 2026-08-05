@@ -19,8 +19,13 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +50,7 @@ final class PartitionGroupExporterStateInitializerTest {
 
     // when
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID)
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -74,7 +79,7 @@ final class PartitionGroupExporterStateInitializerTest {
 
     // when
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID)
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -114,7 +119,7 @@ final class PartitionGroupExporterStateInitializerTest {
 
     // when
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID)
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -139,12 +144,99 @@ final class PartitionGroupExporterStateInitializerTest {
 
     // when
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID)
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
     // then
     assertThat(result).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldUpdateAllMembersInEveryGroupWhenCoordinatorAndPostRestore() {
+    // given — two groups, each with the local member and another member; the local member is
+    // the coordinator, and a restore was just migrated (pending post-restore plan)
+    final var config = DynamicPartitionConfig.init();
+    final var otherMember = MemberId.from("1");
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a",
+                groupWithMember(LOCAL_MEMBER_ID, config)
+                    .addMember(otherMember, initialPartitionState(config)),
+                "tenant-b",
+                groupWithMember(LOCAL_MEMBER_ID, config)),
+            postRestorePendingState());
+
+    // when
+    final var result =
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, true)
+            .modify(configuration)
+            .join();
+
+    // then — every member of every group is updated, not just the local member
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(otherMember)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(
+            result
+                .partitionGroup("tenant-b")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+  }
+
+  @Test
+  void shouldSkipWhenNonCoordinatorAndPostRestore() {
+    // given
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", groupWithMember(LOCAL_MEMBER_ID, config)),
+            postRestorePendingState());
+
+    // when
+    final var result =
+        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — unchanged; the coordinator will initialize on behalf of everyone
+    assertThat(result).isEqualTo(configuration);
+  }
+
+  private static PhasedChangeState postRestorePendingState() {
+    final var plan =
+        PhasedChangePlan.initForRestore(
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty()))))),
+            Instant.EPOCH);
+    return new PhasedChangeState(Optional.of(plan), Optional.empty());
   }
 
   private static PartitionGroupConfiguration groupWithMember(

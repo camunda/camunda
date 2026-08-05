@@ -310,7 +310,8 @@ public final class ClusterConfigurationManagerService
         .andThen(
             new PartitionGroupExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
-                staticConfiguration.localMemberId()))
+                staticConfiguration.localMemberId(),
+                false))
         .andThen(
             PartitionDistributorInitializer
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
@@ -343,7 +344,8 @@ public final class ClusterConfigurationManagerService
         .andThen(
             new PartitionGroupExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
-                staticConfiguration.localMemberId()))
+                staticConfiguration.localMemberId(),
+                true))
         .andThen(
             PartitionDistributorInitializer
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
