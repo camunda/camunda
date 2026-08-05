@@ -9,13 +9,12 @@
 import {Column, Dropdown, Grid, Search} from '@carbon/react';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
+import {useEffect, useEffectEvent, useReducer} from 'react';
 import {Field, Form, type FormRenderProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import styles from './ProcessesFilters.module.scss';
-import {useRef} from 'react';
-import debounce from 'lodash/debounce';
 
 const SUBMIT_DEBOUNCE = 500;
 
@@ -53,6 +52,23 @@ type FieldsProps = {
 	handleSubmit: FormRenderProps<FilterValues>['handleSubmit'];
 };
 
+function useDebounce(callback: () => void, delay: number) {
+	const onDebounce = useEffectEvent(callback);
+	const [invocationCount, invoke] = useReducer((count: number) => count + 1, 0);
+
+	useEffect(() => {
+		if (invocationCount === 0) {
+			return;
+		}
+
+		const timeoutId = setTimeout(() => onDebounce(), delay);
+
+		return () => clearTimeout(timeoutId);
+	}, [delay, invocationCount]);
+
+	return invoke;
+}
+
 const Fields: React.FC<FieldsProps> = ({handleSubmit}) => {
 	const {t} = useTranslation();
 	const {data: tenants} = useSuspenseQuery({
@@ -60,7 +76,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit}) => {
 		select: ({tenants}) => tenants,
 	});
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled && tenants.length > 1;
-	const debouncedHandleSubmit = useRef(debounce(handleSubmit, SUBMIT_DEBOUNCE)).current;
+	const debouncedHandleSubmit = useDebounce(handleSubmit, SUBMIT_DEBOUNCE);
 
 	return (
 		<Grid narrow>
