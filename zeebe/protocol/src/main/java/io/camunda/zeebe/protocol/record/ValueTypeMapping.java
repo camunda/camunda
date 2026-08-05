@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
@@ -88,6 +89,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
@@ -396,6 +398,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.AGENT_HISTORY,
         new Mapping<>(AgentHistoryRecordValue.class, AgentHistoryIntent.class));
+    mapping.put(
+        ValueType.AGENT_DEFINITION,
+        new Mapping<>(AgentDefinitionRecordValue.class, AgentDefinitionIntent.class));
     mapping.put(
         ValueType.SECRET_REFERENCE,
         new Mapping<>(SecretReferenceRecordValue.class, SecretReferenceIntent.class));
