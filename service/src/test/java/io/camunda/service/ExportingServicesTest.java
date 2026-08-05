@@ -241,7 +241,7 @@ public class ExportingServicesTest {
         .asInstanceOf(type(ServiceException.class))
         .extracting(ServiceException::getStatus)
         .isEqualTo(Status.FORBIDDEN);
-    verify(exportingStateController, never()).pauseExporting();
+    verify(exportingStateController, never()).resumeExporting();
   }
 
   @Test

@@ -153,7 +153,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           if (error == null) {
             context.setExporterDirector(director);
             // Pause/Resume here in case the state was changed after the director was created
-            switch (exporterPhase) {
+            switch (resolveExporterPhase(context)) {
               case PAUSED:
                 director.pauseExporting();
                 break;

@@ -62,10 +62,12 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
 
   public CompletableFuture<Void> pauseExporting(
       final boolean soft, final CamundaAuthentication authentication) {
-    final var tenantController = exportingStateController.getByTenant(getPhysicalTenantId());
     return withExporterPausePermission(
         authentication,
-        () -> soft ? tenantController.softPauseExporting() : tenantController.pauseExporting());
+        () -> {
+          final var tenantController = exportingStateController.getByTenant(getPhysicalTenantId());
+          return soft ? tenantController.softPauseExporting() : tenantController.pauseExporting();
+        });
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
