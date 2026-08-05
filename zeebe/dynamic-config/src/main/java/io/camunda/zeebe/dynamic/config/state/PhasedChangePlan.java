@@ -30,9 +30,12 @@ import org.jspecify.annotations.NullMarked;
 public record PhasedChangePlan(
     long id, int currentPhaseIndex, List<Phase> phases, Instant startedAt) {
 
+  public static final long RESTORED_PLAN_ID = 0;
+  public static final long INITIAL_PLAN_ID = 1;
+
   public PhasedChangePlan {
-    if (id <= 0) {
-      throw new IllegalArgumentException("id must be positive");
+    if (id < 0) {
+      throw new IllegalArgumentException("id must be non-negative");
     }
     Objects.checkIndex(currentPhaseIndex, phases.size());
     phases = List.copyOf(phases);
@@ -41,6 +44,16 @@ public record PhasedChangePlan(
   public static PhasedChangePlan init(
       final long id, final List<Phase> phases, final Instant startedAt) {
     return new PhasedChangePlan(id, 0, phases, startedAt);
+  }
+
+  /**
+   * Creates a plan migrated from a legacy restore change plan, assigning it {@link
+   * #RESTORED_PLAN_ID} — the legacy sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2})
+   * cannot be preserved as-is since this record requires a non-negative id. See {@link
+   * #hasRestorePlanId()} and {@link CurrentClusterConfiguration#isAfterRestore()}.
+   */
+  public static PhasedChangePlan initForRestore(final List<Phase> phases, final Instant startedAt) {
+    return new PhasedChangePlan(RESTORED_PLAN_ID, 0, phases, startedAt);
   }
 
   /** Returns the currently active phase. */
@@ -81,6 +94,15 @@ public record PhasedChangePlan(
       return currentPhaseIndex >= other.currentPhaseIndex ? this : other;
     }
     return id > other.id ? this : other;
+  }
+
+  /**
+   * Returns {@code true} if this plan's id is {@link #RESTORED_PLAN_ID} — i.e. it was migrated from
+   * a legacy restore change plan. Note this is a necessary but not sufficient condition for {@link
+   * CurrentClusterConfiguration#isAfterRestore()}, which additionally checks the plan's shape.
+   */
+  public boolean hasRestorePlanId() {
+    return id == RESTORED_PLAN_ID;
   }
 
   /**

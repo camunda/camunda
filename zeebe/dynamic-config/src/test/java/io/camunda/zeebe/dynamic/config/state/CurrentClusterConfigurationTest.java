@@ -348,8 +348,9 @@ class CurrentClusterConfigurationTest {
     }
 
     @Test
-    void shouldNormalizeRestorePendingPlanId() {
-      // given — a legacy restore plan uses the negative sentinel id (RESTORE_CHANGE_ID = -2)
+    void shouldAssignRestoredPlanIdToMigratedRestorePlan() {
+      // given — a legacy restore plan uses the negative sentinel id (RESTORE_CHANGE_ID = -2),
+      // which cannot be preserved as-is (PhasedChangePlan requires a non-negative id)
       final var restore =
           ClusterChangePlan.initForRestore(List.of(new DeleteHistoryOperation(MEMBER_0)));
       final var legacy =
@@ -362,9 +363,80 @@ class CurrentClusterConfigurationTest {
       // when — migration must not fail on the non-positive id
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
-      // then — the pending plan id is normalized to a positive value
+      // then — the pending plan is assigned the new model's own restore sentinel id
       final var plan = migrated.phasedChangeState().pending().orElseThrow();
-      assertThat(plan.id()).isEqualTo(1);
+      assertThat(plan.id()).isEqualTo(PhasedChangePlan.RESTORED_PLAN_ID);
+      assertThat(plan.hasRestorePlanId()).isTrue();
+    }
+
+    @Test
+    void shouldRejectRestorePlanMigratedAlongsideAPriorCompletedChange() {
+      // given — a restore plan is only ever produced alongside a freshly regenerated legacy
+      // configuration (RestoreManager#restoreTopologyFile), so it should never carry a prior
+      // completed change. Constructing that combination here simulates that assumption breaking.
+      final var restore =
+          ClusterChangePlan.initForRestore(List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var priorChange =
+          new CompletedChange(3, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .lastChange(Optional.of(priorChange))
+              .pendingChanges(Optional.of(restore))
+              .build();
+
+      // when / then — fails loudly with restore-specific context instead of only surfacing later
+      // as PhasedChangeState's generic id-monotonicity violation
+      assertThatThrownBy(() -> CurrentClusterConfiguration.fromLegacy(legacy))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("restore");
+    }
+
+    @Test
+    void shouldDetectAfterRestoreOnMigratedRestorePlan() {
+      // given — a legacy config that is isAfterRestore(): a restore plan with exactly one
+      // pending UpdateRoutingState operation
+      final var restore =
+          ClusterChangePlan.initForRestore(
+              List.of(new PartitionGroupOperation.UpdateRoutingState(MEMBER_0, Optional.empty())));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(restore))
+              .build();
+      assertThat(legacy.isAfterRestore()).isTrue();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then — the migrated configuration is detectable as post-restore too
+      assertThat(migrated.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldNotDetectAfterRestoreForAnOrdinaryPendingUpdateRoutingState() {
+      // given — a plain (non-restore) pending plan with the exact same single-op shape as a
+      // restore plan: an admin-triggered updateRoutingState request produces this too, so
+      // isAfterRestore() must not rely on operation shape alone
+      final var pending =
+          ClusterChangePlan.init(
+              2,
+              List.of(new PartitionGroupOperation.UpdateRoutingState(MEMBER_0, Optional.empty())));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(pending))
+              .build();
+      assertThat(legacy.isAfterRestore()).isFalse();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
+
+      // then
+      assertThat(migrated.isAfterRestore()).isFalse();
     }
 
     @Test

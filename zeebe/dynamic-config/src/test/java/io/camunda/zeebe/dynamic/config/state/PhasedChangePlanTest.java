@@ -211,4 +211,62 @@ class PhasedChangePlanTest {
       assertThat(phase.groupOperations().get("g1")).hasSize(1);
     }
   }
+
+  @Nested
+  class Validation {
+    @Test
+    void shouldThrowWhenIdIsNegative() {
+      // when / then
+      assertThatThrownBy(() -> PhasedChangePlan.init(-1, List.of(globalPhase0), Instant.EPOCH))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldAllowRestoredPlanIdOfZero() {
+      // given / when — RESTORED_PLAN_ID (0) must be constructible: it is the sentinel a migrated
+      // legacy restore plan is assigned (see CurrentClusterConfiguration#toPhasedChangePlan)
+      final var plan =
+          PhasedChangePlan.init(
+              PhasedChangePlan.RESTORED_PLAN_ID, List.of(globalPhase0), Instant.EPOCH);
+
+      // then
+      assertThat(plan.id()).isZero();
+    }
+  }
+
+  @Nested
+  class Restore {
+    @Test
+    void shouldReportRestorePlanIdForRestoredPlanId() {
+      // given
+      final var plan =
+          PhasedChangePlan.init(
+              PhasedChangePlan.RESTORED_PLAN_ID, List.of(globalPhase0), Instant.EPOCH);
+
+      // when / then
+      assertThat(plan.hasRestorePlanId()).isTrue();
+    }
+
+    @Test
+    void shouldNotReportRestorePlanIdForAnOrdinaryPlanId() {
+      // given
+      final var plan = planWithThreePhases(PhasedChangePlan.INITIAL_PLAN_ID);
+
+      // when / then
+      assertThat(plan.hasRestorePlanId()).isFalse();
+    }
+
+    @Test
+    void shouldInitForRestoreWithRestoredPlanIdAtPhaseZero() {
+      // when
+      final var plan =
+          PhasedChangePlan.initForRestore(List.of(globalPhase0, groupPhase1), Instant.EPOCH);
+
+      // then
+      assertThat(plan.id()).isEqualTo(PhasedChangePlan.RESTORED_PLAN_ID);
+      assertThat(plan.currentPhaseIndex()).isZero();
+      assertThat(plan.phases()).containsExactly(globalPhase0, groupPhase1);
+      assertThat(plan.hasRestorePlanId()).isTrue();
+    }
+  }
 }
