@@ -5128,7 +5128,10 @@ final class JsonSerializableToJsonTest {
             { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
             { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
           ],
-          "changedAttributes": ["status", "metrics"]
+          "changedAttributes": ["status", "metrics"],
+          "jobKey": -1,
+          "jobLease": "",
+          "loopIteration": 0
         }
         """
       },
@@ -5153,7 +5156,10 @@ final class JsonSerializableToJsonTest {
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
-          "changedAttributes": []
+          "changedAttributes": [],
+          "jobKey": -1,
+          "jobLease": "",
+          "loopIteration": 0
         }
         """
       },

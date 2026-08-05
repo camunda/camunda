@@ -57,9 +57,12 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("tools", AgentInstanceTool::new);
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
+  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
+  private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
 
   public AgentInstanceRecord() {
-    super(17);
+    super(20);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
@@ -76,7 +79,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(limitsProp)
         .declareProperty(metricsProp)
         .declareProperty(toolsProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(jobKeyProp)
+        .declareProperty(jobLeaseProp)
+        .declareProperty(loopIterationProp);
   }
 
   @Override
@@ -261,6 +267,36 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord addChangedAttribute(final String attribute) {
     changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  @Override
+  public long getJobKey() {
+    return jobKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setJobKey(final long jobKey) {
+    jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  @Override
+  public String getJobLease() {
+    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
+  }
+
+  public AgentInstanceRecord setJobLease(final String jobLease) {
+    jobLeaseProp.setValue(jobLease);
+    return this;
+  }
+
+  @Override
+  public int getLoopIteration() {
+    return loopIterationProp.getValue();
+  }
+
+  public AgentInstanceRecord setLoopIteration(final int loopIteration) {
+    loopIterationProp.setValue(loopIteration);
     return this;
   }
 }

@@ -116,6 +116,23 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   List<String> getChangedAttributes();
 
+  /**
+   * @return the key of the job this command was produced for
+   */
+  long getJobKey();
+
+  /**
+   * @return the opaque lease token identifying the job activation during which this command was
+   *     produced
+   */
+  String getJobLease();
+
+  /**
+   * @return the loopIteration this command belongs to; a loopIteration is one pass through the
+   *     agent feedback loop: one LLM call, its tool dispatches, and their results
+   */
+  int getLoopIteration();
+
   /** Represents a tool available to an agent. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)

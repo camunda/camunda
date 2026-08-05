@@ -118,6 +118,15 @@
             },
             "changedAttributes": {
               "type": "keyword"
+            },
+            "jobKey": {
+              "type": "long"
+            },
+            "jobLease": {
+              "type": "keyword"
+            },
+            "loopIteration": {
+              "type": "integer"
             }
           }
         }
