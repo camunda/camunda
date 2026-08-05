@@ -1,53 +1,52 @@
-{{- if .Values.keycloak.enabled -}}
+{{- if .Values.postgresql.enabled -}}
 ---
-# Configure a CNPG-managed PostgreSQL cluster for Keycloak itself.
-#
-# This is **NOT** the PostgreSQL cluster used by Camunda if it's configured to
-# use PostgreSQL as a secondary storage database!
+# Configure a CNPG-managed PostgreSQL cluster for Camunda secondary storage.
 #
 # Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ .Values.keycloak.postgresql.clusterName }}
+  name: {{ .Values.postgresql.clusterName }}
 spec:
-  description: PostgreSQL cluster for Keycloak and Camunda Identity
+  description: PostgreSQL cluster for Camunda secondary storage
 
   instances: 1
-  {{- with .Values.keycloak.postgresql.image }}
+  {{- with .Values.postgresql.image }}
   imageName: {{ .registry }}/{{ .repository }}:{{ .tag }}
   {{- end }}
 
   resources:
-    {{- toYaml .Values.keycloak.postgresql.resources | nindent 4 }}
+    {{- toYaml .Values.postgresql.resources | nindent 4 }}
 
   storage:
-    {{- toYaml .Values.keycloak.postgresql.storage | nindent 4 }}
+    {{- toYaml .Values.postgresql.storage | nindent 4 }}
 
   affinity:
     nodeSelector:
       topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
-      {{- toYaml .Values.keycloak.postgresql.nodeSelector | nindent 6 }}
+      {{- toYaml .Values.postgresql.nodeSelector | nindent 6 }}
 
     tolerations:
-      {{- toYaml .Values.keycloak.postgresql.tolerations | nindent 6 }}
+      {{- toYaml .Values.postgresql.tolerations | nindent 6 }}
 
   postgresql:
+    shared_preload_libraries:
+      {{- toYaml .Values.postgresql.shared_preload_libraries | nindent 6 }}
+
     # The PostgreSQL configuration flags.
     parameters:
-      lock_timeout: 30s
-      statement_timeout: "0"
-      #log_statement: all
-      #log_connections: "on"
-      #log_disconnections: "on"
+      {{- toYaml .Values.postgresql.parameters | nindent 6 }}
 
-  # Initialize the Keycloak PostgreSQL cluster with:
+  postgresUID: {{ .Values.postgresql.postgresUID }}
+  postgresGID: {{ .Values.postgresql.postgresGID }}
+
+  # Initialize the Camunda PostgreSQL cluster with:
   #
   # 1. A dedicated user
   # 2. A dedicated database, owned by the user created in 1.
   # 3. The password comes from the specified Kubernetes Secret
   #
-  # The dedicated user will also be used by Keycloak to connect into this
+  # The dedicated user will also be used by Camunda to connect into this
   # PostgreSQL cluster.
   #
   # In this cluster, this "bootstrap/initdb" method is preferred over the
@@ -62,10 +61,10 @@ spec:
   # Reference: https://cloudnative-pg.io/docs/1.30/bootstrap#bootstrap-an-empty-cluster-initdb
   bootstrap:
     initdb:
-      database: {{ .Values.keycloak.postgresql.databaseName }}
-      owner: {{ .Values.keycloak.postgresql.databaseUser }}
+      database: {{ .Values.postgresql.database.name }}
+      owner: {{ .Values.postgresql.database.user }}
       secret:
-        name: {{ include "load-test-setup.keycloak.postgresql.cnpg-secret-name" . }}
+        name: {{ include "load-test-setup.postgresql.cnpg-secret-name" . }}
 
   managed:
     services:

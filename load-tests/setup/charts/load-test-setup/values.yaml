@@ -195,8 +195,9 @@ keycloak:
   # We deploy Keycloak using the Keycloak Operator, which is currently limited
   # to managed custom resources in a single namespace only.
   # As such, we **have** to deploy Keycloak in the same namespace as the
-  # Keycloak Operator and we can't simply Keycloak in the load test namespace.
-  # This option allows to configure in which namespace Keycloak will be
+  # Keycloak Operator and we can't simply deploy Keycloak in the load test
+  # namespace.
+  # This option allows configuring in which namespace Keycloak will be
   # managed.
   # This probably should not be changed.
   namespace: keycloak-operator
@@ -352,3 +353,111 @@ prometheus-elasticsearch-exporter:
     # Labels used by the service monitor, specific to our prometheus installation
     labels:
       release: monitoring
+
+# -- Configure the PostgreSQL cluster used by Camunda as secondary storage.
+# If you want to use PostgreSQL as secondary storage for Camunda, you must
+# enable this resource and configure it according to your needs.
+#
+# This cluster is **independent** from the PostgreSQL cluster used by Keycloak,
+# configured via `keycloak.postgresql`.
+postgresql:
+  # -- Set to true to deploy this CNPG-managed PostgreSQL cluster.
+  # Only needed when the load test uses PostgreSQL as secondary storage.
+  enabled: false
+
+  # -- The name of the CNPG Cluster resource deployed for Camunda's secondary storage.
+  # Changing this name will also change the Kubernetes Service deployed by the
+  # CNPG operator, and thus will require to adjust the JDBC URL used to connect
+  # Camunda to PostgreSQL.
+  clusterName: postgresql
+
+  # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
+  # PostgreSQL cluster.
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/postgres
+    tag: "18.4"
+
+  # -- The UID and GID used by the PostgreSQL container.
+  # This should match the UID/GID in use by the specified Docker image.
+  postgresUID: 999
+  postgresGID: 999
+
+  # -- CPU and memory resource requests and limits for the PostgreSQL cluster.
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 12Gi
+
+  # -- Persistent storage configuration for the PostgreSQL cluster.
+  storage:
+    size: 512Gi
+    storageClass: benchmark-ssd-zonal-v1
+
+  # -- The PostgreSQL database and user used by Camunda to connect to this cluster.
+  database:
+    # -- The name of the PostgreSQL database created for Camunda.
+    name: camunda
+    # -- The name of the PostgreSQL user Camunda uses to connect to its database.
+    user: camunda
+    # -- The password for the PostgreSQL user used by Camunda. Shared verbatim with
+    # `orchestration.data.secondaryStorage.rdbms.secret.inlineSecret` in the
+    # `camunda-platform-values-rdbms.yaml` values files, independently of the
+    # underlying RDBMS database.
+    password: camunda
+
+  # -- PostgreSQL extensions loaded at server startup.
+  shared_preload_libraries:
+    - pg_stat_statements
+
+  # -- PostgreSQL server configuration parameters (`postgresql.conf`), tuned for the
+  # load test's expected write/update volume.
+  parameters:
+    # WAL Performance Tuning
+    wal_buffers: 128MB
+    max_wal_size: 4GB
+    min_wal_size: 1GB
+    checkpoint_timeout: 20min
+    checkpoint_completion_target: "0.9"
+    wal_writer_delay: 200ms
+    wal_writer_flush_after: 1MB
+
+    # Memory Settings
+    shared_buffers: 2GB
+    effective_cache_size: 7GB
+    work_mem: 32MB
+    maintenance_work_mem: 1GB
+
+    # Autovacuum - Aggressive for high UPDATE/DELETE volume
+    autovacuum_max_workers: "6"
+    autovacuum_naptime: 15s
+    autovacuum_vacuum_scale_factor: "0.03"
+    autovacuum_analyze_scale_factor: "0.02"
+    autovacuum_vacuum_cost_limit: "5000"
+
+    # Monitoring
+    pg_stat_statements.track: all
+    pg_stat_statements.max: "10000"
+    track_io_timing: "on"
+    track_functions: all
+
+    # Logging - default to silent, but keep the values to easily turn them on
+    # during investigations.
+    log_statement: none
+    log_connections: "off"
+    log_disconnections: "off"
+
+  # -- Node selector labels for PostgreSQL pod scheduling.
+  # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  # -- Tolerations applied to PostgreSQL pods.
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule

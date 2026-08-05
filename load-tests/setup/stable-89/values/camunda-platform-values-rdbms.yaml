@@ -11,10 +11,12 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
+        # The username is the same for all the underlying RDBMS databases.
         username: camunda
         secret:
+          # The password is the same for all the underlying RDBMS databases.
           inlineSecret: camunda
-        # set to 2001 and not 2000 o´to directly see when queue is full in metrics dashboard
+
         queueSize: 2001
         history:
           defaultHistoryTTL: PT1H

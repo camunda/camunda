@@ -154,6 +154,8 @@ cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"  
 # or via Optimize)
 elasticsearchEnabled=false
 opensearchEnabled=false
+postgresqlEnabled=false
+
 # The Elasticsearch/OpenSearch URI for the Prometheus exporter for Elasticsearch.
 es_uri=""
 
@@ -170,6 +172,10 @@ case "$secondary_storage" in
     ;;
   postgresql|mysql|mariadb|mssql|oracle)
     cp -v "$VERSION_DIR/values/camunda-platform-values-rdbms.yaml" "$TARGET_DIRECTORY/"
+
+    if [ "$secondary_storage" = "postgresql" ]; then
+      postgresqlEnabled=true
+    fi
 
     physical_tenants_rdbms_config_file="$VERSION_DIR/values/camunda-platform-two-physical-tenants-shared-rdbms.yaml"
     if [[ -f "$physical_tenants_rdbms_config_file" ]]; then
@@ -314,6 +320,11 @@ EOF
     topology.kubernetes.io/zone: "$availability_zone"
 EOF
   fi
+
+  cat <<EOF
+postgresql:
+  enabled: $postgresqlEnabled
+EOF
 } > load-test-setup-values.yaml
 
 # Add/update helm repositories
