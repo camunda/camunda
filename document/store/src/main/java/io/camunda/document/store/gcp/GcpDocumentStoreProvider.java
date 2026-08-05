@@ -7,12 +7,18 @@
  */
 package io.camunda.document.store.gcp;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -24,6 +30,7 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
 
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
   private static final String PREFIX_PROPERTY = "PREFIX";
+  private static final String CREDENTIALS_PATH_PROPERTY = "CREDENTIALS_PATH";
 
   private static final String DEFAULT_PREFIX = "temp/";
 
@@ -42,7 +49,7 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
     return new GcpDocumentStore(
         getBucketNameProperty(configuration),
         getPrefixProperty(configuration),
-        override != null ? override.get() : StorageOptions.getDefaultInstance().getService(),
+        override != null ? override.get() : createStorage(configuration),
         executorService);
   }
 
@@ -58,6 +65,35 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
   @VisibleForTesting
   public static void clearStorageOverrideForTests() {
     storageOverride = null;
+  }
+
+  /**
+   * Builds the GCS client for this store: from the service account key file it was configured with,
+   * or — when it has none — from the application default credentials, which are shared by every
+   * store in the process.
+   */
+  private Storage createStorage(final DocumentStoreConfigurationRecord configuration) {
+    final String credentialsPath = configuration.properties().get(CREDENTIALS_PATH_PROPERTY);
+    if (credentialsPath == null || credentialsPath.isBlank()) {
+      return StorageOptions.getDefaultInstance().getService();
+    }
+
+    try (final InputStream keyFile = Files.newInputStream(Path.of(credentialsPath.trim()))) {
+      return StorageOptions.newBuilder()
+          .setCredentials(GoogleCredentials.fromStream(keyFile))
+          .build()
+          .getService();
+    } catch (final IOException | InvalidPathException e) {
+      throw new IllegalArgumentException(
+          "Failed to configure document store with id '"
+              + configuration.id()
+              + "': could not read GCP credentials from '"
+              + credentialsPath
+              + "' configured as '"
+              + CREDENTIALS_PATH_PROPERTY
+              + "'",
+          e);
+    }
   }
 
   private String getBucketNameProperty(final DocumentStoreConfigurationRecord configuration) {

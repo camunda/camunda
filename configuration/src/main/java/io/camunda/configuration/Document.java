@@ -259,6 +259,12 @@ public class Document {
     private String bucketName;
     private String prefix;
 
+    /**
+     * Path to the service account key file this store authenticates with. When unset, the store
+     * uses the application default credentials, which are shared with every other store.
+     */
+    private String credentialsPath;
+
     public String getBucketName() {
       return bucketName;
     }
@@ -273,6 +279,14 @@ public class Document {
 
     public void setPrefix(final String prefix) {
       this.prefix = prefix;
+    }
+
+    public String getCredentialsPath() {
+      return credentialsPath;
+    }
+
+    public void setCredentialsPath(final String credentialsPath) {
+      this.credentialsPath = credentialsPath;
     }
   }
 
