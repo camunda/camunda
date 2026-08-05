@@ -346,8 +346,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
         failed.job(),
         ErrorType.SECRET_RESOLUTION_ERROR,
         String.format(
-            "The job with key '%s' can not be activated, because injecting its secret values into the job variables failed. "
-                + "The error details are only logged, to keep possible secret data out of persisted records.",
+            "The job with key '%s' can not be activated, because injecting its secret values into "
+                + "the job variables failed. Resolving this incident will not fix it — use process "
+                + "instance modification to reactivate the element and create a fresh job instead.",
             failed.jobKey()));
   }
 
