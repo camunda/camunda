@@ -63,8 +63,10 @@ public final class JobSecretPushInjectionTest {
   private static final String SECRET_NAME = "token";
   private static final String SECRET_VALUE = "resolved-secret";
 
-  private final Map<String, String> cachedSecrets = new ConcurrentHashMap<>();
-  private final RecordingJobStreamer jobStreamer = new RecordingJobStreamer();
+  // static, because the engine rule below reads them while it is initialized, and a field
+  // initializer can only read a field declared before it; setUp resets them per test
+  private static final Map<String, String> CACHED_SECRETS = new ConcurrentHashMap<>();
+  private static final RecordingJobStreamer JOB_STREAMER = new RecordingJobStreamer();
 
   /**
    * The background resolution is driven by hand: the tests write the {@code RESOLUTION_COMPLETE}
@@ -76,7 +78,7 @@ public final class JobSecretPushInjectionTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withJobStreamer(jobStreamer)
+          .withJobStreamer(JOB_STREAMER)
           .withSecretStoreRegistry(
               new SecretStoreRegistry(
                   Map.of("default", new NoopSecretStore()),
@@ -91,13 +93,18 @@ public final class JobSecretPushInjectionTest {
 
   @Before
   public void setUp() {
+    // the cache and the streamer outlive a single test, so each test starts from an empty cache,
+    // no stream and no recorded notification
+    CACHED_SECRETS.clear();
+    JOB_STREAMER.clearStreams();
+    JOB_STREAMER.clearNotifications();
     jobStream = registerJobStream();
   }
 
   @Test
   public void shouldPushJobWithResolvedSecretValue() {
     // given
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
 
     // when
@@ -156,7 +163,7 @@ public final class JobSecretPushInjectionTest {
     awaitResolutionRequests(1);
 
     // when - the background resolution caches the value and completes
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     completeResolution();
 
     // then - the job is pushed exactly once, with the resolved value
@@ -184,7 +191,7 @@ public final class JobSecretPushInjectionTest {
     awaitResolutionRequests(2);
 
     // when - the reference resolves
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     completeResolution();
 
     // then - both jobs are pushed with the resolved value
@@ -241,7 +248,7 @@ public final class JobSecretPushInjectionTest {
     assertThat(jobStream.getActivatedJobs()).isEmpty();
 
     // and - once that resolution completes, the job is pushed with the value
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     completeResolution();
     final ActivatedJob pushedJob = awaitPushedJob();
     assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
@@ -278,7 +285,7 @@ public final class JobSecretPushInjectionTest {
   @Test
   public void shouldPushJobOnlyOnceEveryReferenceIsCached() {
     // given - a job with two references, only one of them cached
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     deploy(
         t ->
             t.zeebeInputExpression("camunda.secrets.token", "a")
@@ -289,7 +296,7 @@ public final class JobSecretPushInjectionTest {
     assertThat(jobStream.getActivatedJobs()).isEmpty();
 
     // when - the second reference resolves too
-    cachedSecrets.put("apiKey", "resolved-api-key");
+    CACHED_SECRETS.put("apiKey", "resolved-api-key");
     completeResolution("apiKey");
 
     // then - the job is pushed with both values
@@ -303,7 +310,7 @@ public final class JobSecretPushInjectionTest {
   @Test
   public void shouldPushJobWithoutSecretReferencesUnchanged() {
     // given
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     deploy(t -> t.zeebeInputExpression("\"plain-value\"", "authorization"));
 
     // when
@@ -319,7 +326,7 @@ public final class JobSecretPushInjectionTest {
   @Test
   public void shouldOnlyNotifyWorkersWhenNoStreamIsRegistered() {
     // given - no job stream for the job type, so the job is not pushed but only announced
-    jobStreamer.clearStreams();
+    JOB_STREAMER.clearStreams();
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
 
     // when
@@ -329,7 +336,7 @@ public final class JobSecretPushInjectionTest {
     // then - the job stays activatable for a long poll, which owns the check on that path
     Awaitility.await("until the workers are notified")
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(jobStreamer.notificationsForJob(JOB_TYPE)).isPositive());
+        .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isPositive());
     assertThat(jobState(jobKey)).isEqualTo(State.ACTIVATABLE);
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
@@ -342,10 +349,10 @@ public final class JobSecretPushInjectionTest {
     engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     awaitResolutionRequests(2);
-    jobStreamer.clearStreams();
+    JOB_STREAMER.clearStreams();
 
     // when - the reference resolves and both jobs become activatable again
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     completeResolution();
     RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
         .withSecretReference(SECRET_NAME)
@@ -354,7 +361,7 @@ public final class JobSecretPushInjectionTest {
     // then - the workers of the job type are notified once for the whole batch, not once per job
     Awaitility.await("until the workers are notified")
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(jobStreamer.notificationsForJob(JOB_TYPE)).isEqualTo(1));
+        .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isEqualTo(1));
     assertThat(jobStream.getActivatedJobs()).isEmpty();
   }
 
@@ -419,7 +426,7 @@ public final class JobSecretPushInjectionTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(30_000L)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-    return jobStreamer.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+    return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
   }
 
   private long jobKeyOf(final long processInstanceKey) {
@@ -449,15 +456,15 @@ public final class JobSecretPushInjectionTest {
   }
 
   /** Serves the test's cached secrets, and takes the values the background resolution caches. */
-  private final class TestSecretCache implements SecretCache {
+  private static final class TestSecretCache implements SecretCache {
     @Override
     public Optional<String> get(final String name) {
-      return Optional.ofNullable(cachedSecrets.get(name));
+      return Optional.ofNullable(CACHED_SECRETS.get(name));
     }
 
     @Override
     public void put(final String name, final String value) {
-      cachedSecrets.put(name, value);
+      CACHED_SECRETS.put(name, value);
     }
   }
 }
