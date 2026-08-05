@@ -46,10 +46,22 @@ public final class ClusterVariableJobSecretResolver {
       final Map<String, Set<ClusterVariableReference>> clusterVariableReferences,
       final String tenantId) {
     final var result = new LinkedHashMap<String, Set<SecretReference>>();
+    resolveInto(clusterVariableReferences, tenantId, result);
+    return result;
+  }
+
+  /**
+   * Folds resolved secret references directly into a caller-supplied {@code target} map, avoiding
+   * the extra map allocation and copy pass that {@link #resolve} would otherwise require of a
+   * caller that already has its own map to merge into (see {@code BpmnJobBehavior}).
+   */
+  public void resolveInto(
+      final Map<String, Set<ClusterVariableReference>> clusterVariableReferences,
+      final String tenantId,
+      final Map<String, Set<SecretReference>> target) {
     clusterVariableReferences.forEach(
         (leafPointer, references) ->
-            references.forEach(reference -> resolveOne(leafPointer, reference, tenantId, result)));
-    return result;
+            references.forEach(reference -> resolveOne(leafPointer, reference, tenantId, target)));
   }
 
   private void resolveOne(
@@ -91,6 +103,7 @@ public final class ClusterVariableJobSecretResolver {
       case "env" ->
           clusterVariableState
               .getTenantScopedClusterVariable(nameBuffer, tenantId)
+              .filter(instance -> instance.getValueBuffer().capacity() > 0)
               .or(() -> clusterVariableState.getGloballyScopedClusterVariable(nameBuffer));
       default -> Optional.empty();
     };
