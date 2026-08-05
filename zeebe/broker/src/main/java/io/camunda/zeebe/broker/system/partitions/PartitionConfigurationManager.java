@@ -130,7 +130,7 @@ final class PartitionConfigurationManager {
    * @param exportingState the target exporting state
    * @return the future that completes when the exporting state is applied
    */
-  ActorFuture<Void> setExporterState(final ExportingState exportingState) {
+  ActorFuture<Void> setExportingState(final ExportingState exportingState) {
     final var stateChanged = executor.<Void>createFuture();
 
     // Update the config in PartitionContext so that the next role transitions use the latest config

@@ -12,6 +12,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
@@ -316,8 +317,14 @@ public class DynamicClusterConfigurationService
         StaticConfigurationGenerator.getStaticConfiguration(
             brokerConfiguration, physicalTenantConfigs, localMember);
 
+    final var legacyExportingStates =
+        LegacyExportingStateReader.readLegacyExportingStates(
+            brokerConfiguration.getData().getDirectory());
+
     return clusterConfigurationManagerService.start(
-        brokerStartupContext.getActorSchedulingService(), staticConfiguration);
+        brokerStartupContext.getActorSchedulingService(),
+        staticConfiguration,
+        legacyExportingStates);
   }
 
   private ClusterConfigurationManagerService getClusterTopologyManagerService(
