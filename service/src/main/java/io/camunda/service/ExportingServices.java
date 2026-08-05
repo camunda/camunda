@@ -17,7 +17,6 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -40,7 +39,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
-  private final ClusterConfigurationManagementRequestSender requestSender;
   private final ExportingStateController exportingStateController;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
@@ -49,7 +47,6 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ClusterConfigurationManagementRequestSender requestSender,
       final ExportingStateController exportingStateController,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
@@ -61,7 +58,6 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
-    this.requestSender = requestSender;
     this.exportingStateController = exportingStateController;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;

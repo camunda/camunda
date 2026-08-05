@@ -422,7 +422,6 @@ class CamundaServicesConfigurationTest {
         readinessProvider(),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
         secretStoreRegistries,
-        mock(ClusterConfigurationManagementRequestSender.class),
         mock(ExportingStateController.class));
   }
 

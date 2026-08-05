@@ -35,10 +35,8 @@ final class ExportingEndpointTest {
     final var endpoint = new ExportingEndpoint(controller);
 
     // when
-    when(controller.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenThrow(new RuntimeException("nope"));
-    when(controller.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenThrow(new RuntimeException("nope"));
+    when(controller.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
+    when(controller.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
 
     // then
     assertThat(endpoint.post(operation, false))

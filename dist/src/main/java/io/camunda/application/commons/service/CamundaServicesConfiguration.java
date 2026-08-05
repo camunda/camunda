@@ -366,7 +366,6 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          clusterConfigurationManagementRequestSender,
                           exportingStateController,
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),

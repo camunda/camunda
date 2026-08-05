@@ -70,7 +70,6 @@ public class ExportingServicesTest {
             PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
-            requestSender,
             exportingStateController,
             authorizationChecker,
             authorizationsConfig,
@@ -293,7 +292,7 @@ public class ExportingServicesTest {
   public void shouldMapFailedStateChangeToServiceException() {
     // given - the state change failed to apply
     when(exportingStateController.pauseExporting(PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("nope")));
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException()));
 
     // when
     final var future = services.pauseExporting(false, authentication);
