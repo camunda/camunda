@@ -146,15 +146,15 @@ test.describe('Process Instances Table', () => {
       instanceIds[0].toString(),
       instanceIds[1].toString(),
     ];
-    // Reads both version-1 rows in one pass and returns the expected keys
-    // found in them, so the pair is matched against a single table state.
+    // allInnerTexts() reads every row in one DOM evaluation, so the two rows
+    // are sampled from a single table state. It also returns whatever rows
+    // exist instead of throwing while one is still detached — a throwing
+    // generator aborts expect.poll instead of being retried.
     const versionOneKeysInRows =
       (first: number, second: number) => async () => {
-        const rowsText = `${await operateProcessesPage.processInstancesTable
-          .nth(first)
-          .innerText()}\n${await operateProcessesPage.processInstancesTable
-          .nth(second)
-          .innerText()}`;
+        const rows =
+          await operateProcessesPage.processInstancesTable.allInnerTexts();
+        const rowsText = `${rows[first] ?? ''}\n${rows[second] ?? ''}`;
         return versionOneKeys.filter((key) => rowsText.includes(key));
       };
 
@@ -171,14 +171,18 @@ test.describe('Process Instances Table', () => {
           operateProcessesPage.processInstancesTable.nth(0).innerText(),
         )
         .toContain(instanceIds[2].toString());
-      await expect.poll(versionOneKeysInRows(1, 2)).toEqual(versionOneKeys);
+      await expect
+        .poll(versionOneKeysInRows(1, 2), defaultAssertionOptions)
+        .toEqual(versionOneKeys);
     });
 
     await test.step('Check sorting of processes by process version ASC', async () => {
       await operateProcessesPage.clickVersionSortButton();
       // The two version-1 rows come first (tie broken by instance key, order
       // not guaranteed on a multi-partition cluster), then version 2 last.
-      await expect.poll(versionOneKeysInRows(0, 1)).toEqual(versionOneKeys);
+      await expect
+        .poll(versionOneKeysInRows(0, 1), defaultAssertionOptions)
+        .toEqual(versionOneKeys);
       await expect
         .poll(() =>
           operateProcessesPage.processInstancesTable.nth(2).innerText(),
