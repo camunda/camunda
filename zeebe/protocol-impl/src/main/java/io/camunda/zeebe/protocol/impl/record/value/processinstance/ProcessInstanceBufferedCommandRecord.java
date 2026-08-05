@@ -31,7 +31,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue COMMAND_KEY_KEY = new StringValue("commandKey");
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
@@ -42,8 +42,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
   private final StringProperty tenantIdProperty =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty elementInstanceKeyProperty =
-      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1);
+  private final LongProperty commandKeyProperty = new LongProperty(COMMAND_KEY_KEY, -1);
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>(VALUE_TYPE_KEY, ValueType.class, ValueType.NULL_VAL);
   private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
@@ -58,7 +57,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(elementInstanceKeyProperty)
+        .declareProperty(commandKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);
@@ -96,12 +95,12 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
   }
 
   @Override
-  public long getElementInstanceKey() {
-    return elementInstanceKeyProperty.getValue();
+  public long getCommandKey() {
+    return commandKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProperty.setValue(elementInstanceKey);
+  public ProcessInstanceBufferedCommandRecord setCommandKey(final long commandKey) {
+    commandKeyProperty.setValue(commandKey);
     return this;
   }
 

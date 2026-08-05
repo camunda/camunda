@@ -434,7 +434,7 @@ public final class ProtocolFactory {
               .withProcessInstanceKey(random.nextLong())
               .withProcessDefinitionKey(random.nextLong())
               .withTenantId(random.nextObject(String.class))
-              .withElementInstanceKey(random.nextLong())
+              .withCommandKey(random.nextLong())
               .withValueType(valueType)
               .withIntent(random.nextObject(typeInfo.getIntentClass()))
               .withCommandValue(generateObject(typeInfo.getValueClass()))

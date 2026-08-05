@@ -2875,7 +2875,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(1234)
                   .setProcessDefinitionKey(13)
                   .setTenantId("tenant-1")
-                  .setElementInstanceKey(5678)
+                  .setCommandKey(5678)
                   .setValueType(ValueType.PROCESS_INSTANCE)
                   .setIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
                   .setCommandValue(commandValue);
@@ -2885,7 +2885,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1234,
                   "processDefinitionKey": 13,
                   "tenantId": "tenant-1",
-                  "elementInstanceKey": 5678,
+                  "commandKey": 5678,
                   "valueType": "PROCESS_INSTANCE",
                   "intent": "ACTIVATE_ELEMENT",
                   "commandValue": {
@@ -2926,7 +2926,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1234,
                   "processDefinitionKey": -1,
                   "tenantId": "<default>",
-                  "elementInstanceKey": -1,
+                  "commandKey": -1,
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
                   "commandValue": null

@@ -68,7 +68,7 @@ public class SuspensionAppliersTest {
     final var bufferedRecord =
         new ProcessInstanceBufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(21L);
+            .setCommandKey(21L);
     bufferedApplier.applyState(bufferedCommandKey, bufferedRecord);
 
     // when
@@ -89,11 +89,11 @@ public class SuspensionAppliersTest {
     // given
     final long processInstanceKey = 3L;
     final long bufferedCommandKey = 30L;
-    final long elementInstanceKey = 31L;
+    final long commandRecordKey = 31L;
     final var bufferedRecord =
         new ProcessInstanceBufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(elementInstanceKey)
+            .setCommandKey(commandRecordKey)
             .setValueType(ValueType.PROCESS_INSTANCE)
             .setIntent(ProcessInstanceBufferedCommandIntent.BUFFER);
 
@@ -113,8 +113,8 @@ public class SuspensionAppliersTest {
     assertThat(visitedKeys).containsExactly(bufferedCommandKey);
     assertThat(visitedCommands)
         .singleElement()
-        .extracting("elementInstanceKey")
-        .isEqualTo(elementInstanceKey);
+        .extracting("commandKey")
+        .isEqualTo(commandRecordKey);
   }
 
   @Test
@@ -123,26 +123,26 @@ public class SuspensionAppliersTest {
     final long processInstanceKey = 4L;
     final long firstBufferedCommandKey = 40L;
     final long secondBufferedCommandKey = 41L;
-    final long firstElementInstanceKey = 400L;
-    final long secondElementInstanceKey = 401L;
+    final long firstCommandRecordKey = 400L;
+    final long secondCommandRecordKey = 401L;
 
     bufferedApplier.applyState(
         firstBufferedCommandKey,
         new ProcessInstanceBufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(firstElementInstanceKey));
+            .setCommandKey(firstCommandRecordKey));
     bufferedApplier.applyState(
         secondBufferedCommandKey,
         new ProcessInstanceBufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(secondElementInstanceKey));
+            .setCommandKey(secondCommandRecordKey));
 
     // when
     drainedApplier.applyState(
         firstBufferedCommandKey,
         new ProcessInstanceBufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(firstElementInstanceKey));
+            .setCommandKey(firstCommandRecordKey));
 
     // then
     final List<Long> visitedKeys = new ArrayList<>();
