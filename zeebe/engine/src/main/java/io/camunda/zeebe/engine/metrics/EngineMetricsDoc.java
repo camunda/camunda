@@ -378,6 +378,29 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of process definitions currently draining (deleted, awaiting last instance) */
+  DRAINING_PROCESS_DEFINITIONS {
+    @Override
+    public String getDescription() {
+      return "Number of process definitions currently draining (deleted, awaiting last instance)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definitions.draining.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */

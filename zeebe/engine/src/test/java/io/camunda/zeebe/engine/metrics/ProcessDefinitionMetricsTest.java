@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -31,6 +32,7 @@ public class ProcessDefinitionMetricsTest {
   private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionMetricsTest.class);
   private static final String PROCESS_ID_A = "processA";
   private static final String PROCESS_ID_B = "processB";
+  private static final String JOB_TYPE = "task";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
@@ -295,6 +297,132 @@ public class ProcessDefinitionMetricsTest {
     assertThat(definitionsCountGauge())
         .describedAs("definitions count after restart with %d processes", processCount)
         .isEqualTo(processCount);
+  }
+
+  @Test
+  public void shouldIncrementDrainingGaugeWhenDeletingProcessWithRunningInstance() {
+    // given - a deployed process with a single instance stuck on a job
+    final long processDefinitionKey = deployProcessWithJob(PROCESS_ID_A);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID_A).create();
+    awaitJobCreated(processInstanceKey);
+    assertThat(definitionsCountGauge()).isOne();
+    assertThat(drainingCountGauge()).isZero();
+
+    // when - the definition is deleted while the instance is still running
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    awaitDraining(processDefinitionKey);
+
+    // then - it moves out of the deployed count and into the draining count
+    assertThat(drainingCountGauge()).describedAs("draining definitions count").isOne();
+    assertThat(definitionsCountGauge())
+        .describedAs("a draining definition is no longer counted as deployed")
+        .isZero();
+  }
+
+  @Test
+  public void shouldDecrementDrainingGaugeWhenLastDrainingInstanceCompletes() {
+    // given - a draining definition kept alive by one running instance
+    final long processDefinitionKey = deployProcessWithJob(PROCESS_ID_A);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID_A).create();
+    awaitJobCreated(processInstanceKey);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    awaitDraining(processDefinitionKey);
+    assertThat(drainingCountGauge()).isOne();
+
+    // when - the last active instance completes and the deletion is finalized
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DELETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // then - the draining count returns to zero
+    assertThat(drainingCountGauge())
+        .describedAs("draining count returns to zero once the definition is finalized")
+        .isZero();
+  }
+
+  @Test
+  public void shouldNotLeaveDrainingGaugeElevatedWhenDeletingProcessWithoutRunningInstances() {
+    // given - a deployed process with no running instances
+    final long processDefinitionKey = deploySimpleProcess(PROCESS_ID_A);
+    assertThat(definitionsCountGauge()).isOne();
+    assertThat(drainingCountGauge()).isZero();
+
+    // when - the definition is deleted; with no instances it drains and finalizes in one step
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DELETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // then - the draining gauge was incremented then decremented within the same finalize, so it
+    // never stays elevated, and the definition leaves the deployed count
+    assertThat(drainingCountGauge())
+        .describedAs("immediate finalize increments then decrements the draining gauge, net zero")
+        .isZero();
+    assertThat(definitionsCountGauge())
+        .describedAs("the deleted definition is no longer counted as deployed")
+        .isZero();
+  }
+
+  @Test
+  public void shouldRecoverDrainingCountAfterBrokerRestart() {
+    // given - a draining definition
+    final long processDefinitionKey = deployProcessWithJob(PROCESS_ID_A);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID_A).create();
+    awaitJobCreated(processInstanceKey);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    awaitDraining(processDefinitionKey);
+    assertThat(drainingCountGauge()).isOne();
+
+    // when - snapshot and restart triggers the metric initialization scan
+    engine.snapshot();
+    engine.stop();
+    engine.start();
+
+    // then - the draining count is recovered from state, not just from live processing
+    assertThat(drainingCountGauge())
+        .describedAs("draining count should be recovered from state after restart")
+        .isOne();
+  }
+
+  private long deployProcessWithJob(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private void awaitJobCreated(final long processInstanceKey) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(JOB_TYPE)
+        .await();
+  }
+
+  private void awaitDraining(final long processDefinitionKey) {
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+  }
+
+  private double drainingCountGauge() {
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.process.definitions.draining.count")
+        .gauge()
+        .value();
   }
 
   private long deploySimpleProcess(final String processId) {
