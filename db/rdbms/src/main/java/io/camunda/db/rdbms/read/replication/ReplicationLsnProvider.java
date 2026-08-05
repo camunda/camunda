@@ -14,20 +14,18 @@ import java.util.List;
  * position is captured after each flush to know what has been committed. Replica statuses are
  * polled periodically to determine what each replica has applied, together with the DB-reported
  * replication lag per replica.
- *
- * <p>The position can represent different metrics depending on the database: a WAL LSN
- * (PostgreSQL), a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are
- * database-specific.
  */
 public interface ReplicationLsnProvider {
 
   /** Returns the primary's current replication position after the last commit. */
   long getCurrent();
 
+  /** Returns the primary's own clock. */
+  long getCurrentDbTime();
+
   /**
    * Returns per-replica state: last replayed position/timestamp, a stable unique identifier, and
-   * the DB-reported replication lag in milliseconds. Returning one row per replica lets the caller
-   * apply quorum-aware aggregation instead of collapsing to a single worst-case value in SQL.
+   * the DB-reported replication lag in milliseconds.
    */
   List<ReplicationLsnStatus> getReplicationStatuses();
 }
