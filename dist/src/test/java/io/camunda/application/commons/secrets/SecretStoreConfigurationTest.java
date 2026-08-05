@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -23,6 +24,10 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.shared.management.ActorClockEndpoint;
+import io.camunda.zeebe.shared.management.ActorClockService;
+import io.camunda.zeebe.shared.management.ControlledActorClockService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +43,7 @@ import org.springframework.mock.env.MockEnvironment;
 class SecretStoreConfigurationTest {
 
   private static final SecretStoreConfiguration CONFIG = new SecretStoreConfiguration();
+  private static final ActorClockService CLOCK_SERVICE = System::currentTimeMillis;
 
   @Test
   void shouldFallbackToNoopStoreForDefaultTenantWhenNoStoresConfigured() {
@@ -45,7 +51,7 @@ class SecretStoreConfigurationTest {
     final var resolver = resolverFor(Map.of());
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then
     assertThat(registries).containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -65,7 +71,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then the configured directory is what the store reads
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -83,7 +89,7 @@ class SecretStoreConfigurationTest {
 
     // when / then
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining("no path configured")
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
@@ -99,7 +105,7 @@ class SecretStoreConfigurationTest {
 
     // when / then
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("only one is supported");
   }
@@ -111,7 +117,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.Default.path", "/etc/camunda/secrets"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -126,7 +132,7 @@ class SecretStoreConfigurationTest {
 
     // when / then
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("main")
         .withMessageContaining("the only supported store id is 'default'")
@@ -145,7 +151,7 @@ class SecretStoreConfigurationTest {
     // when / then — the normalized id appears in no configuration file, so naming it would send
     // the operator looking for a property they never wrote
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining("camunda.secrets.stores.file.MyStore")
         .withMessageNotContaining("mystore");
   }
@@ -166,7 +172,7 @@ class SecretStoreConfigurationTest {
     // when / then — pointing at camunda.secrets.stores would send the operator to configure a
     // different tenant, leaving this one's store misnamed
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining("camunda.physical-tenants.tenanta.secrets.stores.file.default")
         .withMessageNotContaining("rename camunda.secrets.stores");
   }
@@ -182,7 +188,7 @@ class SecretStoreConfigurationTest {
 
       // when / then
       assertThatIllegalStateException()
-          .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+          .isThrownBy(() -> registries(resolver))
           .withMessageContaining("the only supported store id is 'default'");
 
       // then — nothing was built, so nothing had to be rolled back
@@ -200,7 +206,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then the configured store stands, rather than being replaced by the noop fallback
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -221,7 +227,7 @@ class SecretStoreConfigurationTest {
                 "mytenant"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then
     assertThat(registries).containsKey("mytenant");
@@ -256,7 +262,7 @@ class SecretStoreConfigurationTest {
                 "tenantb"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then each tenant has its own registry with its own store
     assertThat(registries).containsKeys("tenanta", "tenantb");
@@ -284,7 +290,7 @@ class SecretStoreConfigurationTest {
                 "camunda.secrets.stores.aws.default.path-prefix", "camunda/"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
+    final var registries = registries(resolver).byPhysicalTenant();
 
     // then the aws branch is what built the store, not the noop fallback or another store type
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -298,6 +304,37 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldExpireACachedSecretWhenTheClockEndpointTravelsForward(@TempDir final Path secretsDir)
+      throws IOException {
+    // given a file store, resolved once so the value is cached
+    Files.writeString(secretsDir.resolve("token"), "token-value");
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+    final var clockService = new ControlledActorClockService(new ControlledActorClock());
+    final var registries = CONFIG.secretStoreRegistries(resolver, clockService).byPhysicalTenant();
+    final var store =
+        registries
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+    store.resolve(Set.of("token"));
+    assertThat(store.lookupLocal("token")).contains("token-value");
+
+    // when the /actuator/clock endpoint travels forward past the cache's TTL — driven through the
+    // real endpoint rather than the mutable clock directly, since ControlledActorClock only
+    // reflects a mutation once update() runs, which is exactly what the endpoint does for every
+    // write; adding (never pinning) keeps the ticker moving forward relative to the write
+    // timestamp already recorded for the cached entry
+    final var response =
+        new ActorClockEndpoint(clockService)
+            .modify("add", null, CaffeineSecretCache.DEFAULT_TTL.plusMinutes(1).toMillis());
+    assertThat(response.getStatus()).isEqualTo(200);
+
+    // then the cached secret has expired
+    assertThat(store.lookupLocal("token")).isEmpty();
+  }
+
+  @Test
   void shouldThrowWhenFileAndAwsSecretsManagerStoresCombinedExceedOne() {
     // given one file store and one aws store for the same tenant
     final var resolver =
@@ -308,7 +345,7 @@ class SecretStoreConfigurationTest {
 
     // when / then
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> registries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("only one is supported");
   }
@@ -324,7 +361,7 @@ class SecretStoreConfigurationTest {
 
     // when / then — the per-tenant cap is enforced before any GCP client is built
     assertThatIllegalStateException()
-        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("only one is supported");
   }
@@ -361,7 +398,7 @@ class SecretStoreConfigurationTest {
 
       // when / then — the build fails and the failure propagates (Mockito wraps the construction
       // failure, but it is still a RuntimeException the rollback path catches)
-      assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+      assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE))
           .isInstanceOf(RuntimeException.class)
           .hasRootCauseInstanceOf(IllegalStateException.class);
 
@@ -380,6 +417,10 @@ class SecretStoreConfigurationTest {
     assertThat(store.resolve(Set.of("token")))
         .containsEntry(
             "token", new Failed(SecretErrorCode.NOT_FOUND, "No secret store configured", null));
+  }
+
+  private static SecretStoreRegistries registries(final PhysicalTenantResolver resolver) {
+    return CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE);
   }
 
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {
