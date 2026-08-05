@@ -18,7 +18,7 @@
 		"typecheck": "tsc"
 	},
 	"devDependencies": {
-		"@camunda/camunda-api-zod-schemas": "0.0.86",
+		"@camunda/camunda-api-zod-schemas": "0.0.87",
 		"typescript": "7.0.2"
 	}
 }
