@@ -27,6 +27,8 @@ class DocumentTest {
         "camunda.document.aws.aws1.bucket-path=prod/",
         "camunda.document.aws.aws1.region=eu-west-1",
         "camunda.document.aws.aws1.bucket-ttl=30",
+        "camunda.document.aws.aws1.access-key=aws1-key",
+        "camunda.document.aws.aws1.secret-key=aws1-secret",
         "camunda.document.gcp.gcp1.bucket-name=gcp-docs",
         "camunda.document.gcp.gcp1.prefix=temp/",
         "camunda.document.azure.az1.container-name=docs",
@@ -56,6 +58,8 @@ class DocumentTest {
                 assertThat(awsStore.getBucketPath()).isEqualTo("prod/");
                 assertThat(awsStore.getRegion()).isEqualTo("eu-west-1");
                 assertThat(awsStore.getBucketTtl()).isEqualTo(30L);
+                assertThat(awsStore.getAccessKey()).isEqualTo("aws1-key");
+                assertThat(awsStore.getSecretKey()).isEqualTo("aws1-secret");
               });
     }
 
