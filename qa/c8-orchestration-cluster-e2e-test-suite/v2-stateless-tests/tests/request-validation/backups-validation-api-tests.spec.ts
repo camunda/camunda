@@ -8,8 +8,8 @@
 
 /*
  * GENERATED FILE - DO NOT EDIT MANUALLY
- * Generated At: 2026-07-28T14:59:54.260Z
- * Spec Commit: a85af569edb1e8502a52942193a277eed43e9508
+ * Generated At: 2026-08-04T11:55:54.253Z
+ * Spec Commit: 7ad6907f6d9cf772438213329bf52fa21d343ed2
  */
 import {test, expect} from '@playwright/test';
 import {jsonHeaders, buildUrl} from '../../../utils/http';
@@ -41,13 +41,15 @@ test.describe('Backups Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  // Known failing (see known-failing-tests.json): query param pattern constraint not enforced
-  test.skip('listRuntimeBackups - Query param prefix pattern violation', async ({
+  test('listRuntimeBackups - Query param prefix pattern violation', async ({
     request,
   }) => {
-    const res = await request.get(buildUrl('/backups/runtime', undefined), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/backups/runtime', undefined, {prefix: '\n'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
