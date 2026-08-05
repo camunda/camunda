@@ -50,12 +50,16 @@ final class DocumentIsolationAzureIT extends AbstractDocumentIsolationIT {
         .withProperty(
             "camunda.physical-tenants.tenanta.document.azure.store-a.container-name", CONTAINER_A)
         .withProperty(
+            "camunda.physical-tenants.tenanta.document.azure.store-a.container-path", "tenanta/")
+        .withProperty(
             "camunda.physical-tenants.tenanta.document.azure.store-a.connection-string",
             AZURITE.externalConnectionString())
         .withProperty("camunda.physical-tenants.tenanta.document.default-store-id", STORE_A)
         .withProperty("camunda.physical-tenants.tenanta.document.assigned[0]", STORE_A)
         .withProperty(
             "camunda.physical-tenants.tenantb.document.azure.store-b.container-name", CONTAINER_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.azure.store-b.container-path", "tenantb/")
         .withProperty(
             "camunda.physical-tenants.tenantb.document.azure.store-b.connection-string",
             AZURITE.externalConnectionString())

@@ -68,10 +68,14 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
         .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
         .withProperty("camunda.physical-tenants.tenanta.document.aws.store-a.bucket-name", BUCKET_A)
         .withProperty(
+            "camunda.physical-tenants.tenanta.document.aws.store-a.bucket-path", "tenanta/")
+        .withProperty(
             "camunda.physical-tenants.tenanta.document.aws.store-a.region", MINIO.region())
         .withProperty("camunda.physical-tenants.tenanta.document.default-store-id", STORE_A)
         .withProperty("camunda.physical-tenants.tenanta.document.assigned[0]", STORE_A)
         .withProperty("camunda.physical-tenants.tenantb.document.aws.store-b.bucket-name", BUCKET_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.aws.store-b.bucket-path", "tenantb/")
         .withProperty(
             "camunda.physical-tenants.tenantb.document.aws.store-b.region", MINIO.region())
         .withProperty("camunda.physical-tenants.tenantb.document.default-store-id", STORE_B)

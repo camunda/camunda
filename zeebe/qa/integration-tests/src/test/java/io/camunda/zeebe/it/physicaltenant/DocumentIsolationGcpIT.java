@@ -60,7 +60,7 @@ final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
 
     BROKER
         .withProperty("camunda.document.gcp.store-default.bucket-name", SHARED_BUCKET)
-        .withProperty("camunda.document.gcp.store-default.prefix", "")
+        .withProperty("camunda.document.gcp.store-default.prefix", "default/")
         .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
         .withProperty(
             "camunda.physical-tenants.tenanta.document.gcp.store-a.bucket-name", SHARED_BUCKET)

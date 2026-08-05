@@ -7,13 +7,16 @@
  */
 package io.camunda.document.store.azure;
 
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import io.camunda.document.store.DocumentStorePaths;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 public class AzureBlobDocumentStoreProvider implements DocumentStoreProvider {
 
@@ -63,8 +66,29 @@ public class AzureBlobDocumentStoreProvider implements DocumentStoreProvider {
     }
   }
 
+  /**
+   * The blob endpoint a store built from these two properties addresses. A connection string takes
+   * precedence, and {@link #createDocumentStore} never reads the endpoint on that branch, so the
+   * account the SDK derives from the string is the answer — a configured endpoint beside it is dead
+   * configuration. Only the URL is read, so no credential is returned.
+   *
+   * <p>The SDK resolves it because the rules are not obvious enough to restate: a path-style {@code
+   * BlobEndpoint} keeps its path only when the host is an IP address. A connection string the SDK
+   * rejects throws, which callers comparing configuration are expected to handle.
+   */
+  public static String effectiveEndpoint(
+      final @Nullable String connectionString, final @Nullable String endpoint) {
+    if (connectionString == null) {
+      return Objects.requireNonNullElse(endpoint, "");
+    }
+    return new BlobServiceClientBuilder()
+        .connectionString(connectionString)
+        .buildClient()
+        .getAccountUrl();
+  }
+
   private static String getContainerPath(final DocumentStoreConfigurationRecord configuration) {
-    String containerPath =
+    final String containerPath =
         Objects.requireNonNullElse(configuration.properties().get(CONTAINER_PATH), "");
 
     if (INVALID_CHARACTERS.matcher(containerPath).find()) {
@@ -76,10 +100,6 @@ public class AzureBlobDocumentStoreProvider implements DocumentStoreProvider {
               + " is invalid. Must not contain \\ character'");
     }
 
-    if (!containerPath.isEmpty() && !containerPath.endsWith("/")) {
-      containerPath = containerPath + "/";
-    }
-
-    return containerPath;
+    return DocumentStorePaths.keyPrefix(containerPath);
   }
 }
