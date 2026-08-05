@@ -325,4 +325,12 @@
     SET STATE = #{state}
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </update>
+
+  <update id="markDraining" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DRAINING"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
 </mapper>
