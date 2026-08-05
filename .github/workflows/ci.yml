@@ -2439,7 +2439,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Install bats and xmllint
-        run: sudo apt-get install -y bats libxml2-utils
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_seconds: 60
+          shell: bash
+          command: sudo apt-get install -y --no-install-recommends bats libxml2-utils
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
