@@ -43,6 +43,28 @@ runs:
         echo "::error::startup_check must be 'healthcheck' or 'wait', got '${STARTUP_CHECK}'"
         exit 1
 
+    # annoyingly we need to have the services in two different formats
+    - name: Validate services
+      shell: bash
+      env:
+        SERVICES: ${{ inputs.services }}
+      run: |
+        if [[ "${SERVICES}" =~ [^a-zA-Z0-9\ _-] ]]; then
+          echo "::error::services input contains invalid characters (only alphanumeric, spaces, hyphens, and underscores are allowed)"
+          exit 1
+        fi
+        echo "COMPOSE_PULL_SERVICES=${SERVICES}" >> "$GITHUB_ENV"
+        services=$(echo "${SERVICES}" | tr -s '[:space:]' '\n' | sed '/^$/d')
+        if grep -qx "EOF" <<< "${services}"; then
+          echo "::error::services input must not contain 'EOF'"
+          exit 1
+        fi
+        {
+          echo "COMPOSE_UP_SERVICES<<EOF"
+          echo "${services}"
+          echo "EOF"
+        } >> "$GITHUB_ENV"
+
     # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
     # 502s, see INC-6810) does not fail the whole job. Once images are cached locally,
     # the compose "up" below does not need to hit the registry again.
@@ -55,29 +77,7 @@ runs:
         shell: bash
         command: |
           docker compose -f "${{ inputs.compose_file }}" \
-            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull ${{ inputs.services }}
-
-    - name: Set COMPOSE_SERVICES from ${{ inputs.services }}
-      if: ${{ inputs.services != '' }}
-      shell: bash
-      env:
-        SERVICES: ${{ inputs.services }}
-      run: |
-        services=$(echo "${SERVICES}" | tr -s '[:space:]' '\n' | sed '/^$/d')
-        if grep -qx "EOF" <<< "${services}"; then
-          echo "::error::services input must not contain 'EOF'"
-          exit 1
-        fi
-        {
-          echo "COMPOSE_SERVICES<<EOF"
-          echo "${services}"
-          echo "EOF"
-        } >> "$GITHUB_ENV"
-
-    - name: Set empty COMPOSE_SERVICES
-      if: ${{ inputs.services == '' }}
-      shell: bash
-      run: echo "COMPOSE_SERVICES=" >> "$GITHUB_ENV"
+            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull ${{ env.COMPOSE_PULL_SERVICES }}
 
     - name: Run ${{ inputs.project_name }} compose
       id: compose_up
@@ -87,7 +87,7 @@ runs:
           ${{ inputs.compose_file }}
         compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
         up-flags: "${{ inputs.startup_check == 'wait' && format('--wait --wait-timeout {0}', inputs.timeout) || '' }}"
-        services: ${{ env.COMPOSE_SERVICES }}
+        services: ${{ env.COMPOSE_UP_SERVICES }}
 
     - name: Dump compose logs on failure
       if: ${{ failure() && steps.compose_up.outcome == 'failure' }}
