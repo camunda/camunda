@@ -64,6 +64,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.errorMessage(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.withLeaseToken(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -89,6 +90,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.errorMessage(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.withLeaseToken(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -99,6 +101,32 @@ public class BeanJobExceptionHandlerTest {
     verify(jobClient, times(0)).newCompleteCommand(anyLong());
     verify(jobClient, times(1)).newFailCommand(anyLong());
     verify(jobClient, times(0)).newThrowErrorCommand(anyLong());
+    verify(failJobCommandStep2, times(1)).send();
+  }
+
+  @Test
+  void shouldCarryLeaseTokenOnFail() {
+    final BeanJobExceptionHandler handler =
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
+    final JobClient jobClient = mock(JobClient.class);
+    final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
+    final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
+    final CamundaFuture<FailJobResponse> future = mock(CamundaFuture.class);
+    when(jobClient.newFailCommand(anyLong())).thenReturn(failJobCommandStep1);
+    when(failJobCommandStep1.retries(anyInt())).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.errorMessage(any())).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.withLeaseToken(any())).thenReturn(failJobCommandStep2);
+    when(failJobCommandStep2.send()).thenReturn(future);
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
+    final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
+    when(job.getRetries()).thenReturn(3);
+    when(job.getLeaseToken()).thenReturn("some-lease-token");
+    handler.handleJobException(
+        new JobExceptionHandlerContext(jobClient, job, new JobError("test error")));
+    verify(failJobCommandStep2).withLeaseToken("some-lease-token");
     verify(failJobCommandStep2, times(1)).send();
   }
 
@@ -115,6 +143,7 @@ public class BeanJobExceptionHandlerTest {
     when(throwErrorCommandStep2.errorMessage(any())).thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.variables(any(JobResponse.class)))
         .thenReturn(throwErrorCommandStep2);
+    when(throwErrorCommandStep2.withLeaseToken(any())).thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.send()).thenReturn(future);
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -125,6 +154,32 @@ public class BeanJobExceptionHandlerTest {
     verify(jobClient, times(0)).newCompleteCommand(anyLong());
     verify(jobClient, times(0)).newFailCommand(anyLong());
     verify(jobClient, times(1)).newThrowErrorCommand(anyLong());
+    verify(throwErrorCommandStep2, times(1)).send();
+  }
+
+  @Test
+  void shouldCarryLeaseTokenOnThrowError() {
+    final BeanJobExceptionHandler handler =
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
+    final JobClient jobClient = mock(JobClient.class);
+    final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
+    final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
+    final CamundaFuture<ThrowErrorResponse> future = mock(CamundaFuture.class);
+    when(jobClient.newThrowErrorCommand(anyLong())).thenReturn(throwErrorCommandStep1);
+    when(throwErrorCommandStep1.errorCode(any())).thenReturn(throwErrorCommandStep2);
+    when(throwErrorCommandStep2.errorMessage(any())).thenReturn(throwErrorCommandStep2);
+    when(throwErrorCommandStep2.variables(any(JobResponse.class)))
+        .thenReturn(throwErrorCommandStep2);
+    when(throwErrorCommandStep2.withLeaseToken(any())).thenReturn(throwErrorCommandStep2);
+    when(throwErrorCommandStep2.send()).thenReturn(future);
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
+    final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
+    when(job.getRetries()).thenReturn(3);
+    when(job.getLeaseToken()).thenReturn("some-lease-token");
+    handler.handleJobException(
+        new JobExceptionHandlerContext(jobClient, job, new BpmnError("errorCode", "test error")));
+    verify(throwErrorCommandStep2).withLeaseToken("some-lease-token");
     verify(throwErrorCommandStep2, times(1)).send();
   }
 }

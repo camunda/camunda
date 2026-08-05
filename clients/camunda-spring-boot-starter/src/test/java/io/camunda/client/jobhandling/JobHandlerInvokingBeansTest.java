@@ -84,6 +84,7 @@ public class JobHandlerInvokingBeansTest {
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     when(completeJobCommandStep1.variables(any(JobResponse.class)))
         .thenReturn(completeJobCommandStep1);
+    when(completeJobCommandStep1.withLeaseToken(any())).thenReturn(completeJobCommandStep1);
     when(completeJobCommandStep1.send()).thenReturn(future);
     when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeJobCommandStep1);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -161,6 +162,38 @@ public class JobHandlerInvokingBeansTest {
         .isInstanceOf(BpmnError.class)
         .hasMessage("[testCode] test message")
         .hasFieldOrPropertyWithValue("errorCode", "testCode");
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Response.class,
+      names = {"VOID", "RESPONSE"})
+  void shouldCarryLeaseTokenOnComplete(final Response response) throws Exception {
+    final TestDimension testDimension = new TestDimension(AutoComplete.YES, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
+    final JobHandler jobHandler =
+        new BeanJobHandlerFactory(
+                methodInfo(testDimension),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder(),
+                jobCallbackCommandWrapperFactory())
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
+    final JobClient jobClient = mock(JobClient.class);
+    final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
+    final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
+    when(completeJobCommandStep1.variables(any(JobResponse.class)))
+        .thenReturn(completeJobCommandStep1);
+    when(completeJobCommandStep1.withLeaseToken(any())).thenReturn(completeJobCommandStep1);
+    when(completeJobCommandStep1.send()).thenReturn(future);
+    when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeJobCommandStep1);
+    final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
+    when(job.getLeaseToken()).thenReturn("some-lease-token");
+    jobHandler.handle(jobClient, job);
+    verify(completeJobCommandStep1).withLeaseToken("some-lease-token");
+    verify(completeJobCommandStep1, times(1)).send();
   }
 
   private ParameterResolverStrategy parameterResolverStrategy() {
