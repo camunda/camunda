@@ -109,6 +109,25 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           dry-run-override: ${{ inputs.dry_run }}
 
+      # BRANCH-LOCAL FORCE — this test branch only. Dispatch without waiting on the
+      # Vault flag, so a live end-to-end test cannot require flipping a production
+      # feature flag. Keyed on dry_run so an explicit dry-run replay still withholds.
+      - name: Resolve effective dispatch
+        id: gate
+        if: ${{ steps.mode.outputs.active == 'true' }}
+        env:
+          FLAG_DISPATCH: ${{ steps.mode.outputs.dispatch }}
+          FORCED: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          dispatch="${FLAG_DISPATCH}"
+          if [ "${FORCED}" = "true" ]; then
+            dispatch=true
+            echo "::warning::Forcing dispatch (test branch): ignoring the Vault flag."
+          fi
+          echo "dispatch=${dispatch}" >> "$GITHUB_OUTPUT"
+          echo "effective dispatch=${dispatch} (from flag=${FLAG_DISPATCH}, forced=${FORCED})"
+
       - name: Report disabled and stop
         if: ${{ steps.mode.outputs.active != 'true' }}
         run: |
@@ -207,10 +226,10 @@ jobs:
             echo "## AlwaysGreen Triage"
             echo ""
             echo "- run: ${{ steps.target.outputs.run_id }} (\`${{ steps.target.outputs.base_ref }}\`)"
-            echo "- mode: ${{ steps.mode.outputs.mode }} (dispatch=${{ steps.mode.outputs.dispatch }})"
+            echo "- mode: ${{ steps.mode.outputs.mode }} (dispatch=${{ steps.gate.outputs.dispatch }})"
             echo ""
             candidates=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)
-            if [ "$candidates" -gt 0 ] && [ "${{ steps.mode.outputs.dispatch }}" = "true" ]; then
+            if [ "$candidates" -gt 0 ] && [ "${{ steps.gate.outputs.dispatch }}" = "true" ]; then
               echo "### Dispatching"
               echo ""
               echo "| Surface | Specs | Deterministic | Key |"
@@ -256,7 +275,7 @@ jobs:
           PARENT_TS: ${{ inputs.parent_slack_ts }}
           PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
-          DISPATCHED: ${{ steps.mode.outputs.dispatch }}
+          DISPATCHED: ${{ steps.gate.outputs.dispatch }}
         run: |
           set -euo pipefail
           base_ref='${{ steps.target.outputs.base_ref }}'
@@ -323,7 +342,7 @@ jobs:
       - name: Dispatch fix agents
         # outcome, not just count: a failed discovery leaves count empty, and '' != '0'
         # would otherwise dispatch with no plan file.
-        if: ${{ steps.mode.outputs.dispatch == 'true' && steps.plan.outcome == 'success' && steps.plan.outputs.count != '0' }}
+        if: ${{ steps.gate.outputs.dispatch == 'true' && steps.plan.outcome == 'success' && steps.plan.outputs.count != '0' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
