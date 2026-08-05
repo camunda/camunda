@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -29,7 +29,7 @@ public class UserTaskCommandPreconditionValidator {
 
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
-  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final UserTaskState userTaskState;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
@@ -37,11 +37,11 @@ public class UserTaskCommandPreconditionValidator {
       final List<LifecycleState> validLifecycleStates,
       final String intent,
       final UserTaskState userTaskState,
-      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final BannedInstanceState bannedInstanceState) {
     this.validLifecycleStates = validLifecycleStates;
     this.intent = intent;
-    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.userTaskState = userTaskState;
     bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
   }
@@ -64,7 +64,7 @@ public class UserTaskCommandPreconditionValidator {
   public Either<Rejection, UserTaskRecord> checkUserTaskExists(
       final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var persistedUserTask = userTaskState.getUserTask(userTaskKey, authorizedTenants);
 
     if (persistedUserTask == null) {

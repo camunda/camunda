@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -38,14 +38,18 @@ public final class JobYieldProcessor
       final ProcessingState state,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslTenantCheck tenantCheck) {
     jobState = state.getJobState();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState, state.getBannedInstanceState(), "yield", List.of(State.ACTIVATED), cslCheck);
+            jobState,
+            state.getBannedInstanceState(),
+            "yield",
+            List.of(State.ACTIVATED),
+            tenantCheck);
   }
 
   @Override

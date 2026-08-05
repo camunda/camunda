@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJob;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
@@ -68,6 +69,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
   private final JobSecretInjector jobSecretInjector;
 
@@ -77,6 +79,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final InstantSource clock,
       final IncidentMetrics incidentMetrics,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -85,6 +88,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     jobSecretInjector = new JobSecretInjector(secretStoreRegistry);
     jobBatchCollector =
         new JobBatchCollector(
@@ -104,7 +108,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    final var authorizedTenantIds = cslCheck.resolveAuthorizedTenants(record.getAuthorizations());
+    final var authorizedTenantIds =
+        tenantCheck.resolveAuthorizedTenants(record.getAuthorizations());
     final var value = record.getValue();
 
     final var validationResult = validateRequest(record, authorizedTenantIds);
@@ -156,7 +161,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private Either<Rejection, Void> validateTenantAuthorization(
       final JobBatchRecord value, final TenantAccess authorizedTenantIds) {
     final var tenantIds = resolveProvidedTenantIds(value);
-    return cslCheck.checkTenantsRequiringPrincipal(
+    return tenantCheck.checkTenantsRequiringPrincipal(
         tenantIds,
         authorizedTenantIds,
         null,

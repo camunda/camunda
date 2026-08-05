@@ -24,11 +24,13 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Encapsulates the tenant-membership checks used across engine command processors.
  *
- * <p>Most callers reach {@link #checkTenant} via {@link
- * CslAuthorizationCheck#checkAuthorizationAndTenant}, which runs {@link
- * CslAuthorizationCheck#check} first. Do not call {@link #checkTenant} directly without a preceding
- * authorization check, and do not remove its no-principal skip without auditing every caller.
- * {@link #checkTenantsRequiringPrincipal} has a different contract — see its own javadoc.
+ * <p>Most callers call {@link #checkTenant} directly, downstream of their own RBAC {@link
+ * CslAuthorizationCheck#check} or {@link CslAuthorizationCheck#checkForDistributedCommand} call on
+ * the same command; a few compose both via {@link
+ * CslAuthorizationCheck#checkAuthorizationAndTenant}. Either way, whoever calls {@link
+ * #checkTenant} is responsible for ensuring that RBAC check has already run and passed — do not
+ * call it directly without one, and do not remove its no-principal skip without auditing every
+ * caller. {@link #checkTenantsRequiringPrincipal} has a different contract — see its own javadoc.
  */
 @NullMarked
 public final class CslTenantCheck {
@@ -89,16 +91,15 @@ public final class CslTenantCheck {
    * command's claims (anonymous access is authorized for every tenant) and {@code tenantId} must be
    * among them.
    *
-   * <p>This no-principal skip is load-bearing: every caller runs {@link
-   * CslAuthorizationCheck#check} first — either directly, composed via {@link
-   * CslAuthorizationCheck#checkAuthorizationAndTenant}, or (for the sole remaining direct caller)
-   * via an equivalent {@code check(...).flatMap(v -> checkTenant(...))} of its own — before this
-   * method is ever reached. When authorizations are enabled, {@code check} itself rejects a
-   * no-principal command before this method runs; when authorizations are disabled, letting a
-   * claims-free command through here (e.g. deployment/process lifecycle commands issued without an
-   * explicit user, common in tests and tooling) is the established, relied-upon behavior. Do not
-   * call this method directly without a preceding {@link CslAuthorizationCheck#check}, and do not
-   * remove this skip without auditing every caller.
+   * <p>This no-principal skip is load-bearing: every caller must ensure a RBAC {@link
+   * CslAuthorizationCheck#check} or {@link CslAuthorizationCheck#checkForDistributedCommand} call
+   * for the same command has already run and passed before reaching this method — either directly,
+   * or composed via {@link CslAuthorizationCheck#checkAuthorizationAndTenant}. When authorizations
+   * are enabled, that RBAC check itself rejects a no-principal command before this method runs;
+   * when authorizations are disabled, letting a claims-free command through here (e.g. deployment/
+   * process lifecycle commands issued without an explicit user, common in tests and tooling) is the
+   * established, relied-upon behavior. Do not call this method directly without a preceding RBAC
+   * check, and do not remove this skip without auditing every caller.
    *
    * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
    * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to

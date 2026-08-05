@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -60,6 +61,7 @@ public class ConditionalEvaluationEvaluateProcessor
   private final ProcessState processState;
   private final ConditionalSubscriptionState conditionalSubscriptionState;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final ExpressionProcessor expressionProcessor;
 
   public ConditionalEvaluationEvaluateProcessor(
@@ -69,6 +71,7 @@ public class ConditionalEvaluationEvaluateProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final ExpressionProcessor expressionProcessor) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -77,6 +80,7 @@ public class ConditionalEvaluationEvaluateProcessor
     conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
     this.keyGenerator = keyGenerator;
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.expressionProcessor = expressionProcessor;
     eventHandle =
         new EventHandle(
@@ -92,9 +96,9 @@ public class ConditionalEvaluationEvaluateProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    final var authorizedTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
-    final var tenantCheck =
-        cslCheck.checkTenantsRequiringPrincipal(
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var tenantCheckResult =
+        tenantCheck.checkTenantsRequiringPrincipal(
             List.of(record.getTenantId()),
             authorizedTenants,
             record,
@@ -102,8 +106,8 @@ public class ConditionalEvaluationEvaluateProcessor
                 new Rejection(
                     RejectionType.FORBIDDEN,
                     USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId())));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
+    if (tenantCheckResult.isLeft()) {
+      final var rejection = tenantCheckResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;

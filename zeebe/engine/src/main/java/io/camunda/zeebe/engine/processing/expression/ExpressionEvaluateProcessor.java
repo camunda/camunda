@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.Resolve
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,6 +38,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionValidator validator;
   private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -47,13 +49,15 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
       final Writers writers,
       final ExpressionBehavior expressionBehavior,
       final ExpressionValidator validator,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.expressionBehavior = expressionBehavior;
     this.validator = validator;
     this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.keyGenerator = keyGenerator;
   }
 
@@ -165,7 +169,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
     if (tenantId.isBlank()) {
       return Either.right(value);
     }
-    return cslCheck.checkTenant(
+    return tenantCheck.checkTenant(
         command,
         tenantId,
         value,

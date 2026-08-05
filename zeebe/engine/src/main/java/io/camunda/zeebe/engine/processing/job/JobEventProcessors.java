@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -36,6 +37,7 @@ public final class JobEventProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics,
       final SecretStoreRegistry secretStoreRegistry) {
 
@@ -62,6 +64,7 @@ public final class JobEventProcessors {
                 jobMetrics,
                 eventHandle,
                 cslCheck,
+                tenantCheck,
                 bpmnBehaviors.variableBehavior(),
                 config.isIncludeVariablesInJobCompletedEvent(),
                 config.isBusinessIdUniquenessEnabled()))
@@ -76,11 +79,12 @@ public final class JobEventProcessors {
                 jobBackoffChecker,
                 bpmnBehaviors,
                 cslCheck,
+                tenantCheck,
                 incidentMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
-            new JobYieldProcessor(processingState, bpmnBehaviors, writers, cslCheck))
+            new JobYieldProcessor(processingState, bpmnBehaviors, writers, tenantCheck))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
@@ -90,6 +94,7 @@ public final class JobEventProcessors {
                 keyGenerator,
                 jobMetrics,
                 cslCheck,
+                tenantCheck,
                 writers,
                 incidentMetrics,
                 bpmnBehaviors.variableBehavior()))
@@ -128,6 +133,7 @@ public final class JobEventProcessors {
                 processingState.getKeyGenerator(),
                 jobMetrics,
                 cslCheck,
+                tenantCheck,
                 clock,
                 incidentMetrics,
                 secretStoreRegistry))

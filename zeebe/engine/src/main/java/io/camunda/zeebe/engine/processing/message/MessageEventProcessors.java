@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -73,6 +74,7 @@ public final class MessageEventProcessors {
     final var bannedInstanceState = processingState.getBannedInstanceState();
     final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
     final var cslCheck = new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig);
+    final var tenantCheck = new CslTenantCheck(claimsConverter, securityConfig);
 
     typedRecordProcessors
         .onCommand(
@@ -167,6 +169,7 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 cslCheck,
+                tenantCheck,
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled,

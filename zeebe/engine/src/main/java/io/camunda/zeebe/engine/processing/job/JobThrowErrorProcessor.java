@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -97,6 +98,7 @@ public class JobThrowErrorProcessor
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final Writers writers,
       final IncidentMetrics incidentMetrics,
       final VariableBehavior variableBehavior) {
@@ -114,7 +116,7 @@ public class JobThrowErrorProcessor
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(JobLeaseFencingCheck.forLifecycleCommand()),
-            cslCheck);
+            tenantCheck);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
