@@ -1,0 +1,231 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.config;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
+
+final class PhysicalTenantProvisioningInitializerTest {
+
+  private static final MemberId LOCAL_MEMBER_ID = MemberId.from("0");
+
+  private final DynamicPartitionConfig partitionConfig =
+      new DynamicPartitionConfig(
+          new ExportingConfig(
+              ExportingState.EXPORTING,
+              Map.of("expA", new ExporterState(1, ExporterState.State.ENABLED, Optional.empty()))));
+
+  @Test
+  void shouldProvisionANewPhysicalTenantNotYetInTheConfiguration() {
+    // given — tenantA already exists; the static configuration additionally lists tenantB, which
+    // has no partition group yet
+    final var existingTenantA =
+        Set.of(
+            partition("tenantA", 1, Set.of(member(0), member(1)), member(0)),
+            partition("tenantA", 2, Set.of(member(0), member(1)), member(1)));
+    final var configuration = configurationWith(existingTenantA);
+    final var staticConfiguration =
+        staticConfigWith(
+            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantB", 2)));
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — tenantB now has an empty-but-provisioned group with a pending change to place its
+    // partitions, while tenantA is completely untouched
+    assertThat(result.partitionGroups()).containsKey("tenantB");
+    assertThat(result.partitionGroup("tenantB").hasPendingChanges()).isTrue();
+    assertThat(result.partitionGroups().get("tenantA"))
+        .isEqualTo(configuration.partitionGroups().get("tenantA"));
+  }
+
+  @Test
+  void shouldNotChangeAnythingWhenNoNewPhysicalTenantExists() {
+    // given — static configuration matches the current configuration exactly
+    final var existingTenantA =
+        Set.of(partition("tenantA", 1, Set.of(member(0), member(1)), member(0)));
+    final var configuration = configurationWith(existingTenantA);
+    final var staticConfiguration = staticConfigWith(List.of(tenantPartitionIds("tenantA", 1)));
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldNotTouchAGroupWhosePhysicalTenantWasRemovedFromStaticConfiguration() {
+    // given — tenantA exists in the configuration, but the static configuration no longer lists it
+    final var existingTenantA =
+        Set.of(partition("tenantA", 1, Set.of(member(0), member(1)), member(0)));
+    final var configuration = configurationWith(existingTenantA);
+    final var staticConfiguration = staticConfigWith(List.of());
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — tenantA is left exactly as-is, no removal attempted
+    assertThat(result).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldProvisionMultipleNewPhysicalTenantsInOnePass() {
+    // given — no existing groups at all; static configuration lists two brand-new tenants
+    final var configuration = configurationWith(Set.of());
+    final var staticConfiguration =
+        staticConfigWith(
+            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantB", 2)));
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result.partitionGroups()).containsKeys("tenantA", "tenantB");
+    assertThat(result.partitionGroup("tenantA").hasPendingChanges()).isTrue();
+    assertThat(result.partitionGroup("tenantB").hasPendingChanges()).isTrue();
+  }
+
+  @Test
+  void shouldBalanceNewTenantsAgainstEachOtherNotJustAgainstExistingLoad() {
+    // given — no existing groups at all, so every member starts equally (un)loaded; two brand-new
+    // single-partition tenants are provisioned in the same pass
+    final var configuration = configurationWith(Set.of());
+    final var staticConfiguration =
+        staticConfigWith(
+            List.of(tenantPartitionIds("tenantA", 1), tenantPartitionIds("tenantB", 1)));
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — tenantA's and tenantB's sole partitions land on different members. If each tenant's
+    // placement were computed in its own separate reassignPartitions call (rather than one joint
+    // call covering both), neither call would see the other's still-JOINING partition as load, and
+    // both would independently pick the very same least-loaded member — piling both brand-new
+    // tenants onto the same broker instead of spreading them out.
+    final var tenantAOperations =
+        result.partitionGroup("tenantA").pendingChanges().orElseThrow().pendingOperations();
+    final var tenantBOperations =
+        result.partitionGroup("tenantB").pendingChanges().orElseThrow().pendingOperations();
+    final var tenantATarget = bootstrapTargetMember(tenantAOperations);
+    final var tenantBTarget = bootstrapTargetMember(tenantBOperations);
+    assertThat(tenantATarget).isNotEqualTo(tenantBTarget);
+  }
+
+  @Test
+  void shouldSkipTheWholeBatchWhenReassignmentFailsAndRetryLater() {
+    // given — replication factor 5, but the live cluster only has 2 members, so no valid
+    // placement exists for tenantA at all
+    final var configuration = configurationWith(Set.of());
+    final var staticConfiguration =
+        new StaticConfiguration(
+            new RoundRobinPartitionDistributor(),
+            Set.of(member(0), member(1)),
+            LOCAL_MEMBER_ID,
+            List.of(new PartitionId("tenantA", 1), new PartitionId("tenantA", 2)),
+            5,
+            partitionConfig,
+            "clusterId");
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — the joint reassignment computation throws (only 2 live members, RF 5), so the whole
+    // batch is skipped and the configuration is returned unchanged instead of propagating the
+    // exception out of modify()
+    assertThat(result).isEqualTo(configuration);
+  }
+
+  private StaticConfiguration staticConfigWith(final List<List<PartitionId>> tenantPartitionIds) {
+    final List<PartitionId> allPartitionIds =
+        tenantPartitionIds.stream().flatMap(List::stream).toList();
+    return new StaticConfiguration(
+        new RoundRobinPartitionDistributor(),
+        Set.of(member(0), member(1), member(2)),
+        LOCAL_MEMBER_ID,
+        allPartitionIds,
+        1,
+        partitionConfig,
+        "clusterId");
+  }
+
+  private MemberId bootstrapTargetMember(
+      final List<ClusterConfigurationChangeOperation> operations) {
+    return operations.stream()
+        .filter(op -> op instanceof PartitionBootstrapOperation)
+        .map(op -> ((PartitionBootstrapOperation) op).memberId())
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private List<PartitionId> tenantPartitionIds(final String tenantId, final int count) {
+    return IntStream.rangeClosed(1, count)
+        .mapToObj(number -> new PartitionId(tenantId, number))
+        .toList();
+  }
+
+  private CurrentClusterConfiguration configurationWith(final Set<PartitionMetadata> existing) {
+    final Set<MemberId> members = new HashSet<>();
+    existing.forEach(metadata -> members.addAll(metadata.members()));
+    // ensure the configuration always has members 0-2 available as live cluster members
+    for (int i = 0; i < 3; i++) {
+      members.add(member(i));
+    }
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+        members, existing, partitionConfig, "clusterId");
+  }
+
+  /**
+   * Builds a partition with a real, non-tied priority ladder (primary gets {@code members.size()},
+   * every other member gets a strictly lower, distinct priority) so round-tripping through {@link
+   * ConfigurationUtil} preserves the given primary exactly.
+   */
+  private PartitionMetadata partition(
+      final String group, final int number, final Set<MemberId> members, final MemberId primary) {
+    final Map<MemberId, Integer> priorities = new HashMap<>();
+    priorities.put(primary, members.size());
+    int nextPriority = members.size() - 1;
+    for (final var member : members.stream().sorted().toList()) {
+      if (!member.equals(primary)) {
+        priorities.put(member, nextPriority--);
+      }
+    }
+    return new PartitionMetadata(
+        new PartitionId(group, number), members, priorities, priorities.get(primary), primary);
+  }
+
+  private MemberId member(final int id) {
+    return MemberId.from(String.valueOf(id));
+  }
+}
