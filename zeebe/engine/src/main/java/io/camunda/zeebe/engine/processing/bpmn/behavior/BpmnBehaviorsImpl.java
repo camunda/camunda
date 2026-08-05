@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -87,6 +88,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
@@ -317,7 +319,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getBannedInstanceState(),
             writers.command(),
             writers.state(),
-            processingState.getKeyGenerator());
+            processingState.getKeyGenerator(),
+            processDefinitionMetrics);
   }
 
   @Override
