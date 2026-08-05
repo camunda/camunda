@@ -74,6 +74,9 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
   public static final String ATTRIBUTE_CONDITION = "condition";
 
+  public static final String ATTRIBUTE_AGENT_TYPE = "agentType";
+  public static final String ATTRIBUTE_MODELER_TEMPLATE = "modelerTemplate";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -127,6 +130,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
 
   public static final String ELEMENT_CONDITIONAL_FILTER = "conditionalFilter";
+
+  public static final String ELEMENT_AGENT_DEFINITION = "agentDefinition";
 
   /** The property used for the example output JSON data. */
   public static final String PROPERTY_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";

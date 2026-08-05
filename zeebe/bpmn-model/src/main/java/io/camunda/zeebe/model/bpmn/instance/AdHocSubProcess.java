@@ -42,4 +42,18 @@ public interface AdHocSubProcess extends SubProcess {
    * @param cancelRemainingInstances whether to cancel remaining instances on completion
    */
   void setCancelRemainingInstances(boolean cancelRemainingInstances);
+
+  /**
+   * @return the zeebe:modelerTemplate attribute value, or {@code null} if this ad-hoc sub-process
+   *     was not built from a Camunda Modeler element template. This is a plain pass-through
+   *     attribute; bpmn-model does not interpret what any particular template id means.
+   */
+  String getModelerTemplate();
+
+  /**
+   * Sets the zeebe:modelerTemplate attribute.
+   *
+   * @param modelerTemplate the element template id to set
+   */
+  void setModelerTemplate(String modelerTemplate);
 }

@@ -25,6 +25,8 @@ import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
@@ -312,6 +314,51 @@ class AdHocSubProcessBuilderTest {
         .first()
         .extracting(ZeebeAdHoc::getOutputElement, ZeebeAdHoc::getOutputCollection)
         .containsExactly("=" + outputElementExpression, outputCollection);
+  }
+
+  @Test
+  void shouldSetAiAgentSubProcessDefinition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> adHocSubProcess.zeebeAiAgentSubProcessDefinition().task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAgentDefinition.class))
+        .singleElement()
+        .extracting(ZeebeAgentDefinition::getAgentType)
+        .isEqualTo(ZeebeAgentType.aiAgentSubProcess);
+  }
+
+  @Test
+  void shouldSetModelerTemplate() {
+    // given / when
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .zeebeModelerTemplate("io.camunda.connectors.MyTemplate")
+                        .task("A"))
+            .endEvent()
+            .done();
+
+    // then
+    final AdHocSubProcess adHocSubProcess = process.getModelElementById("ad-hoc");
+    assertThat(adHocSubProcess.getModelerTemplate()).isEqualTo("io.camunda.connectors.MyTemplate");
   }
 
   private Collection<ZeebeExecutionListener> getExecutionListeners(
