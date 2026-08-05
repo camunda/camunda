@@ -90,9 +90,10 @@ jobs:
               '{"include": [{"server_branch": $server, "test_branch": $test, "server_image": $image}]}')
           else
             echo "Discovering stable branches from remote..."
-            # stable/X.Y branches >= 8.8, sorted ascending by version, from the
-            # list-maintained-branches action (STABLE_BRANCHES_JSON).
-            mapfile -t BRANCHES < <(jq -r '.[]' <<< "$STABLE_BRANCHES_JSON")
+            # stable/X.Y branches >= 8.8 from the list-maintained-branches action
+            # (STABLE_BRANCHES_JSON). The action does not guarantee ordering, so
+            # sort ascending by version here — the pairing logic below relies on it.
+            mapfile -t BRANCHES < <(jq -r '.[]' <<< "$STABLE_BRANCHES_JSON" | sort -t/ -k2 -V)
             echo "Discovered stable branches (ascending): ${BRANCHES[*]}"
 
             if [[ ${#BRANCHES[@]} -lt 2 ]]; then

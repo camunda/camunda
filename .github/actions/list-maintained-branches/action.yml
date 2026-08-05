@@ -10,7 +10,13 @@ description: |
   Because it reads refs with `git ls-remote`, the list stays correct as new
   `stable/*` branches are cut and older ones reach EOL — no hardcoded lists.
 
-  The repository must already be checked out before this action is called.
+  Prerequisites:
+    - The repository must be checked out (e.g. actions/checkout) before this
+      action runs, so the `origin` remote is configured.
+    - `jq` must be available on PATH (present on GitHub-hosted runners).
+
+  The order of the returned branches is not guaranteed; sort in the caller if a
+  specific order is required.
 
 inputs:
   min-version:
@@ -19,10 +25,10 @@ inputs:
 
 outputs:
   branches:
-    description: 'JSON array including main, e.g. ["main","stable/8.8","stable/8.9"].'
+    description: 'JSON array including main (unordered), e.g. ["main","stable/8.8","stable/8.9"].'
     value: ${{ steps.list.outputs.branches }}
   stable-branches:
-    description: 'JSON array of only the stable/X.Y branches, e.g. ["stable/8.8","stable/8.9"].'
+    description: 'JSON array of only the stable/X.Y branches (unordered), e.g. ["stable/8.8","stable/8.9"].'
     value: ${{ steps.list.outputs.stable-branches }}
 
 runs:
@@ -33,38 +39,4 @@ runs:
       shell: bash
       env:
         MIN_VERSION: ${{ inputs.min-version }}
-      run: |
-        if ! command -v jq >/dev/null 2>&1; then
-          echo "::error::list-maintained-branches requires 'jq', which was not found on PATH."
-          exit 1
-        fi
-
-        if [[ ! "$MIN_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
-          echo "::error::Invalid min-version '${MIN_VERSION}'; expected MAJOR.MINOR (e.g. 8.8)."
-          exit 1
-        fi
-
-        min_major="${MIN_VERSION%%.*}"
-        min_minor="${MIN_VERSION#*.}"
-
-        branches=$(
-          git ls-remote --heads origin 'refs/heads/stable/*' \
-            | sed -nE 's|.*refs/heads/(stable/[0-9]+\.[0-9]+)$|\1|p' \
-            | awk -F/ -v maj="$min_major" -v min="$min_minor" \
-                '{ split($2, v, "."); if (v[1] > maj || (v[1] == maj && v[2] >= min)) print }' \
-            | sort -t/ -k2 -V
-        )
-
-        if [[ -z "$branches" ]]; then
-          echo "::error::No stable branch matched stable/X.Y >= ${MIN_VERSION}."
-          exit 1
-        fi
-
-        to_json() { printf '%s\n' "$1" | jq -Rsc 'split("\n") | map(select(length > 0))'; }
-        stable_json=$(to_json "$branches")
-        all_json=$(to_json "$(printf 'main\n%s\n' "$branches")")
-        echo "Discovered branches: ${all_json}"
-        {
-          echo "branches=${all_json}"
-          echo "stable-branches=${stable_json}"
-        } >> "$GITHUB_OUTPUT"
+      run: ${{ github.action_path }}/list-branches.sh
