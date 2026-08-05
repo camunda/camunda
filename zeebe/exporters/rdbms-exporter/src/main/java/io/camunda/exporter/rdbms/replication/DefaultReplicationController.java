@@ -20,49 +20,45 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongFunction;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Shared scaffolding for {@link ReplicationController} implementations that queue exporter
- * positions and confirm them once a subclass-specific condition proves they are safely replicated.
- * Every position flushed via {@link #enqueue(PendingEntry)} is kept in a bounded, debounced queue
- * until {@link #drainConfirmed(Predicate)} removes the entries a concrete subclass considers
- * confirmed; the highest confirmed position is then acknowledged to the {@link Controller}.
- * Subclasses implement {@link #doCheckReplication()}, run periodically by {@link
- * #checkReplication()}, to determine what "confirmed" and "in sync" mean for their replication
- * signal (log-sequence numbers, reported lag, ...).
+ * Queues exporter positions flushed via {@link #onFlush(long)} until a {@link
+ * ReplicationSignalStrategy}-specific condition proves them safely replicated, then acknowledges
+ * the highest confirmed position to the {@link Controller}. A periodic check polls the strategy's
+ * replication signal to determine what is confirmed and whether the exporter should be paused; the
+ * strategy is the only thing that varies between LSN-, lag-, and delay-based replication - this
+ * class owns the queue, debouncing, pause tracking, scheduling, and metrics for all of them.
  */
-public abstract class AbstractReplicationController<
-        E extends AbstractReplicationController.PendingEntry>
-    implements ReplicationController {
+public final class DefaultReplicationController implements ReplicationController {
 
-  protected final Logger log = LoggerFactory.getLogger(getClass());
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
-  protected final Controller controller;
-  protected final ReplicationConfiguration config;
-  protected final int partitionId;
-  protected final InstantSource clock;
-  protected final RdbmsWriterMetrics metrics;
-  protected final AtomicLong flushedPosition = new AtomicLong(-1);
-  protected final AtomicLong acknowledgedPosition = new AtomicLong(-1);
+  private final Controller controller;
+  private final ReplicationSignalStrategy strategy;
+  private final ReplicationConfiguration config;
+  private final int partitionId;
+  private final InstantSource clock;
+  private final RdbmsWriterMetrics metrics;
+  private final AtomicLong flushedPosition = new AtomicLong(-1);
+  private final AtomicLong acknowledgedPosition = new AtomicLong(-1);
 
-  private final BlockingQueue<E> pendingEntries;
+  private final BlockingQueue<QueuedPosition> pendingEntries;
   private final long queueDebounceMillis;
   private long lastAdded = Long.MIN_VALUE;
   private final AtomicBoolean paused = new AtomicBoolean(false);
   private volatile ScheduledTask replicationCheckTask;
 
-  protected AbstractReplicationController(
+  public DefaultReplicationController(
       final Controller controller,
+      final ReplicationSignalStrategy strategy,
       final ReplicationConfiguration config,
       final int partitionId,
       final InstantSource clock,
       final RdbmsWriterMetrics metrics) {
     this.controller = controller;
+    this.strategy = strategy;
     this.config = config;
     this.partitionId = partitionId;
     this.clock = clock;
@@ -75,56 +71,28 @@ public abstract class AbstractReplicationController<
   }
 
   @Override
-  public final boolean isReplicationInSync() {
+  public boolean isReplicationInSync() {
     return !paused.get();
   }
 
-  protected final boolean isPaused() {
-    return paused.get();
-  }
-
-  protected final void forcePause() {
-    paused.set(true);
-  }
-
-  protected final boolean isQueueEmpty() {
-    return pendingEntries.isEmpty();
-  }
-
-  protected final E peekPending() {
-    return pendingEntries.peek();
-  }
-
-  protected final void recordFlushedPosition(final long position) {
-    flushedPosition.set(position);
-  }
-
   /**
-   * Records the flushed position, captures a value from a fallible provider call, and enqueues an
-   * entry built from it. On failure, force-pauses the exporter and logs instead of propagating.
-   * Shared by every subclass's {@code onFlush}, which each need this same tag-then-enqueue-or-pause
-   * sequence for one provider-sourced value (an LSN, a DB clock reading, ...).
-   *
-   * @param exporterPosition the flushed exporter position
-   * @param providerCall the fallible call capturing the value to tag the entry with
-   * @param entryFactory builds the queue entry from the captured value
+   * Records the flushed position, captures the strategy's fallible marker, and enqueues an entry
+   * built from it. On failure, force-pauses the exporter and logs instead of propagating.
    */
-  protected final void onFlushCapturing(
-      final long exporterPosition,
-      final LongSupplier providerCall,
-      final LongFunction<E> entryFactory) {
-    recordFlushedPosition(exporterPosition);
+  @Override
+  public void onFlush(final long exporterPosition) {
+    flushedPosition.set(exporterPosition);
     try {
-      final long capturedValue = providerCall.getAsLong();
+      final long marker = strategy.captureFlushMarker();
       log.debug(
           "[RDBMS Exporter P{}] Flushed position {}, captured replication marker {}, enqueueing "
               + "for replication check",
           partitionId,
           exporterPosition,
-          capturedValue);
-      enqueue(entryFactory.apply(capturedValue));
+          marker);
+      enqueue(new QueuedPosition(exporterPosition, marker, clock.millis()));
     } catch (final Exception e) {
-      forcePause();
+      paused.set(true);
       log.error(
           "[RDBMS Exporter P{}] Failed to capture replication state after flushing exporter "
               + "position {}. Exporting will remain paused until replication checks recover.",
@@ -139,7 +107,7 @@ public abstract class AbstractReplicationController<
    * less than {@code queueDebounceTime} ago. Silently drops the entry if the queue is full - it's
    * fine, the next successfully queued entry will confirm the position anyway.
    */
-  protected final void enqueue(final E entry) {
+  private void enqueue(final QueuedPosition entry) {
     final long now = clock.millis();
 
     if (queueDebounceMillis > 0
@@ -164,17 +132,79 @@ public abstract class AbstractReplicationController<
   }
 
   /**
-   * Removes every queued entry matching {@code isConfirmed} from the front of the queue.
+   * Polls the strategy for the current replication signal, confirms queued positions covered by the
+   * resulting threshold, and updates the paused state accordingly.
+   */
+  @VisibleForTesting
+  final void checkReplication() {
+    try {
+      final List<? extends ReplicationStatus> statuses = strategy.fetchStatuses();
+      final int connectedReplicas = statuses.size();
+
+      final long confirmedMarker = strategy.computeConfirmedMarker(statuses);
+      final QueuedPosition confirmedEntry = drainConfirmed(confirmedMarker);
+
+      final Duration queueHeadAge = queueHeadAge();
+      final Duration pauseLag = strategy.computePauseLag(statuses, queueHeadAge);
+
+      log.debug(
+          "[RDBMS Exporter P{}] connectedReplicas={}, confirmedMarker={}, pauseLag={}, statuses={}",
+          partitionId,
+          connectedReplicas,
+          confirmedMarker,
+          pauseLag,
+          statuses);
+
+      updatePausedState(
+          config.isPauseOnMaxLagExceeded() && pauseLag.compareTo(config.getMaxLag()) > 0,
+          pauseLag,
+          connectedReplicas);
+
+      if (confirmedEntry != null) {
+        acknowledge(confirmedEntry, pauseLag, connectedReplicas);
+      }
+
+      metrics.recordReplicationStatus(
+          statuses, paused.get(), flushedPosition.get(), acknowledgedPosition.get());
+    } catch (final Exception e) {
+      log.error(
+          "[RDBMS Exporter P{}] Error while checking replication status, will retry after {}",
+          partitionId,
+          config.getPollingInterval(),
+          e);
+    } finally {
+      // if null, controller was closed during check
+      if (replicationCheckTask != null) {
+        replicationCheckTask =
+            controller.scheduleCancellableTask(config.getPollingInterval(), this::checkReplication);
+      }
+    }
+  }
+
+  /** The age of the oldest still-unconfirmed queued entry, or {@link Duration#ZERO} if empty. */
+  @VisibleForTesting
+  Duration queueHeadAge() {
+    final QueuedPosition head = pendingEntries.peek();
+    if (head == null) {
+      return Duration.ZERO;
+    }
+    return Duration.ofMillis(clock.millis() - head.enqueueTimeMs());
+  }
+
+  /**
+   * Removes every queued entry whose marker is at or below {@code confirmedMarker} from the front
+   * of the queue.
    *
    * @return the highest-position entry removed, or {@code null} if nothing advanced past the
    *     currently acknowledged position
    */
-  final E drainConfirmed(final Predicate<E> isConfirmed) {
-    E lastConfirmedEntry = null;
+  @VisibleForTesting
+  QueuedPosition drainConfirmed(final long confirmedMarker) {
+    QueuedPosition lastConfirmedEntry = null;
     long newAcknowledgedPosition = acknowledgedPosition.get();
-    E entry;
+    QueuedPosition entry;
     while ((entry = pendingEntries.peek()) != null) {
-      if (!isConfirmed.test(entry)) {
+      if (entry.marker() > confirmedMarker) {
         break;
       }
       newAcknowledgedPosition = entry.position();
@@ -186,9 +216,8 @@ public abstract class AbstractReplicationController<
     return null;
   }
 
-  /** Acknowledges the given entry as the new confirmed position. */
-  protected final void acknowledge(
-      final E entry, final Duration replicationLag, final int connectedReplicas) {
+  private void acknowledge(
+      final QueuedPosition entry, final Duration replicationLag, final int connectedReplicas) {
     acknowledgedPosition.set(entry.position());
     log.info(
         "[RDBMS Exporter P{}] Acknowledging position {} (replication lag: {}, replicas: {})",
@@ -199,12 +228,7 @@ public abstract class AbstractReplicationController<
     controller.updateLastExportedRecordPosition(entry.position());
   }
 
-  protected final void recordMetrics(final List<? extends ReplicationStatus> statuses) {
-    metrics.recordReplicationStatus(
-        statuses, isPaused(), flushedPosition.get(), acknowledgedPosition.get());
-  }
-
-  protected final void updatePausedState(
+  private void updatePausedState(
       final boolean shouldPause, final Duration replicationLag, final int connectedReplicas) {
     final boolean wasPaused = paused.getAndSet(shouldPause);
     if (shouldPause && !wasPaused) {
@@ -228,35 +252,10 @@ public abstract class AbstractReplicationController<
     }
   }
 
-  @VisibleForTesting
-  final void checkReplication() {
-    try {
-      doCheckReplication();
-    } catch (final Exception e) {
-      log.error(
-          "[RDBMS Exporter P{}] Error while checking replication status, will retry after {}",
-          partitionId,
-          config.getPollingInterval(),
-          e);
-    } finally {
-      // if null, controller was closed during check
-      if (replicationCheckTask != null) {
-        replicationCheckTask =
-            controller.scheduleCancellableTask(config.getPollingInterval(), this::checkReplication);
-      }
-    }
-  }
-
-  /**
-   * Queries the replication signal, confirms queued positions that are now safe to acknowledge, and
-   * updates the paused state accordingly.
-   */
-  protected abstract void doCheckReplication();
-
   @Override
-  public final void close() throws Exception {
+  public void close() throws Exception {
     // capture into a local before nulling the field, so a second close() call is a safe no-op
-    // instead of an NPE - mirrors DelayReplicationController.close()'s existing idiom.
+    // instead of an NPE.
     final ScheduledTask task = replicationCheckTask;
     replicationCheckTask = null;
     if (task != null) {
@@ -264,10 +263,15 @@ public abstract class AbstractReplicationController<
     }
   }
 
-  /** An entry linking an exporter position to the time it was flushed. */
-  protected interface PendingEntry {
-    long position();
-
-    long enqueueTimeMs();
-  }
+  /**
+   * A queued position awaiting confirmation.
+   *
+   * @param position the exporter position
+   * @param marker the confirmation value compared against {@link
+   *     ReplicationSignalStrategy#computeConfirmedMarker}'s result (an LSN, a DB-clock-ms reading,
+   *     or a delay-based release time)
+   * @param enqueueTimeMs the JVM-clock instant when this entry was enqueued, used by {@link
+   *     #queueHeadAge()}
+   */
+  record QueuedPosition(long position, long marker, long enqueueTimeMs) {}
 }

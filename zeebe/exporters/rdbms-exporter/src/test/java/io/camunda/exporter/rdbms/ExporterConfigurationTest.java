@@ -694,7 +694,7 @@ class ExporterConfigurationTest {
                   r.setQueueCapacity(-1);
                 },
             "asyncReplication.queueCapacity must be greater 0"),
-        // queueCapacity/queueDebounceTime back AbstractReplicationController's queue for LOG_SEQ
+        // queueCapacity/queueDebounceTime back DefaultReplicationController's queue for LOG_SEQ
         // and TIME_LAG too, not just DELAY - a misconfiguration there must fail validate() the
         // same way, instead of surfacing as an uncaught exception when the controller is created.
         Arguments.of(

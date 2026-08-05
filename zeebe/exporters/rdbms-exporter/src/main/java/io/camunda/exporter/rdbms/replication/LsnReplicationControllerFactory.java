@@ -36,7 +36,9 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    return new LsnReplicationController(
-        controller, replicationLsnProvider, replicationConfiguration, partitionId, clock, metrics);
+    final var strategy =
+        new LsnReplicationSignalStrategy(replicationLsnProvider, replicationConfiguration);
+    return new DefaultReplicationController(
+        controller, strategy, replicationConfiguration, partitionId, clock, metrics);
   }
 }

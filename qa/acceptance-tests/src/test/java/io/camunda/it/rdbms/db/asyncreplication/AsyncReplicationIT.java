@@ -117,10 +117,10 @@ class MssqlAsyncReplicationIT extends AsyncReplicationIT<MSSQLReplicationCluster
 
 /**
  * Exercises the same scenarios as {@link PostgresAsyncReplicationIT} but against {@code
- * TimeMonitoringReplicationController} (lag-based, no LSN tracking) instead of {@code
- * LsnReplicationController}. PostgreSQL already reports a DB-measured lag alongside its LSN (see
- * {@code LsnBackedReplicationLagProvider}), so this validates the lag-based controller end-to-end
- * without needing a real Azure SQL Database.
+ * TimeMonitoringReplicationSignalStrategy} (lag-based, no LSN tracking) instead of {@code
+ * LsnReplicationSignalStrategy}. PostgreSQL already reports a DB-measured lag alongside its LSN
+ * (see {@code LsnBackedReplicationLagProvider}), so this validates the lag-based strategy
+ * end-to-end without needing a real Azure SQL Database.
  */
 class PostgresTimeMonitoringReplicationIT
     extends AsyncReplicationIT<PostgresReplicationClusterContainer> {
