@@ -51,12 +51,19 @@ runs:
       id: multi_line_services
       if: ${{ inputs.services != '' }}
       shell: bash
+      env:
+        SERVICES: ${{ inputs.services }}
       run: |
+        services=$(echo "${SERVICES}" | tr -s '[:space:]' '\n' | sed '/^$/d')
+        if grep -qx "EOF" <<< "${services}"; then
+          echo "::error::services input must not contain 'EOF'"
+          exit 1
+        fi
         {
           echo "services<<EOF"
-          echo "${{ inputs.services }}" | tr ' ' '\n'
+          echo "${services}"
           echo "EOF"
-        } >> $GITHUB_OUTPUT
+        } >> "$GITHUB_OUTPUT"
 
     - name: Run ${{ inputs.project_name }} compose
       uses: hoverkraft-tech/compose-action@4894d2492015c1774ee5a13a95b1072093087ec3 # v2.5.0
