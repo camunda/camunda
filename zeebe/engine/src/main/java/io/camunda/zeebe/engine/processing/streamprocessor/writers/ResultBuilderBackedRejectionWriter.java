@@ -33,7 +33,8 @@ final class ResultBuilderBackedRejectionWriter extends AbstractResultBuilderBack
         new RecordMetadata()
             .recordType(RecordType.COMMAND_REJECTION)
             .intent(command.getIntent())
-            .authorization(new AuthInfo().setClaims(command.getAuthorizations()))
+            // if authInfo is frozen no copy is done
+            .authorization(AuthInfo.of(command.getAuthInfo()))
             .rejectionType(rejectionType)
             .rejectionReason(reason)
             .operationReference(command.getOperationReference());
