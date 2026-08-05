@@ -80,17 +80,26 @@ runs:
       run: echo "COMPOSE_SERVICES=" >> "$GITHUB_ENV"
 
     - name: Run ${{ inputs.project_name }} compose
-      uses: hoverkraft-tech/compose-action@4894d2492015c1774ee5a13a95b1072093087ec3 # v2.5.0
+      id: compose_up
+      uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
       with:
         compose-file: |
           ${{ inputs.compose_file }}
         compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
         up-flags: "${{ inputs.startup_check == 'wait' && format('--wait --wait-timeout {0}', inputs.timeout) || '' }}"
         services: ${{ env.COMPOSE_SERVICES }}
+
+    - name: Dump compose logs on failure
+      if: ${{ failure() && steps.compose_up.outcome == 'failure' }}
+      shell: bash
+      run: |
+        docker compose -f "${{ inputs.compose_file }}" --project-name "${{ inputs.project_name }}" logs
+
     - name: Short sleep to let it startup
       if: ${{ inputs.startup_check == 'healthcheck' }}
       shell: bash
       run: sleep 3
+
     - name: Check if service is healthy
       if: ${{ inputs.startup_check == 'healthcheck' }}
       shell: bash
