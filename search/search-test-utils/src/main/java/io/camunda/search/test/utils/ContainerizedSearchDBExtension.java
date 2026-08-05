@@ -16,14 +16,20 @@ import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpenSearchContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /**
@@ -35,6 +41,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * tests may be executed against both types of databases.
  */
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ContainerizedSearchDBExtension.class);
   private final LazySearchContainer<ElasticsearchContainer, ElasticsearchClient> elasticsearch =
       new LazySearchContainer<>(
           TestSearchContainers::createDefeaultElasticsearchContainer,
@@ -159,7 +167,20 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
       try {
         if (containerAndClient == null) {
           final var container = containerSupplier.get();
-          container.start();
+          final StartupLogRecorder logRecorder = new StartupLogRecorder();
+          container.withLogConsumer(logRecorder);
+          boolean startSucceeded = false;
+          try {
+            container.start();
+            startSucceeded = true;
+          } finally {
+            logRecorder.stopRecording();
+            if (!startSucceeded) {
+              LOGGER.error("Search container failed to start. Logs from the container:");
+              logRecorder.outputLogs(LOGGER);
+            }
+            logRecorder.clearLogs();
+          }
           try {
             final var client = clientCreator.apply(container);
             containerAndClient = new ContainerAndClient<>(container, client);
@@ -172,6 +193,43 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
       } finally {
         lock.unlock();
       }
+    }
+  }
+
+  static class StartupLogRecorder implements Consumer<OutputFrame> {
+    private static final int MAX_LOG_LINES = 1000;
+    private final Queue<String> logs = new ConcurrentLinkedQueue<>();
+    private volatile boolean recording = true;
+
+    void stopRecording() {
+      recording = false;
+    }
+
+    @Override
+    public void accept(final OutputFrame outputFrame) {
+      if (!recording) {
+        return;
+      }
+      final var logLine = outputFrame.getUtf8String().trim();
+      if (!logLine.isEmpty()) {
+        logs.add(logLine);
+      }
+
+      while (logs.size() > MAX_LOG_LINES) {
+        if (logs.poll() == null) {
+          break;
+        }
+      }
+    }
+
+    void outputLogs(final Logger logger) {
+      for (final String log : logs) {
+        logger.error(log);
+      }
+    }
+
+    void clearLogs() {
+      logs.clear();
     }
   }
 
