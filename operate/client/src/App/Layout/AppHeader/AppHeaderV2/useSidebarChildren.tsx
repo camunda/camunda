@@ -51,7 +51,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
       {
         type: 'item',
         key: 'processes',
-        label: 'Process list', // DELIBERATE BREAKAGE - AlwaysGreen live check 2
+        label: 'Processes',
         icon: Flow,
         isActive: (active: string) =>
           active === 'processes' || active.startsWith('process-details'),
