@@ -8,7 +8,13 @@
 
 import {TasklistProcessesPage} from '#/tasklist/pages/TasklistProcessesPage';
 import {createFileRoute} from '@tanstack/react-router';
+import {z} from 'zod';
 
 export const Route = createFileRoute('/_auth/tasklist/processes')({
+	validateSearch: z.object({
+		search: z.string().optional(),
+		hasStartForm: z.enum(['yes', 'no']).optional(),
+		tenantId: z.string().optional(),
+	}),
 	component: TasklistProcessesPage,
 });

@@ -23,7 +23,7 @@ class TasklistProcessesPage extends BasePage {
 	}
 
 	get heading() {
-		return this.page.getByRole('heading', {name: 'Tasklist Processes'});
+		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
 
 	get tasksNavItem() {
