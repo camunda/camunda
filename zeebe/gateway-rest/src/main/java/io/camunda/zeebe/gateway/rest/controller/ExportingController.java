@@ -21,6 +21,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Exposes exporting operations for a physical tenant.
+ *
+ * <p>The physical tenant is currently used to select the service and perform authorization only.
+ * The underlying dynamic-configuration operation is still cluster-wide and does not yet scope the
+ * exporting state to the requested physical tenant. Do not treat these endpoints as
+ * per-physical-tenant exporting controls until dynamic configuration supports that scope.
+ */
 @CamundaRestController
 @RequestMapping("/v2/exporting")
 @NullMarked

@@ -21,6 +21,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Legacy actuator endpoint for controlling exporting.
+ *
+ * <p>The dynamic-configuration operation is cluster-wide. This endpoint has no physical-tenant
+ * scope, and must not be used as evidence that exporting state is isolated per physical tenant.
+ */
 @Component
 @RestControllerEndpoint(id = "exporting")
 public final class ExportingEndpoint {
