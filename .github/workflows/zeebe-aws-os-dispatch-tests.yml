@@ -20,7 +20,7 @@ on:
         type: choice
         options:
           - "2.19"
-          - "3.5"
+          - "3.7"
           - "all"
   schedule:
     - cron: "0 4 * * Mon-Fri"
@@ -28,11 +28,11 @@ on:
 jobs:
   # Each matrix leg below is a separate call to the reusable workflow, i.e. a fully
   # independent job graph (check version -> cleanup -> integration tests -> slack
-  # notification, sequential within that call). That's what makes the 2.19 and 3.5
+  # notification, sequential within that call). That's what makes the 2.19 and 3.7
   # chains run as two parallel, independent boxes instead of one shared job graph
   # gated on both versions at every step: a `needs:` on a matrixed job waits for ALL
   # of that job's matrix legs, not just the matching os_version, so keeping os_version
-  # as a matrix dimension on shared jobs (as before) would still serialize 2.19 and 3.5
+  # as a matrix dimension on shared jobs (as before) would still serialize 2.19 and 3.7
   # at each phase boundary even with per-version concurrency groups.
   run-aws-opensearch-tests:
     name: "AWS OpenSearch ${{ matrix.os_version }}"
@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         # "all" and the unset/schedule case both expand to both versions.
-        os_version: ${{ fromJSON(format('[{0}]', (github.event.inputs.opensearch-version == 'all' || !github.event.inputs.opensearch-version) && '"2.19", "3.5"' || format('"{0}"', github.event.inputs.opensearch-version))) }}
+        os_version: ${{ fromJSON(format('[{0}]', (github.event.inputs.opensearch-version == 'all' || !github.event.inputs.opensearch-version) && '"2.19", "3.7"' || format('"{0}"', github.event.inputs.opensearch-version))) }}
     uses: ./.github/workflows/zeebe-aws-os-integration-tests-reusable.yml
     secrets: inherit
     with:
