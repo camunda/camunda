@@ -129,6 +129,34 @@ final class NewModelConfigurationChangeCoordinatorTest {
         PhasedChangeState.empty());
   }
 
+  /**
+   * Same as {@link #twoMemberCluster()}, plus a second, untouched partition group ("tenanta") that
+   * no request in a given test targets.
+   */
+  private CurrentClusterConfiguration twoMemberClusterWithSecondGroup() {
+    final var base = twoMemberCluster();
+    final var tenantAGroup =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(2, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    return new CurrentClusterConfiguration(
+        base.version(),
+        base.globalConfiguration(),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            base.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+            "tenanta",
+            tenantAGroup),
+        base.phasedChangeState());
+  }
+
   private CurrentClusterConfiguration configuration() {
     return manager.getMultiConfiguration().join();
   }
@@ -164,6 +192,35 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var defaultGroup = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     assertThat(defaultGroup.hasPendingChanges()).isFalse();
     // member 0 left partition 1; member 1 still hosts it
+    assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
+    assertThat(defaultGroup.hasMember(MEMBER_1)).isTrue();
+  }
+
+  @Test
+  void shouldPreserveNonDefaultPartitionGroupInResultAndConfigurationAfterADefaultGroupChange() {
+    // given — a cluster with two partition groups: "default" (targeted by this change) and
+    // "tenanta" (untouched by any request in this test)
+    final var seed = twoMemberClusterWithSecondGroup();
+    final var tenantAGroupBefore = seed.partitionGroup("tenanta");
+    wire(MEMBER_0, seed);
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when
+    final var result = coordinator.applyOperations(request).join();
+
+    // then — the coordinator's own result carries the full multi-group configuration, both
+    // before and after the change, rather than silently projecting the non-default group away
+    assertThat(result.currentMultiConfiguration().partitionGroup("tenanta"))
+        .isEqualTo(tenantAGroupBefore);
+    assertThat(result.finalMultiConfiguration().partitionGroup("tenanta"))
+        .isEqualTo(tenantAGroupBefore);
+
+    // and — the real post-apply configuration reflects the same: default group changed as
+    // expected, tenanta is untouched
+    final var config = configuration();
+    assertThat(config.partitionGroup("tenanta")).isEqualTo(tenantAGroupBefore);
+    final var defaultGroup = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
     assertThat(defaultGroup.hasMember(MEMBER_1)).isTrue();
   }
