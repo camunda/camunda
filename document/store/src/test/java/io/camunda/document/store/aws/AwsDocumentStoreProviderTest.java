@@ -322,4 +322,146 @@ public class AwsDocumentStoreProviderTest {
       assertThat(presigner).isNotNull();
     }
   }
+
+  @Test
+  public void shouldPassConfiguredCredentials() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("ACCESS_KEY", "tenant-a-key");
+      configuration.properties().put("SECRET_KEY", "tenant-a-secret");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().accessKey()).isEqualTo("tenant-a-key");
+      assertThat(optionsCaptor.getValue().secretKey()).isEqualTo("tenant-a-secret");
+      assertThat(optionsCaptor.getValue().hasStaticCredentials()).isTrue();
+    }
+  }
+
+  @Test
+  public void shouldFallBackToTheSdkCredentialChainWhenNoKeyPairIsConfigured() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().hasStaticCredentials()).isFalse();
+      assertThat(optionsCaptor.getValue().credentialsProvider()).isNull();
+    }
+  }
+
+  @Test
+  public void shouldThrowIfOnlyAccessKeyIsConfigured() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("ACCESS_KEY", "tenant-a-key");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .startsWith(
+            "Failed to configure document store with id 'my-aws': 'ACCESS_KEY' and 'SECRET_KEY' must be configured together");
+  }
+
+  @Test
+  public void shouldThrowIfOnlySecretKeyIsConfigured() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("SECRET_KEY", "tenant-a-secret");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .startsWith(
+            "Failed to configure document store with id 'my-aws': 'ACCESS_KEY' and 'SECRET_KEY' must be configured together");
+  }
+
+  @Test
+  public void shouldSignWithTheConfiguredCredentials() {
+    // given
+    final AwsClientOptions options =
+        new AwsClientOptions(
+            null, null, null, null, "eu-central-1", "tenant-a-key", "tenant-a-secret");
+
+    // when
+    try (final var client = AwsDocumentStore.buildClient(options)) {
+
+      // then
+      final var credentials =
+          client.serviceClientConfiguration().credentialsProvider().resolveIdentity().join();
+      assertThat(credentials.accessKeyId()).isEqualTo("tenant-a-key");
+      assertThat(credentials.secretAccessKey()).isEqualTo("tenant-a-secret");
+    }
+  }
+
+  @Test
+  public void shouldNotExposeTheSecretKeyWhenPrinted() {
+    // given
+    final AwsClientOptions options =
+        new AwsClientOptions(
+            null, null, null, null, "eu-central-1", "tenant-a-key", "tenant-a-secret");
+
+    // when
+    final String printed = options.toString();
+
+    // then
+    assertThat(printed).contains("tenant-a-key").contains("<redacted>");
+    assertThat(printed).doesNotContain("tenant-a-secret");
+  }
 }

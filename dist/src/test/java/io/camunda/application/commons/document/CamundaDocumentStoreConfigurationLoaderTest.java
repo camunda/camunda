@@ -259,6 +259,75 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     }
   }
 
+  @Test
+  void shouldLoadPerStoreCredentials() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getDocument().setDefaultStoreId("aws1");
+
+    final Document.AwsStore awsStore = new Document.AwsStore();
+    awsStore.setBucketName("docs");
+    awsStore.setAccessKey("tenant-a-key");
+    awsStore.setSecretKey("tenant-a-secret");
+    camunda.getDocument().getAws().put("aws1", awsStore);
+
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("camunda.document.default-store-id", "aws1");
+    mockEnv.setProperty("camunda.document.aws.aws1.bucket-name", "docs");
+    mockEnv.setProperty("camunda.document.aws.aws1.access-key", "tenant-a-key");
+    mockEnv.setProperty("camunda.document.aws.aws1.secret-key", "tenant-a-secret");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
+
+      // then
+      assertThat(store("aws1", configuration.documentStores()).properties())
+          .containsEntry("ACCESS_KEY", "tenant-a-key")
+          .containsEntry("SECRET_KEY", "tenant-a-secret");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
+  }
+
+  @Test
+  void shouldLoadPerStoreCredentialsFromLegacyProperties() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getDocument().setDefaultStoreId("aws");
+
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "aws");
+    mockEnv.setProperty("DOCUMENT_STORE_AWS_ACCESS_KEY", "legacy-key");
+    mockEnv.setProperty("DOCUMENT_STORE_AWS_SECRET_KEY", "legacy-secret");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
+    System.setProperty(
+        "DOCUMENT_STORE_AWS_CLASS", "io.camunda.document.store.aws.AwsDocumentStoreProvider");
+    System.setProperty("DOCUMENT_STORE_AWS_BUCKET", "shared-bucket");
+    System.setProperty("DOCUMENT_STORE_AWS_ACCESS_KEY", "legacy-key");
+    System.setProperty("DOCUMENT_STORE_AWS_SECRET_KEY", "legacy-secret");
+
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
+
+      // then
+      assertThat(store("aws", configuration.documentStores()).properties())
+          .containsEntry("ACCESS_KEY", "legacy-key")
+          .containsEntry("SECRET_KEY", "legacy-secret");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+      System.clearProperty("DOCUMENT_STORE_AWS_CLASS");
+      System.clearProperty("DOCUMENT_STORE_AWS_BUCKET");
+      System.clearProperty("DOCUMENT_STORE_AWS_ACCESS_KEY");
+      System.clearProperty("DOCUMENT_STORE_AWS_SECRET_KEY");
+    }
+  }
+
   private static DocumentStoreConfigurationRecord store(
       final String id, final List<DocumentStoreConfigurationRecord> stores) {
     return stores.stream().filter(store -> store.id().equals(id)).findFirst().orElseThrow();

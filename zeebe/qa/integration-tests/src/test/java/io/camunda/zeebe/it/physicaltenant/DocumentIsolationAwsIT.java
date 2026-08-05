@@ -53,17 +53,13 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
       client.createBucket(cfg -> cfg.bucket(BUCKET_B)).join();
     }
 
-    // AwsDocumentStore uses S3Client.create() which reads from system properties.
-    // Using an IP-based endpoint forces path-style access in the AWS SDK v2.
+    // every store is configured with its own endpoint, region and credentials, so nothing is read
+    // from the process environment. An IP-based endpoint forces path-style access in the AWS SDK
+    // v2.
     final String minioEndpoint = "http://127.0.0.1:" + MINIO.getMappedPort(9000);
-    System.setProperty("aws.endpointUrl", minioEndpoint);
-    System.setProperty("aws.accessKeyId", MINIO.accessKey());
-    System.setProperty("aws.secretAccessKey", MINIO.secretKey());
-    System.setProperty("aws.region", MINIO.region());
 
     BROKER
         .withProperty("camunda.document.aws.store-default.bucket-name", BUCKET_B)
-        .withProperty("camunda.document.aws.store-default.region", MINIO.region())
         .withProperty("camunda.document.aws.store-default.bucket-path", "default/")
         .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
         .withProperty("camunda.physical-tenants.tenanta.document.aws.store-a.bucket-name", BUCKET_A)
@@ -83,22 +79,39 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
         .withProperty("camunda.physical-tenants.tenantc.document.aws.store-c.bucket-name", BUCKET_A)
         .withProperty(
             "camunda.physical-tenants.tenantc.document.aws.store-c.bucket-path", "tenantc/")
-        .withProperty(
-            "camunda.physical-tenants.tenantc.document.aws.store-c.region", MINIO.region())
         .withProperty("camunda.physical-tenants.tenantc.document.default-store-id", STORE_C)
-        .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C)
-        .start();
+        .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C);
+
+    withStoreConnection(BROKER, "camunda.document.aws.store-default", minioEndpoint);
+    withStoreConnection(
+        BROKER, "camunda.physical-tenants.tenanta.document.aws.store-a", minioEndpoint);
+    withStoreConnection(
+        BROKER, "camunda.physical-tenants.tenantb.document.aws.store-b", minioEndpoint);
+    withStoreConnection(
+        BROKER, "camunda.physical-tenants.tenantc.document.aws.store-c", minioEndpoint);
+
+    BROKER.start();
 
     startClients(BROKER);
+  }
+
+  /**
+   * Points a single document store at Minio with its own credentials. Configuring them per store —
+   * rather than through the AWS SDK's process-wide environment — is what lets each physical tenant
+   * reach its storage under its own identity.
+   */
+  private static void withStoreConnection(
+      final TestStandaloneBroker broker, final String storePrefix, final String endpoint) {
+    broker
+        .withProperty(storePrefix + ".endpoint", endpoint)
+        .withProperty(storePrefix + ".region", MINIO.region())
+        .withProperty(storePrefix + ".access-key", MINIO.accessKey())
+        .withProperty(storePrefix + ".secret-key", MINIO.secretKey());
   }
 
   @AfterAll
   static void tearDown() {
     closeClients();
-    System.clearProperty("aws.endpointUrl");
-    System.clearProperty("aws.accessKeyId");
-    System.clearProperty("aws.secretAccessKey");
-    System.clearProperty("aws.region");
     NETWORK.close();
   }
 }
