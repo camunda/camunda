@@ -1,15 +1,15 @@
 ---
 
 name: operate-frontend
-description: Use for any work in the Operate legacy frontend (operate/client/) — bugs, changes, tests, components, API hooks, styled-components, MobX stores, React Router, or questions about Operate patterns, conventions, or architecture.
+description: Use for any work in the Operate frontend (operate/client/) — bugs, changes, tests, components, API hooks, styled-components, MobX stores, React Router, or questions about Operate patterns, conventions, or architecture.
 
 ---
 
-# Operate Legacy Frontend
+# Operate Frontend
 
-Operate is the process monitoring frontend at `operate/client/`. It is **legacy code being phased out** — the orchestration cluster webapp at `webapp/client/` is replacing it. Work in Operate should be limited to bug fixes, small adjustments, and maintenance. For substantial new features, build them in the new app instead (see the `frontend-feature` and `frontend-migrator` skills).
+Operate is the process monitoring frontend at `operate/client/`.
 
-Follow the existing conventions described here. Don't introduce new architectural patterns — consistency matters more than modernization in a codebase that's winding down.
+Follow the existing conventions described here. Don't introduce new architectural patterns without discussing them with the team first — consistency matters more than modernization for incremental changes.
 
 ## Tech stack
 
@@ -17,8 +17,8 @@ Follow the existing conventions described here. Don't introduce new architectura
 |--------------|---------------------------------------------------------------------------------|
 | UI framework | React 18, React DOM 18                                                          |
 | Language     | TypeScript 5.9 (strict mode)                                                    |
-| Bundler      | Vite 8                                                                          |
-| Routing      | react-router-dom 7 (React Router v6 API)                                        |
+| Bundler      | Vite 7                                                                          |
+| Routing      | react-router 7 (React Router v6 API)                                            |
 | Server state | TanStack React Query 5                                                          |
 | Client state | MobX 6 + mobx-react / mobx-react-lite                                           |
 | Styling      | styled-components 6, Carbon Design System (`@carbon/react`, `@carbon/elements`) |
@@ -126,11 +126,11 @@ Data fetching has three layers. Follow this architecture — don't bypass it.
 
 ### Layer 1: API functions (`modules/api/v2/`)
 
-Each endpoint gets a thin typed function. Endpoints come from `@camunda/camunda-api-zod-schemas/8.10`:
+Each endpoint gets a thin typed function. Endpoints come from `@camunda/camunda-api-zod-schemas/8.9`:
 
 ```tsx
 import {endpoints, type QueryProcessInstancesRequestBody, type QueryProcessInstancesResponseBody}
-  from '@camunda/camunda-api-zod-schemas/8.10';
+  from '@camunda/camunda-api-zod-schemas/8.9';
 import {requestWithThrow} from 'modules/request';
 ```
 
@@ -273,7 +273,7 @@ Tests that render components needing context use a wrapper function composing `Q
 
 ```tsx
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Routes, Route} from 'react-router-dom';
+import {MemoryRouter, Routes, Route} from 'react-router';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 
@@ -315,7 +315,7 @@ To create a new mock, use `mockGetRequest`, `mockPostRequest`, etc. from `module
 
 ```tsx
 import {mockPostRequest} from 'modules/mocks/api/mockRequest';
-import type {MyResponseType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MyResponseType} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockSearchMyEntity = (contextPath = '') =>
   mockPostRequest<MyResponseType>(`${contextPath}/v2/my-entities/search`);
@@ -400,4 +400,4 @@ npm run knip           # Dead code/dependency analysis
 - Route-level data loaders / prefetching
 - New UI component libraries
 
-**For substantial new features:** use the `frontend-migrator` skill to build them in the orchestration cluster webapp instead. Operate is winding down — invest engineering effort in the replacement.
+**For substantial new features:** discuss scope with the team before starting — confirm the feature belongs in Operate rather than a different module.

@@ -77,11 +77,12 @@ Map path prefixes to component labels:
 |--------------------------|----------------------------------|
 | `zeebe/` — see below     | `component/zeebe-engine` or `component/zeebe-platform` (fallback: `component/zeebe`) |
 | `operate/`               | `component/operate`              |
+| `operate/client/`        | `component/operate`              |
 | `tasklist/`              | `component/tasklist`             |
+| `tasklist/client/`       | `component/tasklist`             |
 | `identity/`              | `component/identity`             |
 | `optimize/`              | `component/optimize`             |
 | `clients/`               | `component/clients`              |
-| `webapp/`                | `component/c8-api`               |
 | `gateways/gateway-mcp/`  | `component/mcp`                  |
 | `gateways/`              | `component/gateway`              |
 | `db/` or `search/`       | `component/data-layer`           |
