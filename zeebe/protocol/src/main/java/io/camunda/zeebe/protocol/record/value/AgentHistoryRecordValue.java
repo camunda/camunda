@@ -85,11 +85,52 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the list of content blocks in this history entry. */
   List<AgentHistoryMessageContentValue> getContent();
 
+  /**
+   * Returns the system prompt, as content blocks, as of this entry. Reserved for a future
+   * configuration-change entry kind (see #58794); unused until that lands. An empty list does not
+   * by itself mean the system prompt wasn't touched — it may also mean the prompt was explicitly
+   * cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   */
+  List<AgentHistoryMessageContentValue> getSystemPrompt();
+
   /** Returns the list of tool calls made during this history entry. */
   List<AgentHistoryEmbeddedToolCallValue> getToolCalls();
 
   /** Returns the metrics captured for this history entry. */
   AgentHistoryMetricsValue getMetrics();
+
+  /**
+   * Returns the complete list of tools available to the agent as of this entry. Reserved for a
+   * future configuration-change entry kind (see #58794); unused until that lands. An empty list
+   * does not by itself mean the tool list wasn't touched — it may also mean the tools were
+   * explicitly cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   */
+  List<AgentInstanceRecordValue.AgentInstanceToolValue> getTools();
+
+  /**
+   * Returns the LLM model identifier as of this entry. Reserved for a future configuration-change
+   * entry kind (see #58794); empty until that lands.
+   */
+  String getModel();
+
+  /**
+   * Returns the LLM provider as of this entry. Reserved for a future configuration-change entry
+   * kind (see #58794); empty until that lands.
+   */
+  String getProvider();
+
+  /**
+   * Returns the operational limits as of this entry. Reserved for a future configuration-change
+   * entry kind (see #58794); unused until that lands.
+   */
+  AgentInstanceRecordValue.AgentInstanceLimitsValue getLimits();
+
+  /**
+   * Returns the names of attributes this entry intends to update, or the names of the attributes
+   * that were actually updated; empty otherwise. Reserved for a future configuration-change entry
+   * kind (see #58794); unused until that lands.
+   */
+  List<String> getChangedAttributes();
 
   /** Represents a single content block in a history entry message. */
   @Value.Immutable

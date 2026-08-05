@@ -5217,6 +5217,10 @@ final class JsonSerializableToJsonTest {
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
                       .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+              record.addSystemPrompt(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("You are an invoice extraction assistant."));
               record.addToolCall(
                   new AgentHistoryEmbeddedToolCall()
                       .setToolCallId("call_abc123")
@@ -5264,6 +5268,14 @@ final class JsonSerializableToJsonTest {
               "object": { "page": 1 }
             }
           ],
+          "systemPrompt": [
+            {
+              "contentType": "TEXT",
+              "text": "You are an invoice extraction assistant.",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": null
+            }
+          ],
           "toolCalls": [
             {
               "toolCallId": "call_abc123",
@@ -5277,7 +5289,12 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "process",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": []
         }
         """
       },
@@ -5354,13 +5371,19 @@ final class JsonSerializableToJsonTest {
               "object": "hello"
             }
           ],
+          "systemPrompt": [],
           "toolCalls": [],
           "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": []
         }
         """
       },
@@ -5378,13 +5401,19 @@ final class JsonSerializableToJsonTest {
           "role": "UNSPECIFIED",
           "producedAt": -1,
           "content": [],
+          "systemPrompt": [],
           "toolCalls": [],
           "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": []
         }
         """
       },

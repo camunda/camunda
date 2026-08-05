@@ -166,6 +166,9 @@
                 "content": {
                   "enabled": false
                 },
+                "systemPrompt": {
+                  "enabled": false
+                },
                 "toolCalls": {
                   "enabled": false
                 },
@@ -181,6 +184,41 @@
                       "type": "long"
                     }
                   }
+                },
+                "tools": {
+                  "properties": {
+                    "name": {
+                      "type": "keyword"
+                    },
+                    "description": {
+                      "type": "text"
+                    },
+                    "elementId": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "model": {
+                  "type": "keyword"
+                },
+                "provider": {
+                  "type": "keyword"
+                },
+                "limits": {
+                  "properties": {
+                    "maxTokens": {
+                      "type": "long"
+                    },
+                    "maxModelCalls": {
+                      "type": "integer"
+                    },
+                    "maxToolCalls": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "changedAttributes": {
+                  "type": "keyword"
                 }
               }
             }

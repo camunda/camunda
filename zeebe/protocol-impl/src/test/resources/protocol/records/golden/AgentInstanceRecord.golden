@@ -32,6 +32,15 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_METRICS = "metrics";
   public static final String ATTR_TOOLS = "tools";
 
+  // Derived from CONFIGURATION-role history items on the output side (see #58791 for the engine
+  // processing that merges them in), never from a request-level changedAttributes entry — these
+  // are not part of ALLOWED_ATTRIBUTES in AgentInstanceUpdateProcessor, only of the output-side
+  // merge order.
+  public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
+  public static final String ATTR_MODEL = "model";
+  public static final String ATTR_PROVIDER = "provider";
+  public static final String ATTR_LIMITS = "limits";
+
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final ArrayProperty<LongValue> elementInstanceKeysProp =
