@@ -7,13 +7,13 @@
  */
 package io.camunda.secretstore;
 
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -42,13 +42,15 @@ public final class SecretStoreRegistry {
   }
 
   /**
-   * Creates a registry whose stores cache in the given caches instead of the default in-memory one.
-   * This is the seam for a cache implementation other than {@link InMemorySecretCache} — a TTL and
-   * eviction variant, or a test double. A store the caches do not cover still gets an in-memory
-   * cache, so every store handed out holds what it resolved whichever constructor is used.
+   * Creates a registry whose stores cache in the given caches instead of the default {@link
+   * CaffeineSecretCache}. This is the seam for a test double, or a per-store cache the caller wants
+   * instead of the default. A store the caches do not cover still gets the default cache, and a
+   * store that caches natively is left as it is, so every store handed out holds what it resolved
+   * whichever constructor is used.
    *
-   * <p>A cache given for a store that caches natively is ignored rather than put in front of it:
-   * the store's own cache stands, so this seam reaches only the stores this registry wraps.
+   * <p>Uses the system clock for any store the caches do not cover — see the three-argument
+   * constructor to drive the default cache's expiry from another time source (production wiring
+   * passes the actor clock, so {@code /actuator/clock} time travel reaches it).
    *
    * @throws IllegalArgumentException if a cache is given for a store ID nothing is configured for,
    *     or if two store IDs are given the same cache instance — the cache is keyed by the bare
@@ -57,12 +59,24 @@ public final class SecretStoreRegistry {
    */
   public SecretStoreRegistry(
       final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
-    rejectUnusableCaches(stores, caches);
-    this.stores = locallyCachedStores(stores, caches);
+    this(stores, caches, InstantSource.system());
   }
 
   /**
-   * Returns all configured secret stores, keyed by store ID.
+   * Creates a registry as the two-argument constructor does, but drives the default cache's expiry
+   * from {@code timeSource} instead of the system clock — the choice of default cache is already
+   * the registry's job, and that default is now time-driven.
+   */
+  public SecretStoreRegistry(
+      final Map<String, SecretStore> stores,
+      final Map<String, SecretCache> caches,
+      final InstantSource timeSource) {
+    rejectUnusableCaches(stores, caches);
+    this.stores = locallyCachedStores(stores, caches, timeSource);
+  }
+
+  /**
+   * Returns all configured stores as locally cached stores, keyed by store ID.
    *
    * <p>A lookup in this map is exact, so a store ID that names no configured store addresses none.
    * A {@code camunda.secrets.<name>} reference addresses {@link #DEFAULT_STORE_ID}.
@@ -105,24 +119,31 @@ public final class SecretStoreRegistry {
   }
 
   private static Map<String, LocallyCachedSecretStore> locallyCachedStores(
-      final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
+      final Map<String, SecretStore> stores,
+      final Map<String, SecretCache> caches,
+      final InstantSource timeSource) {
     final Map<String, LocallyCachedSecretStore> locallyCached = new LinkedHashMap<>();
     stores.forEach(
-        (storeId, store) -> locallyCached.put(storeId, locallyCached(storeId, store, caches)));
+        (storeId, store) ->
+            locallyCached.put(storeId, locallyCached(storeId, store, caches, timeSource)));
     return Collections.unmodifiableMap(locallyCached);
   }
 
   /**
    * Returns the store itself when it caches natively — wrapping it would put a second cache in
    * front of its own — and otherwise the store behind the cache configured for it, or a fresh
-   * in-memory one when the configured caches do not cover it.
+   * time-and-size-bounded one when the configured caches do not cover it.
    */
   private static LocallyCachedSecretStore locallyCached(
-      final String storeId, final SecretStore store, final Map<String, SecretCache> caches) {
+      final String storeId,
+      final SecretStore store,
+      final Map<String, SecretCache> caches,
+      final InstantSource timeSource) {
     if (store instanceof final LocallyCachedSecretStore locallyCached) {
       return locallyCached;
     }
-    final var cache = Optional.ofNullable(caches.get(storeId)).orElseGet(InMemorySecretCache::new);
-    return new CachingSecretStore(store, cache);
+    final var configured = caches.get(storeId);
+    return new CachingSecretStore(
+        store, configured != null ? configured : CaffeineSecretCache.createDefault(timeSource));
   }
 }
