@@ -268,6 +268,7 @@ public final class EngineProcessors {
             config,
             incidentMetrics,
             messageCorrelationMetrics,
+            processDefinitionMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck,
@@ -382,7 +383,8 @@ public final class EngineProcessors {
         bpmnBehaviors,
         permissionsBehavior,
         tenantCheck,
-        processDefinitionMetrics);
+        processDefinitionMetrics,
+        routingInfo);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -618,6 +620,7 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
@@ -637,6 +640,7 @@ public final class EngineProcessors {
         config,
         incidentMetrics,
         messageCorrelationMetrics,
+        processDefinitionMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck,
@@ -821,7 +825,8 @@ public final class EngineProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
       final CslTenantCheck tenantCheck,
-      final ProcessDefinitionMetrics processDefinitionMetrics) {
+      final ProcessDefinitionMetrics processDefinitionMetrics,
+      final RoutingInfo routingInfo) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
             writers,
@@ -831,7 +836,8 @@ public final class EngineProcessors {
             bpmnBehaviors,
             permissionsBehavior,
             tenantCheck,
-            processDefinitionMetrics);
+            processDefinitionMetrics,
+            routingInfo);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
 
