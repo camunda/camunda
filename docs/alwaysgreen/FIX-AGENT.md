@@ -113,6 +113,42 @@ The SM smoke suite is **shared** with the SM nightly, which has its own fix agen
 change there must not regress the nightly for the same version, and a competing
 `failing-test-fix` PR may already exist — check before editing.
 
+## Which version directory to edit
+
+The prompt gives you the resolved directories — use them rather than inferring. The rules
+behind them:
+
+- **`main` is the next unreleased minor, currently 8.10.** `stable/X.Y` is X.Y.
+- **SM specs live under an `SM-` prefix, SaaS specs under the bare version.** `pages/`
+  mirrors `tests/` exactly.
+- The Helm chart directory is `charts/camunda-platform-<version>/`.
+
+|             Dispatch             |        e2e specs and pages         |           Helm chart            |
+|----------------------------------|------------------------------------|---------------------------------|
+| `sm-smoke-e2e` on `main`         | `tests/SM-8.10/`, `pages/SM-8.10/` | `charts/camunda-platform-8.10/` |
+| `saas-smoke-e2e` on `main`       | `tests/8.10/`, `pages/8.10/`       | `charts/camunda-platform-8.10/` |
+| `sm-smoke-e2e` on `stable/8.9`   | `tests/SM-8.9/`, `pages/SM-8.9/`   | `charts/camunda-platform-8.9/`  |
+| `saas-smoke-e2e` on `stable/8.9` | `tests/8.9/`, `pages/8.9/`         | `charts/camunda-platform-8.9/`  |
+
+`stable/8.8` and `stable/8.7` follow the same pattern.
+
+**Do not fan a fix out across version directories.** Only the dispatched version failed;
+the differences between version directories often encode real product differences that
+should stay encoded, and editing a passing sibling risks breaking it. If the same bug
+plausibly affects another version, say so in the PR body instead of changing it.
+
+## Which branch the PR targets
+
+A `camunda/camunda` PR must be opened with `--base <base_ref>` — the branch that failed,
+supplied in the prompt. `gh pr create` with no `--base` targets the repository default
+branch, so a `stable/8.9` fix opened that way carries the entire stable-to-main delta, and
+merging it would push stable-only code onto `main`. The workflow re-checks the base
+afterwards and retargets a wrong one, but it warns when it has to.
+
+This applies to `camunda/camunda` only. `c8-cross-component-e2e-tests` and
+`camunda-platform-helm` have no per-version branches — their PRs take their own default
+branch, and the version lives in the path (`tests/SM-8.9/`, `charts/camunda-platform-8.9/`).
+
 ## The PR coverage block — mandatory
 
 Every PR you open must carry, in its body:

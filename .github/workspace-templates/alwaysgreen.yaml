@@ -6,8 +6,8 @@ purpose: |
 
   The failing job identifies the surface that broke, not the repository that needs
   the change. A Playwright job failing does not mean the test is wrong: the most
-  frequent SM e2e failure is a Keycloak deploy problem. Read
-  camunda/docs/alwaysgreen/FIX-AGENT.md before doing anything else.
+  frequent SM e2e failure is a Keycloak deploy problem. Read FIX-AGENT.md in the
+  workspace root before doing anything else.
 
 repos:
   - url: https://github.com/camunda/camunda.git

@@ -117,9 +117,17 @@ jobs:
             sm-smoke-e2e|saas-smoke-e2e) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
-          # The e2e suite directory the specs live in.
+          # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
+          # when main moves to 8.11.
           if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          # The e2e suite directory. SM specs live under an SM- prefix, SaaS specs under
+          # the bare version, and pages/ mirrors tests/ exactly.
+          if [ "$SURFACE" = "sm-smoke-e2e" ]; then suite="SM-${version}"; else suite="${version}"; fi
+          {
+            echo "version=${version}"
+            echo "suite=${suite}"
+            echo "chart=camunda-platform-${version}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout main for tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -209,10 +217,15 @@ jobs:
       - name: Ensure labels exist
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
         run: |
           for repo in camunda/camunda camunda/c8-cross-component-e2e-tests camunda/camunda-platform-helm; do
             gh label create "${FIX_LABEL}" --repo "$repo" --color "1D76DB" \
               --description "Bot-opened fix PR for an AlwaysGreen failure" 2>/dev/null || true
+            # Triage suppresses a surface that already has an open fix PR. It reads this
+            # label rather than the PR body, whose coverage block the agent may omit.
+            gh label create "${KEY_LABEL}" --repo "$repo" --color "C5DEF5" \
+              --description "AlwaysGreen fix PR for dispatch key ${KEY_LABEL#alwaysgreen-key:}" 2>/dev/null || true
           done
 
       - name: Set up Go
@@ -264,6 +277,17 @@ jobs:
           git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
           git -C "$ws_dir" checkout "${TARGET_REF}"
 
+      # The manual documents the agent's contract, not the branch's behaviour, and it
+      # only exists on main. Reading it through the workspace monorepo would miss on
+      # every stable-branch dispatch, since that checkout is pinned to base_ref.
+      - name: Stage the fix-agent manual
+        env:
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          set -euo pipefail
+          cp docs/alwaysgreen/FIX-AGENT.md \
+             "$HOME/workspaces/${WORKSPACE_NAME}/FIX-AGENT.md"
+
       - name: Download evidence artifacts
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -303,6 +327,8 @@ jobs:
           BASE_REF: ${{ inputs.base_ref }}
           SURFACE: ${{ inputs.surface }}
           VERSION: ${{ steps.target.outputs.version }}
+          SUITE: ${{ steps.target.outputs.suite }}
+          CHART: ${{ steps.target.outputs.chart }}
           FAILING_RUN_URL: ${{ inputs.failing_run_url }}
           TRIAGE_RUN_URL: ${{ inputs.triage_run_url }}
           BLAME_AUTHOR: ${{ steps.ctx.outputs.blame_author }}
@@ -314,11 +340,15 @@ jobs:
           prompt=$(cat <<EOF
           You are the Camunda AlwaysGreen fix agent. Workspace: ${ws_dir}
 
-          STEP 0 — read ${ws_dir}/camunda/docs/alwaysgreen/FIX-AGENT.md in full. That is
+          STEP 0 — read ${ws_dir}/FIX-AGENT.md in full. That is
           your operating manual: evidence map, diagnosis order, the PR coverage-block
           contract, and the constraints. Do not skip it.
 
           Failing surface: ${SURFACE}   Branch to fix against: ${BASE_REF}   Version: ${VERSION}
+          Edit only these version directories:
+            c8-cross-component-e2e-tests: tests/${SUITE}/ and pages/${SUITE}/
+            camunda-platform-helm:        charts/${CHART}/
+          A sibling version directory that is passing must not be touched.
           Failing AlwaysGreen run: ${FAILING_RUN_URL}
           Triage run: ${TRIAGE_RUN_URL}
           Breaking change: PR #${BLAME_PR} by ${BLAME_AUTHOR}
@@ -347,6 +377,11 @@ jobs:
           Branch naming: fix/alwaysgreen-${SURFACE}-<slug>. Commit/PR type: 'test:' for
           test-only changes, 'ci:' for workflow changes, 'fix:' for product or chart code.
 
+          PR base: a camunda/camunda PR MUST be opened with --base ${BASE_REF}.
+          Without it gh targets the default branch, so a stable-branch fix would
+          carry the whole stable-to-main delta. PRs in the other repos take their
+          own default branch.
+
           When done write /tmp/fix-meta.json and stop.
           EOF
           )
@@ -360,6 +395,8 @@ jobs:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BLAME_REVIEWER: ${{ steps.ctx.outputs.blame_reviewer }}
           DEFAULT_REPO: ${{ github.repository }}
+          BASE_REF: ${{ inputs.base_ref }}
+          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
         run: |
           set -euo pipefail
           [ -f /tmp/fix-meta.json ] || { echo "no fix-meta.json"; exit 0; }
@@ -371,7 +408,28 @@ jobs:
             repo="${DEFAULT_REPO}"
             [ -n "$owner" ] && [ -n "$name" ] && repo="${owner}/${name}"
 
-            gh pr edit "$num" --repo "$repo" --add-label "${FIX_LABEL}" 2>/dev/null || true
+            # The key label is what triage reads to suppress re-dispatch, so a silent
+            # failure here means duplicate fix PRs on the next push. Keep stderr and say
+            # so loudly; still non-fatal, because a labelled-but-unreviewed PR is worth
+            # more than a failed run.
+            if ! gh pr edit "$num" --repo "$repo" \
+                   --add-label "${FIX_LABEL}" --add-label "${KEY_LABEL}"; then
+              echo "::warning::could not label ${repo}#${num} with ${KEY_LABEL} — triage will re-dispatch this key until the label is applied"
+            fi
+
+            # Only camunda/camunda PRs are branch-scoped; the e2e and chart repos have
+            # no per-version branches. Repair rather than trust: an unset --base
+            # silently targets the default branch, which makes the diff the whole
+            # stable-to-main delta.
+            if [ "$repo" = "${DEFAULT_REPO}" ]; then
+              base=$(gh pr view "$num" --repo "$repo" --json baseRefName \
+                       --jq '.baseRefName' 2>/dev/null || echo "")
+              if [ -n "$base" ] && [ "$base" != "${BASE_REF}" ]; then
+                echo "::warning::${repo}#${num} opened against '${base}', retargeting to '${BASE_REF}'"
+                gh pr edit "$num" --repo "$repo" --base "${BASE_REF}" \
+                  || echo "::error::could not retarget ${repo}#${num} to ${BASE_REF}"
+              fi
+            fi
 
             # Requesting review can legitimately fail: the blamed author may not be a
             # collaborator on the repo the fix landed in. The manual requires the author
