@@ -101,11 +101,13 @@ public final class AgentInstanceClient {
   }
 
   /**
-   * Leaves {@code agentInstanceKey} unset, so {@link #complete()} drives the "batch completion"
-   * branch of {@code AGENT_INSTANCE:COMPLETE}: complete one agent instance still belonging to this
-   * process instance, self-chaining until none remain.
+   * Clears {@code agentInstanceKey} (even if a previous {@link #withAgentInstanceKey} call set it),
+   * so {@link #complete()} drives the "batch completion" branch of {@code AGENT_INSTANCE:COMPLETE}:
+   * complete one agent instance still belonging to this process instance, self-chaining until none
+   * remain.
    */
   public AgentInstanceClient withProcessInstanceKey(final long processInstanceKey) {
+    record.setAgentInstanceKey(-1L);
     record.setProcessInstanceKey(processInstanceKey);
     return this;
   }
