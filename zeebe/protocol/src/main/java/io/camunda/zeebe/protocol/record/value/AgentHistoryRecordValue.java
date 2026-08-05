@@ -99,6 +99,9 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the metrics captured for this history entry. */
   AgentHistoryMetricsValue getMetrics();
 
+  /** Returns the client-supplied identifier this item was created with. */
+  String getHistoryItemId();
+
   /**
    * Returns the complete list of tools available to the agent as of this entry. Reserved for a
    * future configuration-change entry kind (see #58794); unused until that lands. An empty list
@@ -131,6 +134,15 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
    * kind (see #58794); unused until that lands.
    */
   List<String> getChangedAttributes();
+
+  /**
+   * Returns whether this entry was recognized as a duplicate of a previously-processed history item
+   * with the same historyItemId (scoped to the producing agent instance's whole lifetime) or of a
+   * still-pending item under the current job lease — meaningful only when this entry is echoed back
+   * embedded in an AgentInstanceRecord's history[]; if true, no new AGENT_HISTORY event was
+   * actually created for it and agentHistoryKey is the ORIGINAL entry's key, not a new one.
+   */
+  boolean isDuplicate();
 
   /** Represents a single content block in a history entry message. */
   @Value.Immutable

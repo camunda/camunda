@@ -402,4 +402,49 @@ final class AgentHistoryRecordTest {
     // then
     assertThat(record.getChangedAttributes()).containsExactly("model", "provider");
   }
+
+  @Test
+  void shouldDefaultHistoryItemIdToEmpty() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getHistoryItemId()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripHistoryItemIdViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord().setHistoryItemId("item-1");
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getHistoryItemId()).isEqualTo("item-1");
+  }
+
+  @Test
+  void shouldDefaultIsDuplicateToFalse() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.isDuplicate()).isFalse();
+  }
+
+  @Test
+  void shouldRoundTripIsDuplicateViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setHistoryItemId("item-1").setDuplicate(true);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.isDuplicate()).isTrue();
+  }
 }

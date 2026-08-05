@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -53,6 +54,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ArrayProperty<>("toolCalls", AgentHistoryEmbeddedToolCall::new);
   private final ObjectProperty<AgentHistoryMetrics> metricsProp =
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
+  private final StringProperty historyItemIdProp = new StringProperty("historyItemId", "");
   private final ArrayProperty<AgentInstanceTool> toolsProp =
       new ArrayProperty<>("tools", AgentInstanceTool::new);
   private final StringProperty modelProp = new StringProperty("model", "");
@@ -61,9 +63,10 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("limits", new AgentInstanceLimits());
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public AgentHistoryRecord() {
-    super(22);
+    super(24);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -81,11 +84,13 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(systemPromptProp)
         .declareProperty(toolCallsProp)
         .declareProperty(metricsProp)
+        .declareProperty(historyItemIdProp)
         .declareProperty(toolsProp)
         .declareProperty(modelProp)
         .declareProperty(providerProp)
         .declareProperty(limitsProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(isDuplicateProp);
   }
 
   @Override
@@ -308,6 +313,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
+  public String getHistoryItemId() {
+    return BufferUtil.bufferAsString(historyItemIdProp.getValue());
+  }
+
+  public AgentHistoryRecord setHistoryItemId(final String historyItemId) {
+    historyItemIdProp.setValue(historyItemId);
+    return this;
+  }
+
+  @Override
   public List<AgentInstanceToolValue> getTools() {
     return toolsProp.stream()
         .map(
@@ -373,6 +388,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord addChangedAttribute(final String attribute) {
     changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  @Override
+  public boolean isDuplicate() {
+    return isDuplicateProp.getValue();
+  }
+
+  public AgentHistoryRecord setDuplicate(final boolean duplicate) {
+    isDuplicateProp.setValue(duplicate);
     return this;
   }
 }

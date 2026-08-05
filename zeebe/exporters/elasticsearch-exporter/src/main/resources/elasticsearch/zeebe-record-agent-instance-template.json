@@ -185,6 +185,9 @@
                     }
                   }
                 },
+                "historyItemId": {
+                  "type": "keyword"
+                },
                 "tools": {
                   "properties": {
                     "name": {
@@ -219,6 +222,9 @@
                 },
                 "changedAttributes": {
                   "type": "keyword"
+                },
+                "duplicate": {
+                  "type": "boolean"
                 }
               }
             }

@@ -5290,11 +5290,13 @@ final class JsonSerializableToJsonTest {
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "process",
           "processDefinitionKey": -1,
+          "historyItemId": "",
           "tools": [],
           "model": "",
           "provider": "",
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
-          "changedAttributes": []
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },
@@ -5379,11 +5381,13 @@ final class JsonSerializableToJsonTest {
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
           "processDefinitionKey": -1,
+          "historyItemId": "",
           "tools": [],
           "model": "",
           "provider": "",
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
-          "changedAttributes": []
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },
@@ -5409,11 +5413,13 @@ final class JsonSerializableToJsonTest {
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
           "processDefinitionKey": -1,
+          "historyItemId": "",
           "tools": [],
           "model": "",
           "provider": "",
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
-          "changedAttributes": []
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },
