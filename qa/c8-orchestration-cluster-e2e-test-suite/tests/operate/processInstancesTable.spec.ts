@@ -20,7 +20,6 @@ type ProcessInstance = {processInstanceKey: number};
 let processA: ProcessInstance;
 let processB_v_1: ProcessInstance;
 let processB_v_2: ProcessInstance;
-let scrollingInstances: ProcessInstance[];
 const amountOfInstancesForInfiniteScroll = 350;
 
 test.beforeAll(async () => {
@@ -52,14 +51,11 @@ test.beforeAll(async () => {
       ),
     };
   }
-  const createdInstances = await createInstances(
+  await createInstances(
     'instancesTableProcessForInfiniteScroll',
     1,
     amountOfInstancesForInfiniteScroll,
   );
-  scrollingInstances = createdInstances.map((instance) => ({
-    processInstanceKey: Number(instance.processInstanceKey),
-  }));
 });
 
 test.describe('Process Instances Table', () => {
@@ -148,34 +144,46 @@ test.describe('Process Instances Table', () => {
 
     await test.step('Check sorting of processes by process version DESC', async () => {
       await operateProcessesPage.clickVersionSortButton();
+      // Version 2 sorts to the top. The two version-1 rows follow, but their
+      // relative order is a tie broken by process instance key — and on a
+      // multi-partition cluster keys are not monotonic with creation order
+      // (each partition owns a disjoint key range), so the two v1 rows can
+      // appear in either order. Assert them as an unordered set rather than
+      // assuming creation order.
       await expect
         .poll(() =>
           operateProcessesPage.processInstancesTable.nth(0).innerText(),
         )
         .toContain(instanceIds[2].toString());
+      const versionOneRowsText = async () =>
+        `${await operateProcessesPage.processInstancesTable
+          .nth(1)
+          .innerText()}\n${await operateProcessesPage.processInstancesTable
+          .nth(2)
+          .innerText()}`;
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(1).innerText(),
-        )
+        .poll(versionOneRowsText)
         .toContain(instanceIds[0].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(2).innerText(),
-        )
+        .poll(versionOneRowsText)
         .toContain(instanceIds[1].toString());
     });
 
     await test.step('Check sorting of processes by process version ASC', async () => {
       await operateProcessesPage.clickVersionSortButton();
+      // The two version-1 rows come first (tie broken by instance key, order
+      // not guaranteed on a multi-partition cluster), then version 2 last.
+      const versionOneRowsText = async () =>
+        `${await operateProcessesPage.processInstancesTable
+          .nth(0)
+          .innerText()}\n${await operateProcessesPage.processInstancesTable
+          .nth(1)
+          .innerText()}`;
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(0).innerText(),
-        )
+        .poll(versionOneRowsText)
         .toContain(instanceIds[0].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(1).innerText(),
-        )
+        .poll(versionOneRowsText)
         .toContain(instanceIds[1].toString());
       await expect
         .poll(() =>
@@ -282,7 +290,7 @@ test.describe('Process Instances Table', () => {
           .innerText()
       ).trim();
 
-    let key0 = '';  // topmost key after DESC sort; must stay at row 0 until windowing
+    let key0 = ''; // topmost key after DESC sort; must stay at row 0 until windowing
     let key50 = ''; // 51st key; expected at row 0 after the 300-row window shift
 
     await test.step('Select process and sort by instance key DESC', async () => {
@@ -369,9 +377,7 @@ test.describe('Process Instances Table', () => {
       );
       await sleep(500);
       await expect(instanceRows).toHaveCount(200);
-      await expect
-        .poll(() => instanceRows.nth(0).innerText())
-        .toContain(key0);
+      await expect.poll(() => instanceRows.nth(0).innerText()).toContain(key0);
       await expect(
         instanceRows.nth(199).getByTestId('cell-processInstanceKey'),
       ).toBeVisible();
@@ -382,9 +388,7 @@ test.describe('Process Instances Table', () => {
       await sleep(500);
       await expect(instanceRows).toHaveCount(250);
 
-      await expect
-        .poll(() => instanceRows.nth(0).innerText())
-        .toContain(key0);
+      await expect.poll(() => instanceRows.nth(0).innerText()).toContain(key0);
 
       await expect(
         instanceRows.nth(249).getByTestId('cell-processInstanceKey'),
