@@ -106,7 +106,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class ProtoBufSerializer
     implements ClusterConfigurationSerializer, ClusterConfigurationRequestsSerializer {
 
@@ -182,6 +184,22 @@ public class ProtoBufSerializer
               ByteBuffer.wrap(encodedClusterTopology, offset, length));
       return decodeClusterTopology(topology);
 
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
+    return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
+  }
+
+  @Override
+  public CurrentClusterConfiguration decodeCurrentClusterConfiguration(
+      final byte[] encoded, final int offset, final int length) {
+    try {
+      return decodeCurrentClusterConfiguration(
+          Topology.CurrentClusterConfiguration.parseFrom(ByteBuffer.wrap(encoded, offset, length)));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -1658,30 +1676,49 @@ public class ProtoBufSerializer
   public Builder encodeTopologyChangeResponse(
       final ClusterConfigurationChangeResponse clusterConfigurationChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
+    final var legacyResponse = clusterConfigurationChangeResponse.legacyResponse();
 
     builder
         .setChangeId(clusterConfigurationChangeResponse.changeId())
         .addAllPlannedChanges(
-            clusterConfigurationChangeResponse.plannedChanges().stream()
-                .map(this::encodeOperation)
-                .toList())
-        .putAllCurrentTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.currentConfiguration()))
-        .putAllExpectedTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.expectedConfiguration()));
+            legacyResponse.plannedChanges().stream().map(this::encodeOperation).toList())
+        .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
+        .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
+
+    final var response = clusterConfigurationChangeResponse.response();
+    if (response != null) {
+      builder
+          .setCurrentConfiguration(
+              encodeCurrentClusterConfigurationProto(response.currentConfiguration()))
+          .setExpectedConfiguration(
+              encodeCurrentClusterConfigurationProto(response.expectedConfiguration()));
+    }
 
     return builder;
   }
 
   public ClusterConfigurationChangeResponse decodeTopologyChangeResponse(
       final Requests.TopologyChangeResponse topologyChangeResponse) {
+    final var legacyResponse =
+        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+            decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
+            decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
+            topologyChangeResponse.getPlannedChangesList().stream()
+                .map(this::decodeOperation)
+                .toList());
+
+    final var response =
+        topologyChangeResponse.hasCurrentConfiguration()
+                && topologyChangeResponse.hasExpectedConfiguration()
+            ? new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
+                decodeCurrentClusterConfiguration(
+                    topologyChangeResponse.getExpectedConfiguration()),
+                legacyResponse.plannedChanges())
+            : null;
+
     return new ClusterConfigurationChangeResponse(
-        topologyChangeResponse.getChangeId(),
-        decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
-        decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
-        topologyChangeResponse.getPlannedChangesList().stream()
-            .map(this::decodeOperation)
-            .toList());
+        topologyChangeResponse.getChangeId(), legacyResponse, response);
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {
@@ -1712,6 +1749,10 @@ public class ProtoBufSerializer
         .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
   }
 
+  // ---- New multi-partition-group configuration model (8.10) ----
+  // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
+  // wired into gossip or persistence; they exist for the Phase-3 handoff.
+
   private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
     return switch (status) {
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
@@ -1731,28 +1772,8 @@ public class ProtoBufSerializer
     };
   }
 
-  // ---- New multi-partition-group configuration model (8.10) ----
-  // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
-  // wired into gossip or persistence; they exist for the Phase-3 handoff.
-
-  @Override
-  public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
-    return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
-  }
-
   public CurrentClusterConfiguration decodeCurrentClusterConfiguration(final byte[] encoded) {
     return decodeCurrentClusterConfiguration(encoded, 0, encoded.length);
-  }
-
-  @Override
-  public CurrentClusterConfiguration decodeCurrentClusterConfiguration(
-      final byte[] encoded, final int offset, final int length) {
-    try {
-      return decodeCurrentClusterConfiguration(
-          Topology.CurrentClusterConfiguration.parseFrom(ByteBuffer.wrap(encoded, offset, length)));
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
   }
 
   private Topology.CurrentClusterConfiguration encodeCurrentClusterConfigurationProto(

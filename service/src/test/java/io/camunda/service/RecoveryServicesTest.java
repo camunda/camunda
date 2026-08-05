@@ -28,6 +28,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
@@ -389,7 +390,10 @@ public class RecoveryServicesTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.right(
-                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+                    new ClusterConfigurationChangeResponse(
+                        0L,
+                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+                        null))));
   }
 
   private void stubTopologySuccess() {
@@ -411,7 +415,10 @@ public class RecoveryServicesTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.right(
-                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+                    new ClusterConfigurationChangeResponse(
+                        0L,
+                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+                        null))));
   }
 
   private static void assertForbidden(

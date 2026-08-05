@@ -300,9 +300,14 @@ public final class ClusterConfigurationManagementRequestsHandler
             result ->
                 new ClusterConfigurationChangeResponse(
                     result.changeId(),
-                    result.currentConfiguration().members(),
-                    result.finalConfiguration().members(),
-                    result.operations()),
+                    new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                        result.currentConfiguration().members(),
+                        result.finalConfiguration().members(),
+                        result.operations()),
+                    new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                        result.currentMultiConfiguration(),
+                        result.finalMultiConfiguration(),
+                        result.operations())),
             executor);
   }
 }

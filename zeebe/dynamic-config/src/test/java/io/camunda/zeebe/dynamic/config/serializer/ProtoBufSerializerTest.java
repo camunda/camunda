@@ -29,12 +29,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
+import io.camunda.zeebe.dynamic.config.protocol.Requests;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -301,23 +303,32 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodeTopologyChangeResponse() {
     // given
+    final List<ClusterConfigurationChangeOperation> plannedChanges =
+        List.of(
+            new MemberLeaveOperation(MemberId.from("1")),
+            new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+            new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+            new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+            new PartitionPreRestoreOperation(MemberId.from("1"), 1),
+            new PartitionRestoreOperation(MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))));
+    final var currentMultiConfiguration = CurrentClusterConfiguration.init();
+    final var expectedMultiConfiguration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MemberId.from("9"), MemberState.initializeAsActive(Map.of())));
     final var topologyChangeResponse =
         new ClusterConfigurationChangeResponse(
             2,
-            Map.of(
-                MemberId.from("1"),
-                MemberState.initializeAsActive(Map.of()),
-                MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of())),
-            Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
-            List.of(
-                new MemberLeaveOperation(MemberId.from("1")),
-                new PartitionJoinOperation(MemberId.from("2"), 1, 2),
-                new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new PartitionPreRestoreOperation(MemberId.from("1"), 1),
-                new PartitionRestoreOperation(
-                    MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))));
+            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                Map.of(
+                    MemberId.from("1"),
+                    MemberState.initializeAsActive(Map.of()),
+                    MemberId.from("2"),
+                    MemberState.initializeAsActive(Map.of())),
+                Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
+                plannedChanges),
+            new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                currentMultiConfiguration, expectedMultiConfiguration, plannedChanges));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
@@ -326,6 +337,46 @@ final class ProtoBufSerializerTest {
     final var decodedResponse =
         protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeTopologyChangeResponseWithoutMultiConfiguration() {
+    // given — a response with no new multi-partition-group data (e.g. produced by a caller that
+    // doesn't populate it) round-trips with a null response.
+    final var topologyChangeResponse =
+        new ClusterConfigurationChangeResponse(
+            2,
+            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                Map.of(), Map.of(), List.of()),
+            null);
+
+    // when
+    final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
+
+    // then
+    final var decodedResponse =
+        protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
+    assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
+  }
+
+  @Test
+  void shouldDecodeNullResponseWhenMultiConfigurationIsOnlyPartiallyPresent() {
+    // given — a wire message where only the current multi-configuration field is set, not the
+    // expected one (e.g. from a peer running a mismatched version). This must not decode into a
+    // response with a real current configuration and a default/empty expected configuration.
+    final var partial =
+        Requests.TopologyChangeResponse.newBuilder()
+            .setChangeId(3)
+            .setCurrentConfiguration(Topology.CurrentClusterConfiguration.newBuilder().build())
+            .build();
+    final var encoded =
+        Requests.Response.newBuilder().setTopologyChangeResponse(partial).build().toByteArray();
+
+    // when
+    final var decoded = protoBufSerializer.decodeTopologyChangeResponse(encoded).get();
+
+    // then — the whole multi-config payload is treated as absent, not partially decoded
+    assertThat(decoded.response()).isNull();
   }
 
   @Test

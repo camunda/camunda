@@ -172,9 +172,9 @@ final class ClusterApiUtils {
       final ClusterConfigurationChangeResponse response) {
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.currentConfiguration()))
-        .expectedTopology(mapBrokerStates(response.expectedConfiguration()))
-        .plannedChanges(mapOperations(response.plannedChanges()));
+        .currentTopology(mapBrokerStates(response.legacyResponse().currentConfiguration()))
+        .expectedTopology(mapBrokerStates(response.legacyResponse().expectedConfiguration()))
+        .plannedChanges(mapOperations(response.legacyResponse().plannedChanges()));
   }
 
   private static List<Operation> mapOperations(

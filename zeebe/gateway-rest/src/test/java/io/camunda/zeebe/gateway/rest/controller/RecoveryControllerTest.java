@@ -76,7 +76,11 @@ public class RecoveryControllerTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.right(
-                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+                    new ClusterConfigurationChangeResponse(
+                        0L,
+                        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                            Map.of(), Map.of(), List.of()),
+                        null))));
   }
 
   @ParameterizedTest
@@ -86,9 +90,11 @@ public class RecoveryControllerTest extends RestControllerTest {
     final var changeResponse =
         new ClusterConfigurationChangeResponse(
             7L,
-            Map.of(),
-            Map.of(),
-            List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
+            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                Map.of(),
+                Map.of(),
+                List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING))),
+            null);
     Mockito.when(
             recoveryServices.changeMode(
                 Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))

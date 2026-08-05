@@ -101,7 +101,11 @@ final class ClusterEndpointTest {
           .thenReturn(
               CompletableFuture.completedFuture(
                   Either.right(
-                      new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of()))));
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
 
       // when
       final var response =
@@ -124,7 +128,11 @@ final class ClusterEndpointTest {
           .thenReturn(
               CompletableFuture.completedFuture(
                   Either.right(
-                      new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of()))));
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
 
       // when - dryRun flag is forwarded
       final var response =

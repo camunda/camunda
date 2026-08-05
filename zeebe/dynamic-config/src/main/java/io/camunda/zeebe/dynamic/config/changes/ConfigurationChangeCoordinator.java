@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
 public interface ConfigurationChangeCoordinator {
 
@@ -56,13 +57,22 @@ public interface ConfigurationChangeCoordinator {
    */
   ActorFuture<ClusterConfiguration> cancelChange(long changeId);
 
+  @NullMarked
   record ConfigurationChangeResult(
-      // The current configuration before applying the operations.
+      // The current configuration before applying the operations, projected to the legacy
+      // default-group view.
       ClusterConfiguration currentConfiguration,
-      // The expected final configuration after applying the operations.
+      // The expected final configuration after applying the operations, projected to the legacy
+      // default-group view.
       ClusterConfiguration finalConfiguration,
+      // The current configuration before applying the operations, on the new multi-partition-group
+      // model.
+      CurrentClusterConfiguration currentMultiConfiguration,
+      // The expected final configuration after applying the operations, on the new
+      // multi-partition-group model.
+      CurrentClusterConfiguration finalMultiConfiguration,
       long changeId,
-      // The operations that wille be applied to the current configuration.
+      // The operations that will be applied to the current configuration.
       List<ClusterConfigurationChangeOperation> operations) {}
 
   @FunctionalInterface

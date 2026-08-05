@@ -10,26 +10,53 @@ package io.camunda.zeebe.dynamic.config.api;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record ClusterConfigurationChangeResponse(
     long changeId,
-    SortedMap<MemberId, MemberState> currentConfiguration,
-    SortedMap<MemberId, MemberState> expectedConfiguration,
-    List<ClusterConfigurationChangeOperation> plannedChanges) {
+    LegacyConfigurationChangeResponse legacyResponse,
+    // The new multi-partition-group configuration, absent for callers that don't populate it
+    // (e.g. not yet carried over the wire by a peer). legacyResponse is always required, for
+    // backwards compatibility.
+    @Nullable CurrentConfigurationChangeResponse response) {
 
-  public ClusterConfigurationChangeResponse(
-      final long changeId,
-      final Map<MemberId, MemberState> currentConfiguration,
-      final Map<MemberId, MemberState> expectedConfiguration,
-      final List<ClusterConfigurationChangeOperation> plannedChanges) {
-    this(
-        changeId,
-        ImmutableSortedMap.copyOf(currentConfiguration),
-        ImmutableSortedMap.copyOf(expectedConfiguration),
-        plannedChanges);
+  public ClusterConfigurationChangeResponse {
+    Objects.requireNonNull(legacyResponse, "legacyResponse must not be null");
+  }
+
+  public record LegacyConfigurationChangeResponse(
+      SortedMap<MemberId, MemberState> currentConfiguration,
+      SortedMap<MemberId, MemberState> expectedConfiguration,
+      List<ClusterConfigurationChangeOperation> plannedChanges) {
+
+    public LegacyConfigurationChangeResponse(
+        final Map<MemberId, MemberState> currentConfiguration,
+        final Map<MemberId, MemberState> expectedConfiguration,
+        final List<ClusterConfigurationChangeOperation> plannedChanges) {
+      this(
+          ImmutableSortedMap.copyOf(currentConfiguration),
+          ImmutableSortedMap.copyOf(expectedConfiguration),
+          plannedChanges);
+    }
+  }
+
+  public record CurrentConfigurationChangeResponse(
+      CurrentClusterConfiguration currentConfiguration,
+      CurrentClusterConfiguration expectedConfiguration,
+      List<ClusterConfigurationChangeOperation> plannedChanges) {
+
+    public CurrentConfigurationChangeResponse {
+      Objects.requireNonNull(currentConfiguration, "currentConfiguration must not be null");
+      Objects.requireNonNull(expectedConfiguration, "expectedConfiguration must not be null");
+      Objects.requireNonNull(plannedChanges, "plannedChanges must not be null");
+    }
   }
 }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -55,7 +56,13 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
     when(coordinator.applyOperations(any()))
         .thenReturn(
             CompletableActorFuture.completed(
-                new ConfigurationChangeResult(config, config, 1L, List.of())));
+                new ConfigurationChangeResult(
+                    config,
+                    config,
+                    CurrentClusterConfiguration.fromLegacy(config),
+                    CurrentClusterConfiguration.fromLegacy(config),
+                    1L,
+                    List.of())));
 
     // when
     final ActorFuture<ClusterConfigurationChangeResponse> result =
@@ -73,7 +80,13 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
     when(coordinator.simulateOperations(any()))
         .thenReturn(
             CompletableActorFuture.completed(
-                new ConfigurationChangeResult(config, config, 1L, List.of())));
+                new ConfigurationChangeResult(
+                    config,
+                    config,
+                    CurrentClusterConfiguration.fromLegacy(config),
+                    CurrentClusterConfiguration.fromLegacy(config),
+                    1L,
+                    List.of())));
 
     // when
     final ActorFuture<ClusterConfigurationChangeResponse> result =
