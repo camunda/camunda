@@ -9,17 +9,21 @@ package io.camunda.tasklist.schema.manager;
 
 import static io.camunda.tasklist.property.TasklistProperties.OPEN_SEARCH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
+import io.camunda.tasklist.property.ArchiverProperties;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +42,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class OpenSearchSchemaManagerTest {
@@ -102,6 +107,24 @@ class OpenSearchSchemaManagerTest {
     verify(retryOpenSearchClient).createTemplate(requestCaptor.capture(), eq(false));
     final var request = requestCaptor.getValue();
     assertThat(request.priority()).isEqualTo(priority);
+  }
+
+  @Test
+  void createSchemaTemplatesAndPoliciesShouldCreateComponentAndIndexTemplates() {
+    // given
+    // index templates and ISM policies are not part of a backup, so they must be (re)created on
+    // startup even when the schema (indices) already exists after a restore (#32806)
+    when(tasklistProperties.getArchiver()).thenReturn(mock(ArchiverProperties.class));
+    ReflectionTestUtils.setField(
+        openSearchSchemaManager, "templateDescriptors", List.of(taskTemplate));
+    ReflectionTestUtils.setField(openSearchSchemaManager, "indexDescriptors", List.of());
+
+    // when
+    openSearchSchemaManager.createSchemaTemplatesAndPolicies();
+
+    // then
+    verify(retryOpenSearchClient).createComponentTemplate(any(), eq(false));
+    verify(retryOpenSearchClient).createTemplate(any(PutIndexTemplateRequest.class), eq(false));
   }
 
   private void validateMappings(final TypeMapping mapping, final String fileName)

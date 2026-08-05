@@ -101,6 +101,8 @@ public class SchemaStartupIT extends AbstractSchemaIT {
 
   @Autowired public TestSchemaStartup schemaStartup;
   @Autowired public TestIndex testIndex;
+  @Autowired public TestTemplate testTemplate;
+  @Autowired public IndexSchemaValidator schemaValidator;
 
   @Autowired private OperateProperties operateProperties;
 
@@ -147,6 +149,35 @@ public class SchemaStartupIT extends AbstractSchemaIT {
                             new IndexMappingProperty()
                                 .setName("propC")
                                 .setTypeDefinition(Map.of("type", "keyword"))))));
+  }
+
+  @Test
+  public void shouldCreateMissingIndexTemplateWhenSchemaAlreadyExists() throws MigrationException {
+    // given
+    // migration is disabled: this test invokes initializeSchemaOnDemand() twice (to simulate a
+    // restart) within a single Spring context, and the Migrator's ExecutorService is shut down
+    // after the first run, so a second migration would fail with a TaskRejectedException. Template
+    // recreation, which is what this test verifies, is independent of migration.
+    migrationProperties.setMigrationEnabled(false);
+    // a fully created schema (indices, aliases and templates)
+    schemaStartup.initializeSchemaOnDemand();
+    assertThat(schemaHelper.getTemplateMappings(testTemplate)).isNotNull();
+
+    // and an index template that got lost, as happens after restoring a backup into an empty
+    // cluster: the indices are restored from the snapshot but index templates are not part of a
+    // backup (https://github.com/camunda/camunda/issues/32806)
+    final boolean deleted = schemaManager.deleteTemplatesFor(testTemplate.getTemplateName());
+    assertThat(deleted).isTrue();
+    // the schema is still considered to exist, because the (restored) indices and aliases are there
+    assertThat(schemaValidator.schemaExists()).isTrue();
+
+    // when
+    // the application is (re)started
+    schemaStartup.initializeSchemaOnDemand();
+
+    // then
+    // the missing index template has been recreated
+    assertThat(schemaHelper.getTemplateMappings(testTemplate)).isNotNull();
   }
 
   @Test

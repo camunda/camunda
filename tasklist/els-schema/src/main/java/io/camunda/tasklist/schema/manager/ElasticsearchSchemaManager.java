@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indexlifecycle.DeleteAction;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indexlifecycle.LifecycleAction;
 import org.elasticsearch.client.indexlifecycle.LifecyclePolicy;
 import org.elasticsearch.client.indexlifecycle.Phase;
@@ -94,12 +95,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
+    createSchemaTemplatesAndPolicies();
+    createIndices();
+  }
+
+  @Override
+  public void createSchemaTemplatesAndPolicies() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCycles();
+      createIndexLifeCyclesIfNotExist();
     }
     createDefaults();
     createTemplates();
-    createIndices();
   }
 
   @Override
@@ -292,6 +298,24 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .name(getComponentTemplateName())
             .componentTemplate(componentTemplate);
     retryElasticsearchClient.createComponentTemplate(request, overwrite);
+  }
+
+  public void createIndexLifeCyclesIfNotExist() {
+    // Only manage the retention policy when the application is configured to do so, and only create
+    // it when it does not already exist, so a restart never overwrites a user-managed or
+    // pre-existing policy. This mirrors ILMPolicyUpdateElasticSearch and keeps
+    // createSchemaTemplatesAndPolicies() safe to run on every startup (#32806).
+    if (!tasklistProperties.getArchiver().isIlmManagePolicy()) {
+      LOGGER.info("ILM policy is not managed by Tasklist, skipping creation.");
+      return;
+    }
+    if (retryElasticsearchClient.getLifeCyclePolicy(
+            new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES))
+        != null) {
+      LOGGER.info("{} ILM policy already exists.", TASKLIST_DELETE_ARCHIVED_INDICES);
+      return;
+    }
+    createIndexLifeCycles();
   }
 
   public void createIndexLifeCycles() {
