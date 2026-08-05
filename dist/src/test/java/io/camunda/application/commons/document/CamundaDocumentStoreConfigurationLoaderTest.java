@@ -271,11 +271,19 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     awsStore.setSecretKey("tenant-a-secret");
     camunda.getDocument().getAws().put("aws1", awsStore);
 
+    final Document.GcpStore gcpStore = new Document.GcpStore();
+    gcpStore.setBucketName("gcp-docs");
+    gcpStore.setCredentialsPath("/var/secrets/gcp/tenant-a.json");
+    camunda.getDocument().getGcp().put("gcp1", gcpStore);
+
     final var mockEnv = new MockEnvironment();
     mockEnv.setProperty("camunda.document.default-store-id", "aws1");
     mockEnv.setProperty("camunda.document.aws.aws1.bucket-name", "docs");
     mockEnv.setProperty("camunda.document.aws.aws1.access-key", "tenant-a-key");
     mockEnv.setProperty("camunda.document.aws.aws1.secret-key", "tenant-a-secret");
+    mockEnv.setProperty("camunda.document.gcp.gcp1.bucket-name", "gcp-docs");
+    mockEnv.setProperty(
+        "camunda.document.gcp.gcp1.credentials-path", "/var/secrets/gcp/tenant-a.json");
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
     try {
@@ -287,6 +295,8 @@ class CamundaDocumentStoreConfigurationLoaderTest {
       assertThat(store("aws1", configuration.documentStores()).properties())
           .containsEntry("ACCESS_KEY", "tenant-a-key")
           .containsEntry("SECRET_KEY", "tenant-a-secret");
+      assertThat(store("gcp1", configuration.documentStores()).properties())
+          .containsEntry("CREDENTIALS_PATH", "/var/secrets/gcp/tenant-a.json");
     } finally {
       UnifiedConfigurationHelper.setCustomEnvironment(null);
     }
