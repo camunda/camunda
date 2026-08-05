@@ -231,18 +231,26 @@ non-PT deployments are unchanged.
 - [identity ADR-0006](/camunda/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) — the
   bearer-token `/userinfo` claim-augmentation flow (`OidcClaimsProvider` invoked inside
   `AuthenticationHandler.Oidc`), which applies to gRPC and is why the claims provider is per-PT.
-- #54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
-- #54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
+- 
+
+# 54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.
+
+- 
+
+# 54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.
 
 - `AuthenticationInterceptor` / `AuthenticationHandler`
   (`zeebe/gateway-grpc/.../interceptors/impl/`) — the gRPC auth entry point and sealed handler this
   ADR makes PT-aware.
+
 - `PhysicalTenantInterceptor` (`zeebe/gateway-grpc/.../interceptors/impl/`) — the existing
   server-side interceptor that reads/validates the `Camunda-Physical-Tenant` header and stamps the
   `Context`; **removed** by this ADR, its responsibility folded into the merged interceptor.
+
 - `EndpointManager` (`zeebe/gateway-grpc/.../EndpointManager.java`) — reads the PT id from the
   `Context` (`getPhysicalTenantIdKey`) to set the broker request's partition group; the reason the
   stamp must be preserved.
+
 - `ScopedJwtDecoderFactory` (CSL) and `PhysicalTenantAuthConfigurations` /
   `PhysicalTenantScopeProvider` (`authentication/.../pt/`) — the per-PT decoder construction path
   shared with REST.

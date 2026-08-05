@@ -81,7 +81,15 @@ The data-plane read (ADR-0005 §B) is unchanged: it stays instance-bound to the 
 
 - ADR-0005 — Physical-Tenant Routing of the Authorization Layer (superseded in part; see Status)
 - ADR-0003 — pre-security physical-tenant filter (stamps the PT onto the request)
-- #53759 — lazy per-field membership resolution
-- #55440 — the change that exposed the gap
-- #55252 — Physical-Tenant authorization routing (epic)
+- 
+
+# 53759 — lazy per-field membership resolution
+
+- 
+
+# 55440 — the change that exposed the gap
+
+- 
+
+# 55252 — Physical-Tenant authorization routing (epic)
 
