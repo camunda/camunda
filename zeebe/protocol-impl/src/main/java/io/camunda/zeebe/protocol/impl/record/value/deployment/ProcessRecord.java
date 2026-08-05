@@ -19,10 +19,14 @@ import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.agrona.DirectBuffer;
@@ -42,9 +46,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final ArrayProperty<TransformerVersion> transformerVersionsProp =
       new ArrayProperty<>("transformerVersions", TransformerVersion::new);
   private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
+  private final ArrayProperty<IntegerValue> drainPartitionsProp =
+      new ArrayProperty<>("drainPartitions", IntegerValue::new);
 
   public ProcessRecord() {
-    super(11);
+    super(12);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -55,7 +61,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
         .declareProperty(transformerVersionsProp)
-        .declareProperty(deleteHistoryProp);
+        .declareProperty(deleteHistoryProp)
+        .declareProperty(drainPartitionsProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -225,6 +232,19 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   /**
+   * Returns the stored slot→version pairs sorted by slot ID. Absent entries default to version 1.
+   * Excluded from JSON export — engine-internal state not exposed to external consumers.
+   */
+  @JsonIgnore
+  public Map<Integer, Integer> getTransformerVersions() {
+    final Map<Integer, Integer> result = new TreeMap<>();
+    for (final TransformerVersion entry : transformerVersionsProp) {
+      result.put(entry.getSlotId(), entry.getVersion());
+    }
+    return result;
+  }
+
+  /**
    * Sets the per-slot transformer versions frozen at deploy time. Entries are sorted by slot ID
    * before writing so the msgpack array is always in a deterministic order regardless of the input
    * map's iteration order. Version-1 entries are stored but redundant — {@link
@@ -244,19 +264,6 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   /**
-   * Returns the stored slot→version pairs sorted by slot ID. Absent entries default to version 1.
-   * Excluded from JSON export — engine-internal state not exposed to external consumers.
-   */
-  @JsonIgnore
-  public Map<Integer, Integer> getTransformerVersions() {
-    final Map<Integer, Integer> result = new TreeMap<>();
-    for (final TransformerVersion entry : transformerVersionsProp) {
-      result.put(entry.getSlotId(), entry.getVersion());
-    }
-    return result;
-  }
-
-  /**
    * Whether the instances' history must be deleted once the definition is gone cluster-wide.
    * Carried on {@code DRAINING} to be persisted with the draining definition, then back on the
    * {@code DELETE_COMPLETE} drain report so the deployment partition knows whether to delete it.
@@ -269,6 +276,25 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   public ProcessRecord setDeleteHistory(final boolean deleteHistory) {
     deleteHistoryProp.setValue(deleteHistory);
+    return this;
+  }
+
+  /** Partitions frozen at DRAINING time to seed drain-aggregation. Only set on DRAINING events. */
+  @JsonIgnore
+  public List<Integer> getDrainPartitions() {
+    final List<Integer> result = new ArrayList<>();
+    for (final IntegerValue partitionId : drainPartitionsProp) {
+      result.add(partitionId.getValue());
+    }
+    return result;
+  }
+
+  public ProcessRecord setDrainPartitions(final Collection<Integer> partitionIds) {
+    drainPartitionsProp.reset();
+    // Sort to keep the serialized record deterministic across runs.
+    partitionIds.stream()
+        .sorted()
+        .forEach(partitionId -> drainPartitionsProp.add().setValue(partitionId));
     return this;
   }
 

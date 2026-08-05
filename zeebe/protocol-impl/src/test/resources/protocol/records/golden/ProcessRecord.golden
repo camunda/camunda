@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -42,9 +43,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final ArrayProperty<TransformerVersion> transformerVersionsProp =
       new ArrayProperty<>("transformerVersions", TransformerVersion::new);
   private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
+  private final ArrayProperty<IntegerValue> drainPartitionsProp =
+      new ArrayProperty<>("drainPartitions", IntegerValue::new);
 
   public ProcessRecord() {
-    super(11);
+    super(12);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -55,7 +58,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
         .declareProperty(transformerVersionsProp)
-        .declareProperty(deleteHistoryProp);
+        .declareProperty(deleteHistoryProp)
+        .declareProperty(drainPartitionsProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
