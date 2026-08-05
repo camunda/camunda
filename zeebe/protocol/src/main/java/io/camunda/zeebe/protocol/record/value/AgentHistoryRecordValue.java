@@ -193,6 +193,15 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
     /** Returns the number of output tokens produced. */
     long getOutputTokens();
 
+    /** Returns the number of reasoning tokens consumed by this LLM call. */
+    long getReasoningTokenCount();
+
+    /** Returns the number of cache-creation tokens consumed by this LLM call. */
+    long getCacheCreationTokenCount();
+
+    /** Returns the number of cache-read tokens consumed by this LLM call. */
+    long getCacheReadTokenCount();
+
     /** Returns the wall-clock duration of the LLM call in milliseconds. */
     long getDurationMs();
   }

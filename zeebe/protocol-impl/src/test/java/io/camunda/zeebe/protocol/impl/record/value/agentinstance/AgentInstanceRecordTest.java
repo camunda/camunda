@@ -153,6 +153,9 @@ final class AgentInstanceRecordTest {
     final AgentInstanceRecord record = new AgentInstanceRecord();
     assertThat(record.getMetrics().getInputTokens()).isZero();
     assertThat(record.getMetrics().getOutputTokens()).isZero();
+    assertThat(record.getMetrics().getReasoningTokenCount()).isZero();
+    assertThat(record.getMetrics().getCacheCreationTokenCount()).isZero();
+    assertThat(record.getMetrics().getCacheReadTokenCount()).isZero();
     assertThat(record.getMetrics().getModelCalls()).isZero();
     assertThat(record.getMetrics().getToolCalls()).isZero();
   }
@@ -165,6 +168,9 @@ final class AgentInstanceRecordTest {
         .getMetrics()
         .setInputTokens(1340L)
         .setOutputTokens(490L)
+        .setReasoningTokenCount(120L)
+        .setCacheCreationTokenCount(80L)
+        .setCacheReadTokenCount(40L)
         .setModelCalls(3)
         .setToolCalls(2);
 
@@ -175,6 +181,9 @@ final class AgentInstanceRecordTest {
     // then
     assertThat(copy.getMetrics().getInputTokens()).isEqualTo(1340L);
     assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(490L);
+    assertThat(copy.getMetrics().getReasoningTokenCount()).isEqualTo(120L);
+    assertThat(copy.getMetrics().getCacheCreationTokenCount()).isEqualTo(80L);
+    assertThat(copy.getMetrics().getCacheReadTokenCount()).isEqualTo(40L);
     assertThat(copy.getMetrics().getModelCalls()).isEqualTo(3);
     assertThat(copy.getMetrics().getToolCalls()).isEqualTo(2);
   }

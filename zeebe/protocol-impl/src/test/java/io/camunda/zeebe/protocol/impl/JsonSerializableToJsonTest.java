@@ -5123,7 +5123,7 @@ final class JsonSerializableToJsonTest {
             "systemPrompt": "Extract vendor, amount, date, and line items from the invoice."
           },
           "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
-          "metrics": { "inputTokens": 512, "outputTokens": 148, "modelCalls": 1, "toolCalls": 1 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 1, "toolCalls": 1 },
           "tools": [
             { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
             { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
@@ -5155,7 +5155,7 @@ final class JsonSerializableToJsonTest {
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": "" },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
-          "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
           "changedAttributes": [],
           "jobKey": -1,
@@ -5284,7 +5284,7 @@ final class JsonSerializableToJsonTest {
               "arguments": { "documentId": "inv-001" }
             }
           ],
-          "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": 1200 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
@@ -5375,7 +5375,7 @@ final class JsonSerializableToJsonTest {
           ],
           "systemPrompt": [],
           "toolCalls": [],
-          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
@@ -5407,7 +5407,7 @@ final class JsonSerializableToJsonTest {
           "content": [],
           "systemPrompt": [],
           "toolCalls": [],
-          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,

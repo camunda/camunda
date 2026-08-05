@@ -223,6 +223,24 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
     long getOutputTokens();
 
     /**
+     * @return on events, the current number of reasoning tokens consumed; on UPDATE, the delta to
+     *     add ({@code -1} means the field is not provided)
+     */
+    long getReasoningTokenCount();
+
+    /**
+     * @return on events, the current number of tokens used to create a prompt cache entry; on
+     *     UPDATE, the delta to add ({@code -1} means the field is not provided)
+     */
+    long getCacheCreationTokenCount();
+
+    /**
+     * @return on events, the current number of tokens read from a prompt cache entry; on UPDATE,
+     *     the delta to add ({@code -1} means the field is not provided)
+     */
+    long getCacheReadTokenCount();
+
+    /**
      * @return on events, the current number of model calls made by the agent; on UPDATE, the delta
      *     to add ({@code -1} means the field is not provided)
      */

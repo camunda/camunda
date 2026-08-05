@@ -75,6 +75,15 @@
                 "outputTokens": {
                   "type": "long"
                 },
+                "reasoningTokenCount": {
+                  "type": "long"
+                },
+                "cacheCreationTokenCount": {
+                  "type": "long"
+                },
+                "cacheReadTokenCount": {
+                  "type": "long"
+                },
                 "durationMs": {
                   "type": "long"
                 }

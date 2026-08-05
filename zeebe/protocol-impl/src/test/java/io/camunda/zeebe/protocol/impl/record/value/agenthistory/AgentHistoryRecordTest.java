@@ -217,6 +217,9 @@ final class AgentHistoryRecordTest {
     // then
     assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
     assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getReasoningTokenCount()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getCacheCreationTokenCount()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getCacheReadTokenCount()).isEqualTo(-1L);
     assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
   }
 
@@ -252,7 +255,14 @@ final class AgentHistoryRecordTest {
   void shouldRoundTripMetricsViaMsgPack() {
     // given
     final AgentHistoryRecord original = new AgentHistoryRecord();
-    original.getMetrics().setInputTokens(100L).setOutputTokens(200L).setDurationMs(350L);
+    original
+        .getMetrics()
+        .setInputTokens(100L)
+        .setOutputTokens(200L)
+        .setReasoningTokenCount(40L)
+        .setCacheCreationTokenCount(30L)
+        .setCacheReadTokenCount(20L)
+        .setDurationMs(350L);
 
     // when
     final AgentHistoryRecord copy = new AgentHistoryRecord();
@@ -261,6 +271,9 @@ final class AgentHistoryRecordTest {
     // then
     assertThat(copy.getMetrics().getInputTokens()).isEqualTo(100L);
     assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(200L);
+    assertThat(copy.getMetrics().getReasoningTokenCount()).isEqualTo(40L);
+    assertThat(copy.getMetrics().getCacheCreationTokenCount()).isEqualTo(30L);
+    assertThat(copy.getMetrics().getCacheReadTokenCount()).isEqualTo(20L);
     assertThat(copy.getMetrics().getDurationMs()).isEqualTo(350L);
   }
 

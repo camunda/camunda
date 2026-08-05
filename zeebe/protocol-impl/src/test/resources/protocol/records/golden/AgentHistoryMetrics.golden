@@ -17,12 +17,19 @@ public final class AgentHistoryMetrics extends ObjectValue implements AgentHisto
 
   private final LongProperty inputTokensProp = new LongProperty("inputTokens", -1L);
   private final LongProperty outputTokensProp = new LongProperty("outputTokens", -1L);
+  private final LongProperty reasoningTokenCountProp = new LongProperty("reasoningTokenCount", -1L);
+  private final LongProperty cacheCreationTokenCountProp =
+      new LongProperty("cacheCreationTokenCount", -1L);
+  private final LongProperty cacheReadTokenCountProp = new LongProperty("cacheReadTokenCount", -1L);
   private final LongProperty durationMsProp = new LongProperty("durationMs", -1L);
 
   public AgentHistoryMetrics() {
-    super(3);
+    super(6);
     declareProperty(inputTokensProp)
         .declareProperty(outputTokensProp)
+        .declareProperty(reasoningTokenCountProp)
+        .declareProperty(cacheCreationTokenCountProp)
+        .declareProperty(cacheReadTokenCountProp)
         .declareProperty(durationMsProp);
   }
 
@@ -43,6 +50,36 @@ public final class AgentHistoryMetrics extends ObjectValue implements AgentHisto
 
   public AgentHistoryMetrics setOutputTokens(final long outputTokens) {
     outputTokensProp.setValue(outputTokens);
+    return this;
+  }
+
+  @Override
+  public long getReasoningTokenCount() {
+    return reasoningTokenCountProp.getValue();
+  }
+
+  public AgentHistoryMetrics setReasoningTokenCount(final long reasoningTokenCount) {
+    reasoningTokenCountProp.setValue(reasoningTokenCount);
+    return this;
+  }
+
+  @Override
+  public long getCacheCreationTokenCount() {
+    return cacheCreationTokenCountProp.getValue();
+  }
+
+  public AgentHistoryMetrics setCacheCreationTokenCount(final long cacheCreationTokenCount) {
+    cacheCreationTokenCountProp.setValue(cacheCreationTokenCount);
+    return this;
+  }
+
+  @Override
+  public long getCacheReadTokenCount() {
+    return cacheReadTokenCountProp.getValue();
+  }
+
+  public AgentHistoryMetrics setCacheReadTokenCount(final long cacheReadTokenCount) {
+    cacheReadTokenCountProp.setValue(cacheReadTokenCount);
     return this;
   }
 
