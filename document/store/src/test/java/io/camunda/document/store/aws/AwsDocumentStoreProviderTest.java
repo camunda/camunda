@@ -309,7 +309,8 @@ public class AwsDocumentStoreProviderTest {
   @Test
   public void shouldTargetTheConfiguredRegionFromClientAndPresigner() {
     // given
-    final AwsClientOptions options = new AwsClientOptions(null, null, null, null, "eu-central-1");
+    final AwsClientOptions options =
+        new AwsClientOptions(null, null, null, null, "eu-central-1", null, null);
 
     // when
     try (final var client = AwsDocumentStore.buildClient(options);

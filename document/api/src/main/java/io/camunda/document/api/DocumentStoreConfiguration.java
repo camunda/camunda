@@ -29,7 +29,8 @@ public record DocumentStoreConfiguration(
      * #REDACTED}. Matched case-insensitively because store properties also arrive through the
      * legacy {@code DOCUMENT_STORE_<ID>_<PROPERTY>} environment bridge.
      */
-    private static final Set<String> SENSITIVE_PROPERTIES = Set.of("CONNECTION_STRING");
+    private static final Set<String> SENSITIVE_PROPERTIES =
+        Set.of("CONNECTION_STRING", "SECRET_KEY");
 
     private static final String REDACTED = "<redacted>";
 
