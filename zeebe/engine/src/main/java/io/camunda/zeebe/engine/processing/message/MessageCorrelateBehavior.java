@@ -219,6 +219,7 @@ public final class MessageCorrelateBehavior {
 
   public void correlateToMessageEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    // TODO(#58766): defer correlations to suspended instances so live messages can retry on resume.
     correlateToMessageEvents(messageData, correlatingSubscriptions, processInstanceKey -> false);
   }
 
