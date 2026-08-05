@@ -142,6 +142,22 @@ test.describe('Process Instances Table', () => {
         .toContain(instanceIds[2].toString());
     });
 
+    const versionOneKeys = [
+      instanceIds[0].toString(),
+      instanceIds[1].toString(),
+    ];
+    // Reads both version-1 rows in one pass and returns the expected keys
+    // found in them, so the pair is matched against a single table state.
+    const versionOneKeysInRows =
+      (first: number, second: number) => async () => {
+        const rowsText = `${await operateProcessesPage.processInstancesTable
+          .nth(first)
+          .innerText()}\n${await operateProcessesPage.processInstancesTable
+          .nth(second)
+          .innerText()}`;
+        return versionOneKeys.filter((key) => rowsText.includes(key));
+      };
+
     await test.step('Check sorting of processes by process version DESC', async () => {
       await operateProcessesPage.clickVersionSortButton();
       // Version 2 sorts to the top. The two version-1 rows follow, but their
@@ -155,36 +171,14 @@ test.describe('Process Instances Table', () => {
           operateProcessesPage.processInstancesTable.nth(0).innerText(),
         )
         .toContain(instanceIds[2].toString());
-      const versionOneRowsText = async () =>
-        `${await operateProcessesPage.processInstancesTable
-          .nth(1)
-          .innerText()}\n${await operateProcessesPage.processInstancesTable
-          .nth(2)
-          .innerText()}`;
-      await expect
-        .poll(versionOneRowsText)
-        .toContain(instanceIds[0].toString());
-      await expect
-        .poll(versionOneRowsText)
-        .toContain(instanceIds[1].toString());
+      await expect.poll(versionOneKeysInRows(1, 2)).toEqual(versionOneKeys);
     });
 
     await test.step('Check sorting of processes by process version ASC', async () => {
       await operateProcessesPage.clickVersionSortButton();
       // The two version-1 rows come first (tie broken by instance key, order
       // not guaranteed on a multi-partition cluster), then version 2 last.
-      const versionOneRowsText = async () =>
-        `${await operateProcessesPage.processInstancesTable
-          .nth(0)
-          .innerText()}\n${await operateProcessesPage.processInstancesTable
-          .nth(1)
-          .innerText()}`;
-      await expect
-        .poll(versionOneRowsText)
-        .toContain(instanceIds[0].toString());
-      await expect
-        .poll(versionOneRowsText)
-        .toContain(instanceIds[1].toString());
+      await expect.poll(versionOneKeysInRows(0, 1)).toEqual(versionOneKeys);
       await expect
         .poll(() =>
           operateProcessesPage.processInstancesTable.nth(2).innerText(),
