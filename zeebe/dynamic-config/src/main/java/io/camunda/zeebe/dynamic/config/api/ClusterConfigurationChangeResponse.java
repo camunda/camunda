@@ -14,12 +14,20 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 
 public record ClusterConfigurationChangeResponse(
     long changeId,
     LegacyConfigurationChangeResponse legacyResponse,
+    // The new multi-partition-group configuration, absent for callers that don't populate it
+    // (e.g. not yet carried over the wire by a peer). legacyResponse is always required, for
+    // backwards compatibility.
     CurrentConfigurationChangeResponse response) {
+
+  public ClusterConfigurationChangeResponse {
+    Objects.requireNonNull(legacyResponse, "legacyResponse must not be null");
+  }
 
   public record LegacyConfigurationChangeResponse(
       SortedMap<MemberId, MemberState> currentConfiguration,
@@ -40,5 +48,12 @@ public record ClusterConfigurationChangeResponse(
   public record CurrentConfigurationChangeResponse(
       CurrentClusterConfiguration currentConfiguration,
       CurrentClusterConfiguration expectedConfiguration,
-      List<ClusterConfigurationChangeOperation> plannedChanges) {}
+      List<ClusterConfigurationChangeOperation> plannedChanges) {
+
+    public CurrentConfigurationChangeResponse {
+      Objects.requireNonNull(currentConfiguration, "currentConfiguration must not be null");
+      Objects.requireNonNull(expectedConfiguration, "expectedConfiguration must not be null");
+      Objects.requireNonNull(plannedChanges, "plannedChanges must not be null");
+    }
+  }
 }
