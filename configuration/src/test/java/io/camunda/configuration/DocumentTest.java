@@ -31,6 +31,7 @@ class DocumentTest {
         "camunda.document.aws.aws1.secret-key=aws1-secret",
         "camunda.document.gcp.gcp1.bucket-name=gcp-docs",
         "camunda.document.gcp.gcp1.prefix=temp/",
+        "camunda.document.gcp.gcp1.credentials-path=/var/secrets/gcp1.json",
         "camunda.document.azure.az1.container-name=docs",
         "camunda.document.azure.az1.endpoint=https://account.blob.core.windows.net",
         "camunda.document.local.local1.path=/var/camunda/documents"
@@ -70,6 +71,7 @@ class DocumentTest {
               gcpStore -> {
                 assertThat(gcpStore.getBucketName()).isEqualTo("gcp-docs");
                 assertThat(gcpStore.getPrefix()).isEqualTo("temp/");
+                assertThat(gcpStore.getCredentialsPath()).isEqualTo("/var/secrets/gcp1.json");
               });
 
       assertThat(unifiedConfiguration.getCamunda().getDocument().getAzure().get("az1"))

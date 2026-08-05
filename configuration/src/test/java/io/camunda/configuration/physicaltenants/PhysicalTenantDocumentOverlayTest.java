@@ -266,10 +266,14 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.store.bucket-name", "root-bucket",
                     "camunda.document.aws.store.access-key", "root-key",
                     "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.document.gcp.gcs.bucket-name", "root-gcs",
+                    "camunda.document.gcp.gcs.credentials-path", "/secrets/root.json",
                     "camunda.physical-tenants.tenanta.document.aws.store.access-key",
                         "tenant-a-key",
                     "camunda.physical-tenants.tenanta.document.aws.store.secret-key",
-                        "tenant-a-secret")));
+                        "tenant-a-secret",
+                    "camunda.physical-tenants.tenanta.document.gcp.gcs.credentials-path",
+                        "/secrets/tenant-a.json")));
 
     final Document tenantA =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
@@ -278,11 +282,14 @@ class PhysicalTenantDocumentOverlayTest {
 
     assertThat(tenantA.getAws().get("store").getAccessKey()).isEqualTo("tenant-a-key");
     assertThat(tenantA.getAws().get("store").getSecretKey()).isEqualTo("tenant-a-secret");
+    assertThat(tenantA.getGcp().get("gcs").getCredentialsPath())
+        .isEqualTo("/secrets/tenant-a.json");
     // the tenant restated only its credentials, so the root bucket must survive the overlay
     assertThat(tenantA.getAws().get("store").getBucketName()).isEqualTo("root-bucket");
 
     // a tenant without an override keeps the root credentials
     assertThat(tenantB.getAws().get("store").getAccessKey()).isEqualTo("root-key");
     assertThat(tenantB.getAws().get("store").getSecretKey()).isEqualTo("root-secret");
+    assertThat(tenantB.getGcp().get("gcs").getCredentialsPath()).isEqualTo("/secrets/root.json");
   }
 }
