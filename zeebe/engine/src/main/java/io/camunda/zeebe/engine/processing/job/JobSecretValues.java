@@ -36,11 +36,10 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
  *
  * <p>{@link #check(JobRecord)} materializes the value of every reference it finds, so the following
  * {@link #injectedVariablesOf(JobRecord, List)} cannot lose a value that was evicted from the cache
- * in between. The materialized values live until {@link #reset()}, which every caller must reach
- * once it injected them: keeping them longer leaves plaintext secrets reachable, and checking a job
- * against values materialized earlier could inject one that has expired since. A caller that checks
- * the jobs of one activation together resets after their injection, a caller that checks a single
- * job after each one.
+ * in between. The materialized values live until {@link #reset()}, which a caller must reach once
+ * it is done injecting them and before it checks anything else: keeping them longer leaves
+ * plaintext secrets reachable, and checking a job against values materialized earlier could inject
+ * one that has expired since.
  *
  * <p>The replacement is textual: every occurrence of the placeholder in the addressed leaf is
  * replaced, including text that merely spells out the placeholder next to a real reference at the

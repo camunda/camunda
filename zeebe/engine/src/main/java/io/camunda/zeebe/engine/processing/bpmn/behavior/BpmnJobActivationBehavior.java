@@ -193,9 +193,9 @@ public class BpmnJobActivationBehavior {
           });
     } finally {
       // the materialized values are needed only until they are injected into the job to push, so
-      // they are discarded as soon as the hand-out is over: no plaintext secret stays reachable
-      // afterwards, and the next hand-out materializes its own values, which cannot have expired
-      // since
+      // they are discarded as soon as the hand-out is over: afterwards the only plaintext value
+      // left is the one in the pushed job itself, which carries it to the worker, and the next
+      // hand-out materializes its own values, which cannot have expired since
       secretValues.reset();
     }
   }
