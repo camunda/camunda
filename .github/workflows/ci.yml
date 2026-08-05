@@ -2163,7 +2163,13 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@9f994ff942efdab9e4ffb41bc1cc610d3488e9cc # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Install bats and xmllint
-        run: sudo apt-get install -y bats libxml2-utils
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_seconds: 60
+          shell: bash
+          command: sudo apt-get install -y --no-install-recommends bats libxml2-utils
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
