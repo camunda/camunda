@@ -72,33 +72,6 @@ const sidebars = {
           items: [
             {
               type: 'category',
-              label: 'Secondary Storage',
-              link: { type: 'doc', id: 'architecture/components/secondary-storage/index' },
-              items: [
-                'architecture/components/secondary-storage/working-with-secondary-storage',
-                'architecture/components/secondary-storage/archiving',
-                'architecture/components/secondary-storage/backup-and-restore',
-                {
-                  type: 'category',
-                  label: 'RDBMS',
-                  items: [
-                    'architecture/components/secondary-storage/rdbms/rdbms_architecture_docs',
-                    'architecture/components/secondary-storage/rdbms/developer-guide',
-                    'architecture/components/secondary-storage/rdbms/benchmarking',
-                    {
-                      type: 'category',
-                      label: 'ADRs',
-                      items: [
-                        'architecture/components/secondary-storage/rdbms/adr/use-mybatis-as-orm-framework',
-                        'architecture/components/secondary-storage/rdbms/adr/use-liquibase-for-schema-management',
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              type: 'category',
               label: 'Orchestration Cluster Identity',
               items: [
                 {
