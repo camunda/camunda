@@ -83,7 +83,7 @@ runs:
         compose-file: |
           ${{ inputs.compose_file }}
         compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
-        up-flags: "${{ inputs.startup_check == 'wait' && '--wait' || '' }}"
+        up-flags: "${{ inputs.startup_check == 'wait' && format('--wait --wait-timeout {0}', inputs.timeout) || '' }}"
         services: ${{ env.COMPOSE_SERVICES }}
     - name: Short sleep to let it startup
       if: ${{ inputs.startup_check == 'healthcheck' }}
