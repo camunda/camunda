@@ -122,6 +122,32 @@ class AgentDefinitionValidatorTest {
   }
 
   @Test
+  void duplicateAgentDefinitionOnAdHocSubProcessIsInvalid() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnAdHocSubProcess.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(AdHocSubProcess.class, "Must have exactly one 'zeebe:agentDefinition'"));
+  }
+
+  @Test
+  void duplicateAgentDefinitionOnServiceTaskIsInvalid() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnServiceTask.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(ServiceTask.class, "Must have exactly one 'zeebe:agentDefinition'"));
+  }
+
+  @Test
   void missingAgentTypeIsInvalid() {
     // given
     final BpmnModelInstance process =

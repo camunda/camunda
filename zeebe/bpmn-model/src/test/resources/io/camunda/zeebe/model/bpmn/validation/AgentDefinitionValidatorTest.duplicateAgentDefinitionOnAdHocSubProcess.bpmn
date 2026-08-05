@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="process" isExecutable="true">
+    <bpmn:startEvent id="start"/>
+    <bpmn:adHocSubProcess id="ad-hoc">
+      <bpmn:extensionElements>
+        <zeebe:agentDefinition agentType="aiAgentSubProcess"/>
+        <zeebe:agentDefinition agentType="aiAgentSubProcess"/>
+      </bpmn:extensionElements>
+      <bpmn:task id="A"/>
+    </bpmn:adHocSubProcess>
+  </bpmn:process>
+</bpmn:definitions>
