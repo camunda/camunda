@@ -262,6 +262,11 @@ Load extra context on demand — only when relevant, only if the files exist.
 - Follow conventions in the
   [Code Style wiki](https://github.com/camunda/camunda/wiki/Code-Style).
 
+### Code comments
+
+Before writing an inline comment, name the reader and what they would do differently for having
+read it. If you can't name both, don't write it.
+
 ### Testing conventions
 
 - Test behavior, not implementation — assert on observable outcomes rather than internal state.
