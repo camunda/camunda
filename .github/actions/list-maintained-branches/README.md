@@ -16,15 +16,15 @@ version list to maintain.
 
 ## Inputs
 
-| Input         | Description                                               | Required |
-|---------------|-----------------------------------------------------------|----------|
-| `min-version` | Minimum stable version to include, as `MAJOR.MINOR` (e.g. `8.8`). | yes |
+|     Input     |                            Description                            | Required |
+|---------------|-------------------------------------------------------------------|----------|
+| `min-version` | Minimum stable version to include, as `MAJOR.MINOR` (e.g. `8.8`). | yes      |
 
 ## Outputs
 
-| Output            | Description                                                              |
-|-------------------|--------------------------------------------------------------------------|
-| `branches`        | JSON array including `main`, e.g. `["main","stable/8.8","stable/8.9"]`.   |
+|      Output       |                                    Description                                    |
+|-------------------|-----------------------------------------------------------------------------------|
+| `branches`        | JSON array including `main`, e.g. `["main","stable/8.8","stable/8.9"]`.           |
 | `stable-branches` | JSON array of only the `stable/X.Y` branches, e.g. `["stable/8.8","stable/8.9"]`. |
 
 > **Ordering is not guaranteed.** The action does not sort its output. Callers
@@ -52,3 +52,4 @@ jobs:
         branch: ${{ fromJSON(needs.prepare-matrix.outputs.branches) }}
     # ...
 ```
+
