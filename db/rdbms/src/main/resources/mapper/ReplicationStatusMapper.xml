@@ -16,6 +16,7 @@
       <arg column="logStatus" javaType="java.lang.Long" name="logStatus"/>
       <arg column="replicaId" javaType="java.lang.String" name="replicaId"/>
       <arg column="replicationLagMs" javaType="java.lang.Long" name="replicationLagMs"/>
+      <arg column="replicatedUntilMs" javaType="java.lang.Long" name="replicatedUntilMs"/>
     </constructor>
   </resultMap>
 
@@ -23,11 +24,20 @@
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
 
+  <!-- Postgres has no "last commit time" column, so the primary's own clock_timestamp() is used. -->
+  <select id="getCurrentDbTime" resultType="java.lang.Long" databaseId="postgresql">
+    SELECT (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::bigint
+  </select>
+
+  <!-- replicatedUntilMs is left NULL (not coalesced) when replay_lag is NULL, so an unmeasured
+       replica is never mistaken for one that is perfectly caught up. -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint      AS logStatus,
            pid::text                                                    AS replicaId,
-           COALESCE((EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint, 0) AS replicationLagMs
+           COALESCE((EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint, 0) AS replicationLagMs,
+           (EXTRACT(EPOCH FROM (clock_timestamp() - replay_lag)) * 1000)::bigint
+                                                                         AS replicatedUntilMs
     FROM pg_stat_replication
     WHERE pid IS NOT NULL;
   </select>
@@ -35,7 +45,6 @@
   <!--
     MSSQL: last_commit_lsn are numeric(25,0) in sys.dm_hadr_database_replica_states,
     directly comparable as bigint for a test/dev database where LSN values stay small.
-    last_redone_time approximates lag as "time since last redo applied on replica".
   -->
   <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="mssql">
     SELECT CONVERT(bigint, last_commit_lsn) AS last_lsn
@@ -43,13 +52,35 @@
     WHERE is_local = 1
   </select>
 
-  <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
-    SELECT CONVERT(bigint, ISNULL (last_commit_lsn, 0)) AS logStatus,
-           CONVERT(nvarchar(36), replica_id)            AS replicaId, ISNULL
-      (DATEDIFF(millisecond, last_redone_time, GETDATE()), 0)
-      AS replicationLagMs
+  <!--
+    Reads the primary's OWN last_commit_time (is_local = 1), not GETDATE(), so it comes from the
+    same MSSQL commit-time bookkeeping as the secondary's last_commit_time it's later compared
+    against (see getReplicationStatus below) - avoiding skew between the exporter's clock and the
+    database's.
+  -->
+  <select id="getCurrentDbTime" resultType="java.lang.Long" databaseId="mssql">
+    SELECT DATEDIFF_BIG(millisecond, '19700101', last_commit_time)
     FROM sys.dm_hadr_database_replica_states
-    WHERE is_local = 0
+    WHERE is_local = 1
+  </select>
+
+  <!--
+    MSSQL: replicationLagMs is the gap between the primary's and the secondary's last_commit_time,
+    both read from sys.dm_hadr_database_replica_states and correlated via group_database_id (a
+    GUID identifying the same AG-member database across replicas, unlike database_id which is a
+    replica-local id).
+      -->
+  <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
+    SELECT CONVERT(bigint, ISNULL(secondary.last_commit_lsn, 0)) AS logStatus,
+           CONVERT(nvarchar(36), secondary.replica_id)          AS replicaId,
+           DATEDIFF_BIG(millisecond, secondary.last_commit_time, pri.last_commit_time) AS replicationLagMs,
+           DATEDIFF_BIG(millisecond, '19700101', secondary.last_commit_time) AS replicatedUntilMs
+    FROM sys.dm_hadr_database_replica_states secondary
+           JOIN sys.dm_hadr_database_replica_states pri
+                ON secondary.group_database_id = pri.group_database_id
+                  AND pri.is_local = 1
+    WHERE secondary.is_local = 0
+      AND secondary.last_commit_time IS NOT NULL
   </select>
 
   <!--
@@ -104,6 +135,11 @@
                     AND TABLE_NAME = 'REPLICA_HOST_STATUS')
   </select>
 
+  <!-- MySQL (Aurora) also has no "last commit time" column, so the primary's own clock is used. -->
+  <select id="getCurrentDbTime" resultType="java.lang.Long" databaseId="mysql">
+    SELECT CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS SIGNED)
+  </select>
+
   <!--
     Detects whether the connected Aurora PostgreSQL instance is part of a Global Database.
     Uses to_regprocedure to check for aurora_global_db_instance_status() without calling it.
@@ -149,28 +185,32 @@
 
   <!--
     Returns per-replica replication status for Aurora Global Database (PostgreSQL). Each non-primary
-    instance reports its durable_lsn (the LSN persisted to durable storage on that instance)
-    together with the visibility_lag_in_msec for metrics.
+    instance reports its durable_lsn together with visibility_lag_in_msec; replicatedUntilMs is the
+    database's own current time minus that lag, left NULL when the lag itself is NULL.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(durable_lsn, 0)            AS logStatus,
            server_id                           AS replicaId,
-           COALESCE(visibility_lag_in_msec, 0) AS replicationLagMs
+           COALESCE(visibility_lag_in_msec, 0) AS replicationLagMs,
+           (EXTRACT(EPOCH FROM clock_timestamp()) * 1000 - visibility_lag_in_msec)::bigint
+                                                AS replicatedUntilMs
     FROM aurora_global_db_instance_status()
     WHERE session_id != 'MASTER_SESSION_ID'
   </select>
 
   <!--
-    Returns per-replica replication status for Aurora Global Database (MySQL). Each non-primary
-    instance reports its DURABLE_LSN together with VISIBILITY_LAG_IN_MSEC for metrics. Reads from
-    information_schema.aurora_global_db_instance_status (table, not function on MySQL).
+    Returns per-replica replication status for Aurora Global Database (MySQL). Reads from
+    information_schema.aurora_global_db_instance_status (table, not function on MySQL);
+    replicatedUntilMs mirrors the PostgreSQL variant above.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">
     SELECT COALESCE(DURABLE_LSN, 0)            AS logStatus,
            SERVER_ID                           AS replicaId,
-           COALESCE(VISIBILITY_LAG_IN_MSEC, 0) AS replicationLagMs
+           COALESCE(VISIBILITY_LAG_IN_MSEC, 0) AS replicationLagMs,
+           CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS SIGNED) - VISIBILITY_LAG_IN_MSEC
+                                                AS replicatedUntilMs
     FROM information_schema.aurora_global_db_instance_status
     WHERE SESSION_ID != 'MASTER_SESSION_ID'
   </select>
