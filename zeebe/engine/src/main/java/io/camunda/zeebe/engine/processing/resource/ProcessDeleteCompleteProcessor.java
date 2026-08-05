@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -96,11 +97,5 @@ public final class ProcessDeleteCompleteProcessor
   private void finishProcessDelete(
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);
-
-    deleteHistory(command.getKey(), command);
-  }
-
-  private void deleteHistory(final long eventKey, final TypedRecord<ProcessRecord> command) {
-    // TODO delete history https://github.com/camunda/camunda/issues/56973
   }
 }
