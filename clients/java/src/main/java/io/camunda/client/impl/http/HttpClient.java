@@ -190,7 +190,8 @@ public final class HttpClient implements AutoCloseable {
         successPredicate,
         transformer,
         result,
-        null);
+        null,
+        false);
   }
 
   public <RespT> void post(
@@ -223,6 +224,34 @@ public final class HttpClient implements AutoCloseable {
 
     sendRequest(
         Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
+  }
+
+  /**
+   * Same as {@link #post(String, String, RequestConfig, Class, JsonResponseTransformer,
+   * HttpCamundaFuture)}, except that the response body is never echoed into an error message. Use
+   * it for endpoints that answer with secret material: a response the client cannot make sense of —
+   * an unexpected content type, or a response body under an error status — is otherwise reported by
+   * dumping the body, which would leak the secrets it carries into the caller's logs.
+   */
+  public <HttpT, RespT> void postWithSensitiveResponse(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.POST,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        responseType,
+        transformer,
+        result,
+        null,
+        true);
   }
 
   public <HttpT, RespT> void postMultipart(
@@ -355,7 +384,8 @@ public final class HttpClient implements AutoCloseable {
         responseType,
         transformer,
         result,
-        null);
+        null,
+        false);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -368,7 +398,8 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
     sendRequest(
         httpMethod,
         path,
@@ -380,7 +411,8 @@ public final class HttpClient implements AutoCloseable {
         null,
         (response, statusCode) -> transformer.transform(response),
         result,
-        callback);
+        callback,
+        sensitiveResponseBody);
   }
 
   private <RespT> void sendRequest(
@@ -405,7 +437,8 @@ public final class HttpClient implements AutoCloseable {
         successPredicate,
         transformer,
         result,
-        callback);
+        callback,
+        false);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -419,7 +452,8 @@ public final class HttpClient implements AutoCloseable {
       final Predicate<Integer> successPredicate,
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
     sendRequest(
         httpMethod,
         address,
@@ -432,7 +466,8 @@ public final class HttpClient implements AutoCloseable {
         successPredicate,
         transformer,
         result,
-        callback);
+        callback,
+        sensitiveResponseBody);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -447,7 +482,8 @@ public final class HttpClient implements AutoCloseable {
       final Predicate<Integer> successPredicate,
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -467,7 +503,8 @@ public final class HttpClient implements AutoCloseable {
               successPredicate,
               transformer,
               result,
-              apiCallback.get());
+              apiCallback.get(),
+              sensitiveResponseBody);
         };
 
     final SimpleHttpRequest request =
@@ -487,7 +524,8 @@ public final class HttpClient implements AutoCloseable {
               successPredicate,
               credentialsProvider::shouldRetryRequest,
               retryAction,
-              maxRetries));
+              maxRetries,
+              sensitiveResponseBody));
     }
 
     result.transportFuture(

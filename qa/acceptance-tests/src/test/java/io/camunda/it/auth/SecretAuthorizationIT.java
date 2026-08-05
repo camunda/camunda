@@ -358,8 +358,10 @@ class SecretAuthorizationIT {
   }
 
   /**
-   * Issues a raw HTTP call to {@code POST /v2/secrets/resolve} authenticated as the given user. The
-   * endpoint has no fluent Java client method yet.
+   * Issues a raw HTTP call to {@code POST /v2/secrets/resolve} authenticated as the given user.
+   * Deliberately not the fluent {@code newResolveSecretsCommand()}: the tests here assert the HTTP
+   * status code and response headers, neither of which the client exposes. The fluent command is
+   * covered by {@code SecretCommandIT}.
    */
   private static HttpResponse<String> resolve(
       final CamundaClient client, final String username, final List<String> references)
@@ -376,8 +378,9 @@ class SecretAuthorizationIT {
   }
 
   /**
-   * Issues a raw HTTP call to {@code POST /v2/secrets/list} authenticated as the given user. The
-   * endpoint has no fluent Java client method yet.
+   * Issues a raw HTTP call to {@code POST /v2/secrets/list} authenticated as the given user.
+   * Deliberately not the fluent {@code newListSecretsCommand()}, for the same reason as {@link
+   * #resolve}.
    */
   private static HttpResponse<String> list(final CamundaClient client, final String username)
       throws Exception {

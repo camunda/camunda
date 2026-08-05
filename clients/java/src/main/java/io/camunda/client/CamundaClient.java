@@ -69,6 +69,7 @@ import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
+import io.camunda.client.api.command.ListSecretsCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -76,6 +77,7 @@ import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
+import io.camunda.client.api.command.ResolveSecretsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
@@ -3751,4 +3753,51 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching agent instance history
    */
   AgentInstanceHistorySearchRequest newAgentInstanceHistorySearchRequest(long agentInstanceKey);
+
+  /**
+   * Command to resolve a batch of secret references in a single round-trip.
+   *
+   * <p><strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Each reference is authorized and resolved independently, so a reference that cannot be
+   * resolved never fails the others. Such a failure is returned as data on the response, not as an
+   * exception: the resolved references are available on {@link
+   * io.camunda.client.api.response.ResolveSecretsResponse#getResolved()} and the failed ones on
+   * {@link io.camunda.client.api.response.ResolveSecretsResponse#getErrors()}. Only a rejected
+   * request, for example one exceeding the maximum batch size, completes the command exceptionally.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newResolveSecretsCommand()
+   *       .references(List.of("camunda.secrets.token"))
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
+  ResolveSecretsCommandStep1 newResolveSecretsCommand();
+
+  /**
+   * Command to list the secret reference names the caller is authorized to see. It never returns
+   * secret values, only the reference names.
+   *
+   * <p><strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <pre>
+   *   camundaClient
+   *       .newListSecretsCommand()
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
+  ListSecretsCommandStep1 newListSecretsCommand();
 }

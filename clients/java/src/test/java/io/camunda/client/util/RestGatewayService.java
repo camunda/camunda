@@ -74,6 +74,8 @@ import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleUpdateResult;
 import io.camunda.client.protocol.rest.SearchQueryResponse;
+import io.camunda.client.protocol.rest.SecretListResult;
+import io.camunda.client.protocol.rest.SecretResolveResult;
 import io.camunda.client.protocol.rest.SignalBroadcastResult;
 import io.camunda.client.protocol.rest.TenantCreateResult;
 import io.camunda.client.protocol.rest.TenantResult;
@@ -232,6 +234,14 @@ public class RestGatewayService {
 
   public void onCreateUserRequest(final UserCreateResult response) {
     registerPost(RestGatewayPaths.getCreateUserUrl(), response);
+  }
+
+  public void onSecretsResolveRequest(final SecretResolveResult response) {
+    registerPost(RestGatewayPaths.getSecretsResolveUrl(), response);
+  }
+
+  public void onSecretsListRequest(final SecretListResult response) {
+    registerPost(RestGatewayPaths.getSecretsListUrl(), response);
   }
 
   public void onCorrelateMessageRequest(final MessageCorrelationResult response) {

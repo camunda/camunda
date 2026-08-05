@@ -110,6 +110,9 @@ public class RestGatewayPaths {
   private static final String URL_RESOURCE_DELETION = REST_API_PATH + "/resources/%s/deletion";
   private static final String URL_ROLE = REST_API_PATH + "/roles/%s";
   private static final String URL_ROLES = REST_API_PATH + "/roles";
+  private static final String URL_SECRETS = REST_API_PATH + "/secrets";
+  private static final String URL_SECRETS_RESOLVE = URL_SECRETS + "/resolve";
+  private static final String URL_SECRETS_LIST = URL_SECRETS + "/list";
   private static final String URL_SIGNAL_BROADCAST = REST_API_PATH + "/signals/broadcast";
   private static final String URL_TENANT = REST_API_PATH + "/tenants/%s";
   private static final String URL_TENANTS = REST_API_PATH + "/tenants";
@@ -255,6 +258,14 @@ public class RestGatewayPaths {
 
   public static String getBroadcastSignalUrl() {
     return URL_SIGNAL_BROADCAST;
+  }
+
+  public static String getSecretsResolveUrl() {
+    return URL_SECRETS_RESOLVE;
+  }
+
+  public static String getSecretsListUrl() {
+    return URL_SECRETS_LIST;
   }
 
   public static String getEvaluateConditionalUrl() {

@@ -34,12 +34,14 @@ import org.apache.hc.core5.concurrent.FutureCallback;
 final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<HttpT>> {
   private static final Predicate<Integer> DEFAULT_SUCCESS_PREDICATE =
       code -> code >= 200 && code < 400;
+  private static final String REDACTED_BODY = "<redacted: may contain secret values>";
   private final CompletableFuture<RespT> response;
   private final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer;
   private final Predicate<Integer> successPredicate;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
   private final AtomicInteger remainingRetries;
+  private final boolean sensitiveResponseBody;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
@@ -47,7 +49,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       final Predicate<Integer> successPredicate,
       final Predicate<StatusCode> retryPredicate,
       final Runnable retryAction,
-      final int maxRetries) {
+      final int maxRetries,
+      final boolean sensitiveResponseBody) {
     this.response = response;
     this.transformer = transformer;
     if (successPredicate != null) {
@@ -58,6 +61,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     this.retryPredicate = retryPredicate;
     this.retryAction = retryAction;
     remainingRetries = new AtomicInteger(maxRetries);
+    this.sensitiveResponseBody = sensitiveResponseBody;
   }
 
   @Override
@@ -106,7 +110,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
           new MalformedResponseException(
               String.format(
                   "Expected to receive a problem body, but got an unknown body type: %s",
-                  StandardCharsets.UTF_8.decode(body.unknown())),
+                  describeUnknownBody(body)),
               code,
               reason));
       return;
@@ -117,7 +121,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
           new MalformedResponseException(
               String.format(
                   "Expected to receive a problem body, but got an actual response: %s",
-                  body.response()),
+                  describeResponseBody(body)),
               code,
               reason));
       return;
@@ -161,7 +165,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
           new MalformedResponseException(
               String.format(
                   "Expected to receive a response body, but got an unknown body type: %s",
-                  StandardCharsets.UTF_8.decode(body.unknown())),
+                  describeUnknownBody(body)),
               code,
               reason));
       return;
@@ -178,6 +182,27 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     }
 
     completeResponse(code, reason, body.response());
+  }
+
+  /**
+   * A body that the server sent under an unexpected content type is echoed to make the mismatch
+   * debuggable, unless the endpoint answers with secret material: a cluster or proxy breaking the
+   * content type contract would otherwise put every secret in the batch into an exception message,
+   * and from there into the caller's logs.
+   */
+  private String describeUnknownBody(final ApiEntity<HttpT> body) {
+    return sensitiveResponseBody
+        ? REDACTED_BODY
+        : StandardCharsets.UTF_8.decode(body.unknown()).toString();
+  }
+
+  /**
+   * Same reasoning as {@link #describeUnknownBody(ApiEntity)}: the parsed body is only printable
+   * when it cannot carry secret material, because the generated response types print all of their
+   * fields.
+   */
+  private String describeResponseBody(final ApiEntity<HttpT> body) {
+    return sensitiveResponseBody ? REDACTED_BODY : String.valueOf(body.response());
   }
 
   private void completeResponse(final int code, final String reason, final HttpT httpResponse) {
