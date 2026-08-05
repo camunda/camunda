@@ -693,6 +693,29 @@ class ExporterConfigurationTest {
                   r.setDelay(Duration.ofMinutes(10));
                   r.setQueueCapacity(-1);
                 },
-            "asyncReplication.queueCapacity must be greater 0"));
+            "asyncReplication.queueCapacity must be greater 0"),
+        // queueCapacity/queueDebounceTime back AbstractReplicationController's queue for LOG_SEQ
+        // and TIME_LAG too, not just DELAY - a misconfiguration there must fail validate() the
+        // same way, instead of surfacing as an uncaught exception when the controller is created.
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setPollingInterval(Duration.ofSeconds(10));
+                  r.setMaxLag(Duration.ofMinutes(5));
+                  r.setQueueCapacity(0);
+                },
+            "asyncReplication.queueCapacity must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
+                  r.setPollingInterval(Duration.ofSeconds(10));
+                  r.setMaxLag(Duration.ofMinutes(5));
+                  r.setQueueDebounceTime(Duration.ofMillis(-1));
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"));
   }
 }
