@@ -121,6 +121,13 @@ public final class CamundaDocumentStoreConfigurationLoader
     final Map<String, String> properties = new LinkedHashMap<>();
     putResolved(properties, GCP, storeId, "bucket-name", "BUCKET", store.getBucketName());
     putResolved(properties, GCP, storeId, "prefix", "PREFIX", store.getPrefix());
+    putResolved(
+        properties,
+        GCP,
+        storeId,
+        "credentials-path",
+        "CREDENTIALS_PATH",
+        store.getCredentialsPath());
     return toRecord(storeId, GcpDocumentStoreProvider.class, properties);
   }
 
