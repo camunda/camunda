@@ -317,7 +317,8 @@ public final class ClusterConfigurationManagerService
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
         .andThen(
             new PartitionGroupExportingStateInitializer(
-                legacyExportingStates, staticConfiguration.localMemberId()));
+                legacyExportingStates, staticConfiguration.localMemberId()))
+        .andThen(new PhysicalTenantProvisioningInitializer(staticConfiguration));
   }
 
   /**
@@ -351,7 +352,8 @@ public final class ClusterConfigurationManagerService
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
         .andThen(
             new PartitionGroupExportingStateInitializer(
-                legacyExportingStates, staticConfiguration.localMemberId()));
+                legacyExportingStates, staticConfiguration.localMemberId()))
+        .andThen(new PhysicalTenantProvisioningInitializer(staticConfiguration));
   }
 
   private Supplier<List<MemberId>> initializationMembers(
