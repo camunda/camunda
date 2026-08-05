@@ -37,8 +37,10 @@ runs:
     - name: Validate startup_check input
       if: ${{ inputs.startup_check != 'healthcheck' && inputs.startup_check != 'wait' }}
       shell: bash
+      env:
+        STARTUP_CHECK: ${{ inputs.startup_check }}
       run: |
-        echo "::error::startup_check must be 'healthcheck' or 'wait', got '${{ inputs.startup_check }}'"
+        echo "::error::startup_check must be 'healthcheck' or 'wait', got '${STARTUP_CHECK}'"
         exit 1
 
     # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
