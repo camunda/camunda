@@ -173,15 +173,16 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case GLOBAL_LISTENER -> index.globalListener;
       case AGENT_INSTANCE -> index.agentInstance;
       case AGENT_HISTORY -> index.agentHistory;
+      case AGENT_DEFINITION -> index.agentDefinition;
       default -> false;
     };
   }
 
   /**
    * Not all value records are required to be exported from 8.8 onward. The following included
-   * records are required by Optimize and Zeebe-Analytics (and {@code AGENT_INSTANCE} by ad-hoc
-   * sub-process / agent features) so they must continue to be exported by the {@link
-   * OpensearchExporter}:
+   * records are required by Optimize and Zeebe-Analytics (and {@code AGENT_INSTANCE}/{@code
+   * AGENT_DEFINITION} by ad-hoc sub-process / agent features) so they must continue to be exported
+   * by the {@link OpensearchExporter}:
    *
    * @param valueType the value type of the record
    * @return true if the record should be indexed, false otherwise
@@ -197,6 +198,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case USER_TASK -> index.userTask;
       case JOB -> index.job;
       case AGENT_INSTANCE -> index.agentInstance;
+      case AGENT_DEFINITION -> index.agentDefinition;
       default -> false;
     };
   }
@@ -295,6 +297,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
     public boolean agentInstance = true;
     public boolean agentHistory = true;
+    public boolean agentDefinition = true;
 
     // index settings
     private Integer numberOfShards = null;
