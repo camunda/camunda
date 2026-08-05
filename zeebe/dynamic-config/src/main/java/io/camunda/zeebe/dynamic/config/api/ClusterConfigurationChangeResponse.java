@@ -16,14 +16,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record ClusterConfigurationChangeResponse(
     long changeId,
     LegacyConfigurationChangeResponse legacyResponse,
     // The new multi-partition-group configuration, absent for callers that don't populate it
     // (e.g. not yet carried over the wire by a peer). legacyResponse is always required, for
     // backwards compatibility.
-    CurrentConfigurationChangeResponse response) {
+    @Nullable CurrentConfigurationChangeResponse response) {
 
   public ClusterConfigurationChangeResponse {
     Objects.requireNonNull(legacyResponse, "legacyResponse must not be null");
