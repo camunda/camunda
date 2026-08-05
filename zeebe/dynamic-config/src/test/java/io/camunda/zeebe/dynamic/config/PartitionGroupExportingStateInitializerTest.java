@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -37,16 +38,18 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.PAUSED), LOCAL_MEMBER_ID)
+                Map.of(
+                    new PartitionId("tenant-a", 1), ExportingState.PAUSED,
+                    new PartitionId("tenant-b", 1), ExportingState.SOFT_PAUSED),
+                LOCAL_MEMBER_ID)
             .modify(configuration)
             .join();
 
     // then
-    for (final var groupId : Map.of("tenant-a", 1, "tenant-b", 1).keySet()) {
-      assertThat(exportingStateOf(result, groupId, LOCAL_MEMBER_ID))
-          .describedAs("Legacy state is seeded in group %s", groupId)
-          .isEqualTo(ExportingState.PAUSED);
-    }
+    assertThat(exportingStateOf(result, "tenant-a", LOCAL_MEMBER_ID))
+        .isEqualTo(ExportingState.PAUSED);
+    assertThat(exportingStateOf(result, "tenant-b", LOCAL_MEMBER_ID))
+        .isEqualTo(ExportingState.SOFT_PAUSED);
   }
 
   @Test
@@ -65,7 +68,7 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.PAUSED), LOCAL_MEMBER_ID)
+                Map.of(new PartitionId("tenant-a", 1), ExportingState.PAUSED), LOCAL_MEMBER_ID)
             .modify(configuration)
             .join();
 
@@ -84,7 +87,7 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.PAUSED), LOCAL_MEMBER_ID)
+                Map.of(new PartitionId("tenant-a", 1), ExportingState.PAUSED), LOCAL_MEMBER_ID)
             .modify(configurationOf(Map.of("tenant-a", group)))
             .join();
 
@@ -106,7 +109,7 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.PAUSED), LOCAL_MEMBER_ID)
+                Map.of(new PartitionId("tenant-a", 1), ExportingState.PAUSED), LOCAL_MEMBER_ID)
             .modify(configuration)
             .join();
 
@@ -124,7 +127,7 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.UNKNOWN), LOCAL_MEMBER_ID)
+                Map.of(new PartitionId("tenant-a", 1), ExportingState.UNKNOWN), LOCAL_MEMBER_ID)
             .modify(configuration)
             .join();
 
@@ -161,7 +164,7 @@ final class PartitionGroupExportingStateInitializerTest {
     // when
     final var result =
         new PartitionGroupExportingStateInitializer(
-                Map.of(1, ExportingState.PAUSED), LOCAL_MEMBER_ID)
+                Map.of(new PartitionId("tenant-a", 1), ExportingState.PAUSED), LOCAL_MEMBER_ID)
             .modify(configuration)
             .join();
 

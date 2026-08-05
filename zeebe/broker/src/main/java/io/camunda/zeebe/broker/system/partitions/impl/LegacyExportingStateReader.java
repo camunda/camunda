@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import java.io.IOException;
@@ -34,8 +35,9 @@ public final class LegacyExportingStateReader {
   private LegacyExportingStateReader() {}
 
   /** Reads the persisted exporting state of every partition the local member has on disk. */
-  public static Map<Integer, ExportingState> readLegacyExportingStates(final String dataDirectory) {
-    final Map<Integer, ExportingState> legacyExportingStates = new HashMap<>();
+  public static Map<PartitionId, ExportingState> readLegacyExportingStates(
+      final String dataDirectory) {
+    final Map<PartitionId, ExportingState> legacyExportingStates = new HashMap<>();
     final var dataDir = Path.of(dataDirectory);
     if (!Files.isDirectory(dataDir)) {
       return legacyExportingStates;
@@ -48,6 +50,7 @@ public final class LegacyExportingStateReader {
     // member does not host has no directory here, so there is nothing to migrate anyway.
     try (final var groupDirs = Files.newDirectoryStream(dataDir, Files::isDirectory)) {
       for (final var groupDir : groupDirs) {
+        final var groupId = groupDir.getFileName().toString();
         final var partitionsDir = groupDir.resolve("partitions");
         if (!Files.isDirectory(partitionsDir)) {
           continue;
@@ -60,7 +63,9 @@ public final class LegacyExportingStateReader {
               continue;
             }
             readLegacyExportingState(partitionDir)
-                .ifPresent(state -> legacyExportingStates.put(partitionId, state));
+                .ifPresent(
+                    state ->
+                        legacyExportingStates.put(new PartitionId(groupId, partitionId), state));
           }
         }
       }

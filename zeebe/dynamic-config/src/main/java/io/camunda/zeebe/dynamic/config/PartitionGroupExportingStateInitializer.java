@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -36,11 +37,11 @@ import org.jspecify.annotations.NullMarked;
 public class PartitionGroupExportingStateInitializer
     implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
 
-  private final Map<Integer, ExportingState> legacyExportingStates;
+  private final Map<PartitionId, ExportingState> legacyExportingStates;
   private final MemberId localMemberId;
 
   public PartitionGroupExportingStateInitializer(
-      final Map<Integer, ExportingState> legacyExportingStates, final MemberId localMemberId) {
+      final Map<PartitionId, ExportingState> legacyExportingStates, final MemberId localMemberId) {
     this.legacyExportingStates = legacyExportingStates;
     this.localMemberId = localMemberId;
   }
@@ -54,13 +55,16 @@ public class PartitionGroupExportingStateInitializer
       if (partitionGroup != null && partitionGroup.hasMember(localMemberId)) {
         updated =
             updated.updatePartitionGroupConfig(
-                groupId, group -> group.updateMember(localMemberId, this::seedExportingState));
+                groupId,
+                group ->
+                    group.updateMember(localMemberId, state -> seedExportingState(groupId, state)));
       }
     }
     return CompletableActorFuture.completed(updated);
   }
 
-  private BrokerPartitionState seedExportingState(final BrokerPartitionState brokerPartitionState) {
+  private BrokerPartitionState seedExportingState(
+      final String groupId, final BrokerPartitionState brokerPartitionState) {
     BrokerPartitionState updated = brokerPartitionState;
     for (final var partitionId : brokerPartitionState.partitions().keySet()) {
       final var partitionState = brokerPartitionState.partitions().get(partitionId);
@@ -68,7 +72,7 @@ public class PartitionGroupExportingStateInitializer
           || partitionState.config().exporting().state() != ExportingState.UNKNOWN) {
         continue;
       }
-      final var legacyState = legacyExportingStates.get(partitionId);
+      final var legacyState = legacyExportingStates.get(new PartitionId(groupId, partitionId));
       if (legacyState == null || legacyState == ExportingState.UNKNOWN) {
         continue;
       }

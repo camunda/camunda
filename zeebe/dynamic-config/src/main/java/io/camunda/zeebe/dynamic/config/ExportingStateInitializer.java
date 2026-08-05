@@ -8,6 +8,8 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -33,12 +35,12 @@ import java.util.Map;
 public class ExportingStateInitializer
     implements ClusterConfigurationModifier<ClusterConfiguration> {
 
-  private final Map<Integer, ExportingState> legacyExportingStates;
+  private final Map<PartitionId, ExportingState> legacyExportingStates;
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
 
   public ExportingStateInitializer(
-      final Map<Integer, ExportingState> legacyExportingStates,
+      final Map<PartitionId, ExportingState> legacyExportingStates,
       final MemberId localMemberId,
       final ConcurrencyControl executor) {
     this.legacyExportingStates = legacyExportingStates;
@@ -69,7 +71,9 @@ public class ExportingStateInitializer
           || partitionState.config().exporting().state() != ExportingState.UNKNOWN) {
         continue;
       }
-      final var legacyState = legacyExportingStates.get(partitionId);
+      final var legacyState =
+          legacyExportingStates.get(
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionId));
       if (legacyState == null || legacyState == ExportingState.UNKNOWN) {
         continue;
       }

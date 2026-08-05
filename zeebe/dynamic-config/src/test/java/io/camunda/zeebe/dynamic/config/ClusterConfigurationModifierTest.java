@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -479,7 +480,10 @@ final class ClusterConfigurationModifierTest {
       // given
       final var config =
           configWithStates(LOCAL, Map.of(1, ExportingState.UNKNOWN, 2, ExportingState.UNKNOWN));
-      final var legacy = Map.of(1, ExportingState.PAUSED, 2, ExportingState.SOFT_PAUSED);
+      final var legacy =
+          Map.of(
+              new PartitionId("default", 1), ExportingState.PAUSED,
+              new PartitionId("default", 2), ExportingState.SOFT_PAUSED);
 
       // when
       final var result =
@@ -494,7 +498,7 @@ final class ClusterConfigurationModifierTest {
     void shouldNotOverwriteAlreadyDefinedState() {
       // given — dynamic state already PAUSED, legacy file says EXPORTING
       final var config = configWithStates(LOCAL, Map.of(1, ExportingState.PAUSED));
-      final var legacy = Map.of(1, ExportingState.EXPORTING);
+      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.EXPORTING);
 
       // when
       final var result =
@@ -509,7 +513,7 @@ final class ClusterConfigurationModifierTest {
       // given — partition 2 has no legacy entry, partition 1's legacy is UNKNOWN
       final var config =
           configWithStates(LOCAL, Map.of(1, ExportingState.UNKNOWN, 2, ExportingState.UNKNOWN));
-      final var legacy = Map.of(1, ExportingState.UNKNOWN);
+      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.UNKNOWN);
 
       // when
       final var result =
@@ -531,7 +535,7 @@ final class ClusterConfigurationModifierTest {
                       ClusterChangePlan.initForRestore(
                           List.of(new UpdateRoutingState(LOCAL, Optional.empty())))))
               .build();
-      final var legacy = Map.of(1, ExportingState.PAUSED);
+      final var legacy = Map.of(new PartitionId("default", 1), ExportingState.PAUSED);
 
       // when
       final var result =
@@ -557,7 +561,10 @@ final class ClusterConfigurationModifierTest {
                   member1,
                   MemberState.initializeAsActive(
                       Map.of(2, PartitionState.active(2, partitionConfig))));
-      final var legacy = Map.of(1, ExportingState.PAUSED, 2, ExportingState.PAUSED);
+      final var legacy =
+          Map.of(
+              new PartitionId("default", 1), ExportingState.PAUSED,
+              new PartitionId("default", 2), ExportingState.PAUSED);
 
       // when
       final var result =

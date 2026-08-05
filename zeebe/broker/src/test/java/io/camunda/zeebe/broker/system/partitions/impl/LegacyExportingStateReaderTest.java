@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,17 +53,17 @@ final class LegacyExportingStateReaderTest {
     // then
     assertThat(states)
         .containsOnly(
-            entry(1, ExportingState.PAUSED),
-            entry(2, ExportingState.SOFT_PAUSED),
-            entry(3, ExportingState.EXPORTING),
-            entry(4, ExportingState.PAUSED));
+            entry(new PartitionId("default", 1), ExportingState.PAUSED),
+            entry(new PartitionId("default", 2), ExportingState.SOFT_PAUSED),
+            entry(new PartitionId("default", 3), ExportingState.EXPORTING),
+            entry(new PartitionId("default", 4), ExportingState.PAUSED));
   }
 
   @Test
   void shouldReadPartitionsAcrossMultipleGroups() throws IOException {
     // given
     writeExporterPausedFile("default", 1, "PAUSED");
-    writeExporterPausedFile("tenant-a", 2, "SOFT_PAUSED");
+    writeExporterPausedFile("tenant-a", 1, "SOFT_PAUSED");
 
     // when
     final var states =
@@ -70,7 +71,9 @@ final class LegacyExportingStateReaderTest {
 
     // then
     assertThat(states)
-        .containsOnly(entry(1, ExportingState.PAUSED), entry(2, ExportingState.SOFT_PAUSED));
+        .containsOnly(
+            entry(new PartitionId("default", 1), ExportingState.PAUSED),
+            entry(new PartitionId("tenant-a", 1), ExportingState.SOFT_PAUSED));
   }
 
   @Test
@@ -84,7 +87,7 @@ final class LegacyExportingStateReaderTest {
         LegacyExportingStateReader.readLegacyExportingStates(dataDirectory.toString());
 
     // then
-    assertThat(states).containsOnlyKeys(1);
+    assertThat(states).containsOnlyKeys(new PartitionId("default", 1));
   }
 
   @Test
@@ -98,7 +101,7 @@ final class LegacyExportingStateReaderTest {
         LegacyExportingStateReader.readLegacyExportingStates(dataDirectory.toString());
 
     // then - partition 2 stays UNKNOWN rather than failing the whole broker startup
-    assertThat(states).containsOnly(entry(1, ExportingState.PAUSED));
+    assertThat(states).containsOnly(entry(new PartitionId("default", 1), ExportingState.PAUSED));
   }
 
   @Test

@@ -203,7 +203,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer<ClusterConfiguration> getNonCoordinatorInitializer(
       final StaticConfiguration staticConfiguration,
-      final Map<Integer, ExportingState> legacyExportingStates) {
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
@@ -253,7 +253,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer<ClusterConfiguration> getCoordinatorInitializer(
       final StaticConfiguration staticConfiguration,
-      final Map<Integer, ExportingState> legacyExportingStates) {
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
@@ -293,7 +293,7 @@ public final class ClusterConfigurationManagerService
   private ClusterConfigurationInitializer<CurrentClusterConfiguration>
       getCurrentClusterConfigurationNonCoordinatorInitializer(
           final StaticConfiguration staticConfiguration,
-          final Map<Integer, ExportingState> legacyExportingStates) {
+          final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .recover(
@@ -333,7 +333,7 @@ public final class ClusterConfigurationManagerService
   private ClusterConfigurationInitializer<CurrentClusterConfiguration>
       getCurrentClusterConfigurationCoordinatorInitializer(
           final StaticConfiguration staticConfiguration,
-          final Map<Integer, ExportingState> legacyExportingStates) {
+          final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .orThen(
@@ -373,7 +373,7 @@ public final class ClusterConfigurationManagerService
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration,
-      final Map<Integer, ExportingState> legacyExportingStates) {
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     return startGossiper(actorSchedulingService)
         .andThen(
             () ->
@@ -391,7 +391,7 @@ public final class ClusterConfigurationManagerService
   private CompletableActorFuture<Void> startClusterTopologyServices(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration,
-      final Map<Integer, ExportingState> legacyExportingStates) {
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     final var result = new CompletableActorFuture<Void>();
 
     knownGroups =
