@@ -46,7 +46,7 @@ public final class AgentInstanceCompleteProcessor
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to complete agent instance with key '%d', but no such agent instance was found.";
   private static final String ERROR_MSG_NONE_REMAINING =
-      "No remaining agent instances to complete for process instance with key '%d'";
+      "No remaining agent instances to complete for process instance with key '%d'.";
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
