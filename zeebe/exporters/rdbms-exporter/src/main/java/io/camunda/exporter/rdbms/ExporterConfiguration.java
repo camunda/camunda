@@ -722,6 +722,15 @@ public class ExporterConfiguration {
                 "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
 
+      // queueCapacity/queueDebounceTime now back every replication type's queue, not just
+      // DELAY's, so they must be validated regardless of type.
+      checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
+      if (queueCapacity <= 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
+      }
+
       if (type == ReplicationType.LOG_SEQ) {
         checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
         checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
@@ -730,12 +739,6 @@ public class ExporterConfiguration {
         checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
       } else if (type == ReplicationType.DELAY) {
         checkPositiveDuration(delay, "asyncReplication.delay", errors);
-        checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
-        if (queueCapacity <= 0) {
-          errors.add(
-              String.format(
-                  "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
-        }
       }
       return errors;
     }
