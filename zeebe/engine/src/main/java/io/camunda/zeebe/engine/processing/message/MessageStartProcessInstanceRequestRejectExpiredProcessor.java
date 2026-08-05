@@ -51,6 +51,8 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     final var reply = record.getValue();
+    metrics.stopRoundTrip(
+        reply.getMessageKey(), reply.getProcessDefinitionKey(), ReplyOutcome.REJECTED_EXPIRED);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_EXPIRED);

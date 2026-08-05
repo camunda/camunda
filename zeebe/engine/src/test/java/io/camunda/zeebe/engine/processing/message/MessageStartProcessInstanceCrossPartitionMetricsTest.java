@@ -56,6 +56,8 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
   private static final String ASKS_METRIC = "zeebe.message.start.cross.partition.asks.total";
   private static final String ASK_DURATION_METRIC =
       "zeebe.message.start.cross.partition.asks.duration";
+  private static final String ROUND_TRIP_METRIC =
+      "zeebe.message.start.cross.partition.asks.round.trip.duration";
   private static final String RELEASE_TO_START_METRIC =
       "zeebe.message.start.cross.partition.release.to.start.duration";
 
@@ -234,6 +236,11 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
     assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "expired"))
         .as("M7: a clean start records no expired sample")
         .isZero();
+
+    // and the round-trip latency of the send/reply is recorded once on P_K, tagged started (M17)
+    assertThat(timerCount(pK, ROUND_TRIP_METRIC, "outcome", "started"))
+        .as("M17: the cross-partition ask round-trip is recorded as started on P_K")
+        .isEqualTo(1L);
   }
 
   @Test
@@ -278,6 +285,15 @@ public final class MessageStartProcessInstanceCrossPartitionMetricsTest {
         .isGreaterThanOrEqualTo(1L);
     assertThat(timerCount(pK, ASK_DURATION_METRIC, "outcome", "started"))
         .as("M7: a message that never starts records no started sample")
+        .isZero();
+
+    // and each uniqueness-rejected reply recorded a round trip, while the final local expiry
+    // discarded the last in-flight send unmeasured, so no round trip is tagged started (M17)
+    assertThat(timerCount(pK, ROUND_TRIP_METRIC, "outcome", "rejected_uniqueness"))
+        .as("M17: every uniqueness-rejected reply records a round trip on P_K")
+        .isGreaterThanOrEqualTo(1L);
+    assertThat(timerCount(pK, ROUND_TRIP_METRIC, "outcome", "started"))
+        .as("M17: a message that never starts records no started round trip")
         .isZero();
   }
 

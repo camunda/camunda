@@ -477,6 +477,7 @@ public final class MessageCorrelateBehavior {
     metrics.crossPartitionAskSent();
     metrics.startCrossPartitionAsk(
         messageData.messageKey(), subscriptionRecord.getProcessDefinitionKey());
+    metrics.startRoundTrip(messageData.messageKey(), subscriptionRecord.getProcessDefinitionKey());
 
     final int targetPartition = routingInfo.partitionForCorrelationKey(messageData.businessId());
 

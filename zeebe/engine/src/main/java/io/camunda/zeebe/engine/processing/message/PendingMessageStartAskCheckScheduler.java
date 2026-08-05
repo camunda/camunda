@@ -149,6 +149,9 @@ public final class PendingMessageStartAskCheckScheduler
     // Update the sent time to prevent it from being re-sent too soon
     state.updateLastSentTime(ask.getMessageKey(), ask.getProcessDefinitionKey(), now);
     metrics.crossPartitionAskRetried();
+    // M17: this retry is a fresh send; restart the round-trip clock so the eventual reply measures
+    // the last send (last-send-wins). Runs on the scheduler actor — the sample map is concurrent.
+    metrics.startRoundTrip(ask.getMessageKey(), ask.getProcessDefinitionKey());
   }
 
   @Override

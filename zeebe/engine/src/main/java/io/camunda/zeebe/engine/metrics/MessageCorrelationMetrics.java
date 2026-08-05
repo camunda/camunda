@@ -29,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Instruments the Business-ID message-start correlation feature: the cross-partition uniqueness
@@ -45,6 +46,22 @@ import java.util.Set;
  * P_K}), never from the scheduler actors that touch the counters, so a plain {@link HashMap} is
  * safe. They are dropped on recovery ({@link #onRecovered}): samples from a previous leadership
  * term would otherwise record meaningless durations.
+ *
+ * <p>The cross-partition ask round-trip timer (M17) isolates the pure technical {@code P_K → P_B →
+ * P_K} latency of the latest attempt: it starts on every ask send and stops the instant {@code P_K}
+ * receives the matching reply, tagged by reply outcome. Where M7 measures the whole ask lifetime
+ * (blending the round-trip with the retry/back-off and business-id contention waits), subtracting
+ * M17 from M7 leaves that retry-plus-contention component. Its samples use the same {@code
+ * messageKey → processDefinitionKey} shape as the M7 map, but — unlike M7 — the map is written from
+ * two actors: the initial dispatch and every reply run on the processing actor, while each retry
+ * restarts the sample from the scheduler actor. It is therefore a {@link ConcurrentHashMap} keyed
+ * by message key whose per-message inner map is only ever mutated inside an atomic {@code compute}
+ * on the outer key, so the two actors cannot corrupt it and the last-send-wins semantics tolerate a
+ * retry racing a reply. A local expiry (the buffered message hits its TTL on {@code P_K} with no
+ * reply) drops that message's whole inner group unmeasured in one O(1) removal — keyed off the
+ * message alone, not the M7 group, so a sample a scheduler retry recreated with no matching M7
+ * entry (e.g. after a leader change repopulated only the pending-ask state) is still discarded;
+ * samples are likewise dropped on recovery.
  *
  * <p>The release-to-start timer (M16) measures, purely on {@code P_B}, the wait between a business
  * id being released by a completing holder and a cross-partition ask that was <em>blocked on that
@@ -80,6 +97,7 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
       new EnumMap<>(ReleaseResult.class);
   private final Map<BlockReason, Counter> blockedCounters = new EnumMap<>(BlockReason.class);
   private final Map<AskOutcome, Timer> askDurationTimers = new EnumMap<>(AskOutcome.class);
+  private final Map<ReplyOutcome, Timer> askRoundTripTimers = new EnumMap<>(ReplyOutcome.class);
 
   /**
    * Outstanding ask-duration samples keyed by {@code messageKey → processDefinitionKey}. A single
@@ -87,6 +105,18 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
    * messageKey alone, hence the nested map.
    */
   private final Map<Long, Map<Long, Timer.Sample>> pendingAskSamples = new HashMap<>();
+
+  /**
+   * Outstanding round-trip samples (M17) keyed by {@code messageKey → processDefinitionKey}, the
+   * same shape as {@link #pendingAskSamples}. Unlike the M7 map it is written from two actors — the
+   * initial dispatch and every reply run on the processing actor, but each retry restarts the
+   * sample from the scheduler actor — so it is a {@link ConcurrentHashMap} and every mutation of a
+   * message's inner map goes through an atomic {@code compute} on the outer key (the inner map may
+   * therefore stay a plain {@link HashMap}). A local expiry removes the whole inner group for the
+   * message in one O(1) call, independent of the M7 map, so a sample recreated by a post-recovery
+   * retry with no M7 entry is still discarded; all samples are dropped on recovery.
+   */
+  private final Map<Long, Map<Long, Timer.Sample>> askRoundTripSamples = new ConcurrentHashMap<>();
 
   /**
    * Contended uniqueness domains on {@code P_B}: each entry tracks the cross-partition asks
@@ -258,6 +288,13 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
    *     was stopped, {@code false} for the common uncontended case
    */
   public boolean expireCrossPartitionAsks(final long messageKey) {
+    // M17: drop this message's in-flight round-trip samples unmeasured — its asks will now get no
+    // reply. Keyed by messageKey alone, not via the M7 group, so a sample a scheduler retry
+    // recreated with no matching M7 entry (e.g. after a leader change repopulated only the
+    // pending-ask state) is still discarded. One O(1) removal, a no-op for the common
+    // non-cross-partition expiry.
+    askRoundTripSamples.remove(messageKey);
+
     final var byProcessDefinition = pendingAskSamples.remove(messageKey);
     if (byProcessDefinition == null) {
       return false;
@@ -265,6 +302,46 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
     final var timer = askDurationTimer(AskOutcome.EXPIRED);
     byProcessDefinition.values().forEach(sample -> sample.stop(timer));
     return true;
+  }
+
+  /**
+   * M17: (re)starts the round-trip timer for a cross-partition ask send from {@code P_K} — the
+   * initial dispatch or a scheduler retry. Overwrites any previous sample (last-send-wins): a
+   * superseded retry never received a reply, so the delivered reply is measured against the last
+   * send. Safe to call from the scheduler actor because the outer map is concurrent and the
+   * message's inner map is only touched inside this atomic {@code compute}.
+   */
+  public void startRoundTrip(final long messageKey, final long processDefinitionKey) {
+    askRoundTripSamples.compute(
+        messageKey,
+        (key, samples) -> {
+          final var byProcessDefinition =
+              samples != null ? samples : new HashMap<Long, Timer.Sample>();
+          byProcessDefinition.put(processDefinitionKey, Timer.start(registry));
+          return byProcessDefinition;
+        });
+  }
+
+  /**
+   * M17: stops the round-trip timer for a cross-partition ask when {@code P_K} processes its reply,
+   * tagged by {@code outcome}, recording the technical latency of the last send for this {@code
+   * (messageKey, processDefinitionKey)}. No-op if no sample is tracked — the reply raced a leader
+   * change that cleared it, or a retry that would re-arm it has not run yet. The whole update runs
+   * inside the atomic {@code computeIfPresent}, mirroring {@link #startRoundTrip}: recording the
+   * sample there only reads/updates the meter registry (never this map), so it is safe under the
+   * per-key lock, and pruning the emptied inner map keeps fully-replied messages from lingering.
+   */
+  public void stopRoundTrip(
+      final long messageKey, final long processDefinitionKey, final ReplyOutcome outcome) {
+    askRoundTripSamples.computeIfPresent(
+        messageKey,
+        (key, byProcessDefinition) -> {
+          final var sample = byProcessDefinition.remove(processDefinitionKey);
+          if (sample != null) {
+            sample.stop(askRoundTripTimer(outcome));
+          }
+          return byProcessDefinition.isEmpty() ? null : byProcessDefinition;
+        });
   }
 
   /**
@@ -386,6 +463,7 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // Samples belong to the previous leadership term; recording them would produce bogus durations.
     pendingAskSamples.clear();
+    askRoundTripSamples.clear();
     contendedByDomain.clear();
   }
 
@@ -394,6 +472,16 @@ public final class MessageCorrelationMetrics implements StreamProcessorLifecycle
         outcome,
         o ->
             MicrometerUtil.buildTimer(MessageCorrelationMetricsDoc.CROSS_PARTITION_ASK_DURATION)
+                .tag(MessageCorrelationKeyNames.OUTCOME.asString(), o.getLabel())
+                .minimumExpectedValue(Duration.ofMillis(10))
+                .register(registry));
+  }
+
+  private Timer askRoundTripTimer(final ReplyOutcome outcome) {
+    return askRoundTripTimers.computeIfAbsent(
+        outcome,
+        o ->
+            MicrometerUtil.buildTimer(MessageCorrelationMetricsDoc.CROSS_PARTITION_ASK_ROUND_TRIP)
                 .tag(MessageCorrelationKeyNames.OUTCOME.asString(), o.getLabel())
                 .minimumExpectedValue(Duration.ofMillis(10))
                 .register(registry));
