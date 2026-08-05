@@ -198,7 +198,7 @@ jobs:
           opensearch-version: ${{ inputs.os_version }}
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: it-${{ matrix.group }}
+          maven-cache-key-modifier: it-${{ matrix.group }}-${{ inputs.os_version }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
