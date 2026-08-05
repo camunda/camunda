@@ -84,13 +84,13 @@ parked job, so the state alone cannot express it.
 
 ### Command surface
 
-|                     Command                     |                           On a parked job                           |
-|-------------------------------------------------|---------------------------------------------------------------------|
-| `CompleteJob`, `FailJob`, `ThrowError`          | rejected, `INVALID_STATE`, naming the state in the rejection reason |
-| `Yield`                                         | rejected, `INVALID_STATE` (unchanged, it needs `ACTIVATED`)         |
-| `UpdateJob` (retries, priority)                 | accepted                                                            |
-| `UpdateJob` (timeout)                           | rejected, the job has no deadline while parked (unchanged)          |
-| `CancelJob`, process instance termination       | accepted, the job is deleted                                        |
+|                  Command                  |                           On a parked job                           |
+|-------------------------------------------|---------------------------------------------------------------------|
+| `CompleteJob`, `FailJob`, `ThrowError`    | rejected, `INVALID_STATE`, naming the state in the rejection reason |
+| `Yield`                                   | rejected, `INVALID_STATE` (unchanged, it needs `ACTIVATED`)         |
+| `UpdateJob` (retries, priority)           | accepted                                                            |
+| `UpdateJob` (timeout)                     | rejected, the job has no deadline while parked (unchanged)          |
+| `CancelJob`, process instance termination | accepted, the job is deleted                                        |
 
 Rejecting the worker lifecycle commands follows from leaving the new state out of the valid-state
 lists of their processors. A parked job was withheld from every worker on purpose, so a command that
