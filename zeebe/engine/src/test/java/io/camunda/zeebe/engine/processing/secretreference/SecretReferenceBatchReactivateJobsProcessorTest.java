@@ -228,9 +228,10 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     // when
     processor.processRecord(command(value));
 
-    // then
+    // then - the overload the processor hands its jobs to is the one that shares the notified job
+    // types across the batch; verifying the single-job one would pass without publishing anything
     verify(jobActivationBehavior, never())
-        .publishWork(org.mockito.ArgumentMatchers.anyLong(), any());
+        .publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any());
   }
 
   @Test
