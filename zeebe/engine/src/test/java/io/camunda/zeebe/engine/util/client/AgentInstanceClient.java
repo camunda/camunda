@@ -100,6 +100,16 @@ public final class AgentInstanceClient {
     return this;
   }
 
+  /**
+   * Leaves {@code agentInstanceKey} unset, so {@link #complete()} drives the "batch completion"
+   * branch of {@code AGENT_INSTANCE:COMPLETE}: complete one agent instance still belonging to this
+   * process instance, self-chaining until none remain.
+   */
+  public AgentInstanceClient withProcessInstanceKey(final long processInstanceKey) {
+    record.setProcessInstanceKey(processInstanceKey);
+    return this;
+  }
+
   public AgentInstanceClient withDefinition(
       final String model, final String provider, final String systemPrompt) {
     record.getDefinition().setModel(model).setProvider(provider).setSystemPrompt(systemPrompt);
@@ -206,8 +216,12 @@ public final class AgentInstanceClient {
   }
 
   /**
-   * Drives {@code AGENT_INSTANCE:COMPLETE} directly against {@link #withAgentInstanceKey}, without
-   * requiring a ProcessProcessor-driven process instance lifecycle.
+   * Drives {@code AGENT_INSTANCE:COMPLETE} directly, without requiring a ProcessProcessor-driven
+   * process instance lifecycle. Targets {@link #withAgentInstanceKey} when set, otherwise drives
+   * the "batch completion" branch for {@link #withProcessInstanceKey} — which always ends in a
+   * {@code NOT_FOUND} rejection once every agent instance for that process instance has been
+   * completed, so {@link #expectRejection()} is not needed: batch completion always waits for that
+   * rejection, the signal that closes the loop.
    */
   public Record<AgentInstanceRecordValue> complete() {
     final long position =
@@ -216,7 +230,10 @@ public final class AgentInstanceClient {
             AgentInstanceIntent.COMPLETE,
             record,
             authorizedTenantIds.toArray(new String[0]));
-    return (expectRejection ? COMPLETE_REJECTION_EXPECTATION : COMPLETED_EXPECTATION)
+    final boolean isBatchCompletion = record.getAgentInstanceKey() == -1L;
+    return (isBatchCompletion || expectRejection
+            ? COMPLETE_REJECTION_EXPECTATION
+            : COMPLETED_EXPECTATION)
         .apply(position);
   }
 
