@@ -21,9 +21,9 @@ import org.jspecify.annotations.NullMarked;
  * cache itself. The cache is this store's own: no caller is handed one alongside it, and nothing
  * reaches the wrapped store except through here.
  *
- * <p>Only a resolved value is cached: a failure has to stay retryable, or a secret that was briefly
- * unreadable would stay unresolvable until the process restarts. {@link #list()} goes straight to
- * the store, since a cache holds the values read so far rather than the store's set of secrets.
+ * <p>Only a resolved value is cached: a failure has to stay retryable, and an authoritative store
+ * read that fails clears any stale cached value for that name. {@link #list()} goes straight to the
+ * store, since a cache holds the values read so far rather than the store's set of secrets.
  *
  * <p>What the cache holds is also what {@link #lookupLocal} answers with, so a value read by one
  * caller is what a later cache-only lookup of another sees.
@@ -103,8 +103,10 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
         .resolve(names)
         .forEach(
             (name, result) -> {
-              if (result instanceof final SecretResolutionResult.Resolved resolved) {
-                cache.put(name, resolved.value());
+              switch (result) {
+                case final SecretResolutionResult.Resolved resolved ->
+                    cache.put(name, resolved.value());
+                case final SecretResolutionResult.Failed ignored -> cache.remove(name);
               }
               results.put(name, result);
             });
