@@ -48,14 +48,14 @@ spec:
   # 3. The password comes from the specified Kubernetes Secret
   #
   # The dedicated user will also be used by Keycloak to connect into this
-  # PostgeSQL cluster.
+  # PostgreSQL cluster.
   #
   # In this cluster, this "bootstrap/initdb" method is preferred over the
   # dedicated `Database`/`DatabaseRole` custom resources, as:
   #
   # 1. We only create a single database role + database ; we don't need to
   #    manage multiple databases.
-  # 2. It's faster to provision the PostgeSQL cluster: this bootstrap method is
+  # 2. It's faster to provision the PostgreSQL cluster: this bootstrap method is
   #    done very early during the cluster creation, whereas the custom resource
   #    requires the CNPG Operator to trigger reconciliations.
   #

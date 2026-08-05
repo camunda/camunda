@@ -11,8 +11,10 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
+        # The username is the same for all the underlying RDBMS databases.
         username: camunda
         secret:
+          # The password is the same for all the underlying RDBMS databases.
           inlineSecret: camunda
 
   # Overriding the extraConfiguration for the Platform chart

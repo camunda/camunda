@@ -124,7 +124,7 @@ data:
               policy-name: "camunda-retention-policy"
           rdbms:
             aws-enabled: false
-            url: "jdbc:postgresql://postgresql:5432/camunda"
+            url: "jdbc:postgresql://postgresql-rw:5432/camunda"
             username: "camunda"
             password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
     

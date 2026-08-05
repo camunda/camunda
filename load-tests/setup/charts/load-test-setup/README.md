@@ -13,6 +13,10 @@ This Helm Chart sets up the surrounding infrastructure for a Camunda load test n
   that use Elasticsearch as secondary storage.
 * An optional **[OpenSearch](https://opensearch-project.github.io/helm-charts/)** cluster
   (`opensearch.enabled=true`), for load tests that use OpenSearch as secondary storage.
+* An optional **CNPG-managed PostgreSQL cluster** for Camunda's own secondary storage
+  (`postgresql.enabled=true`), for load tests that use PostgreSQL as secondary storage. See the
+  [PostgreSQL (Camunda secondary storage)](#postgresql-camunda-secondary-storage) section below for
+  details.
 * An optional **Keycloak instance**, backed by its own **PostgreSQL cluster** (`keycloak.enabled`,
   default: `true`). See the [Keycloak](#keycloak) section below for details.
 * An optional **metrics-exporter** deployment to query the report internal
@@ -122,7 +126,7 @@ Either use:
 * A load-test `make clean` command: this explicitly deletes the Keycloak CR and Secrets from the
   `keycloak-operator` namespace before tearing down the load test namespace (see the `clean` target
   in `common.mk`).
-* Delete the resources from the `keycloak-operator` namespace by targetting the specific `namespace`
+* Delete the resources from the `keycloak-operator` namespace by targeting the specific `namespace`
   label with:
 
   ```shell
@@ -147,7 +151,7 @@ Keycloak is backed by PostgreSQL (PG). The PG cluster is deployed using the [Clo
 When a CNPG cluster is created, the CNPG Operator creates the underlying Kubernetes resources
 (non-exhaustive list, see [the doc](https://cloudnative-pg.io/docs/1.30/) for the full details):
 
-1. A dedicated Kubernetes service account: the SA exists in the target namespace and represent the
+1. A dedicated Kubernetes service account: the SA exists in the target namespace and represents the
    Kubernetes identity used by the underlying PG cluster
 2. The Kubernetes RBAC to allow the SA to read its secrets, etc.
 3. New pod(s) to represent the actual PostgreSQL node(s)
@@ -155,3 +159,16 @@ When a CNPG cluster is created, the CNPG Operator creates the underlying Kuberne
 The PG cluster is immediately initialized at creation time using the `bootstrap` mechanism, with a
 single database owned by a single user. This ensures that when the PG cluster starts, it's already
 usable by Keycloak without further provisioning to be done.
+
+## PostgreSQL (Camunda secondary storage)
+
+For load tests that run Camunda with PostgreSQL as secondary storage (`secondary_storage=postgresql`),
+this chart can also deploy a second, independent CNPG-managed PostgreSQL cluster
+(`postgresql.enabled=true`) for Camunda itself — separate from the Keycloak PostgreSQL cluster
+described above.
+
+> [!NOTE]
+> Unlike Keycloak's cluster, this one is entirely self-contained in the load
+> test namespace and doesn't deploy or require resources outside of that
+> namespace (except for the CNPG Operator, indirectly).
+

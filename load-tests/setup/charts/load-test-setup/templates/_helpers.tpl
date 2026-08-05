@@ -15,11 +15,11 @@ The input is expected to be a dict with:
 
 The "derivePassword" function is not well documented, by conventions, we use:
 
-* The "counter" input is the same for all the password.
+* The "counter" input is the same for all the passwords.
 * The generated passwords will be "long" passwords: 14 characters with a mix of random characters
 * The "password" input is always set to "secret"
-* The "user" input is the key we generate the input for ; it's not the actual username but something unique across all the users with need
-* The "site" is the name of namespace: this is actually the only "random" value seeded into the password generator. It guarantees that:
+* The "user" input is the key we generate the input for ; it's not the actual username but something unique across all the users that need one
+* The "site" is the name of the namespace: this is actually the only "random" value seeded into the password generator. It guarantees that:
   1. Different namespaces will produce different passwords
   2. The same namespace will produce the same passwords (as long as the other inputs don't change).
 */}}

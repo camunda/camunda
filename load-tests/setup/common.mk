@@ -224,13 +224,7 @@ ifneq ($(install_storage_target),)
 # Install secondary storage based on configuration
 .PHONY: install-storage
 install-storage:
-ifeq ($(secondary_storage),postgresql)
-	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-postgresql.yaml
-	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
-		--namespace $(namespace) \
-		$(platform_values)
-else ifeq ($(secondary_storage),mysql)
+ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
 	# Install MySQL database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
@@ -250,8 +244,6 @@ else ifeq ($(secondary_storage),oracle)
 	@echo "Installing Oracle database for namespace $(namespace)..."
 	# Deploy Oracle Free 23c via plain Kubernetes manifests (oracle.yaml) since no maintained public chart is available
 	kubectl apply --namespace $(namespace) -f databases/oracle.yaml
-else
-	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 endif
 
