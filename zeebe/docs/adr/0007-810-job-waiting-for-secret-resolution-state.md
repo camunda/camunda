@@ -2,7 +2,7 @@
 
 **DRI**: Berkay Can
 
-**Status**: Proposed (8.10)
+**Status**: Accepted (8.10)
 
 **Purpose**: Defines the persisted job state that marks a job as parked while its secret references
 are resolved in the background: which transitions write it, which commands it accepts, and what it
@@ -75,8 +75,8 @@ The guard is a silent skip rather than an exception because a job can legitimate
 twice. A job waiting on two references A and B, both of which resolve, is reactivated by the
 `BATCH_JOBS_REACTIVATED` event of A (B is no longer pending at that point, its own reactivation
 command is only queued), and the event of B then calls the method again on a job that is already
-`ACTIVATABLE`. An exception thrown from an event applier is unrecoverable, it fails the partition,
-so a state that the guard rejects must be a no-op.
+`ACTIVATABLE`. An exception thrown from an event applier bans the process instance, or fails the
+partition when it happens on replay, so a state that the guard rejects must be a no-op.
 
 The eligibility check that keeps an incident-parked job parked stays in the reactivation applier: a
 job with a `SECRET_RESOLUTION_ERROR` incident is in `WAITING_FOR_SECRET_RESOLUTION` like any other
@@ -116,10 +116,6 @@ An older broker reading state written by a newer one would fail on `Enum.valueOf
 follows the general no-downgrade rule for 8.10 state. Reading older state is unaffected: no existing
 entry carries the new name.
 
-The applier logic this changes is updated in place, with the golden files regenerated, instead of
-being registered as new versions: the whole secret resolution flow is 8.10 development that no minor
-release has shipped yet, so there is no released replay behaviour to preserve.
-
 ## Alternatives considered
 
 - **Keep the absence of an index entry as the waiting marker.** Rejected. Absence is not specific to
@@ -136,7 +132,8 @@ release has shipped yet, so there is no released replay behaviour to preserve.
   backoff index and in incident resolution, and would make a parked job indistinguishable from a job
   that a worker failed.
 - **Throw when the reactivation path sees an unexpected state.** Rejected, see above: the
-  double-reactivation path is legitimate and an exception in an applier fails the partition.
+  double-reactivation path is legitimate, and an exception in an applier bans the process instance or
+  fails the partition on replay.
 - **Reject `UpdateJob` on a parked job as well.** Rejected. It would fix the un-parking bug by
   refusing the command instead of by state, and an operator re-prioritising queued work has no reason
   to be blocked by a pending secret resolution.

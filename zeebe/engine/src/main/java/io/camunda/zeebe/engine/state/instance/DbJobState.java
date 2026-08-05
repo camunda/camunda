@@ -274,7 +274,7 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecord record = getJob(key);
     if (record == null) {
       // the state says the job is parked, so its record must exist; guarded anyway because an
-      // exception in an event applier fails the partition
+      // exception in an event applier bans the process instance, or fails the partition on replay
       return;
     }
     updateJobState(key, State.ACTIVATABLE);
