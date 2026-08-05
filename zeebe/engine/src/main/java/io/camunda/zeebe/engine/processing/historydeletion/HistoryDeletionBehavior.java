@@ -47,11 +47,10 @@ public final class HistoryDeletionBehavior {
    *
    * @return the key of the created batch operation
    */
-  public long deleteProcessInstanceHistory(final long eventKey, final long processDefinitionKey) {
+  public long deleteProcessInstanceHistory(final long processDefinitionKey) {
     final var filter =
         new ProcessInstanceFilter.Builder().processDefinitionKeys(processDefinitionKey).build();
     return createBatchOperation(
-        eventKey,
         BatchOperationType.DELETE_PROCESS_INSTANCE,
         MsgPackConverter.convertToMsgPack(filter),
         new HistoryDeletionRecord()
@@ -65,14 +64,12 @@ public final class HistoryDeletionBehavior {
    *
    * @return the key of the created batch operation
    */
-  public long deleteDecisionInstanceHistory(
-      final long eventKey, final long decisionRequirementsKey) {
+  public long deleteDecisionInstanceHistory(final long decisionRequirementsKey) {
     final var filter =
         new DecisionInstanceFilter.Builder()
             .decisionRequirementsKeys(decisionRequirementsKey)
             .build();
     return createBatchOperation(
-        eventKey,
         BatchOperationType.DELETE_DECISION_INSTANCE,
         MsgPackConverter.convertToMsgPack(filter),
         new HistoryDeletionRecord()
@@ -81,7 +78,6 @@ public final class HistoryDeletionBehavior {
   }
 
   private long createBatchOperation(
-      final long eventKey,
       final BatchOperationType batchOperationType,
       final byte[] entityFilter,
       final HistoryDeletionRecord followUpCommand) {
@@ -97,7 +93,7 @@ public final class HistoryDeletionBehavior {
             .setFollowUpCommand(
                 ValueType.HISTORY_DELETION, HistoryDeletionIntent.DELETE, followUpCommand);
     commandWriter.appendFollowUpCommand(
-        eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
+        batchOperationKey, BatchOperationIntent.CREATE, batchOperationRecord);
     return batchOperationKey;
   }
 }
