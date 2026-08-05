@@ -121,6 +121,9 @@ public class AlignmentTest {
               "camunda.client.worker.defaults.auto-complete",
               new Getter(p -> p.getWorker().getDefaults().getAutoComplete())),
           entry(
+              "camunda.client.worker.defaults.with-lease",
+              new Getter(p -> p.getWorker().getDefaults().getWithLease())),
+          entry(
               "camunda.client.worker.defaults.request-timeout",
               new Getter(p -> p.getWorker().getDefaults().getRequestTimeout(), DURATION_MAPPER)),
           entry(

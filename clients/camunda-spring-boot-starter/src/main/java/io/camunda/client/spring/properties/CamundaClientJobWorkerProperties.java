@@ -117,6 +117,15 @@ public class CamundaClientJobWorkerProperties {
   private Duration retryBackoff;
 
   /**
+   * Activate the jobs polled by this worker with a lease. When enabled, each activated job is
+   * assigned a distinct lease token, fencing the complete, fail, and throw-error commands against a
+   * superseded activation of the same job.
+   *
+   * <p>Only applies to the polling path. If not set, jobs are activated without a lease.
+   */
+  private Boolean withLease;
+
+  /**
    * This instantiates the properties without any defaults. Intended to be used by {@link
    * CamundaClientWorkerProperties#getOverride()}.
    */
@@ -284,5 +293,13 @@ public class CamundaClientJobWorkerProperties {
 
   public void setRetryBackoff(final Duration retryBackoff) {
     this.retryBackoff = retryBackoff;
+  }
+
+  public Boolean getWithLease() {
+    return withLease;
+  }
+
+  public void setWithLease(final Boolean withLease) {
+    this.withLease = withLease;
   }
 }
