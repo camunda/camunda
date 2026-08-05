@@ -166,6 +166,11 @@ final class DynamicConfigExportingStateControllerTest {
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> emptyPlan() {
     return CompletableFuture.completedFuture(
-        Either.right(new ClusterConfigurationChangeResponse(0, Map.of(), Map.of(), List.of())));
+        Either.right(
+            new ClusterConfigurationChangeResponse(
+                0,
+                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                    Map.of(), Map.of(), List.of()),
+                null)));
   }
 }

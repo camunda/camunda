@@ -121,7 +121,12 @@ final class ClusterConfigurationChangeAwaiterTest {
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> emptyPlan() {
     return CompletableFuture.completedFuture(
-        Either.right(new ClusterConfigurationChangeResponse(0, Map.of(), Map.of(), List.of())));
+        Either.right(
+            new ClusterConfigurationChangeResponse(
+                0,
+                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                    Map.of(), Map.of(), List.of()),
+                null)));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> plan(
@@ -130,11 +135,13 @@ final class ClusterConfigurationChangeAwaiterTest {
         Either.right(
             new ClusterConfigurationChangeResponse(
                 changeId,
-                Map.of(),
-                Map.of(),
-                List.of(
-                    new ExportingStateChangeOperation(
-                        MemberId.from("0"), ExportingState.PAUSED)))));
+                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                    Map.of(),
+                    Map.of(),
+                    List.of(
+                        new ExportingStateChangeOperation(
+                            MemberId.from("0"), ExportingState.PAUSED))),
+                null)));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> topology(
