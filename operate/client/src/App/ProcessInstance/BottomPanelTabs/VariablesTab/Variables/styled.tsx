@@ -30,7 +30,7 @@ const VariableName = styled.div`
 `;
 
 const StructuredList = styled(BaseStructuredList)`
-  padding: var(--cds-spacing-05);
+  padding: 0 var(--cds-spacing-05) var(--cds-spacing-05);
   [role='table'] {
     table-layout: fixed;
   }
@@ -58,7 +58,8 @@ const FilterSwitcherContainer = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: var(--cds-spacing-04);
-  padding: var(--cds-spacing-05) var(--cds-spacing-05) 0;
+  padding: 0 var(--cds-spacing-05) var(--cds-spacing-05);
+  border-bottom: solid 1px var(--cds-border-subtle-01);
 `;
 
 const VariablesSearch = styled.div`
