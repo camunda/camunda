@@ -1,0 +1,313 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.mapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
+import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
+import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
+import io.camunda.gateway.protocol.model.AgentTool;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.util.Either;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.ProblemDetail;
+
+class AgentInstanceMapperTest {
+
+  private static final String AGENT_INSTANCE_KEY = "9007199254741017";
+  private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
+  private static final String JOB_KEY = "2251799813685249";
+
+  private final AgentInstanceMapper mapper =
+      new AgentInstanceMapper(new AgentInstanceRequestValidator());
+
+  @Nested
+  class ExistingUpdateFieldMappingTest {
+
+    @Test
+    void shouldMapStatusOntoRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setStatus(AgentInstanceUpdateStatusEnum.THINKING);
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getStatus().name()).isEqualTo("THINKING");
+      assertThat(record.getChangedAttributes()).containsExactly("status");
+    }
+
+    @Test
+    void shouldMapMetricsOntoRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
+      request.getMetrics().setInputTokens(1000L);
+      request.getMetrics().setOutputTokens(500L);
+      request.getMetrics().setModelCalls(3);
+      request.getMetrics().setToolCalls(7);
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
+      assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
+      assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
+      assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
+      assertThat(record.getChangedAttributes()).containsExactly("metrics");
+    }
+
+    @Test
+    void shouldMapToolsOntoRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setTools(
+          List.of(
+              AgentTool.Builder.create()
+                  .name("searchDatabase")
+                  .description("Searches the database")
+                  .elementId(null)
+                  .build()));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getTools()).hasSize(1);
+      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
+      assertThat(record.getChangedAttributes()).containsExactly("tools");
+    }
+  }
+
+  @Nested
+  class HistoryBatchMappingTest {
+
+    @Test
+    void shouldMapHistoryBatchOntoRecordPreservingOrderAndFields() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
+              historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getHistory()).hasSize(2);
+      assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
+      assertThat(record.getHistory().get(0).getRole().name()).isEqualTo("USER");
+      assertThat(record.getHistory().get(0).getContent()).hasSize(1);
+      assertThat(record.getHistory().get(0).getContent().get(0).getText()).isEqualTo("hello");
+      assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
+      assertThat(record.getHistory().get(1).getRole().name()).isEqualTo("ASSISTANT");
+    }
+
+    @Test
+    void shouldMapHistoryItemToolCallsAndMetricsOntoRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      final var toolCall =
+          AgentInstanceToolCall.Builder.create()
+              .toolCallId("tc-001")
+              .toolName("extract_data")
+              .elementId("extract-task")
+              .arguments(null)
+              .build();
+      final var item =
+          AgentInstanceHistoryItem.Builder.create()
+              .historyItemId("item-1")
+              .loopIteration(1)
+              .role(AgentInstanceHistoryRoleEnum.ASSISTANT)
+              .content(List.of(textContent("computing")))
+              .producedAt("2025-06-01T12:00:00Z")
+              .build();
+      item.setToolCalls(List.of(toolCall));
+      item.setMetrics(
+          AgentInstanceHistoryItemMetrics.Builder.create()
+              .inputTokens(512L)
+              .outputTokens(128L)
+              .durationMs(1500L)
+              .build());
+      request.setHistory(List.of(item));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getToolCalls()).hasSize(1);
+      assertThat(mappedItem.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-001");
+      assertThat(mappedItem.getToolCalls().get(0).getToolName()).isEqualTo("extract_data");
+      assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(512L);
+      assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(128L);
+      assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(1500L);
+      assertThat(mappedItem.getProducedAt())
+          .isEqualTo(OffsetDateTime.parse("2025-06-01T12:00:00Z").toInstant().toEpochMilli());
+    }
+
+    @Test
+    void shouldMapRequestLevelJobKeyAndJobLeaseOntoRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setJobLease("lease-abc");
+      request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
+      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+    }
+
+    @Test
+    void shouldMapPerItemLoopIterationOntoHistoryRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      final var itemIterationTwo =
+          historyItem("item-1", 2, AgentInstanceHistoryRoleEnum.USER, "hi");
+      final var itemIterationThree =
+          historyItem("item-2", 3, AgentInstanceHistoryRoleEnum.USER, "still there?");
+      request.setHistory(List.of(itemIterationTwo, itemIterationThree));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getHistory().get(0).getLoopIteration()).isEqualTo(2);
+      assertThat(record.getHistory().get(1).getLoopIteration()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class CombinedFieldMappingTest {
+
+    @Test
+    void shouldMapStatusMetricsToolsAndHistoryTogetherWithoutLosingAny() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setStatus(AgentInstanceUpdateStatusEnum.IDLE);
+      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
+      request.getMetrics().setInputTokens(10L);
+      request.setTools(
+          List.of(
+              AgentTool.Builder.create()
+                  .name("searchDatabase")
+                  .description(null)
+                  .elementId(null)
+                  .build()));
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
+              historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getStatus().name()).isEqualTo("IDLE");
+      assertThat(record.getMetrics().getInputTokens()).isEqualTo(10L);
+      assertThat(record.getTools()).hasSize(1);
+      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
+      assertThat(record.getHistory()).hasSize(2);
+      assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
+      assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
+      assertThat(record.getChangedAttributes()).containsExactly("status", "metrics", "tools");
+    }
+  }
+
+  private static AgentInstanceHistoryItem historyItem(
+      final String historyItemId, final AgentInstanceHistoryRoleEnum role, final String text) {
+    return historyItem(historyItemId, 1, role, text);
+  }
+
+  private static AgentInstanceHistoryItem historyItem(
+      final String historyItemId,
+      final int loopIteration,
+      final AgentInstanceHistoryRoleEnum role,
+      final String text) {
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(loopIteration)
+        .role(role)
+        .content(List.of(textContent(text)))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceMessageContent textContent(final String text) {
+    return AgentInstanceTextContent.Builder.create().contentType("TEXT").text(text).build();
+  }
+}
