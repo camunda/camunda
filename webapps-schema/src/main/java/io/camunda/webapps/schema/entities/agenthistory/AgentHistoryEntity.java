@@ -92,6 +92,38 @@ public final class AgentHistoryEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<AgentHistoryEmbeddedToolCallValue> toolCalls;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String historyItemId;
+
+  /**
+   * CONFIGURATION items only — empty when this item didn't touch the tool list. May still be null
+   * for documents exported before this field existed.
+   */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<AgentHistoryToolValue> tools;
+
+  /** CONFIGURATION items only — null if this item didn't touch the model. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String model;
+
+  /** CONFIGURATION items only — null if this item didn't touch the provider. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String provider;
+
+  /**
+   * CONFIGURATION items only — the {@code -1} sentinel ("no limit configured") when this item
+   * didn't touch the limits. May still be null for documents exported before this field existed.
+   */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private AgentHistoryLimitsValue limits;
+
+  /**
+   * CONFIGURATION items only — empty when this item didn't touch the system prompt. May still be
+   * null for documents exported before this field existed.
+   */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<AgentHistoryContentValue> systemPrompt;
+
   @Override
   public String getId() {
     return id;
@@ -286,6 +318,60 @@ public final class AgentHistoryEntity
     return this;
   }
 
+  public String getHistoryItemId() {
+    return historyItemId;
+  }
+
+  public AgentHistoryEntity setHistoryItemId(final String historyItemId) {
+    this.historyItemId = historyItemId;
+    return this;
+  }
+
+  public List<AgentHistoryToolValue> getTools() {
+    return tools;
+  }
+
+  public AgentHistoryEntity setTools(final List<AgentHistoryToolValue> tools) {
+    this.tools = tools;
+    return this;
+  }
+
+  public String getModel() {
+    return model;
+  }
+
+  public AgentHistoryEntity setModel(final String model) {
+    this.model = model;
+    return this;
+  }
+
+  public String getProvider() {
+    return provider;
+  }
+
+  public AgentHistoryEntity setProvider(final String provider) {
+    this.provider = provider;
+    return this;
+  }
+
+  public AgentHistoryLimitsValue getLimits() {
+    return limits;
+  }
+
+  public AgentHistoryEntity setLimits(final AgentHistoryLimitsValue limits) {
+    this.limits = limits;
+    return this;
+  }
+
+  public List<AgentHistoryContentValue> getSystemPrompt() {
+    return systemPrompt;
+  }
+
+  public AgentHistoryEntity setSystemPrompt(final List<AgentHistoryContentValue> systemPrompt) {
+    this.systemPrompt = systemPrompt;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -424,4 +510,13 @@ public final class AgentHistoryEntity
   /** A tool call embedded in a history entry. */
   public record AgentHistoryEmbeddedToolCallValue(
       String toolCallId, String toolName, String elementId, Map<String, Object> arguments) {}
+
+  /** A tool made available to the agent by a CONFIGURATION history entry. */
+  public record AgentHistoryToolValue(String name, String description, String elementId) {}
+
+  /**
+   * The limits carried by a CONFIGURATION history entry. {@code -1} on any field means "no limit
+   * configured" for that dimension, same convention as {@code AgentInstanceEntity}'s limits fields.
+   */
+  public record AgentHistoryLimitsValue(long maxTokens, int maxModelCalls, int maxToolCalls) {}
 }
