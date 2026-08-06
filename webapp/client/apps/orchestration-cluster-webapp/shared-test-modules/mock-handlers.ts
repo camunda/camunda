@@ -24,9 +24,24 @@ const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 	method: endpoints.queryProcessDefinitions.method,
 });
 
+const mockGetProcessDefinitionEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinition.getUrl({processDefinitionKey: ':processDefinitionKey'}),
+	method: endpoints.getProcessDefinition.method,
+});
+
+const mockGetProcessStartFormEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessStartForm.getUrl({processDefinitionKey: ':processDefinitionKey'}),
+	method: endpoints.getProcessStartForm.method,
+});
+
 const mockCreateProcessInstanceEndpoint = createEndpointMock({
 	endpoint: endpoints.createProcessInstance.getUrl(),
 	method: endpoints.createProcessInstance.method,
+});
+
+const mockCreateDocumentsEndpoint = createEndpointMock({
+	endpoint: endpoints.createDocuments.getUrl(),
+	method: endpoints.createDocuments.method,
 });
 
 const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
@@ -181,7 +196,10 @@ export {
 	mockGetAuditLogEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockGetProcessDefinitionEndpoint,
+	mockGetProcessStartFormEndpoint,
 	mockCreateProcessInstanceEndpoint,
+	mockCreateDocumentsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,

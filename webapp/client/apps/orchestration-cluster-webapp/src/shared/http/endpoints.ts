@@ -22,7 +22,7 @@ import {
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
-	type CreateProcessInstanceRequestBody,
+	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
 	type QueryAuditLogsRequestBody,
 	type UserTask,
@@ -42,6 +42,10 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
 
 type CreateDocumentMetadata = {
 	customProperties?: Record<string, unknown>;
+};
+
+type CreateProcessInstanceRequestBody = Omit<ApiCreateProcessInstanceRequestBody, 'variables'> & {
+	variables?: Record<string, unknown>;
 };
 
 type CreateDocumentsFileEntry = {
@@ -157,6 +161,20 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinition: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinition.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinition.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessStartForm: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessStartForm.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessStartForm.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 

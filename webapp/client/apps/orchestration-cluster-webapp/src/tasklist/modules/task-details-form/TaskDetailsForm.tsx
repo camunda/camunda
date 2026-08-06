@@ -15,7 +15,7 @@ import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import {formatVariablesToFormData} from './formatVariablesToFormData';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
-import {useUploadDocuments} from './useUploadDocuments';
+import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import styles from './TaskDetailsForm.module.scss';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 
