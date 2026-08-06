@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -627,6 +628,216 @@ class SecretsTest {
 
       // then the gcp map is empty
       assertThat(secrets.getStores().getGcp()).isEmpty();
+    }
+  }
+
+  @Nested
+  class WithoutCacheConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutCacheConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultCacheTtlToTwentyMinutes() {
+      // given no camunda.secrets.cache.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the ttl is the documented default
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+
+    @Test
+    void shouldDefaultCacheMaxSizeToOneThousand() {
+      // given no camunda.secrets.cache.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the max size is the documented default
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.cache.ttl=5m", "camunda.secrets.cache.max-size=50"})
+  class WithCacheConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithCacheConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindCacheTtlAndMaxSize() {
+      // given camunda.secrets.cache.ttl and .max-size are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both values are bound
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(5));
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(50);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=2h"})
+  class WithCacheTtlCoarserThanMinutes {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithCacheTtlCoarserThanMinutes(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAcceptCacheTtlCoarserThanMinutes() {
+      // given a ttl of two hours, which is a whole number of minutes
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it binds without throwing: minute granularity means a whole multiple of a minute, not
+      // a value that has to be expressed in minutes
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofHours(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=30s"})
+  class WithSubMinuteCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithSubMinuteCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheTtlBelowOneMinute() {
+      // given a ttl below the one-minute minimum
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.ttl")
+          .hasMessageContaining("at least 1 minute");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=90s"})
+  class WithNonMinuteGranularCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithNonMinuteGranularCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheTtlThatIsNotAWholeNumberOfMinutes() {
+      // given a ttl above the minimum but not a whole number of minutes
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then the granularity rule rejects it, not the minimum
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.ttl")
+          .hasMessageContaining("whole number of minutes");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.max-size=0"})
+  class WithZeroCacheMaxSize {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithZeroCacheMaxSize(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheMaxSizeBelowOne() {
+      // given a max size below 1, which would cache nothing at all
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.max-size")
+          .hasMessageContaining("at least 1");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl="})
+  class WithEmptyCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultTtlWhenTheValueIsEmpty() {
+      // given an explicitly empty ttl, which an env-var-driven deployment produces routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept, so no null ever reaches the cache and the minimum is not tripped
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.max-size="})
+  class WithEmptyCacheMaxSize {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyCacheMaxSize(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultMaxSizeWhenTheValueIsEmpty() {
+      // given an explicitly empty max size, which an env-var-driven deployment produces routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept rather than binding as 0, which the minimum would reject at
+      // startup
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  class CacheDefaults {
+
+    @Test
+    void shouldKeepTheDefaultTtlWhenSetToNull() {
+      // given the default cache configuration
+      final Secrets.Cache cache = new Secrets.Cache();
+
+      // when a caller sets the ttl to null directly, which Spring's binder never does
+      cache.setTtl(null);
+
+      // then the default stands, so getTtl() keeps its NullMarked contract for the cache factory
+      assertThat(cache.getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+
+    @Test
+    void shouldKeepTheDefaultMaxSizeWhenSetToNull() {
+      // given the default cache configuration
+      final Secrets.Cache cache = new Secrets.Cache();
+
+      // when a caller sets the max size to null directly
+      cache.setMaxSize(null);
+
+      // then the default stands, so getMaxSize() can keep handing an int to the cache factory
+      assertThat(cache.getMaxSize()).isEqualTo(1000);
     }
   }
 }

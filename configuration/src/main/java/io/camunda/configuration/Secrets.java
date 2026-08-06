@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -20,6 +21,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * <p>Canonical unified configuration properties are under {@code camunda.secrets.*}, including:
  *
  * <ul>
+ *   <li>{@code camunda.secrets.cache.ttl}
+ *   <li>{@code camunda.secrets.cache.max-size}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -43,6 +46,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class Secrets {
 
   @NestedConfigurationProperty private Stores stores = new Stores();
+  @NestedConfigurationProperty private Cache cache = new Cache();
 
   public Stores getStores() {
     return stores;
@@ -50,6 +54,19 @@ public class Secrets {
 
   public void setStores(final Stores stores) {
     this.stores = stores;
+  }
+
+  /**
+   * @throws IllegalArgumentException if the cache ttl is below one minute or is not a whole number
+   *     of minutes, or if the cache max-size is below 1
+   */
+  public Cache getCache() {
+    cache.validate();
+    return cache;
+  }
+
+  public void setCache(final Cache cache) {
+    this.cache = cache;
   }
 
   public static class Stores {
@@ -93,6 +110,120 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+  }
+
+  /**
+   * Cache settings applied to every configured store's cache. One cache is created per store, so
+   * {@link #maxSize} bounds each store's cache on its own rather than being a budget shared across
+   * stores.
+   *
+   * <p>The defaults are restated here as literals rather than read from the cache implementation,
+   * because this module deliberately does not depend on the {@code secret-store-api} module — the
+   * same reason {@code EngineSecrets} and {@code ProcessCache} restate theirs. {@code
+   * SecretStoreConfigurationTest} pins the two sets of defaults against each other, since {@code
+   * dist} is the only module that sees both.
+   */
+  public static class Cache {
+
+    /** Smallest ttl accepted, and the granularity every ttl must be a whole multiple of. */
+    private static final Duration MIN_TTL = Duration.ofMinutes(1);
+
+    private static final Duration DEFAULT_TTL = Duration.ofMinutes(20);
+
+    private static final int DEFAULT_MAX_SIZE = 1000;
+
+    /**
+     * How long a resolved secret is served from a store's cache before it is fetched from the store
+     * again, so a secret rotated in the store is picked up without a restart. Minute granularity
+     * only: a value below {@code 1m}, or one that is not a whole number of minutes, is rejected at
+     * startup — the value is a staleness budget measured in minutes, and expressing it in seconds
+     * invites a cache so short that it turns cache-only lookups into store round trips.
+     *
+     * <p>Defaults to {@code 20m}.
+     */
+    private Duration ttl = DEFAULT_TTL;
+
+    /**
+     * Maximum number of secrets each store's cache holds; once it is reached, caching another
+     * secret evicts one already held. Which one is the cache implementation's choice, so no secret
+     * is guaranteed to stay resident — an evicted secret is re-read from the store on its next
+     * resolution. Must be at least 1.
+     *
+     * <p>This is a per-cache limit, not a budget shared across stores, so the worst-case memory
+     * footprint is the number of configured stores times this value — each cached entry holding one
+     * secret's name and its value.
+     *
+     * <p>Defaults to {@code 1000}.
+     */
+    // Boxed rather than an int so an explicitly empty value survives binding (see setMaxSize), and
+    // never null once bound, which is what lets getMaxSize() hand an int to the cache. Kept out of
+    // the javadoc above because that text is harvested into the operator-facing configuration
+    // reference, where the field's Java type is noise.
+    private Integer maxSize = DEFAULT_MAX_SIZE;
+
+    public Duration getTtl() {
+      return ttl;
+    }
+
+    /**
+     * Coerces {@code null} back to the default, because {@link #getTtl()} is handed straight to the
+     * cache, which cannot take one. An explicitly empty property value ({@code
+     * camunda.secrets.cache.ttl=}) — routine when the value comes from an unset environment
+     * variable — converts to {@code null}, which Spring's binder reads as "not bound", so in that
+     * path the field default simply stands and this setter is never called. The coercion covers a
+     * caller that sets the field directly, keeping the {@code NullMarked} contract of {@link
+     * #getTtl()} true whatever is passed.
+     */
+    public void setTtl(final @Nullable Duration ttl) {
+      this.ttl = ttl == null ? DEFAULT_TTL : ttl;
+    }
+
+    public int getMaxSize() {
+      return maxSize;
+    }
+
+    /**
+     * Takes a boxed {@link Integer} for the sake of the empty-value path described on {@link
+     * #setTtl}: an empty {@code camunda.secrets.cache.max-size=} converts to {@code null}, and
+     * assigning that to an {@code int} parameter fails conversion outright ("A null value cannot be
+     * assigned to a primitive type"), turning an unset environment variable into a startup crash
+     * naming no remedy. Boxed, the binder treats it as "not bound" and the default stands — the
+     * same outcome {@code ttl} already has, rather than the two disagreeing on what an empty value
+     * means.
+     */
+    public void setMaxSize(final @Nullable Integer maxSize) {
+      this.maxSize = maxSize == null ? DEFAULT_MAX_SIZE : maxSize;
+    }
+
+    /**
+     * Enforces the bounds the cache is built with, with property-path-aware messages in the style
+     * of the store validators above. Reported against the canonical {@code camunda.secrets.cache.*}
+     * path even when the value came from a {@code camunda.physical-tenants.<id>.secrets.cache.*}
+     * override — this config object carries no tenant identity, exactly as the store validators do
+     * not. {@code SecretStoreConfiguration} names the tenant when it rethrows, since it is the
+     * caller that knows which one it is reading for.
+     *
+     * <p>Runs from the validating {@link Secrets#getCache()}, which {@code
+     * SecretStoreConfiguration} reads once per physical tenant before building any store — that
+     * unconditional read is what makes this a startup check rather than a first-use one.
+     *
+     * @throws IllegalArgumentException if ttl is below one minute or is not a whole number of
+     *     minutes, or if max-size is below 1
+     */
+    void validate() {
+      if (ttl.compareTo(MIN_TTL) < 0) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.cache.ttl must be at least 1 minute, but was " + ttl);
+      }
+      if (!ttl.equals(Duration.ofMinutes(ttl.toMinutes()))) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.cache.ttl must be a whole number of minutes, but was " + ttl);
+      }
+      if (maxSize < 1) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.cache.max-size must be at least 1, but was " + maxSize);
+      }
     }
   }
 
