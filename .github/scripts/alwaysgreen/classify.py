@@ -245,6 +245,9 @@ HELM_INFRASTRUCTURE = "infrastructure"
 _HELM_CONFIG_MARKERS = (
     "INSTALLATION FAILED",
     "UPGRADE FAILED",
+    # helm install prefixes schema errors with INSTALLATION FAILED, but template and
+    # dry-run print the bare message, so match that too.
+    "values don't meet the specifications",
     "YAML parse error",
     "error validating data",
     "error converting YAML",

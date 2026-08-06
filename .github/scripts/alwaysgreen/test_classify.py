@@ -512,6 +512,16 @@ def test_helm_values_error_is_actionable():
     assert detail == "INSTALLATION FAILED"
 
 
+def test_helm_schema_error_without_install_prefix_is_actionable():
+    # helm template and dry-run print the bare message; only install prefixes it with
+    # INSTALLATION FAILED. Verified locally against camunda-platform-8.10.
+    log = ("Error: values don't meet the specifications of the schema(s) in the "
+           "following chart(s):\ncamunda-platform:\n- global.multitenancy.enabled: "
+           "Invalid type. Expected: boolean, given: string")
+    verdict, _ = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_ACTIONABLE
+
+
 def test_helm_crashloop_is_actionable():
     verdict, _ = classify.helm_install_verdict("identity  0/1  CrashLoopBackOff  5")
     assert verdict == classify.HELM_ACTIONABLE

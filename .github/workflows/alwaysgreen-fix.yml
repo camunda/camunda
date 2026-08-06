@@ -183,7 +183,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common ALWAYS_GREEN_ANTHROPIC_API_KEY | ANTHROPIC_API_KEY ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
             secret/data/products/qa/ci/common GH_TOKEN | GH_PAT ;
 
