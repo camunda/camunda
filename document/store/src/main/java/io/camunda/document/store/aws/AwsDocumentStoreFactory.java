@@ -7,6 +7,7 @@
  */
 package io.camunda.document.store.aws;
 
+import java.net.URI;
 import java.util.concurrent.ExecutorService;
 
 public class AwsDocumentStoreFactory {
@@ -17,6 +18,61 @@ public class AwsDocumentStoreFactory {
       final String bucketPath,
       final ExecutorService executor) {
     return create(bucketName, defaultTTL, bucketPath, executor, AwsClientOptions.sdkDefaults());
+  }
+
+  /**
+   * @deprecated superseded by {@link #create(String, Long, String, ExecutorService,
+   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
+   *     caller compiled against an earlier release still links.
+   */
+  @Deprecated(forRemoval = true)
+  public static AwsDocumentStore create(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled) {
+    return create(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        endpointOverride,
+        forcePathStyle,
+        chunkedEncodingEnabled,
+        null);
+  }
+
+  /**
+   * @deprecated superseded by {@link #create(String, Long, String, ExecutorService,
+   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
+   *     caller compiled against an earlier release still links.
+   */
+  @Deprecated(forRemoval = true)
+  public static AwsDocumentStore create(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    return create(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        new AwsClientOptions(
+            endpointOverride,
+            forcePathStyle,
+            chunkedEncodingEnabled,
+            supportLegacyMd5,
+            null,
+            null,
+            null));
   }
 
   public static AwsDocumentStore create(
