@@ -41,7 +41,8 @@ public final class ConditionalStartedProcessInstance extends ObjectValue
     return processDefinitionKeyProp.getValue();
   }
 
-  public ConditionalStartedProcessInstance setProcessDefinitionKey(final long processDefinitionKey) {
+  public ConditionalStartedProcessInstance setProcessDefinitionKey(
+      final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }

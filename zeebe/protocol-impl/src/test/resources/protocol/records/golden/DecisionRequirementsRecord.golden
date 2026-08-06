@@ -142,6 +142,16 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DecisionRequirementsRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
     return decisionRequirementsIdProp.getValue();
@@ -179,16 +189,6 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
 
   public DecisionRequirementsRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
-  @Override
-  public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
-  }
-
-  public DecisionRequirementsRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 }

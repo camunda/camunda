@@ -32,10 +32,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_METRICS = "metrics";
   public static final String ATTR_TOOLS = "tools";
 
-  // Derived from CONFIGURATION-role history items on the output side (see #58791 for the engine
-  // processing that merges them in), never from a request-level changedAttributes entry — these
-  // are not part of ALLOWED_ATTRIBUTES in AgentInstanceUpdateProcessor, only of the output-side
-  // merge order.
+  // Derived from a future configuration-change history entry kind on the output side (see #58794
+  // for that entry kind and #58791 for the engine processing that merges them in), never from a
+  // request-level changedAttributes entry — these are not part of ALLOWED_ATTRIBUTES in
+  // AgentInstanceUpdateProcessor, only of the output-side merge order.
   public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
   public static final String ATTR_MODEL = "model";
   public static final String ATTR_PROVIDER = "provider";
@@ -133,11 +133,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeysProp.add().setValue(elementInstanceKey);
-    return this;
-  }
-
   @Override
   public String getElementId() {
     return BufferUtil.bufferAsString(elementIdProp.getValue());
@@ -159,6 +154,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
@@ -175,16 +175,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
-    return this;
-  }
-
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
@@ -280,11 +270,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentInstanceRecord addChangedAttribute(final String attribute) {
-    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
-    return this;
-  }
-
   @Override
   public long getJobKey() {
     return jobKeyProp.getValue();
@@ -327,6 +312,21 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         historyProp.add().copyFrom(item);
       }
     }
+    return this;
+  }
+
+  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeysProp.add().setValue(elementInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
     return this;
   }
 

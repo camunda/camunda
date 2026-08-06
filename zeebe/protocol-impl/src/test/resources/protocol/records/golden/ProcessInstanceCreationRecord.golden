@@ -195,6 +195,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public boolean hasBusinessId() {
+    return businessIdProperty.getValue().capacity() > 0;
+  }
+
   @JsonIgnore
   public boolean hasStartInstructions() {
     return !startInstructionsProperty.isEmpty();
@@ -231,6 +235,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions() {
     return startInstructionsProperty;
+  }
+
+  public ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions() {
+    return runtimeInstructionsProperty;
   }
 
   public ProcessInstanceCreationRecord addStartInstructions(

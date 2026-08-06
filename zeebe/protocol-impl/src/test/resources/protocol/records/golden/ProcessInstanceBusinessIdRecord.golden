@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
     implements ProcessInstanceBusinessIdRecordValue {
 
-  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   // Static StringValue keys to avoid memory waste
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
@@ -30,7 +30,7 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
 
   private final LongProperty processInstanceKeyProperty =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
   private final StringProperty tenantIdProperty =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
