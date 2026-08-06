@@ -36,6 +36,9 @@ public class AgentInstanceEntityMapper {
         new AgentInstanceMetrics(
             dbModel.inputTokens(),
             dbModel.outputTokens(),
+            dbModel.reasoningTokenCount(),
+            dbModel.cacheCreationTokenCount(),
+            dbModel.cacheReadTokenCount(),
             dbModel.modelCalls(),
             dbModel.toolCalls()),
         new AgentInstanceLimits(

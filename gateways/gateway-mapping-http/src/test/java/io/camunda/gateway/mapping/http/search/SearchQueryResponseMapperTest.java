@@ -1044,7 +1044,7 @@ class SearchQueryResponseMapperTest {
             List.of(456L), // elementInstanceKeys
             AgentInstanceEntity.AgentInstanceStatus.IDLE,
             new AgentInstanceEntity.AgentInstanceDefinition("gpt-4o", "openai", "You are helpful"),
-            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 0L, 0L, 0L, 1, 2),
             new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
             List.of(
                 new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),

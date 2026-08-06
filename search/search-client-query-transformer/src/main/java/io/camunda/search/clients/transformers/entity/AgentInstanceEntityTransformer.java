@@ -33,6 +33,9 @@ public class AgentInstanceEntityTransformer
         new AgentInstanceMetrics(
             source.getInputTokens(),
             source.getOutputTokens(),
+            source.getReasoningTokenCount(),
+            source.getCacheCreationTokenCount(),
+            source.getCacheReadTokenCount(),
             source.getModelCalls(),
             source.getToolCalls());
 
