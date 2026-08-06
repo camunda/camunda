@@ -44,6 +44,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.No
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOpe
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -92,6 +94,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 final class NewModelManagementApiEndpointsTest {
 
+  private static final String TENANT_B = "tenant-b";
   private static final MemberId ID_0 = MemberId.from("0");
   private static final MemberId ID_1 = MemberId.from("1");
   private static final MemberId ID_2 = MemberId.from("2");
@@ -509,6 +512,83 @@ final class NewModelManagementApiEndpointsTest {
     assertThat(
             config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).getMember(ID_0).mode())
         .isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldApplyModeChangeToEveryPhysicalTenantInOnePlan() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    handler.modeChange(new ModeChangeRequest(Optional.empty(), Mode.RECOVERING, false)).join();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).getMember(ID_0).mode())
+        .isEqualTo(Mode.RECOVERING);
+    assertThat(config.partitionGroup(TENANT_B).getMember(ID_0).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldApplyModeChangeToOnlyTheRequestedPhysicalTenant() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    handler.modeChange(new ModeChangeRequest(Optional.of(TENANT_B), Mode.RECOVERING, false)).join();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).getMember(ID_0).mode()).isEqualTo(Mode.RECOVERING);
+    assertThat(
+            config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).getMember(ID_0).mode())
+        .isEqualTo(Mode.PROCESSING);
+  }
+
+  /**
+   * Wires a cluster with two physical tenants — the default group and {@link #TENANT_B} — both
+   * hosted by {@link #ID_0} and both processing.
+   */
+  private void wireTwoPhysicalTenants() {
+    wire(
+        ClusterConfiguration.init()
+            .addMember(
+                ID_0,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+    manager.registerPartitionGroupChangeAppliers(
+        TENANT_B,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopClusterChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    manager
+        .updateMultiConfiguration(
+            current ->
+                new CurrentClusterConfiguration(
+                    current.version(),
+                    current.globalConfiguration(),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        current.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+                        TENANT_B,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(
+                                ID_0,
+                                BrokerPartitionState.initialize(
+                                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    current.phasedChangeState()))
+        .join();
   }
 
   @Test
