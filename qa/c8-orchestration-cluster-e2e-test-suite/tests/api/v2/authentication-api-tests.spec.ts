@@ -245,10 +245,24 @@ test.describe.parallel('Authentication API Tests', () => {
 test.describe.parallel('Search Own Authorizations API Tests', () => {
   const authorizationKeysToCleanup: string[] = [];
   const usernamesToCleanup: string[] = [];
+  const groupIdsToCleanup: string[] = [];
+  const roleIdsToCleanup: string[] = [];
 
   test.afterAll(async ({request}) => {
     await cleanupAuthorizations(request, authorizationKeysToCleanup);
     await cleanupUsers(request, usernamesToCleanup);
+    await Promise.allSettled([
+      ...groupIdsToCleanup.map((groupId) =>
+        request.delete(buildUrl('/groups/{groupId}', {groupId}), {
+          headers: jsonHeaders(),
+        }),
+      ),
+      ...roleIdsToCleanup.map((roleId) =>
+        request.delete(buildUrl('/roles/{roleId}', {roleId}), {
+          headers: jsonHeaders(),
+        }),
+      ),
+    ]);
   });
 
   test('Search Own Authorizations Returns Direct Grant', async ({request}) => {
@@ -312,6 +326,7 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       resourceType: 'CLUSTER_VARIABLE',
       permissionTypes: ['READ'],
     });
+    authorizationKeysToCleanup.push(matchingKey);
     const otherKey = await createComponentAuthorization(request, {
       ownerId: user.username,
       ownerType: 'USER',
@@ -319,7 +334,7 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       resourceType: 'MESSAGE',
       permissionTypes: ['READ'],
     });
-    authorizationKeysToCleanup.push(matchingKey, otherKey);
+    authorizationKeysToCleanup.push(otherKey);
     await expectAuthorizationCanBeFound(request, matchingKey);
     await expectAuthorizationCanBeFound(request, otherKey);
 
@@ -332,27 +347,29 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
         },
       );
       await assertStatusCode(res, 200);
-      const json = await res.json();
-      expect(
-        json.items.some(
-          (it: {authorizationKey: string}) =>
-            it.authorizationKey === matchingKey,
-        ),
-      ).toBe(true);
-      expect(
-        json.items.some(
-          (it: {authorizationKey: string}) => it.authorizationKey === otherKey,
-        ),
-      ).toBe(false);
+      await validateResponse(
+        {
+          path: '/authentication/me/authorizations/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const keys = (await res.json()).items.map(
+        (it: {authorizationKey: string}) => it.authorizationKey,
+      );
+      expect(keys).toContain(matchingKey);
+      expect(keys).not.toContain(otherKey);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Own Authorizations Never Leaks Another Users Grants', async ({
+  test("Search Own Authorizations Never Leaks Another User's Grants", async ({
     request,
   }) => {
     const caller = await createUser(request);
+    usernamesToCleanup.push(caller.username);
     const stranger = await createUser(request);
-    usernamesToCleanup.push(caller.username, stranger.username);
+    usernamesToCleanup.push(stranger.username);
 
     // Both grants are identical apart from their owner, so the only thing that
     // can keep the stranger's out of the caller's results is owner scoping.
@@ -363,6 +380,7 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       resourceType: 'CLUSTER_VARIABLE',
       permissionTypes: ['READ'],
     });
+    authorizationKeysToCleanup.push(callerKey);
     const strangerKey = await createComponentAuthorization(request, {
       ownerId: stranger.username,
       ownerType: 'USER',
@@ -370,7 +388,7 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       resourceType: 'CLUSTER_VARIABLE',
       permissionTypes: ['READ'],
     });
-    authorizationKeysToCleanup.push(callerKey, strangerKey);
+    authorizationKeysToCleanup.push(strangerKey);
     await expectAuthorizationCanBeFound(request, callerKey);
     await expectAuthorizationCanBeFound(request, strangerKey);
 
@@ -386,6 +404,14 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/authentication/me/authorizations/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const keys = (await res.json()).items.map(
           (it: {authorizationKey: string}) => it.authorizationKey,
         );
@@ -405,6 +431,168 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       await assertStatusCode(res, 200);
       expect((await res.json()).items).toEqual([]);
     });
+  });
+
+  test('Search Own Authorizations Returns Grants Inherited Via Group And Role', async ({
+    request,
+  }) => {
+    const user = await createUser(request);
+    usernamesToCleanup.push(user.username);
+
+    const state: Record<string, unknown> = {};
+    await createGroupAndStoreResponseFields(request, 1, state, 'Inherited');
+    const groupId = state['groupIdInherited1'] as string;
+    groupIdsToCleanup.push(groupId);
+    await createRole(request, state, 'Inherited');
+    const roleId = state['roleIdInherited'] as string;
+    roleIdsToCleanup.push(roleId);
+
+    await test.step('Assign the user to the group and the role', async () => {
+      await expect(async () => {
+        const res = await request.put(
+          buildUrl('/groups/{groupId}/users/{username}', {
+            groupId,
+            username: user.username,
+          }),
+          {headers: jsonHeaders()},
+        );
+        await assertStatusCode(res, 204);
+      }).toPass(defaultAssertionOptions);
+
+      await expect(async () => {
+        const res = await request.put(
+          buildUrl('/roles/{roleId}/users/{username}', {
+            roleId,
+            username: user.username,
+          }),
+          {headers: jsonHeaders()},
+        );
+        await assertStatusCode(res, 204);
+      }).toPass(defaultAssertionOptions);
+    });
+
+    // Neither grant names the user as owner, so they can only surface through
+    // the group/role membership traversal rather than a direct owner match.
+    const groupOwnedKey = await createComponentAuthorization(request, {
+      ownerId: groupId,
+      ownerType: 'GROUP',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(groupOwnedKey);
+    const roleOwnedKey = await createComponentAuthorization(request, {
+      ownerId: roleId,
+      ownerType: 'ROLE',
+      resourceId: '*',
+      resourceType: 'MESSAGE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(roleOwnedKey);
+    await expectAuthorizationCanBeFound(request, groupOwnedKey);
+    await expectAuthorizationCanBeFound(request, roleOwnedKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/authentication/me/authorizations/search'),
+        {
+          headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+          data: {},
+        },
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/authentication/me/authorizations/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const items = (await res.json()).items;
+      const byKey = (key: string) =>
+        items.find((it: {authorizationKey: string}) => {
+          return it.authorizationKey === key;
+        });
+
+      expect(byKey(groupOwnedKey)).toBeDefined();
+      verifyAuthorizationFields(byKey(groupOwnedKey), {
+        ownerId: groupId,
+        ownerType: 'GROUP',
+        resourceId: '*',
+        resourceType: 'CLUSTER_VARIABLE',
+        permissionTypes: ['READ'],
+        authorizationKey: groupOwnedKey,
+      });
+
+      expect(byKey(roleOwnedKey)).toBeDefined();
+      verifyAuthorizationFields(byKey(roleOwnedKey), {
+        ownerId: roleId,
+        ownerType: 'ROLE',
+        resourceId: '*',
+        resourceType: 'MESSAGE',
+        permissionTypes: ['READ'],
+        authorizationKey: roleOwnedKey,
+      });
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Own Authorizations Filters Inherited Grants By Resource Type', async ({
+    request,
+  }) => {
+    const user = await createUser(request);
+    usernamesToCleanup.push(user.username);
+
+    const state: Record<string, unknown> = {};
+    await createGroupAndStoreResponseFields(request, 1, state, 'Filtered');
+    const groupId = state['groupIdFiltered1'] as string;
+    groupIdsToCleanup.push(groupId);
+
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/groups/{groupId}/users/{username}', {
+          groupId,
+          username: user.username,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
+
+    const matchingKey = await createComponentAuthorization(request, {
+      ownerId: groupId,
+      ownerType: 'GROUP',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(matchingKey);
+    const otherKey = await createComponentAuthorization(request, {
+      ownerId: groupId,
+      ownerType: 'GROUP',
+      resourceId: '*',
+      resourceType: 'MESSAGE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(otherKey);
+    await expectAuthorizationCanBeFound(request, matchingKey);
+    await expectAuthorizationCanBeFound(request, otherKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/authentication/me/authorizations/search'),
+        {
+          headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+          data: {filter: {resourceType: 'CLUSTER_VARIABLE'}},
+        },
+      );
+      await assertStatusCode(res, 200);
+      const keys = (await res.json()).items.map(
+        (it: {authorizationKey: string}) => it.authorizationKey,
+      );
+      expect(keys).toContain(matchingKey);
+      expect(keys).not.toContain(otherKey);
+    }).toPass(defaultAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect
