@@ -21,7 +21,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.auth.AuthenticatedOwnerIds;
+import io.camunda.security.auth.AuthenticatedOwnerIdsUtil;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -74,9 +74,9 @@ public class AuthorizationServices
    *
    * <p>Unlike {@link #search(AuthorizationQuery, CamundaAuthentication)}, this does not require the
    * {@code AUTHORIZATION:READ} permission: the query is unconditionally scoped to the caller's own
-   * owner ids (see {@link AuthenticatedOwnerIds#collect(CamundaAuthentication)}), which is itself
-   * sufficient authorization to view the data — a caller can always see grants that apply to them,
-   * regardless of whether they can administer authorizations in general.
+   * owner ids (see {@link AuthenticatedOwnerIdsUtil#collect(CamundaAuthentication)}), which is
+   * itself sufficient authorization to view the data — a caller can always see grants that apply to
+   * them, regardless of whether they can administer authorizations in general.
    *
    * @param callerQuery the caller-supplied filter/sort/page; any {@code ownerId}/{@code ownerType}
    *     the caller specifies is preserved and further narrows the result, it is never widened
@@ -86,7 +86,7 @@ public class AuthorizationServices
    */
   public SearchQueryResult<AuthorizationEntity> searchOwnAuthorizations(
       final AuthorizationQuery callerQuery, final CamundaAuthentication authentication) {
-    final var ownerTypeToOwnerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerTypeToOwnerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
     if (ownerTypeToOwnerIds.isEmpty()) {
       return SearchQueryResult.empty();
     }

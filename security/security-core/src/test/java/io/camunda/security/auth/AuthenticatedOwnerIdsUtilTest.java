@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class AuthenticatedOwnerIdsTest {
+class AuthenticatedOwnerIdsUtilTest {
 
   @Test
   void shouldCollectUserAndGroupOwnerIds() {
@@ -24,7 +24,7 @@ class AuthenticatedOwnerIdsTest {
         CamundaAuthentication.of(b -> b.user("foo").group("groupId").tenant("<default>"));
 
     // when
-    final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
 
     // then — tenant membership is not an owner type; only user/group are reachable
     assertThat(ownerIds)
@@ -42,7 +42,7 @@ class AuthenticatedOwnerIdsTest {
             b -> b.user("foo").role("roleId").mappingRule("mappingRuleId").group("groupId"));
 
     // when
-    final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
 
     // then
     assertThat(ownerIds)
@@ -60,7 +60,7 @@ class AuthenticatedOwnerIdsTest {
     final var authentication = CamundaAuthentication.of(b -> b.clientId("myClient"));
 
     // when
-    final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
 
     // then
     assertThat(ownerIds).isEqualTo(Map.of(EntityType.CLIENT, Set.of("myClient")));
@@ -72,7 +72,7 @@ class AuthenticatedOwnerIdsTest {
     final var authentication = CamundaAuthentication.anonymous();
 
     // when
-    final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
 
     // then
     assertThat(ownerIds).isEmpty();
@@ -84,7 +84,7 @@ class AuthenticatedOwnerIdsTest {
     final var authentication = CamundaAuthentication.none();
 
     // when
-    final var ownerIds = AuthenticatedOwnerIds.collect(authentication);
+    final var ownerIds = AuthenticatedOwnerIdsUtil.collect(authentication);
 
     // then
     assertThat(ownerIds).isEmpty();

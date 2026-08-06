@@ -26,9 +26,9 @@ import java.util.Set;
  * AuthorizationServices#searchOwnAuthorizations} (the {@code /v2/authentication/me/authorizations}
  * endpoint).
  */
-public final class AuthenticatedOwnerIds {
+public final class AuthenticatedOwnerIdsUtil {
 
-  private AuthenticatedOwnerIds() {}
+  private AuthenticatedOwnerIdsUtil() {}
 
   /**
    * @return a map from {@link EntityType} to the set of owner ids of that type reachable by {@code
