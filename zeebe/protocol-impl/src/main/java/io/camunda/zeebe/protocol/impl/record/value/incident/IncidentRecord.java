@@ -125,13 +125,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
-    return this;
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -142,11 +137,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -164,8 +154,13 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return elementInstanceKeyProp.getValue();
   }
 
-  public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
     return this;
   }
 
@@ -249,6 +244,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 

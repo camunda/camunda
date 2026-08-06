@@ -220,6 +220,31 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getBusinessId() {
+    return BufferUtil.bufferAsString(businessIdProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
   public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
@@ -260,33 +285,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getBusinessId() {
-    return BufferUtil.bufferAsString(businessIdProp.getValue());
-  }
-
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
-  }
-
-  public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  @Override
-  public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
-  }
-
-  public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
-    return this;
   }
 }

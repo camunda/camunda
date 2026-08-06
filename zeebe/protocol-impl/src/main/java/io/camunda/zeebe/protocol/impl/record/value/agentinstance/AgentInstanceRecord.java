@@ -133,11 +133,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeysProp.add().setValue(elementInstanceKey);
-    return this;
-  }
-
   @Override
   public String getElementId() {
     return BufferUtil.bufferAsString(elementIdProp.getValue());
@@ -159,6 +154,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
@@ -175,16 +175,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
-    return this;
-  }
-
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
@@ -280,11 +270,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentInstanceRecord addChangedAttribute(final String attribute) {
-    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
-    return this;
-  }
-
   @Override
   public long getJobKey() {
     return jobKeyProp.getValue();
@@ -327,6 +312,21 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         historyProp.add().copyFrom(item);
       }
     }
+    return this;
+  }
+
+  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeysProp.add().setValue(elementInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
     return this;
   }
 
