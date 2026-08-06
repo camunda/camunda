@@ -54,10 +54,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class SecretResolutionSchedulerTest {
 
+  /**
+   * The only store ID an operator can configure — startup validation rejects any other — and so the
+   * one every {@code camunda.secrets.<name>} reference carries. It used to be empty, which
+   * addressed no store and failed every background resolution (#59432).
+   */
+  private static final String STORE_ID = SecretStoreRegistry.DEFAULT_STORE_ID;
+
   @Mock private SecretStore secretStore;
   @Mock private SecretCache secretCache;
-  @Mock private SecretStore defaultStore;
-  @Mock private SecretCache defaultCache;
   @Mock private ScheduledTaskState scheduledTaskState;
   @Mock private SecretReferenceState secretReferenceState;
   @Mock private ReadonlyStreamProcessorContext context;
@@ -77,9 +82,7 @@ final class SecretResolutionSchedulerTest {
 
     final Supplier<ScheduledTaskState> stateFactory = () -> scheduledTaskState;
     final var registry =
-        new SecretStoreRegistry(
-            Map.of("my-store", secretStore, SecretStoreRegistry.DEFAULT_STORE_ID, defaultStore),
-            Map.of("my-store", secretCache, SecretStoreRegistry.DEFAULT_STORE_ID, defaultCache));
+        new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache));
     final var config = new EngineConfiguration();
     scheduler = new SecretResolutionScheduler(stateFactory, registry, config);
     scheduler.onRecovered(context);
@@ -88,7 +91,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldPopulateCacheAndWriteResolutionCompleteOnSuccess() throws Exception {
     // given
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(Set.of("db-password")))
         .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
 
@@ -101,36 +104,15 @@ final class SecretResolutionSchedulerTest {
     final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
     verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
-    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("my-store");
+    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo(STORE_ID);
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("db-password");
-    assertThat(recordCaptor.getValue().getResolutionState()).isEqualTo(ResolutionState.SUCCESS);
-  }
-
-  @Test
-  void shouldResolveReferenceAddressingTheDefaultStore() throws Exception {
-    // given — the store id every camunda.secrets.<name> reference carries; it used to be empty,
-    // which addressed no store and failed every background resolution (#59432)
-    stubPending(SecretStoreRegistry.DEFAULT_STORE_ID, "db-password");
-    when(defaultStore.resolve(Set.of("db-password")))
-        .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
-
-    // when
-    scheduler.resolveSecrets(resultBuilder);
-
-    // then
-    final var intentCaptor = ArgumentCaptor.forClass(SecretReferenceIntent.class);
-    final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
-    verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
-    assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
-    assertThat(recordCaptor.getValue().getStoreId())
-        .isEqualTo(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(recordCaptor.getValue().getResolutionState()).isEqualTo(ResolutionState.SUCCESS);
   }
 
   @Test
   void shouldNotPopulateCacheAndWriteResolutionFailOnPermanentPerSecretError() throws Exception {
     // given
-    stubPending("my-store", "missing-key");
+    stubPending(STORE_ID, "missing-key");
     when(secretStore.resolve(Set.of("missing-key")))
         .thenReturn(
             Map.of(
@@ -147,7 +129,7 @@ final class SecretResolutionSchedulerTest {
     final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
     verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_FAIL);
-    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("my-store");
+    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo(STORE_ID);
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("missing-key");
     assertThat(recordCaptor.getValue().getResolutionState()).isEqualTo(ResolutionState.NOT_FOUND);
   }
@@ -155,7 +137,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldRetryAndNotWriteCommandOnFirstStoreUnavailable() throws Exception {
     // given
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
 
     // when
@@ -175,12 +157,12 @@ final class SecretResolutionSchedulerTest {
     when(clock.millis()).thenAnswer(inv -> nowMs.getAndAdd(Duration.ofDays(1).toMillis()));
     final int maxAttempts = EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS;
     for (int i = 0; i < maxAttempts - 1; i++) {
-      stubPending("my-store", "db-password");
+      stubPending(STORE_ID, "db-password");
       scheduler.resolveSecrets(resultBuilder);
     }
 
     // when — this call hits maxAttempts
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
     // then
@@ -188,7 +170,7 @@ final class SecretResolutionSchedulerTest {
     final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
     verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_FAIL);
-    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("my-store");
+    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo(STORE_ID);
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("db-password");
     assertThat(recordCaptor.getValue().getResolutionState())
         .isEqualTo(ResolutionState.STORE_UNAVAILABLE);
@@ -222,7 +204,7 @@ final class SecretResolutionSchedulerTest {
 
     // when
     for (int i = 0; i < maxAttempts; i++) {
-      stubPending("my-store", "a", "b");
+      stubPending(STORE_ID, "a", "b");
       scheduler.resolveSecrets(resultBuilder);
     }
 
@@ -241,12 +223,12 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldCacheTheValueOfAStoreTheRegistryWasGivenNoCacheFor() throws Exception {
     // given a registry built without a cache for the configured store
-    final var registry = new SecretStoreRegistry(Map.of("my-store", secretStore), Map.of());
+    final var registry = new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of());
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState, registry, new EngineConfiguration());
     localScheduler.onRecovered(context);
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(Set.of("db-password")))
         .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("v")));
 
@@ -255,7 +237,7 @@ final class SecretResolutionSchedulerTest {
 
     // then the store's own cache took the value and the reference completes: a configured store
     // always caches, so resolving cannot strand a job by completing it uncached
-    assertThat(registry.getStores().get("my-store").lookupLocal("db-password")).contains("v");
+    assertThat(registry.getStores().get(STORE_ID).lookupLocal("db-password")).contains("v");
     verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
   }
 
@@ -266,12 +248,12 @@ final class SecretResolutionSchedulerTest {
     final var cache = new InMemorySecretCache();
     cache.put("db-password", "already-held");
     final var registry =
-        new SecretStoreRegistry(Map.of("my-store", secretStore), Map.of("my-store", cache));
+        new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, cache));
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState, registry, new EngineConfiguration());
     localScheduler.onRecovered(context);
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(Set.of("db-password")))
         .thenReturn(
             Map.of(
@@ -292,13 +274,13 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldSkipStoreInCooldownPeriod() throws Exception {
     // given — first execute causes a retry (cooldown starts at t=0)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
     when(clock.millis()).thenReturn(0L);
     scheduler.resolveSecrets(resultBuilder);
 
     // when — second execute while still in cooldown (clock still at 0)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
     // then — store called only once; the cooldown store's ref is excluded during collection, so
@@ -311,7 +293,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldResetRetryStateAfterSuccessfulResolution() throws Exception {
     // given — first execute fails (enters retry state)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any()))
         .thenThrow(new SecretStoreUnavailableException("store down"))
         .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("value")));
@@ -319,7 +301,7 @@ final class SecretResolutionSchedulerTest {
     scheduler.resolveSecrets(resultBuilder); // first: fails
 
     // when — second execute succeeds
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
     // then — cache written, RESOLUTION_COMPLETE written
@@ -328,14 +310,14 @@ final class SecretResolutionSchedulerTest {
     final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
     verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
-    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("my-store");
+    assertThat(recordCaptor.getValue().getStoreId()).isEqualTo(STORE_ID);
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("db-password");
   }
 
   @Test
   void shouldScheduleEarlierThanIntervalWhenRetryDeadlineIsSooner() throws Exception {
     // given — store fails; retry due in retryInitialDelay (1s) which is < schedulingInterval (5s)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
     when(clock.millis()).thenReturn(0L);
 
@@ -354,7 +336,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldPruneRetryStateForStoresWithNoPendingRefs() throws Exception {
     // given — store fails (enters retry state)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
     when(clock.millis()).thenReturn(0L);
     scheduler.resolveSecrets(resultBuilder);
@@ -503,7 +485,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldLeaveRefsPendingWhenStoreThrowsUnexpectedException() throws Exception {
     // given
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(any())).thenThrow(new IllegalStateException("boom"));
 
     // when
@@ -554,7 +536,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldBatchAllRefsOfStoreIntoSingleResolveCall() throws Exception {
     // given
-    stubPending("my-store", "ref-1", "ref-2");
+    stubPending(STORE_ID, "ref-1", "ref-2");
     when(secretStore.resolve(Set.of("ref-1", "ref-2")))
         .thenReturn(
             Map.of(
@@ -577,11 +559,10 @@ final class SecretResolutionSchedulerTest {
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState,
-            new SecretStoreRegistry(
-                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache)),
             config);
     localScheduler.onRecovered(context);
-    stubPending("my-store", "ref-1", "ref-2", "ref-3");
+    stubPending(STORE_ID, "ref-1", "ref-2", "ref-3");
     when(secretStore.resolve(Set.of("ref-1", "ref-2")))
         .thenReturn(
             Map.of(
@@ -659,12 +640,11 @@ final class SecretResolutionSchedulerTest {
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState,
-            new SecretStoreRegistry(
-                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache)),
             config);
     localScheduler.onRecovered(context);
     reset(scheduleService);
-    stubPending("my-store", "ref-1", "ref-2", "ref-3");
+    stubPending(STORE_ID, "ref-1", "ref-2", "ref-3");
     when(secretStore.resolve(any()))
         .thenReturn(
             Map.of(
@@ -687,12 +667,11 @@ final class SecretResolutionSchedulerTest {
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState,
-            new SecretStoreRegistry(
-                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache)),
             config);
     localScheduler.onRecovered(context);
     reset(scheduleService);
-    stubPending("my-store", "ref-1", "ref-2");
+    stubPending(STORE_ID, "ref-1", "ref-2");
     when(secretStore.resolve(Set.of("ref-1", "ref-2")))
         .thenReturn(
             Map.of(
@@ -719,20 +698,19 @@ final class SecretResolutionSchedulerTest {
     final var localScheduler =
         new SecretResolutionScheduler(
             () -> scheduledTaskState,
-            new SecretStoreRegistry(
-                Map.of("my-store", secretStore), Map.of("my-store", secretCache)),
+            new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, secretCache)),
             config);
     localScheduler.onRecovered(context);
     reset(scheduleService);
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
 
     // when — first cycle: store fails, enters retry cooldown
-    stubPending("my-store", "ref-1", "ref-2");
+    stubPending(STORE_ID, "ref-1", "ref-2");
     localScheduler.resolveSecrets(resultBuilder);
 
     // when — second cycle: still within the cooldown window; the cooldown store's ref is excluded
     // from collection entirely, so nothing is capped and nothing is resolved
-    stubPending("my-store", "ref-1", "ref-2");
+    stubPending(STORE_ID, "ref-1", "ref-2");
     localScheduler.resolveSecrets(resultBuilder);
 
     // then — the store was only attempted once; the second cycle skipped it during collection
@@ -751,11 +729,11 @@ final class SecretResolutionSchedulerTest {
   void shouldResumeCollectionFromCursorOnNextCycle() throws Exception {
     // given — cycle 1's collection stops early and reports a resume cursor at the last entry the
     // visitor was offered before being told to stop
-    final var cycle1Cursor = new SecretReferenceState.PendingRefCursor("my-store", "ref-1");
+    final var cycle1Cursor = new SecretReferenceState.PendingRefCursor(STORE_ID, "ref-1");
     doAnswer(
             inv -> {
               final var visitor = (BiPredicate<String, String>) inv.getArgument(1);
-              visitor.test("my-store", "ref-1");
+              visitor.test(STORE_ID, "ref-1");
               return cycle1Cursor;
             })
         .when(secretReferenceState)
@@ -765,7 +743,7 @@ final class SecretResolutionSchedulerTest {
     scheduler.resolveSecrets(resultBuilder);
 
     // and — cycle 2
-    stubPending("my-store", "ref-2");
+    stubPending(STORE_ID, "ref-2");
     scheduler.resolveSecrets(resultBuilder);
 
     // then — cycle 2 resumed from exactly where cycle 1 left off, not from the beginning; this is
@@ -871,7 +849,7 @@ final class SecretResolutionSchedulerTest {
   @Test
   void shouldRescheduleImmediatelyWhenTaskResultBatchIsFull() throws Exception {
     // given
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     when(secretStore.resolve(Set.of("db-password")))
         .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
     when(resultBuilder.appendCommandRecord(any(), any())).thenReturn(false);
@@ -922,11 +900,11 @@ final class SecretResolutionSchedulerTest {
     when(secretStore.resolve(any())).thenThrow(new SecretStoreUnavailableException("store down"));
     when(clock.millis()).thenReturn(0L, 10_000L);
 
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
     // when — cooldown (1s) has elapsed by the time of the second run (clock now at 10s)
-    stubPending("my-store", "db-password");
+    stubPending(STORE_ID, "db-password");
     scheduler.resolveSecrets(resultBuilder);
 
     // then — second attempt happened because the cooldown expired

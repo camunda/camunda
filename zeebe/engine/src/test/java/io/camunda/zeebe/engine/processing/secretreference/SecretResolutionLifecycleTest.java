@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
@@ -78,7 +80,8 @@ public final class SecretResolutionLifecycleTest {
   public void shouldResolveParkedSecretInBackgroundAndReactivateTheJob() {
     // given - a job whose secret the store holds but the cache does not
     deploy();
-    final long jobKey = createInstanceAndAwaitJob();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = awaitJob(processInstanceKey);
 
     // when - the first activation parks the job and requests the resolution
     final Record<JobBatchRecordValue> parked =
@@ -121,6 +124,15 @@ public final class SecretResolutionLifecycleTest {
     assertThat(response.getJobs().get(0).getVariables())
         .containsEntry("authorization", "Bearer " + SECRET_VALUE);
 
+    // and - the job completes and the instance reaches its end, so the whole loop is over and
+    // nothing further will be processed: only then does the absence of an incident below mean the
+    // run never raised one, rather than that none had been raised by the time the records were read
+    engine.job().withKey(jobKey).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+
     // and - no incident was raised, and no exported record leaks the value
     assertThat(RecordingExporter.getRecords())
         .filteredOn(record -> record.getIntent() == IncidentIntent.CREATED)
@@ -129,9 +141,8 @@ public final class SecretResolutionLifecycleTest {
         .noneMatch(record -> record.toString().contains(SECRET_VALUE));
   }
 
-  /** Returns the key of the job the created instance waits on, once that job exists. */
-  private long createInstanceAndAwaitJob() {
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+  /** Returns the key of the job the given instance waits on, once that job exists. */
+  private long awaitJob(final long processInstanceKey) {
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst()
