@@ -24,7 +24,6 @@ import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
-import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.Test;
 
 class AgentDefinitionValidatorTest {
@@ -153,9 +152,21 @@ class AgentDefinitionValidatorTest {
   void duplicateAgentDefinitionOnAdHocSubProcessIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnAdHocSubProcess.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.aiAgentSubProcess))
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.external))
+                        .task("A"))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -166,9 +177,20 @@ class AgentDefinitionValidatorTest {
   void duplicateAgentDefinitionOnServiceTaskIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnServiceTask.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.aiAgentTask))
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.external)))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
