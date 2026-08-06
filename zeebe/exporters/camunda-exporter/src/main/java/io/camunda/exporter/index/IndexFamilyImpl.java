@@ -7,15 +7,4 @@
  */
 package io.camunda.exporter.index;
 
-record MainIndex(String name) implements TargetIndex, IndexFamily {
-  MainIndex {
-    if (name == null || name.isBlank()) {
-      throw new IllegalArgumentException("Main index name must not be null or blank");
-    }
-  }
-
-  @Override
-  public IndexFamily getIndexFamily() {
-    return this;
-  }
-}
+record IndexFamilyImpl(String name) implements IndexFamily {}

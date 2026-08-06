@@ -7,17 +7,25 @@
  */
 package io.camunda.exporter.index;
 
-import com.google.common.base.Strings;
-
 public sealed interface TargetIndex permits MainIndex, OrdinalIndex {
   String name();
+
+  /*
+   * Returns the index family for this target index - for a main index this will be
+   * the name of the index itself, but for ordinal indexes it will be the part of the name
+   * prior to the ordinal part.
+   */
+  IndexFamily getIndexFamily();
+
+  static IndexFamily getIndexFamilyFromName(final String name) {
+    return OrdinalIndex.fromName(name).orElseGet(() -> new MainIndex(name)).getIndexFamily();
+  }
 
   static TargetIndex mainIndex(final String name) {
     return new MainIndex(name);
   }
 
   static TargetIndex ordinalIndex(final String prefix, final int ordinal) {
-    final var suffix = "ord" + Strings.padStart(String.valueOf(ordinal), 5, '0');
-    return new OrdinalIndex(suffix, ordinal, prefix + suffix);
+    return OrdinalIndex.of(prefix, ordinal);
   }
 }
