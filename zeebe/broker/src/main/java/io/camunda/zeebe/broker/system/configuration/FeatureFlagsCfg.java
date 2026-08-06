@@ -42,6 +42,8 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.evaluateBoundaryEventCorrelationKeyInActivityScope();
   private boolean evaluateDuplicateOutputMappingTargetsInOrder =
       DEFAULT_SETTINGS.evaluateDuplicateOutputMappingTargetsInOrder();
+  private boolean propagateOnlyMappedNestedOutputPaths =
+      DEFAULT_SETTINGS.propagateOnlyMappedNestedOutputPaths();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -112,6 +114,15 @@ public final class FeatureFlagsCfg {
         evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
+  public boolean isPropagateOnlyMappedNestedOutputPaths() {
+    return propagateOnlyMappedNestedOutputPaths;
+  }
+
+  public void setPropagateOnlyMappedNestedOutputPaths(
+      final boolean propagateOnlyMappedNestedOutputPaths) {
+    this.propagateOnlyMappedNestedOutputPaths = propagateOnlyMappedNestedOutputPaths;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
@@ -121,7 +132,8 @@ public final class FeatureFlagsCfg {
         enableStraightThroughProcessingLoopDetector,
         enableMessageBodyOnExpired,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder
+        evaluateDuplicateOutputMappingTargetsInOrder,
+        propagateOnlyMappedNestedOutputPaths
         /*, enableFoo*/ );
   }
 

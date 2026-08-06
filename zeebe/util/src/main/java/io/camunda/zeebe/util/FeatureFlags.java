@@ -51,6 +51,8 @@ public final class FeatureFlags {
   private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
   // Kill-switch for a bug fix; intentionally enabled by default.
   private static final boolean EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
+  // Kill-switch for a bug fix; intentionally enabled by default.
+  private static final boolean PROPAGATE_ONLY_MAPPED_NESTED_OUTPUT_PATHS = true;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -60,6 +62,7 @@ public final class FeatureFlags {
   private boolean enableMessageBodyOnExpired;
   private boolean evaluateBoundaryEventCorrelationKeyInActivityScope;
   private boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private boolean propagateOnlyMappedNestedOutputPaths;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -69,7 +72,8 @@ public final class FeatureFlags {
       final boolean enableStraightThroughProcessingLoopDetector,
       final boolean enableMessageBodyOnExpired,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean propagateOnlyMappedNestedOutputPaths
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -81,6 +85,7 @@ public final class FeatureFlags {
         evaluateBoundaryEventCorrelationKeyInActivityScope;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+    this.propagateOnlyMappedNestedOutputPaths = propagateOnlyMappedNestedOutputPaths;
   }
 
   public static FeatureFlags createDefault() {
@@ -92,7 +97,8 @@ public final class FeatureFlags {
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_MESSAGE_BODY_ON_EXPIRED,
         EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
-        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER
+        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER,
+        PROPAGATE_ONLY_MAPPED_NESTED_OUTPUT_PATHS
         /*, FOO_DEFAULT*/ );
   }
 
@@ -110,7 +116,8 @@ public final class FeatureFlags {
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         true, /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
-        true /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
+        true, /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
+        true /* PROPAGATE_ONLY_MAPPED_NESTED_OUTPUT_PATHS */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -144,6 +151,10 @@ public final class FeatureFlags {
 
   public boolean evaluateDuplicateOutputMappingTargetsInOrder() {
     return evaluateDuplicateOutputMappingTargetsInOrder;
+  }
+
+  public boolean propagateOnlyMappedNestedOutputPaths() {
+    return propagateOnlyMappedNestedOutputPaths;
   }
 
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
@@ -181,6 +192,11 @@ public final class FeatureFlags {
       final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+  }
+
+  public void setPropagateOnlyMappedNestedOutputPaths(
+      final boolean propagateOnlyMappedNestedOutputPaths) {
+    this.propagateOnlyMappedNestedOutputPaths = propagateOnlyMappedNestedOutputPaths;
   }
 
   @Override

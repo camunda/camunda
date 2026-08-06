@@ -293,6 +293,7 @@ processing.engine.job.timeout-checker-polling-interval
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
+processing.engine.propagate-only-mapped-nested-output-paths
 processing.engine.secrets.batch-resolution-limit
 processing.engine.secrets.interval
 processing.engine.secrets.retry-backoff-factor
