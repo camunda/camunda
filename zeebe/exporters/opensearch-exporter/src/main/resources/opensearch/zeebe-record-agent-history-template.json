@@ -67,6 +67,9 @@
             "content": {
               "enabled": false
             },
+            "systemPrompt": {
+              "enabled": false
+            },
             "toolCalls": {
               "enabled": false
             },
@@ -78,10 +81,60 @@
                 "outputTokens": {
                   "type": "long"
                 },
+                "reasoningTokenCount": {
+                  "type": "long"
+                },
+                "cacheCreationTokenCount": {
+                  "type": "long"
+                },
+                "cacheReadTokenCount": {
+                  "type": "long"
+                },
                 "durationMs": {
                   "type": "long"
                 }
               }
+            },
+            "historyItemId": {
+              "type": "keyword"
+            },
+            "tools": {
+              "properties": {
+                "name": {
+                  "type": "keyword"
+                },
+                "description": {
+                  "type": "text"
+                },
+                "elementId": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "model": {
+              "type": "keyword"
+            },
+            "provider": {
+              "type": "keyword"
+            },
+            "limits": {
+              "properties": {
+                "maxTokens": {
+                  "type": "long"
+                },
+                "maxModelCalls": {
+                  "type": "integer"
+                },
+                "maxToolCalls": {
+                  "type": "integer"
+                }
+              }
+            },
+            "changedAttributes": {
+              "type": "keyword"
+            },
+            "duplicate": {
+              "type": "boolean"
             }
           }
         }

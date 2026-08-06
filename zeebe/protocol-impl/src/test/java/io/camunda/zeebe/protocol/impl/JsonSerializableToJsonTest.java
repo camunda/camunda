@@ -5123,12 +5123,16 @@ final class JsonSerializableToJsonTest {
             "systemPrompt": "Extract vendor, amount, date, and line items from the invoice."
           },
           "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
-          "metrics": { "inputTokens": 512, "outputTokens": 148, "modelCalls": 1, "toolCalls": 1 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 1, "toolCalls": 1 },
           "tools": [
             { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
             { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
           ],
-          "changedAttributes": ["status", "metrics"]
+          "changedAttributes": ["status", "metrics"],
+          "jobKey": -1,
+          "jobLease": "",
+          "loopIteration": 0,
+          "history": []
         }
         """
       },
@@ -5151,9 +5155,109 @@ final class JsonSerializableToJsonTest {
           "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": "" },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
-          "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
-          "changedAttributes": []
+          "changedAttributes": [],
+          "jobKey": -1,
+          "jobLease": "",
+          "loopIteration": 0,
+          "history": []
+        }
+        """
+      },
+      {
+        "AgentInstanceRecord with embedded history batch",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var item =
+                  new AgentHistoryRecord()
+                      .setHistoryItemId("item-config-1")
+                      .setRole(AgentHistoryRole.ASSISTANT)
+                      .setModel("gpt-4o")
+                      .setProvider("openai")
+                      .setProducedAt(1717199999000L)
+                      .setDuplicate(true);
+              item.addSystemPrompt(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("You are an invoice extraction assistant."));
+              item.setTools(List.of(new AgentInstanceTool().setName("extract_line_items")));
+              item.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+              item.getMetrics()
+                  .setInputTokens(512L)
+                  .setOutputTokens(148L)
+                  .setReasoningTokenCount(64L)
+                  .setCacheCreationTokenCount(32L)
+                  .setCacheReadTokenCount(16L)
+                  .setDurationMs(1200L);
+
+              final AgentInstanceRecord record =
+                  new AgentInstanceRecord()
+                      .setJobKey(2251799813685252L)
+                      .setJobLease("job-lease-abc123")
+                      .setLoopIteration(3)
+                      .setHistory(List.of(item));
+              return record;
+            },
+        """
+        {
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "elementInstanceKeys": [],
+          "elementId": "",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "versionTag": "",
+          "tenantId": "<default>",
+          "status": "UNSPECIFIED",
+          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
+          "tools": [],
+          "changedAttributes": [],
+          "jobKey": 2251799813685252,
+          "jobLease": "job-lease-abc123",
+          "loopIteration": 3,
+          "history": [
+            {
+              "agentHistoryKey": -1,
+              "agentInstanceKey": -1,
+              "elementInstanceKey": -1,
+              "jobKey": -1,
+              "jobLease": "",
+              "loopIteration": 0,
+              "role": "ASSISTANT",
+              "producedAt": 1717199999000,
+              "content": [],
+              "systemPrompt": [
+                {
+                  "contentType": "TEXT",
+                  "text": "You are an invoice extraction assistant.",
+                  "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+                  "object": null
+                }
+              ],
+              "toolCalls": [],
+              "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 64, "cacheCreationTokenCount": 32, "cacheReadTokenCount": 16, "durationMs": 1200 },
+              "tenantId": "<default>",
+              "processInstanceKey": -1,
+              "rootProcessInstanceKey": -1,
+              "bpmnProcessId": "",
+              "processDefinitionKey": -1,
+              "historyItemId": "item-config-1",
+              "tools": [
+                { "name": "extract_line_items", "description": "", "elementId": "" }
+              ],
+              "model": "gpt-4o",
+              "provider": "openai",
+              "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
+              "changedAttributes": [],
+              "duplicate": true
+            }
+          ]
         }
         """
       },
@@ -5209,6 +5313,10 @@ final class JsonSerializableToJsonTest {
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.OBJECT)
                       .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+              record.addSystemPrompt(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("You are an invoice extraction assistant."));
               record.addToolCall(
                   new AgentHistoryEmbeddedToolCall()
                       .setToolCallId("call_abc123")
@@ -5256,6 +5364,14 @@ final class JsonSerializableToJsonTest {
               "object": { "page": 1 }
             }
           ],
+          "systemPrompt": [
+            {
+              "contentType": "TEXT",
+              "text": "You are an invoice extraction assistant.",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": null
+            }
+          ],
           "toolCalls": [
             {
               "toolCallId": "call_abc123",
@@ -5264,12 +5380,19 @@ final class JsonSerializableToJsonTest {
               "arguments": { "documentId": "inv-001" }
             }
           ],
-          "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": 1200 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "process",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },
@@ -5346,13 +5469,21 @@ final class JsonSerializableToJsonTest {
               "object": "hello"
             }
           ],
+          "systemPrompt": [],
           "toolCalls": [],
-          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },
@@ -5370,13 +5501,21 @@ final class JsonSerializableToJsonTest {
           "role": "UNSPECIFIED",
           "producedAt": -1,
           "content": [],
+          "systemPrompt": [],
           "toolCalls": [],
-          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false
         }
         """
       },

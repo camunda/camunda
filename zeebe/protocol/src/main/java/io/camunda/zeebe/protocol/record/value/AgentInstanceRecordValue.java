@@ -116,6 +116,29 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   List<String> getChangedAttributes();
 
+  /**
+   * @return the key of the job this command was produced for
+   */
+  long getJobKey();
+
+  /**
+   * @return the opaque lease token identifying the job activation during which this command was
+   *     produced
+   */
+  String getJobLease();
+
+  /**
+   * @return the loopIteration this command belongs to; a loopIteration is one pass through the
+   *     agent feedback loop: one LLM call, its tool dispatches, and their results
+   */
+  int getLoopIteration();
+
+  /**
+   * @return the batch of history items carried by this command, each reusing the same shape as a
+   *     persisted {@code AgentHistoryRecord} entry
+   */
+  List<AgentHistoryRecordValue> getHistory();
+
   /** Represents a tool available to an agent. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)
@@ -198,6 +221,24 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
      *     ({@code -1} means the field is not provided)
      */
     long getOutputTokens();
+
+    /**
+     * @return on events, the current number of reasoning tokens consumed; on UPDATE, the delta to
+     *     add ({@code -1} means the field is not provided)
+     */
+    long getReasoningTokenCount();
+
+    /**
+     * @return on events, the current number of tokens used to create a prompt cache entry; on
+     *     UPDATE, the delta to add ({@code -1} means the field is not provided)
+     */
+    long getCacheCreationTokenCount();
+
+    /**
+     * @return on events, the current number of tokens read from a prompt cache entry; on UPDATE,
+     *     the delta to add ({@code -1} means the field is not provided)
+     */
+    long getCacheReadTokenCount();
 
     /**
      * @return on events, the current number of model calls made by the agent; on UPDATE, the delta

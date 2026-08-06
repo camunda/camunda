@@ -85,11 +85,64 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the list of content blocks in this history entry. */
   List<AgentHistoryMessageContentValue> getContent();
 
+  /**
+   * Returns the system prompt, as content blocks, as of this entry. Reserved for a future
+   * configuration-change entry kind (see #58794); unused until that lands. An empty list does not
+   * by itself mean the system prompt wasn't touched — it may also mean the prompt was explicitly
+   * cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   */
+  List<AgentHistoryMessageContentValue> getSystemPrompt();
+
   /** Returns the list of tool calls made during this history entry. */
   List<AgentHistoryEmbeddedToolCallValue> getToolCalls();
 
   /** Returns the metrics captured for this history entry. */
   AgentHistoryMetricsValue getMetrics();
+
+  /** Returns the client-supplied identifier this item was created with. */
+  String getHistoryItemId();
+
+  /**
+   * Returns the complete list of tools available to the agent as of this entry. Reserved for a
+   * future configuration-change entry kind (see #58794); unused until that lands. An empty list
+   * does not by itself mean the tool list wasn't touched — it may also mean the tools were
+   * explicitly cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   */
+  List<AgentInstanceRecordValue.AgentInstanceToolValue> getTools();
+
+  /**
+   * Returns the LLM model identifier as of this entry. Reserved for a future configuration-change
+   * entry kind (see #58794); empty until that lands.
+   */
+  String getModel();
+
+  /**
+   * Returns the LLM provider as of this entry. Reserved for a future configuration-change entry
+   * kind (see #58794); empty until that lands.
+   */
+  String getProvider();
+
+  /**
+   * Returns the operational limits as of this entry. Reserved for a future configuration-change
+   * entry kind (see #58794); unused until that lands.
+   */
+  AgentInstanceRecordValue.AgentInstanceLimitsValue getLimits();
+
+  /**
+   * Returns the names of attributes this entry intends to update, or the names of the attributes
+   * that were actually updated; empty otherwise. Reserved for a future configuration-change entry
+   * kind (see #58794); unused until that lands.
+   */
+  List<String> getChangedAttributes();
+
+  /**
+   * Returns whether this entry was recognized as a duplicate of a previously-processed history item
+   * with the same historyItemId (scoped to the producing agent instance's whole lifetime) or of a
+   * still-pending item under the current job lease — meaningful only when this entry is echoed back
+   * embedded in an AgentInstanceRecord's history[]; if true, no new AGENT_HISTORY event was
+   * actually created for it and agentHistoryKey is the ORIGINAL entry's key, not a new one.
+   */
+  boolean isDuplicate();
 
   /** Represents a single content block in a history entry message. */
   @Value.Immutable
@@ -139,6 +192,15 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
 
     /** Returns the number of output tokens produced. */
     long getOutputTokens();
+
+    /** Returns the number of reasoning tokens consumed by this LLM call. */
+    long getReasoningTokenCount();
+
+    /** Returns the number of cache-creation tokens consumed by this LLM call. */
+    long getCacheCreationTokenCount();
+
+    /** Returns the number of cache-read tokens consumed by this LLM call. */
+    long getCacheReadTokenCount();
 
     /** Returns the wall-clock duration of the LLM call in milliseconds. */
     long getDurationMs();

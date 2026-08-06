@@ -16,11 +16,14 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
@@ -28,6 +31,15 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_STATUS = "status";
   public static final String ATTR_METRICS = "metrics";
   public static final String ATTR_TOOLS = "tools";
+
+  // Derived from a future configuration-change history entry kind on the output side (see #58794
+  // for that entry kind and #58791 for the engine processing that merges them in), never from a
+  // request-level changedAttributes entry — these are not part of ALLOWED_ATTRIBUTES in
+  // AgentInstanceUpdateProcessor, only of the output-side merge order.
+  public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
+  public static final String ATTR_MODEL = "model";
+  public static final String ATTR_PROVIDER = "provider";
+  public static final String ATTR_LIMITS = "limits";
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
@@ -57,9 +69,14 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("tools", AgentInstanceTool::new);
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
+  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
+  private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
+  private final ArrayProperty<AgentHistoryRecord> historyProp =
+      new ArrayProperty<>("history", AgentHistoryRecord::new);
 
   public AgentInstanceRecord() {
-    super(17);
+    super(21);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
@@ -76,7 +93,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(limitsProp)
         .declareProperty(metricsProp)
         .declareProperty(toolsProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(jobKeyProp)
+        .declareProperty(jobLeaseProp)
+        .declareProperty(loopIterationProp)
+        .declareProperty(historyProp);
   }
 
   @Override
@@ -261,6 +282,56 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord addChangedAttribute(final String attribute) {
     changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  @Override
+  public long getJobKey() {
+    return jobKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setJobKey(final long jobKey) {
+    jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  @Override
+  public String getJobLease() {
+    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
+  }
+
+  public AgentInstanceRecord setJobLease(final String jobLease) {
+    jobLeaseProp.setValue(jobLease);
+    return this;
+  }
+
+  @Override
+  public int getLoopIteration() {
+    return loopIterationProp.getValue();
+  }
+
+  public AgentInstanceRecord setLoopIteration(final int loopIteration) {
+    loopIterationProp.setValue(loopIteration);
+    return this;
+  }
+
+  @Override
+  public List<AgentHistoryRecordValue> getHistory() {
+    return historyProp.stream().collect(Collectors.toList());
+  }
+
+  public AgentInstanceRecord setHistory(final List<? extends AgentHistoryRecord> history) {
+    historyProp.reset();
+    if (history != null) {
+      for (final var item : history) {
+        historyProp.add().copyFrom(item);
+      }
+    }
+    return this;
+  }
+
+  public AgentInstanceRecord addHistoryItem(final AgentHistoryRecord historyItem) {
+    historyProp.add().copyFrom(historyItem);
     return this;
   }
 }

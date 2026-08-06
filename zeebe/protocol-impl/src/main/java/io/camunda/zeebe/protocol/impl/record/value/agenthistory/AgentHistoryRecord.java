@@ -8,15 +8,20 @@
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceLimits;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -43,13 +48,25 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
   private final ArrayProperty<AgentHistoryMessageContent> contentProp =
       new ArrayProperty<>("content", AgentHistoryMessageContent::new);
+  private final ArrayProperty<AgentHistoryMessageContent> systemPromptProp =
+      new ArrayProperty<>("systemPrompt", AgentHistoryMessageContent::new);
   private final ArrayProperty<AgentHistoryEmbeddedToolCall> toolCallsProp =
       new ArrayProperty<>("toolCalls", AgentHistoryEmbeddedToolCall::new);
   private final ObjectProperty<AgentHistoryMetrics> metricsProp =
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
+  private final StringProperty historyItemIdProp = new StringProperty("historyItemId", "");
+  private final ArrayProperty<AgentInstanceTool> toolsProp =
+      new ArrayProperty<>("tools", AgentInstanceTool::new);
+  private final StringProperty modelProp = new StringProperty("model", "");
+  private final StringProperty providerProp = new StringProperty("provider", "");
+  private final ObjectProperty<AgentInstanceLimits> limitsProp =
+      new ObjectProperty<>("limits", new AgentInstanceLimits());
+  private final ArrayProperty<StringValue> changedAttributesProp =
+      new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public AgentHistoryRecord() {
-    super(16);
+    super(24);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -64,8 +81,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(roleProp)
         .declareProperty(producedAtProp)
         .declareProperty(contentProp)
+        .declareProperty(systemPromptProp)
         .declareProperty(toolCallsProp)
-        .declareProperty(metricsProp);
+        .declareProperty(metricsProp)
+        .declareProperty(historyItemIdProp)
+        .declareProperty(toolsProp)
+        .declareProperty(modelProp)
+        .declareProperty(providerProp)
+        .declareProperty(limitsProp)
+        .declareProperty(changedAttributesProp)
+        .declareProperty(isDuplicateProp);
   }
 
   @Override
@@ -225,6 +250,34 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
+  public List<AgentHistoryMessageContentValue> getSystemPrompt() {
+    return systemPromptProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentHistoryMessageContent();
+              copy.copy(element);
+              return (AgentHistoryMessageContentValue) copy;
+            })
+        .toList();
+  }
+
+  public AgentHistoryRecord setSystemPrompt(
+      final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
+    systemPromptProp.reset();
+    if (systemPrompt != null) {
+      for (final var item : systemPrompt) {
+        systemPromptProp.add().copy(item);
+      }
+    }
+    return this;
+  }
+
+  public AgentHistoryRecord addSystemPrompt(final AgentHistoryMessageContent block) {
+    systemPromptProp.add().copy(block);
+    return this;
+  }
+
+  @Override
   public List<AgentHistoryEmbeddedToolCallValue> getToolCalls() {
     return toolCallsProp.stream()
         .map(
@@ -257,5 +310,94 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord ignoreLease() {
     return setJobLease(JobRecord.EMPTY_LEASE);
+  }
+
+  @Override
+  public String getHistoryItemId() {
+    return BufferUtil.bufferAsString(historyItemIdProp.getValue());
+  }
+
+  public AgentHistoryRecord setHistoryItemId(final String historyItemId) {
+    historyItemIdProp.setValue(historyItemId);
+    return this;
+  }
+
+  @Override
+  public List<AgentInstanceToolValue> getTools() {
+    return toolsProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentInstanceTool();
+              copy.copy(element);
+              return (AgentInstanceToolValue) copy;
+            })
+        .toList();
+  }
+
+  public AgentHistoryRecord setTools(final List<? extends AgentInstanceToolValue> tools) {
+    toolsProp.reset();
+    if (tools != null) {
+      for (final var tool : tools) {
+        toolsProp.add().copy(tool);
+      }
+    }
+    return this;
+  }
+
+  @Override
+  public String getModel() {
+    return BufferUtil.bufferAsString(modelProp.getValue());
+  }
+
+  public AgentHistoryRecord setModel(final String model) {
+    modelProp.setValue(model);
+    return this;
+  }
+
+  @Override
+  public String getProvider() {
+    return BufferUtil.bufferAsString(providerProp.getValue());
+  }
+
+  public AgentHistoryRecord setProvider(final String provider) {
+    providerProp.setValue(provider);
+    return this;
+  }
+
+  @Override
+  public AgentInstanceLimits getLimits() {
+    return limitsProp.getValue();
+  }
+
+  @Override
+  public List<String> getChangedAttributes() {
+    return changedAttributesProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public AgentHistoryRecord setChangedAttributes(final List<String> changedAttributes) {
+    changedAttributesProp.reset();
+    if (changedAttributes != null) {
+      changedAttributes.forEach(
+          attr -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attr)));
+    }
+    return this;
+  }
+
+  public AgentHistoryRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  @Override
+  public boolean isDuplicate() {
+    return isDuplicateProp.getValue();
+  }
+
+  public AgentHistoryRecord setDuplicate(final boolean duplicate) {
+    isDuplicateProp.setValue(duplicate);
+    return this;
   }
 }

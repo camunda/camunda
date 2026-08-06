@@ -238,12 +238,18 @@ final class AgentInstanceHandlerTest {
 
   @Test
   void shouldPreserveCreationDateAcrossSubsequentIntents() {
-    // given — CREATED sets the creation date on the entity
+    // given — CREATED sets the creation date on the entity. Timestamps are pinned explicitly and
+    // strictly increasing: the factory randomizes record.getTimestamp() independently per call, so
+    // leaving it random makes the "lastUpdatedDate is after creationDate" assertion below flaky —
+    // there's no guarantee an independently-random later record has a larger random timestamp.
     final var entity = new AgentInstanceEntity().setId("1");
     final Record<AgentInstanceRecordValue> createdRecord =
         factory.generateRecord(
             ValueType.AGENT_INSTANCE,
-            r -> r.withIntent(AgentInstanceIntent.CREATED).withValue(buildMinimalRecordValue(1L)));
+            r ->
+                r.withIntent(AgentInstanceIntent.CREATED)
+                    .withValue(buildMinimalRecordValue(1L))
+                    .withTimestamp(1_000L));
     underTest.updateEntity(createdRecord, entity);
     final var creationDate = entity.getCreationDate();
     assertThat(creationDate).isNotNull();
@@ -252,7 +258,10 @@ final class AgentInstanceHandlerTest {
     final Record<AgentInstanceRecordValue> updatedRecord =
         factory.generateRecord(
             ValueType.AGENT_INSTANCE,
-            r -> r.withIntent(AgentInstanceIntent.UPDATED).withValue(buildMinimalRecordValue(1L)));
+            r ->
+                r.withIntent(AgentInstanceIntent.UPDATED)
+                    .withValue(buildMinimalRecordValue(1L))
+                    .withTimestamp(2_000L));
     underTest.updateEntity(updatedRecord, entity);
 
     // then — creation date preserved, last updated advanced, completion still absent
@@ -269,7 +278,10 @@ final class AgentInstanceHandlerTest {
     final Record<AgentInstanceRecordValue> completedRecord =
         factory.generateRecord(
             ValueType.AGENT_INSTANCE,
-            r -> r.withIntent(AgentInstanceIntent.COMPLETED).withValue(completedValue));
+            r ->
+                r.withIntent(AgentInstanceIntent.COMPLETED)
+                    .withValue(completedValue)
+                    .withTimestamp(3_000L));
     underTest.updateEntity(completedRecord, entity);
 
     // then — creation date still untouched, completion date now set

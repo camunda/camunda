@@ -10,6 +10,12 @@ package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -147,6 +153,9 @@ final class AgentInstanceRecordTest {
     final AgentInstanceRecord record = new AgentInstanceRecord();
     assertThat(record.getMetrics().getInputTokens()).isZero();
     assertThat(record.getMetrics().getOutputTokens()).isZero();
+    assertThat(record.getMetrics().getReasoningTokenCount()).isZero();
+    assertThat(record.getMetrics().getCacheCreationTokenCount()).isZero();
+    assertThat(record.getMetrics().getCacheReadTokenCount()).isZero();
     assertThat(record.getMetrics().getModelCalls()).isZero();
     assertThat(record.getMetrics().getToolCalls()).isZero();
   }
@@ -159,6 +168,9 @@ final class AgentInstanceRecordTest {
         .getMetrics()
         .setInputTokens(1340L)
         .setOutputTokens(490L)
+        .setReasoningTokenCount(120L)
+        .setCacheCreationTokenCount(80L)
+        .setCacheReadTokenCount(40L)
         .setModelCalls(3)
         .setToolCalls(2);
 
@@ -169,6 +181,9 @@ final class AgentInstanceRecordTest {
     // then
     assertThat(copy.getMetrics().getInputTokens()).isEqualTo(1340L);
     assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(490L);
+    assertThat(copy.getMetrics().getReasoningTokenCount()).isEqualTo(120L);
+    assertThat(copy.getMetrics().getCacheCreationTokenCount()).isEqualTo(80L);
+    assertThat(copy.getMetrics().getCacheReadTokenCount()).isEqualTo(40L);
     assertThat(copy.getMetrics().getModelCalls()).isEqualTo(3);
     assertThat(copy.getMetrics().getToolCalls()).isEqualTo(2);
   }
@@ -302,5 +317,119 @@ final class AgentInstanceRecordTest {
     assertThat(record.getTools())
         .extracting(AgentInstanceToolValue::getName)
         .containsExactly("second");
+  }
+
+  @Test
+  void shouldDefaultJobFieldsToUnset() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getJobKey()).isEqualTo(-1L);
+    assertThat(record.getJobLease()).isEmpty();
+    assertThat(record.getLoopIteration()).isZero();
+  }
+
+  @Test
+  void shouldRoundTripJobFieldsViaMsgPack() {
+    // given
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord()
+            .setJobKey(2251799813685300L)
+            .setJobLease("job-lease-xyz789")
+            .setLoopIteration(4);
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getJobKey()).isEqualTo(2251799813685300L);
+    assertThat(copy.getJobLease()).isEqualTo("job-lease-xyz789");
+    assertThat(copy.getLoopIteration()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldDefaultHistoryToEmptyList() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getHistory()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripHistoryViaMsgPack() {
+    // given
+    final var userItem =
+        new AgentHistoryRecord().setRole(AgentHistoryRole.USER).setProducedAt(1717200000000L);
+    userItem.addContent(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Please extract the invoice data."));
+
+    final var assistantItem =
+        new AgentHistoryRecord().setRole(AgentHistoryRole.ASSISTANT).setProducedAt(1717199999000L);
+    assistantItem.addContent(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Here is the extracted invoice data."));
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("noop"));
+    assistantItem.getMetrics().setInputTokens(10L).setOutputTokens(20L).setDurationMs(30L);
+
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord().setHistory(List.of(assistantItem, userItem));
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    final var history = copy.getHistory();
+    assertThat(history).hasSize(2);
+
+    final AgentHistoryRecordValue firstItem = history.get(0);
+    assertThat(firstItem.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
+    assertThat(firstItem.getContent()).hasSize(1);
+    assertThat(firstItem.getContent().get(0).getText())
+        .isEqualTo("Here is the extracted invoice data.");
+    assertThat(firstItem.getToolCalls()).hasSize(1);
+    assertThat(firstItem.getToolCalls().get(0).getToolCallId()).isEqualTo("call-1");
+    assertThat(firstItem.getMetrics().getInputTokens()).isEqualTo(10L);
+    assertThat(firstItem.getMetrics().getOutputTokens()).isEqualTo(20L);
+    assertThat(firstItem.getMetrics().getDurationMs()).isEqualTo(30L);
+    assertThat(firstItem.getProducedAt()).isEqualTo(1717199999000L);
+
+    final AgentHistoryRecordValue secondItem = history.get(1);
+    assertThat(secondItem.getRole()).isEqualTo(AgentHistoryRole.USER);
+    assertThat(secondItem.getContent()).hasSize(1);
+    assertThat(secondItem.getContent().get(0).getText())
+        .isEqualTo("Please extract the invoice data.");
+    assertThat(secondItem.getProducedAt()).isEqualTo(1717200000000L);
+  }
+
+  @Test
+  void shouldReplaceExistingHistoryOnSet() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setHistory(List.of(new AgentHistoryRecord().setProducedAt(1L)));
+
+    // when
+    record.setHistory(List.of(new AgentHistoryRecord().setProducedAt(2L)));
+
+    // then
+    assertThat(record.getHistory())
+        .extracting(AgentHistoryRecordValue::getProducedAt)
+        .containsExactly(2L);
+  }
+
+  @Test
+  void shouldAppendHistoryItem() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setHistory(List.of(new AgentHistoryRecord().setProducedAt(1L)));
+
+    // when
+    record.addHistoryItem(new AgentHistoryRecord().setProducedAt(2L));
+
+    // then
+    assertThat(record.getHistory())
+        .extracting(AgentHistoryRecordValue::getProducedAt)
+        .containsExactly(1L, 2L);
   }
 }
