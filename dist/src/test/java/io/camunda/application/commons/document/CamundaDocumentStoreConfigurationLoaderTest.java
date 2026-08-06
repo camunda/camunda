@@ -276,6 +276,11 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     gcpStore.setCredentialsPath("/var/secrets/gcp/tenant-a.json");
     camunda.getDocument().getGcp().put("gcp1", gcpStore);
 
+    final Document.AzureStore azureStore = new Document.AzureStore();
+    azureStore.setContainerName("container");
+    azureStore.setConnectionString("AccountName=acc;AccountKey=tenant-a-key");
+    camunda.getDocument().getAzure().put("az1", azureStore);
+
     final var mockEnv = new MockEnvironment();
     mockEnv.setProperty("camunda.document.default-store-id", "aws1");
     mockEnv.setProperty("camunda.document.aws.aws1.bucket-name", "docs");
@@ -284,6 +289,9 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     mockEnv.setProperty("camunda.document.gcp.gcp1.bucket-name", "gcp-docs");
     mockEnv.setProperty(
         "camunda.document.gcp.gcp1.credentials-path", "/var/secrets/gcp/tenant-a.json");
+    mockEnv.setProperty("camunda.document.azure.az1.container-name", "container");
+    mockEnv.setProperty(
+        "camunda.document.azure.az1.connection-string", "AccountName=acc;AccountKey=tenant-a-key");
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
     try {
@@ -297,6 +305,8 @@ class CamundaDocumentStoreConfigurationLoaderTest {
           .containsEntry("SECRET_KEY", "tenant-a-secret");
       assertThat(store("gcp1", configuration.documentStores()).properties())
           .containsEntry("CREDENTIALS_PATH", "/var/secrets/gcp/tenant-a.json");
+      assertThat(store("az1", configuration.documentStores()).properties())
+          .containsEntry("CONNECTION_STRING", "AccountName=acc;AccountKey=tenant-a-key");
     } finally {
       UnifiedConfigurationHelper.setCustomEnvironment(null);
     }
