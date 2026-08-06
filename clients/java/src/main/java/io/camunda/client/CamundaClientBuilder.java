@@ -329,7 +329,9 @@ public interface CamundaClientBuilder {
   /**
    * If enabled, the client will use DNS-based name resolution and balance across all addresses.
    * This allows the client to distribute requests across multiple gateway instances resolved by DNS
-   * without requiring an external load balancer.
+   * without requiring an external load balancer. The gRPC channel additionally re-resolves the DNS
+   * name on a fixed interval, so gateway instances that become available after the channel started
+   * are eventually picked up.
    *
    * <p>Default is {@code false}.
    *
