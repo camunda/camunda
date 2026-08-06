@@ -15,6 +15,7 @@ import {
   ErrorMessage,
   PanelBody,
   SearchRow,
+  SearchAndFilterContainer,
 } from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -25,6 +26,7 @@ import {SortOrderToggle} from './SortOrderToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
 import {FilteredElementInstancesList} from './FilteredElementInstancesList';
 import {SearchForm, SEARCH_PARAM_KEY} from './SearchForm';
+import {StatusFilter, getStatusFilter} from './StatusFilter';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
@@ -90,7 +92,9 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean; showHeader?: boolean}> =
     // shareable. Reads the param directly so a fresh page load with
     // ?elementSearch=foo shows the filtered list immediately.
     const submittedSearch = searchParams.get(SEARCH_PARAM_KEY) ?? '';
-    const isFiltered = submittedSearch.trim().length > 0;
+    const statusFilter = getStatusFilter(searchParams);
+    const isFiltered =
+      submittedSearch.trim().length > 0 || statusFilter !== null;
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
@@ -130,10 +134,13 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean; showHeader?: boolean}> =
         isPanel={isPanel}
         showHeader={showHeader}
         searchInput={
-          <SearchRow>
-            <SearchForm />
-            <SortOrderToggle />
-          </SearchRow>
+          <SearchAndFilterContainer>
+            <SearchRow>
+              <SearchForm />
+              <SortOrderToggle />
+            </SearchRow>
+            <StatusFilter />
+          </SearchAndFilterContainer>
         }
       >
         <PanelBody>
@@ -158,6 +165,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean; showHeader?: boolean}> =
             {isFiltered && !isModificationModeEnabled ? (
               <FilteredElementInstancesList
                 searchText={submittedSearch.trim()}
+                statusFilter={statusFilter}
                 processInstanceKey={processInstance!.processInstanceKey}
                 businessObjects={businessObjects!}
               />

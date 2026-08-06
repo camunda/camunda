@@ -44,4 +44,28 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-export {ScrollContainer, StatusRegion, EmptyStateContainer, IndentedTreeNode};
+// @types/react is v19, which types `inert` as a boolean, but the React 18
+// runtime drops boolean values for it and only renders the string form.
+// Passing `true` here would silently produce no attribute at all.
+const inertWhileDimmed = '' as unknown as boolean;
+
+const DimmableResults = styled.div.attrs<{$dimmed: boolean}>(({$dimmed}) => ({
+  'data-testid': 'filtered-results',
+  inert: $dimmed ? inertWhileDimmed : undefined,
+}))<{$dimmed: boolean}>`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  transition: opacity 150ms ease;
+  opacity: ${({$dimmed}) => ($dimmed ? 0.5 : 1)};
+  pointer-events: ${({$dimmed}) => ($dimmed ? 'none' : 'auto')};
+`;
+
+export {
+  ScrollContainer,
+  StatusRegion,
+  EmptyStateContainer,
+  IndentedTreeNode,
+  DimmableResults,
+};

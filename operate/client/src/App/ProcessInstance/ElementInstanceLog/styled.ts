@@ -63,6 +63,7 @@ const SearchRow = styled.div`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-03);
+  width: 100%;
 
   .cds--search {
     flex: 1;
@@ -70,4 +71,20 @@ const SearchRow = styled.div`
   }
 `;
 
-export {PanelHeader, Container, ErrorMessage, PanelBody, SearchRow};
+const SearchAndFilterContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cds-spacing-04);
+  padding: var(--cds-spacing-05);
+  border-bottom: solid 1px var(--cds-border-subtle-01);
+`;
+
+export {
+  PanelHeader,
+  Container,
+  ErrorMessage,
+  PanelBody,
+  SearchRow,
+  SearchAndFilterContainer,
+};

@@ -232,7 +232,10 @@ test.describe('process instance modification', () => {
     await processInstancePage.variablesEditor.waitForEditorToLoad();
     await processInstancePage.variablesEditor.fill('"some value"');
 
-    await page.getByTestId('variables-list').click();
+    await page
+      .getByTestId('variables-list')
+      .getByRole('columnheader', {name: 'Name'})
+      .click();
 
     const undoButton = await page.getByRole('button', {name: /undo/i});
 
@@ -299,7 +302,10 @@ test.describe('process instance modification', () => {
     await processInstancePage.variablesEditor.clear();
     await processInstancePage.variablesEditor.fill('1234');
 
-    await page.getByTestId('variables-list').click();
+    await page
+      .getByTestId('variables-list')
+      .getByRole('columnheader', {name: 'Name'})
+      .click();
 
     await commonPage.addLeftArrow(undoButton);
 

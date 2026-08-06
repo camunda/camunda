@@ -12,9 +12,12 @@ import {act} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import type {
-  ElementInstance,
-  QueryElementInstancesResponseBody,
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
+import {
+  endpoints,
+  type ElementInstance,
+  type QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {FilteredElementInstancesList} from './index';
@@ -93,6 +96,9 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
     </ProcessDefinitionKeyContext.Provider>
   </MemoryRouter>
 );
+
+const hasInertAncestor = (element: HTMLElement) =>
+  element.closest('[inert]') !== null;
 
 describe('<FilteredElementInstancesList />', () => {
   it('renders results returned by the search API', async () => {
@@ -212,6 +218,153 @@ describe('<FilteredElementInstancesList />', () => {
     vi.useRealTimers();
   });
 
+  it('dims the results while a new status filter is loading its own data', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 1),
+    );
+
+    const {rerender} = render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '1 matching elements',
+      );
+    });
+
+    expect(screen.getByTestId('filtered-results')).toHaveStyle({
+      opacity: '1',
+    });
+
+    mockSearchElementInstances().withDelay(
+      mockResponse([createMockElementInstance({elementInstanceKey: '200'})], 1),
+    );
+
+    rerender(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+    );
+
+    expect(screen.getByTestId('filtered-results')).toHaveStyle({
+      opacity: '0.5',
+    });
+    expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('filtered-results')).toHaveStyle({
+        opacity: '1',
+      });
+    });
+    expect(screen.getByTestId('search-result-200')).toBeInTheDocument();
+  });
+
+  it('makes stale results non-interactive while a new status filter loads', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 1),
+    );
+
+    const {rerender} = render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('filtered-results').hasAttribute('inert')).toBe(
+      false,
+    );
+
+    mockSearchElementInstances().withDelay(
+      mockResponse([createMockElementInstance({elementInstanceKey: '200'})], 1),
+    );
+
+    rerender(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+    );
+
+    expect(screen.getByTestId('filtered-results')).toHaveAttribute('inert');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search-result-200')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('filtered-results').hasAttribute('inert')).toBe(
+      false,
+    );
+  });
+
+  it('keeps announcing the result count while stale results are inert', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 1),
+    );
+
+    const {rerender} = render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '1 matching elements',
+      );
+    });
+
+    mockSearchElementInstances().withDelay(
+      mockResponse(
+        [
+          createMockElementInstance({elementInstanceKey: '200'}),
+          createMockElementInstance({elementInstanceKey: '201'}),
+        ],
+        2,
+      ),
+    );
+
+    rerender(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+    );
+
+    expect(screen.getByTestId('filtered-results')).toHaveAttribute('inert');
+    expect(hasInertAncestor(screen.getByRole('status'))).toBe(false);
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '2 matching elements',
+      );
+    });
+    expect(hasInertAncestor(screen.getByRole('status'))).toBe(false);
+  });
+
   it('renders an error message on a non-permissions error', async () => {
     mockSearchElementInstances().withServerError(500);
 
@@ -243,6 +396,142 @@ describe('<FilteredElementInstancesList />', () => {
 
     expect(
       await screen.findByText(INSTANCE_HISTORY_FORBIDDEN.message),
+    ).toBeInTheDocument();
+  });
+
+  it('excludes elements with incidents from the request filter when statusFilter is "active"', async () => {
+    let capturedFilter: unknown;
+    mockServer.use(
+      http.post(
+        endpoints.queryElementInstances.getUrl(),
+        async ({request}) => {
+          const body = (await request.json()) as {
+            filter?: {state?: unknown; hasIncident?: unknown};
+          };
+          capturedFilter = body.filter;
+          return HttpResponse.json(mockResponse([], 0));
+        },
+        {once: true},
+      ),
+    );
+
+    render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(capturedFilter).toMatchObject({
+        state: 'ACTIVE',
+        hasIncident: false,
+      });
+    });
+    expect(capturedFilter).not.toHaveProperty('$or');
+  });
+
+  it('adds hasIncident: true to the request filter when statusFilter is "incidents"', async () => {
+    let capturedFilter: unknown;
+    mockServer.use(
+      http.post(
+        endpoints.queryElementInstances.getUrl(),
+        async ({request}) => {
+          const body = (await request.json()) as {
+            filter?: {hasIncident?: unknown};
+          };
+          capturedFilter = body.filter;
+          return HttpResponse.json(mockResponse([], 0));
+        },
+        {once: true},
+      ),
+    );
+
+    render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(capturedFilter).toMatchObject({hasIncident: true});
+    });
+  });
+
+  it('combines search text and statusFilter with AND semantics', async () => {
+    let capturedFilter: unknown;
+    mockServer.use(
+      http.post(
+        endpoints.queryElementInstances.getUrl(),
+        async ({request}) => {
+          const body = (await request.json()) as {filter?: unknown};
+          capturedFilter = body.filter;
+          return HttpResponse.json(mockResponse([], 0));
+        },
+        {once: true},
+      ),
+    );
+
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(capturedFilter).toMatchObject({
+        state: 'ACTIVE',
+        hasIncident: false,
+      });
+    });
+    expect(capturedFilter).toHaveProperty('$or');
+  });
+
+  it('renders status-specific empty state copy for the Active filter with no search text', async () => {
+    mockSearchElementInstances().withSuccess(mockResponse([], 0));
+
+    render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByText('No active elements')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Try a different name or ID'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders status-specific empty state copy for the Incidents filter with no search text', async () => {
+    mockSearchElementInstances().withSuccess(mockResponse([], 0));
+
+    render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      await screen.findByText('No elements with incidents'),
     ).toBeInTheDocument();
   });
 });

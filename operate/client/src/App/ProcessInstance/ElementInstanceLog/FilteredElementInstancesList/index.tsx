@@ -35,11 +35,13 @@ import {buildElementInstanceSort} from '../buildElementInstanceSort';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
+import type {StatusFilterValue} from '../StatusFilter';
 import {
   ScrollContainer,
   StatusRegion,
   EmptyStateContainer,
   IndentedTreeNode,
+  DimmableResults,
 } from './styled';
 
 const ROW_HEIGHT = 32;
@@ -107,12 +109,37 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
 
 type Props = {
   searchText: string;
+  statusFilter?: StatusFilterValue | null;
   processInstanceKey: string;
   businessObjects: BusinessObjects;
 };
 
+const getEmptyStateCopy = (
+  searchText: string,
+  statusFilter: StatusFilterValue | null,
+): {heading: string; description: string} => {
+  if (searchText === '' && statusFilter === 'active') {
+    return {
+      heading: 'No active elements',
+      description: 'All elements have finished executing',
+    };
+  }
+
+  if (searchText === '' && statusFilter === 'incidents') {
+    return {
+      heading: 'No elements with incidents',
+      description: 'There are currently no incidents',
+    };
+  }
+
+  return {
+    heading: 'No matching elements',
+    description: 'Try a different name or ID',
+  };
+};
+
 const FilteredElementInstancesList: React.FC<Props> = observer(
-  ({searchText, processInstanceKey, businessObjects}) => {
+  ({searchText, statusFilter = null, processInstanceKey, businessObjects}) => {
     const scrollableContainerRef = useRef<HTMLDivElement>(null);
     const sortOrder = instanceHistorySortOrderStore.order;
 
@@ -121,11 +148,21 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
       return {
         filter: {
           processInstanceKey,
-          $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
+          ...(searchText !== '' && {
+            $or: [
+              {elementName: {$like: pattern}},
+              {elementId: {$like: pattern}},
+            ],
+          }),
+          ...(statusFilter === 'active' && {
+            state: 'ACTIVE' as const,
+            hasIncident: false,
+          }),
+          ...(statusFilter === 'incidents' && {hasIncident: true}),
         },
         sort: buildElementInstanceSort(sortOrder),
       };
-    }, [searchText, processInstanceKey, sortOrder]);
+    }, [searchText, statusFilter, processInstanceKey, sortOrder]);
 
     const query = useElementInstancesSearchPaginated({
       payload,
@@ -160,14 +197,17 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
     }
 
     if (query.data?.items.length === 0) {
+      const emptyStateCopy = getEmptyStateCopy(searchText, statusFilter);
       return (
-        <EmptyStateContainer>
-          <EmptyState
-            heading="No matching elements"
-            description="Try a different name or ID"
-            icon={<Search size={32} />}
-          />
-        </EmptyStateContainer>
+        <DimmableResults $dimmed={query.isPlaceholderData}>
+          <EmptyStateContainer>
+            <EmptyState
+              heading={emptyStateCopy.heading}
+              description={emptyStateCopy.description}
+              icon={<Search size={32} />}
+            />
+          </EmptyStateContainer>
+        </DimmableResults>
       );
     }
 
@@ -176,25 +216,27 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
         <StatusRegion aria-live="polite">
           {query.data?.totalCount ?? 0} matching elements
         </StatusRegion>
-        <ScrollContainer ref={scrollableContainerRef}>
-          <TreeView label="Search results" hideLabel>
-            <InfiniteScroller
-              scrollableContainerRef={scrollableContainerRef}
-              onVerticalScrollEndReach={scroll.handleScrollEndReach}
-              onVerticalScrollStartReach={scroll.handleScrollStartReach}
-            >
-              <ul>
-                {query.data?.items.map((item) => (
-                  <Row
-                    key={item.elementInstanceKey}
-                    item={item}
-                    businessObjects={businessObjects}
-                  />
-                ))}
-              </ul>
-            </InfiniteScroller>
-          </TreeView>
-        </ScrollContainer>
+        <DimmableResults $dimmed={query.isPlaceholderData}>
+          <ScrollContainer ref={scrollableContainerRef}>
+            <TreeView label="Search results" hideLabel>
+              <InfiniteScroller
+                scrollableContainerRef={scrollableContainerRef}
+                onVerticalScrollEndReach={scroll.handleScrollEndReach}
+                onVerticalScrollStartReach={scroll.handleScrollStartReach}
+              >
+                <ul>
+                  {query.data?.items.map((item) => (
+                    <Row
+                      key={item.elementInstanceKey}
+                      item={item}
+                      businessObjects={businessObjects}
+                    />
+                  ))}
+                </ul>
+              </InfiniteScroller>
+            </TreeView>
+          </ScrollContainer>
+        </DimmableResults>
       </>
     );
   },
