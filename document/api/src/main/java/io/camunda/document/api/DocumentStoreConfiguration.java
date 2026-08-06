@@ -24,13 +24,20 @@ public record DocumentStoreConfiguration(
       Map<String, String> properties) {
 
     /**
-     * Property keys whose values authenticate against the backing store. Their values must never
-     * reach a log line or an exception message, so {@link #toString()} replaces them with {@link
-     * #REDACTED}. Matched case-insensitively because store properties also arrive through the
-     * legacy {@code DOCUMENT_STORE_<ID>_<PROPERTY>} environment bridge.
+     * Substrings that mark a property key as carrying a credential. Such values must never reach a
+     * log line or an exception message, so {@link #toString()} replaces them with {@link
+     * #REDACTED}.
+     *
+     * <p>Matched as case-insensitive substrings rather than as an exact-name allowlist: store
+     * properties also arrive through the legacy {@code DOCUMENT_STORE_<ID>_<PROPERTY>} environment
+     * bridge, which forwards whatever property name it finds, so an allowlist would print in the
+     * clear every credential key it had not been taught about.
+     *
+     * <p>{@code CREDENTIALS_PATH} is deliberately not covered — it names a key file rather than
+     * holding a key, and it is the one value worth seeing when a store fails to read it.
      */
-    private static final Set<String> SENSITIVE_PROPERTIES =
-        Set.of("CONNECTION_STRING", "SECRET_KEY");
+    private static final Set<String> SENSITIVE_KEY_MARKERS =
+        Set.of("SECRET", "PASSWORD", "TOKEN", "KEY", "CONNECTION_STRING", "SIGNATURE");
 
     private static final String REDACTED = "<redacted>";
 
@@ -60,7 +67,11 @@ public record DocumentStoreConfiguration(
     }
 
     private static boolean isSensitive(final String key) {
-      return key != null && SENSITIVE_PROPERTIES.contains(key.toUpperCase(Locale.ROOT));
+      if (key == null) {
+        return false;
+      }
+      final String normalized = key.toUpperCase(Locale.ROOT);
+      return SENSITIVE_KEY_MARKERS.stream().anyMatch(normalized::contains);
     }
   }
 }

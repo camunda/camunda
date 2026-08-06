@@ -29,6 +29,8 @@ public record AwsClientOptions(
     @Nullable String accessKey,
     @Nullable String secretKey) {
 
+  private static final String REDACTED = "<redacted>";
+
   public static AwsClientOptions sdkDefaults() {
     return new AwsClientOptions(null, null, null, null, null, null, null);
   }
@@ -67,7 +69,11 @@ public record AwsClientOptions(
         : null;
   }
 
-  /** Renders the options with the secret key masked, so they are safe to log. */
+  /**
+   * Renders the options with both halves of the key pair masked, so they are safe to log. The
+   * access key is masked too: it names the IAM principal the store acts as, which is exactly what
+   * an attacker reading a log needs in order to know which secret is worth hunting for.
+   */
   @Override
   public String toString() {
     return "AwsClientOptions[endpointOverride="
@@ -81,9 +87,9 @@ public record AwsClientOptions(
         + ", region="
         + region
         + ", accessKey="
-        + accessKey
+        + (accessKey == null ? null : REDACTED)
         + ", secretKey="
-        + (secretKey == null ? null : "<redacted>")
+        + (secretKey == null ? null : REDACTED)
         + "]";
   }
 }
