@@ -27,7 +27,7 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 /**
  * Validates that a {@code zeebe:agentDefinition} marker's {@code agentType} is consistent with the
  * element it is attached to: {@code aiAgentSubProcess} is only valid on an ad-hoc sub-process,
- * while {@code aiAgentTask} and {@code external} are only valid on a service task.
+ * {@code aiAgentTask} is only valid on a service task, while {@code external} is valid on either.
  */
 public final class AgentDefinitionValidator implements ModelElementValidator<FlowElement> {
 
@@ -70,10 +70,17 @@ public final class AgentDefinitionValidator implements ModelElementValidator<Flo
         break;
 
       case aiAgentTask:
-      case external:
         if (!(element instanceof ServiceTask)) {
           validationResultCollector.addError(
-              0, String.format("agentType '%s' is only allowed on a service task.", agentType));
+              0, "agentType 'aiAgentTask' is only allowed on a service task.");
+        }
+        break;
+
+      case external:
+        if (!(element instanceof AdHocSubProcess) && !(element instanceof ServiceTask)) {
+          validationResultCollector.addError(
+              0,
+              "agentType 'external' is only allowed on a service task or an ad-hoc sub-process.");
         }
         break;
 
