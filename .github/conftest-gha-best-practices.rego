@@ -77,6 +77,23 @@ deny[msg] {
         [concat(", ", get_jobs_with_cihealth_but_no_checkout(input.jobs))])
 }
 
+deny[msg] {
+    # This rule forbids usage of the "pull_request_target" trigger, which runs
+    # in the context of the base branch and has access to secrets. Using it with
+    # a checkout of the PR's code is a common source of secret exfiltration and
+    # code injection vulnerabilities via forks. Prefer the "pull_request" trigger.
+    # See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+
+    is_pull_request_target_trigger
+
+    # exempted: "Pull Request Labeler" only runs the trusted actions/labeler
+    # action (no checkout of PR code, no secret exposure beyond the labelling
+    # API), which is the documented safe use of pull_request_target
+    input.name != "Pull Request Labeler"
+
+    msg := "This GitHub Actions workflow uses the 'pull_request_target' trigger which is forbidden due to security risks with forks! Use 'pull_request' instead."
+}
+
 warn[msg] {
     # This rule warns in situations where no "secrets: inherit" is passed on
     # calling other workflows as this is usually an oversight that prevents
@@ -89,6 +106,23 @@ warn[msg] {
 }
 
 ###########################   RULE HELPERS   ##################################
+
+# Detects whether the workflow uses the "pull_request_target" trigger across
+# any of the three YAML forms GHA accepts.
+# The "on" key gets transformed by conftest into "true" due to some legacy
+# YAML standards, see https://stackoverflow.com/q/42283732/2148786
+is_pull_request_target_trigger {
+    # object form
+    input["true"]["pull_request_target"]
+}
+is_pull_request_target_trigger {
+    # array form
+    input["true"][_] == "pull_request_target"
+}
+is_pull_request_target_trigger {
+    # string form
+    input["true"] == "pull_request_target"
+}
 
 get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
     jobs_with_setupnodecaching := { job_id |
