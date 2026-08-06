@@ -496,6 +496,12 @@ Every GHA workflow job is given a `GITHUB_TOKEN` environment variable with a val
 
 **Best Practice:** All GHA workflow jobs must request only actually required [permissions on the `GITHUB_TOKEN`](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token). Set `permissions: {}` by default and add what is needed.
 
+### Avoid `pull_request_target` trigger
+
+This [GHA trigger](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) disables safeguards that combined with other factors can lead to compromise of CI, repository and secret integrity.
+
+For this reason we avoid using this trigger to minimize the attack surface and security risks.
+
 ### Usage of Third Party GitHub Actions
 
 GitHub Actions has a [large ecosystem of existing useful actions](https://github.com/marketplace) from GitHub and third parties such as other companies and individuals. While reusing existing actions avoids code duplication and maintenance effort for Camunda, it increases the _attack surface_ should any of those actions be hacked to perform malicious tasks.
