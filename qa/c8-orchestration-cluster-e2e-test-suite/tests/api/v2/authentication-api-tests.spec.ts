@@ -18,11 +18,15 @@ import {
 import {validateResponse} from '../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../utils/constants';
 import {
+  cleanupAuthorizations,
   createComponentAuthorization,
   createGroupAndStoreResponseFields,
   createRole,
   createTenant,
+  createUser,
   createUsersAndStoreResponseFields,
+  expectAuthorizationCanBeFound,
+  verifyAuthorizationFields,
 } from '@requestHelpers';
 import {
   authenticationRequiredFields,
@@ -235,5 +239,159 @@ test.describe.parallel('Authentication API Tests', () => {
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
+  });
+});
+
+test.describe.parallel('Search Own Authorizations API Tests', () => {
+  const authorizationKeysToCleanup: string[] = [];
+  const usernamesToCleanup: string[] = [];
+
+  test.afterAll(async ({request}) => {
+    await cleanupAuthorizations(request, authorizationKeysToCleanup);
+    await cleanupUsers(request, usernamesToCleanup);
+  });
+
+  test('Search Own Authorizations Returns Direct Grant', async ({request}) => {
+    const user = await createUser(request);
+    usernamesToCleanup.push(user.username);
+
+    const authorizationKey = await createComponentAuthorization(request, {
+      ownerId: user.username,
+      ownerType: 'USER',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(authorizationKey);
+    await expectAuthorizationCanBeFound(request, authorizationKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/authentication/me/authorizations/search'),
+        {
+          headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+          data: {},
+        },
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/authentication/me/authorizations/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      const item = json.items.find(
+        (it: {authorizationKey: string}) =>
+          it.authorizationKey === authorizationKey,
+      );
+      expect(item).toBeDefined();
+      verifyAuthorizationFields(item, {
+        ownerId: user.username,
+        ownerType: 'USER',
+        resourceId: '*',
+        resourceType: 'CLUSTER_VARIABLE',
+        permissionTypes: ['READ'],
+        authorizationKey,
+      });
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Own Authorizations Filtered By Resource Type Excludes Others', async ({
+    request,
+  }) => {
+    const user = await createUser(request);
+    usernamesToCleanup.push(user.username);
+
+    const matchingKey = await createComponentAuthorization(request, {
+      ownerId: user.username,
+      ownerType: 'USER',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
+    const otherKey = await createComponentAuthorization(request, {
+      ownerId: user.username,
+      ownerType: 'USER',
+      resourceId: '*',
+      resourceType: 'MESSAGE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(matchingKey, otherKey);
+    await expectAuthorizationCanBeFound(request, matchingKey);
+    await expectAuthorizationCanBeFound(request, otherKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/authentication/me/authorizations/search'),
+        {
+          headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+          data: {filter: {resourceType: 'CLUSTER_VARIABLE'}},
+        },
+      );
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(
+        json.items.some(
+          (it: {authorizationKey: string}) =>
+            it.authorizationKey === matchingKey,
+        ),
+      ).toBe(true);
+      expect(
+        json.items.some(
+          (it: {authorizationKey: string}) => it.authorizationKey === otherKey,
+        ),
+      ).toBe(false);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Own Authorizations Never Leaks Another Users Grants', async ({
+    request,
+  }) => {
+    const caller = await createUser(request);
+    const stranger = await createUser(request);
+    usernamesToCleanup.push(caller.username, stranger.username);
+
+    const strangerKey = await createComponentAuthorization(request, {
+      ownerId: stranger.username,
+      ownerType: 'USER',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
+    authorizationKeysToCleanup.push(strangerKey);
+    await expectAuthorizationCanBeFound(request, strangerKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/authentication/me/authorizations/search'),
+        {
+          headers: jsonHeaders(encode(`${caller.username}:${caller.password}`)),
+          data: {filter: {ownerId: stranger.username, ownerType: 'USER'}},
+        },
+      );
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(
+        json.items.some(
+          (it: {authorizationKey: string}) =>
+            it.authorizationKey === strangerKey,
+        ),
+      ).toBe(false);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  // eslint-disable-next-line playwright/expect-expect
+  test('Search Own Authorizations Unauthorized', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/authentication/me/authorizations/search'),
+      {
+        headers: {'Content-Type': 'application/json'},
+        data: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
   });
 });
