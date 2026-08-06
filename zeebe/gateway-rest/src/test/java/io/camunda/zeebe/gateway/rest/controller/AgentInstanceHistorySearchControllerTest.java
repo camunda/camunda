@@ -51,8 +51,8 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
 
   private static final AgentInstanceHistoryEntity HISTORY_ENTITY =
       new AgentInstanceHistoryEntity(
-          HISTORY_ITEM_ID,
           HISTORY_ITEM_KEY,
+          HISTORY_ITEM_ID,
           AGENT_INSTANCE_KEY,
           ELEMENT_INSTANCE_KEY,
           9007199254741001L,
@@ -83,6 +83,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
         "items": [
           {
             "historyItemKey": "%d",
+            "historyItemId": "%s",
             "agentInstanceKey": "%d",
             "elementInstanceKey": "%d",
             "jobKey": "%d",
@@ -92,6 +93,11 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             "content": [{ "contentType": "TEXT", "text": "Hello agent" }],
             "toolCalls": [],
             "metrics": { "inputTokens": 10, "outputTokens": 20, "durationMs": 100 },
+            "tools": [],
+            "model": null,
+            "provider": null,
+            "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+            "systemPrompt": [],
             "commitStatus": "COMMITTED",
             "producedAt": "2025-01-01T10:00:00.000Z"
           }
@@ -104,7 +110,8 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
         }
       }
       """
-          .formatted(HISTORY_ITEM_KEY, AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, JOB_KEY);
+          .formatted(
+              HISTORY_ITEM_KEY, HISTORY_ITEM_ID, AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, JOB_KEY);
 
   @MockitoBean private AgentInstanceServices agentInstanceServices;
   @MockitoBean private AgentHistoryServices agentHistoryServices;
@@ -256,8 +263,8 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
     // given — entity with metrics == null (history item created without metrics)
     final var entityNoMetrics =
         new AgentInstanceHistoryEntity(
-            HISTORY_ITEM_ID,
             HISTORY_ITEM_KEY,
+            HISTORY_ITEM_ID,
             AGENT_INSTANCE_KEY,
             ELEMENT_INSTANCE_KEY,
             9007199254741001L,
@@ -300,5 +307,69 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
         .expectBody()
         .jsonPath("$.items[0].metrics")
         .isEqualTo(null);
+  }
+
+  @Test
+  void shouldSearchAgentHistoryWithConfigurationFields() {
+    // given — a CONFIGURATION item that touched tools/model/provider/limits
+    final var configurationEntity =
+        new AgentInstanceHistoryEntity(
+            HISTORY_ITEM_KEY,
+            HISTORY_ITEM_ID,
+            AGENT_INSTANCE_KEY,
+            ELEMENT_INSTANCE_KEY,
+            9007199254741001L,
+            9007199254740992L,
+            "myProcess",
+            "<default>",
+            JOB_KEY,
+            "job-lease-1",
+            1,
+            AgentInstanceHistoryRole.CONFIGURATION,
+            List.of(),
+            List.of(),
+            null,
+            List.of(new AgentInstanceHistoryEntity.Tool("search", "Searches the web", "Task_1")),
+            "gpt-4o",
+            "openai",
+            new AgentInstanceHistoryEntity.Limits(1000L, 10, 5),
+            null,
+            AgentInstanceHistoryCommitStatus.COMMITTED,
+            PRODUCED_AT);
+
+    when(agentHistoryServices.search(any(AgentInstanceHistoryQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceHistoryEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(configurationEntity))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(HISTORY_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "items": [
+                {
+                  "role": "CONFIGURATION",
+                  "tools": [{ "name": "search", "description": "Searches the web", "elementId": "Task_1" }],
+                  "model": "gpt-4o",
+                  "provider": "openai",
+                  "limits": { "maxTokens": 1000, "maxModelCalls": 10, "maxToolCalls": 5 }
+                }
+              ]
+            }
+            """,
+            JsonCompareMode.LENIENT);
   }
 }

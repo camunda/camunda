@@ -943,6 +943,12 @@ components:
         - metrics
         - commitStatus
         - producedAt
+        - historyItemId
+        - tools
+        - model
+        - provider
+        - limits
+        - systemPrompt
       properties:
         historyItemKey:
           description: The unique key for this history item. Stable and sortable by creation order.
@@ -999,6 +1005,42 @@ components:
           description: The connector-side timestamp of when this message was produced.
           type: string
           format: date-time
+        historyItemId:
+          description: |
+            The client-supplied identifier this item was created with. Empty for items that don't
+            carry one.
+          type: string
+        tools:
+          description: |
+            The complete list of tools available to the agent as of this entry. CONFIGURATION
+            items only; empty for other roles.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTool'
+        model:
+          description: |
+            The LLM model identifier as of this entry. CONFIGURATION items only; null for other
+            roles.
+          type: string
+          nullable: true
+        provider:
+          description: |
+            The LLM provider as of this entry. CONFIGURATION items only; null for other roles.
+          type: string
+          nullable: true
+        limits:
+          description: |
+            The operational limits as of this entry. CONFIGURATION items only; -1 on any field
+            means "no limit configured" for other roles.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceLimits'
+        systemPrompt:
+          description: |
+            The system prompt, as content blocks, as of this entry. CONFIGURATION items only;
+            empty for other roles.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
     AgentInstanceHistoryRoleEnum:
       description: The role of a history item in the agent conversation.
       type: string
