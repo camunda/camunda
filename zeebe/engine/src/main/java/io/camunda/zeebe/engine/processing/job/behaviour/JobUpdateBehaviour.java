@@ -55,7 +55,12 @@ public class JobUpdateBehaviour {
             jobState,
             processingStateState.getBannedInstanceState(),
             "update",
-            List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN),
+            List.of(
+                State.ACTIVATABLE,
+                State.ACTIVATED,
+                State.FAILED,
+                State.ERROR_THROWN,
+                State.WAITING_FOR_SECRET_RESOLUTION),
             List.of(JobLeaseFencingCheck.forUpdateCommand()),
             tenantCheck);
     this.cslCheck = cslCheck;

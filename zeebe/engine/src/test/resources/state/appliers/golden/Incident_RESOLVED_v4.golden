@@ -58,11 +58,9 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
       return; // not a job-related incident
     }
     if (value.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR) {
-      // Only ACTIVATABLE jobs are parked for secret resolution (removed from the activatable index
-      // but keeping their state); re-inserting a job in any other state corrupts the index.
-      if (jobState.getState(jobKey) == State.ACTIVATABLE) {
-        jobState.makeActivatableAfterSecretResolution(jobKey);
-      }
+      // job state reactivates the job only if it is still parked, so a job that this error type was
+      // raised for without parking it (a failed secret value injection) is left alone
+      jobState.makeActivatableAfterSecretResolution(jobKey);
       return;
     }
     final var stateOfJob = jobState.getState(jobKey);

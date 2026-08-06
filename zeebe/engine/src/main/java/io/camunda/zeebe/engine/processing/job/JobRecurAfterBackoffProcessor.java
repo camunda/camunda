@@ -73,6 +73,9 @@ public class JobRecurAfterBackoffProcessor
         case ERROR_THROWN:
           textState = "it is in error state";
           break;
+        case WAITING_FOR_SECRET_RESOLUTION:
+          textState = "it is waiting for a secret to be resolved";
+          break;
         default:
           textState = "no such job was found";
           break;
