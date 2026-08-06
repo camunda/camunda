@@ -65,6 +65,10 @@ class TasklistProcessesPage extends BasePage {
 	processHeading(name: string) {
 		return this.page.getByRole('heading', {name});
 	}
+
+	get startProcessButton() {
+		return this.page.getByRole('button', {name: 'Start process'});
+	}
 }
 
 export {TasklistProcessesPage};

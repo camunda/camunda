@@ -17,6 +17,7 @@ import {tracking} from '#/shared/tracking';
 import {requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
+import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 
@@ -57,15 +58,14 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 	component: function TasklistProcessesRoute() {
 		const search = Route.useSearch();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const {data, error, fetchNextPage, hasNextPage, isFetchingNextPage} = useSuspenseInfiniteQuery({
-			...queries.queryProcessDefinitionsInfinite(getProcessDefinitionsRequestBody(search, currentUser.tenants)),
+		const processDefinitionsRequestBody = getProcessDefinitionsRequestBody(search, currentUser.tenants);
+		const {data, fetchNextPage, hasNextPage, isFetchingNextPage} = useSuspenseInfiniteQuery({
+			...queries.queryProcessDefinitionsInfinite(processDefinitionsRequestBody),
 			refetchInterval: 5000,
 		});
 		const processes = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
-
-		if (error !== null) {
-			throw error;
-		}
+		const selectedTenantId = processDefinitionsRequestBody.filter?.tenantId;
+		const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
 
 		return (
 			<TasklistProcessesPage
@@ -74,6 +74,10 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 				hasNextPage={hasNextPage}
 				isFetchingNextPage={isFetchingNextPage}
 				onLoadMore={() => fetchNextPage()}
+				selectedProcessDefinitionKey={selectedProcessDefinitionKey}
+				startProcessStatus={status}
+				isStartProcessBusy={isBusy}
+				onStartProcess={(process) => startProcess(process, selectedTenantId)}
 			/>
 		);
 	},

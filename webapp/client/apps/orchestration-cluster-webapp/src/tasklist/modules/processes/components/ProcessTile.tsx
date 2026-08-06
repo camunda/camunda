@@ -7,18 +7,62 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {Button, Stack, Tag} from '@carbon/react';
+import {Stack, Tag} from '@carbon/react';
 import {ArrowRight, List} from '@carbon/react/icons';
+import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
+import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton/AsyncActionButton';
+import type {StartProcessStatus} from '#/tasklist/modules/processes/useStartProcess';
 import styles from './ProcessTile.module.scss';
+import {useMemo} from 'react';
 
 type Props = {
 	process: ProcessDefinition;
+	status: StartProcessStatus;
+	isStartButtonDisabled: boolean;
+	onStartProcess: () => void;
 };
 
-function ProcessTile({process}: Props) {
+function getStartProcessStatusDescription(status: StartProcessStatus): string | undefined {
+	if (status === 'active') {
+		return _t('tasklist.processesStartProcessPendingStatusText');
+	}
+
+	if (status === 'finished') {
+		return _t('tasklist.processesStartProcessSuccess');
+	}
+
+	if (status === 'error') {
+		return _t('tasklist.processesStartProcessFailed');
+	}
+
+	return undefined;
+}
+
+const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, onStartProcess}) => {
 	const {t} = useTranslation();
 	const displayName = process.name ?? process.processDefinitionId;
+	const statusDescription = getStartProcessStatusDescription(status);
+	const buttonProps = useMemo(
+		() =>
+			({
+				type: 'button',
+				kind: 'tertiary',
+				size: 'sm',
+				renderIcon: process.hasStartForm ? ArrowRight : undefined,
+				disabled: isStartButtonDisabled,
+				onClick: onStartProcess,
+			}) as const,
+		[process.hasStartForm, isStartButtonDisabled, onStartProcess],
+	);
+	const inlineLoadingProps = useMemo(
+		() =>
+			({
+				description: statusDescription,
+				'aria-live': status === 'error' || status === 'finished' ? 'assertive' : 'polite',
+			}) as const,
+		[status, statusDescription],
+	);
 
 	return (
 		<div className={styles.container}>
@@ -45,13 +89,13 @@ function ProcessTile({process}: Props) {
 							</li>
 						) : null}
 					</ul>
-					<Button type="button" kind="tertiary" size="sm" renderIcon={process.hasStartForm ? ArrowRight : undefined}>
+					<AsyncActionButton status={status} buttonProps={buttonProps} inlineLoadingProps={inlineLoadingProps}>
 						{t('tasklist.processesTileStartProcessButtonLabel')}
-					</Button>
+					</AsyncActionButton>
 				</div>
 			</Stack>
 		</div>
 	);
-}
+};
 
 export {ProcessTile};
