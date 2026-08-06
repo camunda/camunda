@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_mixed_hot_cold" targetNamespace="http://bpmn.io/schema/bpmn">
+  <!--
+    Mixed hot/cold runtime-state workload.
+
+    Most instances take the hot branch: one service task, completed by the load-test
+    worker within milliseconds, so the instance's keys are deleted right behind the
+    insert. The remainder take the cold branch and park forever on a 30-day timer and
+    a message subscription that is never correlated, so their keys are written once
+    and never touched again. The share of cold instances is set by the divisor in the
+    condition below (4 => 25%); `businessKey` is the per-instance counter the load-test
+    starter injects.
+
+    Used to build a large body of cold state alongside a moving hot tail, which is
+    what RocksDB's compaction file picker needs in order to behave differently
+    between compaction_pri settings (see issue #56519).
+
+    The cold branch writes a ballast variable before parking, so that settled state
+    grows fast enough to reach the multi-GB regime (where RocksDB's base level
+    reaches 1 and the bottom level is properly populated) within a run of ~13h.
+    Without it, growth is ~650 bytes per parked instance, which needs ~150h.
+
+    The ballast is a list of UUIDs. Entropy matters: the two deepest levels are
+    LZ4-compressed, so low-entropy filler would inflate the logical state without
+    growing the levels on disk. LZ4 manages only 1.05x on UUIDs, so the levels grow
+    by what is written. It sits on the cold branch only — inflating the hot path
+    instead would change the throughput the engine can sustain, and the moving hot
+    tail is half the point of this workload.
+
+    Size it by the element count below: each element costs 38 bytes, so 300 elements
+    is ~11.4KB of settled state per parked instance. At 110 PI/s (27.5 cold/s) over
+    3 partitions that is ~0.37GB/h per partition, crossing the 3.2GB base-level-1
+    boundary at ~8.5h. Growing this costs processing-thread time (300 elements is
+    ~0.8ms per parked instance) and disk: at 13h each broker holds ~15GB of runtime
+    state plus a snapshot of comparable size, against a 64Gi volume.
+  -->
+  <bpmn:process id="mixedHotCold" name="Mixed hot and cold state" isExecutable="true">
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>flow_start_split</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow_start_split" sourceRef="start" targetRef="split" />
+    <bpmn:exclusiveGateway id="split" name="cold?" default="flow_split_hot">
+      <bpmn:incoming>flow_start_split</bpmn:incoming>
+      <bpmn:outgoing>flow_split_cold</bpmn:outgoing>
+      <bpmn:outgoing>flow_split_hot</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:sequenceFlow id="flow_split_hot" sourceRef="split" targetRef="hotTask" />
+    <bpmn:serviceTask id="hotTask" name="hot task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_hot</bpmn:incoming>
+      <bpmn:outgoing>flow_hotTask_hotEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow_hotTask_hotEnd" sourceRef="hotTask" targetRef="hotEnd" />
+    <bpmn:endEvent id="hotEnd" name="hot end">
+      <bpmn:incoming>flow_hotTask_hotEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="flow_split_cold" sourceRef="split" targetRef="coldBallast">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=modulo(businessKey, 4) = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:scriptTask id="coldBallast" name="write ballast">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=for i in 1..300 return uuid()" resultVariable="ballast" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_cold</bpmn:incoming>
+      <bpmn:outgoing>flow_coldBallast_coldFork</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="flow_coldBallast_coldFork" sourceRef="coldBallast" targetRef="coldFork" />
+    <bpmn:parallelGateway id="coldFork" name="park">
+      <bpmn:incoming>flow_coldBallast_coldFork</bpmn:incoming>
+      <bpmn:outgoing>flow_coldFork_coldTimer</bpmn:outgoing>
+      <bpmn:outgoing>flow_coldFork_coldMessage</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="flow_coldFork_coldTimer" sourceRef="coldFork" targetRef="coldTimer" />
+    <bpmn:intermediateCatchEvent id="coldTimer" name="30 days">
+      <bpmn:incoming>flow_coldFork_coldTimer</bpmn:incoming>
+      <bpmn:outgoing>flow_coldTimer_coldJoin</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_cold">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="flow_coldFork_coldMessage" sourceRef="coldFork" targetRef="coldMessage" />
+    <bpmn:intermediateCatchEvent id="coldMessage" name="never correlated">
+      <bpmn:incoming>flow_coldFork_coldMessage</bpmn:incoming>
+      <bpmn:outgoing>flow_coldMessage_coldJoin</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_cold" messageRef="Message_cold" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="flow_coldTimer_coldJoin" sourceRef="coldTimer" targetRef="coldJoin" />
+    <bpmn:sequenceFlow id="flow_coldMessage_coldJoin" sourceRef="coldMessage" targetRef="coldJoin" />
+    <bpmn:parallelGateway id="coldJoin">
+      <bpmn:incoming>flow_coldTimer_coldJoin</bpmn:incoming>
+      <bpmn:incoming>flow_coldMessage_coldJoin</bpmn:incoming>
+      <bpmn:outgoing>flow_coldJoin_coldEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="flow_coldJoin_coldEnd" sourceRef="coldJoin" targetRef="coldEnd" />
+    <bpmn:endEvent id="coldEnd" name="cold end">
+      <bpmn:incoming>flow_coldJoin_coldEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_cold" name="cold-correlation">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=businessKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+</bpmn:definitions>
