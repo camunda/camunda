@@ -1294,5 +1294,6 @@ public class BrokerBasedPropertiesOverride {
     secretResolutionCfg.setRetryInitialDelay(engineSecrets.getRetryInitialDelay());
     secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
     secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
+    secretResolutionCfg.setBatchResolutionLimit(engineSecrets.getBatchResolutionLimit());
   }
 }

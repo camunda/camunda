@@ -83,6 +83,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY);
     assertThat(configuration.getSecretResolutionRetryBackoffFactor())
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR);
+    assertThat(configuration.getSecretResolutionBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT);
   }
 
   @Test

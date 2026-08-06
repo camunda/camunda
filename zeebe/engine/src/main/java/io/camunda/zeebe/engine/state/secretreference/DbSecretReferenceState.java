@@ -16,10 +16,11 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 
@@ -126,9 +127,31 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
   }
 
   @Override
-  public void visitPendingSecretReferences(final BiConsumer<String, String> visitor) {
-    pendingSecretReferencesColumnFamily.forEach(
-        (key, value) -> visitor.accept(key.first().toString(), key.second().toString()));
+  public SecretReferenceState.PendingRefCursor visitPendingSecretReferences(
+      final SecretReferenceState.PendingRefCursor startAt,
+      final BiPredicate<String, String> visitor) {
+    final DbCompositeKey<DbString, DbString> startAtKey;
+    if (startAt != null) {
+      storeId.wrapString(startAt.storeId());
+      secretReference.wrapString(startAt.secretReference());
+      startAtKey = storeIdAndSecretReference;
+    } else {
+      startAtKey = null;
+    }
+
+    final var lastVisited = new AtomicReference<SecretReferenceState.PendingRefCursor>();
+    final KeyValuePairVisitor<DbCompositeKey<DbString, DbString>, DbNil> kvVisitor =
+        (key, value) -> {
+          final var storeIdStr = key.first().toString();
+          final var secretRefStr = key.second().toString();
+          if (!visitor.test(storeIdStr, secretRefStr)) {
+            lastVisited.set(new SecretReferenceState.PendingRefCursor(storeIdStr, secretRefStr));
+            return false;
+          }
+          return true;
+        };
+    pendingSecretReferencesColumnFamily.whileTrue(startAtKey, kvVisitor);
+    return lastVisited.get();
   }
 
   @Override

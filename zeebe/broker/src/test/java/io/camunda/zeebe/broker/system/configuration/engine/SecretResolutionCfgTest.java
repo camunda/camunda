@@ -87,4 +87,16 @@ final class SecretResolutionCfgTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Secret resolution retryBackoffFactor must be at least 1 but was 0");
   }
+
+  @Test
+  void shouldRejectBatchResolutionLimitBelowOne() {
+    // given
+    final var cfg = new SecretResolutionCfg();
+    cfg.setBatchResolutionLimit(0);
+
+    // when - then
+    assertThatThrownBy(() -> cfg.init(new BrokerCfg(), ""))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Secret resolution batchResolutionLimit must be at least 1 but was 0");
+  }
 }

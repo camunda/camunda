@@ -30,14 +30,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Periodically reads all pending secret references from state, resolves them in batches (one batch
- * per store) and writes {@link SecretReferenceIntent#RESOLUTION_COMPLETE} or {@link
- * SecretReferenceIntent#RESOLUTION_FAIL} commands. The store holds what it reads, which is what
- * makes a resolved value available to the activation that requested the resolution.
+ * Periodically reads up to {@code batchLimit} pending secret references from state per cycle,
+ * resolves them in batches (one batch per store) and writes {@link
+ * SecretReferenceIntent#RESOLUTION_COMPLETE} or {@link SecretReferenceIntent#RESOLUTION_FAIL}
+ * commands. The store holds what it reads, which is what makes a resolved value available to the
+ * activation that requested the resolution. Any refs beyond the cap stay pending and are retried in
+ * the next cycle — which is scheduled immediately ({@link Duration#ZERO}) instead of waiting the
+ * normal {@code schedulingInterval} (unless a store is currently in retry cooldown, in which case
+ * the cooldown-aware delay is honored instead).
  *
  * <p>Resolution goes through {@link
  * io.camunda.secretstore.LocallyCachedSecretStore#resolveFromStore} rather than the cache-first
@@ -75,8 +81,12 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   private final Duration retryMaxDelay;
   private final int retryMaxAttempts;
   private final int retryBackoffFactor;
+  private final int batchLimit;
 
   private final Map<String, StoreRetryState> storeRetryStates = new HashMap<>();
+
+  /** Carries the resume point for {@link #collectPendingByStore} fairly across cycles. */
+  private SecretReferenceState.PendingRefCursor collectionCursor;
 
   /**
    * Whether the scheduler may reschedule itself. Controlled by the stream processor's lifecycle
@@ -105,6 +115,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     retryMaxDelay = config.getSecretResolutionRetryMaxDelay();
     retryMaxAttempts = config.getSecretResolutionRetryMaxAttempts();
     retryBackoffFactor = config.getSecretResolutionRetryBackoffFactor();
+    batchLimit = config.getSecretResolutionBatchLimit();
   }
 
   @Override
@@ -142,14 +153,30 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   TaskResult resolveSecrets(final TaskResultBuilder resultBuilder) {
     taskScheduled.set(false);
     final long now = clock.millis();
+    boolean taskResultBatchFull = false;
+    boolean capped = false;
+    final var progressMade = new MutableBoolean(false);
     try {
-      final Map<String, Set<String>> pendingByStore = collectPendingByStore();
-      // prune retry state for stores that no longer have pending refs
-      storeRetryStates.keySet().retainAll(pendingByStore.keySet());
+      final CollectedPendingRefs pending = collectPendingByStore(now);
+      capped = pending.capped();
+      final Map<String, Set<String>> pendingByStore = pending.refsByStore();
+      // Prune retry state for stores confirmed to have zero pending refs this cycle. Only
+      // trustworthy when the scan was both uncapped AND didn't skip any store for cooldown —
+      // either condition means a store with pending refs can be missing from pendingByStore for a
+      // reason OTHER than "it has no pending refs", and retainAll would wipe its backoff state as
+      // if it had none, resetting its attempt counter and letting it starve indefinitely without
+      // ever reaching retryMaxAttempts.
+      if (!pending.capped() && pending.cooldownSkippedStores().isEmpty()) {
+        storeRetryStates.keySet().retainAll(pendingByStore.keySet());
+      }
       if (!pendingByStore.isEmpty()) {
         for (final var entry : pendingByStore.entrySet()) {
           try {
-            resolveStore(entry.getKey(), entry.getValue(), resultBuilder, now);
+            if (!resolveStore(entry.getKey(), entry.getValue(), resultBuilder, now, progressMade)) {
+              // the task result batch is full; stop appending more commands this cycle
+              taskResultBatchFull = true;
+              break;
+            }
           } catch (final RuntimeException e) {
             LOG.error(
                 "Unexpected error while resolving secrets from store '{}'; "
@@ -161,7 +188,8 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
         }
       }
     } finally {
-      scheduleNext(computeNextDelay(now));
+      final boolean immediateReschedule = taskResultBatchFull || (capped && progressMade.get());
+      scheduleNext(immediateReschedule ? Duration.ZERO : computeNextDelay(now));
     }
     return resultBuilder.build();
   }
@@ -186,30 +214,51 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     return schedulingInterval;
   }
 
-  private Map<String, Set<String>> collectPendingByStore() {
+  private CollectedPendingRefs collectPendingByStore(final long now) {
     final Map<String, Set<String>> pendingByStore = new LinkedHashMap<>();
-    secretReferenceState.visitPendingSecretReferences(
-        (storeId, secretRef) ->
-            pendingByStore.computeIfAbsent(storeId, k -> new LinkedHashSet<>()).add(secretRef));
-    return pendingByStore;
+    final Set<String> cooldownSkippedStores = new LinkedHashSet<>();
+    final var counter = new MutableInteger(0);
+    final var lastVisited =
+        secretReferenceState.visitPendingSecretReferences(
+            collectionCursor,
+            (storeId, secretRef) -> {
+              final StoreRetryState retryState =
+                  storeRetryStates.getOrDefault(storeId, StoreRetryState.INITIAL);
+              if (now < retryState.nextAttemptAt()) {
+                // store is cooling down: don't let its refs consume cap budget that a healthy
+                // store could use instead — resolveStore would just skip them anyway
+                cooldownSkippedStores.add(storeId);
+                return true;
+              }
+              if (counter.get() >= batchLimit) {
+                return false;
+              }
+              counter.increment();
+              pendingByStore.computeIfAbsent(storeId, k -> new LinkedHashSet<>()).add(secretRef);
+              return true;
+            });
+    collectionCursor = lastVisited; // null once a full scan completes; resume point otherwise
+    return new CollectedPendingRefs(pendingByStore, lastVisited != null, cooldownSkippedStores);
   }
 
-  private void resolveStore(
+  /**
+   * Resolves the pending refs for a single store, appending {@code RESOLUTION_COMPLETE}/{@code
+   * RESOLUTION_FAIL} commands as results become available.
+   *
+   * <p>The caller guarantees {@code storeId} is not currently in retry cooldown — {@link
+   * #collectPendingByStore} filters those out before they ever reach here.
+   *
+   * @return {@code false} if the task result batch filled up and the cycle must stop immediately —
+   *     no further stores should be processed this cycle; {@code true} otherwise
+   */
+  private boolean resolveStore(
       final String storeId,
       final Set<String> refs,
       final TaskResultBuilder resultBuilder,
-      final long now) {
+      final long now,
+      final MutableBoolean progressMade) {
     final StoreRetryState retryState =
         storeRetryStates.getOrDefault(storeId, StoreRetryState.INITIAL);
-
-    if (now < retryState.nextAttemptAt()) {
-      LOG.trace(
-          "Secret store '{}' in cooldown until {}ms, skipping {} pending refs",
-          storeId,
-          retryState.nextAttemptAt(),
-          refs.size());
-      return;
-    }
 
     // a pending reference is keyed by the store ID its record carries, which for a
     // camunda.secrets.<name> reference is empty and addresses no store here (see #59432)
@@ -219,41 +268,54 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
           "Secret store '{}' is not configured — failing {} pending secret refs",
           storeId,
           refs.size());
-      refs.forEach(
-          ref ->
-              appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE));
+      for (final String ref : refs) {
+        if (!appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE)) {
+          // batch full; refs not yet appended remain pending and will be retried next cycle —
+          // leave retry state untouched instead of resetting it out from under them
+          return false;
+        }
+        progressMade.set(true);
+      }
       storeRetryStates.remove(storeId);
-      return;
+      return true;
     }
 
     try {
       final var results = store.resolveFromStore(refs);
-      results.forEach(
-          (ref, result) -> {
-            switch (result) {
-              // the value stays in the store and is never touched here, so the resolution record
-              // carries no secret
-              case final SecretResolutionResult.Resolved ignored ->
-                  appendResolutionComplete(resultBuilder, storeId, ref);
-              case SecretResolutionResult.Failed(
-                      final var code,
-                      final var message,
-                      final var cause) -> {
-                LOG.warn(
-                    "Secret '{}' in secret store '{}' failed permanently: {} — {}",
-                    ref,
-                    storeId,
-                    code,
-                    message,
-                    cause);
-                // All permanent per-secret failures (NOT_FOUND/ACCESS_DENIED/INVALID_REF) map
-                // to NOT_FOUND for now; ResolutionState has no finer per-secret states yet
-                // (#57855 will refine).
-                appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.NOT_FOUND);
-              }
-            }
-          });
+      for (final var entry : results.entrySet()) {
+        final String ref = entry.getKey();
+        final boolean appended;
+        switch (entry.getValue()) {
+          // the value stays in the store and is never touched here, so the resolution record
+          // carries no secret
+          case final SecretResolutionResult.Resolved ignored ->
+              appended = appendResolutionComplete(resultBuilder, storeId, ref);
+          case SecretResolutionResult.Failed(
+                  final var code,
+                  final var message,
+                  final var cause) -> {
+            LOG.warn(
+                "Secret '{}' in secret store '{}' failed permanently: {} — {}",
+                ref,
+                storeId,
+                code,
+                message,
+                cause);
+            // All permanent per-secret failures (NOT_FOUND/ACCESS_DENIED/INVALID_REF) map to
+            // NOT_FOUND for now; ResolutionState has no finer per-secret states yet (#57855
+            // will refine).
+            appended = appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.NOT_FOUND);
+          }
+        }
+        if (!appended) {
+          // batch full; refs not yet appended remain pending and will be retried next cycle —
+          // leave retry state untouched instead of resetting it out from under them
+          return false;
+        }
+        progressMade.set(true);
+      }
       storeRetryStates.remove(storeId);
+      return true;
     } catch (final SecretStoreUnavailableException e) {
       final int nextAttempts = retryState.attempts() + 1;
       if (nextAttempts >= retryMaxAttempts) {
@@ -264,10 +326,16 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
             retryMaxAttempts,
             refs.size(),
             e.getMessage());
-        refs.forEach(
-            ref ->
-                appendResolutionFail(
-                    resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE));
+        for (final String ref : refs) {
+          if (!appendResolutionFail(
+              resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE)) {
+            // batch full; refs not yet appended remain pending. Leave retry state untouched so
+            // the next cycle still sees attempts >= retryMaxAttempts and continues failing them,
+            // instead of resetting to 0 and re-entering the backoff branch below.
+            return false;
+          }
+          progressMade.set(true);
+        }
         storeRetryStates.remove(storeId);
       } else {
         final Duration backoff = calculateBackoff(nextAttempts);
@@ -280,27 +348,28 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
             e.getMessage());
         storeRetryStates.put(storeId, new StoreRetryState(nextAttempts, now + backoff.toMillis()));
       }
+      return true;
     }
   }
 
-  private void appendResolutionComplete(
+  private boolean appendResolutionComplete(
       final TaskResultBuilder resultBuilder, final String storeId, final String secretRef) {
     final var record = new SecretReferenceRecord();
     record
         .setStoreId(storeId)
         .setSecretReference(secretRef)
         .setResolutionState(ResolutionState.SUCCESS);
-    resultBuilder.appendCommandRecord(SecretReferenceIntent.RESOLUTION_COMPLETE, record);
+    return resultBuilder.appendCommandRecord(SecretReferenceIntent.RESOLUTION_COMPLETE, record);
   }
 
-  private void appendResolutionFail(
+  private boolean appendResolutionFail(
       final TaskResultBuilder resultBuilder,
       final String storeId,
       final String secretRef,
       final ResolutionState resolutionState) {
     final var record = new SecretReferenceRecord();
     record.setStoreId(storeId).setSecretReference(secretRef).setResolutionState(resolutionState);
-    resultBuilder.appendCommandRecord(SecretReferenceIntent.RESOLUTION_FAIL, record);
+    return resultBuilder.appendCommandRecord(SecretReferenceIntent.RESOLUTION_FAIL, record);
   }
 
   Duration calculateBackoff(final int attempts) {
@@ -331,4 +400,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   record StoreRetryState(int attempts, long nextAttemptAt) {
     static final StoreRetryState INITIAL = new StoreRetryState(0, 0L);
   }
+
+  /**
+   * @param capped whether more pending refs exist in state than {@code batchLimit} allowed
+   *     collecting this cycle — the scheduler should reschedule immediately rather than wait the
+   *     normal {@code schedulingInterval}
+   * @param cooldownSkippedStores stores whose pending refs were excluded from {@code refsByStore}
+   *     this cycle because the store is currently in retry cooldown
+   */
+  private record CollectedPendingRefs(
+      Map<String, Set<String>> refsByStore, boolean capped, Set<String> cooldownSkippedStores) {}
 }
