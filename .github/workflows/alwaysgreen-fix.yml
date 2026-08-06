@@ -256,6 +256,8 @@ jobs:
         run: echo "name=ag-${SURFACE}-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Stage workspace manifest
+        env:
+          BASE_REF: ${{ inputs.base_ref }}
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.workspace-templates"
@@ -263,6 +265,26 @@ jobs:
              "$HOME/.workspace-templates/alwaysgreen.yaml"
           cp .github/workspace-templates/alwaysgreen.guidance.md \
              "$HOME/.workspace-templates/alwaysgreen.guidance.md"
+
+          # The monorepo is the one repo that is branch-scoped: a stable/8.x failure has
+          # to be read and fixed on that branch. The other three have no release branches
+          # and stay on main. Rewrite only the camunda entry, so the workspace is created
+          # on the failing branch rather than created on main and moved afterwards.
+          python3 - "$HOME/.workspace-templates/alwaysgreen.yaml" "${BASE_REF}" <<'PY'
+          import sys
+          path, base_ref = sys.argv[1], sys.argv[2]
+          lines = open(path).read().splitlines(keepends=True)
+          in_camunda = False
+          for i, line in enumerate(lines):
+              if line.lstrip().startswith('- url:'):
+                  in_camunda = line.rstrip().endswith('camunda/camunda.git')
+              elif in_camunda and line.lstrip().startswith('default_branch:'):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  lines[i] = f'{indent}default_branch: {base_ref}\n'
+                  break
+          open(path, 'w').writelines(lines)
+          PY
+          grep -A2 'camunda/camunda.git' "$HOME/.workspace-templates/alwaysgreen.yaml"
 
       - name: Create workspace
         run: workspace create "${{ steps.ws.outputs.name }}" --manifest alwaysgreen
