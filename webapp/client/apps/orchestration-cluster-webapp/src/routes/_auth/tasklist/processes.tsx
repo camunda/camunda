@@ -7,7 +7,7 @@
  */
 
 import {TasklistProcessesPage} from '#/tasklist/pages/TasklistProcessesPage';
-import {createFileRoute, type ErrorComponentProps} from '@tanstack/react-router';
+import {createFileRoute, Outlet, type ErrorComponentProps, useNavigate} from '@tanstack/react-router';
 import {processesSearchSchema} from '#/tasklist/modules/processes/searchSchema';
 import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
 import {queries} from '#/shared/http/queries';
@@ -52,6 +52,7 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 	},
 	component: function TasklistProcessesRoute() {
 		const search = Route.useSearch();
+		const navigate = useNavigate();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 		const processDefinitionsRequestBody = getProcessDefinitionsRequestBody(search, currentUser.tenants);
 		const {data, fetchNextPage, hasNextPage, isFetchingNextPage} = useSuspenseInfiniteQuery({
@@ -63,17 +64,31 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 		const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
 
 		return (
-			<TasklistProcessesPage
-				initialFilterValues={search}
-				processes={processes}
-				hasNextPage={hasNextPage}
-				isFetchingNextPage={isFetchingNextPage}
-				onLoadMore={() => fetchNextPage()}
-				selectedProcessDefinitionKey={selectedProcessDefinitionKey}
-				startProcessStatus={status}
-				isStartProcessBusy={isBusy}
-				onStartProcess={(process) => startProcess(process, selectedTenantId)}
-			/>
+			<>
+				<TasklistProcessesPage
+					initialFilterValues={search}
+					processes={processes}
+					hasNextPage={hasNextPage}
+					isFetchingNextPage={isFetchingNextPage}
+					onLoadMore={() => fetchNextPage()}
+					selectedProcessDefinitionKey={selectedProcessDefinitionKey}
+					startProcessStatus={status}
+					isStartProcessBusy={isBusy}
+					onStartProcess={(process) => {
+						if (process.hasStartForm) {
+							navigate({
+								to: '/tasklist/processes/$processDefinitionKey/start',
+								params: {processDefinitionKey: process.processDefinitionKey},
+								search,
+							});
+							return;
+						}
+
+						startProcess(process, selectedTenantId);
+					}}
+				/>
+				<Outlet />
+			</>
 		);
 	},
 });

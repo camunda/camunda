@@ -37,11 +37,12 @@ type Props = {
 	handleSubmit: (variables: PartialVariable[]) => Promise<void>;
 	handleFileUpload?: (files: Map<string, File[]>) => Promise<Map<string, DocumentReference[]>>;
 	schema: string;
+	layerLevel?: React.ComponentProps<typeof Layer>['level'];
 	data?: Record<string, unknown>;
 	readOnly?: boolean;
 	onMount?: (formManager: FormManager) => void;
 	onRender?: () => void;
-	onImportError?: () => void;
+	onImportError?: (error: unknown) => void;
 	onSubmitStart?: () => void;
 	onSubmitError?: (error: unknown) => void;
 	onSubmitSuccess?: () => void;
@@ -125,6 +126,7 @@ function injectFileMetadataIntoData(options: {
 const CamundaFormRenderer: React.FC<Props> = ({
 	handleSubmit,
 	schema,
+	layerLevel,
 	data = {},
 	readOnly,
 	onMount,
@@ -246,7 +248,7 @@ const CamundaFormRenderer: React.FC<Props> = ({
 	}, [readOnly]);
 
 	return (
-		<Layer className={styles.container}>
+		<Layer className={styles.container} level={layerLevel}>
 			<div ref={formContainerRef} className={styles.formRoot} />
 
 			{hasInvalidFields || hasLargeFilePayload ? (

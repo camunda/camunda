@@ -10,13 +10,18 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {
+	createGetProcessDefinitionResponse,
 	createProcessDefinition,
+	createProcessStartFormResponse,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {
 	mockCurrentUserEndpoint,
+	mockCreateProcessInstanceEndpoint,
+	mockGetProcessDefinitionEndpoint,
+	mockGetProcessStartFormEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
@@ -73,6 +78,75 @@ test('should match the populated processes page snapshot', async ({network, task
 	await expect(tasklistProcessesPage.loadMoreButton).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
+});
+
+test('should match the start-process form modal snapshot', async ({network, tasklistProcessesPage, page}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(
+				createGetProcessDefinitionResponse({name: 'Invoice review', processDefinitionKey}),
+			),
+		}),
+		mockGetProcessStartFormEndpoint({
+			successResponse: HttpResponse.json(createProcessStartFormResponse()),
+		}),
+	);
+
+	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the start-process form error snapshots', async ({network, tasklistProcessesPage, page}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+		}),
+		mockGetProcessStartFormEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+	);
+
+	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+	await expect(tasklistProcessesPage.startProcessFormError).toBeVisible();
+	await expect(page).toHaveScreenshot('start-process-form-load-error.png');
+
+	network.use(
+		mockGetProcessStartFormEndpoint({
+			successResponse: HttpResponse.json(createProcessStartFormResponse({schema: '{ invalid schema'})),
+		}),
+	);
+	await page.reload();
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+	await expect(page).toHaveScreenshot('start-process-form-render-error.png');
+});
+
+test('should match the start-process form validation and submission-error snapshots', async ({
+	network,
+	tasklistProcessesPage,
+	page,
+}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+		}),
+		mockGetProcessStartFormEndpoint({
+			successResponse: HttpResponse.json(createProcessStartFormResponse()),
+		}),
+		mockCreateProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+	);
+
+	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+	await tasklistProcessesPage.startProcessFormButton.click();
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('alert')).toBeVisible();
+	await expect(page).toHaveScreenshot('start-process-form-validation.png');
+
+	await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
+	await tasklistProcessesPage.startProcessFormButton.click();
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText('Form could not be submitted.');
+	await expect(page).toHaveScreenshot('start-process-form-submission-error.png');
 });
 
 test('should match the unpublished-processes empty-state snapshot', async ({tasklistProcessesPage, page}) => {

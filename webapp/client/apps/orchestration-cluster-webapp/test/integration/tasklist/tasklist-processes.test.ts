@@ -10,7 +10,10 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockCreateDocumentsEndpoint,
 	mockCreateProcessInstanceEndpoint,
+	mockGetProcessDefinitionEndpoint,
+	mockGetProcessStartFormEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
@@ -21,7 +24,10 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
 	createProcessDefinition,
+	createGetProcessDefinitionResponse,
+	createProcessStartFormResponse,
 	createQueryProcessDefinitionsResponse,
+	START_PROCESS_FORM_WITH_DOCUMENT_SCHEMA,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createProcessInstanceResponse} from '#/shared-test-modules/api-mocks/process-instances';
@@ -57,6 +63,299 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Tasklist processes page', () => {
+	test('should open and close a start form while preserving process filters in the URL', async ({
+		network,
+		tasklistProcessesPage,
+		page,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema({
+					hasStartForm: z.literal(true),
+					processDefinitionId: z.strictObject({$like: z.literal('*invoice*')}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Invoice review',
+								processDefinitionKey,
+								hasStartForm: true,
+							}),
+						],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionResponse({name: 'Invoice review', processDefinitionKey}),
+				),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+		);
+
+		await tasklistProcessesPage.goto('?search=invoice&hasStartForm=yes');
+		await tasklistProcessesPage.startProcessButton.click();
+
+		await expect(tasklistProcessesPage.startProcessDialog).toBeVisible();
+		await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start?search=invoice&hasStartForm=yes`);
+
+		await tasklistProcessesPage.cancelStartProcessButton.click();
+
+		await expect(page).toHaveURL('/tasklist/processes?search=invoice&hasStartForm=yes');
+	});
+
+	test('should load a start form directly from its URL', async ({network, tasklistProcessesPage}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionResponse({name: null, processDefinitionId: 'invoice-review', processDefinitionKey}),
+				),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+		);
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+
+		await expect(tasklistProcessesPage.startProcessDialog).toHaveAccessibleName('Start process invoice-review');
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
+	});
+
+	test('should start a process with a form and selected tenant', async ({network, tasklistProcessesPage, page}) => {
+		const processDefinitionKey = '2251799813685279';
+		const tenants = [
+			{tenantId: '<default>', name: 'Default', description: null},
+			{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+		];
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants}))}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['tasklist']},
+						deployment: {isMultiTenancyEnabled: true, maxRequestSize: 4_194_304},
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema({tenantId: z.literal('tenant-a')}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Invoice review',
+								processDefinitionKey,
+								hasStartForm: true,
+								tenantId: 'tenant-a',
+							}),
+						],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionResponse({name: 'Invoice review', processDefinitionKey, tenantId: 'tenant-a'}),
+				),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(
+					createProcessStartFormResponse({schema: START_PROCESS_FORM_WITH_DOCUMENT_SCHEMA, tenantId: 'tenant-a'}),
+				),
+			}),
+			mockCreateDocumentsEndpoint({
+				successResponse: HttpResponse.json({createdDocuments: [], failedDocuments: []}),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstanceResponse({processDefinitionKey, tenantId: 'tenant-a'})),
+			}),
+		);
+
+		await tasklistProcessesPage.goto('?tenantId=tenant-a');
+		await tasklistProcessesPage.startProcessButton.click();
+		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
+		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Invoice amount'}).fill('125.5');
+		await tasklistProcessesPage.startProcessDialog.getByLabel('Supporting document').setInputFiles({
+			name: 'supporting.txt',
+			mimeType: 'text/plain',
+			buffer: Buffer.from('supporting document'),
+		});
+		await tasklistProcessesPage.startProcessFormButton.click();
+
+		await expect(
+			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
+		).toBeVisible();
+		await expect(page).toHaveURL('/tasklist/processes?tenantId=tenant-a');
+	});
+
+	test('should prevent process creation when form validation fails', async ({network, tasklistProcessesPage}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+		);
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+		await tasklistProcessesPage.startProcessFormButton.click();
+
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('alert')).toContainText(
+			'Please review 1 field: Customer name',
+		);
+	});
+
+	test('should keep the form open and allow retry after submission failure', async ({
+		network,
+		tasklistProcessesPage,
+		page,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
+		await tasklistProcessesPage.startProcessFormButton.click();
+
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+			'Form could not be submitted. Please try again later.',
+		);
+		await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start`);
+
+		network.use(
+			mockCreateProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstanceResponse()),
+			}),
+		);
+		await tasklistProcessesPage.startProcessFormButton.click();
+
+		await expect(
+			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
+		).toBeVisible();
+		await expect(page).toHaveURL('/tasklist/processes');
+	});
+
+	test('should show the missing-tenant error when submission fails without a selected tenant', async ({
+		network,
+		tasklistProcessesPage,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: []}))}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['tasklist']},
+						deployment: {isMultiTenancyEnabled: true, maxRequestSize: 4_194_304},
+					}),
+				),
+			}),
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+			mockCreateProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+		);
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
+		await tasklistProcessesPage.startProcessFormButton.click();
+
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+			'You must first select a tenant to start a process.',
+		);
+	});
+
+	test('should show non-retryable errors for missing, form-less, forbidden, and invalid-schema processes', async ({
+		network,
+		tasklistProcessesPage,
+		page,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(mockGetProcessDefinitionEndpoint({successResponse: new HttpResponse(null, {status: 404})}));
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+			`Process ${processDefinitionKey} does not exist or has no start form`,
+		);
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'})).toHaveCount(0);
+
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionResponse({processDefinitionKey, hasStartForm: false}),
+				),
+			}),
+		);
+		await page.reload();
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+			`Process ${processDefinitionKey} does not exist or has no start form`,
+		);
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'})).toHaveCount(0);
+
+		network.use(mockGetProcessDefinitionEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+		await page.reload();
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+			"You don't have the necessary permissions.",
+		);
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'})).toHaveCount(0);
+
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+			}),
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse({schema: '{ invalid schema'})),
+			}),
+		);
+		await page.reload();
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+		await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start`);
+	});
+
+	test('should retry after a transient start-form loading failure', async ({network, tasklistProcessesPage}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+			}),
+			mockGetProcessStartFormEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+		);
+
+		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+		await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to load the form.');
+
+		network.use(
+			mockGetProcessStartFormEndpoint({
+				successResponse: HttpResponse.json(createProcessStartFormResponse()),
+			}),
+		);
+		await tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'}).click();
+
+		await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
+	});
+
 	test('should start a process without a form using the selected tenant', async ({network, tasklistProcessesPage}) => {
 		const processDefinitionKey = '2251799813685279';
 		const tenants = [
