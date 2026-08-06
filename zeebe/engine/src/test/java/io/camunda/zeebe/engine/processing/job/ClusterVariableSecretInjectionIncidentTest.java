@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -167,6 +168,11 @@ public final class ClusterVariableSecretInjectionIncidentTest {
     assertThat(incident.getValue().getErrorMessage())
         .contains("Resolving this incident will not fix it");
 
+    // and - the job is excluded from activation: a later poll does not hand it out either
+    final Record<JobBatchRecordValue> secondAttempt =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
+    assertThat(secondAttempt.getValue().getJobs()).isEmpty();
+
     // when - recovering via the documented path: process instance modification terminates the
     // stuck element and reactivates it, creating a fresh job against now-stable state
     engine
@@ -226,6 +232,87 @@ public final class ClusterVariableSecretInjectionIncidentTest {
     // rather than just non-null - mirrors JobSecretActivationInjectionTest's pattern for a
     // repeated activation reusing the same captured field
     Awaitility.await("until the fresh job's activation response is written")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(secretActivation.getActivationResponse().getJobs().get(0).getVariables())
+                    .containsEntry("authToken", "resolved-B"));
+  }
+
+  @Test
+  public void shouldReactivateJobAfterResolvingIncidentOnceVariableIsCorrected() {
+    // given - same race as above: the job's variables literally hold "camunda.secrets.tokenA"
+    // but its stored secret reference resolved against the updated cluster variable, tokenB
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(BPMN_PROCESS_ID).create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(START_EL_TYPE)
+            .getFirst()
+            .getKey();
+
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue(Map.of("token", "camunda.secrets.tokenB"))
+        .update();
+
+    engine.job().withKey(listenerJobKey).complete();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+
+    secretActivation.putSecret("tokenB", "resolved-B");
+
+    // when - activation raises the mismatch incident
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
+
+    // and - the mismatched variable is corrected directly (whatever out-of-band fix an operator
+    // applies) so it once again contains the placeholder the job's secret reference expects, then
+    // the incident is resolved
+    engine
+        .variables()
+        .ofScope(incident.getValue().getVariableScopeKey())
+        .withDocument(Map.of("authToken", "camunda.secrets.tokenB"))
+        .withLocalSemantic()
+        .update();
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the job is activatable again and injects correctly this time
+    final Record<JobBatchRecordValue> retried =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(3).withRequestId(3L).activate();
+    assertThat(retried.getValue().getJobs()).hasSize(1);
+    Awaitility.await("until the retried job's activation response is written")
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () ->
