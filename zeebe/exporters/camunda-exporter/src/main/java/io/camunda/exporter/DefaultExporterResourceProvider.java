@@ -56,6 +56,7 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscri
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessDeletedHandler;
+import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
 import io.camunda.exporter.handlers.ResourceDeletedHandler;
@@ -306,6 +307,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 processCache,
                 configuration.getExtensionProperties()),
             new ProcessDeletedHandler(
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
+            new ProcessDrainingHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
