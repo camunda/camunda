@@ -770,6 +770,7 @@ export function validateResponseShape<
     configPath?: string;
     throw?: boolean;
     record?: boolean | {label?: string};
+    truncateValidationErrors?: boolean;
   },
 ) {
   // Cast to base signature (method/status widened to string) for internal call.
@@ -797,6 +798,7 @@ export function validateResponse<
     configPath?: string;
     throw?: boolean;
     record?: boolean | {label?: string};
+    truncateValidationErrors?: boolean;
   },
 ) {
   return _baseValidateResponse(spec, response, options);
