@@ -57,12 +57,11 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
       client.createBucket(cfg -> cfg.bucket(BUCKET_B)).join();
     }
 
-    // Each store gets its own Minio user, scoped to the one bucket that store writes into, and the
-    // root key pair is never handed to the broker. That makes the credentials load-bearing: a
-    // regression that drops the per-store key pair falls back to the AWS SDK default chain, which
-    // has nothing to offer here, and a store built with a sibling's key pair is refused by Minio
-    // with AccessDenied. It cannot separate store-a from store-c, which share bucket-a — those two
-    // stay isolated by prefix alone, as the class javadoc of AbstractDocumentIsolationIT describes.
+    // The root key pair is never handed to the broker, which makes the per-store credentials
+    // load-bearing: dropping them falls back to the AWS SDK default chain, which has nothing to
+    // offer here, and a store built with a sibling's pair is refused with AccessDenied. It cannot
+    // separate store-a from store-c, which share bucket-a — those stay isolated by prefix alone,
+    // as the class javadoc of AbstractDocumentIsolationIT describes.
     MINIO.createScopedUser(USER_DEFAULT, USER_DEFAULT + "-secret", BUCKET_B);
     MINIO.createScopedUser(USER_A, USER_A + "-secret", BUCKET_A);
     MINIO.createScopedUser(USER_B, USER_B + "-secret", BUCKET_B);

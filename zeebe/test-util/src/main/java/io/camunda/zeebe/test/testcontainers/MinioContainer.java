@@ -153,14 +153,13 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
   }
 
   /**
-   * Creates a Minio user with a policy granting it full access to exactly the named buckets, and to
-   * nothing else. The container must already be started.
+   * Creates a Minio user with a policy granting it full access to the named buckets and nothing
+   * else. The container must already be started.
    *
-   * <p>Give each client under test its own user whenever the point of the test is that the client
-   * authenticates as its own identity rather than as the process. Handing every client the root key
-   * pair cannot show that: a client that silently falls back to the ambient credentials, or that
-   * picks up a sibling's, still reaches the bucket and the test stays green. With a scoped user it
-   * fails with {@code AccessDenied} instead.
+   * <p>Give each client under test its own user when the point of the test is that the client
+   * authenticates as itself. Sharing the root key pair cannot show that: a client falling back to
+   * the ambient credentials, or picking up a sibling's, still reaches the bucket and the test stays
+   * green. Against a scoped user it fails with {@code AccessDenied}.
    *
    * @param accessKey the user's access key, also used to name its policy
    * @param secretKey the user's secret key; Minio requires at least 8 characters

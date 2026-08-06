@@ -91,9 +91,8 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   /**
-   * @deprecated superseded by {@link #AwsDocumentStore(String, Long, String, ExecutorService,
-   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
-   *     caller compiled against an earlier release still links.
+   * @deprecated use the {@link AwsClientOptions} overload; kept only so callers compiled against an
+   *     earlier release still link.
    */
   @Deprecated(forRemoval = true)
   public AwsDocumentStore(
@@ -116,9 +115,8 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   /**
-   * @deprecated superseded by {@link #AwsDocumentStore(String, Long, String, ExecutorService,
-   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
-   *     caller compiled against an earlier release still links.
+   * @deprecated use the {@link AwsClientOptions} overload; kept only so callers compiled against an
+   *     earlier release still link.
    */
   @Deprecated(forRemoval = true)
   public AwsDocumentStore(

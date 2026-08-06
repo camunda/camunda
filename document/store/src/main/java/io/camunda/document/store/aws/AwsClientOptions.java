@@ -41,14 +41,12 @@ public record AwsClientOptions(
   }
 
   /**
-   * Whether every setting that addresses the backing store is left to the AWS SDK — no endpoint,
-   * region, path-style or chunked-encoding override, and no key pair of this store's own.
+   * Whether the caller must return the plain {@code S3Client.create()} / {@code
+   * S3Presigner.create()} rather than configure a builder, leaving the SDK to resolve everything
+   * from the process environment as it did before per-store clients existed.
    *
-   * <p>When true the caller must return the plain {@code S3Client.create()} / {@code
-   * S3Presigner.create()} instead of configuring a builder, so the SDK resolves all of it from the
-   * process environment as it did before per-store clients existed. Kept here, as one predicate
-   * both builders share, so the two cannot drift apart: a setting added to the record but forgotten
-   * in one of the two lists would silently strand that builder on the wrong path.
+   * <p>Shared by both builders so they cannot drift: a component added to the record but forgotten
+   * in one of two hand-maintained conditions would silently strand that builder on the wrong path.
    */
   public boolean usesSdkDefaults() {
     return endpointOverride == null
@@ -70,9 +68,9 @@ public record AwsClientOptions(
   }
 
   /**
-   * Renders the options with both halves of the key pair masked, so they are safe to log. The
-   * access key is masked too: it names the IAM principal the store acts as, which is exactly what
-   * an attacker reading a log needs in order to know which secret is worth hunting for.
+   * Renders the options safely to log. The access key is masked alongside the secret because it
+   * names the IAM principal the store acts as — what a reader of the log would need to know which
+   * secret is worth hunting for.
    */
   @Override
   public String toString() {

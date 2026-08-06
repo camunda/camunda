@@ -467,18 +467,15 @@ public class AwsDocumentStoreProviderTest {
 
   @Test
   public void shouldLeaveEverySettingToTheSdkWhenNothingIsOverridden() {
-    // a store with no overrides must keep taking the S3Client.create() / S3Presigner.create() path,
-    // where the SDK resolves region and credentials from AWS_REGION, an instance profile, and the
-    // rest of the default chain — the path every deployment without per-store credentials still
-    // uses, and the one no integration test can exercise
+    // the path every deployment without per-store credentials still takes, and the one no
+    // integration test can exercise
     assertThat(AwsClientOptions.sdkDefaults().usesSdkDefaults()).isTrue();
   }
 
   @Test
   public void shouldNotFallBackToTheSdkWhenAnySingleSettingIsOverridden() {
-    // given / when / then — each override alone is enough to take the builder path; a store that
-    // configures only its credentials, or only its region, must not silently address the process
-    // environment instead
+    // a store configuring only its credentials, or only its region, must not silently keep
+    // addressing the process environment
     assertThat(
             new AwsClientOptions(
                     URI.create("http://minio.local:9000"), null, null, null, null, null, null)
@@ -500,8 +497,7 @@ public class AwsDocumentStoreProviderTest {
 
   @Test
   public void shouldThrowIfRegionIsNotAValidRegion() {
-    // given — Region.of accepts any string, so an unchecked region would only surface at the first
-    // document operation as an unresolvable host
+    // given
     final DocumentStoreConfigurationRecord configuration =
         new DocumentStoreConfigurationRecord(
             "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
@@ -526,8 +522,7 @@ public class AwsDocumentStoreProviderTest {
   @Test
   public void shouldAcceptARegionTheSdkDoesNotKnow() {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
-      // given — a region newer than the bundled SDK, or an S3-compatible backend's own region name,
-      // must still be accepted; only a structurally impossible one is rejected
+      // given — a region newer than the bundled SDK, or an S3-compatible backend's own name
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
       final ArgumentCaptor<AwsClientOptions> optionsCaptor =
           ArgumentCaptor.forClass(AwsClientOptions.class);
