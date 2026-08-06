@@ -1,18 +1,14 @@
 # CI for the release-notes TypeScript action package.
 # Guards the committed ncc bundle against drift and runs the parser/policy tests.
+#
+# Part of Unified CI: called by ci.yml, which owns the trigger and the path
+# filtering (the `release-notes-action` filter on its detect-changes job). Do not
+# add `pull_request`/`push` triggers back here — see
+# https://camunda.github.io/camunda/ci/#unified-ci
 name: Release-notes action CI
 
 on:
-  pull_request:
-    paths:
-      - .github/actions/release-notes/**
-      - .github/workflows/release-notes-action-ci.yml
-      - .github/pull_request_template.md
-      - commitlint.config.cjs
-  push:
-    branches: [main]
-    paths:
-      - .github/actions/release-notes/**
+  workflow_call: {}
 
 permissions:
   contents: read
@@ -21,9 +17,13 @@ defaults:
   run:
     working-directory: .github/actions/release-notes
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
