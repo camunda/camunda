@@ -179,9 +179,14 @@ class AgentDefinitionValidatorTest {
   void missingAgentTypeIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.missingAgentTypeIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test").addExtensionElement(ZeebeAgentDefinition.class, a -> {}))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
