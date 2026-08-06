@@ -157,6 +157,48 @@ public class SimpleDocumentStoreRegistryTest {
         .hasMessageNotContaining("super-secret-key");
   }
 
+  @Test
+  public void shouldNotExposeCredentialsUnderAnUnanticipatedPropertyName() {
+    // given — the legacy DOCUMENT_STORE_<ID>_<PROPERTY> bridge forwards whatever property name it
+    // finds, so a store can carry a credential under a key no allowlist was written for
+    final DocumentStoreConfigurationRecord configurationRecord =
+        new DocumentStoreConfigurationRecord(
+            "azure-store",
+            UnregisteredDocumentStoreProvider.class,
+            Map.of("CONTAINER", "documents", "SAS_TOKEN", "sv=2024-01-01&sig=super-secret-sig"));
+    final DocumentStoreConfiguration configuration =
+        new DocumentStoreConfiguration("azure-store", null, List.of(configurationRecord));
+
+    // when
+    // then
+    assertThatThrownBy(() -> new SimpleDocumentStoreRegistry(() -> configuration))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("documents")
+        .hasMessageContaining("<redacted>")
+        .hasMessageNotContaining("super-secret-sig");
+  }
+
+  @Test
+  public void shouldNotExposeTheAwsAccessKey() {
+    // given — the access key names the IAM principal the store acts as, so it is masked alongside
+    // the secret it pairs with
+    final DocumentStoreConfigurationRecord configurationRecord =
+        new DocumentStoreConfigurationRecord(
+            "aws-store",
+            UnregisteredDocumentStoreProvider.class,
+            Map.of("BUCKET", "documents", "ACCESS_KEY", "AKIAEXAMPLEPRINCIPAL"));
+    final DocumentStoreConfiguration configuration =
+        new DocumentStoreConfiguration("aws-store", null, List.of(configurationRecord));
+
+    // when
+    // then
+    assertThatThrownBy(() -> new SimpleDocumentStoreRegistry(() -> configuration))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("documents")
+        .hasMessageContaining("<redacted>")
+        .hasMessageNotContaining("AKIAEXAMPLEPRINCIPAL");
+  }
+
   /** Deliberately absent from {@code META-INF/services}, so the registry fails to resolve it. */
   private static final class UnregisteredDocumentStoreProvider implements DocumentStoreProvider {
 

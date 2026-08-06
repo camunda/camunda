@@ -451,7 +451,7 @@ public class AwsDocumentStoreProviderTest {
   }
 
   @Test
-  public void shouldNotExposeTheSecretKeyWhenPrinted() {
+  public void shouldNotExposeEitherHalfOfTheKeyPairWhenPrinted() {
     // given
     final AwsClientOptions options =
         new AwsClientOptions(
@@ -461,8 +461,8 @@ public class AwsDocumentStoreProviderTest {
     final String printed = options.toString();
 
     // then
-    assertThat(printed).contains("tenant-a-key").contains("<redacted>");
-    assertThat(printed).doesNotContain("tenant-a-secret");
+    assertThat(printed).contains("eu-central-1").contains("<redacted>");
+    assertThat(printed).doesNotContain("tenant-a-secret").doesNotContain("tenant-a-key");
   }
 
   @Test

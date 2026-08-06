@@ -110,7 +110,7 @@ public final class CamundaDocumentStoreConfigurationLoader
         "support-legacy-md5",
         "SUPPORT_LEGACY_MD5",
         store.getSupportLegacyMd5());
-    putResolved(properties, AWS, storeId, "access-key", "ACCESS_KEY", store.getAccessKey());
+    putResolvedSensitive(properties, AWS, storeId, "access-key", "ACCESS_KEY", store.getAccessKey());
     putResolvedSensitive(
         properties, AWS, storeId, "secret-key", "SECRET_KEY", store.getSecretKey());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
