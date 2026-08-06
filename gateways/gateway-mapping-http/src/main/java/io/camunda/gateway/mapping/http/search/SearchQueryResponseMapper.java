@@ -2218,6 +2218,9 @@ public final class SearchQueryResponseMapper {
               .inputTokens(m.inputTokens())
               .outputTokens(m.outputTokens())
               .durationMs(m.durationMs())
+              .reasoningTokenCount(m.reasoningTokenCount())
+              .cacheCreationTokenCount(m.cacheCreationTokenCount())
+              .cacheReadTokenCount(m.cacheReadTokenCount())
               .build();
     }
 

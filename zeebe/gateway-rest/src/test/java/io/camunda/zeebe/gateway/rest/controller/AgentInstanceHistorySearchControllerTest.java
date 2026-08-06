@@ -92,7 +92,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             "role": "USER",
             "content": [{ "contentType": "TEXT", "text": "Hello agent" }],
             "toolCalls": [],
-            "metrics": { "inputTokens": 10, "outputTokens": 20, "durationMs": 100 },
+            "metrics": { "inputTokens": 10, "outputTokens": 20, "reasoningTokenCount": 30, "cacheCreationTokenCount": 40, "cacheReadTokenCount": 50, "durationMs": 100 },
             "tools": [],
             "model": null,
             "provider": null,

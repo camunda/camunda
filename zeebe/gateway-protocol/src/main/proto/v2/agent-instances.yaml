@@ -1184,6 +1184,21 @@ components:
           nullable: true
           type: integer
           format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
         durationMs:
           description: Wall-clock duration of the LLM call in milliseconds. Null when not provided.
           nullable: true
