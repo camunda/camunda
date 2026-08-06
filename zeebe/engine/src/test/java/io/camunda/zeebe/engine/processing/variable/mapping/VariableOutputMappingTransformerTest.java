@@ -15,6 +15,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
@@ -25,6 +26,7 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -199,30 +201,11 @@ public final class VariableOutputMappingTransformerTest {
                 .describedAs("Expected valid expression: %s", mapping.source().getFailureMessage())
                 .isTrue());
 
-    // when: evaluate the mappings one by one in modeling order, same as
-    // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
-    // shadow the scope variables, and nested targets merge with the scope value at every level
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
-    for (final var mapping : outputMappings) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      assertThat(result.isFailure())
-          .describedAs("Expected successful evaluation: %s", result.getFailureMessage())
-          .isFalse();
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
+    // when
+    final var document = evaluateOutputMappings(outputMappings, variables, variables);
 
     // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
+    MsgPackUtil.assertEquality(document, expectedOutput);
   }
 
   @ParameterizedTest(name = "{index}: mapping {0} fails with: {2}")
@@ -327,6 +310,40 @@ public final class VariableOutputMappingTransformerTest {
 
     // then
     MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'p':0}}");
+  }
+
+  // evaluates output mappings one by one in modeling order, mirroring
+  // BpmnVariableMappingBehavior.applyOutputMappings; a parent-only variable belongs in BOTH
+  // scopeChain and mergeTarget, since it's visible both to the element and to the merge target -
+  // only element-local variables appear in scopeChain alone
+  private DirectBuffer evaluateOutputMappings(
+      final List<OutputMapping> outputMappings,
+      final Map<String, DirectBuffer> scopeChain,
+      final Map<String, DirectBuffer> mergeTarget) {
+    // Task 3 switches this to the two-resolver constructor; until then both views share the scope
+    // chain, which is exactly today's behavior.
+    final var resultBuilder = new MappingResultBuilder(resolver(scopeChain));
+    for (final var mapping : outputMappings) {
+      final EvaluationContext context =
+          name -> {
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(accumulated != null ? accumulated : scopeChain.get(name));
+          };
+      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
+      assertThat(result.isFailure())
+          .describedAs("Expected successful evaluation: %s", result.getFailureMessage())
+          .isFalse();
+      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+    }
+    return resultBuilder.toDocument();
+  }
+
+  private static Function<List<String>, DirectBuffer> resolver(
+      final Map<String, DirectBuffer> variables) {
+    return path ->
+        Optional.ofNullable(variables.get(path.getFirst()))
+            .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+            .orElse(null);
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
