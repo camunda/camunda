@@ -8,12 +8,42 @@
 package io.atomix.raft.utils;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
+import java.net.ConnectException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 
 public interface VoteQuorum {
 
   void succeed(MemberId member);
 
-  void fail(MemberId member);
+  void fail(MemberId member, final VoteErrorStatus statusCode);
 
   void cancel();
+
+  enum VoteErrorStatus {
+    NO_SUCH_MEMBER,
+    MEMBER_TIMED_OUT,
+    REJECTED,
+    INVALID_TERM,
+    UNKNOWN;
+
+    public static VoteErrorStatus of(final Throwable error) {
+      return switch (error) {
+        case final NoSuchMemberException noSuchMemberException -> NO_SUCH_MEMBER;
+        case final ConnectException connectException -> NO_SUCH_MEMBER;
+        case final NoRemoteHandler noRemoteHandler -> NO_SUCH_MEMBER;
+        case final TimeoutException timeoutException -> MEMBER_TIMED_OUT;
+        case final CompletionException completionException -> {
+          if (completionException.getCause() != null) {
+            yield of(completionException.getCause());
+          } else {
+            yield UNKNOWN;
+          }
+        }
+        default -> UNKNOWN;
+      };
+    }
+  }
 }

@@ -28,6 +28,7 @@ import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -225,10 +226,10 @@ public final class CandidateRole extends ActiveRole {
         raft.transition(RaftServer.Role.FOLLOWER);
       } else if (!response.voted()) {
         log.debug("Received rejected vote from {}", member);
-        quorum.fail(member.memberId());
+        quorum.fail(member.memberId(), VoteErrorStatus.REJECTED);
       } else if (response.term() != raft.getTerm()) {
         log.debug("Received successful vote for a different term from {}", member);
-        quorum.fail(member.memberId());
+        quorum.fail(member.memberId(), VoteErrorStatus.INVALID_TERM);
       } else {
         log.debug("Received successful vote from {}", member);
         quorum.succeed(member.memberId());
@@ -253,7 +254,7 @@ public final class CandidateRole extends ActiveRole {
       }
     } else {
       log.warn(error.getMessage());
-      quorum.fail(member.memberId());
+      quorum.fail(member.memberId(), VoteErrorStatus.of(error));
     }
   }
 
