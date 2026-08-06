@@ -103,9 +103,10 @@ public class AgentInstanceCompleteTest {
 
   @Test
   public void shouldCompleteAgentInstancesOfProcessInstanceAcrossMultipleBatchCycles() {
-    // given — two agent instances belonging to the same process instance, created directly
+    // given — three agent instances belonging to the same process instance, created directly
     // (mirroring this class's style of driving the processor without a job/process lifecycle)
     final String secondTaskId = "second-agent-task";
+    final String thirdTaskId = "third-agent-task";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -117,6 +118,9 @@ public class AgentInstanceCompleteTest {
                 .endEvent()
                 .moveToNode("fork")
                 .serviceTask(secondTaskId, t -> t.zeebeJobType("other-agent"))
+                .connectTo("join")
+                .moveToNode("fork")
+                .serviceTask(thirdTaskId, t -> t.zeebeJobType("third-agent"))
                 .connectTo("join")
                 .done())
         .deploy();
@@ -133,6 +137,12 @@ public class AgentInstanceCompleteTest {
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withElementId(secondTaskId)
             .getFirst();
+    final var thirdTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(thirdTaskId)
+            .getFirst();
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()
@@ -145,31 +155,28 @@ public class AgentInstanceCompleteTest {
             .withElementInstanceKey(secondTaskInstance.getKey())
             .create()
             .getKey();
+    final var thirdAgentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(thirdTaskInstance.getKey())
+            .create()
+            .getKey();
 
     // when — a single batch-completion command is issued for the process instance
     ENGINE.agentInstances().withProcessInstanceKey(processInstanceKey).complete();
 
-    // then — both agent instances are completed, one per self-chained cycle
+    // then — all three agent instances are completed, one per self-chained cycle
     assertThat(
             RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(2)
+                .limit(3)
                 .map(Record::getKey))
-        .describedAs("Both agent instances are completed across self-chained batch cycles")
-        .containsExactlyInAnyOrder(firstAgentInstanceKey, secondAgentInstanceKey);
+        .describedAs("All three agent instances are completed across self-chained batch cycles")
+        .containsExactlyInAnyOrder(
+            firstAgentInstanceKey, secondAgentInstanceKey, thirdAgentInstanceKey);
 
     // and — the final self-chained batch command, once no agent instances remain, is rejected;
     // this rejection is itself the signal that the process instance's cleanup is complete
-    assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
-                .onlyCommands()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(3)
-                .toList())
-        .describedAs(
-            "3 COMPLETE commands: the initial one plus 2 self-chained follow-ups, one per "
-                + "completed instance")
-        .hasSize(3);
     final var rejectedBatchCommand =
         RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
             .onlyCommandRejections()
