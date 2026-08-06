@@ -16,8 +16,10 @@ import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
 import io.camunda.security.core.authz.ResourceAccess;
 import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,6 +36,22 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   public DefaultResourceAccessProvider(final AuthorizationChecker authorizationChecker) {
     this.authorizationChecker = authorizationChecker;
     this.propertyMatcherRegistry = new ResourcePropertyMatcherRegistry();
+  }
+
+  /**
+   * Builds a {@link ResourceAccessProvider} for a single authorization scope (for example, one
+   * physical tenant) from its {@link AuthorizationScopeRepositoryPort}, or a {@link
+   * DisabledResourceAccessProvider} when {@code authorizationEnabled} is {@code false}.
+   *
+   * <p>Lets callers depend on the {@link AuthorizationScopeRepositoryPort} outbound port instead of
+   * naming {@link AuthorizationChecker} directly, and consolidates the enabled/disabled branch that
+   * would otherwise be duplicated at every call site building a per-scope provider.
+   */
+  public static ResourceAccessProvider forScopeRepository(
+      final AuthorizationScopeRepositoryPort scopeRepository, final boolean authorizationEnabled) {
+    return authorizationEnabled
+        ? new DefaultResourceAccessProvider(new AuthorizationChecker(scopeRepository))
+        : new DisabledResourceAccessProvider();
   }
 
   @Override
