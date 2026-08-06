@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ChangeEventHandler, ReactNode, useState} from 'react';
+import {ChangeEventHandler, ReactNode, useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Button, TextInput} from '@carbon/react';
 import {Error, Save} from '@carbon/icons-react';
 
 import {EntityDescription} from 'components';
+import {getEntityNameMaxLength} from 'config';
 import {useErrorHandling} from 'hooks';
 import {t} from 'translation';
 
@@ -41,7 +42,12 @@ export default function EntityNameForm({
   children,
 }: EntityNameFormProps) {
   const [loading, setLoading] = useState(false);
+  const [nameMaxLength, setNameMaxLength] = useState<number>();
   const {mightFail} = useErrorHandling();
+
+  useEffect(() => {
+    getEntityNameMaxLength().then(setNameMaxLength);
+  }, []);
 
   const homeLink = entity === 'Process' ? '../' : '../../';
 
@@ -58,6 +64,7 @@ export default function EntityNameForm({
             labelText={t(`common.entity.namePlaceholder.${entity}`).toString()}
             placeholder={t(`common.entity.namePlaceholder.${entity}`).toString()}
             autoComplete="off"
+            maxLength={nameMaxLength}
           />
         </div>
         {onDescriptionChange && (

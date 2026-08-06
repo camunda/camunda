@@ -20,6 +20,8 @@ public class EntityConfiguration {
 
   private Boolean createOnStartup;
 
+  private Integer nameMaxLength;
+
   public EntityConfiguration() {}
 
   public AuthorizedUserType getAuthorizedUserType() {
@@ -47,13 +49,21 @@ public class EntityConfiguration {
     this.createOnStartup = createOnStartup;
   }
 
+  public Integer getNameMaxLength() {
+    return nameMaxLength;
+  }
+
+  public void setNameMaxLength(final Integer nameMaxLength) {
+    this.nameMaxLength = nameMaxLength;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof EntityConfiguration;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(authorizedUserType, kpiRefreshInterval, createOnStartup);
+    return Objects.hash(authorizedUserType, kpiRefreshInterval, createOnStartup, nameMaxLength);
   }
 
   @Override
@@ -67,7 +77,8 @@ public class EntityConfiguration {
     final EntityConfiguration that = (EntityConfiguration) o;
     return Objects.equals(authorizedUserType, that.authorizedUserType)
         && Objects.equals(kpiRefreshInterval, that.kpiRefreshInterval)
-        && Objects.equals(createOnStartup, that.createOnStartup);
+        && Objects.equals(createOnStartup, that.createOnStartup)
+        && Objects.equals(nameMaxLength, that.nameMaxLength);
   }
 
   @Override
@@ -78,6 +89,8 @@ public class EntityConfiguration {
         + getKpiRefreshInterval()
         + ", createOnStartup="
         + getCreateOnStartup()
+        + ", nameMaxLength="
+        + getNameMaxLength()
         + ")";
   }
 }
