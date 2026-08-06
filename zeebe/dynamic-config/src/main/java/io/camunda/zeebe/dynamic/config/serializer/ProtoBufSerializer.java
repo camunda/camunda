@@ -1567,12 +1567,12 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeModeChangeRequest(final ModeChangeRequest modeChangeRequest) {
-    return Requests.ModeChangeRequest.newBuilder()
-        .setMode(toProtoRequestMode(modeChangeRequest.mode()))
-        .setDryRun(modeChangeRequest.dryRun())
-        .setPhysicalTenantId(modeChangeRequest.physicalTenantId())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.ModeChangeRequest.newBuilder()
+            .setMode(toProtoRequestMode(modeChangeRequest.mode()))
+            .setDryRun(modeChangeRequest.dryRun());
+    modeChangeRequest.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1580,7 +1580,11 @@ public class ProtoBufSerializer
     try {
       final var request = Requests.ModeChangeRequest.parseFrom(encodedRequest);
       return new ModeChangeRequest(
-          request.getPhysicalTenantId(), toMode(request.getMode()), request.getDryRun());
+          request.hasPhysicalTenantId()
+              ? Optional.of(request.getPhysicalTenantId())
+              : Optional.empty(),
+          toMode(request.getMode()),
+          request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
