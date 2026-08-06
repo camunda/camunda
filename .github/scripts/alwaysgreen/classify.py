@@ -106,9 +106,10 @@ SURFACE_HELM_CLEANUP = "helm-cleanup"
 SURFACE_BUILD = "build"
 SURFACE_CI_INFRA = "ci-infra"
 
-#: Surfaces the first increment dispatches. Everything else is recorded and
-#: reported but not handed to the agent yet.
-DISPATCHABLE_SURFACES = frozenset({SURFACE_SM_E2E, SURFACE_SAAS_E2E})
+#: Surfaces dispatched to the agent. Everything else is recorded and reported but not
+#: handed over. helm-install is gated further by helm_install_verdict: the failure has
+#: to look like the chart rather than the cluster.
+DISPATCHABLE_SURFACES = frozenset({SURFACE_SM_E2E, SURFACE_SAAS_E2E, SURFACE_HELM_INSTALL})
 
 #: A pure propagator: it fails whenever the reusable helm workflow failed and
 #: carries no independent signal.
@@ -228,6 +229,64 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
     if counts.setup_failed == counts.failed:
         return SURFACE_SAAS_PROVISIONING
     return SURFACE_SAAS_E2E
+
+
+# ---------------------------------------------------------------------------
+# Helm install: chart problem or cluster problem?
+# ---------------------------------------------------------------------------
+
+HELM_ACTIONABLE = "actionable"
+HELM_INFRASTRUCTURE = "infrastructure"
+
+#: A failing install is worth an agent only when something points at the chart or its
+#: values. Every helm-install failure sampled on main and stable/8.8 in 2026-07/08 was
+#: the cluster failing to place or attach the workload instead, so the default is to
+#: withhold: dispatching there costs an agent run and can only produce a guess.
+_HELM_CONFIG_MARKERS = (
+    "INSTALLATION FAILED",
+    "UPGRADE FAILED",
+    "YAML parse error",
+    "error validating data",
+    "error converting YAML",
+    "CreateContainerConfigError",
+    "CrashLoopBackOff",
+    "Back-off restarting failed container",
+    "couldn't find key",
+    "is invalid:",
+)
+
+#: Only used to explain the verdict; the decision does not depend on them, so an
+#: unseen infrastructure shape still withholds rather than dispatching.
+_HELM_INFRA_MARKERS = (
+    "FailedScheduling",
+    "Insufficient cpu",
+    "Insufficient memory",
+    "untolerated taint",
+    "node affinity/selector",
+    "Multi-Attach error",
+    "FailedAttachVolume",
+    "ImagePullBackOff",
+    "ErrImagePull",
+    "TLS handshake timeout",
+    "context deadline exceeded",
+)
+
+
+def helm_install_verdict(log_text: str) -> tuple[str, str]:
+    """Classify a failed Helm install from its job log.
+
+    Returns (verdict, detail). A chart marker wins over an infrastructure one: a values
+    bug can crash a pod that the scheduler also complained about, and the chart reading
+    is the one an agent can act on.
+    """
+    text = log_text or ""
+    for marker in _HELM_CONFIG_MARKERS:
+        if marker in text:
+            return HELM_ACTIONABLE, marker
+    for marker in _HELM_INFRA_MARKERS:
+        if marker in text:
+            return HELM_INFRASTRUCTURE, marker
+    return HELM_INFRASTRUCTURE, "no chart-level failure signal"
 
 
 # ---------------------------------------------------------------------------

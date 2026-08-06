@@ -67,6 +67,20 @@ def gh_json_ex(args: list[str], default) -> tuple[object, str]:
         return default, "invalid json"
 
 
+def gh_text_ex(args: list[str]) -> tuple[str | None, str]:
+    """Run a gh command expecting plain text. Returns (text, error_text).
+
+    Job logs are large, so the timeout is longer than the JSON helper's; None means the
+    call failed and the caller must not treat an empty log as "nothing was wrong".
+    """
+    try:
+        return subprocess.run(
+            ["gh", *args], capture_output=True, text=True, timeout=300, check=True
+        ).stdout, ""
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+        return None, (getattr(exc, "stderr", "") or str(exc)).strip()
+
+
 def gh_json(args: list[str], default):
     """Run a gh command expecting JSON on stdout. Returns `default` on any failure."""
     value, _ = gh_json_ex(args, default)
@@ -342,6 +356,20 @@ def resolve_blame(head_sha: str) -> classify.Blame:
 # ---------------------------------------------------------------------------
 
 
+def job_log(job_id: str) -> str:
+    """Raw log of one job, empty when it cannot be read.
+
+    A helm-install failure has no report artifact: the evidence is the job log and the
+    diagnostics dump. Unreadable logs fall through to the withhold default rather than
+    dispatching blind.
+    """
+    out, err = gh_text_ex(["api", f"repos/{REPO}/actions/jobs/{job_id}/logs"])
+    if out is None:
+        log(f"::warning::could not read log for job {job_id}: {err.strip()[:200]}")
+        return ""
+    return out
+
+
 def build_candidates(run_id: str, base_ref: str, workdir: Path):
     candidates: list[planning.Candidate] = []
     noise: list[tuple[str, str]] = []
@@ -366,6 +394,19 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
             candidates.append(sm_candidates(run_id, base_ref, name, workdir))
         elif surface == classify.SURFACE_SAAS_E2E:
             candidates.append(saas_candidate(run_id, base_ref, name, workdir))
+        elif surface == classify.SURFACE_HELM_INSTALL:
+            verdict, detail = classify.helm_install_verdict(job_log(str(job.get("id") or "")))
+            log(f"helm-install verdict: {verdict} ({detail})")
+            if verdict != classify.HELM_ACTIONABLE:
+                noise.append((classify.job_leaf_name(name), f"helm-{verdict}: {detail}"))
+                continue
+            candidates.append(
+                planning.Candidate(
+                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
+                    evidence_repo=REPO,
+                )
+            )
         else:
             candidates.append(
                 planning.Candidate(

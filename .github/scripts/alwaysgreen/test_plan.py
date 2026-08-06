@@ -41,9 +41,16 @@ def test_dispatchable_surface_with_specs_is_dispatched():
 
 
 def test_non_dispatchable_surface_is_recorded_not_dispatched():
-    result = _plan([_cand(surface=classify.SURFACE_HELM_INSTALL)])
+    result = _plan([_cand(surface=classify.SURFACE_BUILD)])
     assert result.dispatches == []
     assert result.suppressed[0].reason == plan.SUPPRESSED_NOT_DISPATCHABLE
+
+
+def test_helm_install_reaches_the_agent():
+    # Whether a helm-install failure is worth an agent is decided earlier, by
+    # helm_install_verdict in discover; anything that gets here is already actionable.
+    result = _plan([_cand(surface=classify.SURFACE_HELM_INSTALL, specs=[], job_level=True)])
+    assert len(result.dispatches) == 1
 
 
 def test_in_flight_agent_blocks_the_same_surface():
