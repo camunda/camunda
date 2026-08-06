@@ -19,11 +19,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.regions.Region;
 
 public class AwsDocumentStoreProvider implements DocumentStoreProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(AwsDocumentStoreProvider.class);
   private static final Pattern INVALID_CHARACTERS = Pattern.compile("[\\u0000-\\u001F\\\\]");
+  private static final Pattern REGION_PATTERN = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
 
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
   private static final String BUCKET_TTL = "BUCKET_TTL";
@@ -50,9 +52,11 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
                             + BUCKET_NAME_PROPERTY
                             + "'"));
 
+    final URI endpoint = getEndpoint(configuration);
     final String accessKey = getTrimmedProperty(configuration, ACCESS_KEY);
     final String secretKey = getTrimmedProperty(configuration, SECRET_KEY);
     validateCredentialPair(configuration, accessKey, secretKey);
+    logCredentialSource(configuration, accessKey);
 
     return AwsDocumentStoreFactory.create(
         bucketName,
@@ -60,13 +64,36 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
         getBucketPath(configuration),
         executorService,
         new AwsClientOptions(
-            getEndpoint(configuration),
+            endpoint,
             getForcePathStyle(configuration),
             getChunkedEncodingEnabled(configuration),
             getSupportLegacyMd5(configuration),
-            getRegion(configuration),
+            getRegion(configuration, endpoint),
             accessKey,
             secretKey));
+  }
+
+  /**
+   * Records which identity the store ended up with. {@code ACCESS_KEY} and {@code SECRET_KEY} were
+   * accepted but ignored before per-store credentials existed, so a deployment that still carries
+   * them — a stale {@code DOCUMENT_STORE_<ID>_ACCESS_KEY} beside an instance role, say — changes
+   * credential source on the first restart after the upgrade. Say which source won, so that switch
+   * is legible in the startup log instead of surfacing later as an opaque S3 403.
+   */
+  private static void logCredentialSource(
+      final DocumentStoreConfigurationRecord configuration, final String accessKey) {
+    if (accessKey == null) {
+      LOG.info(
+          "Document store '{}' authenticates with the credentials of the AWS SDK default chain,"
+              + " which are shared with every other store in this process.",
+          configuration.id());
+    } else {
+      LOG.info(
+          "Document store '{}' authenticates with the key pair configured as '{}'/'{}'.",
+          configuration.id(),
+          ACCESS_KEY,
+          SECRET_KEY);
+    }
   }
 
   /**
@@ -148,8 +175,42 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     }
   }
 
-  private static String getRegion(final DocumentStoreConfigurationRecord configuration) {
-    return getTrimmedProperty(configuration, REGION);
+  /**
+   * The region this store's client and presigner target, or {@code null} to leave it to the AWS
+   * SDK.
+   *
+   * <p>{@code Region.of} accepts any string it is handed, so an unchecked region only surfaces at
+   * the first document operation as a redirect or an unresolvable host — and because the region
+   * property was accepted but ignored until per-store clients existed, an upgrading deployment may
+   * carry one nobody has ever exercised. Reject a structurally impossible region outright; only
+   * warn about one this SDK does not recognise, since a region newer than the bundled SDK, or an
+   * S3-compatible backend behind an endpoint override, is legitimately unknown to it.
+   */
+  private static String getRegion(
+      final DocumentStoreConfigurationRecord configuration, final URI endpoint) {
+    final String region = getTrimmedProperty(configuration, REGION);
+    if (region == null) {
+      return null;
+    }
+    if (!REGION_PATTERN.matcher(region).matches()) {
+      throw new IllegalArgumentException(
+          "Failed to configure document store with id '"
+              + configuration.id()
+              + "': '"
+              + REGION
+              + "' is not a valid region: "
+              + region);
+    }
+    if (endpoint == null && !Region.regions().contains(Region.of(region))) {
+      LOG.warn(
+          "Document store '{}' is configured with '{}' '{}', which this AWS SDK does not know."
+              + " Requests are addressed to a host derived from it, so a typo here fails at the"
+              + " first document operation rather than at startup.",
+          configuration.id(),
+          REGION,
+          region);
+    }
+    return region;
   }
 
   private static String getTrimmedProperty(
