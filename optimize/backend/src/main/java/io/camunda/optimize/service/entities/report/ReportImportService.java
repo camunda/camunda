@@ -380,6 +380,7 @@ public class ReportImportService {
     } catch (OptimizeValidationException ex) {
       throw new OptimizeImportDescriptionNotValidException(Set.of(reportToImport.getId()));
     }
+    reportService.validateReportName(reportToImport.getName());
     switch (reportToImport.getExportEntityType()) {
       case SINGLE_PROCESS_REPORT:
         final SingleProcessReportDefinitionExportDto processExport =

@@ -48,6 +48,8 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
+import io.camunda.optimize.service.util.ValidationHelper;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
@@ -81,6 +83,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
+  private final ConfigurationService configurationService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(
@@ -162,12 +165,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     collectionService.verifyUserAuthorizedToEditCollectionResources(
         userId, dashboardDefinitionDto.getCollectionId());
     validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId());
+    validateDashboardName(dashboardDefinitionDto.getName());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
   public IdResponseDto copyDashboard(
       final String dashboardId, final String userId, final String name) {
+    validateDashboardName(name);
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard =
         getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
@@ -249,9 +254,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     }
 
     final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    // clamped rather than rejected: this may be Optimize's own " – Copy" variant of a stored name,
+    // which the user cannot correct
     final DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
-    newDashboardDefinitionDto.setName(newDashboardName);
+    newDashboardDefinitionDto.setName(
+        ValidationHelper.clampGeneratedEntityName(newDashboardName, getNameMaxLength()));
     newDashboardDefinitionDto.setDescription(dashboardDefinition.getDescription());
     newDashboardDefinitionDto.setTiles(newDashboardReports);
     newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
@@ -268,6 +276,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             "Dashboard descriptions cannot be non-null and empty");
       }
     }
+  }
+
+  public void validateDashboardName(final String dashboardName) {
+    ValidationHelper.validateEntityName("Dashboard", dashboardName, getNameMaxLength());
+  }
+
+  private Integer getNameMaxLength() {
+    return configurationService.getEntityConfiguration().getNameMaxLength();
   }
 
   private void removeVariableFiltersFromDashboardsIfUnavailable(
@@ -416,6 +432,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId =
         dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
+    validateDashboardName(updatedDashboard.getName());
     validateDashboardFilters(userId, updatedDashboard);
     updateDto
         .getTiles()

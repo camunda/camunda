@@ -399,6 +399,10 @@ public class AlertService implements ReportReferencingService {
 
     ValidationHelper.ensureNotEmpty(REPORT, report);
 
+    ValidationHelper.validateEntityName(
+        "Alert",
+        toCreate.getName(),
+        configurationService.getEntityConfiguration().getNameMaxLength());
     ValidationHelper.ensureNotEmpty(THRESHOLD_OPERATOR, toCreate.getThresholdOperator());
     ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
     ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());

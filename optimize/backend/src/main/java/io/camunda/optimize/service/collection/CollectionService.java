@@ -27,6 +27,8 @@ import io.camunda.optimize.service.relations.CollectionRelationService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
+import io.camunda.optimize.service.util.ValidationHelper;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
@@ -48,9 +50,18 @@ public class CollectionService {
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+  private final ConfigurationService configurationService;
 
   public List<CollectionDefinitionDto> getAllCollections() {
     return collectionReader.getAllCollections();
+  }
+
+  public void validateCollectionName(final String collectionName) {
+    ValidationHelper.validateEntityName("Collection", collectionName, getNameMaxLength());
+  }
+
+  private Integer getNameMaxLength() {
+    return configurationService.getEntityConfiguration().getNameMaxLength();
   }
 
   public IdResponseDto createNewCollectionAndReturnId(
@@ -59,6 +70,7 @@ public class CollectionService {
     if (!identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
+    validateCollectionName(partialCollectionDefinitionDto.getName());
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
   }
 
@@ -67,6 +79,7 @@ public class CollectionService {
       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
       final String presetId,
       final boolean automaticallyCreated) {
+    validateCollectionName(partialCollectionDefinitionDto.getName());
     try {
       return Optional.of(
           collectionWriter.createNewCollectionAndReturnId(
@@ -104,6 +117,8 @@ public class CollectionService {
       final PartialCollectionDefinitionRequestDto collectionUpdate) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
+
+    validateCollectionName(collectionUpdate.getName());
 
     final CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();
     updateDto.setName(collectionUpdate.getName());
@@ -162,18 +177,25 @@ public class CollectionService {
 
   public IdResponseDto copyCollection(
       final String userId, final String collectionId, final String newCollectionName) {
+    validateCollectionName(newCollectionName);
     final AuthorizedCollectionDefinitionDto oldCollection =
         authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
             userId, collectionId);
+
+    final String copyName =
+        newCollectionName != null
+            ? newCollectionName
+            // clamped rather than rejected: Optimize generates this from a stored name, so the user
+            // cannot correct it
+            : ValidationHelper.clampGeneratedEntityName(
+                oldCollection.getDefinitionDto().getName() + " – Copy", getNameMaxLength());
 
     final CollectionDefinitionDto newCollection =
         new CollectionDefinitionDto(
             oldCollection.getDefinitionDto().getData(),
             OffsetDateTime.now(),
             IdGenerator.getNextId(),
-            newCollectionName != null
-                ? newCollectionName
-                : oldCollection.getDefinitionDto().getName() + " – Copy",
+            copyName,
             OffsetDateTime.now(),
             userId,
             userId);

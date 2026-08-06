@@ -66,6 +66,7 @@ public class DashboardImportService {
     dashboardsToImport.forEach(
         exportedDto -> {
           dashboardService.validateDashboardDescription(exportedDto.getDescription());
+          dashboardService.validateDashboardName(exportedDto.getName());
           validateDashboardFiltersOrFail(userId, exportedDto);
         });
 

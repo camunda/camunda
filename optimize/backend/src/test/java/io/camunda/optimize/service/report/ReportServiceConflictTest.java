@@ -9,6 +9,7 @@ package io.camunda.optimize.service.report;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,8 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.relations.ReportRelationService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.ReportAuthorizationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.EntityConfiguration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,6 +56,8 @@ public class ReportServiceConflictTest {
 
   @Mock DefinitionService definitionService;
 
+  @Mock ConfigurationService configurationService;
+
   private ReportService underTest;
 
   @BeforeEach
@@ -65,7 +70,11 @@ public class ReportServiceConflictTest {
             reportRelationService,
             collectionService,
             abstractIdentityService,
-            definitionService);
+            definitionService,
+            configurationService);
+    lenient()
+        .when(configurationService.getEntityConfiguration())
+        .thenReturn(new EntityConfiguration());
     when(abstractIdentityService.getEnabledAuthorizations())
         .thenReturn(List.of(AuthorizationType.values()));
   }
