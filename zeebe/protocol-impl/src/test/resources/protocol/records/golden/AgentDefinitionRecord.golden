@@ -20,8 +20,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public final class AgentDefinitionRecord extends UnifiedRecordValue
     implements AgentDefinitionRecordValue {
 
-  private final LongProperty agentDefinitionKeyProp =
-      new LongProperty("agentDefinitionKey", -1L);
+  private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
   private final EnumProperty<AgentDefinitionType> agentTypeProp =
       new EnumProperty<>("agentType", AgentDefinitionType.class, AgentDefinitionType.UNSPECIFIED);
   private final StringProperty nameProp = new StringProperty("name", "");
@@ -31,11 +30,13 @@ public final class AgentDefinitionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1L);
   private final IntegerProperty processDefinitionVersionProp =
       new IntegerProperty("processDefinitionVersion", -1);
+  private final StringProperty processDefinitionVersionTagProp =
+      new StringProperty("processDefinitionVersionTag", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AgentDefinitionRecord() {
-    super(8);
+    super(9);
     declareProperty(agentDefinitionKeyProp)
         .declareProperty(agentTypeProp)
         .declareProperty(nameProp)
@@ -43,6 +44,7 @@ public final class AgentDefinitionRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
+        .declareProperty(processDefinitionVersionTagProp)
         .declareProperty(tenantIdProp);
   }
 
@@ -113,6 +115,17 @@ public final class AgentDefinitionRecord extends UnifiedRecordValue
 
   public AgentDefinitionRecord setProcessDefinitionVersion(final int processDefinitionVersion) {
     processDefinitionVersionProp.setValue(processDefinitionVersion);
+    return this;
+  }
+
+  @Override
+  public String getProcessDefinitionVersionTag() {
+    return BufferUtil.bufferAsString(processDefinitionVersionTagProp.getValue());
+  }
+
+  public AgentDefinitionRecord setProcessDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    processDefinitionVersionTagProp.setValue(processDefinitionVersionTag);
     return this;
   }
 

@@ -588,8 +588,13 @@ public class CompactRecordLogger {
         .append("[")
         .append(shortenKey(value.getProcessDefinitionKey()))
         .append("] v")
-        .append(value.getProcessDefinitionVersion())
-        .append(">");
+        .append(value.getProcessDefinitionVersion());
+
+    if (StringUtils.isNotEmpty(value.getProcessDefinitionVersionTag())) {
+      result.append(" tag:").append(value.getProcessDefinitionVersionTag());
+    }
+
+    result.append(">");
 
     return result.toString();
   }

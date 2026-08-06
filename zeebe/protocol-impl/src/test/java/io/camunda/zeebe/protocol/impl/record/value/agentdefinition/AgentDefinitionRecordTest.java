@@ -27,6 +27,7 @@ final class AgentDefinitionRecordTest {
     assertThat(record.getBpmnProcessId()).isEmpty();
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionVersion()).isEqualTo(-1);
+    assertThat(record.getProcessDefinitionVersionTag()).isEmpty();
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -41,6 +42,7 @@ final class AgentDefinitionRecordTest {
             .setBpmnProcessId("invoice-handling-process")
             .setProcessDefinitionKey(2251799813685100L)
             .setProcessDefinitionVersion(3)
+            .setProcessDefinitionVersionTag("v1.0")
             .setTenantId("acme");
 
     // when
@@ -55,6 +57,8 @@ final class AgentDefinitionRecordTest {
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(original.getProcessDefinitionKey());
     assertThat(copy.getProcessDefinitionVersion())
         .isEqualTo(original.getProcessDefinitionVersion());
+    assertThat(copy.getProcessDefinitionVersionTag())
+        .isEqualTo(original.getProcessDefinitionVersionTag());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
   }
 

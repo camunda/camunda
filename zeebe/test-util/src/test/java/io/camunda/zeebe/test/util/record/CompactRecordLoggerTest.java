@@ -166,6 +166,7 @@ class CompactRecordLoggerTest {
                       .withBpmnProcessId("orderProcess")
                       .withProcessDefinitionKey(2L)
                       .withProcessDefinitionVersion(3)
+                      .withProcessDefinitionVersionTag("v1.0")
                       .build())
               .build();
 
@@ -175,7 +176,7 @@ class CompactRecordLoggerTest {
       // then
       assertThat(result)
           .isEqualTo(
-              "K1 AI_AGENT_TASK @\"Activity_1\" \"Custome..n Agent\" of <process \"orderProcess\"[K2] v3>");
+              "K1 AI_AGENT_TASK @\"Activity_1\" \"Custome..n Agent\" of <process \"orderProcess\"[K2] v3 tag:v1.0>");
     }
 
     @Test

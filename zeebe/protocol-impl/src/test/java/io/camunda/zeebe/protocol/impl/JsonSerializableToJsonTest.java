@@ -5075,6 +5075,7 @@ final class JsonSerializableToJsonTest {
                     .setBpmnProcessId("invoice-handling-process")
                     .setProcessDefinitionKey(2251799813685100L)
                     .setProcessDefinitionVersion(3)
+                    .setProcessDefinitionVersionTag("v1.0")
                     .setTenantId("<default>"),
         """
         {
@@ -5085,6 +5086,7 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "invoice-handling-process",
           "processDefinitionKey": 2251799813685100,
           "processDefinitionVersion": 3,
+          "processDefinitionVersionTag": "v1.0",
           "tenantId": "<default>"
         }
         """
@@ -5101,6 +5103,7 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "",
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
+          "processDefinitionVersionTag": "",
           "tenantId": "<default>"
         }
         """

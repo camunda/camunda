@@ -59,6 +59,11 @@ public interface AgentDefinitionRecordValue extends RecordValue, TenantOwned {
   int getProcessDefinitionVersion();
 
   /**
+   * @return the version tag of the process definition that owns the agent
+   */
+  String getProcessDefinitionVersionTag();
+
+  /**
    * @return the ID of the tenant that owns this agent definition
    */
   @Override

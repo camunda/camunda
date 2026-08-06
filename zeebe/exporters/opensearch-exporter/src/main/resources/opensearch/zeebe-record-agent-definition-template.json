@@ -46,6 +46,9 @@
             "processDefinitionVersion": {
               "type": "integer"
             },
+            "processDefinitionVersionTag": {
+              "type": "keyword"
+            },
             "tenantId": {
               "type": "keyword"
             }
