@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -45,7 +46,15 @@ public record AgentHistoryDbModel(
     Long outputTokens,
     Long durationMs,
     String content,
-    String toolCalls)
+    String toolCalls,
+    String historyItemId,
+    String tools,
+    String model,
+    String provider,
+    Long maxTokens,
+    Integer maxModelCalls,
+    Integer maxToolCalls,
+    String systemPrompt)
     implements Copyable<AgentHistoryDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentHistoryDbModel.class);
@@ -59,9 +68,16 @@ public record AgentHistoryDbModel(
     return copyFunction.apply(toBuilder()).build();
   }
 
-  public AgentHistoryDbModel truncateJobLease(final int sizeLimit, final Integer byteLimit) {
+  public AgentHistoryDbModel truncate(final int sizeLimit, final Integer byteLimit) {
     final var truncatedJobLease = TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit);
-    if (Objects.equals(truncatedJobLease, jobLease)) {
+    final var truncatedHistoryItemId =
+        TruncateUtil.truncateValue(historyItemId, sizeLimit, byteLimit);
+    final var truncatedModel = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+    final var truncatedProvider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
+    if (Objects.equals(truncatedJobLease, jobLease)
+        && Objects.equals(truncatedHistoryItemId, historyItemId)
+        && Objects.equals(truncatedModel, model)
+        && Objects.equals(truncatedProvider, provider)) {
       return this;
     }
 
@@ -85,7 +101,15 @@ public record AgentHistoryDbModel(
         outputTokens,
         durationMs,
         content,
-        toolCalls);
+        toolCalls,
+        truncatedHistoryItemId,
+        tools,
+        truncatedModel,
+        truncatedProvider,
+        maxTokens,
+        maxModelCalls,
+        maxToolCalls,
+        systemPrompt);
   }
 
   /**
@@ -108,6 +132,17 @@ public record AgentHistoryDbModel(
       return null;
     }
     return deserializeToolCallValues(toolCalls);
+  }
+
+  /**
+   * Returns the structured tool list of a CONFIGURATION item, deserializing the JSON form on every
+   * call. Returns an empty list, not null, when this item didn't touch the tool list.
+   */
+  public List<Tool> toolValues() {
+    if (tools == null || tools.isEmpty()) {
+      return List.of();
+    }
+    return deserializeTools(tools);
   }
 
   private static List<ContentItem> deserializeContentItems(final String json) {
@@ -154,8 +189,30 @@ public record AgentHistoryDbModel(
     }
   }
 
+  private static List<Tool> deserializeTools(final String json) {
+    try {
+      return MAPPER.readValue(json, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to deserialize agent history tools", e);
+      return Collections.emptyList();
+    }
+  }
+
+  private static String serializeTools(final List<Tool> toolValues) {
+    if (toolValues == null || toolValues.isEmpty()) {
+      return null;
+    }
+
+    try {
+      return MAPPER.writeValueAsString(toolValues);
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to serialize agent history tools", e);
+      return null;
+    }
+  }
+
   public Builder toBuilder() {
-    return new Builder(content, toolCalls)
+    return new Builder(content, toolCalls, tools, systemPrompt)
         .agentHistoryKey(agentHistoryKey)
         .agentInstanceKey(agentInstanceKey)
         .elementInstanceKey(elementInstanceKey)
@@ -173,7 +230,25 @@ public record AgentHistoryDbModel(
         .producedAt(producedAt)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
-        .durationMs(durationMs);
+        .durationMs(durationMs)
+        .historyItemId(historyItemId)
+        .model(model)
+        .provider(provider)
+        .maxTokens(maxTokens)
+        .maxModelCalls(maxModelCalls)
+        .maxToolCalls(maxToolCalls);
+  }
+
+  /**
+   * Returns the structured system-prompt content list of a CONFIGURATION item, deserializing the
+   * JSON form on every call. Returns an empty list, not null, when this item didn't touch the
+   * system prompt.
+   */
+  public List<ContentItem> systemPromptItems() {
+    if (systemPrompt == null || systemPrompt.isEmpty()) {
+      return List.of();
+    }
+    return deserializeContentItems(systemPrompt);
   }
 
   public static class Builder implements ObjectBuilder<AgentHistoryDbModel> {
@@ -198,17 +273,32 @@ public record AgentHistoryDbModel(
     private Long durationMs;
     private String content;
     private String toolCalls;
+    private String historyItemId;
+    private String tools;
+    private String model;
+    private String provider;
+    private Long maxTokens;
+    private Integer maxModelCalls;
+    private Integer maxToolCalls;
+    private String systemPrompt;
 
     public Builder() {}
 
     // Seeds the raw serialized column values for toBuilder()/copy(), so a copy that never
-    // touches contentItems()/toolCallValues() carries the original JSON through unparsed instead
-    // of round-tripping it through Jackson. Package-private, not a public setter: a second
-    // public setter aliasing the same fields as contentItems(List)/toolCallValues(List) would
-    // let callers silently drop a write (e.g. builder.content(x).contentItems(y) loses x).
-    Builder(final String content, final String toolCalls) {
+    // touches contentItems()/toolCallValues()/toolValues()/systemPromptItems() carries the
+    // original JSON through unparsed instead of round-tripping it through Jackson.
+    // Package-private, not a public setter: a second public setter aliasing the same fields as
+    // contentItems(List)/toolCallValues(List)/toolValues(List)/systemPromptItems(List) would let
+    // callers silently drop a write (e.g. builder.content(x).contentItems(y) loses x).
+    Builder(
+        final String content,
+        final String toolCalls,
+        final String tools,
+        final String systemPrompt) {
       this.content = content;
       this.toolCalls = toolCalls;
+      this.tools = tools;
+      this.systemPrompt = systemPrompt;
     }
 
     public Builder agentHistoryKey(final long agentHistoryKey) {
@@ -311,6 +401,46 @@ public record AgentHistoryDbModel(
       return this;
     }
 
+    public Builder historyItemId(final String historyItemId) {
+      this.historyItemId = historyItemId;
+      return this;
+    }
+
+    public Builder toolValues(final List<Tool> toolValues) {
+      tools = serializeTools(toolValues);
+      return this;
+    }
+
+    public Builder model(final String model) {
+      this.model = model;
+      return this;
+    }
+
+    public Builder provider(final String provider) {
+      this.provider = provider;
+      return this;
+    }
+
+    public Builder maxTokens(final Long maxTokens) {
+      this.maxTokens = maxTokens;
+      return this;
+    }
+
+    public Builder maxModelCalls(final Integer maxModelCalls) {
+      this.maxModelCalls = maxModelCalls;
+      return this;
+    }
+
+    public Builder maxToolCalls(final Integer maxToolCalls) {
+      this.maxToolCalls = maxToolCalls;
+      return this;
+    }
+
+    public Builder systemPromptItems(final List<ContentItem> systemPromptItems) {
+      systemPrompt = serializeContentItems(systemPromptItems);
+      return this;
+    }
+
     @Override
     public AgentHistoryDbModel build() {
       return new AgentHistoryDbModel(
@@ -333,7 +463,15 @@ public record AgentHistoryDbModel(
           outputTokens,
           durationMs,
           content,
-          toolCalls);
+          toolCalls,
+          historyItemId,
+          tools,
+          model,
+          provider,
+          maxTokens,
+          maxModelCalls,
+          maxToolCalls,
+          systemPrompt);
     }
   }
 }
