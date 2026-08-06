@@ -630,8 +630,38 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_agent_history_reasoning_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="REASONING_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_HISTORY">
+      <column name="REASONING_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
+  <changeSet id="add_agent_history_cache_creation_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="CACHE_CREATION_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_HISTORY">
+      <column name="CACHE_CREATION_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
+  <changeSet id="add_agent_history_cache_read_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="CACHE_READ_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_HISTORY">
+      <column name="CACHE_READ_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
 
 
