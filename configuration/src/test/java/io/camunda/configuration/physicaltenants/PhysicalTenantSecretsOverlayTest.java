@@ -13,6 +13,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -362,5 +363,102 @@ class PhysicalTenantSecretsOverlayTest {
         resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getGcp().get("shared");
     assertThat(store.getPathPrefix()).isEqualTo("tenanta-");
     assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+  }
+
+  @Test
+  void shouldOverlayCacheTtlPerTenant() {
+    // given a root cache ttl and a tenant that overrides it
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.physical-tenants.tenanta.secrets.cache.ttl", "5m")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own ttl and the synthesized default keeps the root one
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(cacheOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getTtl())
+        .isEqualTo(Duration.ofMinutes(10));
+  }
+
+  @Test
+  void shouldOverlayCacheMaxSizePerTenant() {
+    // given a root cache max size and a tenant that overrides it
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.max-size", "500",
+                "camunda.physical-tenants.tenanta.secrets.cache.max-size", "50")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own max size and the synthesized default keeps the root one
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(50);
+    assertThat(cacheOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getMaxSize())
+        .isEqualTo(500);
+  }
+
+  @Test
+  void shouldInheritRootCacheWhenTenantHasNoCacheOverride() {
+    // given only a root cache configuration; the tenant overrides no cache field
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.secrets.cache.max-size", "500")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits both root values
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(10));
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(500);
+  }
+
+  @Test
+  void shouldOverrideOnlyTheCacheFieldTenantSets() {
+    // given root sets both cache fields; tenant overrides only the ttl
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.secrets.cache.max-size", "500",
+                "camunda.physical-tenants.tenanta.secrets.cache.ttl", "5m")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's ttl is overridden but the root max size survives: the overlay engine only
+    // repairs maps, so this pins that a scalar section is layered onto the root instance rather
+    // than rebuilt from the tenant's sub-keys
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(500);
+  }
+
+  @Test
+  void shouldFallBackToTheDefaultCacheWhenNeitherRootNorTenantConfiguresIt() {
+    // given a tenant declared without any camunda.secrets.* property
+    setProperties(new HashMap<>(), "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then both tenants get the documented defaults
+    for (final String tenantId :
+        new String[] {"tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID}) {
+      assertThat(cacheOf(resolver, tenantId).getTtl()).isEqualTo(Duration.ofMinutes(20));
+      assertThat(cacheOf(resolver, tenantId).getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  private Secrets.Cache cacheOf(final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver.forPhysicalTenant(tenantId).getSecrets().getCache();
   }
 }

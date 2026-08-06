@@ -18,6 +18,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record SecretStoreRegistries(Map<String, SecretStoreRegistry> byPhysicalTenant) {
 
+  // holds no stores, so no cache is ever built and camunda.secrets.cache.* does not reach it
   private static final SecretStoreRegistry NO_STORES = new SecretStoreRegistry(Map.of());
 
   /**
