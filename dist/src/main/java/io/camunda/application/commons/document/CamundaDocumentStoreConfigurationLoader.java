@@ -23,6 +23,7 @@ import io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider;
 import io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -110,7 +111,8 @@ public final class CamundaDocumentStoreConfigurationLoader
         "support-legacy-md5",
         "SUPPORT_LEGACY_MD5",
         store.getSupportLegacyMd5());
-    putResolvedSensitive(properties, AWS, storeId, "access-key", "ACCESS_KEY", store.getAccessKey());
+    putResolvedSensitive(
+        properties, AWS, storeId, "access-key", "ACCESS_KEY", store.getAccessKey());
     putResolvedSensitive(
         properties, AWS, storeId, "secret-key", "SECRET_KEY", store.getSecretKey());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
@@ -194,8 +196,11 @@ public final class CamundaDocumentStoreConfigurationLoader
       final Object unifiedValue,
       final boolean sensitive) {
     final String unifiedProperty = PREFIX + storeType + "." + storeId + "." + unifiedField;
+    // Locale.ROOT, not the default locale: under a Turkish locale 'i' upper-cases to 'İ', so a
+    // store id containing it would derive a legacy key no environment variable can ever match and
+    // the value would be dropped without a word.
     final Set<String> legacyProperties =
-        Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey);
+        Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase(Locale.ROOT) + "_" + propertyKey);
 
     if (unifiedValue != null) {
       validate(unifiedProperty, String.valueOf(unifiedValue), legacyProperties, sensitive);
