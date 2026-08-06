@@ -65,7 +65,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
           AgentInstanceHistoryRole.USER,
           List.of(new ContentItem(ContentType.TEXT, "Hello agent", null, null)),
           List.of(),
-          new Metrics(10L, 20L, 100L),
+          new Metrics(10L, 20L, 30L, 40L, 50L, 100L),
           null,
           null,
           null,
