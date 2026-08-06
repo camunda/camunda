@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
@@ -80,6 +81,32 @@ final class ProtoBufSerializerTest {
 
     // then
     final var decodedRequest = protoBufSerializer.decodeClusterZoneMigrationRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeModeChangeRequestForOnePhysicalTenant() {
+    // given
+    final var request = new ModeChangeRequest(Optional.of("tenant-b"), Mode.RECOVERING, false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeModeChangeRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeModeChangeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeModeChangeRequestForEveryPhysicalTenant() {
+    // given — an absent tenant means every physical tenant
+    final var request = new ModeChangeRequest(Optional.empty(), Mode.RECOVERING, false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeModeChangeRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeModeChangeRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 

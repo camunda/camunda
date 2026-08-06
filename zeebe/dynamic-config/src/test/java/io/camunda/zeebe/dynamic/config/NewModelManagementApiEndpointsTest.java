@@ -504,7 +504,7 @@ final class NewModelManagementApiEndpointsTest {
     handler
         .modeChange(
             new ModeChangeRequest(
-                CurrentClusterConfiguration.DEFAULT_GROUP, Mode.RECOVERING, false))
+                Optional.of(CurrentClusterConfiguration.DEFAULT_GROUP), Mode.RECOVERING, false))
         .join();
 
     // then — the plan is applied and the local member is now in recovery mode
