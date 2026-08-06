@@ -17,29 +17,46 @@ import java.util.Set;
 
 /**
  * New-model counterpart of {@link ExporterStateInitializer}, applying the same exporter-state
- * reconciliation to the local member's partitions in <em>every</em> partition group, instead of
- * once for the single default group. The per-partition reconciliation logic is shared with {@link
+ * reconciliation to partitions in <em>every</em> partition group, instead of once for the single
+ * default group. The per-partition reconciliation logic is shared with {@link
  * ExporterStateInitializer} via its package-visible static helpers.
  *
- * <p>Unlike {@link ExporterStateInitializer}, this does not have a post-restore branch that updates
- * every member's exporter state: nothing currently produces a restore change plan on {@link
- * CurrentClusterConfiguration}, so that branch would be unreachable and untested. Revisit once
- * restore is migrated to the new model.
+ * <p>Mirrors {@link ExporterStateInitializer}'s post-restore handling: if the migrated
+ * configuration is {@link CurrentClusterConfiguration#isAfterRestore()}, only the coordinator
+ * updates the exporter state, and it does so for every member of every group (not just the local
+ * member) — the coordinator is the only member guaranteed to run this initializer again once the
+ * post-restore {@code UpdateRoutingState} operation is applied, so it must reconcile on behalf of
+ * everyone. Non-coordinators skip initialization entirely in that case.
  */
 public class PartitionGroupExporterStateInitializer
     implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
 
   private final Set<String> configuredExporters;
   private final MemberId localMemberId;
+  private final boolean isCoordinator;
 
   public PartitionGroupExporterStateInitializer(
-      final Set<String> configuredExporters, final MemberId localMemberId) {
+      final Set<String> configuredExporters,
+      final MemberId localMemberId,
+      final boolean isCoordinator) {
     this.configuredExporters = configuredExporters;
     this.localMemberId = localMemberId;
+    this.isCoordinator = isCoordinator;
   }
 
   @Override
   public ActorFuture<CurrentClusterConfiguration> modify(
+      final CurrentClusterConfiguration configuration) {
+    if (configuration.isAfterRestore()) {
+      if (isCoordinator) {
+        return CompletableActorFuture.completed(updateExporterStateForAllMembers(configuration));
+      }
+      return CompletableActorFuture.completed(configuration);
+    }
+    return CompletableActorFuture.completed(updateLocalMemberExporterState(configuration));
+  }
+
+  private CurrentClusterConfiguration updateLocalMemberExporterState(
       final CurrentClusterConfiguration configuration) {
     var updated = configuration;
     for (final var groupId : configuration.partitionGroups().keySet()) {
@@ -49,7 +66,20 @@ public class PartitionGroupExporterStateInitializer
                 groupId, group -> group.updateMember(localMemberId, this::updateExporterState));
       }
     }
-    return CompletableActorFuture.completed(updated);
+    return updated;
+  }
+
+  private CurrentClusterConfiguration updateExporterStateForAllMembers(
+      final CurrentClusterConfiguration configuration) {
+    var updated = configuration;
+    for (final var groupId : configuration.partitionGroups().keySet()) {
+      for (final var memberId : updated.partitionGroup(groupId).members().keySet()) {
+        updated =
+            updated.updatePartitionGroupConfig(
+                groupId, group -> group.updateMember(memberId, this::updateExporterState));
+      }
+    }
+    return updated;
   }
 
   private BrokerPartitionState updateExporterState(

@@ -62,7 +62,7 @@ public record PhasedChangeState(
       throw new IllegalStateException(
           "Cannot init a new plan while one is already pending: " + pending.get());
     }
-    final long nextId = lastChange.map(c -> c.id() + 1).orElse(1L);
+    final long nextId = lastChange.map(c -> c.id() + 1).orElse(PhasedChangePlan.INITIAL_PLAN_ID);
     final var plan = PhasedChangePlan.init(nextId, phases, Instant.now());
     return new PhasedChangeState(Optional.of(plan), lastChange);
   }

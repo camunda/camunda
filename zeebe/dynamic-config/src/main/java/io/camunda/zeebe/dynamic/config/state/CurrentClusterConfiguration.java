@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -505,6 +506,32 @@ public record CurrentClusterConfiguration(
     return partitionGroups.containsKey(groupId);
   }
 
+  /**
+   * Returns true if this configuration was produced by migrating a legacy {@link
+   * ClusterConfiguration} that was itself {@link ClusterConfiguration#isAfterRestore()}: the
+   * pending plan's id is {@link PhasedChangePlan#RESTORED_PLAN_ID} (see {@link
+   * PhasedChangePlan#hasRestorePlanId()}) and it contains exactly one phase with exactly one
+   * operation, an {@link UpdateRoutingState}. Mirrors {@link
+   * ClusterConfiguration#isAfterRestore()}.
+   */
+  public boolean isAfterRestore() {
+    return phasedChangeState
+        .pending()
+        .filter(PhasedChangePlan::hasRestorePlanId)
+        .filter(plan -> plan.phases().size() == 1)
+        .map(plan -> plan.phases().get(0))
+        .filter(
+            phase ->
+                phase instanceof final PartitionGroupParallelPhase parallelPhase
+                    && parallelPhase.groupOperations().size() == 1
+                    && parallelPhase.groupOperations().values().stream()
+                        .allMatch(
+                            operations ->
+                                operations.size() == 1
+                                    && operations.get(0) instanceof UpdateRoutingState))
+        .isPresent();
+  }
+
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
     return partitionGroups.get(groupId);
   }
@@ -533,17 +560,40 @@ public record CurrentClusterConfiguration(
 
   /**
    * Builds the pending {@link PhasedChangePlan}, normalizing the plan id. Legacy restore plans use
-   * a negative sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2}), but {@link
-   * PhasedChangePlan} requires a positive id and {@link PhasedChangeState} requires the pending id
-   * to exceed the last completed change id. Any legacy id that is not positive or not greater than
-   * {@code lastChangeId} is replaced with {@code lastChangeId + 1}, keeping ids positive and
-   * monotonic after migration.
+   * a negative sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2}) that cannot be
+   * preserved as-is ({@link PhasedChangePlan} requires a non-negative id); they are instead
+   * assigned {@link PhasedChangePlan#RESTORED_PLAN_ID}, the new model's own sentinel (see {@link
+   * PhasedChangePlan#hasRestorePlanId()} and {@link #isAfterRestore()}). Any other legacy id that
+   * is not positive or not greater than {@code lastChangeId} is replaced with {@code lastChangeId +
+   * 1}, keeping ids positive and monotonic after migration.
+   *
+   * <p>A restore is only ever produced by {@code RestoreManager#restoreTopologyFile}, which always
+   * regenerates a completely fresh legacy configuration (via {@code StaticConfigurationGenerator})
+   * and attaches the restore plan to it — so a legacy restore plan is expected to never carry a
+   * prior completed change ({@code lastChangeId == 0}). This is asserted below rather than assumed
+   * silently: violating it would mean two restore plans could both be assigned {@link
+   * PhasedChangePlan#RESTORED_PLAN_ID}, and the second migration would only fail downstream in
+   * {@link PhasedChangeState}'s id-monotonicity check with no restore-specific context.
+   *
+   * @throws IllegalStateException if a legacy restore plan is migrated alongside a prior completed
+   *     change, which would violate the assumption above
    */
   private static Optional<PhasedChangePlan> toPhasedChangePlan(
       final ClusterChangePlan plan, final long lastChangeId) {
     final var phases = toPhases(plan.pendingOperations());
     if (phases.isEmpty()) {
       return Optional.empty();
+    }
+
+    if (plan.isRestore()) {
+      if (lastChangeId != 0) {
+        throw new IllegalStateException(
+            "Cannot migrate a legacy restore plan: expected no prior completed change "
+                + "(lastChangeId=0) since a restore always regenerates a fresh configuration, but "
+                + "found lastChangeId="
+                + lastChangeId);
+      }
+      return Optional.of(PhasedChangePlan.initForRestore(phases, plan.startedAt()));
     }
     final long id = plan.id() > 0 && plan.id() > lastChangeId ? plan.id() : lastChangeId + 1;
     return Optional.of(new PhasedChangePlan(id, 0, phases, plan.startedAt()));
