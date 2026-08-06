@@ -98,7 +98,51 @@ run_fn() { run bash -c 'source "$1"; shift; "$@" 2>/dev/null' _ "$@"; }
   run_json "$TRIAGE" main release c.json
   [ "$status" -eq 0 ]
   [ "$(jq -r '.action_count' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.source_missing[0].commits[0].missing_on' <<<"$output")" = target ]
   [ "$(jq -r '.source_missing[0].commits[0].subject' <<<"$output")" = "feat: fix a|b in app.js" ]
+}
+
+@test "triage: a target-only re-fix on a conflicting line (missing on release) is flagged, missing_on=release" {
+  # INC-6953 shape, and the reason the FORWARD check alone is blind. base has line Y. release re-applies
+  # the SAME edit main already made (Y->Y2) as a patch-identical commit, so git cherry sees it as present
+  # and the forward direction finds NOTHING. main then makes a FURTHER edit to that same line (Y2->Y3)
+  # that never reached release. The three-way merge conflicts (base Y, release Y2, main Y3 — both sides
+  # diverge from base), and only the conflict-tied REVERSE check surfaces the main-only commit. Without
+  # it the path lands silently in source_drift with action_count 0.
+  commit base $'app.js=X\nY\nZ'
+  git branch release
+  commit "shared: bump Y on main" $'app.js=X\nY2\nZ'                        # main P
+  git checkout -q release && commit "shared: bump Y on release" $'app.js=X\nY2\nZ'   # release P' (patch-identical to P, distinct SHA)
+  git checkout -q main && commit "fix: Y2 to Y3 (main only)" $'app.js=X\nY3\nZ'   # main Q, missing on release
+  echo '{"status":"conflict","paths":["app.js"]}' > c.json
+  run_json "$TRIAGE" main release c.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.action_count' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.source_missing[0].path' <<<"$output")" = app.js ]
+  [ "$(jq -r '.source_missing[0].commits[0].missing_on' <<<"$output")" = release ]
+  [ "$(jq -r '.source_missing[0].commits[0].subject' <<<"$output")" = "fix: Y2 to Y3 (main only)" ]
+  [ "$(jq -r '.source_drift | length' <<<"$output")" -eq 0 ]
+}
+
+@test "triage: reverse attribution is tied to the conflict lines, not the whole file (decoy excluded)" {
+  # Flood guard. Same forward-blind conflict as above on line Y, PLUS a decoy: another main-only commit
+  # (also missing on release, also touching app.js) on a far, unrelated line. The reverse look blames
+  # only the conflicting line's range, so it surfaces the conflict-line commit and NOT the decoy — the
+  # whole-file/blanket-target-ahead sweep that caused the flood would have pulled the decoy in too.
+  commit base $'app.js=X\nY\nZ\nW\nV'
+  git branch release
+  commit "shared: bump Y on main" $'app.js=X\nY2\nZ\nW\nV'                        # main P
+  git checkout -q release && commit "shared: bump Y on release" $'app.js=X\nY2\nZ\nW\nV'   # release P' (patch-identical)
+  git checkout -q main && commit "fix: Y2 to Y3 (main only)" $'app.js=X\nY3\nZ\nW\nV'       # main Q, on the conflict line
+  commit "chore: V to V2 (decoy, off the conflict)" $'app.js=X\nY3\nZ\nW\nV2'                # main D, missing on release, far line
+  echo '{"status":"conflict","paths":["app.js"]}' > c.json
+  run_json "$TRIAGE" main release c.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.action_count' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.source_missing[0].path' <<<"$output")" = app.js ]
+  [ "$(jq -r '.source_missing[0].commits | length' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.source_missing[0].commits[0].subject' <<<"$output")" = "fix: Y2 to Y3 (main only)" ]
+  [ "$(jq -r '.source_missing[0].commits[0].missing_on' <<<"$output")" = release ]
 }
 
 # ── resolve: fail-closed remote lookup ───────────────────────────────────────

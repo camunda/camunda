@@ -37,7 +37,8 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
     . as $p
     | ( $p.commits[:$max_commits]
         | map("   - *Ref:* `" + (.sha | slack_safe) + "` *Author:* `" + (.author | slack_safe)
-              + "` *Message:* " + (.subject | slack_safe))
+              + "` *Message:* " + (.subject | slack_safe)
+              + (if (.missing_on // "") != "" then "  _(missing on " + (.missing_on | slack_safe) + ")_" else "" end))
         | join("\n") ) as $commit_lines
     | ( "- `" + ($p.path | slack_safe) + "`"
         + (if $p.owner != "" then "  — owner `" + ($p.owner | slack_safe) + "`" else "" end)
@@ -73,7 +74,7 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
             text: { type: "plain_text", text: ":human-robot-heart: Merge-back needs a human", emoji: true } },
           { type: "section",
             text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)) } } ]
-        + actionable_list(":blob_detective:"; "Source changes maybe missing on target"; .source_missing)
+        + actionable_list(":blob_detective:"; "Source changes maybe missing on target or release"; .source_missing)
         + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",
