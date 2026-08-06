@@ -862,6 +862,23 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldResumeSuspendedJobForItsTenant() {
+    // given
+    final long key = 1L;
+    final String testTenant = "test-tenant";
+    final JobRecord jobRecord = newJobRecord(testTenant);
+    jobState.create(key, jobRecord);
+    jobState.suspend(key, jobRecord);
+
+    // when
+    jobState.resume(key);
+
+    // then
+    assertJobState(key, State.ACTIVATABLE);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), testTenant);
+  }
+
+  @Test
   public void shouldNotResumeJobThatIsNotSuspended() {
     // given
     final long key = 1L;

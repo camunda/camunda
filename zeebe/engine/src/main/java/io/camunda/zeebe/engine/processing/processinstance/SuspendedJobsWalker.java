@@ -30,8 +30,7 @@ import org.jspecify.annotations.NullMarked;
  * too, the child would un-park them again on its own.
  *
  * <p>The {@code processInstanceKey} filter below is a defensive invariant check for that boundary,
- * not the mechanism that enforces it - it is not exercised by any test today, since the state layer
- * never hands this walk a child instance's element to filter out in the first place.
+ * not the mechanism that enforces it.
  */
 @NullMarked
 public final class SuspendedJobsWalker {
