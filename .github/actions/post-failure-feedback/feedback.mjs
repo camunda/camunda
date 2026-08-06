@@ -282,7 +282,7 @@ async function postSlack(m) {
     if (!j.ok) throw new Error(j.error || 'unknown');
     console.log(`[feedback] posted to Slack ${channel} (ts=${j.ts})`);
     await setStepOutput('slack_ts', j.ts);
-    await setStepOutput('slack_channel', j.channel || channel);
+    await setStepOutput('slack_channel', j.channel);
   } catch (e) {
     console.error(`[feedback] Slack post failed: ${e.message || e}`);
   }
