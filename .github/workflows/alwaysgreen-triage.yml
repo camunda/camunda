@@ -41,6 +41,14 @@ on:
         required: false
         type: string
         default: ''
+      tooling_ref:
+        description: >
+          Ref carrying this workflow's local actions and scripts. A reusable workflow's
+          checkout takes the CALLER's ref, and a stable branch has none of them, so the
+          tooling ref has to be named rather than inherited.
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       run_id:
@@ -62,6 +70,10 @@ on:
         description: 'Cap on fix-agent dispatches'
         required: false
         default: '2'
+      tooling_ref:
+        description: 'Ref carrying the AlwaysGreen tooling (defaults to the dispatched ref)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -88,11 +100,38 @@ jobs:
     steps:
       # Checkout first: the flag lives in a local composite action, and the flag
       # decides whether anything else runs.
+      #
+      # The ref is explicit because a reusable workflow's checkout follows the CALLER.
+      # Called from stable/8.x that is a tree with no .github/actions/alwaysgreen-flag and
+      # no .github/scripts/alwaysgreen, and the job dies on the first of them. There is no
+      # context value for "the ref this workflow was loaded from": job_workflow_sha is
+      # absent at runtime and workflow_sha is the caller's.
+      #
+      # run_id tells the two entry paths apart. github.event_name cannot: inside a called
+      # workflow it reports the RUN's event, so a manually dispatched pipeline calling
+      # triage looks identical to triage being dispatched itself. run_id is required on
+      # triage's own workflow_dispatch and absent on workflow_call, so it is only set when
+      # github.ref_name really is this workflow's ref.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.tooling_ref || (inputs.run_id && github.ref_name) || 'main' }}
           sparse-checkout: .github
           persist-credentials: false
+
+      # Without this the symptom is actions/checkout's "Can't find action.yml", which
+      # reads as a missing checkout rather than a checkout of the wrong tree.
+      - name: Verify the tooling is present
+        run: |
+          set -euo pipefail
+          missing=""
+          for p in .github/actions/alwaysgreen-flag .github/scripts/alwaysgreen/discover.py; do
+            [ -e "$p" ] || missing="${missing} ${p}"
+          done
+          if [ -n "${missing}" ]; then
+            echo "::error::AlwaysGreen tooling missing from the checked-out ref:${missing}"
+            exit 1
+          fi
 
       # Kill switch and mode, from ALWAYSGREEN_FIX_AGENT at
       # secret/data/products/qa/ci/common:
