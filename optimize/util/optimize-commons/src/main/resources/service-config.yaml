@@ -621,12 +621,10 @@ entity:
   # flag to determine whether this Optimize instance should (re)create management entities on startup
   createOnStartup: ${CAMUNDA_OPTIMIZE_ENTITY_CREATE_ON_STARTUP:true}
   # Maximum number of characters allowed in the name of a report, collection, dashboard or alert.
-  # Names longer than this are rejected with a validation error when created or updated.
-  # The default is the largest value that always fits the Elasticsearch/OpenSearch term limit of
-  # 32766 bytes, since UTF-8 uses at most 4 bytes per character (32766 / 4 = 8191). Raising it above
-  # this can make names fail at index time; lower it to enforce a stricter naming policy.
-  # Existing entities with longer names are unaffected and remain readable.
-  nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:8191}
+  # Matches the orchestration cluster's equivalent limit for name fields. Note that a name well below
+  # this can still be too large to index, as Elasticsearch/OpenSearch cap a term at 32766 bytes and a
+  # character takes up to 3 bytes in UTF-8. Existing longer names remain readable.
+  nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
 export:
   csv:
