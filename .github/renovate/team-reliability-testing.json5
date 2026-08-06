@@ -27,13 +27,10 @@
   ],
 
   packageRules: [
-    {
-      // Disable automerge for all the load test updates, by default.
-      // Automerge can be turned on, on a case by case basis, as needed, until
-      // the teams are more confident about the updates received.
-      matchFileNames: ["load-tests/**"],
-      automerge: false,
-    },
+    // Automerge is disabled for all load test updates in the .github/renovate.json5 file.
+    // We can't configure this behavior here, as the content of
+    // .github/renovate.json5 takes precedence over this file, and automerge is
+    // globally enabled in .github/renovate.json5.
 
     {
       // Simplify the commit message when updating the Camunda Platform Helm Chart for load tests
