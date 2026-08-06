@@ -12,8 +12,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +38,7 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
   @Override
   public ActorFuture<ConfigurationChangeResult> applyOperations(
       final ConfigurationChangeRequest request) {
-    final var operationsEither = request.operations(currentTopology);
+    final var operationsEither = resolveOperations(request);
     if (operationsEither.isLeft()) {
       return TestActorFuture.failedFuture(operationsEither.getLeft());
     }
@@ -70,5 +74,33 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
 
   public List<ClusterConfigurationChangeOperation> getLastAppliedOperation() {
     return lastAppliedOperation;
+  }
+
+  /**
+   * Requests that only implement {@code phases()} (the new multi-partition-group model) have no
+   * meaningful {@code operations(ClusterConfiguration)}; fall back to {@code phases()} on a
+   * fromLegacy projection of the test's legacy topology in that case.
+   */
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> resolveOperations(
+      final ConfigurationChangeRequest request) {
+    try {
+      return request.operations(currentTopology);
+    } catch (final UnsupportedOperationException requestIsPhasesOnly) {
+      return request
+          .phases(CurrentClusterConfiguration.fromLegacy(currentTopology))
+          .map(RecordingChangeCoordinator::flattenPhases);
+    }
+  }
+
+  private static List<ClusterConfigurationChangeOperation> flattenPhases(final List<Phase> phases) {
+    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
+    for (final var phase : phases) {
+      switch (phase) {
+        case final GlobalPhase globalPhase -> operations.addAll(globalPhase.operations());
+        case final PartitionGroupParallelPhase parallelPhase ->
+            parallelPhase.groupOperations().values().forEach(operations::addAll);
+      }
+    }
+    return operations;
   }
 }
