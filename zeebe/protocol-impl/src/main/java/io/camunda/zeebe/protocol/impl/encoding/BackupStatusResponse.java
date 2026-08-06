@@ -153,7 +153,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   }
 
   public String getFailureReason() {
-    return failureReason;
+    return failureReason.isEmpty() ? null : failureReason;
   }
 
   public BackupStatusResponse setFailureReason(final String failureReason) {
