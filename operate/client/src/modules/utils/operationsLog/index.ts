@@ -20,6 +20,8 @@ const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   switch (batchOperationType) {
     case 'DELETE_PROCESS_INSTANCE':
     case 'CANCEL_PROCESS_INSTANCE':
+    case 'SUSPEND_PROCESS_INSTANCE':
+    case 'RESUME_PROCESS_INSTANCE':
     case 'MIGRATE_PROCESS_INSTANCE':
     case 'MODIFY_PROCESS_INSTANCE':
       return 'process instances';

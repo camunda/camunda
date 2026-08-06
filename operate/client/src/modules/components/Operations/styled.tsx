@@ -10,9 +10,19 @@ import {Stack} from '@carbon/react';
 import styled from 'styled-components';
 
 const OperationsContainer = styled(Stack)`
+  position: relative;
+
   .cds--popover[role='tooltip'] {
     display: none;
   }
 `;
 
-export {OperationsContainer};
+const LoadingIndicatorContainer = styled.div`
+  position: absolute;
+  inset-inline-end: 100%;
+  top: 50%;
+  width: var(--cds-spacing-07);
+  transform: translateY(-50%);
+`;
+
+export {LoadingIndicatorContainer, OperationsContainer};

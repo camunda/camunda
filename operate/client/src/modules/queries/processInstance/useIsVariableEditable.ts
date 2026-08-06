@@ -6,19 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type OperationType =
-  | 'RESOLVE_INCIDENT'
-  | 'CANCEL_PROCESS_INSTANCE'
-  | 'SUSPEND_PROCESS_INSTANCE'
-  | 'RESUME_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE'
-  | 'ENTER_MODIFICATION_MODE';
+import {useProcessInstance} from './useProcessInstance';
+import {isVariableEditable} from 'modules/utils/instance';
 
-type OperationConfig = {
-  type: OperationType;
-  onExecute: () => void;
-  disabled?: boolean;
-  label?: string;
-};
+const useIsVariableEditable = () =>
+  useProcessInstance<boolean>(isVariableEditable);
 
-export type {OperationConfig};
+export {useIsVariableEditable};

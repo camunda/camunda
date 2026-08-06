@@ -79,6 +79,22 @@ function useHandleOperationSuccess() {
         isDismissable: true,
       });
     }
+
+    if (operationType === 'SUSPEND_PROCESS_INSTANCE') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    }
+
+    if (operationType === 'RESUME_PROCESS_INSTANCE') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    }
   };
 }
 

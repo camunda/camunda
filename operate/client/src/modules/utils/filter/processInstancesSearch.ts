@@ -28,6 +28,7 @@ const ProcessInstancesFilterSchema = z
     processInstanceKey: z.string().optional(),
     parentProcessInstanceKey: z.string().optional(),
     active: z.coerce.boolean().optional(),
+    suspended: z.coerce.boolean().optional(),
     incidents: z.coerce.boolean().optional(),
     completed: z.coerce.boolean().optional(),
     canceled: z.coerce.boolean().optional(),
@@ -64,7 +65,11 @@ const parseProcessInstancesSearchFilter = (
   const filter = parseProcessInstancesFilter(search);
 
   const hasStateFilters =
-    filter.active || filter.completed || filter.canceled || filter.incidents;
+    filter.active ||
+    filter.suspended ||
+    filter.completed ||
+    filter.canceled ||
+    filter.incidents;
 
   if (!hasStateFilters && !filter.batchOperationKey && !filter.elementId) {
     return undefined;
@@ -114,15 +119,24 @@ const parseProcessInstancesSearchFilter = (
     states.push('TERMINATED');
   }
 
+  const stateFilters: ProcessInstancesSearchFilter[] = [];
+  if (states.length > 0) {
+    stateFilters.push({
+      state: states.length === 1 ? {$eq: states[0]} : {$in: states},
+      hasIncident: false,
+    });
+  }
+  if (filter.suspended) {
+    stateFilters.push({state: {$eq: 'SUSPENDED'}});
+  }
   if (filter.incidents) {
-    if (states.length > 0) {
-      apiFilter.$or = [{state: {$in: states}}, {hasIncident: true}];
-    } else {
-      apiFilter.hasIncident = true;
-    }
-  } else if (states.length > 0) {
-    apiFilter.state = states.length === 1 ? {$eq: states[0]} : {$in: states};
-    apiFilter.hasIncident = false;
+    stateFilters.push({hasIncident: true});
+  }
+
+  if (stateFilters.length === 1) {
+    Object.assign(apiFilter, stateFilters[0]);
+  } else if (stateFilters.length > 1) {
+    apiFilter.$or = stateFilters;
   }
 
   if (filter.elementId) {
@@ -205,6 +219,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
   ProcessInstancesFilterSchema.unwrap()
     .pick({
       active: true,
+      suspended: true,
       incidents: true,
       completed: true,
       canceled: true,

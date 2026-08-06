@@ -6,19 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type OperationType =
-  | 'RESOLVE_INCIDENT'
-  | 'CANCEL_PROCESS_INSTANCE'
-  | 'SUSPEND_PROCESS_INSTANCE'
-  | 'RESUME_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE'
-  | 'ENTER_MODIFICATION_MODE';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {mockPostRequest} from '../../mockRequest';
 
-type OperationConfig = {
-  type: OperationType;
-  onExecute: () => void;
-  disabled?: boolean;
-  label?: string;
-};
+const mockSuspendProcessInstance = (contextPath = '') =>
+  mockPostRequest(
+    `${contextPath}${endpoints.suspendProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'})}`,
+  );
 
-export type {OperationConfig};
+export {mockSuspendProcessInstance};

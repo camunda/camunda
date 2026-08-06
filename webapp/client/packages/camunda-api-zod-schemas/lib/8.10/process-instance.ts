@@ -136,6 +136,20 @@ const cancelProcessInstanceRequestBodySchema = z
 	.optional();
 type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
 
+const suspendProcessInstanceRequestBodySchema = z
+	.object({
+		operationReference: z.number().int(),
+	})
+	.optional();
+type SuspendProcessInstanceRequestBody = z.infer<typeof suspendProcessInstanceRequestBodySchema>;
+
+const resumeProcessInstanceRequestBodySchema = z
+	.object({
+		operationReference: z.number().int(),
+	})
+	.optional();
+type ResumeProcessInstanceRequestBody = z.infer<typeof resumeProcessInstanceRequestBodySchema>;
+
 const getProcessInstance = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}` as const,
@@ -188,6 +202,16 @@ const queryProcessInstances = {
 const cancelProcessInstance = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
+
+const suspendProcessInstance = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/suspension` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
+
+const resumeProcessInstance = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/resumption` as const,
 } as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
@@ -304,6 +328,52 @@ type CreateCancellationBatchOperationResponseBody = z.infer<typeof createCancell
 const createCancellationBatchOperation = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/process-instances/cancellation` as const,
+} as const satisfies Endpoint;
+
+const suspendProcessInstancesBatchOperationRequestBodySchema = z.object({
+	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
+	operationReference: z.number().int().optional(),
+});
+
+type SuspendProcessInstancesBatchOperationRequestBody = z.infer<
+	typeof suspendProcessInstancesBatchOperationRequestBodySchema
+>;
+
+const suspendProcessInstancesBatchOperationResponseBodySchema = z.object({
+	batchOperationKey: z.string(),
+	batchOperationType: processInstanceBatchOperationTypeSchema,
+});
+
+type SuspendProcessInstancesBatchOperationResponseBody = z.infer<
+	typeof suspendProcessInstancesBatchOperationResponseBodySchema
+>;
+
+const suspendProcessInstancesBatchOperation = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/suspension` as const,
+} as const satisfies Endpoint;
+
+const resumeProcessInstancesBatchOperationRequestBodySchema = z.object({
+	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
+	operationReference: z.number().int().optional(),
+});
+
+type ResumeProcessInstancesBatchOperationRequestBody = z.infer<
+	typeof resumeProcessInstancesBatchOperationRequestBodySchema
+>;
+
+const resumeProcessInstancesBatchOperationResponseBodySchema = z.object({
+	batchOperationKey: z.string(),
+	batchOperationType: processInstanceBatchOperationTypeSchema,
+});
+
+type ResumeProcessInstancesBatchOperationResponseBody = z.infer<
+	typeof resumeProcessInstancesBatchOperationResponseBodySchema
+>;
+
+const resumeProcessInstancesBatchOperation = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/process-instances/resumption` as const,
 } as const satisfies Endpoint;
 
 const createDeletionBatchOperationRequestBodySchema = z.object({
@@ -424,6 +494,8 @@ export {
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
+	suspendProcessInstance,
+	resumeProcessInstance,
 	queryProcessInstanceIncidents,
 	getProcessInstanceCallHierarchy,
 	getProcessInstanceStatistics,
@@ -431,6 +503,8 @@ export {
 	getProcessInstanceSequenceFlows,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
+	suspendProcessInstancesBatchOperation,
+	resumeProcessInstancesBatchOperation,
 	createDeletionBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
@@ -442,6 +516,8 @@ export {
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
+	suspendProcessInstanceRequestBodySchema,
+	resumeProcessInstanceRequestBodySchema,
 	queryProcessInstanceIncidentsRequestBodySchema,
 	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
@@ -451,6 +527,10 @@ export {
 	getProcessInstanceSequenceFlowsResponseBodySchema,
 	createIncidentResolutionBatchOperationResponseBodySchema,
 	createCancellationBatchOperationResponseBodySchema,
+	suspendProcessInstancesBatchOperationRequestBodySchema,
+	suspendProcessInstancesBatchOperationResponseBodySchema,
+	resumeProcessInstancesBatchOperationRequestBodySchema,
+	resumeProcessInstancesBatchOperationResponseBodySchema,
 	createDeletionBatchOperationResponseBodySchema,
 	createMigrationBatchOperationResponseBodySchema,
 	createModificationBatchOperationResponseBodySchema,
@@ -468,6 +548,8 @@ export type {
 	QueryProcessInstancesRequestBody,
 	QueryProcessInstancesResponseBody,
 	CancelProcessInstanceRequestBody,
+	SuspendProcessInstanceRequestBody,
+	ResumeProcessInstanceRequestBody,
 	QueryProcessInstanceIncidentsRequestBody,
 	QueryProcessInstanceIncidentsResponseBody,
 	CallHierarchy,
@@ -484,6 +566,10 @@ export type {
 	CreateIncidentResolutionBatchOperationResponseBody,
 	CreateCancellationBatchOperationRequestBody,
 	CreateCancellationBatchOperationResponseBody,
+	SuspendProcessInstancesBatchOperationRequestBody,
+	SuspendProcessInstancesBatchOperationResponseBody,
+	ResumeProcessInstancesBatchOperationRequestBody,
+	ResumeProcessInstancesBatchOperationResponseBody,
 	CreateDeletionBatchOperationRequestBody,
 	CreateDeletionBatchOperationResponseBody,
 	CreateMigrationBatchOperationRequestBody,

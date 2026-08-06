@@ -15,7 +15,11 @@ import {
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
 import {parseDecisionInstancesSearchFilter} from 'modules/utils/filter/decisionsFilter';
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
-import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  CreateDecisionInstancesDeletionBatchOperationRequestBody,
+  ResumeProcessInstancesBatchOperationRequestBody,
+  SuspendProcessInstancesBatchOperationRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const useBatchOperationMutationRequestBody = () => {
   const conditions = variableFilterStore.conditions;
@@ -56,6 +60,42 @@ const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
   });
 };
 
+const useSuspendProcessInstancesBatchOperationMutationRequestBody =
+  (): SuspendProcessInstancesBatchOperationRequestBody => {
+    const conditions = variableFilterStore.conditions;
+    const [searchParams] = useSearchParams();
+
+    const {selectedIds, excludedIds, checkedSuspendableIds} =
+      processInstancesSelectionStore;
+
+    const includeIds = selectedIds.length > 0 ? checkedSuspendableIds : [];
+
+    return buildMutationRequestBody({
+      searchParams,
+      includeIds,
+      excludeIds: excludedIds,
+      conditions,
+    });
+  };
+
+const useResumeProcessInstancesBatchOperationMutationRequestBody =
+  (): ResumeProcessInstancesBatchOperationRequestBody => {
+    const conditions = variableFilterStore.conditions;
+    const [searchParams] = useSearchParams();
+
+    const {selectedIds, excludedIds, checkedSuspendedIds} =
+      processInstancesSelectionStore;
+
+    const includeIds = selectedIds.length > 0 ? checkedSuspendedIds : [];
+
+    return buildMutationRequestBody({
+      searchParams,
+      includeIds,
+      excludeIds: excludedIds,
+      conditions,
+    });
+  };
+
 const useDeleteDecisionInstancesBatchOperationRequestBody =
   (): CreateDecisionInstancesDeletionBatchOperationRequestBody => {
     const [searchParams] = useSearchParams();
@@ -77,5 +117,7 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
 export {
   useBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
+  useSuspendProcessInstancesBatchOperationMutationRequestBody,
+  useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteDecisionInstancesBatchOperationRequestBody,
 };

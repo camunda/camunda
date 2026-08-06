@@ -75,4 +75,54 @@ describe('parseProcessInstancesSearchFilter', () => {
     );
     expect(result).not.toHaveProperty('businessId');
   });
+
+  it('should return a filter with the SUSPENDED state when only suspended is set', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({suspended: 'true'}),
+    );
+
+    expect(result).toEqual({
+      state: {$eq: 'SUSPENDED'},
+    });
+  });
+
+  it('should combine active and suspended into an $or clause', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({active: 'true', suspended: 'true'}),
+    );
+
+    expect(result).toEqual({
+      $or: [
+        {state: {$eq: 'ACTIVE'}, hasIncident: false},
+        {state: {$eq: 'SUSPENDED'}},
+      ],
+    });
+  });
+
+  it('should combine active, suspended and incidents into a three-clause $or', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({active: 'true', suspended: 'true', incidents: 'true'}),
+    );
+
+    expect(result).toEqual({
+      $or: [
+        {state: {$eq: 'ACTIVE'}, hasIncident: false},
+        {state: {$eq: 'SUSPENDED'}},
+        {hasIncident: true},
+      ],
+    });
+  });
+
+  it('should combine suspended with other finished states into an $or clause', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({suspended: 'true', completed: 'true', canceled: 'true'}),
+    );
+
+    expect(result).toEqual({
+      $or: [
+        {state: {$in: ['COMPLETED', 'TERMINATED']}, hasIncident: false},
+        {state: {$eq: 'SUSPENDED'}},
+      ],
+    });
+  });
 });

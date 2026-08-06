@@ -53,7 +53,10 @@ describe('useBatchOperationMutationRequestBody', () => {
 
     expect(result.current).toEqual({
       filter: {
-        $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+        $or: [
+          {state: {$eq: 'ACTIVE'}, hasIncident: false},
+          {hasIncident: true},
+        ],
       },
     });
   });

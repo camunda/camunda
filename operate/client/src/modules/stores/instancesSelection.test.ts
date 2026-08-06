@@ -536,6 +536,171 @@ describe('InstancesSelection - checkedIncidentIds', () => {
   });
 });
 
+describe('InstancesSelection - hasSelectedSuspendableInstances', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleSuspendableIds: ['1', '3'],
+      visibleSuspendedIds: ['2'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return true when a suspendable instance is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // suspendable
+    processInstancesSelectionStore.select('4'); // not suspendable
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendableInstances).toBe(
+      true,
+    );
+  });
+
+  it('should return false when no suspendable instance is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('2'); // suspended, not suspendable
+    processInstancesSelectionStore.select('4'); // neither
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendableInstances).toBe(
+      false,
+    );
+  });
+
+  it('should return true when selectionMode is ALL', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendableInstances).toBe(
+      true,
+    );
+  });
+});
+
+describe('InstancesSelection - checkedSuspendableIds', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleSuspendableIds: ['1', '3'],
+      visibleSuspendedIds: ['2'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return only suspendable ids from selectedIds in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // suspendable
+    processInstancesSelectionStore.select('2'); // suspended, not suspendable
+    processInstancesSelectionStore.select('3'); // suspendable
+
+    expect(processInstancesSelectionStore.checkedSuspendableIds).toEqual([
+      '1',
+      '3',
+    ]);
+  });
+
+  it('should return suspendable ids not in excludedIds in EXCLUDE mode', () => {
+    processInstancesSelectionStore.selectAll();
+    processInstancesSelectionStore.select('1'); // exclude suspendable id
+
+    expect(processInstancesSelectionStore.checkedSuspendableIds).toEqual(['3']);
+  });
+
+  it('should return all suspendable ids in ALL mode', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.checkedSuspendableIds).toEqual([
+      '1',
+      '3',
+    ]);
+  });
+});
+
+describe('InstancesSelection - hasSelectedSuspendedInstances', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleSuspendableIds: ['1', '3'],
+      visibleSuspendedIds: ['2'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return true when a suspended instance is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('2'); // suspended
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendedInstances).toBe(
+      true,
+    );
+  });
+
+  it('should return false when no suspended instance is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // suspendable, not suspended
+    processInstancesSelectionStore.select('4'); // neither
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendedInstances).toBe(
+      false,
+    );
+  });
+
+  it('should return true when selectionMode is ALL', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.hasSelectedSuspendedInstances).toBe(
+      true,
+    );
+  });
+});
+
+describe('InstancesSelection - checkedSuspendedIds', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleSuspendableIds: ['1', '3'],
+      visibleSuspendedIds: ['2', '4'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return only suspended ids from selectedIds in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // suspendable, not suspended
+    processInstancesSelectionStore.select('2'); // suspended
+    processInstancesSelectionStore.select('4'); // suspended
+
+    expect(processInstancesSelectionStore.checkedSuspendedIds).toEqual([
+      '2',
+      '4',
+    ]);
+  });
+
+  it('should return suspended ids not in excludedIds in EXCLUDE mode', () => {
+    processInstancesSelectionStore.selectAll();
+    processInstancesSelectionStore.select('2'); // exclude suspended id
+
+    expect(processInstancesSelectionStore.checkedSuspendedIds).toEqual(['4']);
+  });
+
+  it('should return all suspended ids in ALL mode', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.checkedSuspendedIds).toEqual([
+      '2',
+      '4',
+    ]);
+  });
+});
+
 describe('InstancesSelection - excludedIds', () => {
   beforeEach(() => {
     processInstancesSelectionStore.setRuntime({

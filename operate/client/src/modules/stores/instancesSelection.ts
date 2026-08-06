@@ -21,6 +21,13 @@ type Runtime = {
   visibleRunningIds?: string[];
   visibleFinishedIds?: string[];
   visibleIncidentIds?: string[];
+  visibleSuspendableIds?: string[];
+  visibleSuspendedIds?: string[];
+  hasPotentialRunningInstances?: boolean;
+  hasPotentialFinishedInstances?: boolean;
+  hasPotentialIncidentInstances?: boolean;
+  hasPotentialSuspendableInstances?: boolean;
+  hasPotentialSuspendedInstances?: boolean;
 };
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
@@ -43,6 +50,13 @@ class InstancesSelection {
     visibleRunningIds: [],
     visibleFinishedIds: [],
     visibleIncidentIds: [],
+    visibleSuspendableIds: [],
+    visibleSuspendedIds: [],
+    hasPotentialRunningInstances: undefined,
+    hasPotentialFinishedInstances: undefined,
+    hasPotentialIncidentInstances: undefined,
+    hasPotentialSuspendableInstances: undefined,
+    hasPotentialSuspendedInstances: undefined,
   };
   autorunDisposer: null | IReactionDisposer = null;
 
@@ -76,7 +90,21 @@ class InstancesSelection {
       isEqual(prev.visibleIds, next.visibleIds) &&
       isEqual(prev.visibleRunningIds ?? [], next.visibleRunningIds ?? []) &&
       isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? []) &&
-      isEqual(prev.visibleIncidentIds ?? [], next.visibleIncidentIds ?? [])
+      isEqual(prev.visibleIncidentIds ?? [], next.visibleIncidentIds ?? []) &&
+      isEqual(
+        prev.visibleSuspendableIds ?? [],
+        next.visibleSuspendableIds ?? [],
+      ) &&
+      isEqual(prev.visibleSuspendedIds ?? [], next.visibleSuspendedIds ?? []) &&
+      prev.hasPotentialRunningInstances === next.hasPotentialRunningInstances &&
+      prev.hasPotentialFinishedInstances ===
+        next.hasPotentialFinishedInstances &&
+      prev.hasPotentialIncidentInstances ===
+        next.hasPotentialIncidentInstances &&
+      prev.hasPotentialSuspendableInstances ===
+        next.hasPotentialSuspendableInstances &&
+      prev.hasPotentialSuspendedInstances ===
+        next.hasPotentialSuspendedInstances
     ) {
       return;
     }
@@ -173,48 +201,64 @@ class InstancesSelection {
   }
 
   get hasSelectedRunningInstances() {
-    const {
-      selectedIds,
-      isAllChecked,
-      state: {selectionMode},
-    } = this;
-    const visibleRunningIds = this.runtime.visibleRunningIds ?? [];
-
-    return (
-      isAllChecked ||
-      selectionMode === 'EXCLUDE' ||
-      visibleRunningIds.some((id) => selectedIds.includes(id))
+    return this.hasSelectedEligibleInstances(
+      this.runtime.visibleRunningIds ?? [],
+      this.runtime.hasPotentialRunningInstances,
     );
   }
 
   get hasSelectedFinishedInstances() {
-    const {
-      selectedIds,
-      isAllChecked,
-      state: {selectionMode},
-    } = this;
-    const visibleFinishedIds = this.runtime.visibleFinishedIds ?? [];
-
-    return (
-      isAllChecked ||
-      selectionMode === 'EXCLUDE' ||
-      visibleFinishedIds.some((id) => selectedIds.includes(id))
+    return this.hasSelectedEligibleInstances(
+      this.runtime.visibleFinishedIds ?? [],
+      this.runtime.hasPotentialFinishedInstances,
     );
   }
 
   get hasSelectedInstancesWithIncidents() {
+    return this.hasSelectedEligibleInstances(
+      this.runtime.visibleIncidentIds ?? [],
+      this.runtime.hasPotentialIncidentInstances,
+    );
+  }
+
+  get hasSelectedSuspendableInstances() {
+    return this.hasSelectedEligibleInstances(
+      this.runtime.visibleSuspendableIds ?? [],
+      this.runtime.hasPotentialSuspendableInstances,
+    );
+  }
+
+  get hasSelectedSuspendedInstances() {
+    return this.hasSelectedEligibleInstances(
+      this.runtime.visibleSuspendedIds ?? [],
+      this.runtime.hasPotentialSuspendedInstances,
+    );
+  }
+
+  private hasSelectedEligibleInstances(
+    visibleEligibleIds: string[],
+    hasPotentialEligibleInstances: boolean | undefined,
+  ) {
     const {
       selectedIds,
-      isAllChecked,
       state: {selectionMode},
+      runtime: {totalCount, hasMoreTotalItems, visibleIds},
     } = this;
-    const visibleIncidentIds = this.runtime.visibleIncidentIds ?? [];
 
-    return (
-      isAllChecked ||
-      selectionMode === 'EXCLUDE' ||
-      visibleIncidentIds.some((id) => selectedIds.includes(id))
+    const hasVisibleSelectedEligibleInstance = visibleEligibleIds.some((id) =>
+      selectionMode === 'INCLUDE'
+        ? selectedIds.includes(id)
+        : !selectedIds.includes(id),
     );
+
+    if (hasVisibleSelectedEligibleInstance || selectionMode === 'INCLUDE') {
+      return hasVisibleSelectedEligibleInstance;
+    }
+
+    const hasUnloadedInstances =
+      !!hasMoreTotalItems || visibleIds.length < totalCount;
+
+    return hasUnloadedInstances && (hasPotentialEligibleInstances ?? true);
   }
 
   get checkedRunningIds() {
@@ -237,6 +281,28 @@ class InstancesSelection {
     }
 
     return visibleIncidentIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedSuspendableIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleSuspendableIds = this.runtime.visibleSuspendableIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleSuspendableIds.includes(id));
+    }
+
+    return visibleSuspendableIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedSuspendedIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleSuspendedIds = this.runtime.visibleSuspendedIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleSuspendedIds.includes(id));
+    }
+
+    return visibleSuspendedIds.filter((id) => !selectedIds.includes(id));
   }
 
   get checkedFinishedIds() {
@@ -281,6 +347,13 @@ class InstancesSelection {
       visibleRunningIds: [],
       visibleFinishedIds: [],
       visibleIncidentIds: [],
+      visibleSuspendableIds: [],
+      visibleSuspendedIds: [],
+      hasPotentialRunningInstances: undefined,
+      hasPotentialFinishedInstances: undefined,
+      hasPotentialIncidentInstances: undefined,
+      hasPotentialSuspendableInstances: undefined,
+      hasPotentialSuspendedInstances: undefined,
     };
     this.autorunDisposer?.();
   };

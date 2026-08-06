@@ -6,10 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {
-  CreateCancellationBatchOperationRequestBody,
-  CreateIncidentResolutionBatchOperationRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {VariableCondition} from 'modules/stores/variableFilter';
@@ -59,13 +55,7 @@ const buildMutationRequestBody = ({
     }
   }
 
-  const requestBody:
-    | CreateIncidentResolutionBatchOperationRequestBody
-    | CreateCancellationBatchOperationRequestBody = {
-    filter,
-  };
-
-  return requestBody;
+  return {filter};
 };
 
 export {buildMutationRequestBody};

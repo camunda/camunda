@@ -43,14 +43,23 @@ type ProcessInstancesHandle = {
 const InstancesTableWrapper: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
   const hasActiveFilter = searchParams.get('active') === 'true';
+  const hasSuspendedFilter = searchParams.get('suspended') === 'true';
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
+  const hasCompletedFilter = searchParams.get('completed') === 'true';
+  const hasCanceledFilter = searchParams.get('canceled') === 'true';
+  const hasStateFilter =
+    hasActiveFilter ||
+    hasSuspendedFilter ||
+    hasIncidentsFilter ||
+    hasCompletedFilter ||
+    hasCanceledFilter;
 
   const conditions = variableFilterStore.conditions;
   const filter = useProcessInstancesSearchFilter(conditions);
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =
-    (hasActiveFilter || hasIncidentsFilter) &&
+    (hasActiveFilter || hasSuspendedFilter || hasIncidentsFilter) &&
     !batchModificationStore.state.isEnabled;
 
   const result = useProcessInstancesPaginated({
@@ -73,7 +82,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
       (instance) => instance.processInstanceKey,
     );
     const visibleRunningIds = processInstances
-      .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
+      .filter((instance) => instance.state === 'ACTIVE')
       .map((instance) => instance.processInstanceKey);
 
     const visibleFinishedIds = processInstances
@@ -84,7 +93,23 @@ const InstancesTableWrapper: React.FC = observer(() => {
       .map((instance) => instance.processInstanceKey);
 
     const visibleIncidentIds = processInstances
-      .filter((instance) => instance.hasIncident)
+      .filter((instance) => instance.state === 'ACTIVE' && instance.hasIncident)
+      .map((instance) => instance.processInstanceKey);
+
+    const visibleSuspendableIds = processInstances
+      .filter(
+        (instance) =>
+          instance.state === 'ACTIVE' &&
+          instance.parentProcessInstanceKey === null,
+      )
+      .map((instance) => instance.processInstanceKey);
+
+    const visibleSuspendedIds = processInstances
+      .filter(
+        (instance) =>
+          instance.state === 'SUSPENDED' &&
+          instance.parentProcessInstanceKey === null,
+      )
       .map((instance) => instance.processInstanceKey);
 
     processInstancesSelectionStore.setRuntime({
@@ -94,8 +119,29 @@ const InstancesTableWrapper: React.FC = observer(() => {
       visibleRunningIds,
       visibleFinishedIds,
       visibleIncidentIds,
+      visibleSuspendableIds,
+      visibleSuspendedIds,
+      hasPotentialRunningInstances:
+        !hasStateFilter || hasActiveFilter || hasIncidentsFilter,
+      hasPotentialFinishedInstances:
+        !hasStateFilter || hasCompletedFilter || hasCanceledFilter,
+      hasPotentialIncidentInstances: !hasStateFilter || hasIncidentsFilter,
+      hasPotentialSuspendableInstances:
+        !hasStateFilter || hasActiveFilter || hasIncidentsFilter,
+      hasPotentialSuspendedInstances:
+        !hasStateFilter || hasSuspendedFilter || hasIncidentsFilter,
     });
-  }, [processInstances, totalCount, hasMoreTotalItems]);
+  }, [
+    processInstances,
+    totalCount,
+    hasMoreTotalItems,
+    hasActiveFilter,
+    hasSuspendedFilter,
+    hasIncidentsFilter,
+    hasCompletedFilter,
+    hasCanceledFilter,
+    hasStateFilter,
+  ]);
 
   return (
     <InstancesTable

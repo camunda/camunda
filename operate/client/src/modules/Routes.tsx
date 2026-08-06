@@ -95,6 +95,7 @@ const Locations = {
       });
     } else {
       params.set('active', 'true');
+      params.set('suspended', 'true');
       params.set('incidents', 'true');
     }
 

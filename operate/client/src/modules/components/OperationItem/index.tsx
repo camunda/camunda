@@ -8,6 +8,8 @@
 
 import {
   Error,
+  Pause,
+  Play,
   Tools,
   RetryFailed,
   type CarbonIconType,
@@ -16,7 +18,11 @@ import {Button, type ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type:
-    'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | 'ENTER_MODIFICATION_MODE';
+    | 'RESOLVE_INCIDENT'
+    | 'CANCEL_PROCESS_INSTANCE'
+    | 'SUSPEND_PROCESS_INSTANCE'
+    | 'RESUME_PROCESS_INSTANCE'
+    | 'ENTER_MODIFICATION_MODE';
   onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
   disabled?: boolean;
@@ -36,6 +42,8 @@ const TYPE_DETAILS: Readonly<
 > = {
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},
   CANCEL_PROCESS_INSTANCE: {icon: Error, testId: 'cancel-operation'},
+  SUSPEND_PROCESS_INSTANCE: {icon: Pause, testId: 'suspend-operation'},
+  RESUME_PROCESS_INSTANCE: {icon: Play, testId: 'resume-operation'},
   ENTER_MODIFICATION_MODE: {icon: Tools, testId: 'enter-modification-mode'},
 };
 

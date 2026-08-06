@@ -8,12 +8,12 @@
 
 import {OperationItems} from 'modules/components/OperationItems';
 import {InlineLoading} from '@carbon/react';
-import {OperationsContainer} from './styled';
+import {LoadingIndicatorContainer, OperationsContainer} from './styled';
 import {OperationRenderer} from './OperationRenderer';
 import type {OperationConfig} from './types';
 
 type Props = {
-  operations: OperationConfig[];
+  operations: Array<OperationConfig | null>;
   processInstanceKey: string;
   isLoading?: boolean;
   loadingMessage?: string;
@@ -28,18 +28,20 @@ const Operations: React.FC<Props> = ({
   return (
     <OperationsContainer orientation="horizontal">
       {isLoading ? (
-        <InlineLoading
-          data-testid="operation-spinner"
-          title={
-            loadingMessage ||
-            `Instance ${processInstanceKey} has scheduled Operations`
-          }
-        />
+        <LoadingIndicatorContainer>
+          <InlineLoading
+            data-testid="operation-spinner"
+            title={
+              loadingMessage ||
+              `Instance ${processInstanceKey} has scheduled Operations`
+            }
+          />
+        </LoadingIndicatorContainer>
       ) : null}
       <OperationItems>
-        {operations.map((operation) => (
+        {operations.map((operation, index) => (
           <OperationRenderer
-            key={operation.type}
+            key={operation?.type ?? `placeholder-${index}`}
             operation={operation}
             processInstanceKey={processInstanceKey}
           />

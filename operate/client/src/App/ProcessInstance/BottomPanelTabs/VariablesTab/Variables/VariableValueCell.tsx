@@ -19,7 +19,7 @@ type Props = {
   documentResult: DocumentParseResult | null;
   isTruncated: boolean | null;
   isModificationModeEnabled: boolean | undefined;
-  isProcessInstanceRunning: boolean | undefined;
+  isVariableEditable: boolean | undefined;
 };
 
 const VariableValueCell: React.FC<Props> = ({
@@ -29,7 +29,7 @@ const VariableValueCell: React.FC<Props> = ({
   documentResult,
   isTruncated,
   isModificationModeEnabled,
-  isProcessInstanceRunning,
+  isVariableEditable,
 }) => {
   const {refetch} = useVariable(variableKey, {enabled: false});
 
@@ -66,9 +66,7 @@ const VariableValueCell: React.FC<Props> = ({
                 variableName={variableName}
                 variableValue={value}
                 buttonLabel="Show all"
-                canEdit={
-                  !isModificationModeEnabled && !!isProcessInstanceRunning
-                }
+                canEdit={!isModificationModeEnabled && !!isVariableEditable}
               />
             )
           : undefined
