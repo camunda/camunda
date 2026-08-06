@@ -48,8 +48,11 @@ final class PartitionReassignmentSupport {
   }
 
   /**
-   * Orders members ascending by replica count, then leader count, then {@link MemberId#nodeIdx()} —
-   * the least-loaded, most-deterministic member sorts first.
+   * Orders members ascending by replica count, then leader count, then {@link
+   * MemberId#ID_COMPARATOR} — the least-loaded, most-deterministic member sorts first. {@code
+   * nodeIdx} alone is not a total order once zoned members are involved (the same {@code nodeIdx}
+   * can occur in more than one zone), so {@code ID_COMPARATOR} — which additionally orders by zone
+   * — is used as the final tie-breaker instead.
    */
   static Comparator<MemberId> loadComparator(
       final Map<MemberId, Integer> replicaCountByMember,
@@ -57,7 +60,7 @@ final class PartitionReassignmentSupport {
     return Comparator.comparingInt(
             (MemberId member) -> replicaCountByMember.getOrDefault(member, 0))
         .thenComparingInt(member -> leaderCountByMember.getOrDefault(member, 0))
-        .thenComparingInt(MemberId::nodeIdx);
+        .thenComparing(MemberId.ID_COMPARATOR);
   }
 
   /**

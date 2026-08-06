@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -186,6 +187,42 @@ final class AdditivePartitionReassignerTest {
 
     // then
     assertThat(first).isEqualTo(second);
+  }
+
+  @Test
+  void shouldPlaceZoneAwareMembersWithCollidingNodeIdxIdenticallyRegardlessOfIterationOrder() {
+    // given — "us_0"/"eu_0" share nodeIdx 0, "us_1"/"eu_1" share nodeIdx 1. Two target-member sets
+    // with the exact same four elements but opposite insertion/iteration order (LinkedHashSet
+    // preserves insertion order, unlike Set.of()). Sorting by nodeIdx alone (rather than the full
+    // MemberId.ID_COMPARATOR, which also orders by zone) would leave each colliding pair tied, and
+    // Java's stable sort would then preserve whatever relative order they happened to arrive in —
+    // making the outcome depend on incidental iteration order instead of the members' actual
+    // identities.
+    final var usZone0 = zoneMember("us", 0);
+    final var euZone0 = zoneMember("eu", 0);
+    final var usZone1 = zoneMember("us", 1);
+    final var euZone1 = zoneMember("eu", 1);
+    final var membersInOneOrder = new LinkedHashSet<>(List.of(usZone0, euZone0, usZone1, euZone1));
+    final var membersInReverseOrder =
+        new LinkedHashSet<>(List.of(euZone1, usZone1, euZone0, usZone0));
+    final var configuration = configurationWithExistingGroups(Map.of());
+    final var targetPartitionIds = sortedPartitionIds(NEW_GROUP, 1, 4);
+
+    // when — reassigning the exact same target members, just enumerated in a different order
+    final var first =
+        reassigner.reassignPartitions(configuration, membersInOneOrder, targetPartitionIds, 2);
+    final var second =
+        reassigner.reassignPartitions(configuration, membersInReverseOrder, targetPartitionIds, 2);
+
+    // then — the outcome is identical regardless of iteration order
+    assertThat(first).isEqualTo(second);
+
+    // and — all four zone-aware members are treated as distinct and none is silently dropped or
+    // conflated with its same-nodeIdx counterpart in the other zone
+    final var replicaCounts = countReplicasPerMember(first);
+    assertThat(replicaCounts.keySet())
+        .containsExactlyInAnyOrder(usZone0, euZone0, usZone1, euZone1);
+    assertThat(replicaCounts.values()).allMatch(count -> count == 2);
   }
 
   @Test
@@ -368,5 +405,9 @@ final class AdditivePartitionReassignerTest {
 
   private MemberId member(final int id) {
     return MemberId.from(String.valueOf(id));
+  }
+
+  private MemberId zoneMember(final String zone, final int nodeIdx) {
+    return MemberId.from(zone, nodeIdx);
   }
 }

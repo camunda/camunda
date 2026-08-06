@@ -18,7 +18,6 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,11 +34,11 @@ import java.util.stream.Collectors;
  * state. {@code targetPartitionIds} may span several groups in one call; every id already present
  * in its group's current distribution is passed through unchanged, and only ids that don't exist
  * yet are placed, greedily on the currently least-loaded members (breaking ties by leader count,
- * then {@link MemberId#nodeIdx()} for determinism), updating its in-memory load view after every
- * placement so a batch of new partitions — even across different groups — is itself spread evenly.
- * New-partition placement processes ids in their natural {@link PartitionId} order regardless of
- * the order {@code targetPartitionIds} was given in, so the result only depends on the id set, not
- * on incidental list ordering.
+ * then {@link MemberId#ID_COMPARATOR} for determinism), updating its in-memory load view after
+ * every placement so a batch of new partitions — even across different groups — is itself spread
+ * evenly. New-partition placement processes ids in their natural {@link PartitionId} order
+ * regardless of the order {@code targetPartitionIds} was given in, so the result only depends on
+ * the id set, not on incidental list ordering.
  *
  * <p>This implementation never moves or otherwise touches an existing partition and never adjusts
  * an existing partition's replication factor — a future general-case reassigner is expected to
@@ -67,9 +66,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
       final Set<MemberId> targetMembers,
       final List<PartitionId> targetPartitionIds,
       final int replicationFactor) {
-    if (targetPartitionIds.isEmpty()) {
-      return Set.of();
-    }
+
     validateTargetMembers(targetMembers, replicationFactor);
     final Set<String> targetGroups =
         targetPartitionIds.stream().map(PartitionId::group).collect(Collectors.toSet());
@@ -83,7 +80,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
             .collect(Collectors.toMap(PartitionMetadata::id, Function.identity()));
 
     final List<MemberId> sortedMembers =
-        targetMembers.stream().sorted(Comparator.comparingInt(MemberId::nodeIdx)).toList();
+        targetMembers.stream().sorted(MemberId.ID_COMPARATOR).toList();
     final int clusterSize = sortedMembers.size();
     final int replicaSlotCount = Math.min(replicationFactor, clusterSize);
 
