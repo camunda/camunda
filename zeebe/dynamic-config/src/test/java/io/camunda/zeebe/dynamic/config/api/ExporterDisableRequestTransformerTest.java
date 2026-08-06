@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -120,7 +121,7 @@ final class ExporterDisableRequestTransformerTest {
   }
 
   @Test
-  void shouldReturnEmptyPhasesWhenNoPhysicalTenantHasTheExporterConfigured() {
+  void shouldFailWhenNoPhysicalTenantHasTheExporterConfigured() {
     // given
     final var transformer = new ExporterDisableRequestTransformer(EXPORTER_ID);
     final var clusterConfiguration =
@@ -130,8 +131,10 @@ final class ExporterDisableRequestTransformerTest {
     final var result = transformer.phases(clusterConfiguration);
 
     // then
-    EitherAssert.assertThat(result).isRight();
-    assertThat(result.get()).isEmpty();
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(NotFound.class)
+        .hasMessageContaining("no matching exporters were found");
   }
 
   @Test

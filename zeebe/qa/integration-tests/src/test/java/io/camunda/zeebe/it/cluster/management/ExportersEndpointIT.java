@@ -116,7 +116,7 @@ final class ExportersEndpointIT {
         .isInstanceOf(FeignException.class)
         .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
         .extracting(FeignException::status)
-        .isEqualTo(400);
+        .isEqualTo(404);
   }
 
   @Test

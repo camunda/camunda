@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -83,7 +83,7 @@ public final class ExporterDisableRequestTransformer implements ConfigurationCha
 
     if (groupOperations.isEmpty()) {
       return Either.left(
-          new InvalidRequest(
+          new NotFound(
               "Expected to disable exporter '%s' for physical tenant '%s', but no matching exporters were found"
                   .formatted(exporterId, physicalTenantId.orElse("all tenants"))));
     }
