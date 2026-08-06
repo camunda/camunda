@@ -240,6 +240,18 @@ async function resolveDraft(m) {
   }
 }
 
+// Publishes the posted message's identity so a later job in the same run can reply in
+// its thread instead of opening a second top-level message for the same failure.
+async function setStepOutput(name, value) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file || !value) return;
+  try {
+    await appendFile(file, `${name}=${value}\n`);
+  } catch (e) {
+    console.error(`[feedback] could not write output ${name}: ${e.message || e}`);
+  }
+}
+
 async function postSlack(m) {
   const channel = env('FB_SLACK_CHANNEL');
   const token = env('SLACK_BOT_TOKEN');
@@ -271,7 +283,9 @@ async function postSlack(m) {
     });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || 'unknown');
-    console.log(`[feedback] posted to Slack ${channel}`);
+    console.log(`[feedback] posted to Slack ${channel} (ts=${j.ts})`);
+    await setStepOutput('slack_ts', j.ts);
+    await setStepOutput('slack_channel', j.channel || channel);
   } catch (e) {
     console.error(`[feedback] Slack post failed: ${e.message || e}`);
   }
