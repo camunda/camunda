@@ -97,6 +97,9 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
   </MemoryRouter>
 );
 
+const hasInertAncestor = (element: HTMLElement) =>
+  element.closest('[inert]') !== null;
+
 describe('<FilteredElementInstancesList />', () => {
   it('renders results returned by the search API', async () => {
     mockSearchElementInstances().withSuccess(
@@ -236,7 +239,7 @@ describe('<FilteredElementInstancesList />', () => {
       );
     });
 
-    expect(screen.getByRole('status').parentElement).toHaveStyle({
+    expect(screen.getByTestId('filtered-results')).toHaveStyle({
       opacity: '1',
     });
 
@@ -253,17 +256,113 @@ describe('<FilteredElementInstancesList />', () => {
       />,
     );
 
-    expect(screen.getByRole('status').parentElement).toHaveStyle({
+    expect(screen.getByTestId('filtered-results')).toHaveStyle({
       opacity: '0.5',
     });
     expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByRole('status').parentElement).toHaveStyle({
+      expect(screen.getByTestId('filtered-results')).toHaveStyle({
         opacity: '1',
       });
     });
     expect(screen.getByTestId('search-result-200')).toBeInTheDocument();
+  });
+
+  it('makes stale results non-interactive while a new status filter loads', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 1),
+    );
+
+    const {rerender} = render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('filtered-results').hasAttribute('inert')).toBe(
+      false,
+    );
+
+    mockSearchElementInstances().withDelay(
+      mockResponse([createMockElementInstance({elementInstanceKey: '200'})], 1),
+    );
+
+    rerender(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+    );
+
+    expect(screen.getByTestId('filtered-results')).toHaveAttribute('inert');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('search-result-200')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('filtered-results').hasAttribute('inert')).toBe(
+      false,
+    );
+  });
+
+  it('keeps announcing the result count while stale results are inert', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 1),
+    );
+
+    const {rerender} = render(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="active"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '1 matching elements',
+      );
+    });
+
+    mockSearchElementInstances().withDelay(
+      mockResponse(
+        [
+          createMockElementInstance({elementInstanceKey: '200'}),
+          createMockElementInstance({elementInstanceKey: '201'}),
+        ],
+        2,
+      ),
+    );
+
+    rerender(
+      <FilteredElementInstancesList
+        searchText=""
+        statusFilter="incidents"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+    );
+
+    expect(screen.getByTestId('filtered-results')).toHaveAttribute('inert');
+    expect(hasInertAncestor(screen.getByRole('status'))).toBe(false);
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '2 matching elements',
+      );
+    });
+    expect(hasInertAncestor(screen.getByRole('status'))).toBe(false);
   });
 
   it('renders an error message on a non-permissions error', async () => {

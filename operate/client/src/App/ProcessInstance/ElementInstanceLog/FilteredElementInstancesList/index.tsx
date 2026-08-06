@@ -212,30 +212,32 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
     }
 
     return (
-      <DimmableResults $dimmed={query.isPlaceholderData}>
+      <>
         <StatusRegion aria-live="polite">
           {query.data?.totalCount ?? 0} matching elements
         </StatusRegion>
-        <ScrollContainer ref={scrollableContainerRef}>
-          <TreeView label="Search results" hideLabel>
-            <InfiniteScroller
-              scrollableContainerRef={scrollableContainerRef}
-              onVerticalScrollEndReach={scroll.handleScrollEndReach}
-              onVerticalScrollStartReach={scroll.handleScrollStartReach}
-            >
-              <ul>
-                {query.data?.items.map((item) => (
-                  <Row
-                    key={item.elementInstanceKey}
-                    item={item}
-                    businessObjects={businessObjects}
-                  />
-                ))}
-              </ul>
-            </InfiniteScroller>
-          </TreeView>
-        </ScrollContainer>
-      </DimmableResults>
+        <DimmableResults $dimmed={query.isPlaceholderData}>
+          <ScrollContainer ref={scrollableContainerRef}>
+            <TreeView label="Search results" hideLabel>
+              <InfiniteScroller
+                scrollableContainerRef={scrollableContainerRef}
+                onVerticalScrollEndReach={scroll.handleScrollEndReach}
+                onVerticalScrollStartReach={scroll.handleScrollStartReach}
+              >
+                <ul>
+                  {query.data?.items.map((item) => (
+                    <Row
+                      key={item.elementInstanceKey}
+                      item={item}
+                      businessObjects={businessObjects}
+                    />
+                  ))}
+                </ul>
+              </InfiniteScroller>
+            </TreeView>
+          </ScrollContainer>
+        </DimmableResults>
+      </>
     );
   },
 );
