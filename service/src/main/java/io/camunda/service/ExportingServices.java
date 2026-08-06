@@ -17,8 +17,8 @@ import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
-import io.camunda.zeebe.gateway.admin.ExportingStatus;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
@@ -29,15 +29,14 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>It extends {@link PhysicalTenantScopedApiServices} for uniformity with the other
  * explicitly-checked management services ({@code DocumentServices}, {@code SecretServices}) and to
- * carry the physical tenant id, but it only consumes {@link #getPhysicalTenantId()}: the actual
- * broker requests are stamped and dispatched by {@link ExportingRequestBroadcaster}, which sets the
- * partition group itself, so the base class's {@code brokerRequestMutators()} PT-stamping is not
- * exercised here.
+ * carry the physical tenant id, which it passes to the {@link ExportingStateController}. That
+ * controller — shared with the {@code ExportingEndpoint} actuator — owns how the scope is applied,
+ * so the base class's {@code brokerRequestMutators()} PT-stamping is not exercised here.
  */
 @NullMarked
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
+  private final ExportingStateController exportingStateController;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
 
@@ -45,7 +44,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ExportingRequestBroadcaster exportingRequestBroadcaster,
+      final ExportingStateController exportingStateController,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
@@ -56,7 +55,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
-    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
+    this.exportingStateController = exportingStateController;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
   }
@@ -65,20 +64,21 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final boolean soft, final CamundaAuthentication authentication) {
     return withExporterPausePermission(
         authentication,
-        () ->
-            soft
-                ? exportingRequestBroadcaster.softPauseExporting(getPhysicalTenantId())
-                : exportingRequestBroadcaster.pauseExporting(getPhysicalTenantId()));
+        () -> {
+          final var tenantController = exportingStateController.getByTenant(getPhysicalTenantId());
+          return soft ? tenantController.softPauseExporting() : tenantController.pauseExporting();
+        });
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
     return withExporterPausePermission(
-        authentication, () -> exportingRequestBroadcaster.resumeExporting(getPhysicalTenantId()));
+        authentication,
+        () -> exportingStateController.getByTenant(getPhysicalTenantId()).resumeExporting());
   }
 
   /**
-   * Returns the exporting status aggregated over all partitions of the physical tenant, so backup
-   * tooling can confirm a pause took effect instead of relying on its own bookkeeping.
+   * Returns the exporting status aggregated over every partition replica, so backup tooling can
+   * confirm a pause took effect instead of relying on its own bookkeeping.
    *
    * <p>Reading is gated on the same permission as pause/resume because {@code EXPORTER} only
    * defines {@code PAUSE}: there is no separate read permission to grant.
@@ -87,16 +87,13 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final CamundaAuthentication authentication) {
     return withExporterPausePermission(
         authentication,
-        () -> exportingRequestBroadcaster.getExportingStatus(getPhysicalTenantId()));
+        () -> exportingStateController.getByTenant(getPhysicalTenantId()).getExportingStatus());
   }
 
   /**
    * Runs {@code action} only if the caller holds the {@code EXPORTER/PAUSE} permission, mapping
-   * failures from both the synchronous and asynchronous phases to {@link
-   * io.camunda.service.exception.ServiceException} so they surface with the correct status. The
-   * broadcaster validates topology synchronously (throwing before it returns a future) but
-   * dispatches the broker requests asynchronously, so the returned future may also complete
-   * exceptionally — both paths must be mapped.
+   * failures to {@link io.camunda.service.exception.ServiceException} so they surface with the
+   * correct status.
    *
    * <p>Resume is gated on the same permission as pause: {@code EXPORTER} only defines {@code
    * PAUSE}, and a caller allowed to stop exporting must also be able to start it again — otherwise

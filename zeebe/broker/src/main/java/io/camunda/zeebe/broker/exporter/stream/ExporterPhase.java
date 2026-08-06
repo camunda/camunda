@@ -25,4 +25,15 @@ public enum ExporterPhase {
       case EXPORTING, CLOSED -> ExportingState.EXPORTING;
     };
   }
+
+  public static ExporterPhase fromExportingState(final ExportingState state) {
+    return switch (state) {
+      case EXPORTING -> EXPORTING;
+      case PAUSED -> PAUSED;
+      case SOFT_PAUSED -> SOFT_PAUSED;
+      // UNKNOWN means that no exporting state has been configured dynamically.
+      case UNKNOWN ->
+          throw new IllegalArgumentException("Cannot convert UNKNOWN to an exporter phase");
+    };
+  }
 }

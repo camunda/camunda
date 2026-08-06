@@ -17,6 +17,8 @@ import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -106,5 +108,11 @@ public class DynamicClusterServices {
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
+  }
+
+  @Bean
+  public ExportingStateController exportingStateController(
+      final ClusterConfigurationManagementRequestSender requestSender) {
+    return new DynamicConfigExportingStateController(requestSender);
   }
 }

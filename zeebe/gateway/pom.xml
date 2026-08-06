@@ -160,12 +160,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- required to run both junit4 and junit 5 as test engines side by side -->
     <dependency>
       <groupId>org.junit.vintage</groupId>
