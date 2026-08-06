@@ -497,4 +497,59 @@ public class AwsDocumentStoreProviderTest {
                 .usesSdkDefaults())
         .isFalse();
   }
+
+  @Test
+  public void shouldThrowIfRegionIsNotAValidRegion() {
+    // given — Region.of accepts any string, so an unchecked region would only surface at the first
+    // document operation as an unresolvable host
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "my-aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucket");
+    configuration.properties().put("REGION", "EU West 1");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
+    assertThat(ex.getMessage())
+        .isEqualTo(
+            "Failed to configure document store with id 'my-aws': 'REGION' is not a valid region: EU West 1");
+  }
+
+  @Test
+  public void shouldAcceptARegionTheSdkDoesNotKnow() {
+    try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
+      // given — a region newer than the bundled SDK, or an S3-compatible backend's own region name,
+      // must still be accepted; only a structurally impossible one is rejected
+      final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
+      final ArgumentCaptor<AwsClientOptions> optionsCaptor =
+          ArgumentCaptor.forClass(AwsClientOptions.class);
+      mockedFactory
+          .when(
+              () ->
+                  AwsDocumentStoreFactory.create(
+                      any(), any(), any(), any(), optionsCaptor.capture()))
+          .thenReturn(mockDocumentStore);
+
+      final DocumentStoreConfigurationRecord configuration =
+          new DocumentStoreConfigurationRecord(
+              "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+      configuration.properties().put("BUCKET", "bucket");
+      configuration.properties().put("REGION", "xx-fictional-9");
+
+      // when
+      new AwsDocumentStoreProvider()
+          .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+
+      // then
+      assertThat(optionsCaptor.getValue().region()).isEqualTo("xx-fictional-9");
+    }
+  }
 }
