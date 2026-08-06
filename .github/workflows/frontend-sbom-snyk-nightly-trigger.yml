@@ -23,27 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      branches: ${{ steps.branches.outputs.branches }}
+      branches: ${{ steps.maintained-branches.outputs.branches }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Discover maintained frontend branches
-        id: branches
-        run: |
-          STABLE_BRANCHES=$(git ls-remote --heads origin 'refs/heads/stable/*' \
-            | sed -nE 's|.*refs/heads/(stable/[0-9]+\.[0-9]+)$|\1|p' \
-            | awk -F/ '{ split($2, version, "."); if (version[1] > 8 || (version[1] == 8 && version[2] >= 8)) print }' \
-            | sort -t/ -k2 -V)
-
-          if [[ -z "$STABLE_BRANCHES" ]]; then
-            echo "::error::No eligible stable branches found; expected at least one remote branch matching stable/X.Y with version 8.8 or newer."
-            exit 1
-          fi
-
-          BRANCHES=$(printf 'main\n%s\n' "$STABLE_BRANCHES" \
-            | jq -Rsc 'split("\n") | map(select(length > 0))')
-
-          echo "Discovered branches: $BRANCHES"
-          echo "branches=$BRANCHES" >> "$GITHUB_OUTPUT"
+      - name: List maintained frontend branches
+        id: maintained-branches
+        uses: ./.github/actions/list-maintained-branches
+        with:
+          min-version: '8.8'
       - name: Observe build status
         if: always()
         continue-on-error: true
