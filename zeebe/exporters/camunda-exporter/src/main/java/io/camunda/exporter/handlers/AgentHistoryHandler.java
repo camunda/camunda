@@ -15,6 +15,8 @@ import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
@@ -24,6 +26,8 @@ import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceLimitsValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
@@ -35,16 +39,13 @@ import java.util.Set;
  * CamundaExporter handler for {@code AGENT_HISTORY} records.
  *
  * <ul>
- *   <li>{@code CREATED}: full upsert — all entity fields are populated from the record value,
- *       including {@code content}, {@code toolCalls}, {@code inputTokens}, {@code outputTokens},
- *       {@code durationMs} and {@code producedAt}.
+ *   <li>{@code CREATED}: full upsert — every entity field is populated from the record value.
  *   <li>{@code COMMITTED} / {@code DISCARDED}: the engine only retains identity fields once an item
- *       is committed/discarded, so the record value's {@code content}, {@code toolCalls},
- *       token/duration metrics and {@code producedAt} are trimmed and must not be applied to the
- *       entity — {@code updateEntity()} leaves those 6 fields untouched, updating only {@code
- *       commitStatus} and the other identity fields. {@code flush()} additionally passes only
- *       {@code Map.of(COMMIT_STATUS, ...)} as updateFields so only {@code commitStatus} is written
- *       to the existing document.
+ *       is committed/discarded, so the record value's non-identity fields are trimmed and must not
+ *       be applied to the entity — {@code updateEntity()} leaves those fields untouched, updating
+ *       only {@code commitStatus} and the other identity fields. {@code flush()} additionally
+ *       passes only {@code Map.of(COMMIT_STATUS, ...)} as updateFields so only {@code commitStatus}
+ *       is written to the existing document.
  * </ul>
  */
 public class AgentHistoryHandler
@@ -108,7 +109,10 @@ public class AgentHistoryHandler
         .setCommitStatus(mapCommitStatusFromIntent(intent));
 
     // Guarded to CREATED only: ExporterBatchWriter shares one mutable entity across a batch, so a
-    // same-batch COMMITTED/DISCARDED call would otherwise clobber these with its trimmed values.
+    // same-batch COMMITTED/DISCARDED call would otherwise clobber these with its trimmed values —
+    // AgentHistoryCreatedApplier in primary storage doesn't retain these fields past CREATED
+    // either (see that class), so COMMITTED/DISCARDED events carry them as empty/default rather
+    // than the original CREATED values; guarding to CREATED avoids clobbering.
     if (intent == AgentHistoryIntent.CREATED) {
       entity
           .setProducedAt(
@@ -119,7 +123,13 @@ public class AgentHistoryHandler
           .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
           .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
           .setContent(mapContent(value.getContent()))
-          .setToolCalls(mapToolCalls(value.getToolCalls()));
+          .setToolCalls(mapToolCalls(value.getToolCalls()))
+          .setHistoryItemId(ExporterUtil.emptyToNull(value.getHistoryItemId()))
+          .setTools(mapTools(value.getTools()))
+          .setModel(ExporterUtil.emptyToNull(value.getModel()))
+          .setProvider(ExporterUtil.emptyToNull(value.getProvider()))
+          .setLimits(mapLimits(value.getLimits()))
+          .setSystemPrompt(mapSystemPrompt(value.getSystemPrompt()));
     }
   }
 
@@ -221,5 +231,42 @@ public class AgentHistoryHandler
                     ExporterUtil.emptyToNull(t.getElementId()),
                     t.getArguments()))
         .toList();
+  }
+
+  /** The tools available to the agent, as of this entry. CONFIGURATION items only. */
+  private static List<AgentHistoryToolValue> mapTools(
+      final List<? extends AgentInstanceToolValue> tools) {
+    if (tools == null || tools.isEmpty()) {
+      return List.of();
+    }
+    return tools.stream()
+        .map(
+            t ->
+                new AgentHistoryToolValue(
+                    t.getName(),
+                    ExporterUtil.emptyToNull(t.getDescription()),
+                    ExporterUtil.emptyToNull(t.getElementId())))
+        .toList();
+  }
+
+  /**
+   * The operational limits, as of this entry. CONFIGURATION items only. {@code -1} on any field
+   * means "no limit configured".
+   */
+  private static AgentHistoryLimitsValue mapLimits(final AgentInstanceLimitsValue limits) {
+    if (limits == null) {
+      return new AgentHistoryLimitsValue(-1L, -1, -1);
+    }
+    return new AgentHistoryLimitsValue(
+        limits.getMaxTokens(), limits.getMaxModelCalls(), limits.getMaxToolCalls());
+  }
+
+  /** The system prompt, as content blocks, as of this entry. CONFIGURATION items only. */
+  private static List<AgentHistoryContentValue> mapSystemPrompt(
+      final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
+    if (systemPrompt == null || systemPrompt.isEmpty()) {
+      return List.of();
+    }
+    return mapContent(systemPrompt);
   }
 }
