@@ -37,6 +37,9 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String MAX_TOOL_CALLS = "maxToolCalls";
   public static final String INPUT_TOKENS = "inputTokens";
   public static final String OUTPUT_TOKENS = "outputTokens";
+  public static final String REASONING_TOKEN_COUNT = "reasoningTokenCount";
+  public static final String CACHE_CREATION_TOKEN_COUNT = "cacheCreationTokenCount";
+  public static final String CACHE_READ_TOKEN_COUNT = "cacheReadTokenCount";
   public static final String MODEL_CALLS = "modelCalls";
   public static final String TOOL_CALLS = "toolCalls";
   public static final String TOOLS = "tools";
