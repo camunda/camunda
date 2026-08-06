@@ -78,6 +78,20 @@ public interface MutableJobState extends JobState {
   void makeActivatableAfterSecretResolution(long key);
 
   /**
+   * Parks a job of a suspended process instance in {@link State#SUSPENDED} and removes it from the
+   * activatable index, so no scan pays for it while the instance is suspended. Does nothing unless
+   * the job is {@link State#ACTIVATABLE}; a job that is already parked stays parked.
+   */
+  void suspend(long key, JobRecord record);
+
+  /**
+   * Makes a parked job activatable again when its process instance is resumed, with its current
+   * type, tenant and priority. Does nothing unless the job is in {@link State#SUSPENDED}, so a job
+   * that a worker or a failure owns is never re-inserted into the index.
+   */
+  void resume(long key);
+
+  /**
    * @deprecated see {@link #create(long, JobRecord)}.
    */
   @Deprecated

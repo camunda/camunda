@@ -71,6 +71,7 @@ public final class JobTimeOutProcessor
             case ERROR_THROWN -> "it has thrown an error and is not activated";
             case WAITING_FOR_SECRET_RESOLUTION ->
                 "it is waiting for a secret to be resolved and is not activated";
+            case SUSPENDED -> "its process instance is suspended and it is not activated";
             case NOT_FOUND -> "no such job was found";
           };
 
