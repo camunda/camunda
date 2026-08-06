@@ -70,7 +70,7 @@ final class AdditivePartitionReassignerPropertyTest {
     // tight gap of 1 mathematically unachievable; see
     // PartitionDistributionInvariants.assertSatisfied
     PartitionDistributionInvariants.assertSatisfied(
-        result, targetMembers, targetPartitionIds, replicationFactor, replicationFactor);
+        result, targetMembers, targetPartitionIds, replicationFactor, 3);
   }
 
   private CurrentClusterConfiguration configurationWith(
