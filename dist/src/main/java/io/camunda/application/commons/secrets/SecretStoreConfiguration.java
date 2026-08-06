@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.secrets;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
 import io.camunda.configuration.Secrets.FileStore;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
@@ -48,11 +50,11 @@ public class SecretStoreConfiguration {
    */
   private static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
-          new StoreBinding<>("file", Stores::getFile, SecretStoreConfiguration::fileStore),
+          new StoreBinding<>("file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
+              "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
           new StoreBinding<>(
-              "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
 
   @Bean
   public SecretStoreRegistries secretStoreRegistries(final PhysicalTenantResolver resolver) {
@@ -78,7 +80,7 @@ public class SecretStoreConfiguration {
       final String tenantId, final Stores config, final List<SecretStore> created) {
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
-        STORE_BINDINGS.stream().mapToLong(binding -> binding.count(config)).sum();
+        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
     if (totalStores > 1) {
       throw new IllegalStateException(
           "Physical tenant '"
@@ -87,10 +89,15 @@ public class SecretStoreConfiguration {
               + totalStores
               + " secret stores configured, but only one is supported at this time");
     }
+    // both rules are checked before any store is built, so the operator gets the configuration
+    // error rather than whatever the store's own construction fails with — an AWS or GCP store
+    // eagerly builds a client and probes credentials, which would otherwise surface first for a
+    // configuration that is rejected anyway
+    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
     STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
     if (stores.isEmpty()) {
-      stores.put("default", NOOP_STORE);
+      stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
     }
     return new SecretStoreRegistry(Map.copyOf(stores));
@@ -109,11 +116,10 @@ public class SecretStoreConfiguration {
   private static void registerStore(
       final Map<String, SecretStore> stores,
       final List<SecretStore> created,
-      final String storeId,
+      final String normalizedId,
       final String tenantId,
       final String storeType,
       final SecretStore store) {
-    final var normalizedId = storeId.trim().toLowerCase();
     stores.put(normalizedId, store);
     created.add(store);
     LOG.info(
@@ -121,6 +127,41 @@ public class SecretStoreConfiguration {
         storeType,
         normalizedId,
         tenantId);
+  }
+
+  /** The store ID as it is registered and looked up: trimmed and case-insensitive. */
+  private static String normalizeStoreId(final String storeId) {
+    return storeId.trim().toLowerCase();
+  }
+
+  /**
+   * Rejects a store under an ID no secret reference can address. A {@code camunda.secrets.<name>}
+   * reference addresses {@link SecretStoreRegistry#DEFAULT_STORE_ID} and the store lookup that
+   * resolves it is exact, so a store under any other ID would never be reached.
+   *
+   * @param storeId the ID as the operator wrote it, so the property this names is the one to find
+   *     in their configuration; the rule itself is checked against the normalized form
+   */
+  private static void requireSupportedStoreId(
+      final String storeId, final String tenantId, final String storeTypeProperty) {
+    if (SecretStoreRegistry.DEFAULT_STORE_ID.equals(normalizeStoreId(storeId))) {
+      return;
+    }
+    final var storesProperty =
+        (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+                ? "camunda.secrets.stores."
+                : "camunda.physical-tenants." + tenantId + ".secrets.stores.")
+            + storeTypeProperty;
+    throw new IllegalStateException(
+        "Physical tenant '%s' configures secret store '%s', but the only supported store id is '%s'; rename %s.%s to %s.%s"
+            .formatted(
+                tenantId,
+                storeId,
+                SecretStoreRegistry.DEFAULT_STORE_ID,
+                storesProperty,
+                storeId,
+                storesProperty,
+                SecretStoreRegistry.DEFAULT_STORE_ID));
   }
 
   private static SecretStore fileStore(
@@ -172,15 +213,24 @@ public class SecretStoreConfiguration {
    * and the factory's input type in lock-step, so the registration loop can iterate a heterogeneous
    * {@code List<StoreBinding<?>>} without any casts.
    *
+   * @param propertyKey the {@code camunda.secrets.stores.<key>} segment this type binds to, so a
+   *     configuration error can name the exact property the operator has to change
    * @param displayName human-readable store type name used in log messages
    * @param selector reads this type's {@code storeId -> config} entries from the tenant's stores
    * @param factory builds a store from one entry, applying any per-type validation
    */
   private record StoreBinding<C>(
-      String displayName, Function<Stores, Map<String, C>> selector, StoreFactory<C> factory) {
+      String propertyKey,
+      String displayName,
+      Function<Stores, Map<String, C>> selector,
+      StoreFactory<C> factory) {
 
-    private int count(final Stores config) {
-      return selector.apply(config).size();
+    private Set<String> ids(final Stores config) {
+      return selector.apply(config).keySet();
+    }
+
+    private void requireSupportedStoreIds(final Stores config, final String tenantId) {
+      ids(config).forEach(storeId -> requireSupportedStoreId(storeId, tenantId, propertyKey));
     }
 
     private void registerAll(
@@ -195,9 +245,11 @@ public class SecretStoreConfiguration {
                   registerStore(
                       stores,
                       created,
-                      storeId,
+                      normalizeStoreId(storeId),
                       tenantId,
                       displayName,
+                      // the raw id is what the operator wrote, so it is what a factory names in its
+                      // own validation errors
                       factory.create(storeId, tenantId, entry)));
     }
   }

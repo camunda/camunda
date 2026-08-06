@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.FeelExpression;
 import java.util.ArrayDeque;
@@ -62,13 +63,14 @@ public record SecretReference(String storeId, String name) {
   private static final int REFERENCE_SEGMENT_COUNT = 3;
 
   /**
-   * Creates a reference with no store id. The {@code camunda.secrets.<name>} syntax carries no
-   * store dimension, so the store is left empty until store selection is wired to the engine
-   * (tracked under the Secret Resolution epic, <a
-   * href="https://github.com/camunda/camunda/issues/56563">#56563</a>).
+   * Creates a reference to the default store. The {@code camunda.secrets.<name>} syntax carries no
+   * store dimension, so it addresses {@link SecretStoreRegistry#DEFAULT_STORE_ID}; once store
+   * selection is wired to the engine (tracked under the Secret Resolution epic, <a
+   * href="https://github.com/camunda/camunda/issues/56563">#56563</a>), {@code camunda.secrets.X}
+   * keeps meaning {@code camunda.secrets.default.X}.
    */
   public SecretReference(final String name) {
-    this("", name);
+    this(SecretStoreRegistry.DEFAULT_STORE_ID, name);
   }
 
   /**

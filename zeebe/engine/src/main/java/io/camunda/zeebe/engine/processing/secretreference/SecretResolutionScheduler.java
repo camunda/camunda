@@ -260,8 +260,10 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
     final StoreRetryState retryState =
         storeRetryStates.getOrDefault(storeId, StoreRetryState.INITIAL);
 
-    // a pending reference is keyed by the store ID its record carries, which for a
-    // camunda.secrets.<name> reference is empty and addresses no store here (see #59432)
+    // a pending reference is keyed by the store ID its record carried, and every reference carries
+    // the default store ID, which startup validation guarantees is configured. An ID naming no
+    // configured store is therefore failed rather than mapped onto the default: mapping one ID onto
+    // another is what let this path and job activation disagree about an empty ID (see #59432).
     final var store = secretStoreRegistry.getStores().get(storeId);
     if (store == null) {
       LOG.warn(

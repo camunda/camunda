@@ -22,7 +22,10 @@ import java.util.stream.StreamSupport;
 public final class SecretReferenceRecord extends UnifiedRecordValue
     implements SecretReferenceRecordValue {
 
-  private final StringProperty storeIdProp = new StringProperty("storeId", "");
+  // mirrors io.camunda.secretstore.SecretStoreRegistry#DEFAULT_STORE_ID: the record layer stays
+  // free of the secret store API, so the value is repeated here and pinned against the constant
+  // by DefaultStoreIdTest. An unset store ID names the default store, not no store at all.
+  private final StringProperty storeIdProp = new StringProperty("storeId", "default");
   private final StringProperty secretReferenceProp = new StringProperty("secretReference", "");
   private final EnumProperty<ResolutionState> resolutionStateProp =
       new EnumProperty<>("resolutionState", ResolutionState.class, ResolutionState.UNSPECIFIED);

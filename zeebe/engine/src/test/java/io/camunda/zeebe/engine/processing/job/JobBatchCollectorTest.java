@@ -78,7 +78,8 @@ final class JobBatchCollectorTest {
   private final JobSecretInjector secretInjector =
       new JobSecretInjector(
           new SecretStoreRegistry(
-              Map.of("default", new NoopSecretStore()), Map.of("default", secretCache)));
+              Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, new NoopSecretStore()),
+              Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, secretCache)));
 
   @SuppressWarnings("unused") // injected by the extension
   private MutableProcessingState state;
@@ -757,7 +758,9 @@ final class JobBatchCollectorTest {
             .setElementInstanceKey(variableScopeKey)
             .setType(JOB_TYPE)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    jobRecord.addSecretReference("", secretName, "/auth");
+    // the store a camunda.secrets.<name> reference addresses; the injector looks it up exactly, so
+    // a job carrying any other store id is skipped no matter what the cache holds
+    jobRecord.addSecretReference(SecretStoreRegistry.DEFAULT_STORE_ID, secretName, "/auth");
     final long jobKey = state.getKeyGenerator().nextKey();
 
     state.getJobState().create(jobKey, jobRecord);

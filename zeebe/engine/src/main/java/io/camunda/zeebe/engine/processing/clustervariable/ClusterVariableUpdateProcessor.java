@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -122,7 +123,10 @@ public class ClusterVariableUpdateProcessor
         .scan(command.getValueBuffer())
         .map(
             references -> {
-              references.forEach(ref -> command.addSecretReference("", ref.name(), ref.pointer()));
+              references.forEach(
+                  ref ->
+                      command.addSecretReference(
+                          SecretStoreRegistry.DEFAULT_STORE_ID, ref.name(), ref.pointer()));
               return command;
             });
   }

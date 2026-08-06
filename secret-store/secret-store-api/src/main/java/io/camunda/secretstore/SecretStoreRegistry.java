@@ -28,6 +28,13 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class SecretStoreRegistry {
 
+  /**
+   * The store ID a {@code camunda.secrets.<name>} reference addresses. The syntax carries no store
+   * dimension, so it names the default store; once several stores are supported, {@code
+   * camunda.secrets.X} keeps meaning {@code camunda.secrets.default.X}.
+   */
+  public static final String DEFAULT_STORE_ID = "default";
+
   private final Map<String, LocallyCachedSecretStore> stores;
 
   public SecretStoreRegistry(final Map<String, SecretStore> stores) {
@@ -57,9 +64,8 @@ public final class SecretStoreRegistry {
   /**
    * Returns all configured secret stores, keyed by store ID.
    *
-   * <p>A lookup in this map is exact: an empty store ID addresses no store, even when a single
-   * store is configured. Reading an empty store ID as the sole configured store is a rule of the
-   * {@code camunda.secrets.<name>} reference syntax and belongs to the caller that knows it.
+   * <p>A lookup in this map is exact, so a store ID that names no configured store addresses none.
+   * A {@code camunda.secrets.<name>} reference addresses {@link #DEFAULT_STORE_ID}.
    */
   public Map<String, LocallyCachedSecretStore> getStores() {
     return stores;

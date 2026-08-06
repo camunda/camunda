@@ -32,6 +32,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
  * </ul>
  *
+ * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
+ * default} — that is the store id a {@code camunda.secrets.<name>} reference addresses. A store
+ * under any other id is rejected at startup, since nothing could ever read it.
+ *
  * <p>Secrets configuration is overridable per physical tenant via {@code
  * camunda.physical-tenants.<id>.secrets.*}.
  */

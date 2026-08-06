@@ -13,7 +13,6 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.secretstore.LocallyCachedSecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
@@ -186,26 +185,12 @@ public final class JobSecretInjector {
     if (values.containsKey(reference)) {
       return true;
     }
+    // the store lookup is exact: a reference naming no configured store addresses none
     final Optional<String> value =
-        storeFor(reference.storeId()).flatMap(store -> store.lookupLocal(reference.name()));
+        Optional.ofNullable(secretStoreRegistry.getStores().get(reference.storeId()))
+            .flatMap(store -> store.lookupLocal(reference.name()));
     value.ifPresent(cachedValue -> values.put(reference, cachedValue));
     return value.isPresent();
-  }
-
-  /**
-   * Returns the store the reference addresses, or empty when it addresses none.
-   *
-   * <p>The {@code camunda.secrets.<name>} syntax carries no store dimension yet, so a reference
-   * written that way has an empty store ID and addresses the sole configured store; with several
-   * stores an empty store ID is ambiguous and addresses none. This rule belongs to the reference
-   * syntax rather than to the registry, whose own lookup is exact.
-   */
-  private Optional<LocallyCachedSecretStore> storeFor(final String storeId) {
-    final var stores = secretStoreRegistry.getStores();
-    if (!storeId.isEmpty()) {
-      return Optional.ofNullable(stores.get(storeId));
-    }
-    return stores.size() == 1 ? Optional.of(stores.values().iterator().next()) : Optional.empty();
   }
 
   /**

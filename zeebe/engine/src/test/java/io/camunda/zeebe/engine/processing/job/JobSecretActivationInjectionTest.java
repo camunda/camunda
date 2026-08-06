@@ -128,7 +128,7 @@ public final class JobSecretActivationInjectionTest {
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference("token")
             .getFirst();
-    assertThat(requested.getValue().getStoreId()).isEmpty();
+    assertThat(requested.getValue().getStoreId()).isEqualTo(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
 
     // and - the job is parked: a later activation does not hand it out again, even once the value
