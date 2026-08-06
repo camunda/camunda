@@ -43,20 +43,43 @@ final class ModeChangeRequestTransformerTest {
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @Test
-  void shouldNotPlanOnTheLegacySingleGroupModel() {
-    // given — the legacy model keeps one mode per broker, shared by every physical tenant, so a
-    // per-group plan cannot be expressed on it
-    final var transformer = recoveringTransformer(Optional.of(TENANT_B));
+  void shouldTargetOnlyMembersNotAlreadyInTheTargetModeOnTheLegacySingleGroupModel() {
+    // given — a legacy single-group configuration (the mode lives on the member and is shared by
+    // all of its partitions) where one member is active and one is already recovering
+    final var transformer = recoveringTransformer(Optional.empty());
     final var clusterConfiguration =
-        ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()).toRecovering());
 
     // when
     final var result = transformer.operations(clusterConfiguration);
 
-    // then — rejected rather than silently changing the mode of every tenant; planning happens in
-    // phases() instead, which the coordinator is the only caller of
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
+    // then — only the active member is transitioned, so re-sending the request is idempotent
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new ModeChangeOperation(id0, Mode.RECOVERING),
+            new AwaitModeChangeOperation(id0, Mode.RECOVERING));
+  }
+
+  @Test
+  void shouldIgnoreTheRequestedPhysicalTenantOnTheLegacySingleGroupModel() {
+    // given — the same cluster planned twice: once scoped to a physical tenant, once unscoped
+    final var clusterConfiguration =
+        ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+
+    // when
+    final var scoped =
+        recoveringTransformer(Optional.of(TENANT_B)).operations(clusterConfiguration);
+    final var unscoped = recoveringTransformer(Optional.empty()).operations(clusterConfiguration);
+
+    // then — the scope makes no difference: the legacy model has no per-tenant mode, so the whole
+    // cluster transitions either way. Scoping to one tenant is only expressible on the multi-group
+    // model, via phases(), which is the only method the coordinator calls.
+    EitherAssert.assertThat(scoped).isRight();
+    EitherAssert.assertThat(unscoped).isRight();
+    assertThat(scoped.get()).isNotEmpty().isEqualTo(unscoped.get());
   }
 
   @Test
