@@ -139,7 +139,7 @@ public final class CamundaDocumentStoreConfigurationLoader
     putResolved(
         properties, AZURE, storeId, "container-path", "CONTAINER_PATH", store.getContainerPath());
     putResolved(properties, AZURE, storeId, "endpoint", "ENDPOINT", store.getEndpoint());
-    putResolved(
+    putResolvedSensitive(
         properties,
         AZURE,
         storeId,
