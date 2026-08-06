@@ -20,6 +20,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
@@ -126,6 +127,26 @@ class AgentDefinitionValidatorTest {
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void agentDefinitionOnUnsupportedElementIsInvalid() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .manualTask("task")
+            .addExtensionElement(
+                ZeebeAgentDefinition.class, a -> a.setAgentType(ZeebeAgentType.external))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ManualTask.class,
+            "agentType 'external' is only allowed on a service task or an ad-hoc sub-process."));
   }
 
   @Test
