@@ -10,6 +10,8 @@ package io.camunda.document.store.gcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
+import com.google.auth.oauth2.UserCredentials;
+import com.google.cloud.storage.Storage;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import java.io.IOException;
@@ -115,14 +117,16 @@ public class GcpDocumentStoreProviderTest {
             "gcp", GcpDocumentStoreProvider.class, new HashMap<>());
     configuration.properties().put("BUCKET", "bucketName");
     configuration.properties().put("CREDENTIALS_PATH", keyFile.toString());
-    final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
 
     // when
-    final DocumentStore documentStore =
-        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
+    final Storage storage = GcpDocumentStoreProvider.createStorage(configuration);
 
-    // then
-    assertThat(documentStore).isNotNull();
+    // then — the identity the client will sign with must come from the key file, not from the
+    // application default credentials that every store in the process shares
+    assertThat(storage.getOptions().getCredentials())
+        .isInstanceOfSatisfying(
+            UserCredentials.class,
+            credentials -> assertThat(credentials.getClientId()).isEqualTo("tenant-a-client"));
   }
 
   @Test
