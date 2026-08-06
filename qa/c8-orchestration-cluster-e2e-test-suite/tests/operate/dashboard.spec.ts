@@ -87,19 +87,26 @@ test.afterEach(async ({page}, testInfo) => {
 test.describe('Dashboard', () => {
   test('Statistics', async ({operateDashboardPage}) => {
     await test.step('Verify total count equals sum of active and incident instances', async () => {
-      const incidentInstancesCount = Number(
-        await operateDashboardPage.incidentInstancesBadge.innerText(),
-      );
-      const activeProcessInstancesCount = Number(
-        await operateDashboardPage.activeInstancesBadge.innerText(),
-      );
-      const totalInstancesCount = operateDashboardPage.totalInstancesLink;
-
-      await expect(totalInstancesCount).toHaveText(
-        `${
-          incidentInstancesCount + activeProcessInstancesCount
-        } Running Process Instances in total`,
-      );
+      // The dashboard reflects cluster-wide counts that keep changing while
+      // other nightly tests create instances, and Operate re-polls the metric
+      // panel periodically. Reading the badges once and asserting the total
+      // link separately races: the badges snapshot one poll while the total
+      // link settles on a later one. Re-read all three inside a single retrying
+      // block so the invariant (total === active + incidents) is checked
+      // against one consistent snapshot.
+      await expect(async () => {
+        const incidentInstancesCount = Number(
+          await operateDashboardPage.incidentInstancesBadge.innerText(),
+        );
+        const activeProcessInstancesCount = Number(
+          await operateDashboardPage.activeInstancesBadge.innerText(),
+        );
+        await expect(operateDashboardPage.totalInstancesLink).toHaveText(
+          `${
+            incidentInstancesCount + activeProcessInstancesCount
+          } Running Process Instances in total`,
+        );
+      }).toPass(defaultAssertionOptions);
     });
   });
 
