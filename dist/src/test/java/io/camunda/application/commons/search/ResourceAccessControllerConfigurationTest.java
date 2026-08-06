@@ -20,11 +20,11 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
-import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.DefaultTenantAccessProvider;
 import io.camunda.security.core.authz.DisabledTenantAccessProvider;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.TenantAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -49,14 +49,15 @@ public class ResourceAccessControllerConfigurationTest {
             CamundaSecurityConfiguration.class,
             UnifiedConfiguration.class,
             UnifiedConfigurationHelper.class)
-        .withBean(AuthorizationChecker.class, () -> mock(AuthorizationChecker.class))
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
         .withBean(PhysicalTenantSearchClientReaders.class, () -> defaultPtReaders)
         .withBean(PhysicalTenantSecurityProperties.class, () -> defaultPtSecProps)
         // make REST gateway condition pass
         .withPropertyValues(
             "zeebe.broker.gateway.enable=true",
             "camunda.rest.enabled=true",
-            // avoid needing AuthorizationChecker by disabling authorizations
             "camunda.security.authorizations.enabled=false");
   }
 
@@ -147,7 +148,9 @@ public class ResourceAccessControllerConfigurationTest {
               CamundaSecurityConfiguration.class,
               UnifiedConfiguration.class,
               UnifiedConfigurationHelper.class)
-          .withBean(AuthorizationChecker.class, () -> mock(AuthorizationChecker.class))
+          .withBean(
+              AuthorizationScopeRepositoryPort.class,
+              () -> mock(AuthorizationScopeRepositoryPort.class))
           .withBean(PhysicalTenantSearchClientReaders.class, () -> ptReaders)
           .withBean(PhysicalTenantSecurityProperties.class, () -> ptSecProps)
           .withPropertyValues(

@@ -14,9 +14,13 @@ import io.camunda.security.core.authz.AuthorizationChecker;
  * Builds the {@link AuthorizationChecker} for a single physical tenant from that tenant's own
  * {@link SearchClientReaders}, wrapping the tenant's {@link SearchAuthorizationScopeRepository}.
  *
- * <p>Kept as a shared static factory so every per-tenant checker-construction site in the
- * application wiring layer builds the checker the same way, since those consumers are gated by
- * different Spring conditions and can't simply share a bean.
+ * <p>Used by {@code AuthorizationCheckerProviderConfiguration} to build the raw {@link
+ * AuthorizationChecker} that {@code CamundaServicesConfiguration} hands to services ({@code
+ * DocumentServices}, {@code SecretServices}) that query it directly, bypassing the {@code
+ * ResourceAccessController}/data-plane path. {@code ResourceAccessControllerConfiguration} no
+ * longer uses this factory — its {@code ResourceAccessProvider}s are built from an {@link
+ * io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort} instead, via {@code
+ * DefaultResourceAccessProvider.forScopeRepository(...)}.
  */
 public final class AuthorizationCheckerFactory {
 
