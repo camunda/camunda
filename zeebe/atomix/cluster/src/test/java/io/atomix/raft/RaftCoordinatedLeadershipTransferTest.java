@@ -124,16 +124,17 @@ public class RaftCoordinatedLeadershipTransferTest {
             });
     leader
         .getContext()
-        .setLeadershipTransferPauseControl(
-            new LeadershipTransferPauseControl() {
+        .setLeadershipTransferWriteBarrier(
+            new LeadershipTransferWriteBarrier() {
               @Override
-              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+              public CompletableFuture<Long> freeze(final Duration timeout) {
                 return CompletableFuture.failedFuture(
-                    new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
+                    new TimeoutException(
+                        "Timed out establishing the leadership-transfer write freeze"));
               }
 
               @Override
-              public CompletableFuture<Void> resumeFromTransfer() {
+              public CompletableFuture<Void> unfreeze() {
                 return CompletableFuture.completedFuture(null);
               }
             });
@@ -232,10 +233,10 @@ public class RaftCoordinatedLeadershipTransferTest {
 
     leader
         .getContext()
-        .setLeadershipTransferPauseControl(
-            new LeadershipTransferPauseControl() {
+        .setLeadershipTransferWriteBarrier(
+            new LeadershipTransferWriteBarrier() {
               @Override
-              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+              public CompletableFuture<Long> freeze(final Duration timeout) {
                 return CompletableFuture.failedFuture(
                     new CompletionException(
                         new LeaderRole.ConfigurationChangeInProgressException(
@@ -244,7 +245,7 @@ public class RaftCoordinatedLeadershipTransferTest {
               }
 
               @Override
-              public CompletableFuture<Void> resumeFromTransfer() {
+              public CompletableFuture<Void> unfreeze() {
                 return CompletableFuture.completedFuture(null);
               }
             });
@@ -287,16 +288,16 @@ public class RaftCoordinatedLeadershipTransferTest {
 
     leader
         .getContext()
-        .setLeadershipTransferPauseControl(
-            new LeadershipTransferPauseControl() {
+        .setLeadershipTransferWriteBarrier(
+            new LeadershipTransferWriteBarrier() {
               @Override
-              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+              public CompletableFuture<Long> freeze(final Duration timeout) {
                 return CompletableFuture.failedFuture(
                     new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
               }
 
               @Override
-              public CompletableFuture<Void> resumeFromTransfer() {
+              public CompletableFuture<Void> unfreeze() {
                 return CompletableFuture.completedFuture(null);
               }
             });
@@ -437,15 +438,15 @@ public class RaftCoordinatedLeadershipTransferTest {
     final var freeze = new CompletableFuture<Long>();
     leader
         .getContext()
-        .setLeadershipTransferPauseControl(
-            new LeadershipTransferPauseControl() {
+        .setLeadershipTransferWriteBarrier(
+            new LeadershipTransferWriteBarrier() {
               @Override
-              public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+              public CompletableFuture<Long> freeze(final Duration timeout) {
                 return freeze;
               }
 
               @Override
-              public CompletableFuture<Void> resumeFromTransfer() {
+              public CompletableFuture<Void> unfreeze() {
                 return CompletableFuture.completedFuture(null);
               }
             });

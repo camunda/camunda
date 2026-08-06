@@ -41,7 +41,14 @@ import org.slf4j.LoggerFactory;
  *   start()
  *     |
  *     v
- *   PAUSE --------------------------.
+ *   FREEZE WRITES (broker) ---------.
+ *     |                             |
+ *     |                             v
+ *     |                           PAUSE_FAILED
+ *     |
+ *     | writes frozen
+ *     v
+ *   ARM RAFT PAUSE -----------------.
  *     |                             |
  *     |                             v
  *     |                           PAUSE_FAILED
@@ -71,10 +78,10 @@ import org.slf4j.LoggerFactory;
  *   TRANSFERRED
  * </pre>
  *
- * <p>Every outcome above lands in {@link #finish}, which reopens the partition before reporting to
- * the coordinator (but only while this node is still the leader) - once leadership has moved, the
- * step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves reopening to
- * the step-down for the same reason.
+ * <p>Every outcome above lands in {@link #finish}, which undoes both sides of the pause before
+ * reporting to the coordinator (but only while this node is still the leader) - once leadership has
+ * moved, the step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves
+ * that to the step-down for the same reason.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -113,22 +120,41 @@ final class LeadershipTransferAttempt {
   void start() {
     raft.checkThread();
     startMs = System.currentTimeMillis();
-    pause(pauseBudget())
+    raft.getLeadershipTransferWriteBarrier()
+        .freeze(raft.getRebalanceReplicationTimeout())
         .whenCompleteAsync(
-            (targetIndex, error) -> {
+            (writesFrozenSinceMs, error) -> {
               if (error != null) {
                 final var result = pauseFailureResult(error);
                 LOG.warn(
-                    "Failed to pause partition for transfer to {}, reporting {}",
+                    "Failed to freeze partition writes for transfer to {}, reporting {}",
                     desiredLeader,
                     result,
                     error);
                 finish(result);
                 return;
               }
-              catchUp(targetIndex);
+              armRaftPause(writesFrozenSinceMs);
             },
             raft.getThreadContext());
+  }
+
+  /**
+   * Arms the Raft-side pause - the frozen catch-up target and the step-down watchdog - once the
+   * broker's writes are frozen, then starts the catch-up wait.
+   */
+  private void armRaftPause(final long writesFrozenSinceMs) {
+    final long targetIndex;
+    try {
+      targetIndex = leader.pauseForTransfer(pauseBudget(), writesFrozenSinceMs);
+    } catch (final Exception e) {
+      final var result = pauseFailureResult(e);
+      LOG.warn(
+          "Failed to pause partition for transfer to {}, reporting {}", desiredLeader, result, e);
+      finish(result);
+      return;
+    }
+    catchUp(targetIndex);
   }
 
   void onLeaderStopped() {
@@ -251,42 +277,26 @@ final class LeadershipTransferAttempt {
             });
   }
 
-  private CompletableFuture<Long> pause(final Duration resumeTimeout) {
-    final var control = raft.getLeadershipTransferPauseControl();
-    if (control != null) {
-      return control.pauseForTransfer(resumeTimeout);
-    }
-    // e.g. Raft-only tests, where there are no writes to freeze
-    LOG.debug("No broker pause control registered, pausing the Raft side only");
-    return CompletableFuture.completedFuture(
-        leader.pauseForTransfer(resumeTimeout, System.currentTimeMillis()));
-  }
-
   /**
-   * Reopens the partition on the terminal paths this leader survives. A resume that fails steps the
-   * leader down where it is detected, so the partition is rebuilt rather than left frozen.
+   * Undoes the pause in reverse order on the terminal paths this leader survives: clear the
+   * Raft-side pause first, then reopen the broker's writes. Both sides tolerate a pause that failed
+   * partway. A resume that fails steps the leader down where it is detected, so the partition is
+   * rebuilt rather than left frozen.
    */
   private CompletableFuture<Void> resume() {
-    final var control = raft.getLeadershipTransferPauseControl();
-    final CompletableFuture<Void> resumed;
-    if (control != null) {
-      resumed = control.resumeFromTransfer();
-    } else {
-      // e.g. Raft-only tests, where there are no writes to reopen
-      LOG.debug("No broker pause control registered, resuming the Raft side only");
-      leader.resumeFromTransfer();
-      resumed = CompletableFuture.completedFuture(null);
-    }
-    return resumed.whenComplete(
-        (ignored, error) -> {
-          if (error != null) {
-            LOG.error(
-                "Failed to resume partition after leadership transfer to {}; relying on the pause "
-                    + "watchdog to recover if still frozen",
-                desiredLeader,
-                error);
-          }
-        });
+    leader.resumeFromTransfer();
+    return raft.getLeadershipTransferWriteBarrier()
+        .unfreeze()
+        .whenComplete(
+            (ignored, error) -> {
+              if (error != null) {
+                LOG.error(
+                    "Failed to resume partition after leadership transfer to {}; relying on the "
+                        + "pause watchdog to recover if still frozen",
+                    desiredLeader,
+                    error);
+              }
+            });
   }
 
   /**

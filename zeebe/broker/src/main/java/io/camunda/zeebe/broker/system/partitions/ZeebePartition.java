@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.atomix.raft.LeadershipTransferPauseControl;
+import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
@@ -66,17 +66,17 @@ public final class ZeebePartition extends Actor
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
 
-  /** Bridges the actor-scheduled pause barrier to the {@link CompletableFuture}-based Raft hook. */
-  private final LeadershipTransferPauseControl pauseControl =
-      new LeadershipTransferPauseControl() {
+  /** Bridges the actor-scheduled write freeze to the {@link CompletableFuture}-based Raft hook. */
+  private final LeadershipTransferWriteBarrier writeBarrier =
+      new LeadershipTransferWriteBarrier() {
         @Override
-        public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
-          return toCompletableFuture(ZeebePartition.this.pauseForTransfer(resumeTimeout));
+        public CompletableFuture<Long> freeze(final Duration timeout) {
+          return toCompletableFuture(freezeForTransfer(timeout));
         }
 
         @Override
-        public CompletableFuture<Void> resumeFromTransfer() {
-          return toCompletableFuture(ZeebePartition.this.resumeFromTransfer());
+        public CompletableFuture<Void> unfreeze() {
+          return toCompletableFuture(unfreezeAfterTransfer());
         }
       };
 
@@ -161,7 +161,7 @@ public final class ZeebePartition extends Actor
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
     context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
-    context.getRaftPartition().getServer().setLeadershipTransferPauseControl(pauseControl);
+    context.getRaftPartition().getServer().setLeadershipTransferWriteBarrier(writeBarrier);
   }
 
   @Override
@@ -508,32 +508,32 @@ public final class ZeebePartition extends Actor
   }
 
   /**
-   * Pauses this partition for a leadership transfer: freezes writes, pauses processing so no
-   * follow-up commands are written, and sets up a watchdog that steps the leader down if the pause
-   * outlives {@code resumeTimeout}. The Raft term is kept, and both replication and exporters keep
-   * running.
+   * Freezes this partition's writes for a leadership transfer: pauses processing so no follow-up
+   * commands are written, then freezes write admission. The Raft term is kept, and both replication
+   * and exporters keep running. The Raft-side pause - the frozen catch-up target and the step-down
+   * watchdog - is armed by the transfer itself once this freeze is in place.
    *
-   * <p>The future completes once the pause is fully in effect and the watchdog has been set.
+   * <p>The future completes with the epoch millis at which write admission was frozen.
    *
    * <p>The caller must serialize leadership transfer operations for a given partition, and must
    * await completion (success or failure) of this future before calling {@link
-   * #resumeFromTransfer()}. It is not safe to interleave this method with itself or {@code
-   * resumeFromTransfer()}.
+   * #unfreezeAfterTransfer()}. It is not safe to interleave this method with itself or {@code
+   * unfreezeAfterTransfer()}.
    */
-  public ActorFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+  public ActorFuture<Long> freezeForTransfer(final Duration timeout) {
     final CompletableActorFuture<Long> result = new CompletableActorFuture<>();
     actor.run(
         () -> {
-          LOG.info("Pausing partition {} for leadership transfer", context.getPartitionId());
+          LOG.info(
+              "Freezing partition {} writes for leadership transfer", context.getPartitionId());
           // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
           // cannot silently un-pause the partition.
           context.setPausedForTransfer(true);
-          // If arming does not complete within the resume deadline, roll back and fail so a stalled
-          // processor pause cannot leave writes frozen with no watchdog. Shares the resumeTimeout
-          // budget with the Raft watchdog.
+          // If the freeze does not complete within the timeout, roll back and fail so a stalled
+          // processor pause cannot leave the partition half-frozen. This bounds arming the freeze
+          // only; how long the partition may then stay frozen is the Raft watchdog's budget.
           final ScheduledTimer barrierTimeout =
-              actor.schedule(
-                  resumeTimeout.toMillis(), () -> onBarrierTimeout(resumeTimeout, result));
+              actor.schedule(timeout.toMillis(), () -> onBarrierTimeout(timeout, result));
           result.onComplete((ok, error) -> barrierTimeout.cancel());
           // Await the processor confirming paused: once done, every write it submitted has already
           // enqueued its Raft append.
@@ -557,31 +557,29 @@ public final class ZeebePartition extends Actor
                     // Freeze write admission and drain in-flight writes, so no entry can be
                     // appended past this point
                     context.getLogStream().pauseWrites();
-                    final long pausedSinceMs = ActorClock.currentTimeMillis();
-
-                    armRaftPause(resumeTimeout, pausedSinceMs, result);
+                    result.complete(ActorClock.currentTimeMillis());
                   });
         });
     return result;
   }
 
-  /** Rolls back a pause barrier that did not arm within the resume deadline. */
-  private void onBarrierTimeout(
-      final Duration resumeTimeout, final CompletableActorFuture<Long> result) {
+  /** Rolls back a write freeze that did not complete within its timeout. */
+  private void onBarrierTimeout(final Duration timeout, final CompletableActorFuture<Long> result) {
     if (result.isDone()) {
       return;
     }
     LOG.warn(
-        "Leadership-transfer pause for partition {} did not start within {}; rolling back",
+        "Leadership-transfer write freeze for partition {} did not complete within {}; rolling "
+            + "back",
         context.getPartitionId(),
-        resumeTimeout);
+        timeout);
     rollbackTransferPause();
     result.completeExceptionally(
-        new TimeoutException("Timed out arming the leadership-transfer pause barrier"));
+        new TimeoutException("Timed out establishing the leadership-transfer write freeze"));
   }
 
   /**
-   * Undoes {@link #pauseForTransfer(Duration)} so a pause that fails partway does not leave the
+   * Undoes {@link #freezeForTransfer(Duration)} so a freeze that fails partway does not leave the
    * partition write-frozen.
    */
   private void rollbackTransferPause() {
@@ -594,66 +592,27 @@ public final class ZeebePartition extends Actor
   }
 
   /**
-   * Captures the frozen last log index as the catch-up target and sets the watchdog on the Raft
-   * thread after every already-enqueued append.
-   */
-  private void armRaftPause(
-      final Duration resumeTimeout, final long pausedSinceMs, final ActorFuture<Long> result) {
-    context
-        .getRaftPartition()
-        .getServer()
-        .pauseForTransfer(resumeTimeout, pausedSinceMs)
-        .whenCompleteAsync(
-            (targetIndex, error) -> {
-              if (result.isDone()) {
-                context.getRaftPartition().getServer().resumeFromTransfer();
-                return;
-              }
-
-              if (error != null) {
-                context.getRaftPartition().getServer().resumeFromTransfer();
-                rollbackTransferPause();
-                result.completeExceptionally(error);
-              } else {
-                result.complete(targetIndex);
-              }
-            },
-            actor);
-  }
-
-  /**
-   * Resumes this partition after a coordinated leadership transfer, undoing {@link
-   * #pauseForTransfer(Duration)}.
+   * Reopens this partition's writes after a coordinated leadership transfer, undoing {@link
+   * #freezeForTransfer(Duration)}. Tolerates a freeze that failed or never completed.
    *
-   * <p>The attempt always ends either fully resumed or, if reopening fails, stepped down.
+   * <p>The attempt always ends either fully reopened or, if reopening fails, stepped down.
    *
-   * <p>Must not interleave with a {@link #pauseForTransfer(Duration)} whose future has not yet
+   * <p>Must not interleave with a {@link #freezeForTransfer(Duration)} whose future has not yet
    * completed.
    */
-  public ActorFuture<Void> resumeFromTransfer() {
+  public ActorFuture<Void> unfreezeAfterTransfer() {
     final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
     actor.run(
         () -> {
-          LOG.info("Resuming partition {} after leadership transfer", context.getPartitionId());
-          context
-              .getRaftPartition()
-              .getServer()
-              .resumeFromTransfer()
-              .whenCompleteAsync(
-                  (ignored, raftError) -> {
-                    if (raftError != null) {
-                      result.completeExceptionally(raftError);
-                    } else {
-                      reopenAfterRaftResume(result);
-                    }
-                  },
-                  actor);
+          LOG.info(
+              "Reopening partition {} writes after leadership transfer", context.getPartitionId());
+          reopen(result);
         });
     return result;
   }
 
   /** Reopens write admission, the transfer-pause flag and the stream processor. */
-  private void reopenAfterRaftResume(final CompletableActorFuture<Void> result) {
+  private void reopen(final CompletableActorFuture<Void> result) {
     context.getLogStream().resumeWrites();
     context.setPausedForTransfer(false);
     final ActorFuture<Void> processorResume;
