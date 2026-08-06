@@ -19,6 +19,7 @@ import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.metadata.OptimizeVersionService;
 import io.camunda.optimize.service.tenant.TenantService;
+import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.time.OffsetDateTime;
@@ -79,6 +80,9 @@ public class UIConfigurationService {
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
+    uiConfigurationDto.setEntityNameMaxLength(
+        Optional.ofNullable(configurationService.getEntityConfiguration().getNameMaxLength())
+            .orElse(ValidationHelper.DEFAULT_MAX_ENTITY_NAME_LENGTH));
     uiConfigurationDto.setMaxNumDataSourcesForReport(
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));

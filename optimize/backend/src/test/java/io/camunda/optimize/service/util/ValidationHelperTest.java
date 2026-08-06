@@ -93,6 +93,83 @@ public class ValidationHelperTest {
   }
 
   @Test
+  void shouldRejectEntityNameExceedingMaxLength() {
+    // given
+    final String name = "a".repeat(ValidationHelper.DEFAULT_MAX_ENTITY_NAME_LENGTH + 1);
+
+    // when
+    final Throwable thrown =
+        Assertions.catchThrowable(() -> ValidationHelper.validateEntityName("Report", name, null));
+
+    // then
+    Assertions.assertThat(thrown)
+        .isInstanceOf(OptimizeValidationException.class)
+        .hasMessageContaining("Report names cannot be greater than 8191 characters");
+  }
+
+  @Test
+  void shouldAcceptEntityNameAtExactlyMaxLength() {
+    // given
+    final String name = "a".repeat(ValidationHelper.DEFAULT_MAX_ENTITY_NAME_LENGTH);
+
+    // then
+    ValidationHelper.validateEntityName("Report", name, null);
+  }
+
+  @Test
+  void shouldAcceptNullEntityNameSoDefaultNamesStillApply() {
+    // then
+    ValidationHelper.validateEntityName("Dashboard", null, null);
+  }
+
+  @Test
+  void shouldEnforceConfiguredLimitInsteadOfDefault() {
+    // given
+    final String name = "a".repeat(257);
+
+    // when
+    final Throwable thrown =
+        Assertions.catchThrowable(
+            () -> ValidationHelper.validateEntityName("Collection", name, 256));
+
+    // then
+    Assertions.assertThat(thrown)
+        .isInstanceOf(OptimizeValidationException.class)
+        .hasMessageContaining("Collection names cannot be greater than 256 characters");
+  }
+
+  @Test
+  void shouldCountCharactersNotUtf8Bytes() {
+    // given a name of 4-byte characters that is within the character limit but not the byte limit
+    final String name = "\uD83D\uDE00".repeat(100);
+
+    // then
+    ValidationHelper.validateEntityName("Report", name, 256);
+  }
+
+  @Test
+  void shouldClampGeneratedNameToConfiguredLimit() {
+    // given
+    final String generated = "a".repeat(300);
+
+    // when
+    final String clamped = ValidationHelper.clampGeneratedEntityName(generated, 256);
+
+    // then
+    Assertions.assertThat(clamped).hasSize(256);
+  }
+
+  @Test
+  void shouldLeaveGeneratedNameWithinLimitUntouched() {
+    // given
+    final String generated = "a".repeat(100);
+
+    // then
+    Assertions.assertThat(ValidationHelper.clampGeneratedEntityName(generated, 256))
+        .isEqualTo(generated);
+  }
+
+  @Test
   void shouldValidateFiltersCorrectly() {
     // given
     final ProcessFilterDto<DateFilterDataDto<?>> validFilter = new InstanceStartDateFilterDto();
