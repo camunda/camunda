@@ -8,6 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
@@ -17,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
@@ -382,6 +385,9 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(STATUS, entity.getStatus());
     expectedUpdateFields.put(INPUT_TOKENS, entity.getInputTokens());
     expectedUpdateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    expectedUpdateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    expectedUpdateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    expectedUpdateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     expectedUpdateFields.put(MODEL_CALLS, entity.getModelCalls());
     expectedUpdateFields.put(TOOL_CALLS, entity.getToolCalls());
     expectedUpdateFields.put(TOOLS, entity.getTools());
