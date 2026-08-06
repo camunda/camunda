@@ -7,10 +7,10 @@ paths:
       tags:
         - Cluster
       operationId: getTopology
-      x-required-permissions: []
+      x-required-permissions: [ ]
       security:
-        - bearerAuth: []
-        - basicAuth: []
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
       summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
@@ -23,7 +23,7 @@ paths:
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "500":
-            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.5"
 
   /status:
@@ -32,11 +32,11 @@ paths:
       tags:
         - Cluster
       operationId: getStatus
-      x-required-permissions: []
+      x-required-permissions: [ ]
       # Public health-check endpoint — declared unauthenticated at runtime
       # via SecurityPathAdapter. `security: []` overrides the conditional
       # enforcement on the global schemes for this operation.
-      security: []
+      security: [ ]
       summary: Get physical tenant status
       description: >-
         Checks the health status of the default physical tenant by verifying if there's at least one
@@ -77,11 +77,11 @@ paths:
       tags:
         - Cluster
       operationId: getClusterStatus
-      x-required-permissions: []
+      x-required-permissions: [ ]
       # Public health-check endpoint — declared unauthenticated at runtime
       # via SecurityPathAdapter. `security: []` overrides the conditional
       # enforcement on the global schemes for this operation.
-      security: []
+      security: [ ]
       summary: Get the status of the whole cluster
       description: >-
         Checks the health status of the whole cluster, aggregated over all physical tenants. Returns
@@ -103,6 +103,62 @@ paths:
                 $ref: '#/components/schemas/ClusterStatusResponse'
       x-added-in-version: "8.10"
 
+  # Not served under the document's `/v2` server base,
+  # hence the path-item `servers` override below
+  /cluster/v2/mode:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: changeClusterModeAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Change the cluster mode of one or every physical tenant
+      description: >-
+        Transitions physical tenants between processing and recovery mode.
+
+
+        If the `physicalTenantId` parameter is not provided, all available physical tenants are
+        transitioned individually.
+      parameters:
+        - $ref: '#/components/parameters/ModeParameter'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        "200":
+          description: >-
+            The mode change request was accepted; returns the planned cluster change covering every
+            requested physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterModeChangeResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "409":
+          description: >-
+            The mode change conflicts with the cluster state, for example because another
+            configuration change is in progress.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /mode:
     patch:
       x-eventually-consistent: false
@@ -114,8 +170,8 @@ paths:
             - { resourceType: SYSTEM, permissionType: UPDATE }
             - { resourceType: BACKUP, permissionType: RESTORE }
       security:
-        - bearerAuth: []
-        - basicAuth: []
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
       summary: Change cluster mode
       description: >-
         Transitions the cluster between processing and recovery mode. This is a non-blocking
@@ -153,8 +209,8 @@ paths:
       x-required-permissions:
         - { resourceType: BACKUP, permissionType: RESTORE }
       security:
-        - bearerAuth: []
-        - basicAuth: []
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
       summary: Restore from a backup
       description: >-
         Restores the cluster from a backup. The restore is described either by a single backup ID
@@ -195,8 +251,8 @@ paths:
       x-required-permissions:
         - { resourceType: BACKUP, permissionType: RESTORE }
       security:
-        - bearerAuth: []
-        - basicAuth: []
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
       summary: Get the status of the restore that is currently in progress
       description: >-
         Returns the status of the restore that is currently in progress, reported per broker and
@@ -241,6 +297,16 @@ components:
       schema:
         type: boolean
         default: false
+    PhysicalTenantIdParameter:
+      name: physicalTenantId
+      in: query
+      required: false
+      description: >-
+        The physical tenant to apply the change to. When omitted, the change is applied to every
+        physical tenant of the cluster.
+      schema:
+        type: string
+        example: default
 
   schemas:
     ClusterStatusResponse:
@@ -489,7 +555,7 @@ components:
           items:
             type: integer
             format: int64
-          example: [100, 101]
+          example: [ 100, 101 ]
 
     RestoreStatusResponse:
       description: The status of the restore that is currently in progress.
@@ -582,7 +648,7 @@ components:
           items:
             type: integer
             format: int64
-          example: [100, 101]
+          example: [ 100, 101 ]
         completedAt:
           description: >-
             The time the partition was restored, as an ISO 8601 timestamp; null unless the partition

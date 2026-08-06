@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
-import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
 import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
 import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
@@ -17,24 +15,18 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.DatabaseTypeUtils;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreStatus;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.Mode;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
-import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -83,8 +75,8 @@ public final class RecoveryController {
             serviceRegistry
                 .recoveryServices(physicalTenantId)
                 .changeMode(mode, dryRun, authentication)
-                .thenApply(RecoveryController::unwrapOrThrow),
-        RecoveryController::toClusterModeChangeResponse,
+                .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
+        ClusterModeChangeMapper::toClusterModeChangeResponse,
         HttpStatus.OK);
   }
 
@@ -102,8 +94,8 @@ public final class RecoveryController {
             serviceRegistry
                 .recoveryServices(physicalTenantId)
                 .restore(request, authentication)
-                .thenApply(RecoveryController::unwrapOrThrow),
-        RecoveryController::toClusterModeChangeResponse,
+                .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
+        ClusterModeChangeMapper::toClusterModeChangeResponse,
         HttpStatus.ACCEPTED);
   }
 
@@ -117,7 +109,7 @@ public final class RecoveryController {
             serviceRegistry
                 .recoveryServices(physicalTenantId)
                 .restoreStatus(authentication)
-                .thenApply(RecoveryController::unwrapOrThrow)
+                .thenApply(ClusterModeChangeMapper::unwrapOrThrow)
                 .thenApply(RecoveryController::restoreStatus),
         RecoveryController::mapRestoreStatus,
         HttpStatus.OK);
@@ -144,50 +136,6 @@ public final class RecoveryController {
         databaseType,
         continuousBackups,
         dryRun);
-  }
-
-  private static <T> T unwrapOrThrow(final Either<ErrorResponse, T> result) {
-    if (result.isRight()) {
-      return result.get();
-    }
-    final var error = result.getLeft();
-    throw new ServiceException(error.message(), mapErrorStatus(error.code()));
-  }
-
-  private static Status mapErrorStatus(final ErrorResponse.ErrorCode code) {
-    return switch (code) {
-      case INVALID_REQUEST -> Status.INVALID_ARGUMENT;
-      case OPERATION_NOT_ALLOWED -> Status.FORBIDDEN;
-      case CONCURRENT_MODIFICATION, INVALID_STATE -> Status.INVALID_STATE;
-      case INTERNAL_ERROR -> Status.INTERNAL;
-      case NOT_FOUND -> Status.NOT_FOUND;
-    };
-  }
-
-  private static ClusterModeChangeResponse toClusterModeChangeResponse(
-      final ClusterConfigurationChangeResponse response) {
-    final List<ClusterModeChangeOperation> plannedChanges =
-        response.legacyResponse().plannedChanges().stream()
-            .map(RecoveryController::toClusterModeChangeOperation)
-            .toList();
-    return ClusterModeChangeResponse.Builder.create()
-        .changeId(Long.toString(response.changeId()))
-        .plannedChanges(plannedChanges)
-        .build();
-  }
-
-  private static ClusterModeChangeOperation toClusterModeChangeOperation(
-      final ClusterConfigurationChangeOperation operation) {
-    final String mode =
-        switch (operation) {
-          case final ModeChangeOperation modeChange -> modeChange.mode().name();
-          case final AwaitModeChangeOperation awaitModeChange -> awaitModeChange.mode().name();
-          default -> null;
-        };
-    return ClusterModeChangeOperation.Builder.create()
-        .operation(operation.getClass().getSimpleName())
-        .mode(mode)
-        .build();
   }
 
   private static RestoreStatus restoreStatus(final ClusterConfiguration configuration) {
