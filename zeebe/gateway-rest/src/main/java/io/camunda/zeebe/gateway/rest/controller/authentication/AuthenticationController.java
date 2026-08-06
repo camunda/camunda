@@ -74,7 +74,7 @@ public class AuthenticationController {
    * allowed. It returns 401 for anonymous/unauthenticated callers, mirroring {@link
    * #getCurrentUser()}.
    */
-  @CamundaPostMapping(path = "/me/authorizations")
+  @CamundaPostMapping(path = "/me/authorizations/search")
   public ResponseEntity<AuthorizationSearchResult> searchOwnAuthorizations(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuthorizationSearchQuery query) {

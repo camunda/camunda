@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
- * Verifies {@code POST /v2/authentication/me/authorizations}
+ * Verifies {@code POST /v2/authentication/me/authorizations/search}
  * (https://github.com/camunda/camunda/issues/55892): the endpoint returns authorizations applicable
  * to the authenticated principal — directly or via group/role membership.
  *
@@ -183,7 +183,7 @@ class MeAuthorizationsIT {
     // when — no Authorization header
     final var request =
         HttpRequest.newBuilder()
-            .uri(createUri(meClient, "v2/authentication/me/authorizations"))
+            .uri(createUri(meClient, "v2/authentication/me/authorizations/search"))
             .header("Content-Type", "application/json")
             .POST(BodyPublishers.noBody())
             .build();

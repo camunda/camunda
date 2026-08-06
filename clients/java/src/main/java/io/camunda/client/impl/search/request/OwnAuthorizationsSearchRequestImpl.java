@@ -65,7 +65,7 @@ public class OwnAuthorizationsSearchRequestImpl
   public CamundaFuture<SearchResponse<Authorization>> send() {
     final HttpCamundaFuture<SearchResponse<Authorization>> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/authentication/me/authorizations",
+        "/authentication/me/authorizations/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         AuthorizationSearchResult.class,

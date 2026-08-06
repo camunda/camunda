@@ -53,7 +53,7 @@ import org.springframework.test.json.JsonCompareMode;
 @EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class AuthenticationControllerTest extends RestControllerTest {
 
-  private static final String ME_AUTHORIZATIONS_URL = "/v2/authentication/me/authorizations";
+  private static final String ME_AUTHORIZATIONS_URL = "/v2/authentication/me/authorizations/search";
 
   @MockitoBean private CamundaUserPort camundaUserPort;
   @MockitoBean private ServiceRegistry serviceRegistry;

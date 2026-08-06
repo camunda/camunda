@@ -23,8 +23,8 @@ import java.util.Set;
  * io.camunda.security.core.authz.AuthorizationChecker} and is shared by every caller that needs to
  * query the authorization store for everything a principal — directly or transitively — has been
  * granted, e.g. {@code AuthorizationRepositoryAdapter} (host-supplied CSL port) and {@code
- * AuthorizationServices#searchOwnAuthorizations} (the {@code /v2/authentication/me/authorizations}
- * endpoint).
+ * AuthorizationServices#searchOwnAuthorizations} (the {@code
+ * /v2/authentication/me/authorizations/search} endpoint).
  */
 public final class AuthenticatedOwnerIdsUtil {
 
