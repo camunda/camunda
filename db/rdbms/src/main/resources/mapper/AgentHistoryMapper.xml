@@ -35,7 +35,15 @@
       OUTPUT_TOKENS,
       DURATION_MS,
       CONTENT,
-      TOOL_CALLS
+      TOOL_CALLS,
+      HISTORY_ITEM_ID,
+      TOOLS,
+      MODEL,
+      PROVIDER,
+      MAX_TOKENS,
+      MAX_MODEL_CALLS,
+      MAX_TOOL_CALLS,
+      SYSTEM_PROMPT
     )
     VALUES (
       #{agentHistoryKey},
@@ -57,7 +65,15 @@
       #{outputTokens},
       #{durationMs},
       #{content, jdbcType=CLOB},
-      #{toolCalls, jdbcType=CLOB}
+      #{toolCalls, jdbcType=CLOB},
+      #{historyItemId},
+      #{tools, jdbcType=CLOB},
+      #{model},
+      #{provider},
+      #{maxTokens},
+      #{maxModelCalls},
+      #{maxToolCalls},
+      #{systemPrompt, jdbcType=CLOB}
     )
   </insert>
 
@@ -82,9 +98,11 @@
   <!-- ===== READ operations ===== -->
 
   <!--
-    CONTENT and TOOL_CALLS are JSON CLOBs. They are mapped to the raw String properties on
-    AgentHistoryDbModel; AgentHistoryDbModel.contentItems() and toolCallValues() then deserialize
-    them lazily on first access.
+    CONTENT, TOOL_CALLS, TOOLS and SYSTEM_PROMPT are JSON CLOBs. They are mapped to the raw String
+    properties on AgentHistoryDbModel; AgentHistoryDbModel.contentItems(), toolCallValues(),
+    toolValues() and systemPromptItems() then deserialize them lazily on first access.
+    HISTORY_ITEM_ID/MODEL/PROVIDER/MAX_TOKENS/MAX_MODEL_CALLS/MAX_TOOL_CALLS/SYSTEM_PROMPT are
+    CONFIGURATION-only fields; NULL means this item didn't touch the corresponding field.
   -->
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
     <constructor>
@@ -112,6 +130,14 @@
       <arg column="DURATION_MS" javaType="java.lang.Long" name="durationMs"/>
       <arg column="CONTENT" javaType="java.lang.String" name="content"/>
       <arg column="TOOL_CALLS" javaType="java.lang.String" name="toolCalls"/>
+      <arg column="HISTORY_ITEM_ID" javaType="java.lang.String" name="historyItemId"/>
+      <arg column="TOOLS" javaType="java.lang.String" name="tools"/>
+      <arg column="MODEL" javaType="java.lang.String" name="model"/>
+      <arg column="PROVIDER" javaType="java.lang.String" name="provider"/>
+      <arg column="MAX_TOKENS" javaType="java.lang.Long" name="maxTokens"/>
+      <arg column="MAX_MODEL_CALLS" javaType="java.lang.Integer" name="maxModelCalls"/>
+      <arg column="MAX_TOOL_CALLS" javaType="java.lang.Integer" name="maxToolCalls"/>
+      <arg column="SYSTEM_PROMPT" javaType="java.lang.String" name="systemPrompt"/>
     </constructor>
   </resultMap>
 
@@ -140,7 +166,15 @@
           ah.OUTPUT_TOKENS,
           ah.DURATION_MS,
           ah.CONTENT,
-          ah.TOOL_CALLS
+          ah.TOOL_CALLS,
+          ah.HISTORY_ITEM_ID,
+          ah.TOOLS,
+          ah.MODEL,
+          ah.PROVIDER,
+          ah.MAX_TOKENS,
+          ah.MAX_MODEL_CALLS,
+          ah.MAX_TOOL_CALLS,
+          ah.SYSTEM_PROMPT
         FROM ${prefix}AGENT_HISTORY ah
         <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchAndAuthFilter"/>
       ) filtered
