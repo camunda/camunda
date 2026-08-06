@@ -64,7 +64,13 @@ public interface JobState {
      * the activatable index, so it is handed out to no worker, and it leaves this state only by
      * being reactivated after the resolution or by being deleted.
      */
-    WAITING_FOR_SECRET_RESOLUTION((byte) 5);
+    WAITING_FOR_SECRET_RESOLUTION((byte) 5),
+    /**
+     * The job belongs to a suspended process instance. It is not in the activatable index, so it is
+     * handed out to no worker, and it leaves this state only by being resumed with its process
+     * instance or by being deleted.
+     */
+    SUSPENDED((byte) 6);
 
     byte value;
 

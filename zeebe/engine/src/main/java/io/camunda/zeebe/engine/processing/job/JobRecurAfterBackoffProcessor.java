@@ -76,6 +76,9 @@ public class JobRecurAfterBackoffProcessor
         case WAITING_FOR_SECRET_RESOLUTION:
           textState = "it is waiting for a secret to be resolved";
           break;
+        case SUSPENDED:
+          textState = "its process instance is suspended";
+          break;
         default:
           textState = "no such job was found";
           break;
