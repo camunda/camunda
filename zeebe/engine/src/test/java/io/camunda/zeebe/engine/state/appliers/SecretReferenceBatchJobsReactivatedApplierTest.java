@@ -45,7 +45,11 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
     applier = new SecretReferenceBatchJobsReactivatedApplier(processingState);
   }
 
-  private JobRecord createActivatedJob(final long jobKey) {
+  /**
+   * Parks the job the way {@link SecretReferenceResolutionRequestedApplier} does: out of the
+   * activatable index, but keeping the {@code ACTIVATABLE} state.
+   */
+  private JobRecord createJobParkedForSecretResolution(final long jobKey) {
     final var jobRecord =
         new JobRecord()
             .setType("test")
@@ -53,7 +57,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
             .setDeadline(256L)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     jobState.create(jobKey, jobRecord);
-    jobState.activate(jobKey, jobRecord);
+    jobState.makeJobNotActivatable(jobKey, jobRecord);
     return jobRecord;
   }
 
@@ -61,7 +65,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
   void shouldMakeJobActivatable() {
     // given
     final long jobKey = 1L;
-    final var job = createActivatedJob(jobKey);
+    final var job = createJobParkedForSecretResolution(jobKey);
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
     final var value =
@@ -90,7 +94,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
   void shouldRemoveWaitingJobEntryFromState() {
     // given
     final long jobKey = 2L;
-    createActivatedJob(jobKey);
+    createJobParkedForSecretResolution(jobKey);
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
     final var value =
@@ -118,10 +122,10 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
 
   @Test
   void shouldNotMakeJobActivatableWhenOtherRefsArePending() {
-    // given - job is activated and waiting on two references; one is being resolved (secret1),
+    // given - job is parked and waiting on two references; one is being resolved (secret1),
     //         but the other (secret2) is still pending
     final long jobKey = 4L;
-    createActivatedJob(jobKey);
+    final var job = createJobParkedForSecretResolution(jobKey);
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
     secretReferenceState.addPendingSecretReference(STORE_ID, "secret2");
@@ -148,8 +152,16 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
         });
     assertThat(stillWaiting.get()).isFalse();
 
-    // but job is NOT made activatable — it still waits on secret2
-    assertThat(jobState.getState(jobKey)).isNotEqualTo(State.ACTIVATABLE);
+    // but the job is NOT put back into the activatable index — it still waits on secret2
+    final var activatableJobs = new ArrayList<Long>();
+    jobState.forEachActivatableJobs(
+        job.getTypeBuffer(),
+        List.of(job.getTenantId()),
+        (key, record) -> {
+          activatableJobs.add(key);
+          return true;
+        });
+    assertThat(activatableJobs).isEmpty();
   }
 
   @Test
