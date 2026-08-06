@@ -95,6 +95,7 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
       case USER -> AgentInstanceHistoryRole.USER;
       case ASSISTANT -> AgentInstanceHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentInstanceHistoryRole.TOOL_RESULT;
+      case CONFIGURATION -> AgentInstanceHistoryRole.CONFIGURATION;
       case UNSPECIFIED ->
           throw new IllegalStateException(
               "should never happen — protocol UNSPECIFIED is always overwritten before export");

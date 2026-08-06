@@ -1126,6 +1126,7 @@ components:
         - USER
         - ASSISTANT
         - TOOL_RESULT
+        - CONFIGURATION
 
     AgentInstanceHistoryCommitStatusEnum:
       description: |

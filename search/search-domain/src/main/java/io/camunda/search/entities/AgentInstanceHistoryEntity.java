@@ -63,7 +63,8 @@ public record AgentInstanceHistoryEntity(
   public enum AgentInstanceHistoryRole {
     USER,
     ASSISTANT,
-    TOOL_RESULT
+    TOOL_RESULT,
+    CONFIGURATION
   }
 
   public enum AgentInstanceHistoryCommitStatus {
