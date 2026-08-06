@@ -239,7 +239,8 @@ public final class ClusterConfigurationManagementRequestsHandler
       final ExporterDisableRequest exporterDisableRequest) {
     return handleRequest(
         exporterDisableRequest.dryRun(),
-        new ExporterDisableRequestTransformer(exporterDisableRequest.exporterId()));
+        new ExporterDisableRequestTransformer(
+            exporterDisableRequest.exporterId(), exporterDisableRequest.physicalTenantId()));
   }
 
   @Override

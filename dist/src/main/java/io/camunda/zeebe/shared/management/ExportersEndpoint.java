@@ -44,7 +44,7 @@ public class ExportersEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
 
     return requestSender
-        .disableExporter(new ExporterDisableRequest(exporterId, dryRun))
+        .disableExporter(new ExporterDisableRequest(exporterId, Optional.empty(), dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 

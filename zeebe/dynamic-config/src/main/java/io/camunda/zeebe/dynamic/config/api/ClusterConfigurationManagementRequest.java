@@ -145,7 +145,12 @@ public sealed interface ClusterConfigurationManagementRequest {
   record UpdateZonePrioritiesRequest(List<String> zoneOrder, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ExporterDisableRequest(String exporterId, boolean dryRun)
+  /**
+   * Disable an exporter on all partitions of the given physical tenant. If no physicalTenantId is
+   * provided, it applies to all tenants.
+   */
+  record ExporterDisableRequest(
+      String exporterId, Optional<String> physicalTenantId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ExporterDeleteRequest(String exporterId, boolean dryRun)
