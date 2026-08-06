@@ -270,6 +270,7 @@ public final class EngineProcessors {
             messageCorrelationMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
+            featureFlags.propagateOnlyMappedNestedOutputPaths(),
             cslCheck,
             tenantCheck);
 
@@ -620,6 +621,7 @@ public final class EngineProcessors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean propagateOnlyMappedNestedOutputPaths,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck) {
     return new BpmnBehaviorsImpl(
@@ -639,6 +641,7 @@ public final class EngineProcessors {
         messageCorrelationMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         evaluateDuplicateOutputMappingTargetsInOrder,
+        propagateOnlyMappedNestedOutputPaths,
         cslCheck,
         tenantCheck);
   }

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -223,6 +222,10 @@ public final class VariableOutputMappingTransformerTest {
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                    .orElse(null),
+            path ->
+                Optional.ofNullable(variables.get(path.getFirst()))
+                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
     EvaluationResult failure = null;
     for (final var mapping : outputMappings) {
@@ -245,71 +248,49 @@ public final class VariableOutputMappingTransformerTest {
   }
 
   @Test
-  @Disabled(
-      "context merge() with the current scope leaks an untouched sibling ('p') into the merge "
-          + "target and a later back-reference to it, instead of building a mapping-only result "
-          + "(input mappings already do this post-#58801). Cannot be enabled without the #35251 "
-          + "fix: the desired drop-the-sibling result conflicts with the pinned 'merge target "
-          + "with variable' case, which requires the sibling to be kept — both go through the "
-          + "same seed-from-scope path. Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251.")
-  void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
-    final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
-    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
+  void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
+    // given: 'a' exists only on the element, with an untouched sibling 'p'
+    final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
+    final Map<String, DirectBuffer> scopeChain = Map.of("a", asMsgPack("{'p':0}"));
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
-    for (final var mapping : outputMappings) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
+    final var document = evaluateOutputMappings(outputMappings, scopeChain, Map.of());
 
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'b':1}}");
+    // then: the back-reference ran before 'a' was written, so it reads the scope chain
+    MsgPackUtil.assertEquality(document, "{'a':{'b':1}, 'd':{'p':0}}");
   }
 
   @Test
-  @Disabled(
-      "Same leak as shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference, opposite "
-          + "mapping order: the back-reference runs before 'a' is ever written, so it correctly "
-          + "keeps 'p'; only the later merge target should drop it. Cannot be enabled without "
-          + "the #35251 fix (see the sibling case). Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251.")
-  void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
-    final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
-    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
+  void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
+    // given: same as the sibling case, but the nested write happens first
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
+    final Map<String, DirectBuffer> scopeChain = Map.of("a", asMsgPack("{'p':0}"));
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
-    for (final var mapping : outputMappings) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
+    final var document = evaluateOutputMappings(outputMappings, scopeChain, Map.of());
 
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'p':0}}");
+    // then: 'a' propagates only the mapped path, but the later back-reference still reads the
+    // element's own view of 'a' - the write does not hide branches nobody mapped
+    MsgPackUtil.assertEquality(document, "{'a':{'b':1}, 'd':{'p':0,'b':1}}");
+  }
+
+  @Test
+  void shouldEvaluateAgainstScopeChainButEmitOnlyMappedPaths() {
+    // given: 'data' is visible to the element with three branches; only two are mapped, and the
+    // second mapping reads a branch the first one did not write
+    final var mappings =
+        List.of(mapping("data.wanted1", "data.wanted1"), mapping("data.wanted2", "data.wanted2"));
+    final Map<String, DirectBuffer> scopeChain =
+        Map.of("data", asMsgPack("{'wanted1':'A','wanted2':'B','unmapped':'C'}"));
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    // when
+    final var document = evaluateOutputMappings(outputMappings, scopeChain, Map.of());
+
+    // then: both mapped branches survive, the unmapped one is not propagated
+    MsgPackUtil.assertEquality(document, "{'data':{'wanted1':'A','wanted2':'B'}}");
   }
 
   // evaluates output mappings one by one in modeling order, mirroring
@@ -320,9 +301,7 @@ public final class VariableOutputMappingTransformerTest {
       final List<OutputMapping> outputMappings,
       final Map<String, DirectBuffer> scopeChain,
       final Map<String, DirectBuffer> mergeTarget) {
-    // Task 3 switches this to the two-resolver constructor; until then both views share the scope
-    // chain, which is exactly today's behavior.
-    final var resultBuilder = new MappingResultBuilder(resolver(scopeChain));
+    final var resultBuilder = new MappingResultBuilder(resolver(scopeChain), resolver(mergeTarget));
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
 
 final class MappingResultBuilderTest {
@@ -141,7 +142,9 @@ final class MappingResultBuilderTest {
   void shouldSeedNestedTargetFromScopeValue() {
     // given: scope has a = {'c': 2}
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -157,7 +160,7 @@ final class MappingResultBuilderTest {
         Map.of(
             List.of("a"), asMsgPack("{'b': {'d': 2}, 'e': 3}"),
             List.of("a", "b"), asMsgPack("{'d': 2}"));
-    final var builder = new MappingResultBuilder(scope::get);
+    final var builder = new MappingResultBuilder(scope::get, scope::get);
 
     // when
     builder.put(List.of("a", "b", "c"), asMsgPack("1"));
@@ -167,10 +170,31 @@ final class MappingResultBuilderTest {
   }
 
   @Test
+  void shouldDivergeBetweenViewsTwoLevelsDown() {
+    // given: 'a' is absent from both views (so both freshly create it), but at 'a.b' the scope
+    // chain holds a plain 5 while the merge target holds a map with sibling 'd' - the two views
+    // diverge below the top level, not at it
+    final Map<List<String>, DirectBuffer> scopeChain = Map.of(List.of("a", "b"), asMsgPack("5"));
+    final Map<List<String>, DirectBuffer> mergeTarget =
+        Map.of(List.of("a", "b"), asMsgPack("{'d': 2}"));
+    final var builder = new MappingResultBuilder(scopeChain::get, mergeTarget::get);
+
+    // when
+    builder.put(List.of("a", "b", "c"), asMsgPack("1"));
+
+    // then: the evaluation view is poisoned two levels down
+    assertEquality(builder.getVariable("a"), "{'b': null}");
+    // ... but the document seeds cleanly at that same depth and keeps the sibling 'd'
+    assertEquality(builder.toDocument(), "{'a': {'b': {'c': 1, 'd': 2}}}");
+  }
+
+  @Test
   void shouldPoisonLevelWhenScopeValueIsNotAMap() {
     // given: scope has a = 5
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -183,7 +207,9 @@ final class MappingResultBuilderTest {
   @Test
   void shouldDiscardFurtherPutsUnderPoisonedLevel() {
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -194,9 +220,45 @@ final class MappingResultBuilderTest {
   }
 
   @Test
+  void shouldPoisonEvaluationViewWithoutPoisoningMergeTarget() {
+    // given: the element's own scope has a = 5 (not a map), but the merge target's a = {'c': 2}
+    final var builder =
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
+
+    // when
+    builder.put(List.of("a", "b"), asMsgPack("1"));
+
+    // then: a back-reference sees the evaluation view poisoned by the element's own non-map value
+    assertEquality(builder.getVariable("a"), "null");
+    // ... but the document merges into the (unpoisoned) merge target and keeps its sibling 'c'
+    assertEquality(builder.toDocument(), "{'a': {'b': 1, 'c': 2}}");
+  }
+
+  @Test
+  void shouldPoisonMergeTargetWithoutPoisoningEvaluationView() {
+    // given: the element's own scope has a = {'c': 2}, but the merge target's a = 5 (not a map)
+    final var builder =
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+
+    // when
+    builder.put(List.of("a", "b"), asMsgPack("1"));
+
+    // then: a back-reference still sees the unpoisoned evaluation view, sibling 'c' and all
+    assertEquality(builder.getVariable("a"), "{'b': 1, 'c': 2}");
+    // ... but the document is poisoned to null, like FEEL's context merge(5, {...})
+    assertEquality(builder.toDocument(), "{'a': null}");
+  }
+
+  @Test
   void shouldReplacePoisonedLevelWithPlainTargetPut() {
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when: a nested put poisons 'a', then a plain put replaces it
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -210,7 +272,9 @@ final class MappingResultBuilderTest {
   void shouldReseedFromScopeWhenNestedPutFollowsPlainPut() {
     // given: scope a = {'c': 2}; a plain put stored a value buffer for 'a'
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
     builder.put(List.of("a"), asMsgPack("{'z': 9}"));
 
     // when: the shape flips back to a map — the plain mapping's value is discarded and the fresh
@@ -225,7 +289,9 @@ final class MappingResultBuilderTest {
   void shouldSeedFreshMapWhenScopeValueIsNil() {
     // given: scope has a = null — FEEL's `if (a != null)` takes the else branch
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("null") : null);
+        new MappingResultBuilder(
+            path -> path.equals(List.of("a")) ? asMsgPack("null") : null,
+            path -> path.equals(List.of("a")) ? asMsgPack("null") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
