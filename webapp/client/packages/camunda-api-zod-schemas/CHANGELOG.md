@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.87
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.10 process-definition schema, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.86
 
 ### 🩹 Fixes

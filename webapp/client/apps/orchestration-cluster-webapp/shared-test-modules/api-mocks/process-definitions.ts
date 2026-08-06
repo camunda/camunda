@@ -18,6 +18,7 @@ function createProcessDefinition(overrides?: Partial<ProcessDefinition>): Proces
 		tenantId: '<default>',
 		processDefinitionKey: '2251799813685279',
 		hasStartForm: false,
+		state: 'ACTIVE',
 		...overrides,
 	};
 }
