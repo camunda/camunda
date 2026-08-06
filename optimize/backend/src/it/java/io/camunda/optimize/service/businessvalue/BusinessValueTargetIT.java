@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetD
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
+import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +29,7 @@ import org.junit.jupiter.api.Test;
 class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private static final String PROCESS_KEY = "invoice-automation";
-  private static final String DEFAULT_TENANT = "<default>";
+  private static final String DEFAULT_TENANT = ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
   private static final String OTHER_TENANT = "tenant-b";
 
   private BusinessValueTargetWriter writer;
@@ -49,7 +50,7 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
     writer.upsertTarget(target);
 
     // then
-    final Optional<BusinessValueTargetDto> read = repository.getByKey(PROCESS_KEY, DEFAULT_TENANT);
+    final Optional<BusinessValueTargetDto> read = repository.getByKey(DEFAULT_TENANT, PROCESS_KEY);
     assertThat(read).contains(target);
   }
 
@@ -63,7 +64,7 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
     writer.upsertTarget(updated);
 
     // then
-    assertThat(repository.getByKey(PROCESS_KEY, DEFAULT_TENANT)).contains(updated);
+    assertThat(repository.getByKey(DEFAULT_TENANT, PROCESS_KEY)).contains(updated);
   }
 
   @Test
@@ -79,13 +80,13 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
     writer.upsertTarget(otherTenantTarget);
 
     // then neither overwrites the other
-    assertThat(repository.getByKey(PROCESS_KEY, DEFAULT_TENANT)).contains(defaultTenantTarget);
-    assertThat(repository.getByKey(PROCESS_KEY, OTHER_TENANT)).contains(otherTenantTarget);
+    assertThat(repository.getByKey(DEFAULT_TENANT, PROCESS_KEY)).contains(defaultTenantTarget);
+    assertThat(repository.getByKey(OTHER_TENANT, PROCESS_KEY)).contains(otherTenantTarget);
   }
 
   @Test
   void shouldReturnEmptyForMissingKey() {
-    assertThat(repository.getByKey("does-not-exist", DEFAULT_TENANT)).isEmpty();
+    assertThat(repository.getByKey(DEFAULT_TENANT, "does-not-exist")).isEmpty();
   }
 
   @Test
@@ -95,7 +96,7 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // when reading with a tenant that never wrote
     // then no row is returned
-    assertThat(repository.getByKey(PROCESS_KEY, OTHER_TENANT)).isEmpty();
+    assertThat(repository.getByKey(OTHER_TENANT, PROCESS_KEY)).isEmpty();
   }
 
   @Test

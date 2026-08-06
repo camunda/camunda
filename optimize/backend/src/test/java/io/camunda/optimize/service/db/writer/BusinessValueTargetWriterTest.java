@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -186,7 +187,7 @@ class BusinessValueTargetWriterTest {
   private BusinessValueTargetDto validTarget() {
     final BusinessValueTargetDto dto = new BusinessValueTargetDto();
     dto.setProcessDefinitionKey("invoice-automation");
-    dto.setTenantId("<default>");
+    dto.setTenantId(ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID);
     dto.setCycleTimeTargetMillis(28_800_000L);
     dto.setCycleTimeTargetUnit(TargetValueUnit.HOURS);
     dto.setAutomationRateTargetPct(85);

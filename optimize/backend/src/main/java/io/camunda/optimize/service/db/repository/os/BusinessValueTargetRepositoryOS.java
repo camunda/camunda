@@ -72,7 +72,7 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
 
   @Override
   public Optional<BusinessValueTargetDto> getByKey(
-      final String processDefinitionKey, final String tenantId) {
+      final String tenantId, final String processDefinitionKey) {
     final String documentId =
         BusinessValueTargetRepository.documentId(tenantId, processDefinitionKey);
     final GetRequest.Builder requestBuilder =

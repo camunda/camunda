@@ -17,7 +17,7 @@ public interface BusinessValueTargetRepository {
 
   void upsert(BusinessValueTargetDto target);
 
-  Optional<BusinessValueTargetDto> getByKey(String processDefinitionKey, String tenantId);
+  Optional<BusinessValueTargetDto> getByKey(String tenantId, String processDefinitionKey);
 
   List<BusinessValueTargetDto> scanAll();
 
