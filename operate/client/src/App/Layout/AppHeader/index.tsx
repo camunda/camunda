@@ -182,7 +182,7 @@ const AppHeader: React.FC = observer(() => {
               },
               {
                 key: 'processes',
-                label: 'Processes',
+                label: 'Process list', // DELIBERATE BREAKAGE - AlwaysGreen 8.9 live check
                 isCurrentPage:
                   currentPage === 'processes' ||
                   currentPage?.startsWith('process-details') === true,

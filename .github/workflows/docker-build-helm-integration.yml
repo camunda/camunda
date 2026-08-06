@@ -734,7 +734,7 @@ jobs:
           pr_is_draft: ${{ github.event.merge_group && 'false' || github.event.pull_request.draft }}
           # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
           # as alwaysgreen-streak-detector.yml.
-          slack_channel: "C0AK0AVKRL0"
+          slack_channel: "C0ALT57EN3C"
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
       - name: Checkout (for observe-build-status)
@@ -1256,7 +1256,7 @@ jobs:
     # PR. Mirrors the gate on main (#59386).
     if: ${{ always() && contains(needs.*.result, 'failure')
             && !github.event.pull_request.draft }}
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@ci/alwaysgreen-89-triage
     secrets: inherit
     with:
       # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the
