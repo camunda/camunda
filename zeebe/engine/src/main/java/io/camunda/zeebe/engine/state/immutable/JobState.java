@@ -58,7 +58,14 @@ public interface JobState {
     ACTIVATED((byte) 1),
     FAILED((byte) 2),
     NOT_FOUND((byte) 3),
-    ERROR_THROWN((byte) 4);
+    ERROR_THROWN((byte) 4),
+
+    /**
+     * The job belongs to a suspended process instance. It is not in the activatable index, so it is
+     * handed out to no worker, and it leaves this state only by being resumed with its process
+     * instance or by being deleted.
+     */
+    SUSPENDED((byte) 5);
 
     byte value;
 

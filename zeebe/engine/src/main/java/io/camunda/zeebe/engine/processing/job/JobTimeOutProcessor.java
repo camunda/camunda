@@ -69,6 +69,7 @@ public final class JobTimeOutProcessor
             case ACTIVATABLE -> "it must be activated first";
             case FAILED -> "it is marked as failed and is not activated";
             case ERROR_THROWN -> "it has thrown an error and is not activated";
+            case SUSPENDED -> "its process instance is suspended and it is not activated";
             case NOT_FOUND -> "no such job was found";
           };
 

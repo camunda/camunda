@@ -73,6 +73,9 @@ public class JobRecurAfterBackoffProcessor
         case ERROR_THROWN:
           textState = "it is in error state";
           break;
+        case SUSPENDED:
+          textState = "its process instance is suspended";
+          break;
         default:
           textState = "no such job was found";
           break;

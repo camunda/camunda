@@ -274,6 +274,35 @@ public final class DbJobState implements JobState, MutableJobState {
     }
   }
 
+  @Override
+  public void suspend(final long key, final JobRecord record) {
+    if (!isInState(key, State.ACTIVATABLE)) {
+      // only a job that is up for activation can be withheld from it; parking a job a worker or a
+      // failure already owns would take its state away from it
+      return;
+    }
+    updateJobState(key, State.SUSPENDED);
+    makeJobNotActivatable(key, record);
+  }
+
+  @Override
+  public void resume(final long key) {
+    if (!isInState(key, State.SUSPENDED)) {
+      // the job is gone, or was never parked; re-inserting it in either case corrupts the
+      // activatable index
+      return;
+    }
+    final JobRecord record = getJob(key);
+    if (record == null) {
+      // the state says the job is parked, so its record must exist; guarded anyway because an
+      // exception in an event applier bans the process instance, or fails the partition on replay
+      return;
+    }
+    updateJobState(key, State.ACTIVATABLE);
+    makeJobActivatableByPriority(
+        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+  }
+
   /**
    * @deprecated see {@link #create(long, JobRecord)}.
    */

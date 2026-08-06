@@ -108,7 +108,8 @@ public final class BpmnJobBehavior {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
-      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
+      EnumSet.of(
+          State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN, State.SUSPENDED);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
