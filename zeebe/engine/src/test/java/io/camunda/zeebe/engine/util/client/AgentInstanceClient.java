@@ -79,6 +79,23 @@ public final class AgentInstanceClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
+  /**
+   * Unlike {@link #COMPLETE_REJECTION_EXPECTATION}, this doesn't filter by {@code
+   * sourceRecordPosition}: with command batching disabled (or too small a limit), each self-chained
+   * follow-up {@code COMPLETE} command is dequeued in its own processing round and gets its own
+   * source position, so the closing rejection's source position isn't the initial command's
+   * position. Filtering by {@code processInstanceKey} instead still identifies the right (and only)
+   * rejection, regardless of how many rounds the batch took.
+   */
+  private static final Function<Long, Record<AgentInstanceRecordValue>>
+      COMPLETE_BATCH_REJECTION_EXPECTATION =
+          (processInstanceKey) ->
+              RecordingExporter.agentInstanceRecords()
+                  .onlyCommandRejections()
+                  .withIntent(AgentInstanceIntent.COMPLETE)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .getFirst();
+
   private final CommandWriter writer;
   private final AgentInstanceRecord record = new AgentInstanceRecord();
   private final LinkedHashSet<String> autoChangedAttributes = new LinkedHashSet<>();
@@ -226,16 +243,17 @@ public final class AgentInstanceClient {
    * rejection, the signal that closes the loop.
    */
   public Record<AgentInstanceRecordValue> complete() {
+    final boolean isBatchCompletion = record.getAgentInstanceKey() == -1L;
     final long position =
         writer.writeCommand(
             record.getAgentInstanceKey(),
             AgentInstanceIntent.COMPLETE,
             record,
             authorizedTenantIds.toArray(new String[0]));
-    final boolean isBatchCompletion = record.getAgentInstanceKey() == -1L;
-    return (isBatchCompletion || expectRejection
-            ? COMPLETE_REJECTION_EXPECTATION
-            : COMPLETED_EXPECTATION)
+    if (isBatchCompletion) {
+      return COMPLETE_BATCH_REJECTION_EXPECTATION.apply(record.getProcessInstanceKey());
+    }
+    return (expectRejection ? COMPLETE_REJECTION_EXPECTATION : COMPLETED_EXPECTATION)
         .apply(position);
   }
 
