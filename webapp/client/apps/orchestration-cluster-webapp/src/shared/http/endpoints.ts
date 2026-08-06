@@ -22,6 +22,7 @@ import {
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
+	type CreateProcessInstanceRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
 	type QueryAuditLogsRequestBody,
 	type UserTask,
@@ -154,6 +155,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessDefinitions.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createProcessInstance: (body: CreateProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createProcessInstance.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createProcessInstance.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

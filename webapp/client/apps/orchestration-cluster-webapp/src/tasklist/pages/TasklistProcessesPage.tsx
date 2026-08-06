@@ -9,6 +9,7 @@
 import EmptyMessageImage from '#/tasklist/modules/processes/empty-message-image.svg';
 import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
 import {ProcessTile} from '#/tasklist/modules/processes/components/ProcessTile';
+import type {StartProcessStatus} from '#/tasklist/modules/processes/useStartProcess';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Button, Column, Grid, Layer, Link, Stack} from '@carbon/react';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -23,6 +24,10 @@ type Props = {
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
 	onLoadMore: () => void;
+	selectedProcessDefinitionKey: string | null;
+	startProcessStatus: StartProcessStatus;
+	isStartProcessBusy: boolean;
+	onStartProcess: (process: ProcessDefinition) => void;
 };
 
 const TasklistProcessesPage: React.FC<Props> = ({
@@ -31,6 +36,10 @@ const TasklistProcessesPage: React.FC<Props> = ({
 	hasNextPage,
 	isFetchingNextPage,
 	onLoadMore,
+	selectedProcessDefinitionKey,
+	startProcessStatus,
+	isStartProcessBusy,
+	onStartProcess,
 }) => {
 	const {t} = useTranslation();
 	const isFiltered = initialFilterValues.search !== undefined && initialFilterValues.search !== '';
@@ -91,7 +100,16 @@ const TasklistProcessesPage: React.FC<Props> = ({
 											lg={5}
 											key={process.processDefinitionKey}
 										>
-											<ProcessTile process={process} />
+											<ProcessTile
+												process={process}
+												status={
+													selectedProcessDefinitionKey === process.processDefinitionKey
+														? startProcessStatus
+														: 'inactive'
+												}
+												isStartButtonDisabled={isStartProcessBusy}
+												onStartProcess={() => onStartProcess(process)}
+											/>
 										</Column>
 									))}
 								</Grid>

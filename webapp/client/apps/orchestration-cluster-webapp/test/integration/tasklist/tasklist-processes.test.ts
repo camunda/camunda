@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockCreateProcessInstanceEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
@@ -23,6 +24,7 @@ import {
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createProcessInstanceResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {z} from 'zod';
 
 function createProcessDefinitionsRequestSchema(filter: Record<string, z.ZodType> = {}) {
@@ -52,6 +54,137 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Tasklist processes page', () => {
+	test('should start a process without a form using the selected tenant', async ({network, tasklistProcessesPage}) => {
+		const processDefinitionKey = '2251799813685279';
+		const tenants = [
+			{tenantId: '<default>', name: 'Default', description: null},
+			{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+		];
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants}))}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema({tenantId: z.literal('tenant-a')}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Invoice review',
+								processDefinitionKey,
+								tenantId: 'tenant-a',
+							}),
+						],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				schema: z.strictObject({
+					processDefinitionKey: z.literal(processDefinitionKey),
+					tenantId: z.literal('tenant-a'),
+				}),
+				successResponse: HttpResponse.json(createProcessInstanceResponse({processDefinitionKey, tenantId: 'tenant-a'})),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		await tasklistProcessesPage.goto('?tenantId=tenant-a');
+		await tasklistProcessesPage.startProcessButton.click();
+
+		await expect(
+			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
+		).toBeVisible();
+	});
+
+	test('should notify the user when starting a process fails', async ({network, tasklistProcessesPage}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [{tenantId: '<default>', name: 'Default', description: null}],
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema({tenantId: z.literal('<default>')}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Invoice review',
+								processDefinitionKey,
+							}),
+						],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				schema: z.strictObject({
+					processDefinitionKey: z.literal(processDefinitionKey),
+					tenantId: z.literal('<default>'),
+				}),
+				successResponse: new HttpResponse(null, {status: 500}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		await tasklistProcessesPage.goto();
+		await tasklistProcessesPage.startProcessButton.click();
+
+		const notification = tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed');
+		await expect(notification).toBeVisible();
+		await expect(notification).toContainText('Invoice review');
+	});
+
+	test('should notify the user when they do not have permission to start a process', async ({
+		network,
+		tasklistProcessesPage,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [{tenantId: '<default>', name: 'Default', description: null}],
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema({tenantId: z.literal('<default>')}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Invoice review',
+								processDefinitionKey,
+							}),
+						],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				schema: z.strictObject({
+					processDefinitionKey: z.literal(processDefinitionKey),
+					tenantId: z.literal('<default>'),
+				}),
+				successResponse: new HttpResponse(null, {status: 403}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		await tasklistProcessesPage.goto();
+		await tasklistProcessesPage.startProcessButton.click();
+
+		const notification = tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed');
+		await expect(notification).toContainText(
+			"You don't have the necessary permissions. Contact your admin to request access.",
+		);
+		await expect(notification).not.toContainText('Invoice review');
+		await expect(tasklistProcessesPage.startProcessButton).toBeEnabled();
+	});
+
 	test('should render Tasklist Processes page with navigation', async ({tasklistProcessesPage}) => {
 		await tasklistProcessesPage.goto();
 
@@ -96,7 +229,7 @@ test.describe('Tasklist processes page', () => {
 		await expect(page.getByText('invoice-review', {exact: true})).toBeVisible();
 		await expect(tasklistProcessesPage.processHeading('order-approval')).toBeVisible();
 		await expect(page.getByText('Requires form input')).toBeVisible();
-		await expect(page.getByRole('button', {name: 'Start process'})).toHaveCount(2);
+		await expect(tasklistProcessesPage.startProcessButton).toHaveCount(2);
 		await expect(tasklistProcessesPage.loadMoreButton).toBeVisible();
 	});
 

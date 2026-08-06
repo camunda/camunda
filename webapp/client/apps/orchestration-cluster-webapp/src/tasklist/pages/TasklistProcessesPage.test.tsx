@@ -14,15 +14,8 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {HttpResponse} from 'msw';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {TasklistProcessesPage} from './TasklistProcessesPage';
-
-const defaultProps = {
-	initialFilterValues: {},
-	processes: [],
-	hasNextPage: false,
-	isFetchingNextPage: false,
-	onLoadMore: vi.fn(),
-};
 
 describe('<TasklistProcessesPage />', () => {
 	beforeEach(() => {
@@ -38,11 +31,18 @@ describe('<TasklistProcessesPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TasklistProcessesPage
-					{...defaultProps}
+					initialFilterValues={{}}
 					processes={[
 						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1'}),
 						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
 					]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={vi.fn()}
 				/>
 			),
 			{path: '/tasklist/processes'},
@@ -54,9 +54,22 @@ describe('<TasklistProcessesPage />', () => {
 
 	it('should display the unpublished-processes empty state', async ({worker}) => {
 		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
-		const screen = await renderWithRouter(() => <TasklistProcessesPage {...defaultProps} />, {
-			path: '/tasklist/processes',
-		});
+		const screen = await renderWithRouter(
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/processes'},
+		);
 
 		await expect.element(screen.getByRole('heading', {name: 'No published processes yet'})).toBeVisible();
 		await expect.element(screen.getByRole('img')).toBeVisible();
@@ -65,7 +78,19 @@ describe('<TasklistProcessesPage />', () => {
 	it('should display the no-matching-process empty state for a filtered list', async ({worker}) => {
 		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
 		const screen = await renderWithRouter(
-			() => <TasklistProcessesPage {...defaultProps} initialFilterValues={{search: 'missing'}} />,
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{search: 'missing'}}
+					processes={[]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={vi.fn()}
+				/>
+			),
 			{path: '/tasklist/processes'},
 		);
 
@@ -76,9 +101,22 @@ describe('<TasklistProcessesPage />', () => {
 
 	it('should link to the process publishing documentation', async ({worker}) => {
 		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
-		const screen = await renderWithRouter(() => <TasklistProcessesPage {...defaultProps} />, {
-			path: '/tasklist/processes',
-		});
+		const screen = await renderWithRouter(
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/processes'},
+		);
 
 		await expect
 			.element(screen.getByRole('link', {name: 'here'}))
@@ -91,10 +129,102 @@ describe('<TasklistProcessesPage />', () => {
 	it('should display the load-more button when more processes are available', async ({worker}) => {
 		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
 		const screen = await renderWithRouter(
-			() => <TasklistProcessesPage {...defaultProps} processes={[createProcessDefinition()]} hasNextPage />,
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[createProcessDefinition()]}
+					hasNextPage
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={vi.fn()}
+				/>
+			),
 			{path: '/tasklist/processes'},
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Load more'})).toBeVisible();
+	});
+
+	it('should call onStartProcess with the selected process', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
+		const process = createProcessDefinition({name: 'Invoice review'});
+		const onStartProcess = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[process]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy={false}
+					onStartProcess={onStartProcess}
+				/>
+			),
+			{path: '/tasklist/processes'},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Start process'}));
+
+		expect(onStartProcess).toHaveBeenCalledWith(process);
+	});
+
+	it('should display the start status only for the selected process', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
+		const screen = await renderWithRouter(
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[
+						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1'}),
+						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
+					]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey="1"
+					startProcessStatus="active"
+					isStartProcessBusy
+					onStartProcess={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/processes'},
+		);
+
+		await expect.element(screen.getByText('Starting process...')).toHaveLength(1);
+		await expect.element(screen.getByRole('button', {name: 'Start process'})).toHaveLength(1);
+	});
+
+	it('should disable all start-process buttons while a process start is busy', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
+		const screen = await renderWithRouter(
+			() => (
+				<TasklistProcessesPage
+					initialFilterValues={{}}
+					processes={[
+						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1'}),
+						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
+					]}
+					hasNextPage={false}
+					isFetchingNextPage={false}
+					onLoadMore={vi.fn()}
+					selectedProcessDefinitionKey={null}
+					startProcessStatus="inactive"
+					isStartProcessBusy
+					onStartProcess={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/processes'},
+		);
+
+		const startButtons = screen.getByRole('button', {name: 'Start process'});
+		await expect.element(startButtons).toHaveLength(2);
+		await expect.element(startButtons.first()).toBeDisabled();
+		await expect.element(startButtons.last()).toBeDisabled();
 	});
 });
