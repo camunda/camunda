@@ -248,7 +248,8 @@ public final class ClusterConfigurationManagementRequestsHandler
       final ExporterDeleteRequest exporterDeleteRequest) {
     return handleRequest(
         exporterDeleteRequest.dryRun(),
-        new ExporterDeleteRequestTransformer(exporterDeleteRequest.exporterId()));
+        new ExporterDeleteRequestTransformer(
+            exporterDeleteRequest.exporterId(), exporterDeleteRequest.physicalTenantId()));
   }
 
   @Override
