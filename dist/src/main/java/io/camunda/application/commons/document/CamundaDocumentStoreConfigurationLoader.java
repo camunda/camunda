@@ -196,9 +196,6 @@ public final class CamundaDocumentStoreConfigurationLoader
       final Object unifiedValue,
       final boolean sensitive) {
     final String unifiedProperty = PREFIX + storeType + "." + storeId + "." + unifiedField;
-    // Locale.ROOT, not the default locale: under a Turkish locale 'i' upper-cases to 'İ', so a
-    // store id containing it would derive a legacy key no environment variable can ever match and
-    // the value would be dropped without a word.
     final Set<String> legacyProperties =
         Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase(Locale.ROOT) + "_" + propertyKey);
 

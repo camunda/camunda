@@ -295,9 +295,8 @@ class PhysicalTenantDocumentOverlayTest {
 
   @Test
   void shouldRejectATenantOverridingOnlyOneHalfOfTheKeyPair() {
-    // the unrestated half is inherited from the root, so the store would be built with an access
-    // key and a secret key belonging to two different identities — a pairing that passes the
-    // store's both-or-neither check and only fails at the first document operation
+    // the inherited half pairs two different identities, which passes the store's both-or-neither
+    // check and only fails at the first document operation
     environment
         .getPropertySources()
         .addFirst(

@@ -351,9 +351,8 @@ class CamundaDocumentStoreConfigurationLoaderTest {
 
   @Test
   void shouldDeriveLegacyPropertyNamesIndependentlyOfTheDefaultLocale() {
-    // given — under a Turkish locale, upper-casing 'i' with the default locale yields 'İ', so a
-    // store id containing it would derive a legacy key no environment variable can ever match and
-    // the credential would be dropped without a word
+    // given — the store is declared through unified configuration, so its credential can only come
+    // back through the legacy bridge, which is the path the default locale breaks
     final Locale defaultLocale = Locale.getDefault();
     Locale.setDefault(Locale.forLanguageTag("tr"));
 

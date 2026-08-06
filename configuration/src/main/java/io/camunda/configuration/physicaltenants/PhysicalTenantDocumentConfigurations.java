@@ -64,14 +64,11 @@ public final class PhysicalTenantDocumentConfigurations {
   }
 
   /**
-   * Rejects a tenant that restates only one half of an AWS key pair.
-   *
-   * <p>The overlay merges field by field, so the unrestated half is inherited from the root and the
-   * store ends up with an access key and a secret key belonging to two different identities. Both
-   * are non-null, so the store's own both-or-neither check passes, the client builds, and the
-   * mismatch first appears as an S3 signature failure at the first document operation — an error
-   * that names nothing about the merge that produced it. The delta is only visible here, before it
-   * is folded into the root, so this is the one place the pairing can be enforced.
+   * The overlay merges field by field, so a tenant restating only one half of an AWS key pair
+   * inherits the other from the root and ends up with two halves of different identities. Both are
+   * non-null, so the store's own both-or-neither check passes and the mismatch first appears as an
+   * S3 signature failure that names nothing about the merge. Enforced here because the tenant's
+   * delta is only distinguishable from an inheritance before it is folded into the root.
    */
   private static void validateCredentialOverridesAreComplete(final OverlayContext context) {
     final Map<String, AwsStore> overrides =

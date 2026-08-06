@@ -74,11 +74,10 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   /**
-   * Records which identity the store ended up with. {@code ACCESS_KEY} and {@code SECRET_KEY} were
-   * accepted but ignored before per-store credentials existed, so a deployment that still carries
-   * them — a stale {@code DOCUMENT_STORE_<ID>_ACCESS_KEY} beside an instance role, say — changes
-   * credential source on the first restart after the upgrade. Say which source won, so that switch
-   * is legible in the startup log instead of surfacing later as an opaque S3 403.
+   * {@code ACCESS_KEY} and {@code SECRET_KEY} were accepted but ignored before per-store
+   * credentials existed, so a deployment still carrying a stale pair beside an instance role
+   * changes credential source on the first restart after the upgrade. Name the source that won, so
+   * the switch is legible at startup instead of surfacing later as an opaque S3 403.
    */
   private static void logCredentialSource(
       final DocumentStoreConfigurationRecord configuration, final String accessKey) {
@@ -176,15 +175,12 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   }
 
   /**
-   * The region this store's client and presigner target, or {@code null} to leave it to the AWS
-   * SDK.
-   *
-   * <p>{@code Region.of} accepts any string it is handed, so an unchecked region only surfaces at
-   * the first document operation as a redirect or an unresolvable host — and because the region
-   * property was accepted but ignored until per-store clients existed, an upgrading deployment may
-   * carry one nobody has ever exercised. Reject a structurally impossible region outright; only
-   * warn about one this SDK does not recognise, since a region newer than the bundled SDK, or an
-   * S3-compatible backend behind an endpoint override, is legitimately unknown to it.
+   * {@code Region.of} accepts any string, so an unchecked region only surfaces at the first
+   * document operation as a redirect or an unresolvable host — and since the property was accepted
+   * but ignored until per-store clients existed, an upgrading deployment may carry one nobody has
+   * ever exercised. A structurally impossible region is rejected; one the SDK merely does not
+   * recognise is only warned about, because a region newer than the bundled SDK, or an
+   * S3-compatible backend's own name, is legitimately unknown to it.
    */
   private static String getRegion(
       final DocumentStoreConfigurationRecord configuration, final URI endpoint) {

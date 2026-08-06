@@ -121,8 +121,8 @@ public class GcpDocumentStoreProviderTest {
     // when
     final Storage storage = GcpDocumentStoreProvider.createStorage(configuration);
 
-    // then — the identity the client will sign with must come from the key file, not from the
-    // application default credentials that every store in the process shares
+    // then — the identity must come from the key file, not from the application default
+    // credentials every store in the process shares
     assertThat(storage.getOptions().getCredentials())
         .isInstanceOfSatisfying(
             UserCredentials.class,
