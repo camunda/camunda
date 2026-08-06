@@ -317,6 +317,32 @@ class AdHocSubProcessBuilderTest {
   }
 
   @Test
+  void shouldSetAgentDefinition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess.zeebeAgentDefinition(ZeebeAgentType.external).task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAgentDefinition.class))
+        .singleElement()
+        .extracting(ZeebeAgentDefinition::getAgentType)
+        .isEqualTo(ZeebeAgentType.external);
+  }
+
+  @Test
   void shouldSetAiAgentSubProcessDefinition() {
     // given
     final BpmnModelInstance process =
@@ -339,6 +365,31 @@ class AdHocSubProcessBuilderTest {
         .singleElement()
         .extracting(ZeebeAgentDefinition::getAgentType)
         .isEqualTo(ZeebeAgentType.aiAgentSubProcess);
+  }
+
+  @Test
+  void shouldSetExternalAgentDefinition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> adHocSubProcess.zeebeExternalAgentDefinition().task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAgentDefinition.class))
+        .singleElement()
+        .extracting(ZeebeAgentDefinition::getAgentType)
+        .isEqualTo(ZeebeAgentType.external);
   }
 
   @Test

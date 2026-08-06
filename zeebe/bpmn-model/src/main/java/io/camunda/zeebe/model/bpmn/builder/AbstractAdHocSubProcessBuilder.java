@@ -99,15 +99,34 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
   }
 
   /**
+   * Marks this ad-hoc sub-process as an agent definition.
+   *
+   * @param agentType the agent type declared on the marker
+   * @return the builder object
+   */
+  public B zeebeAgentDefinition(final ZeebeAgentType agentType) {
+    final ZeebeAgentDefinition agentDefinition =
+        getCreateSingleExtensionElement(ZeebeAgentDefinition.class);
+    agentDefinition.setAgentType(agentType);
+    return myself;
+  }
+
+  /**
    * Marks this ad-hoc sub-process as a Camunda-native AI agent.
    *
    * @return the builder object
    */
   public B zeebeAiAgentSubProcessDefinition() {
-    final ZeebeAgentDefinition agentDefinition =
-        getCreateSingleExtensionElement(ZeebeAgentDefinition.class);
-    agentDefinition.setAgentType(ZeebeAgentType.aiAgentSubProcess);
-    return myself;
+    return zeebeAgentDefinition(ZeebeAgentType.aiAgentSubProcess);
+  }
+
+  /**
+   * Marks this ad-hoc sub-process as an external agent.
+   *
+   * @return the builder object
+   */
+  public B zeebeExternalAgentDefinition() {
+    return zeebeAgentDefinition(ZeebeAgentType.external);
   }
 
   @Override

@@ -80,14 +80,9 @@ public class ZeebeAgentDefinitionTest extends BpmnModelElementInstanceTest {
               .startEvent()
               .adHocSubProcess(
                   "ad-hoc",
-                  adHocSubProcess ->
-                      adHocSubProcess.zeebeAiAgentSubProcessDefinition().task("inner"))
+                  adHocSubProcess -> adHocSubProcess.zeebeAgentDefinition(agentType).task("inner"))
               .endEvent()
               .done();
-      final AdHocSubProcess builtAdHocSubProcess = modelInstance.getModelElementById("ad-hoc");
-      builtAdHocSubProcess
-          .getSingleExtensionElement(ZeebeAgentDefinition.class)
-          .setAgentType(agentType);
       final String modelXml = Bpmn.convertToString(modelInstance);
 
       // when
