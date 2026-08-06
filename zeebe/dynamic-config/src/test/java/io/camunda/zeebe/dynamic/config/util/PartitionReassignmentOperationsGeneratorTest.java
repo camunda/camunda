@@ -203,6 +203,45 @@ final class PartitionReassignmentOperationsGeneratorTest {
   }
 
   @Test
+  void shouldRejectATargetDistributionThatOmitsAnExistingPartitionOfATouchedGroup() {
+    // given — tenantA already has partitions 1 and 2
+    final var existingPartition1 =
+        PartitionMetadataFixtures.partition("tenantA", 1, Set.of(member(0), member(1)), member(0));
+    final var existingPartition2 =
+        PartitionMetadataFixtures.partition("tenantA", 2, Set.of(member(1), member(2)), member(1));
+    final var currentConfiguration =
+        configurationWith(Set.of(existingPartition1, existingPartition2));
+    // target only mentions partition 1 — partition 2 is silently omitted
+    final var target = Set.of(existingPartition1);
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                PartitionReassignmentOperationsGenerator.generateOperations(
+                    currentConfiguration, target, Map.of()))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldNotRejectAnExistingGroupThatIsEntirelyAbsentFromTheTargetDistribution() {
+    // given — tenantA already has a partition, but the target distribution only concerns a
+    // brand-new tenantB — tenantA is simply left alone, not "removed"
+    final var existingTenantA =
+        PartitionMetadataFixtures.partition("tenantA", 1, Set.of(member(0), member(1)), member(0));
+    final var currentConfiguration = configurationWith(Set.of(existingTenantA));
+    final var target =
+        Set.of(PartitionMetadataFixtures.partition("tenantB", 1, Set.of(member(2)), member(2)));
+
+    // when — no exception; tenantA is simply not part of this call at all
+    final var operations =
+        PartitionReassignmentOperationsGenerator.generateOperations(
+            currentConfiguration, target, Map.of("tenantB", newTenantConfig));
+
+    // then
+    assertThat(operations).containsOnlyKeys("tenantB");
+  }
+
+  @Test
   void shouldReturnEmptyMapForEmptyTargetDistribution() {
     // given
     final var currentConfiguration = configurationWith(Set.of());

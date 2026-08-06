@@ -75,7 +75,8 @@ public final class PartitionReassignmentOperationsGenerator {
    *     actually needs a change — a target partition identical to its current state contributes no
    *     operations.
    * @throws IllegalArgumentException if a brand-new group in {@code targetDistribution} has no
-   *     corresponding entry in {@code partitionConfigByNewGroup}
+   *     corresponding entry in {@code partitionConfigByNewGroup}, or if {@code targetDistribution}
+   *     omits an existing partition id of a group it touches
    */
   public static Map<String, List<PartitionGroupOperation>> generateOperations(
       final CurrentClusterConfiguration currentConfiguration,
@@ -95,6 +96,16 @@ public final class PartitionReassignmentOperationsGenerator {
         targetGroups.stream()
             .flatMap(group -> distributionByGroup.getOrDefault(group, Set.of()).stream())
             .collect(Collectors.toMap(PartitionMetadata::id, Function.identity()));
+
+    // Every existing partition id of a group targetDistribution touches must be present in
+    // targetDistribution — mirroring AdditivePartitionReassigner/PartitionReassignmentSupport
+    // #validateNoRemoval. Without this, a targetDistribution that silently omits an existing
+    // partition (e.g. a caller-side bug, or a reassigner change that starts supporting removal
+    // without this generator being updated) would produce no leave operations for it at all: the
+    // partition would simply be left out of the result, never mentioned again, without any
+    // indication it was ever removed.
+    final var targetIds = targetDistribution.stream().map(PartitionMetadata::id).toList();
+    validateNoRemoval(distributionByGroup, targetGroups, targetIds);
 
     final Set<String> newGroups =
         targetGroups.stream()
@@ -144,6 +155,33 @@ public final class PartitionReassignmentOperationsGenerator {
               }
             });
     return operationsByGroup;
+  }
+
+  /**
+   * Validates that every existing partition id of every group in {@code targetGroups} is present in
+   * {@code targetIds}. Scoped to {@code targetGroups} rather than every group in {@code
+   * distributionByGroup}, matching this generator's existing convention of only ever reading/acting
+   * on groups that {@code targetDistribution} actually mentions — an untouched existing group is
+   * legitimately absent from {@code targetDistribution} and is not a removal.
+   */
+  private static void validateNoRemoval(
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Set<String> targetGroups,
+      final List<PartitionId> targetIds) {
+    final Set<PartitionId> targetIdSet = Set.copyOf(targetIds);
+    final var missing =
+        targetGroups.stream()
+            .flatMap(group -> distributionByGroup.getOrDefault(group, Set.of()).stream())
+            .map(PartitionMetadata::id)
+            .filter(id -> !targetIdSet.contains(id))
+            .toList();
+    if (!missing.isEmpty()) {
+      throw new IllegalArgumentException(
+          "targetDistribution must include every existing partition id of every group it "
+              + "touches — removing partitions or groups is not supported by this generator, but "
+              + "is missing: "
+              + missing);
+    }
   }
 
   /** A partition with no prior state: bootstrap the primary, then join every other member. */
