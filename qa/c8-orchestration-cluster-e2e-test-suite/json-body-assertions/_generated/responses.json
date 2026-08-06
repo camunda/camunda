@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "4e852515199fa7e4b1e4a0a7692ef11be36b3f73",
-    "generatedAt": "2026-08-02T12:24:00.661Z",
+    "commit": "3e39a2d98dab6eb07cb4438d17915c291744c7a2",
+    "generatedAt": "2026-08-06T12:39:23.040Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "44ecb6a0fbfc7db951dddbaff3076ab8b9763816da297503ac7251d0e93a1dca"
+    "specSha256": "b33f0519714cde6ee3c35e929a034227b50537cd23ca0c140509f21b6c680865"
   },
   "responses": [
     {
@@ -1082,6 +1082,115 @@
           {
             "name": "username",
             "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/authentication/me/authorizations/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [
+                {
+                  "name": "authorizationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "string"
+                },
+                {
+                  "name": "ownerType",
+                  "type": "string",
+                  "enumValues": [
+                    "USER",
+                    "CLIENT",
+                    "ROLE",
+                    "GROUP",
+                    "MAPPING_RULE",
+                    "UNSPECIFIED"
+                  ]
+                },
+                {
+                  "name": "permissionTypes",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "resourceId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "resourcePropertyName",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "resourceType",
+                  "type": "string",
+                  "enumValues": [
+                    "AUDIT_LOG",
+                    "AUTHORIZATION",
+                    "BACKUP",
+                    "BATCH",
+                    "CLUSTER_VARIABLE",
+                    "COMPONENT",
+                    "DECISION_DEFINITION",
+                    "DECISION_REQUIREMENTS_DEFINITION",
+                    "DOCUMENT",
+                    "EXPORTER",
+                    "EXPRESSION",
+                    "GLOBAL_LISTENER",
+                    "GROUP",
+                    "MAPPING_RULE",
+                    "MESSAGE",
+                    "PROCESS_DEFINITION",
+                    "RESOURCE",
+                    "ROLE",
+                    "SECRET",
+                    "SYSTEM",
+                    "TENANT",
+                    "USER",
+                    "USER_TASK"
+                  ]
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []
@@ -6569,6 +6678,7 @@
                   "type": "string",
                   "enumValues": [
                     "ACTIVE",
+                    "DRAINING",
                     "DELETED"
                   ]
                 },
@@ -6795,6 +6905,7 @@
             "type": "string",
             "enumValues": [
               "ACTIVE",
+              "DRAINING",
               "DELETED"
             ]
           },
