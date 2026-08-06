@@ -18,12 +18,11 @@ import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
-import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.core.authz.DisabledResourceAccessProvider;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.authz.TenantAccessProvider;
-import io.camunda.security.impl.AuthorizationCheckerFactory;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.LinkedHashMap;
@@ -41,10 +40,10 @@ public class ResourceAccessControllerConfiguration {
 
   @Bean
   public ResourceAccessProvider resourceAccessProvider(
-      final CamundaSecurityLibraryProperties cslProperties, final AuthorizationChecker checker) {
-    return cslProperties.getAuthorizations().isEnabled()
-        ? new DefaultResourceAccessProvider(checker)
-        : new DisabledResourceAccessProvider();
+      final CamundaSecurityLibraryProperties cslProperties,
+      final AuthorizationScopeRepositoryPort scopeRepository) {
+    return DefaultResourceAccessProvider.forScopeRepository(
+        scopeRepository, cslProperties.getAuthorizations().isEnabled());
   }
 
   @Bean
@@ -114,10 +113,10 @@ public class ResourceAccessControllerConfiguration {
   private static ResourceAccessProvider resourceAccessProviderFor(
       final SearchClientReaders searchClientReaders,
       final CamundaSecurityLibraryProperties cslProps) {
-    final var checker = AuthorizationCheckerFactory.forPhysicalTenant(searchClientReaders);
-    return cslProps.getAuthorizations().isEnabled()
-        ? new DefaultResourceAccessProvider(checker)
-        : new DisabledResourceAccessProvider();
+    final var scopeRepository =
+        new SearchAuthorizationScopeRepository(searchClientReaders.authorizationReader());
+    return DefaultResourceAccessProvider.forScopeRepository(
+        scopeRepository, cslProps.getAuthorizations().isEnabled());
   }
 
   private static PhysicalTenantResourceAccessControllers buildPerTenantControllers(
