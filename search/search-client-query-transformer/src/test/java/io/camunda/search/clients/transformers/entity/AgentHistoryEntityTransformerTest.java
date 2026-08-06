@@ -13,10 +13,13 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryEmbeddedToolCallValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
@@ -46,6 +49,7 @@ class AgentHistoryEntityTransformerTest {
     source.setJobKey(500L);
     source.setJobLease("lease-token");
     source.setLoopIteration(3);
+    source.setHistoryItemId("history-item-1");
     source.setRole(AgentHistoryRole.ASSISTANT);
     source.setCommitStatus(AgentHistoryCommitStatus.COMMITTED);
     source.setProducedAt(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
@@ -70,6 +74,7 @@ class AgentHistoryEntityTransformerTest {
 
     // then
     assertThat(result.historyItemKey()).isEqualTo(100L);
+    assertThat(result.historyItemId()).isEqualTo("history-item-1");
     assertThat(result.agentInstanceKey()).isEqualTo(50L);
     assertThat(result.elementInstanceKey()).isEqualTo(200L);
     assertThat(result.processInstanceKey()).isEqualTo(300L);
@@ -245,5 +250,54 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.metrics().inputTokens()).isEqualTo(100L);
     assertThat(result.metrics().outputTokens()).isEqualTo(200L);
     assertThat(result.metrics().durationMs()).isNull();
+  }
+
+  @Test
+  void shouldMapConfigurationFields() {
+    // given — a CONFIGURATION item that touched tools/model/provider/limits/systemPrompt
+    final var source = buildSource();
+    source.setRole(AgentHistoryRole.CONFIGURATION);
+    source.setTools(List.of(new AgentHistoryToolValue("search", "Searches the web", "Task_1")));
+    source.setModel("gpt-4o");
+    source.setProvider("openai");
+    source.setLimits(new AgentHistoryLimitsValue(1000L, 10, 5));
+    source.setSystemPrompt(List.of(AgentHistoryContentValue.text("You are a helpful assistant.")));
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.role()).isEqualTo(AgentInstanceHistoryRole.CONFIGURATION);
+    assertThat(result.tools()).hasSize(1);
+    assertThat(result.tools().get(0).name()).isEqualTo("search");
+    assertThat(result.tools().get(0).description()).isEqualTo("Searches the web");
+    assertThat(result.tools().get(0).elementId()).isEqualTo("Task_1");
+    assertThat(result.model()).isEqualTo("gpt-4o");
+    assertThat(result.provider()).isEqualTo("openai");
+    assertThat(result.limits()).isNotNull();
+    assertThat(result.limits().maxTokens()).isEqualTo(1000L);
+    assertThat(result.limits().maxModelCalls()).isEqualTo(10);
+    assertThat(result.limits().maxToolCalls()).isEqualTo(5);
+    assertThat(result.systemPrompt()).hasSize(1);
+    assertThat(result.systemPrompt().get(0).contentType()).isEqualTo(ContentType.TEXT);
+    assertThat(result.systemPrompt().get(0).text()).isEqualTo("You are a helpful assistant.");
+  }
+
+  @Test
+  void shouldMapEmptyToolsAndSystemPromptAndSentinelLimitsWhenUntouched() {
+    // given — source has no tools/model/provider/limits/systemPrompt set (the default for
+    // non-CONFIGURATION items, and for CONFIGURATION items that didn't touch these particular
+    // fields)
+    final var source = buildSource();
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.tools()).isEmpty();
+    assertThat(result.model()).isNull();
+    assertThat(result.provider()).isNull();
+    assertThat(result.limits()).isEqualTo(new Limits(-1, -1, -1));
+    assertThat(result.systemPrompt()).isEmpty();
   }
 }

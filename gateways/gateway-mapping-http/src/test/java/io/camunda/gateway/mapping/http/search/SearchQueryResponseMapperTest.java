@@ -1377,6 +1377,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               100L,
+              "history-item-1",
               200L,
               300L,
               400L,
@@ -1390,6 +1391,11 @@ class SearchQueryResponseMapperTest {
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
               new Metrics(10L, 20L, 30L),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.COMMITTED,
               producedAt);
 
@@ -1421,6 +1427,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               1L,
+              "history-item-1",
               2L,
               3L,
               4L,
@@ -1434,6 +1441,11 @@ class SearchQueryResponseMapperTest {
               List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
               List.of(),
               new Metrics(0L, 0L, 0L),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.PENDING,
               OffsetDateTime.now());
 
@@ -1453,6 +1465,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               1L,
+              "history-item-1",
               2L,
               3L,
               4L,
@@ -1466,6 +1479,11 @@ class SearchQueryResponseMapperTest {
               null,
               null,
               new Metrics(0L, 0L, 0L),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.DISCARDED,
               OffsetDateTime.now());
 
@@ -1484,6 +1502,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               1L,
+              "history-item-1",
               2L,
               3L,
               4L,
@@ -1497,6 +1516,11 @@ class SearchQueryResponseMapperTest {
               List.of(),
               List.of(toolCall),
               new Metrics(5L, 10L, 100L),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
 
@@ -1516,6 +1540,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               42L,
+              "history-item-1",
               7L,
               8L,
               9L,
@@ -1529,6 +1554,11 @@ class SearchQueryResponseMapperTest {
               List.of(),
               List.of(),
               new Metrics(0L, 0L, 0L),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
       final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
@@ -1547,6 +1577,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               1L,
+              "history-item-1",
               2L,
               3L,
               4L,
@@ -1559,6 +1590,11 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(),
               List.of(),
+              null,
+              null,
+              null,
+              null,
+              null,
               null,
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
@@ -1576,6 +1612,7 @@ class SearchQueryResponseMapperTest {
       final var entity =
           new AgentInstanceHistoryEntity(
               1L,
+              "history-item-1",
               2L,
               3L,
               4L,
@@ -1589,6 +1626,11 @@ class SearchQueryResponseMapperTest {
               List.of(),
               List.of(),
               new Metrics(100L, 200L, null),
+              null,
+              null,
+              null,
+              null,
+              null,
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
 
