@@ -104,7 +104,7 @@ public class ValidationHelperTest {
     // then
     Assertions.assertThat(thrown)
         .isInstanceOf(OptimizeValidationException.class)
-        .hasMessageContaining("Report names cannot be greater than 8191 characters");
+        .hasMessageContaining("Report names cannot be greater than 32768 characters");
   }
 
   @Test
@@ -157,6 +157,43 @@ public class ValidationHelperTest {
 
     // then
     Assertions.assertThat(clamped).hasSize(256);
+  }
+
+  @Test
+  void shouldNotSplitSurrogatePairWhenClamping() {
+    // given a name where the limit falls exactly between the two halves of a surrogate pair
+    final String emoji = "\uD83D\uDE00";
+    final String generated = "a" + emoji.repeat(10);
+
+    // when
+    final String clamped = ValidationHelper.clampGeneratedEntityName(generated, 2);
+
+    // then the trailing half-character is dropped rather than persisted as invalid Unicode
+    Assertions.assertThat(clamped).isEqualTo("a");
+  }
+
+  @Test
+  void shouldKeepWholeSurrogatePairWhenClampingLandsAfterIt() {
+    // given
+    final String emoji = "\uD83D\uDE00";
+    final String generated = emoji.repeat(10);
+
+    // when the limit falls on a pair boundary rather than inside a pair
+    final String clamped = ValidationHelper.clampGeneratedEntityName(generated, 4);
+
+    // then
+    Assertions.assertThat(clamped).isEqualTo(emoji.repeat(2));
+  }
+
+  @Test
+  void shouldFallBackToDefaultWhenConfiguredLimitIsNotPositive() {
+    // given a misconfigured limit that would otherwise reject every name and break clamping
+    final String name = "a".repeat(300);
+
+    // then
+    ValidationHelper.validateEntityName("Report", name, 0);
+    ValidationHelper.validateEntityName("Report", name, -1);
+    Assertions.assertThat(ValidationHelper.clampGeneratedEntityName(name, 0)).isEqualTo(name);
   }
 
   @Test
