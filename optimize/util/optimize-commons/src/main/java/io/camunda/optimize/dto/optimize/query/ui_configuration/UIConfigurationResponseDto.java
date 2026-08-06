@@ -35,6 +35,7 @@ public class UIConfigurationResponseDto {
   private boolean logoutHidden;
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
+  private Integer entityNameMaxLength;
   private DatabaseType optimizeDatabase;
   private boolean validLicense;
   private String licenseType;

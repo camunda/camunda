@@ -59,6 +59,45 @@ import org.slf4j.LoggerFactory;
 public class ValidationHelper {
   protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
 
+  /**
+   * Largest name length that always fits the ~32,766 byte Elasticsearch/OpenSearch term limit,
+   * since UTF-8 uses at most 4 bytes per character. Used when {@code entity.nameMaxLength} is not
+   * set.
+   */
+  public static final int DEFAULT_MAX_ENTITY_NAME_LENGTH = 8191;
+
+  /**
+   * Validates the length of a user-provided entity name on the write path. A {@code null} name is
+   * accepted, as entities without a name fall back to a default one when persisted.
+   *
+   * @param entityLabel the capitalised entity type used in the error message, e.g. {@code "Report"}
+   * @param name the name to validate, may be {@code null}
+   * @param maxLength the configured limit, or {@code null} to use {@link
+   *     #DEFAULT_MAX_ENTITY_NAME_LENGTH}
+   */
+  public static void validateEntityName(
+      final String entityLabel, final String name, final Integer maxLength) {
+    final int limit = resolveMaxNameLength(maxLength);
+    if (name != null && name.length() > limit) {
+      throw new OptimizeValidationException(
+          String.format("%s names cannot be greater than %d characters", entityLabel, limit));
+    }
+  }
+
+  /**
+   * Shortens a name Optimize generates itself, such as the name of a copy, so that it satisfies the
+   * configured limit. Generated names are clamped rather than rejected, because the user did not
+   * supply them and so cannot correct them.
+   */
+  public static String clampGeneratedEntityName(final String name, final Integer maxLength) {
+    final int limit = resolveMaxNameLength(maxLength);
+    return name != null && name.length() > limit ? name.substring(0, limit) : name;
+  }
+
+  private static int resolveMaxNameLength(final Integer maxLength) {
+    return maxLength != null ? maxLength : DEFAULT_MAX_ENTITY_NAME_LENGTH;
+  }
+
   public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());

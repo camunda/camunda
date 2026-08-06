@@ -20,4 +20,6 @@ public class EntityConfiguration {
   private Long kpiRefreshInterval;
 
   private Boolean createOnStartup;
+
+  private Integer nameMaxLength;
 }
