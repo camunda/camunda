@@ -1,0 +1,144 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {test, expect} from '#/pw-modules/test-extend';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {
+	mockCurrentUserEndpoint,
+	mockLicenseEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {HttpResponse} from 'msw';
+
+test.beforeEach(({network}) => {
+	network.use(
+		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
+		}),
+		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
+	);
+});
+
+test('should match the populated processes page snapshot', async ({network, tasklistProcessesPage, page}) => {
+	network.use(
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [
+						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1', hasStartForm: true}),
+						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
+						createProcessDefinition({
+							name: 'Customer onboarding process with a very long descriptive process name that exceeds the card width',
+							processDefinitionId: 'customer-onboarding-with-a-process-definition-id-that-exceeds-the-card-width',
+							processDefinitionKey: '3',
+							hasStartForm: true,
+						}),
+						createProcessDefinition({
+							name: null,
+							processDefinitionId: 'expense-reimbursement',
+							processDefinitionKey: '4',
+						}),
+						createProcessDefinition({name: 'Contract renewal', processDefinitionKey: '5'}),
+						createProcessDefinition({name: 'Purchase request', processDefinitionKey: '6', hasStartForm: true}),
+					],
+					page: {endCursor: 'next-page', hasMoreTotalItems: true},
+				}),
+			),
+		}),
+	);
+
+	await tasklistProcessesPage.goto();
+	await expect(tasklistProcessesPage.processHeading('Invoice review')).toBeVisible();
+	await expect(tasklistProcessesPage.loadMoreButton).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the unpublished-processes empty-state snapshot', async ({tasklistProcessesPage, page}) => {
+	await tasklistProcessesPage.goto();
+	await expect(tasklistProcessesPage.unpublishedProcessesHeading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the filtered empty-state snapshot', async ({tasklistProcessesPage, page}) => {
+	await tasklistProcessesPage.goto('?search=missing');
+	await expect(tasklistProcessesPage.noMatchingProcessesHeading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the multi-tenant processes page snapshot', async ({network, tasklistProcessesPage, page}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(
+				createCurrentUser({
+					tenants: [
+						{tenantId: '<default>', name: 'Default', description: null},
+						{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+					],
+				}),
+			),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(
+				createSystemConfiguration({
+					components: {active: ['tasklist']},
+					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+				}),
+			),
+		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [createProcessDefinition({name: 'Tenant process', processDefinitionKey: '1'})],
+				}),
+			),
+		}),
+	);
+
+	await tasklistProcessesPage.goto();
+	await expect(tasklistProcessesPage.tenantFilter).toBeVisible();
+	await expect(tasklistProcessesPage.processHeading('Tenant process')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the forbidden processes page snapshot', async ({
+	network,
+	tasklistProcessesPage,
+	forbiddenPage,
+	page,
+}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+
+	await tasklistProcessesPage.goto();
+	await expect(forbiddenPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the generic processes error page snapshot', async ({network, tasklistProcessesPage, page}) => {
+	network.use(mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+
+	await tasklistProcessesPage.goto();
+	await expect(tasklistProcessesPage.genericErrorHeading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});

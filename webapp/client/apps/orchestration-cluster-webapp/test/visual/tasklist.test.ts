@@ -70,13 +70,6 @@ test('should match the tasklist index page snapshot with available tasks', async
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the tasklist processes page snapshot', async ({tasklistProcessesPage, page}) => {
-	await tasklistProcessesPage.goto();
-	await expect(tasklistProcessesPage.heading).toBeVisible();
-
-	await expect(page).toHaveScreenshot();
-});
-
 test('should match the tasklist 404 page snapshot', async ({notFoundPage, page, network}) => {
 	network.use(
 		mockGetUserTaskEndpoint({

@@ -8,18 +8,35 @@
 
 import EmptyMessageImage from '#/tasklist/modules/processes/empty-message-image.svg';
 import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
+import {ProcessTile} from '#/tasklist/modules/processes/components/ProcessTile';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Column, Grid, Layer, Link, Stack} from '@carbon/react';
-import {useSearch} from '@tanstack/react-router';
+import {Button, Column, Grid, Layer, Link, Stack} from '@carbon/react';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useTranslation} from 'react-i18next';
+import type {ProcessesSearch} from '#/tasklist/modules/processes/searchSchema';
+import {tracking} from '#/shared/tracking';
 import styles from './TasklistProcessesPage.module.scss';
 
-const TasklistProcessesPage: React.FC = () => {
+type Props = {
+	initialFilterValues: ProcessesSearch;
+	processes: ProcessDefinition[];
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
+	onLoadMore: () => void;
+};
+
+const TasklistProcessesPage: React.FC<Props> = ({
+	initialFilterValues,
+	processes,
+	hasNextPage,
+	isFetchingNextPage,
+	onLoadMore,
+}) => {
 	const {t} = useTranslation();
-	const initialFilterValues = useSearch({from: '/_auth/tasklist/processes'});
+	const isFiltered = initialFilterValues.search !== undefined && initialFilterValues.search !== '';
 
 	return (
-		<main className={`cds--content ${styles.page}`}>
+		<main id="main-content" className={`cds--content ${styles.page}`}>
 			<div className={styles.scrollContainer}>
 				<Stack gap={2}>
 					<section className={styles.header} aria-labelledby="processes-heading">
@@ -39,25 +56,56 @@ const TasklistProcessesPage: React.FC = () => {
 
 					<section className={styles.processes}>
 						<div className={styles.processesContent}>
-							<Layer>
-								<C3EmptyState
-									icon={{path: EmptyMessageImage, altText: ''}}
-									heading={t('tasklist.processesProcessNotPublishedError')}
-									description={
-										<span>
-											{t('tasklist.processesErrorBody')}
-											<Link
-												href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-												target="_blank"
-												rel="noopener noreferrer"
-												inline
-											>
-												{t('tasklist.processesErrorBodyLinkLabel')}
-											</Link>
-										</span>
-									}
-								/>
-							</Layer>
+							{processes.length === 0 ? (
+								<Layer>
+									<C3EmptyState
+										icon={isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}}
+										heading={
+											isFiltered
+												? t('tasklist.processesProcessNotFoundError')
+												: t('tasklist.processesProcessNotPublishedError')
+										}
+										description={
+											<span>
+												{t('tasklist.processesErrorBody')}
+												<Link
+													href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+													target="_blank"
+													rel="noopener noreferrer"
+													inline
+													onClick={() => tracking.track({eventName: 'tasklist:processes-empty-message-link-clicked'})}
+												>
+													{t('tasklist.processesErrorBodyLinkLabel')}
+												</Link>
+											</span>
+										}
+									/>
+								</Layer>
+							) : (
+								<Grid narrow as={Layer}>
+									{processes.map((process) => (
+										<Column
+											className={styles.processTileWrapper}
+											sm={4}
+											md={4}
+											lg={5}
+											key={process.processDefinitionKey}
+										>
+											<ProcessTile process={process} />
+										</Column>
+									))}
+								</Grid>
+							)}
+							{hasNextPage && processes.length > 0 ? (
+								<Button
+									onClick={onLoadMore}
+									disabled={isFetchingNextPage}
+									kind="ghost"
+									className={styles.loadMoreButton}
+								>
+									{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}
+								</Button>
+							) : null}
 						</div>
 					</section>
 				</Stack>

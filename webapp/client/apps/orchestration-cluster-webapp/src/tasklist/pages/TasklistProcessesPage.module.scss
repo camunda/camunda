@@ -36,3 +36,14 @@
 .processes {
 	background: var(--cds-layer);
 }
+
+.processTileWrapper {
+	min-width: 0;
+	padding-top: var(--cds-spacing-03);
+	padding-bottom: var(--cds-spacing-03);
+}
+
+.loadMoreButton {
+	display: block;
+	margin: var(--cds-spacing-05) auto;
+}

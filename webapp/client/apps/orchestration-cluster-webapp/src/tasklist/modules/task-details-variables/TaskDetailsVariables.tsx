@@ -33,12 +33,12 @@ import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 import styles from './TaskDetailsVariables.module.scss';
 
 const JSONEditorModal = lazy(async () => {
-	const [{loadMonaco}, {JSONEditorModal: Component}] = await Promise.all([
+	const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
 		import('#/tasklist/modules/task-details-variables/loadMonaco'),
 		import('#/tasklist/modules/task-details-variables/components/JSONEditorModal'),
 	]);
 	loadMonaco();
-	return {default: Component};
+	return {default: JSONEditorModal};
 });
 
 type Props = {
