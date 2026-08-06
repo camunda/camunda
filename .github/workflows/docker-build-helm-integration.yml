@@ -647,6 +647,11 @@ jobs:
     permissions:
       contents: read
       actions: read
+    # Surfaced so alwaysgreen-triage can reply in the feedback message's thread rather
+    # than opening a second top-level message for the same failure.
+    outputs:
+      slack_ts: ${{ steps.feedback.outputs.slack_ts }}
+      slack_channel: ${{ steps.feedback.outputs.slack_channel }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - run: |
@@ -713,6 +718,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
       - name: Post AlwaysGreen failure feedback
+        id: feedback
         if: failure()
         continue-on-error: true
         uses: ./.github/actions/post-failure-feedback
@@ -1218,3 +1224,40 @@ jobs:
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
 
+  # Final job: hand a failed run to the triage agent. github.run_id here is this run,
+  # so the classifier reads this run's own artifacts. The triage workflow and the fix
+  # agent live only on main; base_ref carries the branch so the fix targets stable/8.8.
+  #
+  # `continue-on-error` is not available on a job that calls a reusable workflow, so
+  # alwaysgreen-triage.yml keeps its own fallible steps continue-on-error instead.
+  alwaysgreen-triage:
+    name: AlwaysGreen triage and fix dispatch
+    needs:
+      - should-run
+      - preflight
+      - build-operate-frontend
+      - build-tasklist-frontend
+      - build-identity-frontend
+      - build-and-push
+      - format-identifier
+      - helm-deploy-status
+      - trigger-saas-e2e
+    # Unfinished work is expected to fail: dispatching a fix agent at a draft PR wastes
+    # an agent run and can open a PR against a moving target. No-op until a
+    # pull_request trigger is added — merge_group is never a draft and push carries no
+    # PR. Mirrors the gate on main (#59386).
+    if: ${{ always() && contains(needs.*.result, 'failure')
+            && !github.event.pull_request.draft }}
+    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    secrets: inherit
+    with:
+      # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the
+      # target branch. Triage normalises it (classify.normalise_base_ref) before anything
+      # derives from it, because the ref is part of every fingerprint and a per-PR value
+      # would defeat dedupe.
+      base_ref: ${{ github.ref_name }}
+      chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.8' }}
+      # Empty when the helm stage did not fail, or Slack was unavailable; triage then
+      # posts its own parent message instead of threading.
+      parent_slack_ts: ${{ needs.helm-deploy-status.outputs.slack_ts }}
+      parent_slack_channel: ${{ needs.helm-deploy-status.outputs.slack_channel }}
