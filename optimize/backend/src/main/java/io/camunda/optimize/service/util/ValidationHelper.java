@@ -56,24 +56,16 @@ import org.slf4j.LoggerFactory;
 public final class ValidationHelper {
 
   /**
-   * Largest name length that always fits the ~32,766 byte Elasticsearch/OpenSearch term limit,
-   * since UTF-8 uses at most 4 bytes per character. Used when {@code entity.nameMaxLength} is not
-   * set.
+   * Mirrors {@code EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH} in the orchestration cluster.
    */
-  public static final int DEFAULT_MAX_ENTITY_NAME_LENGTH = 8191;
+  public static final int DEFAULT_MAX_ENTITY_NAME_LENGTH = 32 * 1024;
 
   protected static final Logger LOG = LoggerFactory.getLogger(ValidationHelper.class);
 
   private ValidationHelper() {}
 
   /**
-   * Validates the length of a user-provided entity name on the write path. A {@code null} name is
-   * accepted, as entities without a name fall back to a default one when persisted.
-   *
-   * @param entityLabel the capitalised entity type used in the error message, e.g. {@code "Report"}
-   * @param name the name to validate, may be {@code null}
-   * @param maxLength the configured limit, or {@code null} to use {@link
-   *     #DEFAULT_MAX_ENTITY_NAME_LENGTH}
+   * A {@code null} name is accepted, as unnamed entities fall back to a default name when saved.
    */
   public static void validateEntityName(
       final String entityLabel, final String name, final Integer maxLength) {
@@ -85,17 +77,25 @@ public final class ValidationHelper {
   }
 
   /**
-   * Shortens a name Optimize generates itself, such as the name of a copy, so that it satisfies the
-   * configured limit. Generated names are clamped rather than rejected, because the user did not
-   * supply them and so cannot correct them.
+   * Names Optimize generates itself are clamped, as the user cannot correct what they didn't type.
    */
   public static String clampGeneratedEntityName(final String name, final Integer maxLength) {
     final int limit = resolveMaxNameLength(maxLength);
-    return name != null && name.length() > limit ? name.substring(0, limit) : name;
+    if (name == null || name.length() <= limit) {
+      return name;
+    }
+    // drop the whole character when the cut would land between the halves of a surrogate pair
+    final int end =
+        Character.isHighSurrogate(name.charAt(limit - 1))
+                && Character.isLowSurrogate(name.charAt(limit))
+            ? limit - 1
+            : limit;
+    return name.substring(0, end);
   }
 
+  /** Falls back to the default when the limit is unset or misconfigured to a non-positive value. */
   private static int resolveMaxNameLength(final Integer maxLength) {
-    return maxLength != null ? maxLength : DEFAULT_MAX_ENTITY_NAME_LENGTH;
+    return maxLength != null && maxLength > 0 ? maxLength : DEFAULT_MAX_ENTITY_NAME_LENGTH;
   }
 
   public static void validate(final BranchAnalysisRequestDto dto) {

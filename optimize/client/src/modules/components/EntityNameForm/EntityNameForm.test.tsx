@@ -42,7 +42,9 @@ it('should provide name edit input', () => {
 it('should cap the name input at the configured server limit', async () => {
   const node = shallow(<EntityNameForm {...props} />);
 
-  await runAllEffects();
+  runAllEffects();
+  await flushPromises();
+  node.update();
 
   expect(node.find(TextInput).prop('maxLength')).toBe(256);
 });
