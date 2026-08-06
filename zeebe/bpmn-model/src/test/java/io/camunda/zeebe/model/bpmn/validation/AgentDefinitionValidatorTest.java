@@ -96,9 +96,14 @@ class AgentDefinitionValidatorTest {
   void aiAgentTaskOnAdHocSubProcessIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.aiAgentTaskOnAdHocSubProcessIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess.zeebeAgentDefinition(ZeebeAgentType.aiAgentTask).task("A"))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -108,17 +113,19 @@ class AgentDefinitionValidatorTest {
   }
 
   @Test
-  void externalOnAdHocSubProcessIsInvalid() {
+  void externalOnAdHocSubProcessIsValid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.externalOnAdHocSubProcessIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> adHocSubProcess.zeebeExternalAgentDefinition().task("A"))
+            .endEvent()
+            .done();
 
     // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(AdHocSubProcess.class, "agentType 'external' is only allowed on a service task."));
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   @Test
