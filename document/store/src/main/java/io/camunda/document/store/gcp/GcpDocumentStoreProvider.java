@@ -72,7 +72,8 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
    * or — when it has none — from the application default credentials, which are shared by every
    * store in the process.
    */
-  private Storage createStorage(final DocumentStoreConfigurationRecord configuration) {
+  @VisibleForTesting
+  static Storage createStorage(final DocumentStoreConfigurationRecord configuration) {
     final String credentialsPath = configuration.properties().get(CREDENTIALS_PATH_PROPERTY);
     if (credentialsPath == null || credentialsPath.isBlank()) {
       return StorageOptions.getDefaultInstance().getService();
