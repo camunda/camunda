@@ -294,7 +294,8 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   /**
    * Registers the broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes
-   * during a coordinated leadership transfer.
+   * during a coordinated leadership transfer. Safe to call from the broker's thread; the barrier
+   * takes effect once the Raft thread picks the registration up.
    */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     server.getContext().setLeadershipTransferWriteBarrier(barrier);

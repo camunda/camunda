@@ -1053,14 +1053,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /**
    * The broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes during a
    * coordinated leadership transfer. Defaults to {@link LeadershipTransferWriteBarrier#NONE} when
-   * no broker is attached.
+   * no broker is attached. Must be read on the Raft thread.
    */
   public LeadershipTransferWriteBarrier getLeadershipTransferWriteBarrier() {
     return leadershipTransferWriteBarrier;
   }
 
+  /**
+   * Registers the barrier the broker attaches on its own thread. Applied on the Raft thread, so the
+   * registration only takes effect once the Raft thread picks it up.
+   */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
-    leadershipTransferWriteBarrier = barrier;
+    threadContext.execute(() -> leadershipTransferWriteBarrier = barrier);
   }
 
   /**
