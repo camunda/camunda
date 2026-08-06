@@ -14,6 +14,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
@@ -138,6 +139,8 @@ public interface ServiceRegistry {
   // -- cluster-wide --
 
   ClusterStatusServices clusterStatusServices();
+
+  ClusterRecoveryServices clusterRecoveryServices();
 
   ManagementServices managementServices();
 }
