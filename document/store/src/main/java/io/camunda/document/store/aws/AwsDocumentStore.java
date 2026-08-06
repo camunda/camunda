@@ -134,12 +134,9 @@ public class AwsDocumentStore implements DocumentStore {
 
   @VisibleForTesting
   static S3Client buildClient(final AwsClientOptions options) {
-    if (options.endpointOverride() == null
-        && options.forcePathStyle() == null
-        && options.chunkedEncodingEnabled() == null
-        && options.region() == null
-        && !options.hasStaticCredentials()
-        && !Boolean.TRUE.equals(options.supportLegacyMd5())) {
+    // supportLegacyMd5 is a client-only plugin, which is why it forces the builder path here but
+    // not in buildPresigner.
+    if (options.usesSdkDefaults() && !Boolean.TRUE.equals(options.supportLegacyMd5())) {
       return S3Client.create();
     }
     final S3ClientBuilder builder = S3Client.builder();
@@ -161,11 +158,7 @@ public class AwsDocumentStore implements DocumentStore {
 
   @VisibleForTesting
   static S3Presigner buildPresigner(final AwsClientOptions options) {
-    if (options.endpointOverride() == null
-        && options.forcePathStyle() == null
-        && options.chunkedEncodingEnabled() == null
-        && options.region() == null
-        && !options.hasStaticCredentials()) {
+    if (options.usesSdkDefaults()) {
       return S3Presigner.create();
     }
     final S3Presigner.Builder builder = S3Presigner.builder();

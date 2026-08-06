@@ -464,4 +464,37 @@ public class AwsDocumentStoreProviderTest {
     assertThat(printed).contains("tenant-a-key").contains("<redacted>");
     assertThat(printed).doesNotContain("tenant-a-secret");
   }
+
+  @Test
+  public void shouldLeaveEverySettingToTheSdkWhenNothingIsOverridden() {
+    // a store with no overrides must keep taking the S3Client.create() / S3Presigner.create() path,
+    // where the SDK resolves region and credentials from AWS_REGION, an instance profile, and the
+    // rest of the default chain — the path every deployment without per-store credentials still
+    // uses, and the one no integration test can exercise
+    assertThat(AwsClientOptions.sdkDefaults().usesSdkDefaults()).isTrue();
+  }
+
+  @Test
+  public void shouldNotFallBackToTheSdkWhenAnySingleSettingIsOverridden() {
+    // given / when / then — each override alone is enough to take the builder path; a store that
+    // configures only its credentials, or only its region, must not silently address the process
+    // environment instead
+    assertThat(
+            new AwsClientOptions(
+                    URI.create("http://minio.local:9000"), null, null, null, null, null, null)
+                .usesSdkDefaults())
+        .isFalse();
+    assertThat(new AwsClientOptions(null, true, null, null, null, null, null).usesSdkDefaults())
+        .isFalse();
+    assertThat(new AwsClientOptions(null, null, false, null, null, null, null).usesSdkDefaults())
+        .isFalse();
+    assertThat(
+            new AwsClientOptions(null, null, null, null, "eu-central-1", null, null)
+                .usesSdkDefaults())
+        .isFalse();
+    assertThat(
+            new AwsClientOptions(null, null, null, null, null, "tenant-a-key", "tenant-a-secret")
+                .usesSdkDefaults())
+        .isFalse();
+  }
 }
