@@ -160,7 +160,7 @@ public final class AgentInstanceStateTest {
 
     // when
     final var found =
-        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+        agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
 
     // then
     assertThat(found).isEqualTo(agentInstanceKey);
@@ -187,10 +187,10 @@ public final class AgentInstanceStateTest {
 
     // when
     final var first =
-        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+        agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
     agentInstanceState.delete(first);
     final var second =
-        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+        agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
 
     // then
     assertThat(first).isNotEqualTo(second);
@@ -201,7 +201,7 @@ public final class AgentInstanceStateTest {
   @Test
   public void shouldReturnNullWhenNoAgentInstanceKeyFoundForProcessInstanceKey() {
     // given / when
-    final var found = agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(9999L);
+    final var found = agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(9999L);
 
     // then
     assertThat(found).isNull();

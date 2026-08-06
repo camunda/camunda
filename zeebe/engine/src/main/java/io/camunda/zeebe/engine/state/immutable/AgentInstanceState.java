@@ -29,5 +29,5 @@ public interface AgentInstanceState {
    * @return the key of an agent instance still associated with the given process instance, or
    *     {@code null} if none remain
    */
-  Long findNextAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
+  Long findFirstAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
 }

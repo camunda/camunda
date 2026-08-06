@@ -86,7 +86,7 @@ public final class AgentInstanceCompleteProcessor
   private void completeNextOfProcessInstance(final TypedRecord<AgentInstanceRecord> command) {
     final long processInstanceKey = command.getValue().getProcessInstanceKey();
     final Long agentInstanceKey =
-        agentInstanceState.findNextAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+        agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
     if (agentInstanceKey == null) {
       rejectionWriter.appendRejection(
           command, RejectionType.NOT_FOUND, ERROR_MSG_NONE_REMAINING.formatted(processInstanceKey));
