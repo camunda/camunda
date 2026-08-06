@@ -60,8 +60,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
 
-  // a physical tenant is capped at one configured secret store, so the ID only has to be stable
-  private static final String SECRET_STORE_ID = "test";
+  // the only store ID a camunda.secrets.<name> reference can address, and the only one the broker
+  // accepts at startup — a store under any other ID makes it refuse to boot. Mirrors
+  // io.camunda.secretstore.SecretStoreRegistry#DEFAULT_STORE_ID, which this module only sees
+  // transitively; declaring that dependency to read one constant is not worth it, and getting the
+  // value wrong here fails loudly at broker startup rather than silently.
+  private static final String SECRET_STORE_ID = "default";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneBroker.class);
 
   private boolean isGatewayEnabled = true;

@@ -20,6 +20,7 @@ import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import java.io.IOException;
@@ -61,28 +62,29 @@ class SecretStoreConfigurationTest {
     // configuration constructed
     Files.writeString(secretsDir.resolve("token"), "token-value");
     final var resolver =
-        resolverFor(Map.of("camunda.secrets.stores.file.main.path", secretsDir.toString()));
+        resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then the configured directory is what the store reads
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(registry.getStores()).containsKey("main");
-    final var store = registry.getStores().get("main");
+    assertThat(registry.getStores()).containsKey(SecretStoreRegistry.DEFAULT_STORE_ID);
+    final var store = registry.getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(store.list()).containsExactly("token");
     assertThat(store.resolve(Set.of("token"))).containsEntry("token", new Resolved("token-value"));
   }
 
   @Test
   void shouldThrowWhenFileStoreHasBlankPath() {
-    // given
-    final var resolver = resolverFor(Map.of("camunda.secrets.stores.file.bad.path", ""));
+    // given a store under the only supported id, so the store id rule passes and the path is what
+    // the configuration is rejected for
+    final var resolver = resolverFor(Map.of("camunda.secrets.stores.file.default.path", ""));
 
     // when / then
     assertThatIllegalStateException()
         .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
-        .withMessageContaining("bad")
+        .withMessageContaining("no path configured")
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
@@ -106,29 +108,105 @@ class SecretStoreConfigurationTest {
   void shouldNormalizeStoreIdToLowercase() {
     // given
     final var resolver =
-        resolverFor(Map.of("camunda.secrets.stores.file.MyStore.path", "/etc/camunda/secrets"));
+        resolverFor(Map.of("camunda.secrets.stores.file.Default.path", "/etc/camunda/secrets"));
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(registry.getStores()).containsOnlyKeys("mystore");
+    assertThat(registry.getStores()).containsOnlyKeys(SecretStoreRegistry.DEFAULT_STORE_ID);
   }
 
   @Test
-  void shouldNotAddNoopStoreWhenStoresAreConfigured() {
-    // given
+  void shouldThrowWhenConfiguredStoreIsNotNamedDefault() {
+    // given a single store under an id no secret reference can address
     final var resolver =
         resolverFor(Map.of("camunda.secrets.stores.file.main.path", "/etc/camunda/secrets"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("main")
+        .withMessageContaining("the only supported store id is 'default'")
+        // the full property the operator has to change, type segment included, so it can be
+        // matched against their configuration as it is written there
+        .withMessageContaining("camunda.secrets.stores.file.main")
+        .withMessageContaining("camunda.secrets.stores.file.default");
+  }
+
+  @Test
+  void shouldNameTheMisnamedStoreIdAsTheOperatorWroteIt() {
+    // given a store id that is not lowercase, and so does not match the id it is registered under
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.MyStore.path", "/etc/camunda/secrets"));
+
+    // when / then — the normalized id appears in no configuration file, so naming it would send
+    // the operator looking for a property they never wrote
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining("camunda.secrets.stores.file.MyStore")
+        .withMessageNotContaining("mystore");
+  }
+
+  @Test
+  void shouldNameTheTenantScopedPropertyWhenAPhysicalTenantsStoreIsNotNamedDefault() {
+    // given a store misnamed under a physical tenant, whose property carries the tenant prefix
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.file.main.path",
+                "/etc/tenanta/secrets",
+                "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                "tenanta-admin",
+                "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
+
+    // when / then — pointing at camunda.secrets.stores would send the operator to configure a
+    // different tenant, leaving this one's store misnamed
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining("camunda.physical-tenants.tenanta.secrets.stores.file.default")
+        .withMessageNotContaining("rename camunda.secrets.stores");
+  }
+
+  @Test
+  void shouldRejectStoreUnderAnotherIdBeforeBuildingIt() {
+    // given an aws store under an id no secret reference can address. Its construction eagerly
+    // builds a client and probes credentials, so building it first would surface an unrelated aws
+    // error for a configuration that is rejected either way.
+    try (var construction = mockConstruction(AwsSecretsManagerSecretStore.class)) {
+      final var resolver =
+          resolverFor(Map.of("camunda.secrets.stores.aws.aws-main.region", "eu-west-1"));
+
+      // when / then
+      assertThatIllegalStateException()
+          .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+          .withMessageContaining("the only supported store id is 'default'");
+
+      // then — nothing was built, so nothing had to be rolled back
+      assertThat(construction.constructed()).isEmpty();
+    }
+  }
+
+  @Test
+  void shouldNotAddNoopStoreWhenStoresAreConfigured(@TempDir final Path secretsDir)
+      throws IOException {
+    // given — the configured store and the noop fallback share the id 'default', so the only way to
+    // tell them apart is by what the registered store reads
+    Files.writeString(secretsDir.resolve("token"), "token-value");
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
-    // then
+    // then the configured store stands, rather than being replaced by the noop fallback
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(registry.getStores()).containsOnlyKeys("main");
-    assertThat(registry.getStores()).doesNotContainKey("default");
+    assertThat(registry.getStores()).containsOnlyKeys(SecretStoreRegistry.DEFAULT_STORE_ID);
+    assertThat(registry.getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID).list())
+        .containsExactly("token");
   }
 
   @Test
@@ -153,19 +231,25 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
-  void shouldProduceOneRegistryPerPhysicalTenant() {
-    // given two tenants with different store configurations
+  void shouldProduceOneRegistryPerPhysicalTenant(@TempDir final Path secretsRoot)
+      throws IOException {
+    // given two tenants each with their own store — both under the id 'default', the only supported
+    // one, so the stores are told apart by the directory each reads
+    final var tenantASecrets = Files.createDirectory(secretsRoot.resolve("tenanta"));
+    Files.writeString(tenantASecrets.resolve("tenanta-token"), "a");
+    final var tenantBSecrets = Files.createDirectory(secretsRoot.resolve("tenantb"));
+    Files.writeString(tenantBSecrets.resolve("tenantb-token"), "b");
     final var resolver =
         resolverFor(
             Map.of(
-                "camunda.physical-tenants.tenanta.secrets.stores.file.main.path",
-                "/etc/tenanta/secrets",
+                "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
+                tenantASecrets.toString(),
                 "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
                 "tenanta-admin",
                 "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
                 "tenanta",
-                "camunda.physical-tenants.tenantb.secrets.stores.file.other.path",
-                "/etc/tenantb/secrets",
+                "camunda.physical-tenants.tenantb.secrets.stores.file.default.path",
+                tenantBSecrets.toString(),
                 "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
                 "tenantb-admin",
                 "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
@@ -176,8 +260,12 @@ class SecretStoreConfigurationTest {
 
     // then each tenant has its own registry with its own store
     assertThat(registries).containsKeys("tenanta", "tenantb");
-    assertThat(registries.get("tenanta").getStores()).containsKey("main");
-    assertThat(registries.get("tenantb").getStores()).containsKey("other");
+    assertThat(
+            registries.get("tenanta").getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID).list())
+        .containsExactly("tenanta-token");
+    assertThat(
+            registries.get("tenantb").getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID).list())
+        .containsExactly("tenantb-token");
   }
 
   @Test
@@ -192,16 +280,20 @@ class SecretStoreConfigurationTest {
     final var resolver =
         resolverFor(
             Map.of(
-                "camunda.secrets.stores.aws.aws-main.region", "eu-west-1",
-                "camunda.secrets.stores.aws.aws-main.path-prefix", "camunda/"));
+                "camunda.secrets.stores.aws.default.region", "eu-west-1",
+                "camunda.secrets.stores.aws.default.path-prefix", "camunda/"));
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then the aws branch is what built the store, not the noop fallback or another store type
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(registry.getStores()).containsKey("aws-main");
-    assertThat(registry.getStores().get("aws-main").is(AwsSecretsManagerSecretStore.class))
+    assertThat(registry.getStores()).containsKey(SecretStoreRegistry.DEFAULT_STORE_ID);
+    assertThat(
+            registry
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .is(AwsSecretsManagerSecretStore.class))
         .isTrue();
   }
 
@@ -254,13 +346,13 @@ class SecretStoreConfigurationTest {
       final var resolver =
           resolverFor(
               Map.of(
-                  "camunda.physical-tenants.tenanta.secrets.stores.file.main.path",
+                  "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
                   "/etc/tenanta/secrets",
                   "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
                   "tenanta-admin",
                   "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
                   "tenanta",
-                  "camunda.physical-tenants.tenantb.secrets.stores.file.other.path",
+                  "camunda.physical-tenants.tenantb.secrets.stores.file.default.path",
                   "/etc/tenantb/secrets",
                   "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
                   "tenantb-admin",

@@ -27,7 +27,10 @@ public final class ClusterVariableSecretReference extends ObjectValue
   private static final StringValue SECRET_REFERENCE_KEY = new StringValue("secretReference");
   private static final StringValue PATH_KEY = new StringValue("path");
 
-  private final StringProperty storeIdProp = new StringProperty(STORE_ID_KEY, "");
+  // mirrors io.camunda.secretstore.SecretStoreRegistry#DEFAULT_STORE_ID: the record layer stays
+  // free of the secret store API, so the value is repeated here and pinned against the constant
+  // by DefaultStoreIdTest. An unset store ID names the default store, not no store at all.
+  private final StringProperty storeIdProp = new StringProperty(STORE_ID_KEY, "default");
   private final StringProperty secretReferenceProp = new StringProperty(SECRET_REFERENCE_KEY, "");
   // RFC 6901 JSON pointer of the value leaf the reference was found in
   private final StringProperty pathProp = new StringProperty(PATH_KEY, "");

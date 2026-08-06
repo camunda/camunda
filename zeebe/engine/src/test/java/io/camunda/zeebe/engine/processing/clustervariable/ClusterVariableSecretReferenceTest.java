@@ -48,7 +48,7 @@ public final class ClusterVariableSecretReferenceTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/auth"));
+        .containsExactly(tuple("default", "token", "/auth"));
   }
 
   @Test
@@ -69,7 +69,7 @@ public final class ClusterVariableSecretReferenceTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", ""));
+        .containsExactly(tuple("default", "token", ""));
   }
 
   @Test
@@ -93,7 +93,7 @@ public final class ClusterVariableSecretReferenceTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactlyInAnyOrder(tuple("", "x", "/a/b"), tuple("", "y", "/list/0"));
+        .containsExactlyInAnyOrder(tuple("default", "x", "/a/b"), tuple("default", "y", "/list/0"));
   }
 
   @Test
@@ -114,7 +114,7 @@ public final class ClusterVariableSecretReferenceTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "a", ""), tuple("", "b", ""));
+        .containsExactly(tuple("default", "a", ""), tuple("default", "b", ""));
   }
 
   @Test
@@ -185,6 +185,6 @@ public final class ClusterVariableSecretReferenceTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/auth"));
+        .containsExactly(tuple("default", "token", "/auth"));
   }
 }

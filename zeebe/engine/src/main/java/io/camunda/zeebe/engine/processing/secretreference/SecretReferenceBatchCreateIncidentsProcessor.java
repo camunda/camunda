@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.secretreference;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
@@ -161,11 +162,12 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
 
   /**
    * The {@code camunda.secrets.<name>} syntax carries no store id yet (store selection is tracked
-   * under <a href="https://github.com/camunda/camunda/issues/56563">#56563</a>), so an empty id
-   * addresses the configured store and must not be quoted in the incident message.
+   * under <a href="https://github.com/camunda/camunda/issues/56563">#56563</a>), so every reference
+   * names the default store. Naming it in the incident message would tell the reader nothing while
+   * it is the only store there is.
    */
   private static String describeStore(final String storeId) {
-    return storeId.isEmpty()
+    return SecretStoreRegistry.DEFAULT_STORE_ID.equals(storeId)
         ? "the configured secret store"
         : "secret store '%s'".formatted(storeId);
   }

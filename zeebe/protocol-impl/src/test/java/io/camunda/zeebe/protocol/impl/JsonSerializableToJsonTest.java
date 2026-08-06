@@ -3497,7 +3497,7 @@ final class JsonSerializableToJsonTest {
                         new UnsafeBuffer(
                             MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2"))))
                     .setKind(ClusterVariableKind.SECRET_REFERENCE)
-                    .addSecretReference("", "token", "/auth"),
+                    .addSecretReference("default", "token", "/auth"),
         """
                 {
                   "name": "secretVar",
@@ -3508,7 +3508,7 @@ final class JsonSerializableToJsonTest {
                   "kind": "SECRET_REFERENCE",
                   "secretReferences": [
                     {
-                      "storeId": "",
+                      "storeId": "default",
                       "secretReference": "token",
                       "path": "/auth"
                     }
@@ -5388,7 +5388,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) SecretReferenceRecord::new,
         """
         {
-          "storeId": "",
+          "storeId": "default",
           "secretReference": "",
           "resolutionState": "UNSPECIFIED",
           "jobKeys": []

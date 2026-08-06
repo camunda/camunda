@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 
 final class JobSecretInjectorTest {
 
-  private static final String STORE_ID = "";
+  private static final String STORE_ID = SecretStoreRegistry.DEFAULT_STORE_ID;
 
   private static JobSecretInjector injector(final Map<String, String> cachedSecrets) {
     final var cache = new InMemorySecretCache();
@@ -348,30 +348,25 @@ final class JobSecretInjectorTest {
                   new SecretRef("store-b", "token", "/auth")));
 
       // then - the job is skipped rather than served from the store that happens to hold the name:
-      // a named store is looked up exactly, and the sole-store rule is only for a reference that
-      // names none
+      // the store lookup is exact
       assertThat(jobKeysOf(batch)).isEmpty();
     }
 
     @Test
-    void shouldNotResolveReferenceWithoutStoreIdWhenSeveralStoresAreConfigured() {
-      // given - both stores cache the secret, but the reference names no store, which is
-      // ambiguous with more than one configured store
-      final var cacheA = new InMemorySecretCache();
-      cacheA.put("token", "a");
-      final var cacheB = new InMemorySecretCache();
-      cacheB.put("token", "b");
+    void shouldNotResolveDefaultReferenceFromAStoreUnderAnotherId() {
+      // given - a store holding the secret under an id other than the default one
+      final var cache = new InMemorySecretCache();
+      cache.put("token", "resolved");
       final var registry =
           new SecretStoreRegistry(
-              Map.of("store-a", new NoopSecretStore(), "store-b", new NoopSecretStore()),
-              Map.of("store-a", cacheA, "store-b", cacheB));
+              Map.of("store-a", new NoopSecretStore()), Map.of("store-a", cache));
       final var injector = new JobSecretInjector(registry);
 
-      // when
+      // when - the reference addresses the default store, as camunda.secrets.<name> always does
       final var batch =
           collect(injector, job(Map.of("auth", "camunda.secrets.token"), ref("token", "/auth")));
 
-      // then - the job is skipped instead of guessing a store
+      // then - the job is skipped instead of falling back to the sole configured store
       assertThat(jobKeysOf(batch)).isEmpty();
     }
 

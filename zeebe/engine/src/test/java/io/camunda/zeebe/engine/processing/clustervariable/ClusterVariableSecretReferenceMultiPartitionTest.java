@@ -62,7 +62,7 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/auth"));
+        .containsExactly(tuple("default", "token", "/auth"));
 
     // and every distributed partition's CREATED event carries the identical reference
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
@@ -78,7 +78,7 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
               ClusterVariableSecretReferenceValue::getStoreId,
               ClusterVariableSecretReferenceValue::getSecretReference,
               ClusterVariableSecretReferenceValue::getPath)
-          .containsExactly(tuple("", "token", "/auth"));
+          .containsExactly(tuple("default", "token", "/auth"));
     }
   }
 
@@ -116,7 +116,7 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
             ClusterVariableSecretReferenceValue::getStoreId,
             ClusterVariableSecretReferenceValue::getSecretReference,
             ClusterVariableSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "rotated", "/auth"));
+        .containsExactly(tuple("default", "rotated", "/auth"));
     assertThat(updated.getValue().getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
 
     // and every distributed partition's UPDATED event carries the identical reference
@@ -133,7 +133,7 @@ public final class ClusterVariableSecretReferenceMultiPartitionTest {
               ClusterVariableSecretReferenceValue::getStoreId,
               ClusterVariableSecretReferenceValue::getSecretReference,
               ClusterVariableSecretReferenceValue::getPath)
-          .containsExactly(tuple("", "rotated", "/auth"));
+          .containsExactly(tuple("default", "rotated", "/auth"));
       assertThat(updatedOnReceiver.getValue().getKind())
           .isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
     }

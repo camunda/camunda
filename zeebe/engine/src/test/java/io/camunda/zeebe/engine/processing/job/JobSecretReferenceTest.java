@@ -68,7 +68,7 @@ public final class JobSecretReferenceTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/tokens/externalSystemToken"));
+        .containsExactly(tuple("default", "token", "/tokens/externalSystemToken"));
   }
 
   @Test
@@ -99,8 +99,8 @@ public final class JobSecretReferenceTest {
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
         .containsExactlyInAnyOrder(
-            tuple("", "token", "/tokens/externalSystemToken"),
-            tuple("", "postfix", "/tokens/externalSystemToken"));
+            tuple("default", "token", "/tokens/externalSystemToken"),
+            tuple("default", "postfix", "/tokens/externalSystemToken"));
   }
 
   @Test
@@ -130,7 +130,7 @@ public final class JobSecretReferenceTest {
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
         .containsExactlyInAnyOrder(
-            tuple("", "token", "/auth/token"), tuple("", "apiKey", "/auth/key"));
+            tuple("default", "token", "/auth/token"), tuple("default", "apiKey", "/auth/key"));
   }
 
   @Test
@@ -180,7 +180,7 @@ public final class JobSecretReferenceTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/auth/token"));
+        .containsExactly(tuple("default", "token", "/auth/token"));
   }
 
   @Test
@@ -270,7 +270,7 @@ public final class JobSecretReferenceTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/auth/token"));
+        .containsExactly(tuple("default", "token", "/auth/token"));
   }
 
   private static BpmnModelInstance processWithServiceTask(

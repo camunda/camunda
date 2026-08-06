@@ -56,6 +56,8 @@ final class SecretResolutionSchedulerTest {
 
   @Mock private SecretStore secretStore;
   @Mock private SecretCache secretCache;
+  @Mock private SecretStore defaultStore;
+  @Mock private SecretCache defaultCache;
   @Mock private ScheduledTaskState scheduledTaskState;
   @Mock private SecretReferenceState secretReferenceState;
   @Mock private ReadonlyStreamProcessorContext context;
@@ -75,7 +77,9 @@ final class SecretResolutionSchedulerTest {
 
     final Supplier<ScheduledTaskState> stateFactory = () -> scheduledTaskState;
     final var registry =
-        new SecretStoreRegistry(Map.of("my-store", secretStore), Map.of("my-store", secretCache));
+        new SecretStoreRegistry(
+            Map.of("my-store", secretStore, SecretStoreRegistry.DEFAULT_STORE_ID, defaultStore),
+            Map.of("my-store", secretCache, SecretStoreRegistry.DEFAULT_STORE_ID, defaultCache));
     final var config = new EngineConfiguration();
     scheduler = new SecretResolutionScheduler(stateFactory, registry, config);
     scheduler.onRecovered(context);
@@ -99,6 +103,27 @@ final class SecretResolutionSchedulerTest {
     assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
     assertThat(recordCaptor.getValue().getStoreId()).isEqualTo("my-store");
     assertThat(recordCaptor.getValue().getSecretReference()).isEqualTo("db-password");
+    assertThat(recordCaptor.getValue().getResolutionState()).isEqualTo(ResolutionState.SUCCESS);
+  }
+
+  @Test
+  void shouldResolveReferenceAddressingTheDefaultStore() throws Exception {
+    // given — the store id every camunda.secrets.<name> reference carries; it used to be empty,
+    // which addressed no store and failed every background resolution (#59432)
+    stubPending(SecretStoreRegistry.DEFAULT_STORE_ID, "db-password");
+    when(defaultStore.resolve(Set.of("db-password")))
+        .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then
+    final var intentCaptor = ArgumentCaptor.forClass(SecretReferenceIntent.class);
+    final var recordCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
+    verify(resultBuilder).appendCommandRecord(intentCaptor.capture(), recordCaptor.capture());
+    assertThat(intentCaptor.getValue()).isEqualTo(SecretReferenceIntent.RESOLUTION_COMPLETE);
+    assertThat(recordCaptor.getValue().getStoreId())
+        .isEqualTo(SecretStoreRegistry.DEFAULT_STORE_ID);
     assertThat(recordCaptor.getValue().getResolutionState()).isEqualTo(ResolutionState.SUCCESS);
   }
 

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -220,22 +221,28 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
   }
 
   @Test
-  void shouldReferenceConfiguredStoreInIncidentMessageWhenStoreIdIsEmpty() {
-    // given - camunda.secrets.<name> references carry no store id until store selection exists
-    createWaitingJob(1L, 11L, "");
-    final var value = new SecretReferenceRecord().setSecretReference(SECRET_REF).addJobKey(1L);
+  void shouldReferenceConfiguredStoreInIncidentMessageWhenStoreIsTheDefaultOne() {
+    // given - camunda.secrets.<name> references address the default store until store selection
+    // exists, so it is the only store there is
+    createWaitingJob(1L, 11L, SecretStoreRegistry.DEFAULT_STORE_ID);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(SecretStoreRegistry.DEFAULT_STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L);
 
     // when
     processor.processRecord(command(value));
 
-    // then - the message points to the configured store instead of quoting an empty id
+    // then - the message points to the configured store instead of naming an id that tells the
+    // reader nothing
     final var incidentCaptor = ArgumentCaptor.forClass(IncidentRecord.class);
     verify(stateWriter)
         .appendFollowUpEvent(eq(999L), eq(IncidentIntent.CREATED), incidentCaptor.capture());
     Assertions.assertThat(incidentCaptor.getValue().getErrorMessage())
         .contains(SECRET_REF)
         .contains("the configured secret store")
-        .doesNotContain("''");
+        .doesNotContain("'" + SecretStoreRegistry.DEFAULT_STORE_ID + "'");
   }
 
   @Test
