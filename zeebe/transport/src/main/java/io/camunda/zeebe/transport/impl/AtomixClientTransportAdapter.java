@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -223,6 +224,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private boolean exceptionShowsConnectionIssue(final @Nullable Throwable throwable) {
     return throwable instanceof ConnectException
+        || throwable instanceof NoSuchMemberException
         || throwable instanceof MessagingException.NoRemoteHandler;
   }
 
