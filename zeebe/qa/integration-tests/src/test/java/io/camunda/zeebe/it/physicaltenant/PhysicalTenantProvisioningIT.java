@@ -10,17 +10,25 @@ package io.camunda.zeebe.it.physicaltenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
-import org.junit.jupiter.api.Test;
+import java.util.Comparator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * A physical tenant added to a broker's static configuration after the cluster has already been
@@ -63,8 +71,10 @@ final class PhysicalTenantProvisioningIT {
           .withBrokerConfig(broker -> TENANTS_BEFORE.configure(broker.withUnauthenticatedAccess()))
           .build();
 
-  @Test
-  void shouldProvisionNewPhysicalTenantAddedAfterInitialBootstrapOnRestart() {
+  @ParameterizedTest
+  @MethodSource("restartStrategies")
+  void shouldProvisionNewPhysicalTenantAddedAfterInitialBootstrapOnRestart(
+      final Consumer<TestCluster> restarter) {
     // given - the cluster is up and running with only the default tenant and tenantA
     try (final var tenantAClient =
         TENANTS_BEFORE.newClientBuilder(cluster.availableGateway(), TENANT_A).build()) {
@@ -77,18 +87,7 @@ final class PhysicalTenantProvisioningIT {
     }
 
     // when - tenantB is added to every broker's static configuration and the cluster is restarted
-    cluster.shutdown();
-    cluster
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              TENANTS_AFTER.configure(broker);
-              broker.withPtConfig(
-                  TENANT_B,
-                  camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
-            });
-    cluster.start().awaitCompleteTopology();
+    restarter.accept(cluster);
 
     // then - tenantB's own partition group is visible through the client-facing, physical-tenant-
     // scoped topology endpoint (the same endpoint used to observe any other physical tenant),
@@ -140,5 +139,55 @@ final class PhysicalTenantProvisioningIT {
       TopologyAssert.assertThat(tenantAClient.newTopologyRequest().send().join())
           .isComplete(BROKERS_COUNT, 2, BROKERS_COUNT);
     }
+  }
+
+  public static Stream<Arguments> restartStrategies() {
+    return Stream.of(
+        Arguments.of(
+            Named.of(
+                "Full restart",
+                (Consumer<TestCluster>) PhysicalTenantProvisioningIT::restartCluster)),
+        Arguments.of(
+            Named.of(
+                "Rolling restart (coordinator first)",
+                (Consumer<TestCluster>) cluster -> rollingRestart(cluster, true))),
+        Arguments.of(
+            Named.of(
+                "Rolling restart (coordinator last)",
+                (Consumer<TestCluster>) cluster -> rollingRestart(cluster, false))));
+  }
+
+  private static void restartCluster(final TestCluster cluster) {
+    cluster.shutdown();
+    cluster
+        .brokers()
+        .values()
+        .forEach(
+            broker -> {
+              TENANTS_AFTER.configure(broker);
+              broker.withPtConfig(
+                  TENANT_B,
+                  camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
+            });
+    cluster.start().awaitCompleteTopology();
+  }
+
+  private static void rollingRestart(final TestCluster cluster, final boolean ascending) {
+    cluster.brokers().values().stream()
+        .sorted(
+            ascending
+                ? Comparator.comparing(b -> b.nodeId(), MemberId.ID_COMPARATOR)
+                : Comparator.comparing(b -> b.nodeId(), MemberId.ID_COMPARATOR.reversed()))
+        .forEach(
+            broker -> {
+              broker.stop();
+              TENANTS_AFTER.configure(broker);
+              broker.withPtConfig(
+                  TENANT_B,
+                  camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
+              broker.start();
+              cluster.await(TestHealthProbe.READY, Duration.ofSeconds(30));
+            });
+    cluster.start().awaitCompleteTopology();
   }
 }
