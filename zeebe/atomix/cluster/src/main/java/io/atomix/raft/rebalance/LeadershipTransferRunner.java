@@ -86,6 +86,7 @@ public final class LeadershipTransferRunner {
   }
 
   public void onLeaderStopped() {
+    raft.checkThread();
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onLeaderStopped();
@@ -94,6 +95,7 @@ public final class LeadershipTransferRunner {
 
   /** The freeze ended. */
   public void onPauseCleared() {
+    raft.checkThread();
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onPauseCleared();
@@ -102,6 +104,7 @@ public final class LeadershipTransferRunner {
 
   /** The leader's freeze watchdog fired: the pause outlived its resume deadline. */
   public void onPauseDeadlineExpired() {
+    raft.checkThread();
     final var attempt = currentAttempt;
     if (attempt != null) {
       attempt.onPauseDeadlineExpired();
