@@ -266,6 +266,11 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void makeActivatableAfterSecretResolution(final long key) {
+    if (!isInState(key, State.ACTIVATABLE)) {
+      // only a job parked for secret resolution stays ACTIVATABLE while out of the index;
+      // re-inserting a job in any other state (e.g. SUSPENDED) corrupts the activatable index
+      return;
+    }
     final JobRecord record = getJob(key);
     if (record != null) {
       updateJobState(key, State.ACTIVATABLE);

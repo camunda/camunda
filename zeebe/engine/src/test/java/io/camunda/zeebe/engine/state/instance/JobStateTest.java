@@ -887,6 +887,37 @@ public final class JobStateTest {
     assertJobState(key, State.NOT_FOUND);
   }
 
+  @Test
+  public void shouldMakeActivatableJobActivatableAfterSecretResolution() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    jobState.create(key, jobRecord);
+
+    // when
+    jobState.makeActivatableAfterSecretResolution(key);
+
+    // then
+    assertJobState(key, State.ACTIVATABLE);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
+  }
+
+  @Test
+  public void shouldNotMakeSuspendedJobActivatableAfterSecretResolution() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    jobState.create(key, jobRecord);
+    jobState.suspend(key, jobRecord);
+
+    // when
+    jobState.makeActivatableAfterSecretResolution(key);
+
+    // then
+    assertJobState(key, State.SUSPENDED);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+  }
+
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
     jobState.create(key, record);
     jobState.activate(key, record);
