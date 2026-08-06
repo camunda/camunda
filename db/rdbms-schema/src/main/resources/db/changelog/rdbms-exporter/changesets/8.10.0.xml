@@ -663,8 +663,38 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_agent_instance_reasoning_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_INSTANCE" columnName="REASONING_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_INSTANCE">
+      <column name="REASONING_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
+  <changeSet id="add_agent_instance_cache_creation_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_INSTANCE" columnName="CACHE_CREATION_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_INSTANCE">
+      <column name="CACHE_CREATION_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
+  <changeSet id="add_agent_instance_cache_read_token_count_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AGENT_INSTANCE" columnName="CACHE_READ_TOKEN_COUNT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AGENT_INSTANCE">
+      <column name="CACHE_READ_TOKEN_COUNT" type="BIGINT"/>
+    </addColumn>
+  </changeSet>
 
   <changeSet id="create_wait_state_keyset_index" author="camunda">
     <preConditions onFail="MARK_RAN">
