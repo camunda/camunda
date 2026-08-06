@@ -159,9 +159,9 @@ public final class JobWaitingForSecretResolutionTest {
     // then - the new priority is applied to the job
     assertThat(updated.getIntent()).isEqualTo(JobIntent.PRIORITY_UPDATED);
     assertThat(updated.getValue().getPriority()).isEqualTo(42);
-    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
 
-    // and - the job is still parked: it is not handed out to the next activation
+    // and - the job is still parked: it is not handed out to the next activation. The parked state
+    // itself is asserted in JobStateTest, where the read cannot race the engine's own transaction.
     final Record<JobBatchRecordValue> activated =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     assertThat(activated.getValue().getJobs()).isEmpty();
