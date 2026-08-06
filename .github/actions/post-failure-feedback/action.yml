@@ -41,9 +41,11 @@ inputs:
   pr_is_draft:
     description: >
       Draft state of `pr` when the caller already knows it — on a pull_request
-      trigger pass ${{ github.event.pull_request.draft }}, on merge_group pass
+      trigger pass the event's pull_request.draft value, on merge_group pass
       "false" (a draft cannot enter a merge queue). Empty means resolve it via
-      the API, which needs github_token.
+      the API, which needs github_token. Do not write an expression here: the
+      template engine evaluates it and the github context is unavailable in an
+      action's input metadata, which makes the whole action fail to load.
     required: false
     default: ""
   skip_on_draft:
