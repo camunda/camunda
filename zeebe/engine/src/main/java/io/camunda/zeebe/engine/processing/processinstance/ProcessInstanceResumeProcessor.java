@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -19,11 +20,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -47,17 +50,22 @@ public final class ProcessInstanceResumeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
+  private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final SuspendedJobsWalker jobsWalker;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final BpmnJobActivationBehavior jobActivationBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     suspensionState = processingState.getSuspensionState();
+    this.jobActivationBehavior = jobActivationBehavior;
+    jobsWalker = new SuspendedJobsWalker(elementInstanceState, processingState.getJobState());
   }
 
   @Override
@@ -73,6 +81,15 @@ public final class ProcessInstanceResumeProcessor
     // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
     // draining of buffered commands is implemented.
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
+    jobsWalker.forEachJob(
+        command.getKey(),
+        JobState.State.SUSPENDED,
+        (jobKey, job) -> {
+          stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
+          // a job stream is push-only, so a stream worker learns about the job only from here; a
+          // poll-only setup gets the job-available notification instead
+          jobActivationBehavior.publishWork(jobKey, job);
+        });
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
   }
