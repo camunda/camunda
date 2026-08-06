@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.test.testcontainers;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
@@ -35,6 +39,9 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
   private static final String DEFAULT_REGION = "us-east-1";
   private static final String DEFAULT_ACCESS_KEY = "accessKey";
   private static final String DEFAULT_SECRET_KEY = "secretKey";
+
+  /** Name the {@code mc} client uses inside the container for this Minio instance. */
+  private static final String ALIAS = "local";
 
   private String domain;
 
@@ -143,6 +150,72 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
     }
 
     return this;
+  }
+
+  /**
+   * Creates a Minio user with a policy granting it full access to exactly the named buckets, and to
+   * nothing else. The container must already be started.
+   *
+   * <p>Give each client under test its own user whenever the point of the test is that the client
+   * authenticates as its own identity rather than as the process. Handing every client the root key
+   * pair cannot show that: a client that silently falls back to the ambient credentials, or that
+   * picks up a sibling's, still reaches the bucket and the test stays green. With a scoped user it
+   * fails with {@code AccessDenied} instead.
+   *
+   * @param accessKey the user's access key, also used to name its policy
+   * @param secretKey the user's secret key; Minio requires at least 8 characters
+   * @param buckets the buckets the user may access — at least one
+   */
+  public void createScopedUser(
+      final String accessKey, final String secretKey, final String... buckets) {
+    if (buckets.length == 0) {
+      throw new IllegalArgumentException(
+          "must scope the user to at least one bucket, otherwise it can reach nothing");
+    }
+
+    final String policyName = accessKey + "-policy";
+    final String policyFile = "/tmp/" + policyName + ".json";
+    final String resources =
+        Arrays.stream(buckets)
+            .flatMap(bucket -> Stream.of(bucket, bucket + "/*"))
+            .map("\"arn:aws:s3:::%s\""::formatted)
+            .collect(Collectors.joining(","));
+    final String policy =
+        "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:*\"],"
+            + "\"Resource\":[%s]}]}".formatted(resources);
+
+    mc("alias", "set", ALIAS, "http://localhost:" + PORT, accessKey(), secretKey());
+    exec("sh", "-c", "printf '%s' '" + policy + "' > " + policyFile);
+    mc("admin", "user", "add", ALIAS, accessKey, secretKey);
+    mc("admin", "policy", "create", ALIAS, policyName, policyFile);
+    mc("admin", "policy", "attach", ALIAS, policyName, "--user", accessKey);
+  }
+
+  private void mc(final String... arguments) {
+    final String[] command = new String[arguments.length + 1];
+    command[0] = "mc";
+    System.arraycopy(arguments, 0, command, 1, arguments.length);
+    exec(command);
+  }
+
+  private void exec(final String... command) {
+    try {
+      final var result = execInContainer(command);
+      if (result.getExitCode() != 0) {
+        throw new IllegalStateException(
+            "Failed to run '%s' in the Minio container (exit code %d): %s%s"
+                .formatted(
+                    String.join(" ", command),
+                    result.getExitCode(),
+                    result.getStdout(),
+                    result.getStderr()));
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
   }
 
   private String internalHost() {
