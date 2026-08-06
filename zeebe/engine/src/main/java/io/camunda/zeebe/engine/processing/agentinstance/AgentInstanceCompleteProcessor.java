@@ -25,26 +25,18 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
 /**
- * Handles {@code AGENT_INSTANCE:COMPLETE}, which has two meanings depending on whether {@code
- * agentInstanceKey} is set on the command:
- *
- * <ul>
- *   <li>set — completes exactly that agent instance.
- *   <li>unset ({@code -1}, only {@code processInstanceKey} set) — "batch completion": completes one
- *       agent instance still belonging to that process instance, then re-appends the same command
- *       as a follow-up so the next one is picked up on the next cycle. Once none remain, the
- *       command is rejected {@code NOT_FOUND} — the rejection doubles as the signal that the
- *       process instance's agent instances are fully cleaned up. At most two records are written
- *       per cycle (the {@code COMPLETED} event and the re-issued {@code COMPLETE}), so this relies
- *       on the general follow-up-command mechanism rather than a bespoke batch limit or cursor.
- * </ul>
+ * Handles {@code AGENT_INSTANCE:COMPLETE}: completes one agent instance still belonging to the
+ * process instance identified by {@code processInstanceKey}, then re-appends the same command as a
+ * follow-up so the next one is picked up on the next cycle. Once none remain, the command is
+ * rejected {@code NOT_FOUND} — the rejection doubles as the signal that the process instance's
+ * agent instances are fully cleaned up. At most two records are written per cycle (the {@code
+ * COMPLETED} event and the re-issued {@code COMPLETE}), so this relies on the general
+ * follow-up-command mechanism rather than a bespoke batch limit or cursor.
  */
 @ExcludeAuthorizationCheck
 public final class AgentInstanceCompleteProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
-  private static final String ERROR_MSG_NOT_FOUND =
-      "Expected to complete agent instance with key '%d', but no such agent instance was found.";
   private static final String ERROR_MSG_NONE_REMAINING =
       "No remaining agent instances to complete for process instance with key '%d'.";
 
@@ -63,42 +55,24 @@ public final class AgentInstanceCompleteProcessor
 
   @Override
   public void processRecord(final TypedRecord<AgentInstanceRecord> command) {
-    final var value = command.getValue();
-    final boolean isBatchCompletion = value.getAgentInstanceKey() == -1L;
-
-    final Long agentInstanceKey;
-    if (isBatchCompletion) {
-      agentInstanceKey =
-          agentInstanceState.getFirstAgentInstanceKeyByProcessInstanceKey(
-              value.getProcessInstanceKey());
-    } else {
-      agentInstanceKey = value.getAgentInstanceKey();
-    }
-    final var current =
-        agentInstanceKey == null ? null : agentInstanceState.getRecord(agentInstanceKey);
-    if (current == null) {
+    final long processInstanceKey = command.getValue().getProcessInstanceKey();
+    final Long agentInstanceKey =
+        agentInstanceState.getFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
+    if (agentInstanceKey == null) {
       rejectionWriter.appendRejection(
-          command, RejectionType.NOT_FOUND, rejectionReason(isBatchCompletion, value));
+          command, RejectionType.NOT_FOUND, ERROR_MSG_NONE_REMAINING.formatted(processInstanceKey));
       return;
     }
 
+    final var current = agentInstanceState.getRecord(agentInstanceKey);
     current.setStatus(AgentInstanceStatus.COMPLETED);
     current.setChangedAttributes(List.of(AgentInstanceRecord.ATTR_STATUS));
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.COMPLETED, current);
 
-    if (isBatchCompletion) {
-      // re-chain: other agent instances may still be left for this process instance
-      commandWriter.appendNewCommand(
-          AgentInstanceIntent.COMPLETE,
-          new AgentInstanceRecord().setProcessInstanceKey(value.getProcessInstanceKey()));
-    }
-  }
-
-  private static String rejectionReason(
-      final boolean isBatchCompletion, final AgentInstanceRecord value) {
-    return isBatchCompletion
-        ? ERROR_MSG_NONE_REMAINING.formatted(value.getProcessInstanceKey())
-        : ERROR_MSG_NOT_FOUND.formatted(value.getAgentInstanceKey());
+    // re-chain: other agent instances may still be left for this process instance
+    commandWriter.appendNewCommand(
+        AgentInstanceIntent.COMPLETE,
+        new AgentInstanceRecord().setProcessInstanceKey(processInstanceKey));
   }
 
   @Override

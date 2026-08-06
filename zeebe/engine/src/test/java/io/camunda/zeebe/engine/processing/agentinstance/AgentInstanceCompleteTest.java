@@ -43,54 +43,44 @@ public class AgentInstanceCompleteTest {
   @Test
   public void shouldCompleteAgentInstanceAndSetStatusCompleted() {
     // given
-    final var agentInstanceKey = deployAndCreateAgentInstance();
+    final var fixture = deployAndCreateAgentInstance();
 
-    // when
-    final var completed = ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).complete();
+    // when — no expectRejection() needed: complete() always resolves to the closing NOT_FOUND
+    // rejection, the signal that cleanup finished, not an error
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
     // then
-    assertThat(completed.getKey()).isEqualTo(agentInstanceKey);
+    final var completed =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withRecordKey(fixture.agentInstanceKey())
+            .getFirst();
     assertThat(completed.getValue().getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED);
   }
 
   @Test
   public void shouldDeleteAgentInstanceFromStateOnCompleted() {
     // given
-    final var agentInstanceKey = deployAndCreateAgentInstance();
+    final var fixture = deployAndCreateAgentInstance();
 
     // when
-    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).complete();
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
     // then
-    assertThat(ENGINE.getProcessingState().getAgentInstanceState().getRecord(agentInstanceKey))
+    assertThat(
+            ENGINE
+                .getProcessingState()
+                .getAgentInstanceState()
+                .getRecord(fixture.agentInstanceKey()))
         .isNull();
   }
 
   @Test
-  public void shouldRejectCompleteWhenAgentInstanceDoesNotExist() {
-    // given
-    final long unknownAgentInstanceKey = 9999L;
-
-    // when
-    final var rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(unknownAgentInstanceKey)
-            .expectRejection()
-            .complete();
-
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason()).contains(String.valueOf(unknownAgentInstanceKey));
-  }
-
-  @Test
-  public void shouldRejectBatchCompleteWhenNoAgentInstanceForProcessInstance() {
+  public void shouldRejectCompleteWhenNoAgentInstanceForProcessInstance() {
     // given
     final long unknownProcessInstanceKey = 9999L;
 
-    // when — no expectRejection() needed: for batch completion, a NOT_FOUND rejection is one of
-    // two equally valid outcomes, not an error
+    // when — no expectRejection() needed: a NOT_FOUND rejection is one of two equally valid
+    // outcomes, not an error
     final var rejection =
         ENGINE.agentInstances().withProcessInstanceKey(unknownProcessInstanceKey).complete();
 
@@ -98,7 +88,6 @@ public class AgentInstanceCompleteTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason()).contains(String.valueOf(unknownProcessInstanceKey));
     assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(unknownProcessInstanceKey);
-    assertThat(rejection.getValue().getAgentInstanceKey()).isEqualTo(-1L);
   }
 
   @Test
@@ -185,7 +174,7 @@ public class AgentInstanceCompleteTest {
     assertThat(rejectedBatchCommand.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
-  private long deployAndCreateAgentInstance() {
+  private AgentInstanceFixture deployAndCreateAgentInstance() {
     ENGINE
         .deployment()
         .withXmlResource(
@@ -197,12 +186,14 @@ public class AgentInstanceCompleteTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
-    return ENGINE
-        .agentInstances()
-        .withElementInstanceKey(serviceTaskInstance.getKey())
-        .create()
-        .getValue()
-        .getAgentInstanceKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    return new AgentInstanceFixture(processInstanceKey, agentInstanceKey);
   }
 
   private static Record<ProcessInstanceRecordValue> awaitServiceTaskActivated(
@@ -213,4 +204,6 @@ public class AgentInstanceCompleteTest {
         .withElementId(SERVICE_TASK_ID)
         .getFirst();
   }
+
+  private record AgentInstanceFixture(long processInstanceKey, long agentInstanceKey) {}
 }
