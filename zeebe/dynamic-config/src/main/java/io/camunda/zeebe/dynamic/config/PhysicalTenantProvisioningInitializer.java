@@ -13,6 +13,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.util.AdditivePartitionReassigner;
@@ -126,8 +127,7 @@ public class PhysicalTenantProvisioningInitializer
         Stream.concat(existingPartitionIds.stream(), newPartitionIds).toList();
 
     final var targetDistribution =
-        reassigner.reassignPartitions(
-            configuration, targetMembers, targetPartitionIds, replicationFactor);
+        getTargetDistribution(configuration, targetMembers, targetPartitionIds);
 
     final Map<String, DynamicPartitionConfig> partitionConfigByNewGroup =
         newTenantIds.stream()
@@ -151,6 +151,35 @@ public class PhysicalTenantProvisioningInitializer
       result = addGroupAndStartChange(result, newTenantId, tenantOperations);
     }
     return result;
+  }
+
+  private Set<PartitionMetadata> getTargetDistribution(
+      final CurrentClusterConfiguration configuration,
+      final Set<MemberId> targetMembers,
+      final List<PartitionId> targetPartitionIds) {
+
+    final boolean isZoneAwareConfig =
+        configuration
+            .globalConfiguration()
+            .partitionDistributorConfig()
+            .filter(ZoneAwareConfig.class::isInstance)
+            .isPresent();
+
+    if (isZoneAwareConfig) {
+      // AdditiveReassigner does not support zone-aware distribution, so we delegate to the
+      // configured distributor instead. ZoneAwareDistribution uses round robin assignment that
+      // means the existing tenants are also moved. Additive zone aware reassignment will be a
+      // followup.
+      return configuration
+          .globalConfiguration()
+          .partitionDistributorConfig()
+          .get()
+          .toDistributor()
+          .distributePartitions(targetMembers, targetPartitionIds, replicationFactor);
+    }
+
+    return reassigner.reassignPartitions(
+        configuration, targetMembers, targetPartitionIds, replicationFactor);
   }
 
   private CurrentClusterConfiguration addGroupAndStartChange(

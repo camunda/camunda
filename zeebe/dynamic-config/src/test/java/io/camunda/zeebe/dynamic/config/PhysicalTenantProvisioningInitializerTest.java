@@ -51,7 +51,7 @@ final class PhysicalTenantProvisioningInitializerTest {
     final var configuration = configurationWith(existingTenantA);
     final var staticConfiguration =
         staticConfigWith(
-            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantB", 2)));
+            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantB", 2)), 2);
     final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
 
     // when
@@ -168,6 +168,11 @@ final class PhysicalTenantProvisioningInitializerTest {
   }
 
   private StaticConfiguration staticConfigWith(final List<List<PartitionId>> tenantPartitionIds) {
+    return staticConfigWith(tenantPartitionIds, 1);
+  }
+
+  private StaticConfiguration staticConfigWith(
+      final List<List<PartitionId>> tenantPartitionIds, final int replicationFactor) {
     final List<PartitionId> allPartitionIds =
         tenantPartitionIds.stream().flatMap(List::stream).toList();
     return new StaticConfiguration(
@@ -175,7 +180,7 @@ final class PhysicalTenantProvisioningInitializerTest {
         Set.of(member(0), member(1), member(2)),
         LOCAL_MEMBER_ID,
         allPartitionIds,
-        1,
+        replicationFactor,
         partitionConfig,
         "clusterId");
   }
