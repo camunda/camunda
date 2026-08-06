@@ -359,9 +359,10 @@ public final class JobSecretInjector {
               + secret.placeholder()
               + "' at "
               + secret.path()
-              + " does not match the job's variables — the referenced value changed between input "
-              + "mapping evaluation and job creation (this can only happen for a camunda.vars.* "
-              + "cluster-variable reference, never a direct camunda.secrets.* reference)");
+              + " does not match the job's variables — the referenced value changed since the "
+              + "placeholder was baked in (job variables are re-read from the current variable "
+              + "scope on every activation attempt, so a later merge into that scope can overwrite "
+              + "it)");
     }
     ((ObjectNode) parent).put(pointer.last().getMatchingProperty(), replaced);
     return true;
