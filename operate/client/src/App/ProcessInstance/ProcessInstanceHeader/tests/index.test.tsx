@@ -317,6 +317,7 @@ describe('InstanceHeader', () => {
         tenantId: mockInstance.tenantId,
         resourceName: null,
         hasStartForm: false,
+        state: 'ACTIVE',
       },
     );
 
