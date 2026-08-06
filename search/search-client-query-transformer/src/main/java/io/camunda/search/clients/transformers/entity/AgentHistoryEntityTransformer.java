@@ -15,13 +15,18 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryEmbeddedToolCallValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import java.util.List;
+import java.util.Objects;
 
 public class AgentHistoryEntityTransformer
     implements ServiceTransformer<AgentHistoryEntity, AgentInstanceHistoryEntity> {
@@ -30,6 +35,7 @@ public class AgentHistoryEntityTransformer
   public AgentInstanceHistoryEntity apply(final AgentHistoryEntity source) {
     return new AgentInstanceHistoryEntity(
         source.getKey(),
+        Objects.requireNonNullElse(source.getHistoryItemId(), ""),
         source.getAgentInstanceKey(),
         source.getElementInstanceKey(),
         source.getProcessInstanceKey(),
@@ -43,6 +49,11 @@ public class AgentHistoryEntityTransformer
         toContent(source.getContent()),
         toToolCalls(source.getToolCalls()),
         toMetrics(source.getInputTokens(), source.getOutputTokens(), source.getDurationMs()),
+        toTools(source.getTools()),
+        source.getModel(),
+        source.getProvider(),
+        toLimits(source.getLimits()),
+        toSystemPrompt(source.getSystemPrompt()),
         toCommitStatus(source.getCommitStatus()),
         source.getProducedAt());
   }
@@ -123,5 +134,33 @@ public class AgentHistoryEntityTransformer
       return null;
     }
     return new Metrics(inputTokens, outputTokens, durationMs);
+  }
+
+  /** The tools available to the agent, as of this entry. CONFIGURATION items only. */
+  private static List<Tool> toTools(final List<AgentHistoryToolValue> tools) {
+    if (tools == null) {
+      return List.of();
+    }
+    return tools.stream().map(t -> new Tool(t.name(), t.description(), t.elementId())).toList();
+  }
+
+  /**
+   * The operational limits, as of this entry. CONFIGURATION items only. {@code -1} on any field
+   * means "no limit configured".
+   */
+  private static Limits toLimits(final AgentHistoryLimitsValue limits) {
+    if (limits == null) {
+      return new Limits(-1, -1, -1);
+    }
+    return new Limits(limits.maxTokens(), limits.maxModelCalls(), limits.maxToolCalls());
+  }
+
+  /** The system prompt, as content blocks, as of this entry. CONFIGURATION items only. */
+  private static List<ContentItem> toSystemPrompt(
+      final List<AgentHistoryContentValue> systemPrompt) {
+    if (systemPrompt == null) {
+      return List.of();
+    }
+    return systemPrompt.stream().map(AgentHistoryEntityTransformer::toContentItem).toList();
   }
 }

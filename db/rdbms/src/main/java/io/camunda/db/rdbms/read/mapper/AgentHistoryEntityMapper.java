@@ -11,6 +11,7 @@ import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
 
 import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class AgentHistoryEntityMapper {
     final var toolCallValues = dbModel.toolCallValues();
     return new AgentInstanceHistoryEntity(
         dbModel.agentHistoryKey(),
+        nullToEmpty(dbModel.historyItemId()),
         dbModel.agentInstanceKey(),
         dbModel.elementInstanceKey(),
         dbModel.processInstanceKey(),
@@ -37,6 +39,11 @@ public class AgentHistoryEntityMapper {
         contentItems != null ? contentItems : List.of(),
         toolCallValues != null ? toolCallValues : List.of(),
         toMetrics(dbModel.inputTokens(), dbModel.outputTokens(), dbModel.durationMs()),
+        dbModel.toolValues(),
+        dbModel.model(),
+        dbModel.provider(),
+        toLimits(dbModel.maxTokens(), dbModel.maxModelCalls(), dbModel.maxToolCalls()),
+        dbModel.systemPromptItems(),
         dbModel.commitStatus(),
         dbModel.producedAt());
   }
@@ -52,5 +59,17 @@ public class AgentHistoryEntityMapper {
       return null;
     }
     return new Metrics(inputTokens, outputTokens, durationMs);
+  }
+
+  /**
+   * Defaults any null individual field to {@code -1} ("no limit configured"), the same sentinel
+   * {@code AgentInstanceLimits} uses.
+   */
+  private static Limits toLimits(
+      final Long maxTokens, final Integer maxModelCalls, final Integer maxToolCalls) {
+    return new Limits(
+        maxTokens != null ? maxTokens : -1L,
+        maxModelCalls != null ? maxModelCalls : -1,
+        maxToolCalls != null ? maxToolCalls : -1);
   }
 }

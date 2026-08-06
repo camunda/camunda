@@ -47,8 +47,11 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
   private static final OffsetDateTime PRODUCED_AT =
       OffsetDateTime.parse("2025-01-01T10:00:00+00:00");
 
+  private static final String HISTORY_ITEM_ID = "history-item-1";
+
   private static final AgentInstanceHistoryEntity HISTORY_ENTITY =
       new AgentInstanceHistoryEntity(
+          HISTORY_ITEM_ID,
           HISTORY_ITEM_KEY,
           AGENT_INSTANCE_KEY,
           ELEMENT_INSTANCE_KEY,
@@ -63,6 +66,11 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
           List.of(new ContentItem(ContentType.TEXT, "Hello agent", null, null)),
           List.of(),
           new Metrics(10L, 20L, 100L),
+          null,
+          null,
+          null,
+          null,
+          null,
           AgentInstanceHistoryCommitStatus.COMMITTED,
           PRODUCED_AT);
 
@@ -248,6 +256,7 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
     // given — entity with metrics == null (history item created without metrics)
     final var entityNoMetrics =
         new AgentInstanceHistoryEntity(
+            HISTORY_ITEM_ID,
             HISTORY_ITEM_KEY,
             AGENT_INSTANCE_KEY,
             ELEMENT_INSTANCE_KEY,
@@ -261,6 +270,11 @@ class AgentInstanceHistorySearchControllerTest extends RestControllerTest {
             AgentInstanceHistoryRole.USER,
             List.of(new ContentItem(ContentType.TEXT, "Hello agent", null, null)),
             List.of(),
+            null,
+            null,
+            null,
+            null,
+            null,
             null,
             AgentInstanceHistoryCommitStatus.COMMITTED,
             PRODUCED_AT);
