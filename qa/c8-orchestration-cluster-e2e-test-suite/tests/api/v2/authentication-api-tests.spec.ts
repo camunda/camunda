@@ -354,6 +354,15 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
     const stranger = await createUser(request);
     usernamesToCleanup.push(caller.username, stranger.username);
 
+    // Both grants are identical apart from their owner, so the only thing that
+    // can keep the stranger's out of the caller's results is owner scoping.
+    const callerKey = await createComponentAuthorization(request, {
+      ownerId: caller.username,
+      ownerType: 'USER',
+      resourceId: '*',
+      resourceType: 'CLUSTER_VARIABLE',
+      permissionTypes: ['READ'],
+    });
     const strangerKey = await createComponentAuthorization(request, {
       ownerId: stranger.username,
       ownerType: 'USER',
@@ -361,10 +370,31 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
       resourceType: 'CLUSTER_VARIABLE',
       permissionTypes: ['READ'],
     });
-    authorizationKeysToCleanup.push(strangerKey);
+    authorizationKeysToCleanup.push(callerKey, strangerKey);
+    await expectAuthorizationCanBeFound(request, callerKey);
     await expectAuthorizationCanBeFound(request, strangerKey);
 
-    await expect(async () => {
+    await test.step('Own grant is returned, stranger grant is not', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/authentication/me/authorizations/search'),
+          {
+            headers: jsonHeaders(
+              encode(`${caller.username}:${caller.password}`),
+            ),
+            data: {},
+          },
+        );
+        await assertStatusCode(res, 200);
+        const keys = (await res.json()).items.map(
+          (it: {authorizationKey: string}) => it.authorizationKey,
+        );
+        expect(keys).toContain(callerKey);
+        expect(keys).not.toContain(strangerKey);
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Filtering by the stranger as owner returns nothing', async () => {
       const res = await request.post(
         buildUrl('/authentication/me/authorizations/search'),
         {
@@ -373,14 +403,8 @@ test.describe.parallel('Search Own Authorizations API Tests', () => {
         },
       );
       await assertStatusCode(res, 200);
-      const json = await res.json();
-      expect(
-        json.items.some(
-          (it: {authorizationKey: string}) =>
-            it.authorizationKey === strangerKey,
-        ),
-      ).toBe(false);
-    }).toPass(defaultAssertionOptions);
+      expect((await res.json()).items).toEqual([]);
+    });
   });
 
   // eslint-disable-next-line playwright/expect-expect
