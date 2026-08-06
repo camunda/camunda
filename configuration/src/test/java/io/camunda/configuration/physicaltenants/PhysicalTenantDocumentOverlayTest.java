@@ -294,6 +294,53 @@ class PhysicalTenantDocumentOverlayTest {
   }
 
   @Test
+  void shouldRejectATenantOverridingOnlyOneHalfOfTheKeyPair() {
+    // the unrestated half is inherited from the root, so the store would be built with an access
+    // key and a secret key belonging to two different identities — a pairing that passes the
+    // store's both-or-neither check and only fails at the first document operation
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.store.bucket-name", "root-bucket",
+                    "camunda.document.aws.store.access-key", "root-key",
+                    "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.physical-tenants.tenanta.document.aws.store.access-key",
+                        "tenant-a-key")));
+
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("store")
+        .withMessageContaining("access-key")
+        .withMessageContaining("secret-key");
+  }
+
+  @Test
+  void shouldAcceptATenantOverridingNeitherHalfOfTheKeyPair() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.store.bucket-name", "root-bucket",
+                    "camunda.document.aws.store.access-key", "root-key",
+                    "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.physical-tenants.tenanta.document.aws.store.bucket-path",
+                        "tenant-a")));
+
+    final Document doc =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
+
+    assertThat(doc.getAws().get("store").getAccessKey()).isEqualTo("root-key");
+    assertThat(doc.getAws().get("store").getSecretKey()).isEqualTo("root-secret");
+  }
+
+  @Test
   void shouldResolveAzureConnectionStringPerPhysicalTenant() {
     environment
         .getPropertySources()
