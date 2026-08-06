@@ -18,6 +18,7 @@ import io.camunda.document.store.azure.AzureBlobDocumentStoreProvider;
 import io.camunda.document.store.gcp.GcpDocumentStoreProvider;
 import io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -345,6 +346,43 @@ class CamundaDocumentStoreConfigurationLoaderTest {
       System.clearProperty("DOCUMENT_STORE_AWS_BUCKET");
       System.clearProperty("DOCUMENT_STORE_AWS_ACCESS_KEY");
       System.clearProperty("DOCUMENT_STORE_AWS_SECRET_KEY");
+    }
+  }
+
+  @Test
+  void shouldDeriveLegacyPropertyNamesIndependentlyOfTheDefaultLocale() {
+    // given — under a Turkish locale, upper-casing 'i' with the default locale yields 'İ', so a
+    // store id containing it would derive a legacy key no environment variable can ever match and
+    // the credential would be dropped without a word
+    final Locale defaultLocale = Locale.getDefault();
+    Locale.setDefault(Locale.forLanguageTag("tr"));
+
+    final Camunda camunda = new Camunda();
+    camunda.getDocument().setDefaultStoreId("minio");
+
+    final Document.AwsStore awsStore = new Document.AwsStore();
+    awsStore.setBucketName("docs");
+    camunda.getDocument().getAws().put("minio", awsStore);
+
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("camunda.document.default-store-id", "minio");
+    mockEnv.setProperty("camunda.document.aws.minio.bucket-name", "docs");
+    mockEnv.setProperty("DOCUMENT_STORE_MINIO_ACCESS_KEY", "legacy-key");
+    mockEnv.setProperty("DOCUMENT_STORE_MINIO_SECRET_KEY", "legacy-secret");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
+
+      // then
+      assertThat(store("minio", configuration.documentStores()).properties())
+          .containsEntry("ACCESS_KEY", "legacy-key")
+          .containsEntry("SECRET_KEY", "legacy-secret");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+      Locale.setDefault(defaultLocale);
     }
   }
 
