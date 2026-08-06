@@ -44,11 +44,10 @@ import org.junit.Test;
  * {@code JobBatchActivateProcessor#raiseIncidentJobSecretInjectionFailed}).
  *
  * <p>This proves three things no test previously covered: that the incident actually fires for this
- * specific cause, that its message says plainly resolving it will not fix anything - the job's data
- * is immutable once created, so re-resolving the same frozen record hits the identical mismatch
- * again - and that the one documented recovery path, process instance modification, actually works
- * end-to-end: the stale job is canceled, its incident auto-resolves, and the *fresh* job created
- * against now-stable cluster-variable state resolves and injects correctly.
+ * specific cause, that its message states the cause and both valid recovery paths without
+ * prescribing one over the other, and that one of those paths, process instance modification,
+ * actually works end-to-end: the stale job is canceled, its incident auto-resolves, and the *fresh*
+ * job created against now-stable cluster-variable state resolves and injects correctly.
  *
  * <p>The cluster variable is still tenant-scoped (the {@code camunda.vars.tenant.*} reference
  * requires that), but scoped to the {@code <default>} tenant rather than a custom one: completing a
@@ -159,14 +158,14 @@ public final class ClusterVariableSecretInjectionIncidentTest {
     engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
 
     // then - the mismatch between the job's baked-in placeholder and its resolved reference makes
-    // injection fail, and the incident says plainly that resolving it will not fix anything
+    // injection fail, and the incident states the cause and both valid recovery paths
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withJobKey(staleJobKey)
             .getFirst();
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(incident.getValue().getErrorMessage())
-        .contains("Resolving this incident will not fix it");
+        .contains("Correct the mismatched variable and resolve the incident");
 
     // and - the job is excluded from activation: a later poll does not hand it out either
     final Record<JobBatchRecordValue> secondAttempt =
