@@ -33,7 +33,9 @@ class DocumentTest {
         "camunda.document.gcp.gcp1.prefix=temp/",
         "camunda.document.gcp.gcp1.credentials-path=/var/secrets/gcp1.json",
         "camunda.document.azure.az1.container-name=docs",
+        "camunda.document.azure.az1.container-path=tenant-a/",
         "camunda.document.azure.az1.endpoint=https://account.blob.core.windows.net",
+        "camunda.document.azure.az1.connection-string=AccountName=acc;AccountKey=az1-key",
         "camunda.document.local.local1.path=/var/camunda/documents"
       })
   class WithUnifiedDocumentConfiguration {
@@ -78,8 +80,11 @@ class DocumentTest {
           .satisfies(
               azureStore -> {
                 assertThat(azureStore.getContainerName()).isEqualTo("docs");
+                assertThat(azureStore.getContainerPath()).isEqualTo("tenant-a/");
                 assertThat(azureStore.getEndpoint())
                     .isEqualTo("https://account.blob.core.windows.net");
+                assertThat(azureStore.getConnectionString())
+                    .isEqualTo("AccountName=acc;AccountKey=az1-key");
               });
 
       assertThat(unifiedConfiguration.getCamunda().getDocument().getLocal().get("local1"))
