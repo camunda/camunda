@@ -27,6 +27,8 @@ const batchOperationTypeSchema = z.enum([
 	'DELETE_PROCESS_INSTANCE',
 	'ADD_VARIABLE',
 	'UPDATE_VARIABLE',
+	'SUSPEND_PROCESS_INSTANCE',
+	'RESUME_PROCESS_INSTANCE',
 ]);
 type BatchOperationType = z.infer<typeof batchOperationTypeSchema>;
 
