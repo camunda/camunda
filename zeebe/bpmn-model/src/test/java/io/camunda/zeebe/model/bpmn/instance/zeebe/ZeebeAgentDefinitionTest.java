@@ -27,7 +27,8 @@ import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeAgentDefinitionTest extends BpmnModelElementInstanceTest {
 
@@ -47,53 +48,53 @@ public class ZeebeAgentDefinitionTest extends BpmnModelElementInstanceTest {
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "agentType", false, true));
   }
 
-  @Test
-  public void shouldRoundTripAgentDefinitionOnServiceTaskForAllAgentTypes() {
-    for (final ZeebeAgentType agentType : ZeebeAgentType.values()) {
-      // given
-      final BpmnModelInstance modelInstance =
-          Bpmn.createExecutableProcess("process-" + agentType)
-              .startEvent()
-              .serviceTask("task", t -> t.zeebeAgentDefinition(agentType))
-              .endEvent()
-              .done();
-      final String modelXml = Bpmn.convertToString(modelInstance);
+  @ParameterizedTest
+  @EnumSource(ZeebeAgentType.class)
+  public void shouldRoundTripAgentDefinitionOnServiceTaskForAllAgentTypes(
+      final ZeebeAgentType agentType) {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process-" + agentType)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeAgentDefinition(agentType))
+            .endEvent()
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
 
-      // when
-      final ServiceTask serviceTask =
-          Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
-              .getModelElementById("task");
-      final ZeebeAgentDefinition agentDefinition =
-          serviceTask.getSingleExtensionElement(ZeebeAgentDefinition.class);
+    // when
+    final ServiceTask serviceTask =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("task");
+    final ZeebeAgentDefinition agentDefinition =
+        serviceTask.getSingleExtensionElement(ZeebeAgentDefinition.class);
 
-      // then
-      assertThat(agentDefinition.getAgentType()).isEqualTo(agentType);
-    }
+    // then
+    assertThat(agentDefinition.getAgentType()).isEqualTo(agentType);
   }
 
-  @Test
-  public void shouldRoundTripAgentDefinitionOnAdHocSubProcessForAllAgentTypes() {
-    for (final ZeebeAgentType agentType : ZeebeAgentType.values()) {
-      // given
-      final BpmnModelInstance modelInstance =
-          Bpmn.createExecutableProcess("process-" + agentType)
-              .startEvent()
-              .adHocSubProcess(
-                  "ad-hoc",
-                  adHocSubProcess -> adHocSubProcess.zeebeAgentDefinition(agentType).task("inner"))
-              .endEvent()
-              .done();
-      final String modelXml = Bpmn.convertToString(modelInstance);
+  @ParameterizedTest
+  @EnumSource(ZeebeAgentType.class)
+  public void shouldRoundTripAgentDefinitionOnAdHocSubProcessForAllAgentTypes(
+      final ZeebeAgentType agentType) {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process-" + agentType)
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> adHocSubProcess.zeebeAgentDefinition(agentType).task("inner"))
+            .endEvent()
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
 
-      // when
-      final AdHocSubProcess adHocSubProcess =
-          Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
-              .getModelElementById("ad-hoc");
-      final ZeebeAgentDefinition agentDefinition =
-          adHocSubProcess.getSingleExtensionElement(ZeebeAgentDefinition.class);
+    // when
+    final AdHocSubProcess adHocSubProcess =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("ad-hoc");
+    final ZeebeAgentDefinition agentDefinition =
+        adHocSubProcess.getSingleExtensionElement(ZeebeAgentDefinition.class);
 
-      // then
-      assertThat(agentDefinition.getAgentType()).isEqualTo(agentType);
-    }
+    // then
+    assertThat(agentDefinition.getAgentType()).isEqualTo(agentType);
   }
 }
