@@ -46,11 +46,15 @@ export async function assignUsersToTenant(
       userId: user.username,
       tenantId: tenantId,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/users/{userId}', p),
-      {headers: jsonHeaders()},
-    );
-    await assertStatusCode(res, 204);
+    // Retry to absorb read-after-write lag: the user created above may not
+    // yet be visible to the assign endpoint on a shared cluster (404 → 204).
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/users/{userId}', p),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
     state[`username${tenantId}${i}`] = user.username;
   }
 }
