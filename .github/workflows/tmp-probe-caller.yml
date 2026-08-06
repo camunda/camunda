@@ -1,0 +1,15 @@
+# description: Throwaway caller that reproduces the reusable-call ref problem. Deleted after use.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: TMP probe caller
+
+on:
+  push:
+    branches:
+      - ci/alwaysgreen-89-live-check
+
+jobs:
+  call:
+    uses: camunda/camunda/.github/workflows/tmp-reusable-probe.yml@ci/alwaysgreen-89-triage
+    secrets: inherit
